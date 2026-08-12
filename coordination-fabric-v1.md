@@ -90,7 +90,7 @@ v1 behaviour set (deliberately minimal):
 | `coalescer` | N routine attests/messages → one digest | grouping keys, window |
 | `batcher` | delivers non-urgent classes at turn boundaries | class → immediacy map |
 | `status-responder` | answers `status-query` from rows (toplines/trace); the question never reaches a mind | scope of auto-answerable queries |
-| `watchdog` | starvation watermark: open obligation quiet > X → escalate regardless of any gate | thresholds per class/archetype |
+| `avasarala` | starvation watermark: open obligation quiet > X → escalate regardless of any gate (née prodder/watchdog — renamed r3; Expanse: the org's relentless prodder, escalates pain to the top) | thresholds per class/archetype |
 
 `wake-on-fact` (S1) already exists and is the subscription bone; this spec
 consumes it, not respecifies it.
@@ -107,7 +107,7 @@ principal's personal reflex policy on instruction (§8).
 
 MUST NOT: file verdicts on substance; accept or reject work; make product
 judgments; alter another principal's reflexes; hold anything — its only
-"no" is "later," and the watchdog bounds every "later."
+"no" is "later," and the avasarala bounds every "later."
 
 **Context (RULED): rows + standing directives.** The exec reads toplines,
 attests, traces, and the directives its worker publishes. It never reads the
@@ -137,7 +137,7 @@ Substrate-shipped base vocabulary; kungfu may extend, never remove:
   and/or the human. Never batched, never digested, never triaged.
 
 Class is **advisory metadata extending `attend`** — sender-elected, receiver
-re-classifiable, never a gate. Mis-classification costs latency (watchdog
+re-classifiable, never a gate. Mis-classification costs latency (avasarala
 bounds it), never truth.
 
 ## 8. The inhibition seam (override power — RULED)
@@ -148,7 +148,7 @@ Two kinds of reflex changes, two authorities:
   the affected agent, instantly, no permission — filed as a standing
   directive. The mind that overrides the reflex is the mind whose hand is in
   the fire.
-- **Skeletal** (shared vocabulary, watchdog floors, org-wide routing): the
+- **Skeletal** (shared vocabulary, avasarala floors, org-wide routing): the
   normal law path — identity-tree edit, owner/PO authority, learn/relearn
   distribution. Nobody silences someone else's alarm.
 
@@ -160,8 +160,8 @@ which reflex to inhibit. An unattributable reflex is a bug.
 
 | Failure | Caught by |
 |---|---|
-| bone misroutes | watchdog watermark (deterministic catches deterministic) |
-| exec mis-gates | watchdog bounds the delay; worker feedback tunes directives |
+| bone misroutes | avasarala watermark (deterministic catches deterministic) |
+| exec mis-gates | avasarala bounds the delay; worker feedback tunes directives |
 | worker stalls | effort-checkin (exists) |
 | fabric drifts systemically | rumination audits artifacts AND the fabric itself |
 | genuine pain | algedonic class bypasses everything |
@@ -184,7 +184,7 @@ delegation card. Generalize to worker archetypes only after the pilot.
 Acceptance (evidence, not vibes): (1) PO-session coordination turns drop
 measurably (toplines/turn counts, before/after); (2) zero information loss —
 every attenuated message still present in rows; (3) summon latency bounded —
-no `input-needed`/`blocker` older than the watchdog floor without a summon;
+no `input-needed`/`blocker` older than the avasarala floor without a summon;
 (4) at least one personal override and one skeletal change exercised
 end-to-end; (5) exec never files a substance verdict (audit its card).
 
@@ -274,6 +274,10 @@ convention's manual frictions that the noun would remove — the noun is
 justified by friction observed, never by symmetry.
 
 ## Revision trail
+
+r3 (2026-08-12): the watchdog behaviour is named **Avasarala** (Mike's
+ruling; Tightbeam is Expanse-themed — port 11373 = 1373 gates + 1 Earth).
+Supervision's prodder unbraids INTO this behaviour at Phase 4.
 
 r2 (2026-08-12): §4 layering corrected (office pattern is neutral-seed
 anatomy, not domain kungfu — Mike's catch); §13 implementation phases added,
