@@ -1,6 +1,6 @@
 # Coordination fabric — bones and cartilage — v1
 
-Status: DRAFT r1 (2026-08-12). Authored from the ruled forks of
+Status: DRAFT r3 (2026-08-12). Authored from the ruled forks of
 `coordination-fabric-ideation-2026-08-12.md` (retained as provenance; this file
 supersedes it as design authority). Rulings: Mike, 2026-08-12. Not yet
 spirit-reviewed; route through the normal review pipeline before
