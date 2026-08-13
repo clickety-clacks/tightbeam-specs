@@ -358,8 +358,10 @@ Miller files, never a seizure the substrate performs (Q8, Q1).
 A small, fast, cheap-per-token model. Bounded verbs — the delegation card's
 subject enumerates exactly these:
 
-MAY: read substrate rows; file its own lifecycle attests on its own card and
-acknowledge directives there; answer routine queries answerable from rows;
+MAY: read substrate rows; file its own lifecycle attests on its own card
+(directive receipt is proven by BEHAVIOR — the next filing that reflects
+the directive — never by an acknowledgment filing, per the
+no-acknowledgment law, §7); answer routine queries answerable from rows;
 batch, schedule, and deliver to its principal within §7's ceilings; summon
 its principal with a brief; escalate to rumination; tune its principal's
 personal reflex policy on instruction (§8); spawn offices from the seed
@@ -734,9 +736,10 @@ Acceptance (evidence, not vibes; each clause decidable):
 4. **Both seams exercised:** at least one personal override and one
    skeletal change end-to-end.
 5. **No substance verdicts:** audit of the exec's card shows only its
-   lifecycle attests and directive acknowledgments — zero verdict-kind
-   attests on cards it does not hold, zero attest content judging work
-   products (§6's definition decides).
+   lifecycle attests — zero verdict-kind attests on cards it does not
+   hold, zero attest content judging work products (§6's definition
+   decides), and zero acknowledgment-only filings (receipt is behavior,
+   never a filing — the no-ack law, §7).
 
 Generalize to worker archetypes only after the pilot (Phase 4 entry is a
 RULING on this acceptance, not just the evidence).
@@ -940,7 +943,12 @@ law-as-text in the charter and is enforced by layer 3's audit, never by
 the substrate parsing content (gate Q1/Q6; candidates item 11's
 contentless-mechanism ruling). Terms entry aligned. Finding 8 (bone still
 named Avasarala in program-doc measurement text) fixed in the program
-record, same sitting.
+record, same sitting. Seed-arm residue, same sitting: §6's MAY list and
+§11.5's acceptance clause dropped the "acknowledge directives" filing —
+this fold's own no-ack law makes directive receipt provable by behavior
+(the next filing that reflects the directive), never by an
+acknowledgment filing; §11.5 now audits acknowledgment-only filings as a
+violation instead of expecting them.
 
 r5 (2026-08-13): the CR fold — executes `0.2-change-request-001.md` §C
 (items 1–7) and `0.2-change-request-002.md` (D1–D9), both AUTHORIZED by
