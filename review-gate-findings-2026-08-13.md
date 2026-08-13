@@ -564,3 +564,33 @@ path.
 6. **Zombie sweep.** Moves to the 0.1.x handoff list (Mike relays; their
    org executes). The program text is re-scoped so no program agent can
    read a 0.1.x mutation as theirs to run.
+
+---
+
+## Fold round 2 — Sol delta re-check (2026-08-13) and READY declaration
+
+Sol (gpt-5.6-sol, high, fresh thread, embedded docs) re-checked both folds
+against every original finding. Resolution tally: fabric — all 18 Fable +
+all 11 Sol findings RESOLVED or DEFERRED-EXPLICITLY except S5 (a leftover
+§6 clause); program — all resolved except F2/S1 (missing Architecture +
+authority order in the header), F3 (the dead term still printed in the
+rename note), and F7 (C1/E4 floors unseeded). New fold-introduced defects
+found: (1) BLOCKING — §11.3 counted correctly answered/consumed requests
+as acceptance violations; (2) BLOCKING — §6 "avasarala bounds every
+ceiling" contradicted the §5 watermark scoping; (3) IMPORTANT — §4's
+rename note printed the sealed term. Verdict: FOLD-DEFECTS.
+
+All seven items fixed same day, verbatim as prescribed: §11.3 accepts
+answer/consume/summon as clearing; §6 re-scoped (batcher enforces
+ceilings per Invariant 3, avasarala bounds watermark starvation); §5
+seeds the 60-min open-obligation quiet floor beside the 30-min decision
+floor and C1/E4 cite them; program header gains Architecture +
+spec-homing authority order; §4's note no longer prints the term (the
+amendment's exemption list updated to match). Fix commits in this repo's
+log, 2026-08-13.
+
+**r4 READY declared 2026-08-13** by the integrator under the
+drive-to-completion authorization. The fix round was applied by the fold
+owner rather than re-originated because every fix was verbatim-prescribed
+by the cross-vendor re-check (zero judgment content added); Mike may
+order a fresh re-check on the fix diff if he wants a third vendor pass.

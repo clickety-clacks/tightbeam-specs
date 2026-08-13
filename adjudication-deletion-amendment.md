@@ -78,9 +78,9 @@ Added 2026-08-13 (fold; the `ringdown` term was renamed "model election"
 across live specs — these dated records lawfully retain the word as
 verbatim quotation): `v0.2-ticket-audit-2026-08-12.md` (0.1.x work-item
 titles quoted from state.db), `0.2-orchestrator-handoff.md` (context
-snapshot), `review-gate-findings-2026-08-13.md` (verbatim reviewer
-findings), and `v0.2-program-2026-08-12.md` (the rename record itself —
-one mention naming what was renamed).
+snapshot), and `review-gate-findings-2026-08-13.md` (verbatim reviewer
+findings; also holds the rename record). The live program doc no longer
+prints the term at all (delta re-check fix, 2026-08-13).
 
 ## Sweep contract
 

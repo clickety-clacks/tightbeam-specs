@@ -1,6 +1,8 @@
 # Coordination fabric — bones and cartilage — v1
 
-Status: DRAFT r4 (2026-08-13). Folded from the 2026-08-13 review gate
+Status: r4 READY (2026-08-13; declared after the cross-vendor delta
+re-check + its prescribed fix round — see `review-gate-findings-2026-08-13.md`).
+Folded from the 2026-08-13 review gate
 (`review-gate-findings-2026-08-13.md`: one Fable round, one Sol-xhigh round,
 blind, both changes-requested; integrator rulings recorded there). r3 and
 earlier authored from the ruled forks of
@@ -173,7 +175,7 @@ v1 behaviour set (deliberately minimal):
 | `coalescer` | N routine attests/messages → one signed digest | group by sender+card, dedupe, "×3, latest" | grouping keys, window |
 | `batcher` | creates the delivery wake at min(next turn boundary, class ceiling) | ceilings: §7 table | class → immediacy map |
 | `status-responder` | answers `status-query` from rows (toplines/trace) when the query is in its answerable scope; out-of-scope or rows-unavailable → files a named degradation row and routes the query to the desk (the cheapest mind), never silently drops (Phase 5; until then the desk answers from rows) | scope: toplines + trace reads | scope of auto-answerable queries |
-| `avasarala` | starvation watermark over the WATERMARK POPULATION: any member quiet past its floor → escalate regardless of any gate. Population = open obligations (quiet = no attest) AND unanswered `input-needed`/`blocker` rows (quiet = no answer, consume, or summon since creation). A misclassified decision still enters the population the moment any mind re-classifies it upward; a decision misclassified `fyi` AND never re-classified is bounded by rumination audit (§9), not by the watermark — the fabric does not claim otherwise | floor: 30 min for `input-needed`/`blocker` (pilot seed value; skeletal to change) | thresholds per class/archetype |
+| `avasarala` | starvation watermark over the WATERMARK POPULATION: any member quiet past its floor → escalate regardless of any gate. Population = open obligations (quiet = no attest) AND unanswered `input-needed`/`blocker` rows (quiet = no answer, consume, or summon since creation). A misclassified decision still enters the population the moment any mind re-classifies it upward; a decision misclassified `fyi` AND never re-classified is bounded by rumination audit (§9), not by the watermark — the fabric does not claim otherwise | floors (pilot seed values; skeletal to change): 30 min for unanswered `input-needed`/`blocker`; 60 min attest-quiet for open obligations | thresholds per class/archetype |
 
 `wake-on-fact` (S1) already exists and is the subscription bone; this spec
 consumes it, not respecifies it.
@@ -200,8 +202,10 @@ judging a work product); accept or reject work; make product judgments;
 alter another principal's reflexes; restaff its principal; hold anything —
 where "hold" is §Terms' definition: obligations, lifecycle transitions, and
 verdicts are never delayed by the exec; delivery TIMING within §7's bounded
-ceilings is the exec's job, not a hold. Its only "no" is "later," every
-"later" has a ceiling, and the avasarala bounds every ceiling.
+ceilings is the exec's job, not a hold. Its only "no" is "later"; every
+"later" has a ceiling the BATCHER enforces by creating the delivery wake
+(Invariant 3), and the avasarala bounds starvation across its watermark
+population (§5) — two different guarantees, neither claiming the other's.
 
 **Context (RULED): rows + standing directives.** The exec reads toplines,
 attests, traces, and the directives its principal files on the delegation
@@ -310,8 +314,10 @@ Acceptance (evidence, not vibes; each clause decidable):
    remains historical context, not the measure).
 2. **Zero information loss:** every attenuated message present in rows —
    digest-member audit (C4) returns zero missing sources.
-3. **Summon latency bounded:** no `input-needed`/`blocker` row older than
-   the avasarala floor (30 min seed) without a summon or escalation row.
+3. **Summon latency bounded:** no `input-needed`/`blocker` row still
+   UNANSWERED and UNCONSUMED past the avasarala floor (30 min seed)
+   without a summon or escalation row — a row cleared by answer, consume,
+   or summon (§5's quiet definition) is satisfied, not a violation.
 4. **Both seams exercised:** at least one personal override and one
    skeletal change end-to-end.
 5. **No substance verdicts:** audit of the exec's card shows only its
@@ -439,6 +445,12 @@ never cross); `wake-on-fact-v1.md` (consumed primitive); `tightbeam.md`
 (hub — may not lag this file).
 
 ## Revision trail
+
+r4 fix round (2026-08-13, same day): three defects the Sol delta re-check
+named, fixed as prescribed — §11.3 accepts answer/consume as lawful
+clearing; §6's avasarala clause re-scoped to the watermark population
+(batcher enforces ceilings, Invariant 3); §5 seeds the open-obligation
+quiet floor (60 min) alongside the 30-min decision floor. READY declared.
 
 r4 (2026-08-13): review-gate fold. Canonical structure added (Goal,
 Non-Goals, Terms, Assumptions, spec-homing; Open Questions marked). Class
