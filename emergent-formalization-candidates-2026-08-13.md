@@ -188,3 +188,19 @@ checkin notices work-shaped token burn.
 Razor: mechanism (archetype-scoped verb enforcement) is contentless
 substrate; the restrictive matrix ships prearmed on the seed exec archetype;
 orgs may loosen by ordinary law amendment. Queue with the CR-001 fold batch.
+
+### 10b/11b correction (Mike, 2026-08-13): desks do the spawning; the office is the unit of hiring
+Minds judge; desks execute. The inception flow corrected: the PO rules
+"spirit ratified" and the PO's DESK spawns the orchestrator AND the
+orchestrator's desk, wires PO-desk to orchestrator-desk, and binds the
+charter. Worker hires likewise: the orchestrator decides shape and staffing;
+ITS desk performs the spawns and wires each new office in. The nervous
+system is not assembled after the fact — it is BUILT BY HIRING, because the
+unit of hiring is the office (mind + desk), plumbed to the parent desk at
+birth. Directives flow down the desk graph; summons bubble up it.
+Item 11 amended: the exec no-spawn clause becomes spawn-as-directed-
+execution — a desk spawn filing MUST cite the authority row (the
+principal's recorded decision) and draw from seed office templates;
+uncited spawns are refused by rule. Initiative stays with minds.
+Graph-building mechanics (spawn + wire patterns) live in the DESK playbook
+(seed, domain-free); shape judgment stays with orchestrator minds (kungfu).
