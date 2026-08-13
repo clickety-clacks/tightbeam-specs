@@ -74,3 +74,27 @@ the philosophy gate's org-agent counterpart in workstream 3.
 Disposition: items 1, 3, 5 are Phase 1-2 fold candidates; 2 is Phase 4's
 reference contract; 4, 7, 8 are seed guidance (workstream 2-3); 6 is a
 kungfu playbook. tb02 to absorb at the next fold sitting.
+
+## The shipped-vs-emergent razor (RULED in discussion, 2026-08-13)
+
+Observed law: every institution the 0.1 org invented was expressible in
+shipped primitives alone. Fertilizer means keeping it that way.
+
+- **Substrate (mechanism):** only domain-free, contentless floors whose
+  absence fails silently. The starvation timer. Typed vocabulary. Batching.
+- **Seed (template, content empty):** patterns proven in a live org whose
+  SHAPE is domain-free but whose CONTENT is local. The nurse playbook with
+  an EMPTY casebook. The specimen discipline and its vocabulary. Charter
+  templates. An org can unlearn any of it.
+- **Emergent (never ship):** anything learned from one org's failures.
+  Class taxonomies, thresholds, rulings, staffing. Shipping these is the
+  gh#8 disease at the knowledge level.
+
+Case-law rot: casebook entries must cite their evidence and record their
+hits (template requirement), so a class that stops matching is visible in
+rows. Retirement stays a local judgment. Ship the ability to notice;
+noticing is emergent.
+
+The pipeline is the product: org invents → evidence accrues → proven
+domain-free shapes promote to seed → contentless floors promote to
+substrate. This document is one such promotion request.
