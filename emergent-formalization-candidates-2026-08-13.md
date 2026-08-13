@@ -118,3 +118,18 @@ hit count is a managed bug, not a triage success), and files promotion
 requests for domain-free shapes. The casebook, with evidence links and hit
 counts, is the shared artifact: the nurse writes it as a tool; Miller reads
 it as evidence.
+
+### Ruling by recommendation (RULED 2026-08-13 — the owner is not a queue)
+Human adjudication of every promotion is a bottleneck and contradicts the
+dark-factory ruling (humans only for genuine decisions). Promotion requests
+therefore carry a recommendation, a risk tier, and a default:
+- Tier 1, reversible housekeeping (retirements, demotions, seed guidance
+  additions): the recommendation AUTO-EXECUTES with a durable notice; the
+  owner may reverse after the fact.
+- Tier 2, new shapes entering the seed (playbooks, patterns, vocabulary):
+  default-executes at a stated deadline unless the owner objects; the
+  notification carries the one-line recommendation so dissent costs one word.
+- Tier 3, substrate mechanism, floors, or anything irreversible: explicit
+  owner ruling, always. Rare by construction; the razor pushes nearly
+  everything into tiers 1-2.
+The owner's station in the pipeline is veto-with-context, not adjudication.
