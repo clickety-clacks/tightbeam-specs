@@ -517,3 +517,50 @@ Everything else in both rounds folds mechanically under existing law
 (structure sections, unmarked gaps, dead cross-references, unbound
 parameters get values or explicit deferral marks, stale clauses swept,
 §8b reconciliation per the staleness flag).
+
+---
+
+## Integrator rulings (2026-08-13, drive-to-completion authorization)
+
+Mike authorized "drive to completion" on the findings package. The six
+decision points fall in lanes program §8 assigns to Fable (spec review, the
+§4 boundary review, tiebreak when reviewers split) or to the integrator.
+Each ruling below is PROVISIONAL — recorded, executed, and overridable by
+Mike at any time; an override reverses the folded text by the normal law
+path.
+
+1. **Ringdown boundary (tiebreak, reviewers split).** The mechanism STANDS;
+   the name dies. Walking an org-authored ordered election list against
+   live catalog truth at creation time, recorded, caller-override-wins,
+   exhaustion = named failure, is physics executing culture — the exact
+   shape of rails. The judgment happened when the ORG authored the list;
+   the walk executes it. Sol's strongest point (fallback choice is agent
+   judgment) is honored at the seam: the walk runs only when the caller
+   elected silence, the caller's election always wins, and mid-session
+   failure still summons a mind (the §4 pin untouched). The term
+   `ringdown` is sealed dead vocabulary — renamed **model election**
+   (manifest field `elections`); the sweep contract stays clean because
+   the corpus drops the word rather than amending the seal.
+2. **Class vocabulary layer (Sol S2).** Split by the standing layer test:
+   the class FIELD and the behaviours consuming it are physics; the five
+   NAMES and their default immediacies are NEUTRAL SEED — shipped as
+   content, reshapeable by the skeletal law path (identity-tree edit),
+   never silently removable. "Extend, never remove" is corrected to
+   "extend freely; reshape or remove only via the skeletal path."
+   `algedonic`'s never-batched handling is a seed default whose change
+   requires the skeletal path — nobody silences someone else's alarm
+   quietly, but an org CAN reshape its pain channel by law.
+3. **Program-record structure.** No exemption ruled (that would be new
+   law, Mike's). The program doc GETS the compact canonical header —
+   the missing Acceptance ("when is the program done") was a real hole,
+   not ceremony.
+4. **Seam ② staffing.** §8's origination-vs-maintenance revision is the
+   later ruling and the 2026-08-13 handoff restates it: **Opus 5
+   originates all four seams, ② leads.** §9.2's "(Fable)" dies. Fable
+   stays on judgment lanes only.
+5. **Fold ownership.** The integrator (this session, Fable) holds the
+   fold; the folded deltas get a Sol cross-vendor re-check before r4 is
+   declared READY.
+6. **Zombie sweep.** Moves to the 0.1.x handoff list (Mike relays; their
+   org executes). The program text is re-scoped so no program agent can
+   read a 0.1.x mutation as theirs to run.
