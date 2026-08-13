@@ -185,8 +185,9 @@ v1 behaviour set (deliberately minimal):
 
 | Behaviour | What it does | Seed default | Policy knobs |
 |---|---|---|---|
-| `classifier` | stamps ONLY unclassified inbound messages (§7); a sender's elected class is NEVER overwritten | unclassified → `fyi` | class vocabulary extensions; per-sender default elections (the sender's own org-authored defaults, applied at send when the sender elected nothing) |
+| `classifier` | guards elections: a sender's elected class is NEVER overwritten, and an unknown class receives fyi's POLICY plus a named skew row, never a rewrite (r4.3: ELECTION IS HOW TRAFFIC ENTERS THE FABRIC — wakes with no election are untouched legacy traffic, deliberately: auto-stamping would retroactively hold mail nobody elected; the classify seam exists in code for per-sender default elections when an org authors them) | unclassed → untouched; unknown class → fyi policy + skew row | class vocabulary extensions; per-sender default elections (the sender's own org-authored defaults, applied at send when the sender elected nothing) |
 | `coalescer` | N routine attests/messages → one signed digest | group by sender+card, dedupe, "×3, latest" | grouping keys, window |
+| | ^ SCHEDULING (r4.3): the coalescer ships at PHASE 4 — v1/Phase-1 digests carry every payload verbatim (form matters at desk scale, not before); §13 Phase 4 now names it | | |
 | `batcher` | creates the delivery wake at min(next turn boundary, class ceiling) | ceilings: §7 table | class → immediacy map |
 | `status-responder` | answers `status-query` from rows (toplines/trace) when the query is in its answerable scope; out-of-scope or rows-unavailable → files a named degradation row and routes the query to the desk (the cheapest mind), never silently drops (Phase 5; until then the desk answers from rows) | scope: toplines + trace reads | scope of auto-answerable queries |
 | `avasarala` | starvation watermark over the WATERMARK POPULATION: any member quiet past its floor → escalate regardless of any gate. Population = open obligations (quiet = no attest) AND unanswered `input-needed`/`blocker` rows (quiet = no answer, consume, or summon since creation). A misclassified decision still enters the population the moment any mind re-classifies it upward; a decision misclassified `fyi` AND never re-classified is bounded by rumination audit (§9), not by the watermark — the fabric does not claim otherwise | floors (pilot seed values; skeletal to change): 30 min for unanswered `input-needed`/`blocker`; 60 min attest-quiet for open obligations | thresholds per class/archetype |
@@ -262,7 +263,9 @@ RE-CLASSIFY for its own handling, recorded as its own row with the sender's
 election preserved (Law 2) — receiver re-classification shapes the
 receiver's delivery, and for `algedonic` it takes effect only AFTER the
 first bypass delivery (nobody, including the receiver's bones, mutes an
-alarm before it rings once).
+alarm before it rings once). (r4.3: re-classification is a DESK behavior —
+it ships with Phase 3's first front desk, recorded here so its absence in
+Phase 1 is a deferral, not a hole.)
 
 **Misclassification costs, stated honestly:** downward misclassification
 (`blocker` sent as `fyi`) costs latency; the watermark bounds it once the
@@ -419,7 +422,9 @@ ruling to generalize.
 
 **Phase 4 — worker desks (entry: Phase 3 acceptance RULED, not just met).**
 Generalize per cost-tier guidance (frontier-class workers first). Harden the
-directive schema from pilot lessons (§12 Q1). Unbraid the prodder: sweep
+directive schema from pilot lessons (§12 Q1). Build the COALESCER (§5:
+sender+card grouping, dedupe, "×3, latest" — scheduled here by r4.3;
+digest form starts to matter at desk scale). Unbraid the prodder: sweep
 mechanics stay physics; thresholds, cadence, quiet-definitions, ladder shape
 move to anatomy defaults + culture overrides in the identity tree. Exit: ≥2
 worker archetypes running offices; prod false-positive cost measured at
@@ -459,6 +464,16 @@ never cross); `wake-on-fact-v1.md` (consumed primitive); `tightbeam.md`
 (hub — may not lag this file).
 
 ## Revision trail
+
+r4.3 (2026-08-13): completeness-scan fold (dual-vendor scan,
+completeness-scan-2026-08-13.md). §5 classifier row rewritten to match
+the shipped, review-accepted design — election is how traffic enters the
+fabric; unclassed wakes are untouched legacy traffic (auto-stamping would
+retroactively hold unelected mail); the classify seam remains for
+org-authored per-sender defaults. Coalescer explicitly SCHEDULED at Phase
+4 (it was named in §5 but scheduled nowhere — a spec defect). Receiver
+re-classification recorded as a Phase 3 desk behavior (deferral, not
+hole). Mike may overrule any of the three.
 
 r4.2 (2026-08-13): §4 crash-window claim narrowed per Sol micro-review —
 the post-crash state is a bounded, governed dual-authority window (not
