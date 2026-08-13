@@ -127,11 +127,16 @@ creation. The office exploits the seam:
   principal at creation. Everything the exec does traces to that card;
   revoking it dissolves the office.
 
-**Dissolution and failover (v1: convention, non-atomic, degraded windows
-named):** revoke-then-rebind is a documented two-verb sequence executed by
-the same authority (the principal or the org actor dissolving the office).
-A crash between the verbs leaves the role unstaffed — the existing
-unstaffed-role rule catches it; nothing new. In-flight batched traffic:
+**Dissolution and failover (v1: convention, non-atomic, degraded window
+named; ordering corrected r4.1):** REBIND-then-revoke is a documented
+two-verb sequence executed by the same authority (the principal or the org
+actor dissolving the office). Order matters: revoking a card never changes
+role binding (address and obligation are different seams), so revoke-first
+would leave a window where the role routes to an off-card desk. Rebind
+first puts the role safe on its next session; a crash between the verbs
+leaves only a benign leftover card — an on-card desk with no role gets no
+new role traffic, and the dissolver revokes on resume. In-flight batched
+traffic:
 rows are durable (Law 2), digests are signed (§8); an undelivered wake
 addressed to the ROLE re-resolves at send time per existing law; a wake
 addressed to the dead exec SESSION follows the existing wake-delivery
@@ -142,7 +147,9 @@ Failure modes degrade to today's topology: exec dies → role falls back per
 the existing unstaffed rule, worker's cards unaffected; worker dies → normal
 restaffing BY THE WORKER'S PARENT/SPAWNER per existing restaffing law (the
 exec cannot restaff — not in its verbs — but keeps triaging and may summon
-or escalate); card revoked → role rebinds to the worker.
+or escalate); card revoked → the office is over in authority; the role
+never rebinds itself — the dissolver rebinds (first, per the ordering
+above).
 
 **Layering (ruled 2026-08-12):** the office is domain-independent, so it
 does NOT live in domain kungfu. Three layers: (1) substrate MECHANISM —
@@ -445,6 +452,12 @@ never cross); `wake-on-fact-v1.md` (consumed primitive); `tightbeam.md`
 (hub — may not lag this file).
 
 ## Revision trail
+
+r4.1 (2026-08-13): §4 dissolution ordering corrected — REBIND-then-revoke
+(was revoke-then-rebind; revocation never changes role binding, so the old
+order left the role routing to an off-card desk in the crash window; found
+by Sol's Phase 2 review of the office-convention doc, which inherited the
+defect from this section; both fixed in the same breath).
 
 r4 fix round (2026-08-13, same day): three defects the Sol delta re-check
 named, fixed as prescribed — §11.3 accepts answer/consume as lawful
