@@ -63,8 +63,10 @@ rendering of classes (Clawline's business); 0.1.x-line behavior.
   principal to desk, filed as a directive-kind attest on the delegation
   card; latest-wins per directive key.
 - **Dispatch rule** — org-authored, archetype-keyed verb law the substrate
-  executes deterministically (bySession + archetype); a refusal names its
-  rule (§6, §8). Mechanism is contentless; the matrix is org content.
+  executes deterministically (bySession + archetype) over STRUCTURAL facts
+  only — verb, attest kind, target card, authority reference — never
+  content; a refusal names its rule (§6, §8). Mechanism is contentless;
+  the matrix is org content.
 - **Authority citation** — the row (attest or ruling) a desk's spawn filing
   must cite as the recorded decision it executes; an uncited spawn is
   refused by rule (§6).
@@ -396,18 +398,27 @@ wisdom — none of the three layers requires exec judgment:
    gate is CORRECT here: it is a capability boundary, not a judgment
    prohibition — the anti-cage rule (gate Q2) forbids caging judgment, not
    withholding tools from a role that must never use them.
-2. **Law (dispatch rules).** The delegation charter's MUST-NOT list
-   compiles into per-archetype dispatch rules — deterministic (bySession +
-   archetype), org-authored, executed by the substrate as named law: no
-   substance verdicts, no holding or receiving implementation cards, no
-   completions off the delegation card, no uncited spawns. Refusals name
-   the rule. The MECHANISM (archetype-scoped verb enforcement) is
-   contentless substrate; the restrictive MATRIX ships prearmed on the seed
-   exec archetype, and any org may loosen it by ordinary law amendment
-   (§8 — skeletal path, never a directive).
-3. **Audit.** Desk overreach is a specimen class Miller probes (§8b), and
-   effort-checkin notices work-shaped token burn on a session that should
-   only coordinate.
+2. **Law (dispatch rules).** The delegation charter's STRUCTURAL
+   must-nots compile into per-archetype dispatch rules — deterministic
+   (bySession + archetype), org-authored, executed by the substrate as
+   named law over structural facts ONLY: verb, attest kind, target card,
+   authority reference. The compiled set: no verdict-kind attests off the
+   delegation card; no holding or receiving implementation cards; no
+   completions off the delegation card; no uncited spawns. Refusals name
+   the rule. The SEMANTIC half of the substance prohibition — attest
+   content that accepts, rejects, or judges a work product in prose (this
+   section's definition) — never compiles: enforcing prose semantics
+   would require the substrate to read meaning, i.e. to judge (gate
+   Q1/Q6); that half binds as law-as-text in the charter and is enforced
+   by layer 3. The MECHANISM (archetype-scoped verb enforcement) is
+   contentless substrate (candidates item 11); the restrictive MATRIX
+   ships prearmed on the seed exec archetype, and any org may loosen it
+   by ordinary law amendment (§8 — skeletal path, never a directive).
+3. **Audit.** Desk overreach — including the semantic half of layer 2's
+   prohibition, prose that judges a work product past the structural
+   walls — is a specimen class Miller probes (§8b), and effort-checkin
+   notices work-shaped token burn on a session that should only
+   coordinate.
 
 **A desk's memory is rows (r5, CR-002 D4).** Working state — directives,
 queues, tracking — lives as attests on its OWN delegation card, latest-wins
@@ -920,6 +931,16 @@ never cross); `wake-on-fact-v1.md` (consumed primitive); `tightbeam.md`
 (hub — may not lag this file).
 
 ## Revision trail
+
+r5 fix round (2026-08-13, same day; Sol fold review, finding 3): §6 layer
+2 sharpened — dispatch rules compile the charter's STRUCTURAL must-nots
+only (verb, attest kind, target card, authority reference); the SEMANTIC
+half of the substance prohibition (prose judging a work product) binds as
+law-as-text in the charter and is enforced by layer 3's audit, never by
+the substrate parsing content (gate Q1/Q6; candidates item 11's
+contentless-mechanism ruling). Terms entry aligned. Finding 8 (bone still
+named Avasarala in program-doc measurement text) fixed in the program
+record, same sitting.
 
 r5 (2026-08-13): the CR fold — executes `0.2-change-request-001.md` §C
 (items 1–7) and `0.2-change-request-002.md` (D1–D9), both AUTHORIZED by
