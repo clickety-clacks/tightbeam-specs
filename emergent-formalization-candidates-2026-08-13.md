@@ -222,3 +222,16 @@ rule but by economics (fabric granularity ruling): dedicated desk for
 frontier-class minds, pooled desks for mid-tier squads, bones-only below.
 Recursion terminates: desks have no desks — the prodder floor below and the
 principal above are their only guardians.
+
+### 11e: how desks bend (Mike's question, 2026-08-13) — identity composition, not prompts alone
+A desk shaped only by runtime directives collapses into a policy
+interpreter. Bending is LAYERED through the identity system: (1) seed desk
+core, invariant craft; (2) kungfu desk guidance fragments, domain bend,
+versioned via learn/relearn; (3) THE PRINCIPAL ARCHETYPE'S DESK FRAGMENT —
+worker archetype manifests gain a desk section contributing to their
+front desk's composed identity at office creation ("what my desk should
+know about fronting a coder"); (4) standing directives, runtime, latest-
+wins. One anatomy, bent by composition. The desk's inference exists to read
+these layers over the bones and handle the residue no table can: conflict,
+ambiguity, novelty. Layers 2-3 make the org's desk-craft durable,
+reviewable, and promotable; layer 4 stays conversational.
