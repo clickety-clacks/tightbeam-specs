@@ -152,3 +152,23 @@ ready, casebook and probe list EMPTY; staffing TRIGGERS in seed guidance
 (prodder ring-rate hires Avasarala; ledger depth / rumination cadence hires
 Miller). No auto-spawn, ever — organs arrive when load demands and the org
 decides, one spawn each. Ship the inevitability, never the employee.
+
+## 10. Product inception SOP + the altitude rule (Mike's design, 2026-08-13)
+SOP: product-scale request (from user OR agent) → huddle work item + spawn a
+Product Owner → spirit interview → spirit CHARTER as a commons document
+(invariants, non-goals, taste, boundaries), artifact-recorded and bound to
+the product's work items via spec-ref → PO commissions an ORCHESTRATOR →
+orchestrator builds and runs the graph; PO stands aside as judgment.
+- Q1 ruled: spirit lives as a doc; substrate holds hash + spec-ref bindings.
+- Q2 ruled: the user is summoned via the input-needed decision-request
+  (gh#11 create-path, conversation anchor); PO drives a structured interview
+  per playbook, STE comms; DR closes on charter ratification.
+- Q3 ruled: PO judges, orchestrator coordinates. Orchestrator charter gains
+  the lifecycle contract: owns the LIFETIME of its work items and their
+  toplines (staffing, sequencing, review commissioning, dispositions) under
+  the PO's spirit rulings. Graph-building craft = orchestrator playbook
+  (workstream 3). The altitude rule ships as a seed STATUTE TEMPLATE orgs
+  may arm: POs do not assign implementation cards directly; product work
+  items carry an orchestrator. Evidence for need: 0.1 POs staffing coders
+  and running reviews directly despite orchestrators existing.
+Queue with the CR-001 fold batch (fabric r5 + workstream 3).
