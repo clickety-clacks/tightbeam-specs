@@ -142,3 +142,13 @@ treatment, minting, on-shift accountability) — and the bone beneath takes a
 boring name, the starvation floor. General rule adopted: NAME THE MINDS,
 KEEP THE MACHINERY BORING. A dramatic name on a deterministic component
 invites people to expect judgment from it.
+
+### Staffing at first boot (RULED 2026-08-13): the substrate never staffs
+Names ratified: AVASARALA is the triage role (the nurse); THE PRODDER is the
+deterministic starvation floor (the bone keeps the legacy name).
+A fresh org, no kungfu learned, gets: the prodder always on, escalating to
+Main (Main is the day-one nurse); both archetypes in the seed, charters
+ready, casebook and probe list EMPTY; staffing TRIGGERS in seed guidance
+(prodder ring-rate hires Avasarala; ledger depth / rumination cadence hires
+Miller). No auto-spawn, ever — organs arrive when load demands and the org
+decides, one spawn each. Ship the inevitability, never the employee.
