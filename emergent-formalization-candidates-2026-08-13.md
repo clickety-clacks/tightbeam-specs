@@ -133,3 +133,12 @@ therefore carry a recommendation, a risk tier, and a default:
   owner ruling, always. Rare by construction; the razor pushes nearly
   everything into tiers 1-2.
 The owner's station in the pipeline is veto-with-context, not adjudication.
+
+### Naming correction for the Phase 4 fold (ruled in discussion 2026-08-13)
+Fabric r3 assigns the name Avasarala to the deterministic watermark bone.
+Misassigned: the character is judgment, not machinery. At the fold, the name
+moves UP to the role — Avasarala is the triage mind (the nurse: analysis,
+treatment, minting, on-shift accountability) — and the bone beneath takes a
+boring name, the starvation floor. General rule adopted: NAME THE MINDS,
+KEEP THE MACHINERY BORING. A dramatic name on a deterministic component
+invites people to expect judgment from it.
