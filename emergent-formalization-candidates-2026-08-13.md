@@ -213,3 +213,12 @@ latest-wins per key — survivable across restaffing, auditable, org-visible.
 Nothing durable may live only in scratch; document-shaped durables are
 artifacts. Zero new doctrine: projected homes are already declared
 disposable; desks simply live that truth fully.
+
+### 11d: one desk archetype, cost-elected pairing (clarified 2026-08-13)
+The exec/desk is ONE seed archetype — desk craft is domain-free; per-pairing
+specialization arrives via the delegation card and standing directives
+(told, not smart), with optional kungfu flavoring. Pairing is not 1:1 by
+rule but by economics (fabric granularity ruling): dedicated desk for
+frontier-class minds, pooled desks for mid-tier squads, bones-only below.
+Recursion terminates: desks have no desks — the prodder floor below and the
+principal above are their only guardians.
