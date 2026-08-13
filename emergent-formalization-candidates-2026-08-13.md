@@ -98,3 +98,13 @@ noticing is emergent.
 The pipeline is the product: org invents → evidence accrues → proven
 domain-free shapes promote to seed → contentless floors promote to
 substrate. This document is one such promotion request.
+
+## 9. The org invented its own Miller (noted 2026-08-13)
+Observed: tenet-driven, row-cited, falsifiable audits already run in the 0.1
+org — the churn-detection auditor session, the 2026-07-30 sample-then-act
+and topology-probe audits (tenet → checks → quoted-evidence findings F1-F12
+→ verdicts), and the forged-verdict catch as a live refutation probe.
+Formalize per the razor: Miller ships as a SEED PLAYBOOK — the tenet-audit
+discipline with an empty probe list. The program's C1-E8 probes are our
+org's casebook content and never ship. Phase 5+ posture changes from build
+Miller to formalize Miller; the reference implementation already runs.
