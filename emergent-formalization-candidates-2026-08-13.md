@@ -108,3 +108,13 @@ Formalize per the razor: Miller ships as a SEED PLAYBOOK — the tenet-audit
 discipline with an empty probe list. The program's C1-E8 probes are our
 org's casebook content and never ship. Phase 5+ posture changes from build
 Miller to formalize Miller; the reference implementation already runs.
+
+### Division of labor: nurse vs Miller over the same casebook (ruled 2026-08-13)
+The nurse works cases, synchronously: adjudicates, treats, and MINTS
+provisional classes at the moment of encounter (ring-once requires a name
+now). Miller works the taxonomy, asynchronously: merges and splits classes,
+retires zero-hit entries, converts busy classes into repair demands (a high
+hit count is a managed bug, not a triage success), and files promotion
+requests for domain-free shapes. The casebook, with evidence links and hit
+counts, is the shared artifact: the nurse writes it as a tool; Miller reads
+it as evidence.
