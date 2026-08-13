@@ -204,3 +204,12 @@ principal's recorded decision) and draw from seed office templates;
 uncited spawns are refused by rule. Initiative stays with minds.
 Graph-building mechanics (spawn + wire patterns) live in the DESK playbook
 (seed, domain-free); shape judgment stays with orchestrator minds (kungfu).
+
+### 11c: desk provisioning and notes (ruled in discussion, 2026-08-13)
+Archetype manifests gain a provisioning election: desk-class homes ship with
+no repo and only ephemeral scratch. A desk's notes are ROWS: working state
+(directives, queues, tracking) lives as attests on its own delegation card,
+latest-wins per key — survivable across restaffing, auditable, org-visible.
+Nothing durable may live only in scratch; document-shaped durables are
+artifacts. Zero new doctrine: projected homes are already declared
+disposable; desks simply live that truth fully.
