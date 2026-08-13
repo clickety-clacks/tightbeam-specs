@@ -172,3 +172,19 @@ orchestrator builds and runs the graph; PO stands aside as judgment.
   items carry an orchestrator. Evidence for need: 0.1 POs staffing coders
   and running reviews directly despite orchestrators existing.
 Queue with the CR-001 fold batch (fabric r5 + workstream 3).
+
+## 11. Exec containment (Mike's concern, 2026-08-13): cheap minds, environmental limits
+Execs are fast, cheap, and untrusted for substance; never rely on their
+judgment to know their limits. Three layers, none requiring exec wisdom:
+(1) CAPABILITY: the exec home ships without means of production — no repo,
+no workdir beyond own scratch, archetype-armed gates (no git, no edits).
+A hard gate is CORRECT here: capability boundary, not judgment prohibition.
+(2) LAW: the delegation charter's MUST-NOT list compiles into per-archetype
+dispatch rules (bySession + archetype make it deterministic): no substance
+verdicts, no holding/being-assigned implementation cards, no completions
+off the delegation card, no spawning workers. Refused with the rule named.
+(3) AUDIT: exec overreach is a specimen class; Miller probes it, effort-
+checkin notices work-shaped token burn.
+Razor: mechanism (archetype-scoped verb enforcement) is contentless
+substrate; the restrictive matrix ships prearmed on the seed exec archetype;
+orgs may loosen by ordinary law amendment. Queue with the CR-001 fold batch.
