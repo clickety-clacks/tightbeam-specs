@@ -134,9 +134,16 @@ actor dissolving the office). Order matters: revoking a card never changes
 role binding (address and obligation are different seams), so revoke-first
 would leave a window where the role routes to an off-card desk. Rebind
 first puts the role safe on its next session; a crash between the verbs
-leaves only a benign leftover card — an on-card desk with no role gets no
-new role traffic, and the dissolver revokes on resume. In-flight batched
-traffic:
+leaves a bounded, explicitly governed DUAL-AUTHORITY window: the on-card
+desk gets no new role traffic but may act on already-resolved/queued/
+session-addressed work concurrently with the new desk — worst case a
+duplicated delivery or summon (interruption cost, never truth, per the
+error asymmetry; the exec's verbs cannot hold, judge, or file substance).
+The window cannot persist quietly: the leftover card is an open
+obligation in the avasarala watermark (60-min quiet floor) and under
+effort check-in, and a desk that reads its role rebound away while its
+card stands must stand down and surrender (seed exec guidance carries
+the rule). In-flight batched traffic:
 rows are durable (Law 2), digests are signed (§8); an undelivered wake
 addressed to the ROLE re-resolves at send time per existing law; a wake
 addressed to the dead exec SESSION follows the existing wake-delivery
@@ -452,6 +459,11 @@ never cross); `wake-on-fact-v1.md` (consumed primitive); `tightbeam.md`
 (hub — may not lag this file).
 
 ## Revision trail
+
+r4.2 (2026-08-13): §4 crash-window claim narrowed per Sol micro-review —
+the post-crash state is a bounded, governed dual-authority window (not
+"benign"): duplicated-delivery worst case named, watermark/effort-checkin
+bounds named, exec stand-down rule added to the seed guidance.
 
 r4.1 (2026-08-13): §4 dissolution ordering corrected — REBIND-then-revoke
 (was revoke-then-rebind; revocation never changes role binding, so the old
