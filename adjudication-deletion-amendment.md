@@ -74,6 +74,14 @@ still-live sense — a ruling on a spec), `escalation-substrate-v1.md` (a single
 precedent citation), and `derived-model-catalog-v1.md` (itself OBE —
 superseded by `per-host-catalogs-v1.md` + `model-identity-v1.md`).
 
+Added 2026-08-13 (fold; the `ringdown` term was renamed "model election"
+across live specs — these dated records lawfully retain the word as
+verbatim quotation): `v0.2-ticket-audit-2026-08-12.md` (0.1.x work-item
+titles quoted from state.db), `0.2-orchestrator-handoff.md` (context
+snapshot), `review-gate-findings-2026-08-13.md` (verbatim reviewer
+findings), and `v0.2-program-2026-08-12.md` (the rename record itself —
+one mention naming what was renamed).
+
 ## Sweep contract
 
 The dead vocabulary is: `adjudication_episodes`, `adjudicationHold`,
