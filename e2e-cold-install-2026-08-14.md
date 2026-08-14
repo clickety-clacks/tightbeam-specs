@@ -273,14 +273,38 @@ wakes. 13c MANUAL by design.
     reality (`last_refresh = 19:47:15`, exactly its login time). The
     store file's mtime DID update while its content stayed at 02:41.
     Specimen preserved: `~/.tightbeam/auth/codex/auth.json.bak.<ts>`.
-    Code note: `onboard_openai/1` and `onboarding_staging_path/2` are
-    BYTE-IDENTICAL across 0.1.5, v0.1.7 and main, and `credentials.ex`
-    is byte-identical 0.1.5 → v0.1.7 — so this is long-standing, not a
-    0.2 regression. Suspect the install/activation side of the lease
-    ceremony (`begin_onboard` → staging → `finish_onboard`), not the
-    capture side. NOTE: codex is green only because the working
-    credential was hand-placed into the store; the DOCUMENTED onboarding
-    path is BROKEN and is the thing to fix.
+    **ROOT CAUSE FOUND — a credential-recovery DEADLOCK, and it is a 0.2
+    REGRESSION.** In `finish_staged_onboard/4` (main): `install_staged!`
+    writes the new credential to the store, then
+    `activate_staged_credential` starts the provider runtime; when that
+    start returns `:degraded` — which it always does while the adapter's
+    circuit is latched open — `rollback_failed_finish/5` calls
+    `restore_prior_state/3` and REVERTS the just-installed credential to
+    the prior one. The cycle: exhausted credential → turns fail → 5
+    failures latch the circuit → operator onboards a good credential →
+    activation fails BECAUSE the circuit is open → rollback discards the
+    good credential → still exhausted. **A working credential cannot be
+    installed while the adapter is degraded, and the adapter is degraded
+    because the credential does not work.** Compounds finding 18 (the
+    latched circuit has no agent-reachable reset): restarting alone does
+    not help either, because by then the credential has already been
+    reverted, so the fresh adapter starts on the old one.
+    VERSION EVIDENCE: `v0.1.7` contains ZERO occurrences of
+    `finish_staged_onboard`/`rollback_failed_finish` — its finish path is
+    a plain `with` that installs the credential and returns the error if
+    `state.start` fails, LEAVING THE NEW CREDENTIAL IN PLACE. The build
+    shrdlu runs (`63e3400`; its version string still reads 0.1.7 because
+    the 0.2 line has not bumped) contains 5. The capture side
+    (`onboard_openai/1`, `onboarding_staging_path/2`) is byte-identical
+    across 0.1.5 / v0.1.7 / main and is NOT at fault; the rollback that
+    discards the captured credential is new in 0.2. 0.1.x is unaffected.
+    Finding 19 is this bug's front end, not a separate defect.
+    FIX DIRECTION: activation failure must not roll back a credential the
+    operator explicitly installed — an unstartable runtime is a separate
+    condition from a bad credential, and conflating them makes recovery
+    impossible. NOTE: codex is green only because the working credential
+    was hand-placed into the store; the DOCUMENTED onboarding path is
+    BROKEN and is the thing to fix.
 22. **PRODUCT — J5 concurrency violates commit ordering under codex,
     REPRODUCIBLE 2/2.** Run 1: frames whose `seq` disagrees with the
     store row they carry, so the client cannot settle them into commit
