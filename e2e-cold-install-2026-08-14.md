@@ -51,11 +51,15 @@ preflight passes after the workaround below.
 7. **Build provenance**: ad-hoc darwin package (eezo) bundles erts-16.2.1
    (older OTP 28 patch) vs the repo pin 28.5/erts-16.4 — functional, but
    real releases must come from CI's pinned toolchain.
-8. **tars is not a clean e2e box**: its live Clawline web stack
-   re-attached to port 11373 within minutes of the fresh gateway serving
-   and populated the cold org with 10 agent:main:clawline sessions; its
-   claude dispatch check starves at 30s. AWAITING MIKE'S RULING: move
-   e2e gateway to its own port/base, or stop tars' clawline services.
+8. **RETRACTED then corrected (Mike's challenge, rows checked): no
+   clawline client ever touched the e2e org** — devices table empty, no
+   external connections; the 10 agent:main:clawline sessions are the
+   SMOKE'S OWN spawns (its fixture product is named clawline), 9 retired
+   cleanly. The REAL tars defect: the claude dispatch turn hangs
+   pre-turn-row (sessions spawn, turns table stays empty, curl starves
+   at 30s) under the LaunchDaemon context — under diagnosis. The
+   integrator's original inference was pattern-matching on a name;
+   the rows refuted it.
 
 ## Residual state
 
