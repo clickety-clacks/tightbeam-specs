@@ -297,7 +297,16 @@ wakes. 13c MANUAL by design.
     the 0.2 line has not bumped) contains 5. The capture side
     (`onboard_openai/1`, `onboarding_staging_path/2`) is byte-identical
     across 0.1.5 / v0.1.7 / main and is NOT at fault; the rollback that
-    discards the captured credential is new in 0.2. 0.1.x is unaffected.
+    discards the captured credential is new in 0.2.
+    **SCOPE CORRECTION (2026-08-14): 0.1.x IS AFFECTED.** An earlier note
+    here said "0.1.x is unaffected" — that was true of the RELEASED
+    v0.1.7 tag only. Current `origin/0.1.x` and
+    `origin/release-candidate/0.1.8` each carry 5 occurrences of
+    `finish_staged_onboard`/`rollback_failed_finish`, same as
+    `origin/main`. The rollback landed on 0.1.x after v0.1.7 was cut, so
+    **0.1.8 ships this defect** and the fix must reach both lines.
+    Declared an INCIDENT by Mike 2026-08-14: fix immediately, merge to
+    0.1.8 and 0.2.
     Finding 19 is this bug's front end, not a separate defect.
     **SEVERITY — the failure CORRELATES WITH NEED (gate 4).** A proactive
     swap (old credential still good, adapter healthy) succeeds: activation
