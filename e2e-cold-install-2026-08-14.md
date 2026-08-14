@@ -128,3 +128,73 @@ exception); (3) the §6 exception question (Sol-via-shrdlu-gateway);
 (4) whether the smoke-fix and LIVESWITCH branches may land on branch
 evidence + deferred review, or hold. Rotate both box sudo passwords
 at your convenience (transcript exposure noted at the time).
+
+## T2b — client journeys, shrdlu (2026-08-14, continued session)
+
+Tier T2b of the runbook (`client-e2e-v1.md`, driver
+`scripts/client_e2e.exs`) carried forward on shrdlu at main `63e3400`,
+template `~/.tightbeam`, one throwaway gateway per leg.
+
+**claude leg: PASS — every step, twice, on two independent runs.**
+Boot, pair, converse, tool use (the `uname -s` placement proof), stream
+create/rename/retire, cancel, queueing, concurrency, `/new`, `/compact`,
+`/model`, model change (applied `claude-opus-5`), restart resilience
+(pid 4025448 → 4027909, interrupted turn delivered, harness pointer
+`loaded`), restart queue survival, wakes, scheduled wakes. 13c is
+MANUAL by design (app-side footer assertion).
+
+**codex leg: FAIL — OpenAI quota exhaustion, NOT a product defect.**
+The adapter's start-up gate wiring-check fails 31 times, 0 passes, every
+one identical: `gate wiring-check FAIL detail=turn_error output="You've
+hit your usage limit. ... try again at Aug 20th, 2026 3:35 AM."` Same
+account and same date as the Sol review-lane outage (open ruling 2). The
+06:20 smoke ran codex 12/13 "under quota strain"; the shrdlu bucket has
+since reached zero. T2b codex is BLOCKED until credits or Aug 20 — it is
+not evidence against the product.
+
+### Findings 14-17
+
+14. **UNDECLARED PREREQUISITE — the client-e2e driver needs the Rust CLI
+    built.** shrdlu's `~/src/tightbeam-e2e` had no `cli/target`, so each
+    leg's provisioned `bin/tightbeam` was the refusal shim (exit 127).
+    Every harness spawn goes through `bin/tightbeam harness-exec ... --
+    <adapter>`, so NO adapter could ever start: `harness-processes/`
+    stayed empty, no turn row was ever written, and the client starved at
+    180s per step. This produced a full-red T2b scorecard at 08:34
+    (13 FAIL / 2 PASS) that read as a product regression and was not one.
+    `ci.yml` names the build a "suite prerequisite"; `client-e2e-v1.md`,
+    `SMOKE.md`, `TEST-HOSTS.md`, the driver script and the `ClientE2E`
+    modules mention it nowhere. Cost: 44 minutes of wall clock and a
+    false FAIL verdict. Fix: the driver's preflight should refuse by name
+    when the resolved CLI path does not exist, and the runbook should
+    list the build.
+15. **PRODUCT — readiness asserts a capability it has not proved.** The
+    leg gateway logged the CLI-missing warning at 08:52:57 and declared
+    `READY: claude on shrdlu can run turns` at 08:52:58. Readiness proves
+    the credential and the catalog; it does not prove the spawn path,
+    which was structurally impossible at that moment. Per "report dirt,
+    never accommodate it", a gateway that cannot spawn should refuse
+    loudly rather than report ready and let every turn time out.
+16. **HARNESS — the leg's evidence self-destructs.** `gateway.log` and
+    `adapter-*.stderr.log` (and the adapter `.gate.log`, which carries
+    the verbatim gate verdict) live INSIDE the base dir that teardown
+    removes by design. The 08:34 run therefore left nothing to diagnose.
+    Bit twice: the first evidence mirror written for this session globbed
+    `adapter-*.stderr.log`, which does not match `*.stderr.log.gate.log`,
+    and lost the decisive artifact a second time. The driver should copy
+    the leg's logs to a durable path before teardown.
+17. **PRODUCT — the gate buries the harness's own reason.** The operator
+    and the scorecard see `{:adapter_unavailable,
+    "{:gate_attestation_failed, :turn_error}"}`, a generic name, while
+    the true cause ("You've hit your usage limit ... Aug 20th") sits in
+    the gate log's `output=` field, already in hand. Compare the model
+    catalog, which surfaces the SAME underlying quota exhaustion as a
+    named `model_unavailable` with alternatives (praised in finding 12).
+    Same condition, two qualities of report; the adapter gate should
+    carry the harness's message out the way the catalog does.
+
+Residual: T2b claude PROVEN. T2b codex blocked on quota. The Rust CLI is
+now built on shrdlu at `63e3400`. Evidence preserved outside the leg
+dirs at `/tmp/t2b-*-evidence/` and `/tmp/t2b-*-scorecard.md` on shrdlu
+(volatile — /tmp). Remaining runbook: T4 acceptance soak, T3 satellite
+planning.
