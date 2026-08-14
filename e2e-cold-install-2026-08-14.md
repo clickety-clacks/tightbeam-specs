@@ -193,6 +193,42 @@ not evidence against the product.
     Same condition, two qualities of report; the adapter gate should
     carry the harness's message out the way the catalog does.
 
+### Findings 18-19 (codex credential recovery attempt, 2026-08-14 18:20-18:50)
+
+18. **PRODUCT/WEDGE — an open adapter circuit has no agent-reachable
+    repair verb.** After the quota outage the codex circuit latched open
+    at 705 consecutive failures. `AdapterCoordinator.adapter_for/2`
+    returns `{:error, :degraded}` on `entry.circuit == :open` BEFORE
+    reaching `start_adapter`, and only `{:adapter_ready, key, pid}` from
+    a successful start closes it — so a latched circuit can never retry
+    itself. No half-open probe, no cooldown. The CLI offers no reset
+    (`harness-process` has only `list`), so recovery required an
+    operator running `sudo systemctl restart tightbeam`. That is
+    philosophy gate 3's wedge verbatim — "if repair requires an admin at
+    a database console, the design is incomplete" — the same class as
+    the completion-selection wedge (wi_1b0237fe). The substrate is right
+    not to judge here; it simply left the org no lawful way out.
+    PROVEN both directions: a fresh credential could not be tested until
+    the restart, and after the restart the adapter started immediately
+    (circuit closed, generation 2).
+19. **PRODUCT — re-onboarding reports success while the runtime stays
+    dead.** Both `tightbeam onboard openai` runs (api_key, then
+    subscription) printed "Successfully logged in" and then
+    `{:provider_runtime_start_failed, %{failed: [%{reason: :degraded,
+    harness: "codex"}]}}`. That names neither the latched circuit nor
+    its failure count, and does not tell the operator a restart is the
+    fix. Same shape as finding 17.
+20. **NOT A DEFECT, recorded so it is not re-derived: an OpenAI API key
+    cannot substitute for the Codex subscription.** An `sk-proj-` key
+    was onboarded (banked correctly as `credentialKind: api_key`) and
+    validated live against `/v1/models` (HTTP 200) — but the models it
+    offers are the standard API surface (gpt-4, gpt-3.5-turbo…), NOT the
+    Codex-plan models the legs run (`gpt-5.6-sol-wm` et al). Codex CLI
+    also never read `OPENAI_API_KEY` from the environment (401 "Missing
+    bearer or basic authentication in header"). The credential was
+    restored to `subscription` by device flow. Codex-plan quota and API
+    billing are different meters; only the former unblocks the legs.
+
 Residual: T2b claude PROVEN. T2b codex blocked on quota. The Rust CLI is
 now built on shrdlu at `63e3400`. Evidence preserved outside the leg
 dirs at `/tmp/t2b-*-evidence/` and `/tmp/t2b-*-scorecard.md` on shrdlu
