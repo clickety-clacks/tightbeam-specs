@@ -310,6 +310,23 @@ wakes. 13c MANUAL by design.
     sits, the more certain the latch. Provider-agnostic — the same
     `finish_staged_onboard` path serves anthropic, whose credentials also
     expire.
+    **RULING (Mike, 2026-08-14): "we have no business adding security ON
+    TOP of codex or claude logins."** The substrate stores what the
+    operator gave it and reports VERBATIM what the vendor said when it
+    was used; it holds no opinion about whether a vendor login is valid.
+    The vendor owns that judgment and the only honest test is a real
+    turn. Under this ruling the fix is DELETE the rollback, not classify
+    or tune it — reverting an operator's explicit credential choice is
+    the substrate adjudicating someone else's auth. Same lens condemns
+    the `onboarded: true/false` metadata (a second opinion about a vendor
+    login) and readiness-gating on the wiring-check verdict (recording it
+    is right; withholding the adapter from it is judgment). NOT
+    condemned: the backoff/circuit itself, which exists to stop hammering
+    a dead process and spamming lifecycle events — a legitimate duty —
+    but it must never gate INSTALLING a credential and it needs an
+    agent-reachable reset (finding 18). Finding 17 is the same complaint
+    from the other end: the vendor's real reason sat in the gate log
+    while the substrate reported its own generic verdict.
     FIX DIRECTION: activation failure must not roll back a credential the
     operator explicitly installed — an unstartable runtime is a separate
     condition from a bad credential, and conflating them makes recovery
