@@ -255,19 +255,32 @@ wakes. 13c MANUAL by design.
 
 ### Findings 21-22
 
-21. **PRODUCT (SUSPECTED, specimen preserved) — onboarding banked a
-    different account than the one authorized.** `tightbeam onboard
-    openai` printed "Successfully logged in" and wrote a fresh
-    `auth.json` (mtime updated), but the banked credential was for the
-    exhausted account, while a `codex login --device-auth` performed by
-    the same operator from the same browser session five minutes earlier
-    produced a working credential. Not proven, because credential files
-    may not be read under the standing rule; the bad credential is
-    preserved at `~/.tightbeam/auth/codex/auth.json.bak.<ts>` on shrdlu
-    — comparing its account identity against `~/.codex/auth.json`
-    settles it. NOTE: codex is currently green only because the working
+21. **PRODUCT (EVIDENCED) — `tightbeam onboard openai` reports success
+    but does NOT replace the banked credential.** THE ROOT CAUSE of the
+    entire day's codex block. Three onboardings ran on shrdlu (18:21
+    api_key, 19:37 subscription, 19:52 subscription), each printing
+    "Successfully logged in". The credential still in the store after
+    all three carried `last_refresh = 2026-08-14T02:41:43Z` — the
+    ORIGINAL 02:41 onboarding (cf. `/tmp/onboard-openai.log`, mtime
+    02:41). None of the three re-onboardings installed anything.
+    Structural comparison (key names and null/non-null only, values
+    never read) of the stale store credential vs the working
+    `~/.codex/auth.json`: both `auth_mode=chatgpt`, both
+    `OPENAI_API_KEY: null`, identical token shape
+    (id_token/access_token/refresh_token/account_id). So NOT an API-key
+    override, and NOT a different account — the operator confirms the
+    same account throughout, and `~/.codex` proves the field tracks
+    reality (`last_refresh = 19:47:15`, exactly its login time). The
+    store file's mtime DID update while its content stayed at 02:41.
+    Specimen preserved: `~/.tightbeam/auth/codex/auth.json.bak.<ts>`.
+    Code note: `onboard_openai/1` and `onboarding_staging_path/2` are
+    BYTE-IDENTICAL across 0.1.5, v0.1.7 and main, and `credentials.ex`
+    is byte-identical 0.1.5 → v0.1.7 — so this is long-standing, not a
+    0.2 regression. Suspect the install/activation side of the lease
+    ceremony (`begin_onboard` → staging → `finish_onboard`), not the
+    capture side. NOTE: codex is green only because the working
     credential was hand-placed into the store; the DOCUMENTED onboarding
-    path remains unverified and is the thing to fix.
+    path is BROKEN and is the thing to fix.
 22. **PRODUCT — J5 concurrency violates commit ordering under codex,
     REPRODUCIBLE 2/2.** Run 1: frames whose `seq` disagrees with the
     store row they carry, so the client cannot settle them into commit
