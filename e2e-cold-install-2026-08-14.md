@@ -69,3 +69,33 @@ finding 2). tars: service active with horizon in plist; clawline
 entanglement pending ruling. Source clones at ~/src/tightbeam-e2e on
 both (smoke harness). Sudo passwords for both boxes passed through this
 session's transcript — rotate at e2e close.
+
+## Findings 10-12 (2026-08-14 continued session)
+
+10. **PRODUCT/DOCS — the README-mandated macOS LaunchDaemon cannot run
+    claude turns.** Proven by controlled experiment: identical box, base
+    dir, and smoke — dispatch hangs indefinitely (>120s, zero bytes, no
+    session row) under the system-domain daemon, passes immediately
+    under a foreground user-context gateway. Consistent with the four
+    daemon-spawned `claude --version` probes found hung across boots.
+    The README's macOS section needs a working alternative (user-domain
+    service, or a documented incompatibility + supported form).
+11. **Orphan gateway processes survive service teardown** — a
+    pre-bootout gateway instance survived `launchctl bootout`, held the
+    Erlang node name, and silently killed the next boot with a name
+    collision (third node-name ghost of this e2e; shrdlu's wipe met the
+    same class). Teardown guidance should include a process/epmd check.
+12. **The smoke's own drift fix proven live on shrdlu**: 25/26 with the
+    doubled-denial (nested remedy dispatch artifact) asserted exactly;
+    codex leg ran real turns 12/13 under quota strain; the sole
+    remaining miss is real-turn artifact-record compliance by the model
+    — nondeterministic turn behavior, not harness plumbing. Also: the
+    gibson `codex exec` quota exhaustion did NOT stop shrdlu's
+    tightbeam codex turns — the two paths meter from different buckets
+    (provider-capacity world-fact, CR-003 D8's sibling, observed live).
+
+Residual tars state: gateway FOREGROUND in tmux (tb-fg) with the smoke
+horizon — deliberate, because the documented daemon form cannot run
+claude turns (finding 10); the LaunchDaemon plist remains installed but
+booted out. Not a finished install per the README's own standard; ruling
+needed on the macOS service form before tars can be called done.
