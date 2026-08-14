@@ -99,3 +99,32 @@ horizon — deliberate, because the documented daemon form cannot run
 claude turns (finding 10); the LaunchDaemon plist remains installed but
 booted out. Not a finished install per the README's own standard; ruling
 needed on the macOS service form before tars can be called done.
+
+## CLOSURE (2026-08-14)
+
+Final tallies, fixed smoke (branch fix/smoke-gate-chain):
+- **shrdlu** (systemd service): claude 13/13; codex 12/13. Sole miss:
+  carrier-on-real-turn — the model did not perform its in-turn
+  artifact-record.
+- **tars** (foreground gateway per finding 10): claude 11+ passes to the
+  codex boundary; codex (gpt-5.6-sol-wm after the catalog surfaced the
+  sol quota exhaustion as a named model_unavailable with alternatives —
+  the three duties working) 12/13, same sole miss.
+- **Finding 13:** codex in-turn artifact-record compliance 0/2 across
+  boxes vs claude 2/2 where reached — a model/prompt interaction in the
+  smoke's carrier check, NOT install plumbing; investigate under the
+  smoke card umbrella.
+
+VERDICT: both cold installs FUNCTIONALLY PROVEN end to end — install,
+service (with the macOS exception of finding 10), onboarding, learn,
+real turns on both harnesses, reviewer loops, gate chains, escalations,
+toplines. The long-deferred live-smoke ruling converts to SUBSTANTIALLY
+DISCHARGED WITH ONE NAMED RESIDUAL (the codex carrier check); it does
+NOT fully close — Phase 3 entry re-checks with the residual resolved.
+
+Open rulings for Mike: (1) the macOS service form (finding 10);
+(2) the Sol review-lane outage (wait to Aug 20 / credits / ruled
+exception); (3) the §6 exception question (Sol-via-shrdlu-gateway);
+(4) whether the smoke-fix and LIVESWITCH branches may land on branch
+evidence + deferred review, or hold. Rotate both box sudo passwords
+at your convenience (transcript exposure noted at the time).
