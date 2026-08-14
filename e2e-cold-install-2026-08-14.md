@@ -229,7 +229,59 @@ not evidence against the product.
     restored to `subscription` by device flow. Codex-plan quota and API
     billing are different meters; only the former unblocks the legs.
 
-Residual: T2b claude PROVEN. T2b codex blocked on quota. The Rust CLI is
+## T2b codex UNBLOCKED and run (2026-08-14 evening)
+
+Root cause of the all-day codex block was NOT the product: the credential
+Tightbeam banked was for a rate-limit-exhausted OpenAI account. Proven by
+A/B on one machine, one minute apart, same `codex` binary: the system home
+`~/.codex` (freshly onboarded to me@mikemanzano.com) ran a real turn
+(3,330 tokens); Tightbeam's projected home returned "usage limit … Aug
+20th". Clearing the projected home's cache changed nothing; replacing the
+banked `auth.json` with the working one made codex green immediately
+(gate wiring-check PASS, circuit closed, generation 1).
+
+**Model note:** `gpt-5.6-sol-wm` is NOT offered on the new account;
+plain `gpt-5.6-sol` is. The substrate handled this WELL — named
+`:model_unavailable` precisely and the catalog offered live alternatives,
+which is how the right model was found. Three duties working.
+
+### Scorecard, codex@shrdlu on gpt-5.6-sol — 17 of 18
+
+PASS: auth preflight, boot, pair, converse, tool use, create/rename/retire
+stream, cancel, queueing, /new, /compact, /model, model change (applied
+gpt-5.6-terra), restart resilience (pid 360465 → 364685, interrupted turn
+delivered, pointer "loaded"), restart queue survival, wakes, scheduled
+wakes. 13c MANUAL by design.
+
+### Findings 21-22
+
+21. **PRODUCT (SUSPECTED, specimen preserved) — onboarding banked a
+    different account than the one authorized.** `tightbeam onboard
+    openai` printed "Successfully logged in" and wrote a fresh
+    `auth.json` (mtime updated), but the banked credential was for the
+    exhausted account, while a `codex login --device-auth` performed by
+    the same operator from the same browser session five minutes earlier
+    produced a working credential. Not proven, because credential files
+    may not be read under the standing rule; the bad credential is
+    preserved at `~/.tightbeam/auth/codex/auth.json.bak.<ts>` on shrdlu
+    — comparing its account identity against `~/.codex/auth.json`
+    settles it. NOTE: codex is currently green only because the working
+    credential was hand-placed into the store; the DOCUMENTED onboarding
+    path remains unverified and is the thing to fix.
+22. **PRODUCT — J5 concurrency violates commit ordering under codex,
+    REPRODUCIBLE 2/2.** Run 1: frames whose `seq` disagrees with the
+    store row they carry, so the client cannot settle them into commit
+    order (`c_sim_10_10 seq=23 store=25`, `seq=24 store=25`,
+    sampled_together=true, intervals_overlapped=true). Run 2 (J0,J5
+    subset): `Main's turns completed out of order: [c_sim_2_2, c_sim_2_2,
+    c_sim_1_1, c_sim_1_1, c_sim_1_1, c_sim_3_3]` — message 2 completing
+    ahead of message 1. Two different surfaces, same step, same leg: a
+    race that loses consistently, not a flake. The claude leg passes step
+    10 on every run, so codex timing is what exposes it. This is the
+    first genuine product defect the client-journey tier has produced and
+    it deserves its own card.
+
+Residual: T2b claude PROVEN. T2b codex 17/18 (finding 22 outstanding). The Rust CLI is
 now built on shrdlu at `63e3400`. Evidence preserved outside the leg
 dirs at `/tmp/t2b-*-evidence/` and `/tmp/t2b-*-scorecard.md` on shrdlu
 (volatile — /tmp). Remaining runbook: T4 acceptance soak, T3 satellite
