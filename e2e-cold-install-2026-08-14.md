@@ -327,6 +327,23 @@ wakes. 13c MANUAL by design.
     agent-reachable reset (finding 18). Finding 17 is the same complaint
     from the other end: the vendor's real reason sat in the gate log
     while the substrate reported its own generic verdict.
+    **RULING PART 2 (Mike, 2026-08-14) — the rollback is a SILENT-SPEND
+    defect, not merely a recovery wedge.** A failed login leaves the
+    operator with one mental model: "it failed, the system is stopped."
+    They may have CHOSEN that — "I was running out of tokens anyway, I'll
+    leave it logged out." The rollback silently restores the previous
+    working credential and keeps running real turns against it: real
+    money, on an account the operator believes is disconnected, with no
+    signal anything is live. The substrate owes truth, and a state that
+    contradicts the operator's model is a lie by omission — worse than a
+    state that is merely broken. This also condemns the `onboarded`
+    metadata harder: after a rollback the system reports a coherent
+    onboarded state describing a credential the operator thinks they
+    replaced. GENERAL PRINCIPLE: **credential operations fail CLOSED and
+    VISIBLE.** A failed login leaves the system failed, because that is
+    what the operator will believe happened. Accepted cost, explicitly:
+    a bad login can now displace a working credential — recoverable by
+    signing in again, and honest, which the alternative is not.
     FIX DIRECTION: activation failure must not roll back a credential the
     operator explicitly installed — an unstartable runtime is a separate
     condition from a bad credential, and conflating them makes recovery
