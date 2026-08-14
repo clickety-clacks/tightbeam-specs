@@ -299,6 +299,17 @@ wakes. 13c MANUAL by design.
     across 0.1.5 / v0.1.7 / main and is NOT at fault; the rollback that
     discards the captured credential is new in 0.2. 0.1.x is unaffected.
     Finding 19 is this bug's front end, not a separate defect.
+    **SEVERITY — the failure CORRELATES WITH NEED (gate 4).** A proactive
+    swap (old credential still good, adapter healthy) succeeds: activation
+    starts and nothing rolls back. A REACTIVE swap — expired, revoked,
+    dead account, exhausted quota — is bricked, because the adapter has
+    already been failing against the bad credential and the circuit is
+    latched by the time the operator onboards. Nobody swaps a working
+    credential, so the recovery path is broken exactly in the case it
+    exists for, and it is self-reinforcing: the longer the bad credential
+    sits, the more certain the latch. Provider-agnostic — the same
+    `finish_staged_onboard` path serves anthropic, whose credentials also
+    expire.
     FIX DIRECTION: activation failure must not roll back a credential the
     operator explicitly installed — an unstartable runtime is a separate
     condition from a bad credential, and conflating them makes recovery
