@@ -21,13 +21,21 @@ Already-standing evidence (preserved, not re-run):
   (same_harness, unknown_harness, needs_onboarding); vendor-verbatim
   failure reporting observed (credential-incident fix proven in release).
 
-## Machine choice, with reasons
+## Machine choice, with reasons (AMENDED v2.1 per Mike's correction:
+## shrdlu and tars are THE test machines; gibson hosts the live org and is
+## NOT a test machine — its isolated install and tarball are preserved
+## evidence and a reusable build artifact, not an execution venue)
 
 | Lane | Host | Why | Executor |
 |---|---|---|---|
-| G | gibson, EXISTING isolated install (base ~/tb018-test/home, port 12373) | already running v0.1.8 with claude onboarded + catalog live; codex EXCLUDED here (gibson ~/.codex quota dead until Aug 20; onboarding incomplete) | tester:release018-gibson-e2e |
-| S | shrdlu, NEW isolated install (operator account clu per TEST-HOSTS.md; own base dir, port 12374) | ONLY host with BOTH claude and codex credentials → the cross-harness switch battery lives here; also holds a real intact 0.1.7 state.db for the non-destructive stamp-refusal test | tester:release018-shrdlu-e2e (staffed by the product owner on plan routing) |
+| S | shrdlu, NEW isolated install (operator account clu per TEST-HOSTS.md; own base dir, port 12374) | ONLY host with BOTH claude and codex credentials → the cross-harness switch battery lives here; also holds a real intact 0.1.7 state.db for the non-destructive stamp-refusal test; ABSORBS the former gibson scope (now S7-S9) | tester:release018-shrdlu-e2e |
 | T | tars, darwin tarball, isolated | darwin-aarch64 package has no live verification yet; finding 10 rules the form (tmux foreground, NEVER LaunchDaemon for claude turns) | shrdlu tester via ssh, after S goes green; light scope |
+
+Gibson-recorded evidence (refusal battery, vendor-verbatim reporting) is
+PRESERVED and cited; the tb018-build tarball may be REUSED as the install
+artifact on shrdlu if byte-identical to the CI package (verify sha256
+against the proof manifest before reuse — else install from the CI
+package).
 
 The live org install and port 11373 are untouchable everywhere. Credential
 files are never read; the CLI is the only sanctioned path; secrets via
@@ -35,17 +43,8 @@ stdin only.
 
 ## Exact scope
 
-GIBSON (G lane — claude-side, no codex until quota returns):
-- G1. gh#11 operator decision requests, full lifecycle on the isolated
-  install: file (--key idempotency retry), list, recommend (proxy label,
-  non-resolving), rule (owner-only; non-owner refusal named), withdraw,
-  supersede. Evidence: exact commands + row states per step.
-- G2. Cap-removal check (efb8a653): spawn past the old ceiling on the
-  isolated org; record the count reached and the absence of the old refusal.
-- G3. Version identity: gateway/CLI handshake reports 0.1.8 and the
-  build number per CONTRIBUTING (`<version> build N`, N = rev-list count at
-  becb130). If the runtime surfaces no build number, record that as a
-  FINDING (the stamp is packaging-level in 0.1.8), not a failure.
+(v2.1: former gibson G lane moved to shrdlu as S7-S9; gibson executes
+nothing further.)
 
 SHRDLU (S lane — the release theme lives here):
 - S1. Fresh isolated 0.1.8 install from the linux tarball, account clu,
@@ -71,6 +70,17 @@ SHRDLU (S lane — the release theme lives here):
 - S6. Credential-incident codex half where re-onboarding is possible: a
   deliberately failed onboarding must NOT restore the previous credential
   silently; the circuit must not gate credential installation. Record both.
+- S7 (was G1). gh#11 operator decision requests, full lifecycle: file
+  (--key idempotency retry), list, recommend (proxy label, non-resolving),
+  rule (owner-only; non-owner refusal named), withdraw, supersede.
+  Evidence: exact commands + row states per step.
+- S8 (was G2). Cap-removal check (efb8a653): spawn past the old ceiling on
+  the isolated org; record the count reached and the absence of the old
+  refusal.
+- S9 (was G3). Version identity: gateway/CLI handshake reports 0.1.8 and
+  the build number per CONTRIBUTING. If the runtime surfaces no build
+  number, record it as a FINDING (packaging-level stamp in 0.1.8), not a
+  failure.
 
 TARS (T lane — light, after S green):
 - T1. darwin-aarch64 tarball installs isolated; finding 10 form (tmux
@@ -84,7 +94,9 @@ Known flakes: O4 is documented — one retry allowed, logged as O4 when seen.
   upgrade — fresh-install evidence does NOT cover the upgrade path).
 - Overlay reconcile-survival and toolchain-PATH smokes (deploy-gated,
   they run against the LIVE org after deploy).
-- Any codex activity on gibson before Aug 20 (quota).
+- ANY test execution on gibson (Mike's correction: gibson hosts the live
+  org and is not a test machine; its isolated install is preserved
+  evidence only).
 - Building the schema upgrade tool (separate item, mike's nod pending).
 
 ## Evidence and completion
