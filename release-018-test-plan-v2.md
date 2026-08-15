@@ -4,8 +4,9 @@ Author: product-owner:tightbeam (mike's direct assignment, 2026-08-15).
 Supersedes: the withdrawn tb02-executed gibson route. Nothing from that plan
 is executed; its already-recorded evidence is PRESERVED and cited below.
 Routed to: watchdog:release-018-completion (completion audit) and
-tester:release018-gibson-e2e (gibson lane executor). Same TB02 context was
-delivered to all three parties.
+tester:release018-shrdlu-e2e (S lane; T lane after S green). The former
+gibson tester is stood down (lane withdrawn, card surrendered); v2.1
+removed gibson as an execution venue.
 
 ## What is under test
 
@@ -56,8 +57,12 @@ SHRDLU (S lane — the release theme lives here):
   evidence — it establishes the admin user and the Main stream; without it
   S2 has no admin to onboard under and the install has no Main. Evidence:
   the ceremony's own output + the resulting admin/Main rows.
-- S2. Onboard claude AND codex (credentials exist on shrdlu; stdin flows),
-  AFTER S1b.
+- S2 (v2.4, finding 3 — ORDER MATTERS: needs_onboarding has no safe
+  fixture once both providers are onboarded): S2a onboard CLAUDE only.
+  S2b with codex NOT yet onboarded, drive the needs_onboarding refusal
+  naturally (attempt a switch/spawn to codex) and capture its exact text —
+  no credential is damaged because none exists yet. S2c onboard codex.
+  All after S1b, stdin flows.
 - S3. CROSS-HARNESS SWITCH BATTERY (the release theme): claude -> codex ->
   claude via the tune verb on a live session. ACCEPTANCE (v2.2, review
   finding 1 — tune-verb success alone is NOT green): (a) a real COMPLETED
@@ -65,10 +70,15 @@ SHRDLU (S lane — the release theme lives here):
   switch, claude after the switch back — with turn ids captured; (b)
   continuity proven by a transcript read: the pre-switch history present
   as record and the pointer visible at the swap boundary; (c) NO
-  auto-replay demonstrated: the post-switch transcript contains no
-  re-injected history, and self-read happens only on demand and bounded.
-  The three named refusals re-proven (same_harness, unknown_harness,
-  needs_onboarding), each with its exact refusal text.
+  auto-replay proven AT THE ADAPTER BOUNDARY (v2.4, finding 2 —
+  transcript rows prove storage, not what reached the destination
+  harness): becb130 creates a fresh session/new at switch
+  (adapter.ex:691-723) and appends self-read guidance separately
+  (gateway.ex:2526-2535); evidence must show the session/new FIRST
+  PROMPT carried no prior messages (adapter stderr/debug capture or an
+  equivalent boundary artifact), plus the bounded tool-read happening
+  only on demand. Refusals re-proven with exact text: same_harness and
+  unknown_harness here; needs_onboarding lives in S2b.
 - S4. Finding 22 re-check on 0.1.8: the codex J5 commit-ordering journey.
   If it reproduces unchanged, record and keep OPEN (known, not a
   regression); if it worsens, surface to mike before continuing.
@@ -105,7 +115,10 @@ TARS (T lane — light, after S green):
   `mike` (explicit per TEST-HOSTS.md — the account rule is part of the
   artifact under test); finding 10 form (tmux foreground, never
   LaunchDaemon); pair-then-connect per section 3a likewise precedes
-  evidence; one real claude turn; version identity as S9.
+  evidence; one real claude turn; version identity as S9. NAMED LIMIT
+  (v2.4): the foreground form proves the Darwin BINARY journey only — it
+  deliberately does NOT prove the LaunchDaemon service mode F10 rules out
+  for claude turns; the evidence must state this limit.
 
 Known flakes: O4 is documented — one retry allowed, logged as O4 when seen.
 
@@ -125,8 +138,18 @@ Known flakes: O4 is documented — one retry allowed, logged as O4 when seen.
 - All evidence lands in the specs repo, findings-bank style (exact
   commands, ids, timestamps), committed per batch; this file is amended
   with a scorecard per lane.
-- watchdog:release-018-completion audits evidence against this scope —
-  every line above either has evidence or a named skip with a reason.
+- Every evidence batch is PINNED (v2.4, finding 7): package sha256, plan
+  revision commit, host, account, base dir, port, and the serving
+  gateway's reported version — unpinned evidence does not count.
+- MUST-PASS set (v2.4, finding 7 — named skips cannot green the plan):
+  S1, S1b, S2a-c, S3, S5, S6, S7, S8, S9, T1 each PASS or the plan is
+  BLOCKED/INCOMPLETE, stated as such. S4 alone may close as
+  reproduces-unchanged (known finding 22). The watchdog audits against
+  plan HEAD at audit time.
+- ACCEPTANCE SCOPE (v2.4, finding 6): all evidence here is
+  FRESH-INSTALL-ONLY; it does not establish upgrade viability, and the
+  LIVE-ORG DEPLOY of v0.1.8 stays BLOCKED on Phase 0 (schema upgrade)
+  regardless of how green this plan ends.
 - The product owner's spirit acceptance closes the plan: features verified
   against the release theme (switching proven live) and gh#11 semantics.
 
