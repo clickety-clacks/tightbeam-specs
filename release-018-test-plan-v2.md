@@ -64,6 +64,14 @@ SHRDLU (S lane — the release theme lives here):
   move-aside path, PRESERVING the moved-aside DB as evidence. Finding 14
   trap: `cargo build --release` before any e2e driver use;
   EFFORT_CHECKIN_HORIZON_MS=2500 drop-in where the smoke requires it.
+  AUTH PATH (v2.7b ruling, hazard att_1c37a9cb): the in-place install
+  ADOPTS a retained auth dir without ceremony (recorded as a release
+  finding — upgrade-semantics asymmetry: credential continuity while org
+  rows refuse). For the TEST org, the retained auth dir moves aside WHOLE
+  beside the moved-aside state.db — MOVE ONLY, never read/copy/hash
+  credential contents; filenames+mtimes via ls only — restoring
+  TEST-HOSTS 3b (fresh-never-adopted) and revalidating S2b's natural
+  needs_onboarding fixture.
   STATUS: S1 evidence from the isolated form (specs 7281952) is MARKED
   UNPROVEN for this acceptance — recorded, not credited; S1b's ceremony
   evidence (6247d1a) is tied to the withdrawn base and must be RE-RUN on
