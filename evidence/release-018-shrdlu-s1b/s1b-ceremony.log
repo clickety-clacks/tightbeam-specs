@@ -1,0 +1,66 @@
+S1B_START_UTC=2026-08-15T17:45:42Z
+      warning: the following clause will never match:
+
+          {:error, reason}
+
+      because it attempts to match on the result of:
+
+          Tightbeam.Supervision.transition_in_txn(txn, observation)
+
+      which has type:
+
+          dynamic(
+            :armed or :canceled or :duplicate or :parent_elevated or :terminal_disposition or
+              {:admit, term()} or {:armed, float() or integer()}
+          )
+
+      typing violation found at:
+      │
+ 1781 │       {:error, reason} -> raise "supervision transition refused: #{inspect(reason)}"
+      │       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      │
+      └─ lib/tightbeam/assignments.ex:1781: Tightbeam.Assignments.supervision_transition!/3
+
+     warning: the following clause will never match:
+
+         {:error, reason}
+
+     because it attempts to match on the result of:
+
+         Tightbeam.Supervision.transition_in_txn(txn, %{
+           kind: "parent_target_retired",
+           session_key: session_key,
+           retirement_epoch: retirement_epoch,
+           principal: principal,
+           supervision_interval_ms: supervision_interval_ms
+         })
+
+     which has type:
+
+         dynamic(:armed or :duplicate or :parent_elevated)
+
+     typing violation found at:
+     │
+ 551 │       {:error, reason} -> raise "parent-target retirement refused: #{inspect(reason)}"
+     │       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/tightbeam/org.ex:551: Tightbeam.Org.retire_active_in_txn/4
+
+PAIR_OK user_id=mike token=[redacted]
+CONNECT_EVIDENCE: %{
+  main: %{
+    "displayName" => "Main",
+    "kind" => "main",
+    "sessionKey" => "agent:main:clawline:mike:main"
+  },
+  pair_user_id: "mike",
+  connected_user_id: "mike",
+  connected_is_admin: true,
+  auth_success: true,
+  auth_user_id: "mike",
+  auth_is_admin: true,
+  sync_complete: true
+}
+S1B_PASS
+S1B_EXIT=0
+S1B_END_UTC=2026-08-15T17:45:42Z

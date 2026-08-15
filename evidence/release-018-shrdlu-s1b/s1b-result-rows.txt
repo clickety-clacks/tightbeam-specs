@@ -1,0 +1,8 @@
+FOLLOWUP_QUERY_CORRECTION_UTC=2026-08-15T17:46:06Z
+Prior display-only query used WHERE kind=main after shell quote loss; no state mutation.
+--- Main row (cliToken omitted) ---
+sessionKey                     displayName  kind  isBuiltIn  ownerUserId  origin     archetype  harness  provider   state   createdAt    
+-----------------------------  -----------  ----  ---------  -----------  ---------  ---------  -------  ---------  ------  -------------
+agent:main:clawline:mike:main  Main         main  1          mike         user:mike  default    claude   anthropic  active  1786815911042
+--- onboarding state before S2 ---
+NO_AUTH_FILES

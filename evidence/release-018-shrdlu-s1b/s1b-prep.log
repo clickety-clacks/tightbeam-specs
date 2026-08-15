@@ -1,0 +1,314 @@
+S1B_PREP_START_UTC=2026-08-15T17:44:12Z
+Erlang/OTP 28 [erts-16.4] [source] [64-bit] [smp:12:12] [ds:12:12:10] [async-threads:1] [jit:ns]
+
+Elixir 1.19.5 (compiled with Erlang/OTP 28)
+Resolving Hex dependencies...
+Resolution completed in 0.067s
+Unchanged:
+  bandit 1.12.1
+  cc_precompiler 0.1.11
+  db_connection 2.10.2
+  earmark_parser 1.4.46
+  elixir_make 0.10.0
+  ex_doc 0.40.3
+  exqlite 0.39.0
+  hpax 1.0.4
+  makeup 1.2.2
+  makeup_elixir 1.0.1
+  makeup_erlang 1.1.0
+  mime 2.0.7
+  nimble_parsec 1.4.2
+  plug 1.20.3
+  plug_crypto 2.1.1
+  telemetry 1.4.2
+  thousand_island 1.5.0
+  toml 0.7.0
+  websock 0.5.3
+  websock_adapter 0.6.0
+* Getting exqlite (Hex package)
+* Getting bandit (Hex package)
+* Getting websock_adapter (Hex package)
+* Getting toml (Hex package)
+* Getting ex_doc (Hex package)
+* Getting earmark_parser (Hex package)
+* Getting makeup_elixir (Hex package)
+* Getting makeup_erlang (Hex package)
+* Getting makeup (Hex package)
+* Getting nimble_parsec (Hex package)
+* Getting plug (Hex package)
+* Getting websock (Hex package)
+* Getting mime (Hex package)
+* Getting plug_crypto (Hex package)
+* Getting telemetry (Hex package)
+* Getting hpax (Hex package)
+* Getting thousand_island (Hex package)
+* Getting cc_precompiler (Hex package)
+* Getting db_connection (Hex package)
+* Getting elixir_make (Hex package)
+==> earmark_parser
+Compiling 2 files (.xrl)
+Compiling 1 file (.yrl)
+Compiling 3 files (.erl)
+Compiling 32 files (.ex)
+Generated earmark_parser app
+==> mime
+Compiling 1 file (.ex)
+Generated mime app
+==> toml
+Compiling 10 files (.ex)
+     warning: using single-quoted strings to represent charlists is deprecated.
+     Use ~c"" if you indeed want a charlist or use "" instead.
+     You may run "mix format --migrate" to change all single-quoted
+     strings to use the ~c sigil and fix this warning.
+     │
+ 264 │   defp handle_token(lexer, original, doc, type, skip, _data, lines) when type in '-_' do
+     │                                                                                  ~
+     │
+     └─ lib/decoder.ex:264:82
+
+     warning: using single-quoted strings to represent charlists is deprecated.
+     Use ~c"" if you indeed want a charlist or use "" instead.
+     You may run "mix format --migrate" to change all single-quoted
+     strings to use the ~c sigil and fix this warning.
+     │
+ 371 │       {:ok, {type, _skip, _data, _lines}} when type in '-+' ->
+     │                                                        ~
+     │
+     └─ lib/decoder.ex:371:56
+
+     warning: using single-quoted strings to represent charlists is deprecated.
+     Use ~c"" if you indeed want a charlist or use "" instead.
+     You may run "mix format --migrate" to change all single-quoted
+     strings to use the ~c sigil and fix this warning.
+     │
+ 419 │           {:ok, {:alpha, _, <<c::utf8>>, _}} when c in 'eE' ->
+     │                                                        ~
+     │
+     └─ lib/decoder.ex:419:56
+
+     warning: using single-quoted strings to represent charlists is deprecated.
+     Use ~c"" if you indeed want a charlist or use "" instead.
+     You may run "mix format --migrate" to change all single-quoted
+     strings to use the ~c sigil and fix this warning.
+     │
+ 474 │       {:ok, {:alpha, _, <<c::utf8>>, _}} when c in 'eE' ->
+     │                                                    ~
+     │
+     └─ lib/decoder.ex:474:52
+
+     warning: using single-quoted strings to represent charlists is deprecated.
+     Use ~c"" if you indeed want a charlist or use "" instead.
+     You may run "mix format --migrate" to change all single-quoted
+     strings to use the ~c sigil and fix this warning.
+     │
+ 514 │       {:ok, {sign, _, _, _}} when sign in '-+' and last == ?e ->
+     │                                           ~
+     │
+     └─ lib/decoder.ex:514:43
+
+     warning: using single-quoted strings to represent charlists is deprecated.
+     Use ~c"" if you indeed want a charlist or use "" instead.
+     You may run "mix format --migrate" to change all single-quoted
+     strings to use the ~c sigil and fix this warning.
+     │
+ 518 │       {:ok, {:alpha, _, <<c::utf8>>, _}} when c in 'eE' and signal == ?. ->
+     │                                                    ~
+     │
+     └─ lib/decoder.ex:518:52
+
+     warning: using single-quoted strings to represent charlists is deprecated.
+     Use ~c"" if you indeed want a charlist or use "" instead.
+     You may run "mix format --migrate" to change all single-quoted
+     strings to use the ~c sigil and fix this warning.
+     │
+ 522 │       {:ok, {?_, skip, _, lines}} when last not in '_e.' ->
+     │                                                    ~
+     │
+     └─ lib/decoder.ex:522:52
+
+     warning: using single-quoted strings to represent charlists is deprecated.
+     Use ~c"" if you indeed want a charlist or use "" instead.
+     You may run "mix format --migrate" to change all single-quoted
+     strings to use the ~c sigil and fix this warning.
+     │
+ 538 │       {:ok, {type, skip, data, lines}} when last in 'e.' ->
+     │                                                     ~
+     │
+     └─ lib/decoder.ex:538:53
+
+     warning: using single-quoted strings to represent charlists is deprecated.
+     Use ~c"" if you indeed want a charlist or use "" instead.
+     You may run "mix format --migrate" to change all single-quoted
+     strings to use the ~c sigil and fix this warning.
+     │
+ 542 │       {:ok, {_type, skip, _data, lines} = token} when last not in '_e.' ->
+     │                                                                   ~
+     │
+     └─ lib/decoder.ex:542:67
+
+     warning: using single-quoted strings to represent charlists is deprecated.
+     Use ~c"" if you indeed want a charlist or use "" instead.
+     You may run "mix format --migrate" to change all single-quoted
+     strings to use the ~c sigil and fix this warning.
+     │
+ 682 │         {:ok, {sign, _, _, _}} when sign in '-+' ->
+     │                                             ~
+     │
+     └─ lib/decoder.ex:682:45
+
+     warning: using single-quoted strings to represent charlists is deprecated.
+     Use ~c"" if you indeed want a charlist or use "" instead.
+     You may run "mix format --migrate" to change all single-quoted
+     strings to use the ~c sigil and fix this warning.
+     │
+ 796 │       {:ok, {sign, _, _, _}} when sign in '-+' ->
+     │                                           ~
+     │
+     └─ lib/decoder.ex:796:43
+
+     warning: using single-quoted strings to represent charlists is deprecated.
+     Use ~c"" if you indeed want a charlist or use "" instead.
+     You may run "mix format --migrate" to change all single-quoted
+     strings to use the ~c sigil and fix this warning.
+     │
+ 916 │         {:ok, {type, skip, _, lines}} when type in '-_' ->
+     │                                                    ~
+     │
+     └─ lib/decoder.ex:916:52
+
+     warning: using single-quoted strings to represent charlists is deprecated.
+     Use ~c"" if you indeed want a charlist or use "" instead.
+     You may run "mix format --migrate" to change all single-quoted
+     strings to use the ~c sigil and fix this warning.
+     │
+ 954 │               {:ok, {type, _, _, _}} when type in '-_' ->
+     │                                                   ~
+     │
+     └─ lib/decoder.ex:954:51
+
+     warning: using single-quoted strings to represent charlists is deprecated.
+     Use ~c"" if you indeed want a charlist or use "" instead.
+     You may run "mix format --migrate" to change all single-quoted
+     strings to use the ~c sigil and fix this warning.
+     │
+ 969 │       {:ok, {type, _, _, _}} when type in '-_' ->
+     │                                           ~
+     │
+     └─ lib/decoder.ex:969:43
+
+     warning: using single-quoted strings to represent charlists is deprecated.
+     Use ~c"" if you indeed want a charlist or use "" instead.
+     You may run "mix format --migrate" to change all single-quoted
+     strings to use the ~c sigil and fix this warning.
+     │
+ 983 │           {:ok, {type, _, _, _}} when type in '-_' ->
+     │                                               ~
+     │
+     └─ lib/decoder.ex:983:47
+
+Generated toml app
+==> plug_crypto
+Compiling 5 files (.ex)
+Generated plug_crypto app
+==> hpax
+Compiling 4 files (.ex)
+Generated hpax app
+==> elixir_make
+Compiling 8 files (.ex)
+Generated elixir_make app
+==> nimble_parsec
+Compiling 4 files (.ex)
+Generated nimble_parsec app
+==> makeup
+Compiling 15 files (.ex)
+Generated makeup app
+==> makeup_elixir
+Compiling 6 files (.ex)
+Compiling lib/makeup/lexers/elixir_lexer.ex (it's taking more than 10s)
+Generated makeup_elixir app
+==> makeup_erlang
+Compiling 4 files (.ex)
+Compiling lib/makeup/lexers/erlang_lexer.ex (it's taking more than 10s)
+Generated makeup_erlang app
+==> ex_doc
+Compiling 30 files (.ex)
+Generated ex_doc app
+==> tightbeam
+===> Analyzing applications...
+===> Compiling telemetry
+==> thousand_island
+Compiling 18 files (.ex)
+Generated thousand_island app
+==> db_connection
+Compiling 18 files (.ex)
+Generated db_connection app
+==> plug
+Compiling 1 file (.erl)
+Compiling 42 files (.ex)
+Generated plug app
+==> cc_precompiler
+Compiling 3 files (.ex)
+Generated cc_precompiler app
+==> exqlite
+Compiling 12 files (.ex)
+Generated exqlite app
+==> websock
+Compiling 1 file (.ex)
+Generated websock app
+==> bandit
+Compiling 54 files (.ex)
+Generated bandit app
+==> websock_adapter
+Compiling 4 files (.ex)
+Generated websock_adapter app
+==> tightbeam
+Compiling 87 files (.ex)
+     warning: the following clause will never match:
+
+         {:error, reason}
+
+     because it attempts to match on the result of:
+
+         Tightbeam.Supervision.transition_in_txn(txn, %{
+           kind: "parent_target_retired",
+           session_key: session_key,
+           retirement_epoch: retirement_epoch,
+           principal: principal,
+           supervision_interval_ms: supervision_interval_ms
+         })
+
+     which has type:
+
+         dynamic(:armed or :duplicate or :parent_elevated)
+
+     typing violation found at:
+     │
+ 551 │       {:error, reason} -> raise "parent-target retirement refused: #{inspect(reason)}"
+     │       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/tightbeam/org.ex:551: Tightbeam.Org.retire_active_in_txn/4
+
+      warning: the following clause will never match:
+
+          {:error, reason}
+
+      because it attempts to match on the result of:
+
+          Tightbeam.Supervision.transition_in_txn(txn, observation)
+
+      which has type:
+
+          dynamic(
+            :armed or :canceled or :duplicate or :parent_elevated or :terminal_disposition or
+              {:admit, term()} or {:armed, float() or integer()}
+          )
+
+      typing violation found at:
+      │
+ 1781 │       {:error, reason} -> raise "supervision transition refused: #{inspect(reason)}"
+      │       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      │
+      └─ lib/tightbeam/assignments.ex:1781: Tightbeam.Assignments.supervision_transition!/3
+
+Generated tightbeam app
+S1B_PREP_END_UTC=2026-08-15T17:44:56Z

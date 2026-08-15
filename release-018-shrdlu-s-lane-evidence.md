@@ -146,3 +146,87 @@ captured build log, package verification, install output, gateway log, doctor
 census, port/PID verification, and timestamps. `gateway.json` is deliberately
 excluded because it contains the isolated CLI bearer token; no provider
 credential file was read or copied.
+
+## S1b — mandatory pair-then-connect ceremony: PASS
+
+Authority: plan v2.3 commit `48bef1f` and `docs/TEST-HOSTS.md` section 3a.
+Window: 2026-08-15 17:44:12–17:46:06 UTC. This ceremony completed before
+S2 onboarding or any e2e evidence; the post-ceremony filesystem census was
+`NO_AUTH_FILES` under the isolated base's `auth/` directory.
+
+The tag source was prepared under the host's already-installed pinned
+OTP 28 / Elixir 1.19 toolchain. The Rust release build recorded under S1
+predates this preparation and no e2e driver ran during it.
+
+The retained driver `evidence/release-018-shrdlu-s1b/s1b_pair_connect.exs`
+performed the real wire ceremony:
+
+```elixir
+{:ok, %{token: token, user_id: user_id}} =
+  Tightbeam.ClientE2E.SimClient.pair("127.0.0.1", 12_374,
+    device_id: "release018-s1b",
+    claimed_name: "mike"
+  )
+
+{:ok, client} =
+  Tightbeam.ClientE2E.SimClient.connect(
+    "127.0.0.1",
+    12_374,
+    token,
+    device_id: "release018-s1b"
+  )
+```
+
+The token existed only in process memory and was printed as `[redacted]`.
+No token or provider credential is present in the evidence corpus.
+
+Clean terminal output at `2026-08-15T17:45:42Z`:
+
+```text
+PAIR_OK user_id=mike token=[redacted]
+CONNECT_EVIDENCE: %{
+  main: %{
+    "displayName" => "Main",
+    "kind" => "main",
+    "sessionKey" => "agent:main:clawline:mike:main"
+  },
+  pair_user_id: "mike",
+  connected_user_id: "mike",
+  connected_is_admin: true,
+  auth_success: true,
+  auth_user_id: "mike",
+  auth_is_admin: true,
+  sync_complete: true
+}
+S1B_PASS
+S1B_EXIT=0
+```
+
+Read-only SQLite rows after the ceremony, with token columns deliberately
+omitted:
+
+```text
+users:   mike | isAdmin=1
+devices: release018-s1b | mike | allowlisted | sim | client-e2e
+sessions: agent:main:clawline:mike:main | Main | kind=main |
+          isBuiltIn=1 | ownerUserId=mike | origin=user:mike | active
+```
+
+An admin-attributed CLI read independently returned exactly one active Main
+session owned by `user:mike`; both model catalogs were empty, as required
+before S2 onboarding.
+
+Two executor-only evidence issues are preserved rather than hidden:
+
+1. The first pair/connect succeeded through the full evidence map, then its
+   formatter called nonexistent `Tightbeam.JSON.encode!/1`. Process exit
+   closed the socket. The same device was paired and connected again after
+   changing only the formatter to `IO.inspect`; the second run carries the
+   clean terminal receipt above.
+2. A read-only display query lost SQL string quotes in the SSH shell and
+   failed with `no such column: main`. It was rerun using `isBuiltIn=1`; no
+   database mutation occurred.
+
+Companion evidence is in `evidence/release-018-shrdlu-s1b/`, including both
+ceremony attempts, sanitized rows, the admin-attributed list result, source
+preparation log, and the exact driver.

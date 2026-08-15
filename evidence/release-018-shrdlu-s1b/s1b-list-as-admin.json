@@ -1,0 +1,41 @@
+{
+  "archetypes": [
+    {
+      "defaults": {},
+      "modelPreferences": [],
+      "name": "default",
+      "where": [
+        "shrdlu"
+      ]
+    }
+  ],
+  "hosts": [
+    "shrdlu"
+  ],
+  "models": {
+    "shrdlu": {
+      "claude": [],
+      "codex": []
+    }
+  },
+  "pendingDevices": [],
+  "roles": [],
+  "sessions": [
+    {
+      "archetype": "default",
+      "context": null,
+      "createdAt": 1786815911042,
+      "displayName": "Main",
+      "effort": "medium",
+      "handle": null,
+      "harness": "claude",
+      "host": "shrdlu",
+      "model": "claude-sonnet-5",
+      "origin": "user:mike",
+      "sessionKey": "agent:main:clawline:mike:main",
+      "spawnedBy": null,
+      "state": "active"
+    }
+  ],
+  "wakes": []
+}

@@ -1,0 +1,36 @@
+--- users ---
+userId  isAdmin  createdAt    
+------  -------  -------------
+mike    1        1786815911039
+--- devices (token omitted) ---
+deviceId        userId  claimedName  status       platform  model       createdAt    
+--------------  ------  -----------  -----------  --------  ----------  -------------
+release018-s1b  mike    mike         allowlisted  sim       client-e2e  1786815911039
+--- sessions schema ---
+cid  name               type     notnull  dflt_value  pk
+---  -----------------  -------  -------  ----------  --
+0    sessionKey         TEXT     0                    1 
+1    displayName        TEXT     1                    0 
+2    kind               TEXT     1        'custom'    0 
+3    orderIndex         INTEGER  1        0           0 
+4    isBuiltIn          INTEGER  1        0           0 
+5    adopted            INTEGER  1        0           0 
+6    ownerUserId        TEXT     1                    0 
+7    origin             TEXT     1                    0 
+8    spawnedBy          TEXT     0                    0 
+9    handle             TEXT     0                    0 
+10   archetype          TEXT     1                    0 
+11   overrides          TEXT     0                    0 
+12   identityName       TEXT     0                    0 
+13   identityRevision   TEXT     0                    0 
+14   cliToken           TEXT     0                    0 
+15   harness            TEXT     1                    0 
+16   provider           TEXT     1                    0 
+17   model              TEXT     1                    0 
+18   thinkingLevel      TEXT     0                    0 
+19   modelContext       TEXT     0                    0 
+20   host               TEXT     1        'local'     0 
+21   clearedThroughSeq  INTEGER  1        0           0 
+22   state              TEXT     1        'active'    0 
+23   createdAt          INTEGER  1                    0 
+24   updatedAt          INTEGER  1                    0 
