@@ -413,3 +413,54 @@ admin-attributed catalog exposed Codex models before S2a. That makes S2b's
 required natural `needs_onboarding` fixture unavailable. No auth file has
 been modified. The finding is attested as `att_1c37a9cb`; S2 remains paused
 pending an explicit sanctioned auth move-aside/reset path.
+
+## v2.11d whole-base reset and crediting S1b: PASS
+
+Window: 2026-08-15 18:59:53–19:07:32 UTC. Evidence pins plan `5a311f0`,
+package SHA-256 `faf202f5f7057a00f478df54a60998650ddc96d2248813a3e3823775d0737630`,
+SHRDLU account `clu`, base `/home/clu/.tightbeam`, port 11373, and serving
+CLI/gateway version 0.1.8.
+
+The reviewed a0 stop required an escalation: tmux Ctrl-C and then SIGTERM plus
+five seconds left PID 1393618 bound to 11373. After reporting
+`att_5eee31f2`, an exact-target SIGKILL stopped it; `ss` showed no listener,
+the PID was absent, and the tmux session was gone before any move. A preceding
+broad `ps args` census exposed Erlang distribution cookies into internal tool
+output; no value is reproduced or used, and the incident is banked as
+`att_9e5ef9aa`.
+
+The entire retained base except its existing evidence directory moved unread
+to `moved-aside-v017-20260815T180853Z/whole-base-pre-reset-20260815T185953Z/`.
+The current DB/WAL/SHM moved there under the explicit
+`contaminated-fresh-state.db*` label. Names+mtimes prove auth, identity, homes,
+adapter/log, archive, work, config, and state residue were preserved whole;
+active auth/identity/homes/state paths were absent afterward.
+
+Clean first boot created stamp `operator-decision-requests-v1` with
+users/devices/sessions `0/0/0`, no refusal, and both providers naturally
+`needs_onboarding/missing`. The first non-login tmux launch omitted
+`/home/clu/.local/bin`, making Claude non-runnable; after filing
+`att_d696167f`, the same clean gateway restarted with the explicit local/asdf
+PATH and both providers then reported only their intended missing-credential
+state.
+
+The one ruled S1b repeat used the pinned driver form and named only client
+dependency applications:
+
+```sh
+cd /home/clu/tb018-replacement-staging/source
+source /home/clu/.asdf/asdf.sh
+mix run --no-start -e '{:ok, _} = Application.ensure_all_started(:crypto); {:ok, _} = Application.ensure_all_started(:inets); Code.require_file("/home/clu/tb018-replacement-staging/s1b_pair_connect.exs")'
+```
+
+It paired `mike`, connected as admin, reached `sync_complete`, and returned
+active Main `agent:main:clawline:mike:main`; the Tightbeam application was not
+started by the driver. An independent admin-attributed CLI read returned the
+same active Main. Read-only DB counts were users/admin-mike/devices/sessions
+`1/1/1/1`; a first wrong-column read was reported before correction as
+`att_5037661f`. Exact commands, names, findings, and sanitized output are in
+`evidence/release-018-shrdlu-reset-v211d/reset-and-s1b.txt`.
+
+This post-reset S1b is the single crediting run. The old retained-auth S2
+blocker is resolved: both Claude and Codex are now naturally un-onboarded.
+OAuth remains unarmed under the product-owner-only per-instance rule.

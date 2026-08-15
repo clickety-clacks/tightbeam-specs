@@ -1,0 +1,95 @@
+Release 0.1.8 / SHRDLU v2.11d whole-base reset and crediting S1b
+UTC window: 2026-08-15 18:59:53-19:07:32
+Plan: 5a311f079e60db6b295064bba8f585b7fb3e211d (v2.11d)
+Package sha256: faf202f5f7057a00f478df54a60998650ddc96d2248813a3e3823775d0737630
+Host/account/base/port: shrdlu / clu / /home/clu/.tightbeam / 11373
+CLI/gateway version: 0.1.8 / 0.1.8
+
+A0 stop:
+  tmux target=tb018-standard-replacement
+  gateway pid=1393618
+  tmux Ctrl-C did not stop the listener.
+  SIGTERM plus 5 seconds did not stop the listener.
+  Exact-target SIGKILL stopped pid 1393618.
+  Final ss output contained only the header; PID absent; tmux absent.
+  Detailed stop finding: att_5eee31f2.
+
+Credential-exposure incident before stop:
+  A broad ps args census printed Erlang distribution cookie values into
+  internal tool output. Values are not reproduced or used. No mutation had
+  occurred. Incident: att_9e5ef9aa.
+
+Whole-base preserved destination:
+  /home/clu/.tightbeam/moved-aside-v017-20260815T180853Z/
+    whole-base-pre-reset-20260815T185953Z/
+
+Top-level entries moved whole, without reading contents:
+  adapter-claude:shared@shrdlu.stderr.log
+  adapter-codex:shared@shrdlu.stderr.log
+  adapter-codex:shared@shrdlu.stderr.log.gate.log
+  adapters/
+  archive/
+  auth/
+  bin/
+  gateway.json
+  harness-processes/
+  harnesses.json
+  homes/
+  identity/
+  work/
+  state.db     -> contaminated-fresh-state.db
+  state.db-wal -> contaminated-fresh-state.db-wal
+  state.db-shm -> contaminated-fresh-state.db-shm
+
+After the move, active auth/, identity/, homes/, state.db, state.db-wal,
+and state.db-shm were all absent. The only top-level base entry was the
+preserved moved-aside-v017-20260815T180853Z/ directory.
+
+Clean boot:
+  first clean PID=1413297, fresh stamp=operator-decision-requests-v1
+  users=0 devices=0 sessions=0
+  no schema refusal
+  anthropic=needs_onboarding/missing
+  openai=needs_onboarding/missing
+
+The first tmux launch omitted /home/clu/.local/bin from PATH, so the gateway
+reported Claude installed but non-runnable. This driver finding is
+att_d696167f. The same clean gateway was restarted with exact PATH:
+  /home/clu/.local/bin:/home/clu/.asdf/shims:/home/clu/.asdf/bin:
+  /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+It then reported both providers only as needs_onboarding/missing, with no
+Claude runnable-path defect. Final serving PID=1414330 on 0.0.0.0:11373.
+
+Crediting S1b exact command:
+  cd /home/clu/tb018-replacement-staging/source
+  source /home/clu/.asdf/asdf.sh
+  mix run --no-start -e '{:ok, _} = Application.ensure_all_started(:crypto); {:ok, _} = Application.ensure_all_started(:inets); Code.require_file("/home/clu/tb018-replacement-staging/s1b_pair_connect.exs")'
+
+Named client dependency apps started: crypto, inets. The Tightbeam
+application was never started by the driver.
+
+S1b result:
+  PAIR_OK user_id=mike token=[redacted]
+  connected_user_id=mike
+  connected_is_admin=true
+  auth_success=true
+  auth_user_id=mike
+  auth_is_admin=true
+  sync_complete=true
+  main.sessionKey=agent:main:clawline:mike:main
+  S1B_PASS
+
+Independent admin-attributed CLI read:
+  Main sessionKey=agent:main:clawline:mike:main
+  state=active
+  origin=user:mike
+
+Independent read-only DB counts after correcting a reported wrong-column
+query (att_5037661f):
+  users=1
+  admin_mike=1
+  devices=1
+  sessions=1
+
+No OAuth ceremony was armed. No credential file content was read, copied,
+hashed, or imported.
