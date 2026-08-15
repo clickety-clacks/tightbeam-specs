@@ -2487,3 +2487,33 @@ Flynn's derivation, ruled:
   other hosts onboard their own grants.
 - Deploy verification standard: "ready" means a NEW agent spawns and answers
   a turn — not merely that an existing session does.
+
+## 2026-08-15 — Catalog completeness is part of the harness-switching feature (Mike)
+
+Ruled by Mike, recorded via tb02: harness/model switching is NOT done while
+the catalogs are thin. The INVARIANT, stated as the feature's acceptance
+criterion on every line that ships switching (0.1.8 onward, 0.2):
+
+- **codex** lists all modern OpenAI models — **sol, terra, luna** — at ALL
+  thinking levels, plus fast mode.
+- **claude** lists at minimum **fable 5, opus 5, sonnet 5, opus 4.8**.
+
+If a model in that set is unselectable when switching is deployed, the
+switching feature is still broken — "the harness can't drive it today" is a
+defect to fix, not a scoping excuse.
+
+Current state at ruling time: claude MEETS the minimum (fable-5, opus-5,
+sonnet-5, opus-4-8, haiku observed on a fresh 0.1.8 install). codex FAILS:
+`@adapter_selectable_models ~w(gpt-5.6-sol)` (harness/codex.ex, pinned from
+a live 2026-07-28 probe at codex-acp 1.1.4 where every other slug was
+refused with -32602), and the sole listed model exposes `efforts: []` — no
+thinking levels — and no fast option. The pin is injectable
+(`codex_selectable_models`, `:all`) so widening needs evidence, not code.
+
+Work this ruling orders: (1) re-probe the CURRENT codex-acp version for
+sol/terra/luna × all thinking levels × fast (the 1.1.4 pin is stale-dated;
+harness CLIs auto-update); (2) widen the pin/injection to the evidenced
+set; (3) if the current adapter still refuses luna/terra, that is an
+upstream defect to chase, not an accepted state; (4) add a
+catalog-completeness check to the switching acceptance battery on both
+lines. Routed to the 0.1 PO (0.1.8 acceptance) and the 0.2 program.
