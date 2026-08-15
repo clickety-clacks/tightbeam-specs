@@ -51,7 +51,13 @@ SHRDLU (S lane — the release theme lives here):
   own base dir, port 12374. Finding 14 trap: `cargo build --release` before
   any e2e driver use. Smoke drop-in EFFORT_CHECKIN_HORIZON_MS=2500 where
   the smoke requires it.
-- S2. Onboard claude AND codex (credentials exist on shrdlu; stdin flows).
+- S1b (v2.3, review finding 3): the MANDATORY pair-then-connect ceremony
+  per docs/TEST-HOSTS.md section 3a, BEFORE any onboarding or e2e
+  evidence — it establishes the admin user and the Main stream; without it
+  S2 has no admin to onboard under and the install has no Main. Evidence:
+  the ceremony's own output + the resulting admin/Main rows.
+- S2. Onboard claude AND codex (credentials exist on shrdlu; stdin flows),
+  AFTER S1b.
 - S3. CROSS-HARNESS SWITCH BATTERY (the release theme): claude -> codex ->
   claude via the tune verb on a live session. ACCEPTANCE (v2.2, review
   finding 1 — tune-verb success alone is NOT green): (a) a real COMPLETED
@@ -95,8 +101,11 @@ SHRDLU (S lane — the release theme lives here):
   failure.
 
 TARS (T lane — light, after S green):
-- T1. darwin-aarch64 tarball installs isolated; finding 10 form (tmux
-  foreground); one real claude turn; version identity as G3.
+- T1. darwin-aarch64 tarball installs isolated UNDER OPERATOR ACCOUNT
+  `mike` (explicit per TEST-HOSTS.md — the account rule is part of the
+  artifact under test); finding 10 form (tmux foreground, never
+  LaunchDaemon); pair-then-connect per section 3a likewise precedes
+  evidence; one real claude turn; version identity as S9.
 
 Known flakes: O4 is documented — one retry allowed, logged as O4 when seen.
 
