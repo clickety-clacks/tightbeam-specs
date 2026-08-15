@@ -358,6 +358,13 @@ names, mtimes, stats, hashes, command, and validation result are in
 `evidence/release-018-shrdlu-s1-v211b/post-exposure-backup.txt`. No gateway,
 base reset, auth, boot, S1b, OAuth, or S2 mutation accompanied this action.
 
+Plan v2.11d (`5a311f0`) dispositioned the SHM observation as SQLite
+connection scratch and bound stability to DB/WAL content, inode, and size.
+The supplemental readback records unchanged DB inode `15468588`, size
+3,182,592 and SHA-256 `a177ad1c...c59ebb`; WAL inode `15468468`, size zero,
+and SHA-256 `e3b0c442...b855`. Thus the new v2.11d binding fields are stable;
+the SHM mtime change remains preserved as an explained observation.
+
 ## S1b v2.7 — pair then connect on replaced install: PASS
 
 Window: 2026-08-15 18:10:44–18:14:33 UTC. The v0.1.8 tag source was prepared

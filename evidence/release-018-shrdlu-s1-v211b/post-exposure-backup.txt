@@ -42,3 +42,11 @@ The source state.db inode/size/mtime/hash stayed unchanged and the source
 state.db-wal mtime stayed 1786817355.7884267900. Read-only verification of
 the new backup also created zero/auxiliary WAL/SHM files beside the NEW
 backup. Every artifact and sidecar is preserved; nothing was deleted.
+
+v2.11d stability supplement (plan 5a311f0):
+  state.db inode=15468588 size=3182592 mtime_epoch=1786817308
+  state.db sha256=a177ad1c542cda3ac759d9169c4052b2b1b18177cd61abeaa4b65db3c8c59ebb
+  state.db-wal inode=15468468 size=0 mtime_epoch=1786817355
+  state.db-wal sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+The DB and WAL binding fields remained identical after the backup; v2.11d
+classifies only SHM as connection scratch and excludes it from stability.
