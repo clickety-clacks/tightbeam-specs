@@ -474,7 +474,10 @@ known gateway was stopped, the installed cookie was overwritten with fresh
 256-bit randomness without displaying either value, and an in-shell hash
 comparison returned only `COOKIE_DIFFERS=yes`. Mode tightened from `664` to
 `600`; the file retained inode `15467050`. The 0.1.8 gateway restarted on
-11373, Main remained active, both provider credentials remained naturally
+11373 at 19:23:00, after the cookie's 19:22:34 mtime. The installed launcher
+unconditionally reads that exact release-tree file when no override is supplied,
+and its 19:23:02 boot log reached provider initialization, confirming consumption
+without exposing a value. Main remained active, both provider credentials remained naturally
 missing, and both harness CLIs were runnable. The repeated shutdown delay
 (Ctrl-C and SIGTERM each exceeded 20 seconds before exact SIGKILL) is banked as
 `att_a6a5fab0`. OAuth remained unarmed and S2 did not run.

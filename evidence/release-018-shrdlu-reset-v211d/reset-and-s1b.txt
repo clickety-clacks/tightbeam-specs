@@ -111,7 +111,12 @@ Post-reset Erlang cookie rotation supplement:
   After rotation: inode=15467050 size=65 mode=600
     mtime=2026-08-15 19:22:34.166899974 +0000.
   Gateway 0.1.8 restarted on port 11373 as PID 1421052 with the same base and
-  explicit local/asdf/system PATH. Main remained active. Both Claude and Codex
+  explicit local/asdf/system PATH at 19:23:00, after that mtime. The installed
+  launcher line 29 unconditionally sources RELEASE_COOKIE from
+  $RELEASE_ROOT/releases/COOKIE when no override is supplied; the 19:23:02 boot
+  log proves the restarted node reached provider initialization. This confirms
+  consumption of the rotated file without exposing its value. Main remained
+  active. Both Claude and Codex
   credential stores remained missing/needs_onboarding; Claude 2.1.232 and
   Codex CLI 0.147.0 were runnable from /home/clu/.local/bin.
   OAuth remained unarmed; S2 did not run.
