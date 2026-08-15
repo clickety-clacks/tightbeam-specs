@@ -124,7 +124,10 @@ TARS (T lane — light, after S green):
   `mike` (explicit per TEST-HOSTS.md — the account rule is part of the
   artifact under test); finding 10 form (tmux foreground, never
   LaunchDaemon); pair-then-connect per section 3a likewise precedes
-  evidence; one real claude turn; version identity as S9. NAMED LIMIT
+  evidence; FRESH CLAUDE ONBOARDING on the isolated base per TEST-HOSTS
+  section 3b (v2.5 — the existing tars credential belongs to the intact
+  0.1.7 install, not this base; without 3b the real turn cannot execute);
+  one real claude turn; version identity as S9. NAMED LIMIT
   (v2.4): the foreground form proves the Darwin BINARY journey only — it
   deliberately does NOT prove the LaunchDaemon service mode F10 rules out
   for claude turns; the evidence must state this limit.
@@ -150,6 +153,11 @@ Known flakes: O4 is documented — one retry allowed, logged as O4 when seen.
 - Every evidence batch is PINNED (v2.4, finding 7): package sha256, plan
   revision commit, host, account, base dir, port, and the serving
   gateway's reported version — unpinned evidence does not count.
+  S5 EXCEPTION (v2.5): S5's gateway correctly refuses BEFORE serving, so
+  no serving version exists by design; S5's batch pins instead the
+  refusing binary's package sha256 and the version/build the refusal
+  output or boot log reports — the refusal artifact IS the version
+  evidence for that batch.
 - MUST-PASS set (v2.4, finding 7 — named skips cannot green the plan):
   S1, S1b, S2a-c, S3, S5, S6, S7, S8, S9, T1 each PASS or the plan is
   BLOCKED/INCOMPLETE, stated as such. S4 alone may close as
