@@ -138,7 +138,20 @@ SHRDLU (S lane — the release theme lives here):
   no credential is damaged because none exists yet. S2c onboard codex.
   All after S1b, stdin flows.
 - S3. CROSS-HARNESS SWITCH BATTERY (the release theme): claude -> codex ->
-  claude via the tune verb on a live session. ACCEPTANCE (v2.2, review
+  claude via the tune verb on a live session. CATALOG-COMPLETENESS
+  PRECONDITION (v2.12, Mike's ruling — specs tightbeam-decisions.md
+  330666d: catalog completeness IS part of the switching feature): before
+  any switch leg, assert the served catalogs — codex lists sol, terra,
+  AND luna at ALL thinking levels plus fast mode; claude lists at minimum
+  fable 5, opus 5, sonnet 5, opus 4.8. Codex is KNOWN-FAILING at ruling
+  time (harness/codex.ex pins to sol from a 2026-07-28 probe; the pin is
+  runtime-injectable via codex_selectable_models): the lane first
+  RE-PROBES the current codex-acp for the full matrix, widens the test
+  org's pin to the EVIDENCED set by runtime injection, and files any
+  still-refused slug as an UPSTREAM DEFECT (chased, not accepted). The
+  battery itself must then switch across MORE than sol — at least one
+  leg lands on terra or luna — because a battery that only ever selects
+  sol does not prove the feature as ruled. ACCEPTANCE (v2.2, review
   finding 1 — tune-verb success alone is NOT green): (a) a real COMPLETED
   TURN on each leg — claude before any switch, codex after the first
   switch, claude after the switch back — with turn ids captured; (b)
