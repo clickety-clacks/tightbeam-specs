@@ -1,6 +1,22 @@
 # Tightbeam release maintenance lines
 
-Status: implementation contract, 2026-08-11
+Status: SUPERSEDED 2026-08-15 by Mike's branch-convention ruling (recorded on
+work item wi_01bc054f in the live org). The 0.1 line now uses PER-VERSION
+scratchpad branches — the highest `0.1.*` branch (currently `0.1.9`) is the
+active line; when Mike calls quits the branch freezes, the last build is the
+release, a `v<version>` tag is the immutable name, and the successor branch
+spins from its tip. Builds are identified as `<version> build <N>` with
+N = `git rev-list --count` (semver `<version>+N`). Candidate branches are
+deleted once the tag exists. CI and branch protection run on the `0.1.*`
+glob. The authoritative procedure text is `docs/RELEASE_TRAIN.md` in the code
+repository as amended on branch `0.1.9`. This document's `release/<major>.<minor>`
+model and its `main`-as-source assumptions predate both the 2026-08-13 branch
+flip (main = 0.2 program) and the ruling; it is retained as the historical
+contract and must not be implemented. (Reconciliation by
+product-owner:tightbeam under Mike's directive: "reconcile docs to ONE
+convention... this ruling supersedes both where they conflict.")
+
+Status before supersession: implementation contract, 2026-08-11
 
 ## Goal
 
