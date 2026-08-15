@@ -8,6 +8,23 @@ oracles, and safety rails below were adversarially gate-cleared against main 58f
 around incidental failures, and reports an honest scorecard. No satellite_e2e script
 exists or should be written.
 
+## STANDING CREDENTIAL RULE — shrdlu E2E OpenAI restore (Mike, 2026-08-15)
+
+Every SHRDLU reset/rebuild E2E lane restores the E2E-ONLY OpenAI credential
+BEFORE testing, from its durable source: a Mike-only secret file on GIBSON.
+Restore is by STANDARD INPUT ONLY at onboarding time:
+
+    cat <mike-provided-path> | ssh shrdlu \
+      '<test-install>/bin/tightbeam onboard openai --api-key --as-user mike'
+
+Constraints, absolute: the secret VALUE never appears in argv, artifacts,
+attests, evidence files, ATC notes, or this document; the file PATH is
+sensitive — obtain it from Mike, never by searching; the file is Mike's to
+rotate. This rule supersedes the interactive device-auth expectation for
+shrdlu E2E (the device ceremony detaches to a private pty by design and is
+relay-incompatible — product finding on wi_e86ddd54; its arm/timeout
+behaviors are already banked evidence and need no re-exercise).
+
 ## Executor contract (the flexibility rule)
 
 - You are an agent on the ORCHESTRATION host (eezo) with SSH access per
