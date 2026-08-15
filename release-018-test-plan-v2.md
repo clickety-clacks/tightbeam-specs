@@ -4,8 +4,9 @@ Author: product-owner:tightbeam (mike's direct assignment, 2026-08-15).
 Supersedes: the withdrawn tb02-executed gibson route. Nothing from that plan
 is executed; its already-recorded evidence is PRESERVED and cited below.
 Routed to: watchdog:release-018-completion (completion audit) and
-tester:release018-gibson-e2e (gibson lane executor). Same TB02 context was
-delivered to all three parties.
+tester:release018-shrdlu-e2e (S lane; T lane after S green). The former
+gibson tester is stood down (lane withdrawn, card surrendered); v2.1
+removed gibson as an execution venue.
 
 ## What is under test
 
@@ -19,7 +20,10 @@ Already-standing evidence (preserved, not re-run):
   (finding 22 outstanding) — e2e-cold-install-2026-08-14.md.
 - Gibson isolated install (port 12373): refusal battery PASSED
   (same_harness, unknown_harness, needs_onboarding); vendor-verbatim
-  failure reporting observed (credential-incident fix proven in release).
+  failure reporting observed. PROVENANCE: VERSION-UNVERIFIED per watchdog
+  attestation (asg_2aa46337 — a baseline specimen showed CLI 0.1.8 vs a
+  gateway requiring 0.1.7 on that install); cite only as mixed-version
+  evidence, nonblocking; shrdlu S3 CONTROLS the refusal surface.
 
 ## Machine choice, with reasons (AMENDED v2.1 per Mike's correction:
 ## shrdlu and tars are THE test machines; gibson hosts the live org and is
@@ -51,7 +55,17 @@ SHRDLU (S lane — the release theme lives here):
   own base dir, port 12374. Finding 14 trap: `cargo build --release` before
   any e2e driver use. Smoke drop-in EFFORT_CHECKIN_HORIZON_MS=2500 where
   the smoke requires it.
-- S2. Onboard claude AND codex (credentials exist on shrdlu; stdin flows).
+- S1b (v2.3, review finding 3): the MANDATORY pair-then-connect ceremony
+  per docs/TEST-HOSTS.md section 3a, BEFORE any onboarding or e2e
+  evidence — it establishes the admin user and the Main stream; without it
+  S2 has no admin to onboard under and the install has no Main. Evidence:
+  the ceremony's own output + the resulting admin/Main rows.
+- S2 (v2.4, finding 3 — ORDER MATTERS: needs_onboarding has no safe
+  fixture once both providers are onboarded): S2a onboard CLAUDE only.
+  S2b with codex NOT yet onboarded, drive the needs_onboarding refusal
+  naturally (attempt a switch/spawn to codex) and capture its exact text —
+  no credential is damaged because none exists yet. S2c onboard codex.
+  All after S1b, stdin flows.
 - S3. CROSS-HARNESS SWITCH BATTERY (the release theme): claude -> codex ->
   claude via the tune verb on a live session. ACCEPTANCE (v2.2, review
   finding 1 — tune-verb success alone is NOT green): (a) a real COMPLETED
@@ -59,10 +73,15 @@ SHRDLU (S lane — the release theme lives here):
   switch, claude after the switch back — with turn ids captured; (b)
   continuity proven by a transcript read: the pre-switch history present
   as record and the pointer visible at the swap boundary; (c) NO
-  auto-replay demonstrated: the post-switch transcript contains no
-  re-injected history, and self-read happens only on demand and bounded.
-  The three named refusals re-proven (same_harness, unknown_harness,
-  needs_onboarding), each with its exact refusal text.
+  auto-replay proven AT THE ADAPTER BOUNDARY (v2.4, finding 2 —
+  transcript rows prove storage, not what reached the destination
+  harness): becb130 creates a fresh session/new at switch
+  (adapter.ex:691-723) and appends self-read guidance separately
+  (gateway.ex:2526-2535); evidence must show the session/new FIRST
+  PROMPT carried no prior messages (adapter stderr/debug capture or an
+  equivalent boundary artifact), plus the bounded tool-read happening
+  only on demand. Refusals re-proven with exact text: same_harness and
+  unknown_harness here; needs_onboarding lives in S2b.
 - S4. Finding 22 re-check on 0.1.8: the codex J5 commit-ordering journey.
   If it reproduces unchanged, record and keep OPEN (known, not a
   regression); if it worsens, surface to mike before continuing.
@@ -73,15 +92,29 @@ SHRDLU (S lane — the release theme lives here):
   `sqlite3 'file:<orig>?mode=ro' ".backup <scratch>/state.db"`. Point the
   isolated 0.1.8 gateway at the SNAPSHOT; expect the named refusal citing
   model-identity-message-envelope-v2 and this-build
-  operator-decision-requests-v1. UNTOUCHED-ORIGINAL PROOF required:
-  sha256 of the original state.db, -wal, and -shm plus an ls -la of the
-  auth/ dir, captured BEFORE and AFTER the whole S5 exercise —
-  byte-identical or the test is void regardless of the refusal outcome. (This is the ONLY upgrade-adjacent test in scope — the
+  operator-decision-requests-v1. UNTOUCHED-ORIGINAL PROOF (v2.4,
+  finding 4 — the LIVE 0.1.7 DB changes under its own traffic, so
+  before/after hash equality of the original is the WRONG criterion):
+  prove ISOLATION instead — (a) realpath + inode of snapshot vs original
+  distinct; (b) while the 0.1.8 gateway runs against the snapshot, an
+  lsof/FD listing shows it opened ONLY scratch paths, never the original
+  db/-wal/-shm or the 0.1.7 auth dir; (c) the isolated base's auth dir
+  hashed or proven absent; (d) read the SOURCE stamp from the SNAPSHOT
+  first (SELECT shape FROM schema_stamp) and expect the refusal to cite
+  that exact string plus this build's operator-decision-requests-v1. (This is the ONLY upgrade-adjacent test in scope — the
   upgrade PATH itself has no tool yet; that is Phase 0 on mike's queue and
   explicitly NOT this plan's scope.)
 - S6. Credential-incident codex half where re-onboarding is possible: a
   deliberately failed onboarding must NOT restore the previous credential
-  silently; the circuit must not gate credential installation. Record both.
+  silently; the circuit must not gate credential installation. ACCEPTANCE
+  (v2.6 — the circuit half is VACUOUS while the circuit is closed): the
+  circuit-does-not-gate proof requires the PRESERVED INCIDENT
+  PRECONDITION — codex adapter circuit demonstrably OPEN first
+  (e.g. consecutiveFailures at threshold, captured), THEN credential
+  install succeeds WITHOUT a gateway restart, the credential fingerprint
+  changes with NO prior-credential restore, and durable status/health is
+  recorded after. 0.2-build-ledger.md incident-part-2 records this exact
+  valid proof shape and the discarded fake passes — match it.
 - S7 (was G1). gh#11 operator decision requests, full lifecycle: file
   (--key idempotency retry), list, recommend (proxy label, non-resolving),
   rule (owner-only; non-owner refusal named), withdraw, supersede.
@@ -95,8 +128,17 @@ SHRDLU (S lane — the release theme lives here):
   failure.
 
 TARS (T lane — light, after S green):
-- T1. darwin-aarch64 tarball installs isolated; finding 10 form (tmux
-  foreground); one real claude turn; version identity as G3.
+- T1. darwin-aarch64 tarball installs isolated UNDER OPERATOR ACCOUNT
+  `mike` (explicit per TEST-HOSTS.md — the account rule is part of the
+  artifact under test); finding 10 form (tmux foreground, never
+  LaunchDaemon); pair-then-connect per section 3a likewise precedes
+  evidence; FRESH CLAUDE ONBOARDING on the isolated base per TEST-HOSTS
+  section 3b (v2.5 — the existing tars credential belongs to the intact
+  0.1.7 install, not this base; without 3b the real turn cannot execute);
+  one real claude turn; version identity as S9. NAMED LIMIT
+  (v2.4): the foreground form proves the Darwin BINARY journey only — it
+  deliberately does NOT prove the LaunchDaemon service mode F10 rules out
+  for claude turns; the evidence must state this limit.
 
 Known flakes: O4 is documented — one retry allowed, logged as O4 when seen.
 
@@ -116,8 +158,23 @@ Known flakes: O4 is documented — one retry allowed, logged as O4 when seen.
 - All evidence lands in the specs repo, findings-bank style (exact
   commands, ids, timestamps), committed per batch; this file is amended
   with a scorecard per lane.
-- watchdog:release-018-completion audits evidence against this scope —
-  every line above either has evidence or a named skip with a reason.
+- Every evidence batch is PINNED (v2.4, finding 7): package sha256, plan
+  revision commit, host, account, base dir, port, and the serving
+  gateway's reported version — unpinned evidence does not count.
+  S5 EXCEPTION (v2.5): S5's gateway correctly refuses BEFORE serving, so
+  no serving version exists by design; S5's batch pins instead the
+  refusing binary's package sha256 and the version/build the refusal
+  output or boot log reports — the refusal artifact IS the version
+  evidence for that batch.
+- MUST-PASS set (v2.4, finding 7 — named skips cannot green the plan):
+  S1, S1b, S2a-c, S3, S5, S6, S7, S8, S9, T1 each PASS or the plan is
+  BLOCKED/INCOMPLETE, stated as such. S4 alone may close as
+  reproduces-unchanged (known finding 22). The watchdog audits against
+  plan HEAD at audit time.
+- ACCEPTANCE SCOPE (v2.4, finding 6): all evidence here is
+  FRESH-INSTALL-ONLY; it does not establish upgrade viability, and the
+  LIVE-ORG DEPLOY of v0.1.8 stays BLOCKED on Phase 0 (schema upgrade)
+  regardless of how green this plan ends.
 - The product owner's spirit acceptance closes the plan: features verified
   against the release theme (switching proven live) and gh#11 semantics.
 
