@@ -20,7 +20,10 @@ Already-standing evidence (preserved, not re-run):
   (finding 22 outstanding) — e2e-cold-install-2026-08-14.md.
 - Gibson isolated install (port 12373): refusal battery PASSED
   (same_harness, unknown_harness, needs_onboarding); vendor-verbatim
-  failure reporting observed (credential-incident fix proven in release).
+  failure reporting observed. PROVENANCE: VERSION-UNVERIFIED per watchdog
+  attestation (asg_2aa46337 — a baseline specimen showed CLI 0.1.8 vs a
+  gateway requiring 0.1.7 on that install); cite only as mixed-version
+  evidence, nonblocking; shrdlu S3 CONTROLS the refusal surface.
 
 ## Machine choice, with reasons (AMENDED v2.1 per Mike's correction:
 ## shrdlu and tars are THE test machines; gibson hosts the live org and is
