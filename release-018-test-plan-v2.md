@@ -115,10 +115,7 @@ SHRDLU (S lane — the release theme lives here):
   read-only .backup of the moved-aside DB taken NOW; the pre-exposure
   gap stays a NAMED LIMIT per the owner's acceptance ruling. The
   mandatory pre-boot readback+backup pair binds every FUTURE staging.
-  STATUS: S1 evidence from the isolated form (specs 7281952) is MARKED
-  UNPROVEN for this acceptance — recorded, not credited; S1b's ceremony
-  evidence (6247d1a) is tied to the withdrawn base and must be RE-RUN on
-  the replaced install.
+  (Isolated-form crediting is stated once in the STATUS block above.)
 - S1b (v2.3, review finding 3): the MANDATORY pair-then-connect ceremony
   per docs/TEST-HOSTS.md section 3a, BEFORE any onboarding or e2e
   evidence. DRIVER FORM PINNED (v2.9/I3): against a service-held standard
