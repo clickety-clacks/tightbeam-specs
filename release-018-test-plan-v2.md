@@ -53,18 +53,30 @@ SHRDLU (S lane — the release theme lives here):
   the smoke requires it.
 - S2. Onboard claude AND codex (credentials exist on shrdlu; stdin flows).
 - S3. CROSS-HARNESS SWITCH BATTERY (the release theme): claude -> codex ->
-  claude via the tune verb on a live session; the three named refusals
-  re-proven here (same_harness, unknown_harness, needs_onboarding);
-  continuity semantics observed and recorded: history preserved as record +
-  pointer at the swap, bounded self-read available, NO auto-replay.
+  claude via the tune verb on a live session. ACCEPTANCE (v2.2, review
+  finding 1 — tune-verb success alone is NOT green): (a) a real COMPLETED
+  TURN on each leg — claude before any switch, codex after the first
+  switch, claude after the switch back — with turn ids captured; (b)
+  continuity proven by a transcript read: the pre-switch history present
+  as record and the pointer visible at the swap boundary; (c) NO
+  auto-replay demonstrated: the post-switch transcript contains no
+  re-injected history, and self-read happens only on demand and bounded.
+  The three named refusals re-proven (same_harness, unknown_harness,
+  needs_onboarding), each with its exact refusal text.
 - S4. Finding 22 re-check on 0.1.8: the codex J5 commit-ordering journey.
   If it reproduces unchanged, record and keep OPEN (known, not a
   regression); if it worsens, surface to mike before continuing.
-- S5. STAMP-REFUSAL acceptance, non-destructive: COPY shrdlu's intact
-  0.1.7 state.db to a scratch path; point the isolated 0.1.8 gateway at the
-  copy; expect the named refusal citing model-identity-message-envelope-v2
-  and this-build operator-decision-requests-v1. The original 0.1.7 install
-  is never touched. (This is the ONLY upgrade-adjacent test in scope — the
+- S5. STAMP-REFUSAL acceptance, non-destructive: snapshot shrdlu's intact
+  0.1.7 state.db via the SQLITE ONLINE BACKUP method from a READ-ONLY
+  connection (v2.2, review finding 2 — a plain file copy of a live DB is
+  not a defined-consistent snapshot):
+  `sqlite3 'file:<orig>?mode=ro' ".backup <scratch>/state.db"`. Point the
+  isolated 0.1.8 gateway at the SNAPSHOT; expect the named refusal citing
+  model-identity-message-envelope-v2 and this-build
+  operator-decision-requests-v1. UNTOUCHED-ORIGINAL PROOF required:
+  sha256 of the original state.db, -wal, and -shm plus an ls -la of the
+  auth/ dir, captured BEFORE and AFTER the whole S5 exercise —
+  byte-identical or the test is void regardless of the refusal outcome. (This is the ONLY upgrade-adjacent test in scope — the
   upgrade PATH itself has no tool yet; that is Phase 0 on mike's queue and
   explicitly NOT this plan's scope.)
 - S6. Credential-incident codex half where re-onboarding is possible: a
