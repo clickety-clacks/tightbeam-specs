@@ -78,21 +78,33 @@ SHRDLU (S lane — the release theme lives here):
   refusal, then moved aside. Finding 14
   trap: `cargo build --release` before any e2e driver use;
   EFFORT_CHECKIN_HORIZON_MS=2500 drop-in where the smoke requires it.
-  AUTH PATH (v2.7b ruling, hazard att_1c37a9cb): the in-place install
-  ADOPTS a retained auth dir without ceremony (recorded as a release
-  finding — upgrade-semantics asymmetry: credential continuity while org
-  rows refuse). For the TEST org, the retained auth dir moves aside WHOLE
-  beside the moved-aside state.db — MOVE ONLY, never read/copy/hash
-  credential contents; filenames+mtimes via ls only — restoring
-  TEST-HOSTS 3b (fresh-never-adopted) and revalidating S2b's natural
-  needs_onboarding fixture.
+  WHOLE-BASE RESET (v2.9/R2 ruling, superseding the v2.7b auth-only
+  scope, which the supplement proved insufficient): the in-place install
+  ADOPTS retained state without ceremony (release finding — credential
+  continuity while org rows refuse), and the fresh org BOOTED with
+  retained auth/identity/homes present, so its own state.db may embed
+  the adoption. Therefore: (a) move aside the ENTIRE retained base
+  contents — auth/, identity/, homes/, and any residue — preserved
+  UNREAD beside the moved-aside DB (move only; names+mtimes trail); (b)
+  the current fresh state.db is DISCARDED-BY-MOVE-ASIDE too, labeled
+  contaminated-fresh; (c) fresh first boot on the clean base (no refusal
+  expected — the old DB is gone; S1's refusal capture predates this and
+  is UNAFFECTED), then S1b RE-RUNS — this ONE repeat is RULED
+  deliberately, not implied; (d) ALL credited credentials originate from
+  S2 ceremonies — nothing adopted counts; (e) the armed OAuth ceremony
+  targets the pre-reset base: LET IT EXPIRE per the standing protocol
+  and re-arm only after the reset, on mike's real-time go.
   STATUS: S1 evidence from the isolated form (specs 7281952) is MARKED
   UNPROVEN for this acceptance — recorded, not credited; S1b's ceremony
   evidence (6247d1a) is tied to the withdrawn base and must be RE-RUN on
   the replaced install.
 - S1b (v2.3, review finding 3): the MANDATORY pair-then-connect ceremony
   per docs/TEST-HOSTS.md section 3a, BEFORE any onboarding or e2e
-  evidence — it establishes the admin user and the Main stream; without it
+  evidence. DRIVER FORM PINNED (v2.9/I3): against a service-held standard
+  port the driver runs `mix run --no-start` ONLY — dependency apps via
+  ensure_all_started on named client deps, never :tightbeam — and the
+  exact command goes into evidence (the ceremony is a wire-client act by
+  contract; auto-start boots a second app into the held port) — it establishes the admin user and the Main stream; without it
   S2 has no admin to onboard under and the install has no Main. Evidence:
   the ceremony's own output + the resulting admin/Main rows.
 - S2 (v2.4, finding 3 — ORDER MATTERS: needs_onboarding has no safe
