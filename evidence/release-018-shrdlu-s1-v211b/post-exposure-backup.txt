@@ -1,0 +1,44 @@
+Release 0.1.8 / SHRDLU S1 v2.11b transition backup
+UTC window: 2026-08-15 18:45:50-18:46:28
+Plan HEAD observed before action: 03b886e (v2.11b)
+Host/account/base: shrdlu / clu / /home/clu/.tightbeam
+
+Authorized source:
+  /home/clu/.tightbeam/moved-aside-v017-20260815T180853Z/state.db
+
+Source before:
+  inode=15468588
+  size=3182592
+  mtime=2026-08-15 18:08:28.232649543 +0000
+  sha256=a177ad1c542cda3ac759d9169c4052b2b1b18177cd61abeaa4b65db3c8c59ebb
+
+Names+mtimes before:
+  state.db      1786817308.2326495430
+  state.db-shm  1786817718.7575933980
+  state.db-wal  1786817355.7884267900
+
+Exact backup command:
+  sqlite3 'file:/home/clu/.tightbeam/moved-aside-v017-20260815T180853Z/state.db?mode=ro' ".backup '/home/clu/.tightbeam/moved-aside-v017-20260815T180853Z/state.post-exposure-ro-backup-20260815T184550Z.db'"
+
+Backup result:
+  path=/home/clu/.tightbeam/moved-aside-v017-20260815T180853Z/state.post-exposure-ro-backup-20260815T184550Z.db
+  inode=15468473
+  size=3182592
+  mtime=2026-08-15 18:46:09.322249449 +0000
+  sha256=76a581247b42a2c6260278b8de40aa017491e8a15e2a14ac916fa521451af086
+  PRAGMA integrity_check=ok
+  schema_stamp=coordination-fabric-v1-phase1-v3
+
+Source after:
+  inode=15468588
+  size=3182592
+  mtime=2026-08-15 18:08:28.232649543 +0000
+  sha256=a177ad1c542cda3ac759d9169c4052b2b1b18177cd61abeaa4b65db3c8c59ebb
+
+Finding: mode=ro was not side-effect-free for the existing SQLite SHM.
+The preserved source state.db-shm mtime changed from
+1786817718.7575933980 to 1786819569.3092484900 during the backup open.
+The source state.db inode/size/mtime/hash stayed unchanged and the source
+state.db-wal mtime stayed 1786817355.7884267900. Read-only verification of
+the new backup also created zero/auxiliary WAL/SHM files beside the NEW
+backup. Every artifact and sidecar is preserved; nothing was deleted.

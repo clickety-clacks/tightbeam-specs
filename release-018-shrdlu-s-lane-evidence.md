@@ -328,6 +328,36 @@ Accordingly, this run carries a named pristine-proof limitation under the
 v2.8 acceptance draft. It must not be silently credited as satisfying the new
 mandatory pre-boot backup requirement.
 
+### v2.11b transition backup — COMPLETE WITH READ-ONLY SIDECAR FINDING
+
+Window: 2026-08-15 18:45:50–18:46:28 UTC. Plan HEAD was `03b886e`
+(v2.11b). Under the product owner's one-action authorization, SQLite opened
+the preserved moved-aside DB through a `mode=ro` URI and wrote a uniquely
+named post-exposure online backup beside it:
+
+```sh
+sqlite3 'file:/home/clu/.tightbeam/moved-aside-v017-20260815T180853Z/state.db?mode=ro' \
+  ".backup '/home/clu/.tightbeam/moved-aside-v017-20260815T180853Z/state.post-exposure-ro-backup-20260815T184550Z.db'"
+```
+
+The new backup is 3,182,592 bytes, has SHA-256
+`76a581247b42a2c6260278b8de40aa017491e8a15e2a14ac916fa521451af086`,
+passes `PRAGMA integrity_check` as `ok`, and reads stamp
+`coordination-fabric-v1-phase1-v3`. The source DB remained inode `15468588`,
+3,182,592 bytes, mtime `2026-08-15 18:08:28.232649543 +0000`, and SHA-256
+`a177ad1c542cda3ac759d9169c4052b2b1b18177cd61abeaa4b65db3c8c59ebb`
+before and after.
+
+Important finding: the plan/authorization described the read-only backup as
+touching nothing, but SQLite's `mode=ro` open updated the existing preserved
+source `state.db-shm` mtime from `1786817718.7575933980` to
+`1786819569.3092484900`. The source WAL mtime stayed unchanged. Read-only
+verification also created WAL/SHM sidecars beside the NEW backup. All source,
+backup, and sidecar artifacts remain preserved; nothing was removed. Exact
+names, mtimes, stats, hashes, command, and validation result are in
+`evidence/release-018-shrdlu-s1-v211b/post-exposure-backup.txt`. No gateway,
+base reset, auth, boot, S1b, OAuth, or S2 mutation accompanied this action.
+
 ## S1b v2.7 — pair then connect on replaced install: PASS
 
 Window: 2026-08-15 18:10:44–18:14:33 UTC. The v0.1.8 tag source was prepared
