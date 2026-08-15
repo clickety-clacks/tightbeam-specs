@@ -85,7 +85,11 @@ SHRDLU (S lane — the release theme lives here):
   retained auth/identity/homes present, so its own state.db may embed
   the adoption. Therefore: (a) move aside the ENTIRE retained base
   contents — auth/, identity/, homes/, and any residue — preserved
-  UNREAD beside the moved-aside DB (move only; names+mtimes trail); (b)
+  UNREAD beside the moved-aside DB (move only; names+mtimes trail);
+  homes/ retention is NOT an option (v2.10/B5): sweep_auth
+  (becb130 homes.ex:316, boot path) harvests homes/*/<harness> into the
+  auth store at EVERY boot, so retained homes re-adopt old credentials
+  after any auth-only move — whole-base is the only closing form; (b)
   the current fresh state.db is DISCARDED-BY-MOVE-ASIDE too, labeled
   contaminated-fresh; (c) fresh first boot on the clean base (no refusal
   expected — the old DB is gone; S1's refusal capture predates this and
@@ -94,6 +98,15 @@ SHRDLU (S lane — the release theme lives here):
   S2 ceremonies — nothing adopted counts; (e) the armed OAuth ceremony
   targets the pre-reset base: LET IT EXPIRE per the standing protocol
   and re-arm only after the reset, on mike's real-time go.
+  TRANSITION CLAUSE (v2.10/B4 — the executed run predates v2.8's
+  mandatory pre-boot backup and must not fail audit-at-HEAD forever):
+  the already-executed run is CREDITED via compensating proof — pre-boot
+  SOURCE_STAMP readback banked; refusal text = readback + build strings
+  (vindicated); moved-aside DB inode/mtime/size recorded stable across
+  the refusal boot with ACTIVE_DB_PATHS_ABSENT evidence; a POST-exposure
+  read-only .backup of the moved-aside DB taken NOW; the pre-exposure
+  gap stays a NAMED LIMIT per the owner's acceptance ruling. The
+  mandatory pre-boot readback+backup pair binds every FUTURE staging.
   STATUS: S1 evidence from the isolated form (specs 7281952) is MARKED
   UNPROVEN for this acceptance — recorded, not credited; S1b's ceremony
   evidence (6247d1a) is tied to the withdrawn base and must be RE-RUN on
