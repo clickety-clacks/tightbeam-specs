@@ -85,7 +85,8 @@ SHRDLU (S lane — the release theme lives here):
   retained auth/identity/homes present, so its own state.db may embed
   the adoption. Therefore: (a0) STOP THE RUNNING 0.1.8 GATEWAY/SERVICE on 11373 FIRST
   (v2.11/I5 — the whole-base move must never run under a serving
-  gateway; record the stop in evidence), THEN (a) move aside the ENTIRE
+  gateway; record the stop AND a port-11373-free proof, e.g.
+  `ss -ltnp` showing nothing bound, in evidence), THEN (a) move aside the ENTIRE
   retained base
   contents — auth/, identity/, homes/, and any residue — preserved
   UNREAD beside the moved-aside DB (move only; names+mtimes trail);
