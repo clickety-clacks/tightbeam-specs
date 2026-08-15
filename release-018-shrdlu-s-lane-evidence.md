@@ -304,6 +304,30 @@ No credential file was read, copied, moved, or deleted. Companion evidence
 is in `evidence/release-018-shrdlu-s1-v27/`. Sanitized summaries deliberately
 exclude the prior Erlang distribution cookie.
 
+### v2.8 retrospective audit — named pristine-proof limit
+
+Plan-under-review commit `2592ed6` made two pre-first-boot artifacts explicit
+S1 acceptance requirements. The existing v2.7 capture answers them as follows:
+
+1. **Pre-boot stamp readback: captured and matching.** Before the first 0.1.8
+   boot, a read-only connection executed `SELECT shape FROM schema_stamp`
+   against the real 0.1.7 DB and returned exactly
+   `coordination-fabric-v1-phase1-v3`. The real refusal cited that exact string
+   as `stamped:` and cited `operator-decision-requests-v1` as `this build:`.
+   The observed database therefore did not carry the plan text's illustrative
+   `model-identity-v1` value; the readback-based oracle correctly follows the
+   actual DB rather than a hardcoded expected source stamp.
+2. **Pre-boot read-only SQLite backup: NOT TAKEN.** No
+   `sqlite3 'file:...?mode=ro' ".backup ..."` artifact was created before the
+   first 0.1.8 boot. The original DB was moved aside afterward with inode and
+   checksum preserved, but that post-refusal preservation is not a substitute
+   for a pristine pre-exposure backup while refuse-before-write is itself under
+   test.
+
+Accordingly, this run carries a named pristine-proof limitation under the
+v2.8 acceptance draft. It must not be silently credited as satisfying the new
+mandatory pre-boot backup requirement.
+
 ## S1b v2.7 — pair then connect on replaced install: PASS
 
 Window: 2026-08-15 18:10:44–18:14:33 UTC. The v0.1.8 tag source was prepared
