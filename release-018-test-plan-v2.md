@@ -112,7 +112,13 @@ SHRDLU (S lane — the release theme lives here):
   SOURCE_STAMP readback banked; refusal text = readback + build strings
   (vindicated); moved-aside DB inode/mtime/size recorded stable across
   the refusal boot with ACTIVE_DB_PATHS_ABSENT evidence; a POST-exposure
-  read-only .backup of the moved-aside DB taken NOW; the pre-exposure
+  read-only .backup of the moved-aside DB taken NOW; STABILITY CRITERION
+  SCOPE (v2.11d, finding att_960bf8a0): stability binds state.db and
+  -wal CONTENT/inode/size — the -shm file is EXCLUDED as
+  connection-scratch (SQLite touches it on ANY connection incl. mode=ro;
+  the authorized backup itself changed its mtime, self-inflicted and
+  explained); content sha256 of the moved-aside state.db and -wal,
+  recorded at backup time, is the binding stability evidence forward; the pre-exposure
   gap stays a NAMED LIMIT per the owner's acceptance ruling. The
   mandatory pre-boot readback+backup pair binds every FUTURE staging.
   (Isolated-form crediting is stated once in the STATUS block above.)
