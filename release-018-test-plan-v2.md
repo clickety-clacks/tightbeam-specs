@@ -106,7 +106,15 @@ SHRDLU (S lane — the release theme lives here):
   explicitly NOT this plan's scope.)
 - S6. Credential-incident codex half where re-onboarding is possible: a
   deliberately failed onboarding must NOT restore the previous credential
-  silently; the circuit must not gate credential installation. Record both.
+  silently; the circuit must not gate credential installation. ACCEPTANCE
+  (v2.6 — the circuit half is VACUOUS while the circuit is closed): the
+  circuit-does-not-gate proof requires the PRESERVED INCIDENT
+  PRECONDITION — codex adapter circuit demonstrably OPEN first
+  (e.g. consecutiveFailures at threshold, captured), THEN credential
+  install succeeds WITHOUT a gateway restart, the credential fingerprint
+  changes with NO prior-credential restore, and durable status/health is
+  recorded after. 0.2-build-ledger.md incident-part-2 records this exact
+  valid proof shape and the discarded fake passes — match it.
 - S7 (was G1). gh#11 operator decision requests, full lifecycle: file
   (--key idempotency retry), list, recommend (proxy label, non-resolving),
   rule (owner-only; non-owner refusal named), withdraw, supersede.
