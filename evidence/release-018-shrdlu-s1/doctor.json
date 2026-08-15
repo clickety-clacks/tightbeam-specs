@@ -1,0 +1,178 @@
+{
+  "adapter_candidates": [
+    {
+      "cwd": "/home/clu",
+      "elapsed_s": 49286,
+      "evidence": "environ_exact",
+      "executable": "/home/clu/.tightbeam/bin/tightbeam",
+      "harness": "claude",
+      "lineage": "claude@shrdlu",
+      "lineage_raw_b64": "dGIxLVkyeGhkV1JsUUhOb2NtUnNkUQ==",
+      "pgid": 899539,
+      "pid": 899539,
+      "ppid": 886531,
+      "started_at_s": 1786766158
+    },
+    {
+      "cwd": "/home/clu",
+      "elapsed_s": 49286,
+      "evidence": "environ_exact",
+      "executable": "/usr/bin/node",
+      "harness": "claude",
+      "lineage": "claude@shrdlu",
+      "lineage_raw_b64": "dGIxLVkyeGhkV1JsUUhOb2NtUnNkUQ==",
+      "pgid": 899541,
+      "pid": 899541,
+      "ppid": 899539,
+      "started_at_s": 1786766158
+    },
+    {
+      "cwd": "/home/clu",
+      "elapsed_s": 1,
+      "evidence": "none_observed",
+      "executable": "/usr/bin/dash",
+      "harness": "claude",
+      "lineage": null,
+      "lineage_raw_b64": null,
+      "pgid": 1378902,
+      "pid": 1378902,
+      "ppid": 1378822,
+      "started_at_s": 1786815443
+    },
+    {
+      "cwd": "/home/clu",
+      "elapsed_s": 1,
+      "evidence": "none_observed",
+      "executable": "/usr/bin/dash",
+      "harness": "codex",
+      "lineage": null,
+      "lineage_raw_b64": null,
+      "pgid": 1378902,
+      "pid": 1378902,
+      "ppid": 1378822,
+      "started_at_s": 1786815443
+    },
+    {
+      "cwd": "/home/clu",
+      "elapsed_s": 1,
+      "evidence": "none_observed",
+      "executable": "/usr/bin/node",
+      "harness": "claude",
+      "lineage": null,
+      "lineage_raw_b64": null,
+      "pgid": 1378902,
+      "pid": 1378903,
+      "ppid": 1378902,
+      "started_at_s": 1786815443
+    },
+    {
+      "cwd": "/home/clu",
+      "elapsed_s": 1,
+      "evidence": "none_observed",
+      "executable": "/usr/bin/node",
+      "harness": "codex",
+      "lineage": null,
+      "lineage_raw_b64": null,
+      "pgid": 1378902,
+      "pid": 1378903,
+      "ppid": 1378902,
+      "started_at_s": 1786815443
+    },
+    {
+      "cwd": null,
+      "elapsed_s": 1035012,
+      "evidence": "env_unreadable",
+      "executable": null,
+      "harness": "codex",
+      "lineage": null,
+      "lineage_raw_b64": null,
+      "pgid": 3749937,
+      "pid": 3749937,
+      "ppid": 3749402,
+      "started_at_s": 1785780432
+    },
+    {
+      "cwd": null,
+      "elapsed_s": 1001443,
+      "evidence": "env_unreadable",
+      "executable": null,
+      "harness": "codex",
+      "lineage": null,
+      "lineage_raw_b64": null,
+      "pgid": 3946678,
+      "pid": 3946678,
+      "ppid": 3946074,
+      "started_at_s": 1785814001
+    }
+  ],
+  "base_dir": {
+    "adapter_stderr_log_count": 0,
+    "entries": {
+      "adapters": "present",
+      "assets": "absent",
+      "auth": "present",
+      "bin": "present",
+      "gateway.json": "present",
+      "homes": "present",
+      "identity": "present",
+      "staging": "absent",
+      "state.db": "present",
+      "work": "present"
+    },
+    "path": "/home/clu/tb018-s-lane/home",
+    "status": "present"
+  },
+  "collection_ms": 32,
+  "epistemics": {
+    "absence_means": "possibly_laundered",
+    "census_grade": "accident",
+    "lineage_is_claim": true,
+    "notes": [],
+    "pids_env_unreadable": 294,
+    "pids_scanned": 326,
+    "platform_limits": [
+      "environ is ptrace-gated; other-user and protected processes are unreadable",
+      "procfs may hide processes entirely",
+      "markers are spoofable env content"
+    ]
+  },
+  "host": {
+    "hostname": "shrdlu",
+    "platform": "linux",
+    "probe_version": "0.1.8"
+  },
+  "identity_candidates": {
+    "claude@shrdlu": [
+      899539,
+      899541
+    ]
+  },
+  "marked_candidates": [
+    {
+      "cwd": "/home/clu",
+      "elapsed_s": 49286,
+      "evidence": "environ_exact",
+      "executable": "/home/clu/.tightbeam/bin/tightbeam",
+      "lineage": "claude@shrdlu",
+      "lineage_raw_b64": "dGIxLVkyeGhkV1JsUUhOb2NtUnNkUQ==",
+      "pgid": 899539,
+      "pid": 899539,
+      "ppid": 886531,
+      "started_at_s": 1786766158
+    },
+    {
+      "cwd": "/home/clu",
+      "elapsed_s": 49286,
+      "evidence": "environ_exact",
+      "executable": "/usr/bin/node",
+      "lineage": "claude@shrdlu",
+      "lineage_raw_b64": "dGIxLVkyeGhkV1JsUUhOb2NtUnNkUQ==",
+      "pgid": 899541,
+      "pid": 899541,
+      "ppid": 899539,
+      "started_at_s": 1786766158
+    }
+  ],
+  "probed_at_ms": 1786815444902,
+  "schema": "tightbeam.probe.v1"
+}

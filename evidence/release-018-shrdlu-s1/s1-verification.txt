@@ -1,0 +1,9 @@
+VERIFY_UTC=2026-08-15T17:37:39Z
+INSTALLED_CLI_VERSION=0.1.8
+PACKAGE_SHA256=faf202f5f7057a00f478df54a60998650ddc96d2248813a3e3823775d0737630
+SOURCE_HEAD=becb13072624fce1129cfce377882bc2fb647cb8
+RUST_CLI=/home/clu/tb018-s-lane/source/cli/target/release/tightbeam: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 3.2.0, BuildID[sha1]=690e0f250fb44fb2418ad7f3abc756d5b976d197, not stripped
+BASE_STATE=/home/clu/tb018-s-lane/home/state.db size=4096 mtime=2026-08-15 17:37:23.826956608 +0000
+ISOLATED_PID=1378774
+LIVE017_PID=886487
+TMUX=tb018-s-lane: 1 windows (created Sat Aug 15 17:37:22 2026)

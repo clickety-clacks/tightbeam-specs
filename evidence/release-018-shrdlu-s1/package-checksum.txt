@@ -1,0 +1,2 @@
+tightbeam-0.1.8-darwin-aarch64-becb130.tgz: FAILED open or read
+tightbeam-0.1.8-linux-x86_64-becb130.tgz: OK

@@ -1,0 +1,48 @@
+
+17:37:23.872 [warning] model catalog claude on shrdlu refresh degraded: {:needs_onboarding, :missing}
+
+17:37:23.872 [warning] model catalog codex on shrdlu refresh degraded: {:needs_onboarding, :missing}
+
+17:37:23.882 [info] Running Tightbeam.Wire.Router with Bandit 1.12.1 at 0.0.0.0:12374 (http)
+
+17:37:23.883 [info] installing ACP adapters into /home/clu/tb018-s-lane/home/adapters on shrdlu — npm can take minutes on a cold cache
+
+17:37:32.213 [info] ACP adapter install into /home/clu/tb018-s-lane/home/adapters on shrdlu complete
+
+17:37:32.217 [warning] adapter provisioning for claude on shrdlu did not complete: host shrdlu is not ready for claude: Tightbeam has no credential for anthropic on shrdlu. It does not use or import your normal claude CLI login; Tightbeam keeps its own credential under /home/clu/tb018-s-lane/home/auth. Run on shrdlu: tightbeam onboard anthropic --as-user <userId>
+
+17:37:32.230 [warning] adapter provisioning for codex on shrdlu did not complete: host shrdlu is not ready for codex: Tightbeam has no credential for openai on shrdlu. It does not use or import your normal codex CLI login; Tightbeam keeps its own credential under /home/clu/tb018-s-lane/home/auth. Run on shrdlu: tightbeam onboard openai --as-user <userId>
+
+17:37:32.230 [warning] model catalog claude on shrdlu refresh degraded: {:needs_onboarding, {:credential_store_unreadable, %{path: "/home/clu/tb018-s-lane/home/auth/claude/.tightbeam/credential.json", found: :missing, expected: :readable_file}}}
+
+17:37:32.230 [warning] model catalog codex on shrdlu refresh degraded: {:needs_onboarding, {:credential_store_unreadable, %{path: "/home/clu/tb018-s-lane/home/auth/codex/.tightbeam/credential.json", found: :missing, expected: :readable_file}}}
+
+17:37:32.230 [warning] model catalog claude on shrdlu refresh degraded: {:needs_onboarding, {:credential_store_unreadable, %{path: "/home/clu/tb018-s-lane/home/auth/claude/.tightbeam/credential.json", found: :missing, expected: :readable_file}}}
+
+17:37:32.230 [warning] model catalog codex on shrdlu refresh degraded: {:needs_onboarding, {:credential_store_unreadable, %{path: "/home/clu/tb018-s-lane/home/auth/codex/.tightbeam/credential.json", found: :missing, expected: :readable_file}}}
+
+17:37:32.407 [warning] model catalog claude on shrdlu refresh degraded: {:needs_onboarding, {:credential_store_unreadable, %{path: "/home/clu/tb018-s-lane/home/auth/claude/.tightbeam/credential.json", found: :missing, expected: :readable_file}}}
+
+17:37:32.407 [warning] model catalog codex on shrdlu refresh degraded: {:needs_onboarding, {:credential_store_unreadable, %{path: "/home/clu/tb018-s-lane/home/auth/codex/.tightbeam/credential.json", found: :missing, expected: :readable_file}}}
+
+17:37:32.461 [info] NOT READY: no harness on any host can run a turn. The gateway is
+
+17:37:32.461 [info] serving, so clients can connect, but every turn will fail until the
+
+17:37:32.461 [info] gaps below are closed.
+
+17:37:32.461 [info] 
+
+17:37:32.461 [info]   claude on shrdlu:
+
+17:37:32.461 [info]     no credential on shrdlu ({:credential_store_unreadable, %{path: "/home/clu/tb018-s-lane/home/auth/claude/.tightbeam/credential.json", found: :missing, expected: :readable_file}}) — this host's model catalog is empty, so no model can be selected here. Onboard it with: tightbeam onboard anthropic --as-user <userId> on shrdlu
+
+17:37:32.461 [info] 
+
+17:37:32.461 [info]   codex on shrdlu:
+
+17:37:32.461 [info]     no credential on shrdlu ({:credential_store_unreadable, %{path: "/home/clu/tb018-s-lane/home/auth/codex/.tightbeam/credential.json", found: :missing, expected: :readable_file}}) — this host's model catalog is empty, so no model can be selected here. Onboard it with: tightbeam onboard openai --as-user <userId> on shrdlu
+
+17:37:32.461 [info] 
+
+17:37:32.461 [info] Diagnose further with: mix tightbeam.doctor (base_dir /home/clu/tb018-s-lane/home)
