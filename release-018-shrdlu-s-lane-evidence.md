@@ -464,3 +464,17 @@ same active Main. Read-only DB counts were users/admin-mike/devices/sessions
 This post-reset S1b is the single crediting run. The old retained-auth S2
 blocker is resolved: both Claude and Codex are now naturally un-onboarded.
 OAuth remains unarmed under the product-owner-only per-instance rule.
+
+The later cookie-exposure disposition initially assumed the whole-base reset
+also rotated the Erlang distribution cookie. Read-only path resolution proved
+otherwise: the release launcher reads `release/releases/COOKIE` from the
+installed package tree, outside the base. That mechanism finding is
+`att_dc649617`. Under the corrected product-owner ruling `att_17f3b73`, the
+known gateway was stopped, the installed cookie was overwritten with fresh
+256-bit randomness without displaying either value, and an in-shell hash
+comparison returned only `COOKIE_DIFFERS=yes`. Mode tightened from `664` to
+`600`; the file retained inode `15467050`. The 0.1.8 gateway restarted on
+11373, Main remained active, both provider credentials remained naturally
+missing, and both harness CLIs were runnable. The repeated shutdown delay
+(Ctrl-C and SIGTERM each exceeded 20 seconds before exact SIGKILL) is banked as
+`att_a6a5fab0`. OAuth remained unarmed and S2 did not run.

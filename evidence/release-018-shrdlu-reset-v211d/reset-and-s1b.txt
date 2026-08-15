@@ -93,3 +93,25 @@ query (att_5037661f):
 
 No OAuth ceremony was armed. No credential file content was read, copied,
 hashed, or imported.
+
+Post-reset Erlang cookie rotation supplement:
+  Authority: PO coordination att_17f3b73 after tester finding att_dc649617.
+  The serving release cookie was confirmed outside the reset base at
+  /home/clu/.local/lib/node_modules/tightbeam/release/releases/COOKIE.
+  Before rotation: inode=15467050 size=56 mode=664
+    mtime=2026-08-15 18:08:32.298973532 +0000.
+  Exact gateway PID 1414330 matched beam.smp, cwd /home/clu, and the installed
+  0.1.8 release executable. Tmux C-c and then SIGTERM each exceeded a full
+  20-second grace; exact-target SIGKILL was required. PID, port 11373, and the
+  tmux target were absent before the overwrite. The repeated shutdown finding
+  is att_a6a5fab0.
+  A fresh 256-bit random cookie was written with an umask-protected command;
+  neither old nor new value was displayed or retained in evidence. Hashes were
+  compared only in shell variables and emitted COOKIE_DIFFERS=yes.
+  After rotation: inode=15467050 size=65 mode=600
+    mtime=2026-08-15 19:22:34.166899974 +0000.
+  Gateway 0.1.8 restarted on port 11373 as PID 1421052 with the same base and
+  explicit local/asdf/system PATH. Main remained active. Both Claude and Codex
+  credential stores remained missing/needs_onboarding; Claude 2.1.232 and
+  Codex CLI 0.147.0 were runnable from /home/clu/.local/bin.
+  OAuth remained unarmed; S2 did not run.
