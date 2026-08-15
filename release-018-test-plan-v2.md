@@ -83,7 +83,10 @@ SHRDLU (S lane — the release theme lives here):
   ADOPTS retained state without ceremony (release finding — credential
   continuity while org rows refuse), and the fresh org BOOTED with
   retained auth/identity/homes present, so its own state.db may embed
-  the adoption. Therefore: (a) move aside the ENTIRE retained base
+  the adoption. Therefore: (a0) STOP THE RUNNING 0.1.8 GATEWAY/SERVICE on 11373 FIRST
+  (v2.11/I5 — the whole-base move must never run under a serving
+  gateway; record the stop in evidence), THEN (a) move aside the ENTIRE
+  retained base
   contents — auth/, identity/, homes/, and any residue — preserved
   UNREAD beside the moved-aside DB (move only; names+mtimes trail);
   homes/ retention is NOT an option (v2.10/B5): sweep_auth
@@ -98,6 +101,10 @@ SHRDLU (S lane — the release theme lives here):
   S2 ceremonies — nothing adopted counts; (e) the armed OAuth ceremony
   targets the pre-reset base: LET IT EXPIRE per the standing protocol
   and re-arm only after the reset, on mike's real-time go.
+  STATUS, single-crediting (v2.11 refresh): S1 = CREDITED-WITH-NAMED-LIMIT
+  via the transition clause below; S1b = PASSED on the pre-reset base and
+  RE-RUNS after the whole-base reset (the re-run is the crediting run);
+  isolated-form evidence (7281952/6247d1a) = recorded, not credited.
   TRANSITION CLAUSE (v2.10/B4 — the executed run predates v2.8's
   mandatory pre-boot backup and must not fail audit-at-HEAD forever):
   the already-executed run is CREDITED via compensating proof — pre-boot
