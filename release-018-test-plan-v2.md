@@ -89,10 +89,16 @@ SHRDLU (S lane — the release theme lives here):
   `sqlite3 'file:<orig>?mode=ro' ".backup <scratch>/state.db"`. Point the
   isolated 0.1.8 gateway at the SNAPSHOT; expect the named refusal citing
   model-identity-message-envelope-v2 and this-build
-  operator-decision-requests-v1. UNTOUCHED-ORIGINAL PROOF required:
-  sha256 of the original state.db, -wal, and -shm plus an ls -la of the
-  auth/ dir, captured BEFORE and AFTER the whole S5 exercise —
-  byte-identical or the test is void regardless of the refusal outcome. (This is the ONLY upgrade-adjacent test in scope — the
+  operator-decision-requests-v1. UNTOUCHED-ORIGINAL PROOF (v2.4,
+  finding 4 — the LIVE 0.1.7 DB changes under its own traffic, so
+  before/after hash equality of the original is the WRONG criterion):
+  prove ISOLATION instead — (a) realpath + inode of snapshot vs original
+  distinct; (b) while the 0.1.8 gateway runs against the snapshot, an
+  lsof/FD listing shows it opened ONLY scratch paths, never the original
+  db/-wal/-shm or the 0.1.7 auth dir; (c) the isolated base's auth dir
+  hashed or proven absent; (d) read the SOURCE stamp from the SNAPSHOT
+  first (SELECT shape FROM schema_stamp) and expect the refusal to cite
+  that exact string plus this build's operator-decision-requests-v1. (This is the ONLY upgrade-adjacent test in scope — the
   upgrade PATH itself has no tool yet; that is Phase 0 on mike's queue and
   explicitly NOT this plan's scope.)
 - S6. Credential-incident codex half where re-onboarding is possible: a
