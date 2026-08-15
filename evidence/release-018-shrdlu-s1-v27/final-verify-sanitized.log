@@ -1,0 +1,18 @@
+FINAL_VERIFY_UTC=2026-08-15T18:15:18Z
+CLI_VERSION=0.1.8
+PACKAGE_SHA256=faf202f5f7057a00f478df54a60998650ddc96d2248813a3e3823775d0737630
+PLAN_COMMIT=8579cff
+HOST=shrdlu
+ACCOUNT=clu
+BASE=/home/clu/.tightbeam
+PORT=11373
+ACTIVE_STAMP=operator-decision-requests-v1
+MOVED_STAMP=coordination-fabric-v1-phase1-v3
+MOVED_SHA256=a177ad1c542cda3ac759d9169c4052b2b1b18177cd61abeaa4b65db3c8c59ebb
+GATEWAY_PID=1393618
+GATEWAY_EXE=/home/clu/.local/lib/node_modules/tightbeam/release/erts-16.4.0.5/bin/beam.smp
+RELEASE_DIRS=0.1.8
+WITHDRAWN_BASE_ABSENT
+PORT_12374_ABSENT
+State  Recv-Q Send-Q               Local Address:Port  Peer Address:PortProcess                                
+LISTEN 0      1024                       0.0.0.0:11373      0.0.0.0:*    users:(("beam.smp",pid=1393618,fd=23))

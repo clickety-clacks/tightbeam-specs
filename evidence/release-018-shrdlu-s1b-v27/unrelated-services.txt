@@ -1,0 +1,5 @@
+SERVICE_SCOPE_RECHECK_UTC=2026-08-15T18:14:33Z
+user:openclaw-gateway active
+user:subspace-daemon active
+system:postgresql@16-main active
+system:docker active

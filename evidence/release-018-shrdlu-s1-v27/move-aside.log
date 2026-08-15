@@ -1,0 +1,8 @@
+/home/clu/.tightbeam/state.db inode=15468588 size=3182592 mtime=2026-08-15 18:08:28.232649543 +0000
+a177ad1c542cda3ac759d9169c4052b2b1b18177cd61abeaa4b65db3c8c59ebb  /home/clu/.tightbeam/state.db
+MOVED_ASIDE_UTC=2026-08-15T18:09:15Z
+MOVED_DIR=/home/clu/.tightbeam/moved-aside-v017-20260815T180853Z
+/home/clu/.tightbeam/moved-aside-v017-20260815T180853Z/state.db inode=15468588 size=3182592 mtime=2026-08-15 18:08:28.232649543 +0000
+a177ad1c542cda3ac759d9169c4052b2b1b18177cd61abeaa4b65db3c8c59ebb  /home/clu/.tightbeam/moved-aside-v017-20260815T180853Z/state.db
+PRESERVED_STAMP=coordination-fabric-v1-phase1-v3
+ACTIVE_DB_PATHS_ABSENT

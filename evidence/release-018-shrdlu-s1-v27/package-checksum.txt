@@ -1,0 +1,2 @@
+tightbeam-0.1.8-linux-x86_64-becb130.tgz: OK
+faf202f5f7057a00f478df54a60998650ddc96d2248813a3e3823775d0737630  tightbeam-0.1.8-linux-x86_64-becb130.tgz

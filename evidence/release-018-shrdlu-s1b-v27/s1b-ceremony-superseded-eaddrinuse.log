@@ -1,0 +1,287 @@
+S1B_START_UTC=2026-08-15T18:12:04Z
+      warning: the following clause will never match:
+
+          {:error, reason}
+
+      because it attempts to match on the result of:
+
+          Tightbeam.Supervision.transition_in_txn(txn, observation)
+
+      which has type:
+
+          dynamic(
+            :armed or :canceled or :duplicate or :parent_elevated or :terminal_disposition or
+              {:admit, term()} or {:armed, float() or integer()}
+          )
+
+      typing violation found at:
+      │
+ 1781 │       {:error, reason} -> raise "supervision transition refused: #{inspect(reason)}"
+      │       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      │
+      └─ lib/tightbeam/assignments.ex:1781: Tightbeam.Assignments.supervision_transition!/3
+
+     warning: the following clause will never match:
+
+         {:error, reason}
+
+     because it attempts to match on the result of:
+
+         Tightbeam.Supervision.transition_in_txn(txn, %{
+           kind: "parent_target_retired",
+           session_key: session_key,
+           retirement_epoch: retirement_epoch,
+           principal: principal,
+           supervision_interval_ms: supervision_interval_ms
+         })
+
+     which has type:
+
+         dynamic(:armed or :duplicate or :parent_elevated)
+
+     typing violation found at:
+     │
+ 551 │       {:error, reason} -> raise "parent-target retirement refused: #{inspect(reason)}"
+     │       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/tightbeam/org.ex:551: Tightbeam.Org.retire_active_in_txn/4
+
+
+18:12:05.773 [warning] harness claude is installed but CANNOT RUN: its CLI is not on PATH — no session will be placed on it until this is fixed.
+
+18:12:05.805 [info] Boot default derived from onboarding: codex is the only onboarded harness on this machine, so a no-preference boot defaults to codex with its default model. An explicit default-harness preference overrides this.
+
+18:12:06.074 [error] Running Tightbeam.Wire.Router with Bandit 1.12.1 at http failed, port 11373 already in use
+
+18:12:06.074 [notice] Application tightbeam exited: exited in: Tightbeam.Application.start(:normal, [])
+    ** (EXIT) an exception was raised:
+        ** (MatchError) no match of right hand side value:
+
+    {:error,
+     {{:shutdown, {:failed_to_start_child, :listener, :eaddrinuse}},
+      {:child, :undefined, {Bandit, #Reference<0.3157948079.3629383686.118243>},
+       {Bandit, :start_link,
+        [
+          [
+            plug: {Tightbeam.Wire.Router,
+             %{
+               handlers: %{
+                 "add-user" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>,
+                 "identity-relearn" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "toplines" => #Function<92.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "artifact-get" => #Function<52.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "role-rm" => #Function<85.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "work-item-create" => #Function<87.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "assignments" => #Function<102.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "revoke-assignment" => #Function<101.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "spawn" => #Function<106.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "dispatch" => #Function<97.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "artifact-record" => #Function<51.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "role-bind" => #Function<84.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "host-env-unset" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "cancel" => #Function<104.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "work-item-icebox" => #Function<192.83451147/1 in Tightbeam.Gateway.work_item_disposition/3>,
+                 "promote-user" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>,
+                 "work-item-reopen" => #Function<192.83451147/1 in Tightbeam.Gateway.work_item_disposition/3>,
+                 "decision-request" => #Function<60.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "tune" => #Function<107.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "kungfu-scaffold" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "identity-edit" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "inspect" => #Function<103.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "learn" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "topline" => #Function<93.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "retire" => #Function<108.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "revoke-waiver" => #Function<57.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "artifacts" => #Function<53.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "identity-apply" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "update-clients" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>,
+                 "approve-device" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>,
+                 "work-item-trace" => #Function<89.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "condition" => #Function<49.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "role-list" => #Function<86.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "work-item-get" => #Function<88.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "attend" => #Function<91.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "assign" => #Function<96.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "deny-device" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>,
+                 "host-env-set" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "identity-repoint" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "effort-rule" => #Function<55.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "role-create" => #Function<83.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "identity-status" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "assignment-get" => #Function<100.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "onboard" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "facts-read" => #Function<50.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "work-item-list" => #Function<94.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "transcript" => #Function<90.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "withdraw" => #Function<58.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "waive" => #Function<56.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "kungfu-list" => #Function<75.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "harness-processes" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>,
+                 "critical" => #Function<105.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "attests" => #Function<99.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "decision-requests" => #Function<59.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "config" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>,
+                 "attest" => #Function<98.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "work-item-fail" => #Function<192.83451147/1 in Tightbeam.Gateway.work_item_disposition/3>,
+                 "register-host" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>,
+                 "rule" => #Function<54.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "work-item-close" => #Function<192.83451147/1 in Tightbeam.Gateway.work_item_disposition/3>,
+                 "host-env-list" => #Function<65.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "unlearn" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "work-item-update" => #Function<95.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "wake" => #Function<48.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "post" => #Function<47.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "revoke-device" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>
+               },
+               defaults: %{
+                 provider: #Function<40.83451147/0 in Tightbeam.Gateway.defaults/2>,
+                 model: %Tightbeam.Model{
+                   family: "gpt-5.6-sol",
+                   effort: "medium",
+                   context: nil
+                 },
+                 harness: :codex,
+                 archetype: "default"
+               },
+               base_dir: "/home/clu/.tightbeam",
+               db: Tightbeam.DB,
+               conn_registry: Tightbeam.ConnRegistry,
+               ...
+             }},
+            ...
+          ]
+        ]}, ...}}}
+
+            (tightbeam 0.1.8) lib/tightbeam/application.ex:64: anonymous fn/2 in Tightbeam.Application.start_tree/1
+            (elixir 1.19.5) lib/enum.ex:961: Enum."-each/2-lists^foreach/1-0-"/2
+            (tightbeam 0.1.8) lib/tightbeam/application.ex:63: Tightbeam.Application.start_tree/1
+            (kernel 10.6.3) application_master.erl:299: :application_master.start_it_old/4
+
+18:12:06.140 [notice] Application toml exited: :stopped
+
+18:12:06.140 [notice] Application websock_adapter exited: :stopped
+
+18:12:06.142 [notice] Application bandit exited: :stopped
+
+18:12:06.142 [notice] Application hpax exited: :stopped
+
+18:12:06.142 [notice] Application websock exited: :stopped
+
+18:12:06.143 [notice] Application plug exited: :stopped
+
+18:12:06.149 [notice] Application plug_crypto exited: :stopped
+
+18:12:06.149 [notice] Application mime exited: :stopped
+
+18:12:06.149 [notice] Application eex exited: :stopped
+
+18:12:06.149 [notice] Application thousand_island exited: :stopped
+
+18:12:06.149 [notice] Application exqlite exited: :stopped
+
+18:12:06.151 [notice] Application db_connection exited: :stopped
+
+18:12:06.154 [notice] Application telemetry exited: :stopped
+** (Mix) Could not start application tightbeam: exited in: Tightbeam.Application.start(:normal, [])
+    ** (EXIT) an exception was raised:
+        ** (MatchError) no match of right hand side value:
+
+    {:error,
+     {{:shutdown, {:failed_to_start_child, :listener, :eaddrinuse}},
+      {:child, :undefined, {Bandit, #Reference<0.3157948079.3629383686.118243>},
+       {Bandit, :start_link,
+        [
+          [
+            plug: {Tightbeam.Wire.Router,
+             %{
+               handlers: %{
+                 "add-user" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>,
+                 "identity-relearn" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "toplines" => #Function<92.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "artifact-get" => #Function<52.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "role-rm" => #Function<85.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "work-item-create" => #Function<87.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "assignments" => #Function<102.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "revoke-assignment" => #Function<101.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "spawn" => #Function<106.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "dispatch" => #Function<97.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "artifact-record" => #Function<51.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "role-bind" => #Function<84.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "host-env-unset" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "cancel" => #Function<104.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "work-item-icebox" => #Function<192.83451147/1 in Tightbeam.Gateway.work_item_disposition/3>,
+                 "promote-user" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>,
+                 "work-item-reopen" => #Function<192.83451147/1 in Tightbeam.Gateway.work_item_disposition/3>,
+                 "decision-request" => #Function<60.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "tune" => #Function<107.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "kungfu-scaffold" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "identity-edit" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "inspect" => #Function<103.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "learn" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "topline" => #Function<93.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "retire" => #Function<108.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "revoke-waiver" => #Function<57.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "artifacts" => #Function<53.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "identity-apply" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "update-clients" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>,
+                 "approve-device" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>,
+                 "work-item-trace" => #Function<89.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "condition" => #Function<49.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "role-list" => #Function<86.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "work-item-get" => #Function<88.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "attend" => #Function<91.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "assign" => #Function<96.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "deny-device" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>,
+                 "host-env-set" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "identity-repoint" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "effort-rule" => #Function<55.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "role-create" => #Function<83.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "identity-status" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "assignment-get" => #Function<100.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "onboard" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "facts-read" => #Function<50.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "work-item-list" => #Function<94.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "transcript" => #Function<90.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "withdraw" => #Function<58.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "waive" => #Function<56.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "kungfu-list" => #Function<75.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "harness-processes" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>,
+                 "critical" => #Function<105.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "attests" => #Function<99.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "decision-requests" => #Function<59.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "config" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>,
+                 "attest" => #Function<98.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "work-item-fail" => #Function<192.83451147/1 in Tightbeam.Gateway.work_item_disposition/3>,
+                 "register-host" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>,
+                 "rule" => #Function<54.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "work-item-close" => #Function<192.83451147/1 in Tightbeam.Gateway.work_item_disposition/3>,
+                 "host-env-list" => #Function<65.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "unlearn" => #Function<0.83451147/1 in Tightbeam.Gateway.admin_call_handler/2>,
+                 "work-item-update" => #Function<95.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "wake" => #Function<48.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "post" => #Function<47.83451147/1 in Tightbeam.Gateway.handlers/1>,
+                 "revoke-device" => #Function<1.83451147/1 in Tightbeam.Gateway.admin_handler/2>
+               },
+               defaults: %{
+                 provider: #Function<40.83451147/0 in Tightbeam.Gateway.defaults/2>,
+                 model: %Tightbeam.Model{
+                   family: "gpt-5.6-sol",
+                   effort: "medium",
+                   context: nil
+                 },
+                 harness: :codex,
+                 archetype: "default"
+               },
+               base_dir: "/home/clu/.tightbeam",
+               db: Tightbeam.DB,
+               conn_registry: Tightbeam.ConnRegistry,
+               ...
+             }},
+            ...
+          ]
+        ]}, ...}}}
+
+            (tightbeam 0.1.8) lib/tightbeam/application.ex:64: anonymous fn/2 in Tightbeam.Application.start_tree/1
+            (elixir 1.19.5) lib/enum.ex:961: Enum."-each/2-lists^foreach/1-0-"/2
+            (tightbeam 0.1.8) lib/tightbeam/application.ex:63: Tightbeam.Application.start_tree/1
+            (kernel 10.6.3) application_master.erl:299: :application_master.start_it_old/4

@@ -1,0 +1,70 @@
+{
+  "adapter_candidates": [
+    {
+      "cwd": null,
+      "elapsed_s": 1036948,
+      "evidence": "env_unreadable",
+      "executable": null,
+      "harness": "codex",
+      "lineage": null,
+      "lineage_raw_b64": null,
+      "pgid": 3749937,
+      "pid": 3749937,
+      "ppid": 3749402,
+      "started_at_s": 1785780433
+    },
+    {
+      "cwd": null,
+      "elapsed_s": 1003379,
+      "evidence": "env_unreadable",
+      "executable": null,
+      "harness": "codex",
+      "lineage": null,
+      "lineage_raw_b64": null,
+      "pgid": 3946678,
+      "pid": 3946678,
+      "ppid": 3946074,
+      "started_at_s": 1785814002
+    }
+  ],
+  "base_dir": {
+    "adapter_stderr_log_count": 2,
+    "entries": {
+      "adapters": "present",
+      "assets": "absent",
+      "auth": "present",
+      "bin": "present",
+      "gateway.json": "present",
+      "homes": "present",
+      "identity": "present",
+      "staging": "absent",
+      "state.db": "present",
+      "work": "present"
+    },
+    "path": "/home/clu/.tightbeam",
+    "status": "present"
+  },
+  "collection_ms": 31,
+  "epistemics": {
+    "absence_means": "possibly_laundered",
+    "census_grade": "accident",
+    "lineage_is_claim": true,
+    "notes": [],
+    "pids_env_unreadable": 296,
+    "pids_scanned": 324,
+    "platform_limits": [
+      "environ is ptrace-gated; other-user and protected processes are unreadable",
+      "procfs may hide processes entirely",
+      "markers are spoofable env content"
+    ]
+  },
+  "host": {
+    "hostname": "shrdlu",
+    "platform": "linux",
+    "probe_version": "0.1.8"
+  },
+  "identity_candidates": {},
+  "marked_candidates": [],
+  "probed_at_ms": 1786817381516,
+  "schema": "tightbeam.probe.v1"
+}

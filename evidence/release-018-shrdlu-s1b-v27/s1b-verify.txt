@@ -1,0 +1,32 @@
+S1B_VERIFY_UTC=2026-08-15T18:13:46Z
+PLAN_COMMIT=8579cff
+PACKAGE_SHA256=faf202f5f7057a00f478df54a60998650ddc96d2248813a3e3823775d0737630
+HOST=shrdlu
+ACCOUNT=clu
+BASE=/home/clu/.tightbeam
+PORT=11373
+CLI_VERSION=0.1.8
+USERS
+userId  isAdmin  createdAt    
+------  -------  -------------
+mike    1        1786817604264
+DEVICES_TOKEN_OMITTED
+deviceId            userId  claimedName  status       platform  model       createdAt    
+------------------  ------  -----------  -----------  --------  ----------  -------------
+release018-s1b-v27  mike    mike         allowlisted  sim       client-e2e  1786817604264
+MAIN_CLI_TOKEN_OMITTED
+sessionKey                     displayName  kind  isBuiltIn  ownerUserId  origin     archetype  harness  provider   state   createdAt    
+-----------------------------  -----------  ----  ---------  -----------  ---------  ---------  -------  ---------  ------  -------------
+agent:main:clawline:mike:main  Main         main  1          mike         user:mike  default    claude   anthropic  active  1786817604267
+ACTIVE_STAMP
+operator-decision-requests-v1
+MOVED_STAMP
+coordination-fabric-v1-phase1-v3
+LISTENERS
+State  Recv-Q Send-Q               Local Address:Port  Peer Address:PortProcess                                
+LISTEN 0      1024                       0.0.0.0:11373      0.0.0.0:*    users:(("beam.smp",pid=1393618,fd=23))
+UNRELATED_SERVICES
+openclaw-gateway inactive
+subspace-daemon inactive
+postgresql@16-main active
+docker active

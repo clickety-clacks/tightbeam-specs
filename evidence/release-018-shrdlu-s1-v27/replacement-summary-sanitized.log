@@ -1,0 +1,16 @@
+REPLACEMENT_START_UTC=2026-08-15T18:08:28Z
+PLAN_COMMIT=8579cff
+HOST=shrdlu
+ACCOUNT=clu
+BASE=/home/clu/.tightbeam
+PORT=11373
+OLD_CLI=0.1.7
+SOURCE_STAMP=coordination-fabric-v1-phase1-v3
+faf202f5f7057a00f478df54a60998650ddc96d2248813a3e3823775d0737630  /home/clu/tb018-replacement-staging/download/tightbeam-0.1.8-linux-x86_64-becb130.tgz
+BEFORE_DB /home/clu/.tightbeam/state.db inode=15468588 size=3178496 mtime=2026-08-15 03:36:48.842256916 +0000
+OLD_GATEWAY_STOPPED_UTC=2026-08-15T18:08:29Z
+NEW_CLI=0.1.8
+/home/clu/.local/lib/node_modules/tightbeam
+DB_BEFORE_FIRST_BOOT /home/clu/.tightbeam/state.db inode=15468588 size=3182592 mtime=2026-08-15 18:08:28.232649543 +0000
+PORT_11373_READY
+INSTALL_END_UTC=2026-08-15T18:08:32Z

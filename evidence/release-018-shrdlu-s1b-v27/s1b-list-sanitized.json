@@ -1,0 +1,340 @@
+{
+  "sessions": [
+    {
+      "sessionKey": "agent:main:clawline:mike:main",
+      "displayName": "Main",
+      "origin": "user:mike",
+      "archetype": "default",
+      "state": "active"
+    }
+  ],
+  "pendingDevices": [],
+  "hosts": [
+    "shrdlu"
+  ],
+  "models": {
+    "shrdlu": {
+      "claude": [],
+      "codex": [
+        {
+          "capabilities": {
+            "supported_reasoning_levels": [
+              {
+                "description": "Fast responses with lighter reasoning",
+                "effort": "low"
+              },
+              {
+                "description": "Balances speed and reasoning depth for everyday tasks",
+                "effort": "medium"
+              },
+              {
+                "description": "Greater reasoning depth for complex problems",
+                "effort": "high"
+              },
+              {
+                "description": "Extra high reasoning depth for complex problems",
+                "effort": "xhigh"
+              },
+              {
+                "description": "Maximum reasoning depth for the hardest problems",
+                "effort": "max"
+              },
+              {
+                "description": "Maximum reasoning with automatic task delegation",
+                "effort": "ultra"
+              }
+            ]
+          },
+          "context": null,
+          "displayName": "GPT-5.6-Sol",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+            "ultra"
+          ],
+          "id": "gpt-5.6-sol",
+          "maxInputTokens": 272000,
+          "model": "gpt-5.6-sol",
+          "name": "GPT-5.6-Sol",
+          "provider": "openai",
+          "ref": "gpt-5.6-sol"
+        },
+        {
+          "capabilities": {
+            "supported_reasoning_levels": [
+              {
+                "description": "Fast responses with lighter reasoning",
+                "effort": "low"
+              },
+              {
+                "description": "Balances speed and reasoning depth for everyday tasks",
+                "effort": "medium"
+              },
+              {
+                "description": "Greater reasoning depth for complex problems",
+                "effort": "high"
+              },
+              {
+                "description": "Extra high reasoning depth for complex problems",
+                "effort": "xhigh"
+              },
+              {
+                "description": "Maximum reasoning depth for the hardest problems",
+                "effort": "max"
+              },
+              {
+                "description": "Maximum reasoning with automatic task delegation",
+                "effort": "ultra"
+              }
+            ]
+          },
+          "context": null,
+          "displayName": "GPT-5.6-Terra",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+            "ultra"
+          ],
+          "id": "gpt-5.6-terra",
+          "maxInputTokens": 272000,
+          "model": "gpt-5.6-terra",
+          "name": "GPT-5.6-Terra",
+          "provider": "openai",
+          "ref": "gpt-5.6-terra"
+        },
+        {
+          "capabilities": {
+            "supported_reasoning_levels": [
+              {
+                "description": "Fast responses with lighter reasoning",
+                "effort": "low"
+              },
+              {
+                "description": "Balances speed and reasoning depth for everyday tasks",
+                "effort": "medium"
+              },
+              {
+                "description": "Greater reasoning depth for complex problems",
+                "effort": "high"
+              },
+              {
+                "description": "Extra high reasoning depth for complex problems",
+                "effort": "xhigh"
+              },
+              {
+                "description": "Maximum reasoning depth for the hardest problems",
+                "effort": "max"
+              }
+            ]
+          },
+          "context": null,
+          "displayName": "GPT-5.6-Luna",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "id": "gpt-5.6-luna",
+          "maxInputTokens": 272000,
+          "model": "gpt-5.6-luna",
+          "name": "GPT-5.6-Luna",
+          "provider": "openai",
+          "ref": "gpt-5.6-luna"
+        },
+        {
+          "capabilities": {
+            "supported_reasoning_levels": [
+              {
+                "description": "Fast responses with lighter reasoning",
+                "effort": "low"
+              },
+              {
+                "description": "Balances speed and reasoning depth for everyday tasks",
+                "effort": "medium"
+              },
+              {
+                "description": "Greater reasoning depth for complex problems",
+                "effort": "high"
+              },
+              {
+                "description": "Extra high reasoning depth for complex problems",
+                "effort": "xhigh"
+              }
+            ]
+          },
+          "context": null,
+          "displayName": "GPT-5.5",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ],
+          "id": "gpt-5.5",
+          "maxInputTokens": 272000,
+          "model": "gpt-5.5",
+          "name": "GPT-5.5",
+          "provider": "openai",
+          "ref": "gpt-5.5"
+        },
+        {
+          "capabilities": {
+            "supported_reasoning_levels": [
+              {
+                "description": "Fast responses with lighter reasoning",
+                "effort": "low"
+              },
+              {
+                "description": "Balances speed and reasoning depth for everyday tasks",
+                "effort": "medium"
+              },
+              {
+                "description": "Greater reasoning depth for complex problems",
+                "effort": "high"
+              },
+              {
+                "description": "Extra high reasoning depth for complex problems",
+                "effort": "xhigh"
+              }
+            ]
+          },
+          "context": null,
+          "displayName": "GPT-5.4",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ],
+          "id": "gpt-5.4",
+          "maxInputTokens": 272000,
+          "model": "gpt-5.4",
+          "name": "GPT-5.4",
+          "provider": "openai",
+          "ref": "gpt-5.4"
+        },
+        {
+          "capabilities": {
+            "supported_reasoning_levels": [
+              {
+                "description": "Fast responses with lighter reasoning",
+                "effort": "low"
+              },
+              {
+                "description": "Balances speed and reasoning depth for everyday tasks",
+                "effort": "medium"
+              },
+              {
+                "description": "Greater reasoning depth for complex problems",
+                "effort": "high"
+              },
+              {
+                "description": "Extra high reasoning depth for complex problems",
+                "effort": "xhigh"
+              }
+            ]
+          },
+          "context": null,
+          "displayName": "GPT-5.4-Mini",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ],
+          "id": "gpt-5.4-mini",
+          "maxInputTokens": 272000,
+          "model": "gpt-5.4-mini",
+          "name": "GPT-5.4-Mini",
+          "provider": "openai",
+          "ref": "gpt-5.4-mini"
+        },
+        {
+          "capabilities": {
+            "supported_reasoning_levels": [
+              {
+                "description": "Fast responses with lighter reasoning",
+                "effort": "low"
+              },
+              {
+                "description": "Balances speed and reasoning depth for everyday tasks",
+                "effort": "medium"
+              },
+              {
+                "description": "Greater reasoning depth for complex problems",
+                "effort": "high"
+              },
+              {
+                "description": "Extra high reasoning depth for complex problems",
+                "effort": "xhigh"
+              }
+            ]
+          },
+          "context": null,
+          "displayName": "GPT-5.3-Codex-Spark",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ],
+          "id": "gpt-5.3-codex-spark",
+          "maxInputTokens": 128000,
+          "model": "gpt-5.3-codex-spark",
+          "name": "GPT-5.3-Codex-Spark",
+          "provider": "openai",
+          "ref": "gpt-5.3-codex-spark"
+        },
+        {
+          "capabilities": {
+            "supported_reasoning_levels": [
+              {
+                "description": "Fast responses with lighter reasoning",
+                "effort": "low"
+              },
+              {
+                "description": "Balances speed and reasoning depth for everyday tasks",
+                "effort": "medium"
+              },
+              {
+                "description": "Greater reasoning depth for complex problems",
+                "effort": "high"
+              },
+              {
+                "description": "Extra high reasoning depth for complex problems",
+                "effort": "xhigh"
+              },
+              {
+                "description": "Maximum reasoning depth for the hardest problems",
+                "effort": "max"
+              }
+            ]
+          },
+          "context": null,
+          "displayName": "Codex Auto Review",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "id": "codex-auto-review",
+          "maxInputTokens": 272000,
+          "model": "codex-auto-review",
+          "name": "Codex Auto Review",
+          "provider": "openai",
+          "ref": "codex-auto-review"
+        }
+      ]
+    }
+  }
+}

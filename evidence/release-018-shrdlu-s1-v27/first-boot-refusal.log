@@ -1,0 +1,31 @@
+FIRST_BOOT_START_UTC=2026-08-15T18:08:50Z
+PACKAGE_SHA256=faf202f5f7057a00f478df54a60998650ddc96d2248813a3e3823775d0737630
+PLAN_COMMIT=8579cff
+HOST=shrdlu ACCOUNT=clu BASE=/home/clu/.tightbeam PORT=11373
+REFUSING_CLI=0.1.8
+{exit,terminating,[{application_controller,call,2,[{file,"application_controller.erl"},{line,515}]},{application,enqueue_or_start,6,[{file,"application.erl"},{line,381}]},{application,ensure_all_started,3,[{file,"application.erl"},{line,360}]},{elixir,start_cli,0,[{file,"src/elixir.erl"},{line,188}]},{init,start_it,1,[]},{init,start_em,1,[]},{init,do_boot,3,[]}]}
+
+18:08:51.370 [notice] Application tightbeam exited: Tightbeam.Application.start(:normal, []) returned an error: shutdown: failed to start child: Tightbeam.Boot
+    ** (EXIT) an exception was raised:
+        ** (Tightbeam.Schema.ShapeError) this Tightbeam database was written by a different build.
+
+  stamped: coordination-fabric-v1-phase1-v3
+  this build: operator-decision-requests-v1
+
+operator decision requests changed the decision_requests and wakes shape.
+
+There is no migration. Move the database aside and let it be recreated.
+
+            (tightbeam 0.1.8) lib/tightbeam/schema.ex:915: Tightbeam.Schema.check_shape/1
+            (tightbeam 0.1.8) lib/tightbeam/schema.ex:731: Tightbeam.Schema.ensure_all/1
+            (tightbeam 0.1.8) lib/tightbeam/boot.ex:27: Tightbeam.Boot.start_link/1
+            (stdlib 7.3.0.1) supervisor.erl:996: :supervisor.do_start_child_i/3
+            (stdlib 7.3.0.1) supervisor.erl:982: :supervisor.do_start_child/3
+            (stdlib 7.3.0.1) supervisor.erl:966: anonymous fn/3 in :supervisor.start_children/2
+            (stdlib 7.3.0.1) supervisor.erl:1891: :supervisor.children_map/4
+            (stdlib 7.3.0.1) supervisor.erl:932: :supervisor.init_children/2
+Kernel pid terminated (application_controller) ("{application_start_failure,tightbeam,{{shutdown,{failed_to_start_child,'Elixir.Tightbeam.Boot',{'EXIT',{#{message => <<\"this Tightbeam database was written by a different build.\n\n  stamped: coordination-fabric-v1-phase1-v3\n  this build: operator-decision-requests-v1\n\noperator decision requests changed the decision_requests and wakes shape.\n\nThere is no migration. Move the database aside and let it be recreated.\n\">>,'__struct__' => 'Elixir.Tightbeam.Schema.ShapeError','__exception__' => true},[{'Elixir.Tightbeam.Schema',check_shape,1,[{file,\"lib/tightbeam/schema.ex\"},{line,915}]},{'Elixir.Tightbeam.Schema',ensure_all,1,[{file,\"lib/tightbeam/schema.ex\"},{line,731}]},{'Elixir.Tightbeam.Boot',start_link,1,[{file,\"lib/tightbeam/boot.ex\"},{line,27}]},{supervisor,do_start_child_i,3,[{file,\"supervisor.erl\"},{line,996}]},{supervisor,do_start_child,3,[{file,\"supervisor.erl\"},{line,982}]},{supervisor,'-start_children/2-fun-0-',3,[{file,\"supervisor.er
+
+Crash dump is being written to: erl_crash.dump...done
+FIRST_BOOT_EXIT=1
+FIRST_BOOT_END_UTC=2026-08-15T18:08:53Z

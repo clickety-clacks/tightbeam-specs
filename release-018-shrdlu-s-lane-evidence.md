@@ -7,7 +7,7 @@ commit `5df5826`)
 Release: immutable tag `v0.1.8`, commit
 `becb13072624fce1129cfce377882bc2fb647cb8`
 
-## S1 — fresh isolated Linux install: PASS
+## S1 (withdrawn isolated form) — UNPROVEN / NOT CREDITED
 
 Window: 2026-08-15 17:34:11–17:37:39 UTC. Host/account:
 `shrdlu` / `clu`.
@@ -147,7 +147,7 @@ census, port/PID verification, and timestamps. `gateway.json` is deliberately
 excluded because it contains the isolated CLI bearer token; no provider
 credential file was read or copied.
 
-## S1b — mandatory pair-then-connect ceremony: PASS
+## S1b (withdrawn isolated base) — UNPROVEN / NOT CREDITED
 
 Authority: plan v2.3 commit `48bef1f` and `docs/TEST-HOSTS.md` section 3a.
 Window: 2026-08-15 17:44:12–17:46:06 UTC. This ceremony completed before
@@ -230,3 +230,125 @@ Two executor-only evidence issues are preserved rather than hidden:
 Companion evidence is in `evidence/release-018-shrdlu-s1b/`, including both
 ceremony attempts, sanitized rows, the admin-attributed list result, source
 preparation log, and the exact driver.
+
+## S1 v2.7 — in-place replacement on standard port: PASS
+
+Authority: plan v2.7 commit `8579cff`. Window:
+2026-08-15 18:05:05–18:09:41 UTC. Host/account/base/port:
+`shrdlu` / `clu` / `/home/clu/.tightbeam` / `11373`.
+
+Mike withdrew the isolated/parallel acceptance. The earlier evidence commit
+`7281952` remains recorded above but is not credited. The only prior test
+installation, `/home/clu/tb018-s-lane`, was resolved before deletion as the
+base serving port 12374 in tmux `tb018-s-lane`. That session was stopped and
+the directory removed. The standard 0.1.7 gateway on 11373 remained running
+until the replacement package was prepared.
+
+The immutable release package was downloaded again and verified against the
+published checksum:
+
+```text
+package=tightbeam-0.1.8-linux-x86_64-becb130.tgz
+sha256=faf202f5f7057a00f478df54a60998650ddc96d2248813a3e3823775d0737630
+source=v0.1.8 / becb13072624fce1129cfce377882bc2fb647cb8
+```
+
+Finding 14 was re-proven before any v2.7 e2e driver use: `cargo build
+--release --manifest-path cli/Cargo.toml` completed successfully under the
+pinned tag. The standard 0.1.7 gateway PID 886487 was then terminated
+gracefully, and npm replaced the package in `/home/clu/.local`. The CLI
+reported `0.1.8`; the installed release tree contained only `0.1.8`.
+
+### Real first-boot stamp refusal (S5 refusal half)
+
+The real 0.1.7 database remained at `/home/clu/.tightbeam/state.db` for the
+first 0.1.8 boot. The refusing binary was pinned by the package checksum
+above and reported Tightbeam `0.1.8` in its stack. It exited 1 without
+opening a listener and emitted:
+
+```text
+this Tightbeam database was written by a different build.
+
+  stamped: coordination-fabric-v1-phase1-v3
+  this build: operator-decision-requests-v1
+
+operator decision requests changed the decision_requests and wakes shape.
+
+There is no migration. Move the database aside and let it be recreated.
+```
+
+This is the v2.7 real-flow S5 refusal half. After the refusal, no process held
+the database open. The sanctioned move-aside preserved it at:
+
+```text
+/home/clu/.tightbeam/moved-aside-v017-20260815T180853Z/state.db
+inode=15468588
+sha256=a177ad1c542cda3ac759d9169c4052b2b1b18177cd61abeaa4b65db3c8c59ebb
+stamp=coordination-fabric-v1-phase1-v3
+```
+
+The move stayed on the same filesystem and preserved inode and checksum.
+There were no WAL/SHM companions after the clean 0.1.7 stop. A fresh boot
+then created stamp `operator-decision-requests-v1` and served from the
+standard package/base on port 11373 as PID 1393618. Verification showed:
+
+```text
+CLI_VERSION=0.1.8
+RELEASE_DIRS=0.1.8
+LISTEN=0.0.0.0:11373 pid=1393618
+PORT_12374_ABSENT
+WITHDRAWN_BASE_ABSENT
+```
+
+No credential file was read, copied, moved, or deleted. Companion evidence
+is in `evidence/release-018-shrdlu-s1-v27/`. Sanitized summaries deliberately
+exclude the prior Erlang distribution cookie.
+
+## S1b v2.7 — pair then connect on replaced install: PASS
+
+Window: 2026-08-15 18:10:44–18:14:33 UTC. The v0.1.8 tag source was prepared
+under OTP 28 / Elixir 1.19. The retained driver used port 11373 and fresh
+device id `release018-s1b-v27`; its token existed only in process memory and
+was printed as `[redacted]`.
+
+The first executor invocation used `mix run` without `--no-start`; Mix tried
+to start a second Tightbeam application and failed `:eaddrinuse` before any
+pairing. The exact specimen is preserved and was attested as
+`att_1c37a9cb`. The sanctioned correction loaded the driver without starting
+a second gateway:
+
+```sh
+mix run --no-start /home/clu/tb018-replacement-staging/s1b_pair_connect.exs
+```
+
+It completed the real wire ceremony:
+
+```text
+PAIR_OK user_id=mike token=[redacted]
+connected_user_id=mike
+connected_is_admin=true
+auth_success=true
+sync_complete=true
+main.sessionKey=agent:main:clawline:mike:main
+S1B_PASS
+S1B_EXIT=0
+```
+
+Sanitized SQLite rows independently showed user `mike` with `isAdmin=1`,
+device `release018-s1b-v27` allowlisted, and one active built-in Main owned by
+`mike`. A bare CLI read was correctly refused for missing attribution and
+preserved as `att_e61195b6`; the sanctioned admin-attributed read
+`tightbeam list --as-user mike` then returned exactly that active Main.
+User services `openclaw-gateway` and `subspace-daemon` and system services
+`postgresql@16-main` and `docker` were all active after replacement.
+
+Companion evidence is in `evidence/release-018-shrdlu-s1b-v27/`.
+
+## S2 precondition finding — BLOCKED pending plan direction
+
+Without reading any credential file, the fresh 0.1.8 gateway reported an
+existing Codex credential from the retained standard auth directory, and the
+admin-attributed catalog exposed Codex models before S2a. That makes S2b's
+required natural `needs_onboarding` fixture unavailable. No auth file has
+been modified. The finding is attested as `att_1c37a9cb`; S2 remains paused
+pending an explicit sanctioned auth move-aside/reset path.
