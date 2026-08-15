@@ -32,7 +32,7 @@ Already-standing evidence (preserved, not re-run):
 
 | Lane | Host | Why | Executor |
 |---|---|---|---|
-| S | shrdlu, NEW isolated install (operator account clu per TEST-HOSTS.md; own base dir, port 12374) | ONLY host with BOTH claude and codex credentials → the cross-harness switch battery lives here; also holds a real intact 0.1.7 state.db for the non-destructive stamp-refusal test; ABSORBS the former gibson scope (now S7-S9) | tester:release018-shrdlu-e2e |
+| S | shrdlu, IN-PLACE REPLACEMENT of the standard install on port 11373, account clu (v2.8/B1 — the earlier isolated-venue clause was stale text from the withdrawn form) | ONLY host with BOTH claude and codex credentials → the cross-harness switch battery lives here; its real 0.1.7 state.db supplies the first-boot stamp-refusal capture; ABSORBS the former gibson scope (S7-S9) | tester:release018-shrdlu-e2e |
 | T | tars, darwin tarball, isolated | darwin-aarch64 package has no live verification yet; finding 10 rules the form (tmux foreground, NEVER LaunchDaemon for claude turns) | shrdlu tester via ssh, after S goes green; light scope |
 
 Gibson-recorded evidence (refusal battery, vendor-verbatim reporting) is
@@ -58,10 +58,24 @@ SHRDLU (S lane — the release theme lives here):
   and must not be credited): IN-PLACE REPLACEMENT on the STANDARD port
   11373, account clu, with any prior TEST installation removed first (the
   12374 isolated base from the withdrawn form is torn down). The prior
-  standard 0.1.7 install is the replacement target. At first boot the
-  schema stamp refusal fires against the real 0.1.7 state.db — capture its
-  exact text (both stamp strings), then proceed by the sanctioned
-  move-aside path, PRESERVING the moved-aside DB as evidence. Finding 14
+  standard 0.1.7 install is the replacement target. BEFORE first boot (v2.8/B3+I2, MANDATORY): read the real DB's actual
+  stamp via a read-only connection (`sqlite3 'file:...?mode=ro' "SELECT
+  shape FROM schema_stamp"`) — v0.1.7 stamps model-identity-v1, NOT the
+  later message-envelope string, and an unstamped DB yields a ONE-string
+  refusal — and take a read-only `.backup` pre-boot copy (the only
+  pristine pre-exposure artifact while refuse-before-write is itself
+  under test). At first boot the schema stamp refusal fires — capture its
+  exact text and expect it to cite THE STRING THE READBACK RETURNED plus
+  this build's operator-decision-requests-v1 (not a hardcoded pair), then
+  proceed by the sanctioned move-aside path, PRESERVING the moved-aside
+  DB as evidence. REPLACEMENT MECHANICS (v2.8/I1, stated not implied):
+  stop/remove the 0.1.7 service on 11373 first; state.db and the auth dir
+  move aside WHOLE to preserved paths (auth per the v2.7b move-only
+  rule); identity/ and homes/ are substrate-owned projections the fresh
+  install regenerates — record their fate in evidence either way.
+  TEST-HOSTS section-1 clean-start is explicitly SUPERSEDED here by
+  mike's in-place ruling: the DB is retained precisely to capture the
+  refusal, then moved aside. Finding 14
   trap: `cargo build --release` before any e2e driver use;
   EFFORT_CHECKIN_HORIZON_MS=2500 drop-in where the smoke requires it.
   AUTH PATH (v2.7b ruling, hazard att_1c37a9cb): the in-place install
@@ -106,29 +120,10 @@ SHRDLU (S lane — the release theme lives here):
 - S4. Finding 22 re-check on 0.1.8: the codex J5 commit-ordering journey.
   If it reproduces unchanged, record and keep OPEN (known, not a
   regression); if it worsens, surface to mike before continuing.
-- S5 (v2.7 note: the in-place S1 now encounters the stamp refusal FOR
-  REAL at first boot — that capture satisfies the refusal half; this
-  snapshot variant remains only if a pre-teardown snapshot of the 0.1.7 DB
-  is wanted as an independent artifact). Original snapshot design:
-  snapshot shrdlu's intact
-  0.1.7 state.db via the SQLITE ONLINE BACKUP method from a READ-ONLY
-  connection (v2.2, review finding 2 — a plain file copy of a live DB is
-  not a defined-consistent snapshot):
-  `sqlite3 'file:<orig>?mode=ro' ".backup <scratch>/state.db"`. Point the
-  isolated 0.1.8 gateway at the SNAPSHOT; expect the named refusal citing
-  model-identity-message-envelope-v2 and this-build
-  operator-decision-requests-v1. UNTOUCHED-ORIGINAL PROOF (v2.4,
-  finding 4 — the LIVE 0.1.7 DB changes under its own traffic, so
-  before/after hash equality of the original is the WRONG criterion):
-  prove ISOLATION instead — (a) realpath + inode of snapshot vs original
-  distinct; (b) while the 0.1.8 gateway runs against the snapshot, an
-  lsof/FD listing shows it opened ONLY scratch paths, never the original
-  db/-wal/-shm or the 0.1.7 auth dir; (c) the isolated base's auth dir
-  hashed or proven absent; (d) read the SOURCE stamp from the SNAPSHOT
-  first (SELECT shape FROM schema_stamp) and expect the refusal to cite
-  that exact string plus this build's operator-decision-requests-v1. (This is the ONLY upgrade-adjacent test in scope — the
-  upgrade PATH itself has no tool yet; that is Phase 0 on mike's queue and
-  explicitly NOT this plan's scope.)
+- S5: DELETED (v2.8/B2, deletion preferred by the delta review): the
+  refusal capture folded into S1's real first-boot flow; the snapshot
+  variant needed the withdrawn isolated gateway and is gone with it.
+  S5's serving-version pinning exception re-homes to S1 (see pinning).
 - S6. Credential-incident codex half where re-onboarding is possible: a
   deliberately failed onboarding must NOT restore the previous credential
   silently; the circuit must not gate credential installation. ACCEPTANCE
@@ -186,13 +181,14 @@ Known flakes: O4 is documented — one retry allowed, logged as O4 when seen.
 - Every evidence batch is PINNED (v2.4, finding 7): package sha256, plan
   revision commit, host, account, base dir, port, and the serving
   gateway's reported version — unpinned evidence does not count.
-  S5 EXCEPTION (v2.5): S5's gateway correctly refuses BEFORE serving, so
-  no serving version exists by design; S5's batch pins instead the
-  refusing binary's package sha256 and the version/build the refusal
-  output or boot log reports — the refusal artifact IS the version
-  evidence for that batch.
+  S1 FIRST-BOOT EXCEPTION (v2.8, re-homed from deleted S5): the
+  first-boot gateway correctly refuses BEFORE serving, so no serving
+  version exists by design for that batch; it pins instead the refusing
+  binary's package sha256 and the version/build the refusal output or
+  boot log reports — the refusal artifact IS the version evidence.
 - MUST-PASS set (v2.4, finding 7 — named skips cannot green the plan):
-  S1, S1b, S2a-c, S3, S5, S6, S7, S8, S9, T1 each PASS or the plan is
+  S1 (incl. its refusal capture), S1b, S2a-c, S3, S6, S7, S8, S9, T1
+  each PASS or the plan is
   BLOCKED/INCOMPLETE, stated as such. S4 alone may close as
   reproduces-unchanged (known finding 22). The watchdog audits against
   plan HEAD at audit time.
