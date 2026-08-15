@@ -41,7 +41,10 @@ artifact on shrdlu if byte-identical to the CI package (verify sha256
 against the proof manifest before reuse — else install from the CI
 package).
 
-The live org install and port 11373 are untouchable everywhere. Credential
+GIBSON's live org install and its port 11373 are untouchable. On SHRDLU,
+mike's v2.7 correction makes the standard-port install the REPLACEMENT
+TARGET — that supersedes the earlier 0.1.7-untouched constraint for
+shrdlu only. Credential
 files are never read; the CLI is the only sanctioned path; secrets via
 stdin only.
 
@@ -51,10 +54,20 @@ stdin only.
 nothing further.)
 
 SHRDLU (S lane — the release theme lives here):
-- S1. Fresh isolated 0.1.8 install from the linux tarball, account clu,
-  own base dir, port 12374. Finding 14 trap: `cargo build --release` before
-  any e2e driver use. Smoke drop-in EFFORT_CHECKIN_HORIZON_MS=2500 where
-  the smoke requires it.
+- S1 (v2.7, MIKE'S CORRECTION — the isolated/parallel form is WITHDRAWN
+  and must not be credited): IN-PLACE REPLACEMENT on the STANDARD port
+  11373, account clu, with any prior TEST installation removed first (the
+  12374 isolated base from the withdrawn form is torn down). The prior
+  standard 0.1.7 install is the replacement target. At first boot the
+  schema stamp refusal fires against the real 0.1.7 state.db — capture its
+  exact text (both stamp strings), then proceed by the sanctioned
+  move-aside path, PRESERVING the moved-aside DB as evidence. Finding 14
+  trap: `cargo build --release` before any e2e driver use;
+  EFFORT_CHECKIN_HORIZON_MS=2500 drop-in where the smoke requires it.
+  STATUS: S1 evidence from the isolated form (specs 7281952) is MARKED
+  UNPROVEN for this acceptance — recorded, not credited; S1b's ceremony
+  evidence (6247d1a) is tied to the withdrawn base and must be RE-RUN on
+  the replaced install.
 - S1b (v2.3, review finding 3): the MANDATORY pair-then-connect ceremony
   per docs/TEST-HOSTS.md section 3a, BEFORE any onboarding or e2e
   evidence — it establishes the admin user and the Main stream; without it
@@ -85,7 +98,11 @@ SHRDLU (S lane — the release theme lives here):
 - S4. Finding 22 re-check on 0.1.8: the codex J5 commit-ordering journey.
   If it reproduces unchanged, record and keep OPEN (known, not a
   regression); if it worsens, surface to mike before continuing.
-- S5. STAMP-REFUSAL acceptance, non-destructive: snapshot shrdlu's intact
+- S5 (v2.7 note: the in-place S1 now encounters the stamp refusal FOR
+  REAL at first boot — that capture satisfies the refusal half; this
+  snapshot variant remains only if a pre-teardown snapshot of the 0.1.7 DB
+  is wanted as an independent artifact). Original snapshot design:
+  snapshot shrdlu's intact
   0.1.7 state.db via the SQLITE ONLINE BACKUP method from a READ-ONLY
   connection (v2.2, review finding 2 — a plain file copy of a live DB is
   not a defined-consistent snapshot):
