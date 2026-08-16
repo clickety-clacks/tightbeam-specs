@@ -2517,3 +2517,26 @@ set; (3) if the current adapter still refuses luna/terra, that is an
 upstream defect to chase, not an accepted state; (4) add a
 catalog-completeness check to the switching acceptance battery on both
 lines. Routed to the 0.1 PO (0.1.8 acceptance) and the 0.2 program.
+
+## 2026-08-16 — Auth-ceremony codes are deliverables, not screen text (Mike)
+
+Ruled after three consecutive S2c failures of identical shape (ceremony
+armed, one-time code never reached the operator, expired unseen).
+
+**Discipline, effective immediately, every line:** any agent running an
+auth/onboarding ceremony MUST, the moment a sign-in URL and/or one-time
+code appears, (1) elevate it to the operator immediately (wake to the
+human; open the URL on the operator's browser host per standing practice)
+AND (2) file the URL + code as an attest row on its card. Device codes are
+short-lived single-use pairing strings, not durable secrets — a code that
+expired unseen in a private terminal is an agent failure, full stop. A
+ceremony whose code cannot be delivered within a minute of minting is
+aborted and re-armed, never left to expire silently.
+
+**Product order (both lines; gate-8 extraction — the discipline above is
+the stopgap, the bone is the fix):** `tightbeam onboard` must treat the
+URL and code as first-class delivery: capture them from the vendor flow
+and (a) emit them as structured output, (b) record them as a substrate
+row, (c) notify the operator channel. Delivery must never depend on an
+agent reading a pty. Related open defect: wi_e86ddd54 (onboarding parks
+the runtime conducting it) — reproduced live 2026-08-16 on shrdlu.
