@@ -2540,3 +2540,20 @@ and (a) emit them as structured output, (b) record them as a substrate
 row, (c) notify the operator channel. Delivery must never depend on an
 agent reading a pty. Related open defect: wi_e86ddd54 (onboarding parks
 the runtime conducting it) — reproduced live 2026-08-16 on shrdlu.
+
+## 2026-08-16 — A release branch EVOLVES until it passes (Mike; supersedes freeze-by-abandonment-at-tag)
+
+Ruled by Mike on the S7 wire-dead-operator-verbs finding, recorded via tb02:
+NOTHING lands in 0.1.9 while 0.1.8 is still testing. Fixes for defects found
+by release testing land ON THE RELEASE BRANCH (0.1.8) as new builds, and e2e
+re-tests the evolving branch — loop until 0.1.8 TESTS CLEAN. Only then do we
+stop adding to it: passing is what "calling quits" means. If anything has
+landed in 0.1.9 meanwhile, merge it into 0.1.8 and keep evolving. The
+successor scratchpad (0.1.9) becomes the active line only after 0.1.8
+passes. Mike verbatim: "we evolve a release branch until it passes."
+
+This supersedes the plan clause "tag at becb130 immutable; test failures
+produce 0.1.9 fixes, never a tag change" — build numbers identify bytes
+during evolution; the final identification happens at quits. Immediate
+effect: the S7 router fix (gh#11 operator verbs absent from router.ex
+@agent_verbs) lands on branch 0.1.8, S7 re-runs against the new build.
