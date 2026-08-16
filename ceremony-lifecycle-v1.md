@@ -51,18 +51,27 @@ lease, no reaper.
    - eurisko: the Jul 26 `script`/`claude setup-token` pair (pids were
      1109018/1109020; RE-VERIFY, they may have died or been recycled).
 
-## Ceremony deliverables — the general contract (Mike, 2026-08-16, ledger 8287cd0)
+## The definition of interactive onboarding (Mike, 2026-08-16; decisions ledger latest + 8287cd0)
 
-Any interactive auth ceremony's sign-in URL and one-time code ARE
-DELIVERABLES to the operator: within one minute of minting, open the URL on
-the operator's current browser host (ask Mike which; serenity as of
-2026-08-16), wake user mike with the code text, and file the code as an
-attest. A ceremony run without this delivery path is INVALID regardless of
-other outcome, and a card for any ceremony MUST name this deliverable as its
-acceptance. (Origin: the 0.1.8 S2c saga — four ceremonies burned because the
-runbook said only "onboard codex", activity language with no deliverable;
-this clause makes the deliverable a runbook fact future carding minds copy,
-not re-derive. Release-plan instance: release-018-test-plan-v2.md S2 v2.15.)
+Interactive onboarding is DEFINED as incomplete until the operator holds the
+sign-in URL and code. The loop runs through the user: no code in the user's
+hands means the user cannot finish, therefore the onboarding IS incomplete —
+not a delivery step bolted on, the definition of the task itself.
+
+Every "onboard <provider>" instruction means the FULL LOOP:
+ceremony -> URL+code to operator (within one minute of minting: URL opened
+on the operator's current browser host — ask Mike which; serenity as of
+2026-08-16 — code waked to user mike and filed as an attest) -> operator
+signs in -> credential installed and verified. Anything less is the task not
+done, and a card for any ceremony MUST name the full loop as its acceptance.
+
+(Origin: the 0.1.8 S2c saga — four ceremonies burned because the runbook
+said only "onboard codex", activity language that named no loop; this
+definition makes it a runbook fact future carding minds copy, not re-derive.
+Release-plan instance: release-018-test-plan-v2.md S2 v2.15. When
+wi_0535922b lands — onboard emitting url+code as structured output — the
+same sentence propagates into the product repo's onboarding runbook: the
+mechanism and the definition ship together.)
 
 ## Non-goals
 

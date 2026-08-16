@@ -146,16 +146,19 @@ SHRDLU (S lane — the release theme lives here):
   naturally (attempt a switch/spawn to codex) and capture its exact text —
   no credential is damaged because none exists yet. S2c onboard codex.
   All after S1b, stdin flows.
-  v2.15 CEREMONY-DELIVERABLE CLAUSE (Mike's runbook amendment order,
-  decisions ledger 8287cd0 — the missing clause cost four ceremonies):
-  any interactive auth ceremony's sign-in URL and one-time code ARE
-  DELIVERABLES to the operator: within one minute of minting, open the
-  URL on the operator's current browser host (ask Mike which; serenity
-  as of 2026-08-16), wake user mike with the code text, and file the
-  code as an attest. A ceremony run without this delivery path is
-  INVALID regardless of other outcome, and a card for any ceremony MUST
-  name this deliverable as its acceptance. (General contract also in
-  ceremony-lifecycle-v1.md.)
+  v2.15 ONBOARDING-DEFINITION CLAUSE (Mike, decisions ledger latest +
+  8287cd0; supersedes the delivery-step framing): interactive onboarding
+  is DEFINED as incomplete until the operator holds the sign-in URL and
+  code — the loop runs through the user; no code in the user's hands
+  means the user cannot finish, therefore the onboarding IS incomplete.
+  Not a delivery step bolted on: the definition of the task itself.
+  Every 'onboard <provider>' instruction means the FULL LOOP: ceremony
+  -> URL+code to operator (within one minute of minting: URL opened on
+  the operator's current browser host — ask Mike which; serenity as of
+  2026-08-16 — code waked to user mike and filed as an attest) ->
+  operator signs in -> credential installed and verified. Anything less
+  is the task not done, and a card for any ceremony MUST name the full
+  loop as its acceptance. (General contract: ceremony-lifecycle-v1.md.)
 - S3. CROSS-HARNESS SWITCH BATTERY (the release theme): claude -> codex ->
   claude via the tune verb on a live session. CATALOG-COMPLETENESS
   PRECONDITION (v2.12, Mike's ruling — specs tightbeam-decisions.md
