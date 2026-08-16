@@ -185,9 +185,17 @@ SHRDLU (S lane — the release theme lives here):
   recorded after. 0.2-build-ledger.md incident-part-2 records this exact
   valid proof shape and the discarded fake passes — match it.
 - S7 (was G1). gh#11 operator decision requests, full lifecycle: file
-  (--key idempotency retry), list, recommend (proxy label, non-resolving),
-  rule (owner-only; non-owner refusal named), withdraw, supersede.
-  Evidence: exact commands + row states per step.
+  (--key idempotency retry), list, rule (owner-only; non-owner refusal
+  named), withdraw, supersede. Evidence: exact commands + row states per
+  step. (v2.13: `recommend` dropped — over-specified at authoring, never a
+  shipped verb; PO adjudication 2026-08-15.)
+  v2.13 STATUS NOTE (not an acceptance change): the lifecycle is WIRE-DEAD
+  on v0.1.8 — router.ex:57 `@agent_verbs` omits `operator-ask` and
+  `operator-rule` while escalation.ex:264 implements them, cli dispatch.rs:418
+  sends them as agent verbs, and unit tests call Escalation directly,
+  bypassing the router seam. S7 remains MUST-PASS as written; its terminal
+  state on this evidence is fail-as-blocked with the defect carded, and the
+  release-acceptance consequence is Mike's ruling (see User decisions).
 - S8 (was G2). Cap-removal check (efb8a653): spawn past the old ceiling on
   the isolated org; record the count reached and the absence of the old
   refusal.
