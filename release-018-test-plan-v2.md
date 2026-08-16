@@ -10,10 +10,19 @@ removed gibson as an execution venue.
 
 ## What is under test
 
-Tag v0.1.8 at becb130 (immutable; CONTRIBUTING.md freeze-by-abandonment —
-test failures produce 0.1.9 fixes, never a tag change). CI proof and
-boundary review already stand (run 31872013477, att_a14c0afb). This plan
-verifies the FEATURES on live installs; it does not re-prove the build.
+v2.14 RELEASE MODEL (Mike's ruling, decisions ledger 3b6c530, supersedes
+the becb130-immutable clause): A RELEASE BRANCH EVOLVES UNTIL IT PASSES.
+Test failures produce fixes ON BRANCH 0.1.8 as new builds; e2e re-tests
+the evolving builds (failed legs re-run against the fixed build) until
+0.1.8 tests clean. Passing IS calling-quits: only then does 0.1.8 stop
+taking changes and 0.1.9 become the active scratchpad; nothing lands in
+0.1.9 while 0.1.8 is testing (work already on 0.1.9 merges into 0.1.8).
+Build numbers (`<version> build N`, N = rev-list count) identify bytes
+during evolution; final identification happens at quits. Mike verbatim:
+"we evolve a release branch until it passes." The initial build under
+test was becb130 (v0.1.8 tag; CI run 31872013477, att_a14c0afb — CI proof
+and boundary review re-run per new build). This plan verifies the
+FEATURES on live installs; it does not re-prove any build by hand.
 
 Already-standing evidence (preserved, not re-run):
 - shrdlu/tars T2b client journeys on the line: claude 18/18, codex 17/18
@@ -193,9 +202,12 @@ SHRDLU (S lane — the release theme lives here):
   on v0.1.8 — router.ex:57 `@agent_verbs` omits `operator-ask` and
   `operator-rule` while escalation.ex:264 implements them, cli dispatch.rs:418
   sends them as agent verbs, and unit tests call Escalation directly,
-  bypassing the router seam. S7 remains MUST-PASS as written; its terminal
-  state on this evidence is fail-as-blocked with the defect carded, and the
-  release-acceptance consequence is Mike's ruling (see User decisions).
+  bypassing the router seam. (Terminal evidence widened the set: all THREE
+  operator verbs — ask/rule/withdraw — are router-dead; escalation.ex:265/288/303,
+  dispatch.rs:418/437/445.) S7 remains MUST-PASS as written; its terminal
+  state on the becb130 build is fail-as-blocked with the defect carded.
+  v2.14 (Mike, ledger 3b6c530): the fix lands ON BRANCH 0.1.8 as a new
+  build and S7 RE-RUNS against it — the release evolves until it passes.
 - S8 (was G2). Cap-removal check (efb8a653): spawn past the old ceiling on
   the isolated org; record the count reached and the absence of the old
   refusal.
