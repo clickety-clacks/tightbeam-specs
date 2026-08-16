@@ -2557,3 +2557,12 @@ produce 0.1.9 fixes, never a tag change" — build numbers identify bytes
 during evolution; the final identification happens at quits. Immediate
 effect: the S7 router fix (gh#11 operator verbs absent from router.ex
 @agent_verbs) lands on branch 0.1.8, S7 re-runs against the new build.
+
+## 2026-08-16 — The loop iterates without permission (Mike: "why aren't we iterating?")
+
+Refinement of evolve-until-passes, recorded via tb02: fixes for test-found
+defects land on the release branch AS FAST AS THEY PASS GATES. No
+per-iteration operator approval; audits run in parallel with the next
+iteration and gate QUITS, not iteration; the successor lane pre-stages so
+there is zero idle between one lane going green and the next starting.
+Only quits needs Mike.
