@@ -51,6 +51,19 @@ lease, no reaper.
    - eurisko: the Jul 26 `script`/`claude setup-token` pair (pids were
      1109018/1109020; RE-VERIFY, they may have died or been recycled).
 
+## Ceremony deliverables — the general contract (Mike, 2026-08-16, ledger 8287cd0)
+
+Any interactive auth ceremony's sign-in URL and one-time code ARE
+DELIVERABLES to the operator: within one minute of minting, open the URL on
+the operator's current browser host (ask Mike which; serenity as of
+2026-08-16), wake user mike with the code text, and file the code as an
+attest. A ceremony run without this delivery path is INVALID regardless of
+other outcome, and a card for any ceremony MUST name this deliverable as its
+acceptance. (Origin: the 0.1.8 S2c saga — four ceremonies burned because the
+runbook said only "onboard codex", activity language with no deliverable;
+this clause makes the deliverable a runbook fact future carding minds copy,
+not re-derive. Release-plan instance: release-018-test-plan-v2.md S2 v2.15.)
+
 ## Non-goals
 
 - No change to the interactive-failure path — cancel works there, proven.
