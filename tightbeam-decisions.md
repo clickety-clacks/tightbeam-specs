@@ -2566,3 +2566,18 @@ per-iteration operator approval; audits run in parallel with the next
 iteration and gate QUITS, not iteration; the successor lane pre-stages so
 there is zero idle between one lane going green and the next starting.
 Only quits needs Mike.
+
+## 2026-08-16 — Watchdogs check advancement, not just liveness (Mike-caught gap)
+
+Finding + charter rule, recorded via tb02. The 0.1.8 watchdog missed the
+post-S7 idle because the stall was MOTION WITHOUT ADVANCEMENT: every lane
+was alive and attesting (audits, specimens) while the critical path's next
+step (Bug B implementation) had NO CARD — and a missing card is invisible
+to a watermark over existing rows. A lawful-looking permission gate in the
+plan compounded it. Charter rule for completion watchdogs, this org and the
+0.2 fabric's kungfu: each patrol names the current critical-path item,
+verifies some lane holds an obligation advancing it, and treats
+no-such-card as a stall finding (summon the owner to card it). The prodder
+bone still bounds starvation of existing rows; naming the missing row is a
+MIND's duty — which is why it lands in the watchdog's charter, not the
+substrate.
