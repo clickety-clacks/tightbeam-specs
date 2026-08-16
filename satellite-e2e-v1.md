@@ -25,6 +25,17 @@ shrdlu E2E (the device ceremony detaches to a private pty by design and is
 relay-incompatible — product finding on wi_e86ddd54; its arm/timeout
 behaviors are already banked evidence and need no re-exercise).
 
+## STANDING CODE-DELIVERY RULE — auth ceremonies (Mike, ledger 8287cd0)
+
+A sign-in URL or one-time code printed by ANY ceremony is a DELIVERABLE.
+Within ONE MINUTE of print the executor must BOTH: (1) elevate — wake user
+mike with the code text and open the URL in eezo's browser; AND (2) file
+the URL+code as an attest row on its card. Codes are short-lived
+single-use pairing strings, not durable secrets. A ceremony that cannot
+deliver inside the minute is ABORTED AND RE-ARMED — never left to expire
+silently. (Product fix: wi_0535922b — onboard emits structured url+code +
+row + operator notification; this rule is the stopgap until it lands.)
+
 ## Executor contract (the flexibility rule)
 
 - You are an agent on the ORCHESTRATION host (eezo) with SSH access per
