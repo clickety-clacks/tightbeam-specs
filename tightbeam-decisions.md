@@ -2581,3 +2581,18 @@ no-such-card as a stall finding (summon the owner to card it). The prodder
 bone still bounds starvation of existing rows; naming the missing row is a
 MIND's duty — which is why it lands in the watchdog's charter, not the
 substrate.
+
+## 2026-08-16 — Interactive onboarding is DEFINED as incomplete until the operator holds the URL and code (Mike; the saga's answer)
+
+Mike's closing ruling on the S2c saga, verbatim reasoning: the runbook said
+only "onboard codex," so agents GUESSED at the task's definition — and
+guessed one that did not include the operator. The answer to the entire
+saga is runbook explicitness: an interactive auth ceremony's sign-in URL
+and one-time code MUST be returned to the user (or the parent that can
+reach the user), because the sign-in loop runs through the user — without
+the code in the user's hands the user cannot finish, and therefore THE
+ONBOARDING IS INCOMPLETE. Not a delivery step bolted onto the task; the
+definition of the task. Every runbook, plan step, and card that says
+"onboard <provider>" means this full loop: ceremony started -> URL+code to
+the operator -> operator signs in -> credential installed and verified.
+Anything less is not a partial success; it is the task not done.
