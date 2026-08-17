@@ -24,6 +24,14 @@ test was becb130 (v0.1.8 tag; CI run 31872013477, att_a14c0afb — CI proof
 and boundary review re-run per new build). This plan verifies the
 FEATURES on live installs; it does not re-prove any build by hand.
 
+## Release-completion gate
+
+PR19 and PR20 are required 0.1.8 release inputs. Do not call 0.1.8 done
+or call quits until both have been source-integrated into 0.1.8 from their
+reviewed candidates. E2E passing on an earlier build is intermediate
+evidence only; rerun the affected rows on the exact final post-PR20 0.1.8
+build.
+
 Already-standing evidence (preserved, not re-run):
 - shrdlu/tars T2b client journeys on the line: claude 18/18, codex 17/18
   (finding 22 outstanding) — e2e-cold-install-2026-08-14.md.
