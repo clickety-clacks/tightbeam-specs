@@ -2596,3 +2596,28 @@ definition of the task. Every runbook, plan step, and card that says
 "onboard <provider>" means this full loop: ceremony started -> URL+code to
 the operator -> operator signs in -> credential installed and verified.
 Anything less is not a partial success; it is the task not done.
+
+## 2026-08-18 — A verdict points at its artifact; the note field is the wrong shape (Mike)
+
+Ruled by Mike, recorded via tb02. The attest note's 2000-character cap is an
+ARBITRARY limit, and agents have been working around it in the open: reviewers
+routinely file "FULL CLAUSE TABLE + EVIDENCE: art_xxxxxxx — the 2000-char note
+cap forced the card's clause table" into a separate artifact, and tb02 hit the
+same cap filing forensics today. A verdict whose reasoning must be truncated to
+fit a column has lost the thing that makes it reviewable.
+
+RULING: a verdict should not carry its substance in a free-text note field. It
+should POINT AT AN ARTIFACT. The row carries the decision plus the pointer; the
+artifact carries the clause table, the reproductions, the evidence. Then review
+context is durable by construction — it cannot be dropped by a reviewer who
+forgets to record, and no rail is needed to chase it.
+
+Consequences to work through in the 0.2 design (NOT a 0.1 change): the attest
+verb and schema grow an artifact reference for verdict-kind attests; the
+artifact becomes the review's home; the note degrades to a short summary or
+disappears; the existing `completion-requires-results-artifact` rail becomes
+unnecessary for reviewers because the pointer is structural. Sequence with
+artifacts-and-reconciliation.md (ratified) and the check-tier verdict facts.
+
+Interim until that lands: the rail keeps reviewers honest, and the shipped
+guidance says a path in an attest is not custody.
