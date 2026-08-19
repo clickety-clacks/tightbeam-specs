@@ -171,12 +171,34 @@ successfully, a wake that creates a turn which immediately fails at the harness
 still consumes a rung. Repeated provider or adapter failures therefore burn the
 whole budget while the holder never hears anything.
 
-**Repair.** The successor re-assign above.
+**Repair.** The successor re-assign above — one `dispatch --holder <same
+session> --work-item <same item>` per genuinely live exhausted card; the fresh
+assignment carries a fresh supervision entitlement, which is the actual
+repair. Skip completed, abandoned, deliberately blocked, retired, quota-walled,
+and adapter-fenced work. Verify the new entitlement is armed before treating
+the card as recovered.
 
-**Fixed by.** Builds where rung selection uses *heard* prod evidence — failed or
-canceled turns no longer advance the ladder, so an outage freezes the budget
-instead of spending it. Check whether your build has this; if not, expect the
-class to recur after every outage.
+**What does NOT work on 0.1.8, and exactly why** (verified in supervision.ex,
+2026-08-19): a plain wake plus a liveness receipt never repairs an EXHAUSTED
+card. The receipt-driven full ladder reset (prodCount=0, stalledAt=NULL) is
+real, but its absorption path is guarded by `state in ["armed","claimed"]` on
+the supervision entitlement (`absorb_liveness_receipts_in_txn`). An exhausted
+card no longer qualifies, so the receipt is recorded and nothing resets.
+Receipts DO repair pre-exhaustion stalls — a chased card whose entitlement is
+still armed. Know which side of the boundary you are on before choosing.
+
+**Fixed by.** Two different mechanisms by line: 0.1.8 (frozen) ships the
+harness gate — prods are not spent into a harness+host with a standing
+harness-auth-dead or harness-rate-limit-dead fact — which removes the biggest
+burn source but NOT all: an adapter fenced by an incomplete park (the eezo
+park, 2026-08-19) fails turns without filing those facts, so park-fenced
+holders still burn ladders; expect this class to persist there at low volume
+forever, since 0.1.8 accepts no changes. main/0.2 additionally selects rungs
+from *heard* prod evidence — failed or canceled turns never advance the ladder
+— so the burn class is gone by construction and remaining exhaustion is a
+holder who heard every prod and did nothing: a parent's judgment, not a
+substrate fault. A possible RE-ARM verb (fresh entitlement, same assignment)
+is an open question in the delete-surrender spec fold (wi_ecd8cd9d).
 
 ### 4.5 False self-declared blocker
 
