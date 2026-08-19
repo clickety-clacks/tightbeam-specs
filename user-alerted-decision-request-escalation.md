@@ -1,6 +1,6 @@
 # user-alerted → decision-request escalation (design discussion, parked)
 
-Status: PARKED for a discussion with Mike. Work item wi_ad13e204 (unstaffed by
+Status: PARKED for a discussion with Mike. Work item wi_a8de6fe5 (predecessor wi_ad13e204 was failed by Main over the deliberate park) (unstaffed by
 design — staff it with `assign --files '["user-alerted-decision-request-escalation.md"]'`
 when the discussion is scheduled). Written 2026-08-19 by tb02 from the night's
 specimens; Mike has ratified NOTHING here.
@@ -53,4 +53,4 @@ nothing obliges anyone to ever look.
 ## Deliverable when staffed
 
 A one-page decision memo Mike can rule on — chosen answers to 1–5 with
-rationale — filed as an artifact on wi_ad13e204. Not code.
+rationale — filed as an artifact on wi_a8de6fe5. Not code.
