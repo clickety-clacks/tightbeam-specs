@@ -2621,3 +2621,28 @@ artifacts-and-reconciliation.md (ratified) and the check-tier verdict facts.
 
 Interim until that lands: the rail keeps reviewers honest, and the shipped
 guidance says a path in an attest is not custody.
+
+## 2026-08-19 — Surrender deleted from the fabric (Mike, ruled to tb02, stated three times)
+
+An agent may not give up its card. Surrender — the holder unilaterally closing
+its own obligation — is removed from the 0.2 design. In its place: a typed
+CANNOT-PROCEED report from holder to parent (the card's opener), stating why
+completion is impossible. The card STAYS OPEN on the holder until the parent
+disposes: revoke, re-scope, or restaff. Obligations never evaporate from below;
+a mind above the failure owns the new plan.
+
+Motivating specimen: 2026-08-19, the T1778 Apple-signing coder surrendered at a
+keychain human-gate at 03:25 PT with perfect evidence — and the org went silent
+for 19 hours because a surrender pages nobody and leaves nothing open.
+
+Engineering conditions ruled in with it (philosophy gate §2/§3):
+- cannot-proceed PAUSES supervision/prodding on that card (the work-blocked
+  shape) — a holder must never be ladder-burned on a card it has proven it
+  cannot do;
+- the report routes to the parent as that parent's decision; a dead or silent
+  parent is covered by the existing fault-bubbling climb;
+- stop-and-report is the agent's lawful "no"; what is removed is only the
+  power to dissolve the row.
+
+Scope: 0.2 line (main). 0.1.8 is frozen and keeps surrender as history. The
+earlier ask-then-surrender guidance idea is superseded by this ruling.
