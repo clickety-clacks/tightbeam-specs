@@ -2682,3 +2682,28 @@ evidence cards instead of one specimen with a count. Both carded untargeted
 2026-08-20 (Mike: card with standalone context, do not schedule on a
 release): wi_89087a49 the vanishing decision-request defect, wi_c05fdbe6 the
 card-per-recurrence burn pattern.
+
+## 2026-08-20 — Firehose auth: existing gateway auth, no capability keys (Mike, ruled to tb02)
+
+The event stream authenticates the way everything else at the gateway does,
+as the requesting user with their existing credential. Deployment reality is
+localhost or tailscale, the consumer is the user's own tooling, the feed is
+read-only. There is NO separate capability/API-key system: no key minting,
+no expiry, no per-feed revocation wire. Revocation is the existing session
+and device revocation. Scoped or expiring keys become a later versioned
+addition only if a less-trusted consumer ever becomes real (same later-
+decision pattern the draft used for SSE and native TLS).
+
+Consequences for the draft spec's blocking questions:
+- OQ5 (key expiry), OQ6 (expiry closing an active socket), OQ7 (key
+  list/revocation wire), OQ8 (timing non-disclosure) are DEAD. All four were
+  mechanics of the capability system that no longer exists.
+- OQ9 (bootstrap/replay concurrency): Mike ruled THERE IS NO LIMIT. No
+  bootstrap admission cap, no 503 server_busy for replay capacity.
+- OQ10 (cursor byte format): delegated to the firehose spec writer as a
+  technical decision. No owner ruling needed.
+
+With this and the 2026-08-20 firehose ruling above, nothing about the
+streaming feature is waiting on Mike. The next step, whenever someone picks
+it up, is a firehose-scoped spec written off main tip with the archived
+focused design and draft as input.
