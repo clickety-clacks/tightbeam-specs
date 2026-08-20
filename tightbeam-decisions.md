@@ -2678,6 +2678,7 @@ Consequences:
 
 Context worth keeping: the OQ decision request to Mike VANISHED repeatedly
 at the ruling seam (2026-08-15/16), and the org filed ~37 one-per-recurrence
-evidence cards instead of one specimen with a count. Two findings, neither
-carded yet: the vanishing decision-request defect, and the
+evidence cards instead of one specimen with a count. Both carded untargeted
+2026-08-20 (Mike: card with standalone context, do not schedule on a
+release): wi_89087a49 the vanishing decision-request defect, wi_c05fdbe6 the
 card-per-recurrence burn pattern.
