@@ -1,6 +1,10 @@
-# Event firehose v1 — the external event stream (product spec, r3)
+# Event firehose v1 — the external event stream (product spec, r3.1)
 
-Status: DRAFT r3, 2026-08-20. r3 folds Mike's freshness ruling (r2.1
+Status: DRAFT r3.1, 2026-08-20. r3.1: subscriptions are MULTIPLEXED — one
+ws connection carries any number of filtered subscriptions, each with its
+own id and cursor (Mike's r3 comment: per-connection-per-view is too
+heavy; the per-subscription cursor is the load-bearing part, not the
+connection count). r3 folds Mike's freshness ruling (r2.1
 changelog comment): the stream is ONLY a freshness signal, never a client's
 prime model; retention is a configurable few days; past the horizon clients
 reconstruct by fetching. §Position is new and pervades the doc. Companion
@@ -124,13 +128,22 @@ T4. **Epoch** — 128 CSPRNG bits, base64url. Identifies one continuous
 history of the store. Rotates only on restore-from-backup.
 
 T5. **Cursor** — a checkpoint: `(epoch, seq)`, a position in the one global
-order. Cursors are PER VIEW, not global: a client keeps one cursor for each
-filtered subscription it cares about — one for its all-events view, one for
-"events from this agent," one for "events on this work item" — and may hold
-any number. Every cursor is encoded the same way and is valid with any
-filter set, because the seq underneath is the same global order; a filtered
-view simply skips the rows its filter excludes while the cursor advances
-past them.
+order. Cursors are PER SUBSCRIPTION, not global: a client keeps one cursor
+for each filtered subscription it cares about — one for its all-events
+view, one for "events from this agent," one for "events on this work item"
+— and may hold any number, all multiplexed on one connection (S1). Every
+cursor is encoded the same way and is valid with any filter set, because
+the seq underneath is the same global order; a filtered view simply skips
+the rows its filter excludes while the cursor advances past them. A single
+merged cursor over differently-filtered views is rejected on purpose: on
+reconnect every view would have to resume from the slowest one's position,
+and a new filter would have no well-defined resume point.
+
+T5b. **Subscription** — one filtered view on the connection, opened by a
+subscribe message with a client-chosen `subscriptionId`. Every frame the
+server sends for it is tagged with that id. An event matching several of a
+connection's subscriptions is delivered once per matching subscription,
+each tagged.
 
 T6. **Pump** — the serialized server process that drains durable rows to
 connections. Reused from the archived design.
@@ -159,6 +172,7 @@ V4. Frame shape:
 ```json
 {
   "type": "firehose_event",
+  "subscriptionId": "chat-s_775f",
   "schemaVersion": 1,
   "eventId": {"epoch": "fhe_...", "seq": 40213},
   "class": "attest.filed",
@@ -225,12 +239,14 @@ TLS termination, if any, is the operator's reverse proxy, exactly as today.
 
 ## Subscribing
 
-S1. After auth, the client sends one subscribe message:
+S1. After auth, the client opens subscriptions — as many as it wants, all
+on this one connection, each by one subscribe message:
 
 ```json
 {
   "type": "subscribe",
   "protocolVersion": 1,
+  "subscriptionId": "chat-s_775f",
   "cursor": "fhc_v1_...",
   "tail": 50,
   "filters": {
@@ -263,11 +279,13 @@ scroll-back is §History below. `tail` with a supplied cursor is
 S5. `{"seq": 0}` at the current epoch is a lawful cursor: replay from the
 retention floor (the oldest retained event).
 
-S6. The server answers `subscription_ready` carrying the cursor at which
-live delivery begins (after any tail or replay completes). One subscription
-per connection; changing filters is a new connection. Connections are cheap
-on a local network, and a client holding several filtered views (T5) holds
-one connection per view.
+S6. The server answers `subscription_ready` (tagged with the
+subscriptionId) carrying the cursor at which live delivery begins, after
+that subscription's tail or replay completes. Subscriptions are independent:
+each replays and goes live on its own schedule. Changing a subscription's
+filters is `{"type": "unsubscribe", "subscriptionId": ...}` followed by a
+fresh subscribe — never a new connection. A duplicate subscriptionId or an
+unsubscribe for an unknown one is `invalid_request`.
 
 S7. There is NO admission or replay concurrency limit (Mike's OQ9 ruling:
 no limit). Any number of consumers may replay any amount of history
@@ -279,15 +297,16 @@ H1. On an open subscription the client may request older events at any
 time:
 
 ```json
-{"type": "history", "before": "fhc_v1_...", "limit": 100}
+{"type": "history", "subscriptionId": "chat-s_775f",
+ "before": "fhc_v1_...", "limit": 100}
 ```
 
-H2. The server returns the `limit` matching events (this subscription's
+H2. The server returns the `limit` matching events (that subscription's
 filters) immediately older than `before`, in chronological order:
 
 ```json
-{"type": "history_page", "events": [ ... ],
- "olderCursor": "fhc_v1_...", "atFloor": false}
+{"type": "history_page", "subscriptionId": "chat-s_775f",
+ "events": [ ... ], "olderCursor": "fhc_v1_...", "atFloor": false}
 ```
 
 `olderCursor` points at the oldest event returned and is a lawful `before`
@@ -346,11 +365,12 @@ crashed pump never invalidates a row. A 30-second heartbeat compare of
 drained-vs-durable head catches lost nudges. (Archived AR139–AR145,
 AR163–AR164, kept.)
 
-D4. Slow consumer: each connection has a bounded in-memory queue. On
-overflow the server closes THAT connection with close code 4008 and the
-last-delivered cursor in the close reason. The client reconnects and
-replays; nothing is lost because the rows are durable. This is not an
-admission limit; it is the only alternative to unbounded server memory.
+D4. Slow consumer: each connection has a bounded in-memory queue shared by
+its subscriptions. On overflow the server closes THAT connection with close
+code 4008. The client reconnects and resumes each subscription from its own
+persisted cursor (D2); nothing is lost because the rows are durable. This
+is not an admission limit; it is the only alternative to unbounded server
+memory.
 
 D5. Decimation: kill the gateway mid-stream and every consumer resumes from
 its cursor on restart with zero loss. Kill a consumer and the substrate
