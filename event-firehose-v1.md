@@ -6,12 +6,10 @@ prime model; retention is a configurable few days; past the horizon clients
 reconstruct by fetching. §Position is new and pervades the doc. Companion
 recon carded: wi_9fdc0c07 (client buildability — prove a Clawline-class
 chat client stands on this stream plus the non-streaming APIs). r2.1 added
-§Client workflows; r2 folded the nine r1 review comments. r2 folds Mike's nine review comments from the
-r1 reading copy (artifact comments pulled 2026-08-20): observability
-framing corrected, class vocabulary enumerated in-doc, tail and
-scroll-back history reads added, per-view cursors clarified, the read-only
-boundary restated with the chat-client pattern, MQ1 ruled (full payloads),
-MQ2 and MQ3 rewritten as plain discussions. Untargeted (0.2.0 or later,
+§Client workflows; r2 folded the nine r1 review comments (observability
+framing, in-doc class registry, tail and scroll-back reads, per-view
+cursors, chat-over-verbs pattern, payload ruling, MQ rewrites).
+Untargeted (0.2.0 or later,
 undecided). When build work starts it branches from main tip; ws is
 orthogonal enough that merge timing is unconstrained (Mike, 2026-08-20).
 
@@ -36,8 +34,9 @@ Authority and inputs:
   vocabulary, capability system, and redacted frames are superseded.
 - observability-v1.md r4: unchanged and complementary. Its doorbells are
   thin best-effort UI nudges on the existing chat wire, tolerating loss
-  because reads recompute. The firehose is the complete durable feed on its
-  own endpoint. Both exist; neither replaces the other.
+  because reads recompute. The firehose is the durable, replayable feed on
+  its own endpoint, complete within its retention window (ST2). Both
+  exist; neither replaces the other.
 
 ## Position — freshness, not truth (Mike's ruling, pervades this doc)
 
