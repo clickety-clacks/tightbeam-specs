@@ -1,8 +1,12 @@
-# Event firehose v1 — the external event stream (product spec, r2.1)
+# Event firehose v1 — the external event stream (product spec, r3)
 
-Status: DRAFT r2.1, 2026-08-20. r2.1 adds §Client workflows (rationale) per
-Mike's changelog comment: the cursor as a stable scroll-back point, and the
-workflows the protocol exists to support, written into the doc as the why. r2 folds Mike's nine review comments from the
+Status: DRAFT r3, 2026-08-20. r3 folds Mike's freshness ruling (r2.1
+changelog comment): the stream is ONLY a freshness signal, never a client's
+prime model; retention is a configurable few days; past the horizon clients
+reconstruct by fetching. §Position is new and pervades the doc. Companion
+recon carded: wi_9fdc0c07 (client buildability — prove a Clawline-class
+chat client stands on this stream plus the non-streaming APIs). r2.1 added
+§Client workflows; r2 folded the nine r1 review comments. r2 folds Mike's nine review comments from the
 r1 reading copy (artifact comments pulled 2026-08-20): observability
 framing corrected, class vocabulary enumerated in-doc, tail and
 scroll-back history reads added, per-view cursors clarified, the read-only
@@ -35,17 +39,39 @@ Authority and inputs:
   because reads recompute. The firehose is the complete durable feed on its
   own endpoint. Both exist; neither replaces the other.
 
+## Position — freshness, not truth (Mike's ruling, pervades this doc)
+
+P1. The event stream exists to keep real-time clients LIVELY: to signal
+that something changed, promptly, so a client refreshes what it shows. It
+is NEVER the prime model of any client.
+
+P2. A client builds and owns its internal model through the normal
+request/response surface (CLI verbs, HTTP reads: transcript, toplines,
+work-item and assignment reads). The stream only keeps that model fresh.
+
+P3. Therefore no client may RELY on all events existing for all time.
+Events are retained for a bounded, configurable window (ST2). Inside the
+window, replay and history reads work; past it, the client reconstructs by
+fetching — a chat client scrolling deep into the past pages the transcript
+read, not the event stream.
+
+P4. Whether the non-streaming surface is sufficient to build a
+Clawline-class chat client this way is the companion recon wi_9fdc0c07;
+gaps it finds are findings against that surface, not reasons to widen this
+stream into a model store.
+
 ## Goal
 
 G1. Tightbeam SHALL provide one WebSocket endpoint from which every
 substrate event streams to external consumers as it commits.
 
-G2. A consumer SHALL be able to read history three ways: resume from a
-cursor and receive everything missed in order without loss; fetch the
-newest N events to boot cold; and page backward from any point for
-scroll-back. The cursor's job for a UI is marking NEWNESS — an event after
-the client's saved cursor is "new to the user" — not gatekeeping how
-history is fetched.
+G2. Within the retention window, a consumer SHALL be able to read events
+three ways: resume from a cursor and receive everything missed in order
+without loss; fetch the newest N events to boot cold; and page backward for
+scroll-back. Past the window, reconstruction is the query surface's job
+(P3). The cursor's job for a UI is marking NEWNESS — an event after the
+client's saved cursor is "new to the user" — not gatekeeping how history is
+fetched.
 
 G3. A subscription MAY carry filters. Filters narrow delivery for that
 subscriber only. Nothing is excluded from the stream itself.
@@ -236,7 +262,7 @@ scroll-back is §History below. `tail` with a supplied cursor is
 `invalid_request` — they answer the same question two ways.
 
 S5. `{"seq": 0}` at the current epoch is a lawful cursor: replay from the
-beginning of retained history.
+retention floor (the oldest retained event).
 
 S6. The server answers `subscription_ready` carrying the cursor at which
 live delivery begins (after any tail or replay completes). One subscription
@@ -266,8 +292,9 @@ filters) immediately older than `before`, in chronological order:
 ```
 
 `olderCursor` points at the oldest event returned and is a lawful `before`
-for the next page; `atFloor: true` means retained history is exhausted.
-History pages never move the subscription's live position.
+for the next page; `atFloor: true` means retained history is exhausted —
+the client's scroll-back continues against the query surface (P3), not this
+socket. History pages never move the subscription's live position.
 
 H3. The intended UI shape (Mike, r1 comment): boot with `tail`, mark
 newness against the saved per-view cursor, page backward with `history` as
@@ -287,7 +314,10 @@ W2. **Jump to first unread.** The saved cursor is a stable position in the
 global order, not an offset — so "scroll up to where unseen starts" is:
 page backward with `history` from the live head until the page spans the
 saved cursor, land the viewport there. Offsets would rot as events arrive;
-a position does not. This workflow is why the cursor is `(epoch, seq)`.
+a position does not. This workflow is why the cursor is `(epoch, seq)`. If
+the saved cursor has fallen below the retention floor, the unread boundary
+is older than the window and the client lands via the query surface
+instead (P3).
 
 W3. **Resume after disconnect or sleep.** Subscribe with the saved cursor;
 everything missed arrives in order, then live delivery continues. The
@@ -297,7 +327,11 @@ need to.
 W4. **A chat client.** Send by calling the normal gateway verbs (wake);
 watch the effect arrive on the stream (`wake.scheduled`, turn and message
 classes). Filter the subscription to the session in view; keep one cursor
-per conversation view for unread marking (T5, W2).
+per conversation view for unread marking (T5, W2). The conversation itself
+is modeled from the transcript read (paginated, before/after); deep
+scroll-back pages that read once history hits the floor (H2). Whether every
+piece of this stands on today's non-streaming surface is recon
+wi_9fdc0c07.
 
 ## Delivery semantics
 
@@ -329,9 +363,10 @@ Q1. A consumer that needs current STATE plus updates SHALL: (1) subscribe
 with no cursor and receive `subscription_ready` with cursor K; (2) query
 current state through the existing query surface; (3) apply events after K,
 deduping against what the query already showed. Events between subscribe
-and query are duplicates by construction, and D2 handles duplicates. A
-consumer that only displays the event feed itself needs none of this —
-`tail` plus live delivery is complete (S4).
+and query are duplicates by construction, and D2 handles duplicates. This
+is the PRIMARY pattern (P1–P3): model from queries, stream for freshness.
+`tail` alone suffices only for a pure recent-events ticker that displays
+nothing older than the retention window.
 
 ## Cursors
 
@@ -358,9 +393,13 @@ ST1. One append-only table, one AUTOINCREMENT seq, rows written in the
 committing transaction (V1). Whether the existing internal EventLog tables
 fold into it is MQ2 below.
 
-ST2. Retention: v1 retains everything. The `cursor_expired` machinery (K3)
-exists so a retention horizon can be added later as a config change, not a
-contract change. Plain version in MQ1 below.
+ST2. **RULED (Mike, r2.1 comment):** retention is a bounded, configurable
+number of days — long enough to cover reconnects and short scroll-back, a
+few days by default (builder proposes the default; Mike's framing was "a
+couple days"). A sweep deletes event rows past the horizon; a cursor below
+the floor is `cursor_expired` (K3) and the client reconstructs by fetching
+(P3). Keep-everything is rejected: the stream is a freshness signal, not an
+archive — the substrate's durable rows are the archive.
 
 ## Errors and close codes
 
@@ -397,22 +436,22 @@ any quiescent moment.
 A5. A slow consumer forced into 4008 resumes by cursor with zero loss.
 
 A6. A cold-boot client using `tail` then `history` renders the same event
-sequence a cursor-zero replay would, in the same order.
+sequence a retention-floor replay would, in the same order.
+
+A6b. Retention: an event past the horizon is gone from the stream; a cursor
+below the floor returns `cursor_expired`; the documented reconstruction
+path (P3) covers what the stream no longer serves — proven by a test that
+ages events past a short test horizon.
 
 A7. The feature-smoke drives one real external consumer (ATC or a script)
 end to end.
 
 ## Open questions for Mike
 
-MQ1 (was MQ2). **Retention, plainly.** Every event is a database row and
-they accrue forever — every wake, every turn, every attest, from now on.
-The question is only: do we ever delete old ones? I propose NO — keep
-everything until table growth is a measured problem someone brings back
-here with numbers. Saying yes costs nothing today, and the expired-cursor
-machinery (K3) already handles a future "we only keep 90 days" as a config
-change. Confirm keep-everything, or set a horizon now.
+MQ1: RULED 2026-08-20 (r2.1 comment) — retention is a configurable few
+days, not keep-everything; see ST2. Closed.
 
-MQ2 (was MQ3). **One event table or two systems, the discussion.** Main
+MQ2. **One event table or two systems, the discussion.** Main
 already has internal append-only tables recording some of this (verb calls
 and denials, lifecycle transitions, rail denials — the EventLog, written
 for observability, currently with no consumer). The firehose needs its own
