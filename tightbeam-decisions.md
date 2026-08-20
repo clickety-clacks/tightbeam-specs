@@ -2646,3 +2646,38 @@ Engineering conditions ruled in with it (philosophy gate §2/§3):
 
 Scope: 0.2 line (main). 0.1.8 is frozen and keeps surrender as history. The
 earlier ask-then-surrender guidance idea is superseded by this ruling.
+
+## 2026-08-20 — Event stream is a firehose, not a focused feed (Mike, ruled to tb02)
+
+The external WS streaming endpoint is part of the OBSERVABILITY LAYER. Its
+point is that EVERY substrate event streams out of it, so any future UI or
+any agent can monitor what is happening in Tightbeam. Filters exist to let a
+subscriber narrow what it receives — they are never a gate on what is
+streamable. This supersedes the "focused" scoping of the reviewed 0.1-org
+design (art_7450257b, wi_5c34747f), which closed the vocabulary to a single
+work_item_created class and listed the broad feed as a non-goal. That
+plumbing survives — capability auth, durable event rows, cursor replay,
+push-after-commit — the closed single-class vocabulary does not.
+
+Targeting: untargeted (0.2.0 or later, undecided). When work starts it
+branches from main tip. WS is orthogonal enough that merge timing is
+unconstrained.
+
+Consequences:
+- OQ5–OQ10 from the draft spec (expiry bounds, expiry socket close,
+  list/revocation wire, timing non-disclosure, bootstrap 503, cursor
+  encoding) are NOT ruled — they are mechanics of a superseded scoping and
+  get re-derived when the firehose spec is written.
+- The reviewed design and the 915-line draft spec are INPUT, not authority:
+  rescued to archive/filtered-external-push-subscriptions-recon-v3.md
+  (sha256 3e0cd6df…, verified against the artifact row) and
+  archive/focused-external-subscriptions-v1-draft.md.
+- The 0.1-org cards on wi_5c34747f (the OQ hold asg_430badf6, the spec card
+  asg_ad5c8ca1) are moot in their current scope; the org is paused, so they
+  sit inert until disposed.
+
+Context worth keeping: the OQ decision request to Mike VANISHED repeatedly
+at the ruling seam (2026-08-15/16), and the org filed ~37 one-per-recurrence
+evidence cards instead of one specimen with a count. Two findings, neither
+carded yet: the vanishing decision-request defect, and the
+card-per-recurrence burn pattern.
