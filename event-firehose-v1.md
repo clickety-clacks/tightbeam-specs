@@ -1,6 +1,8 @@
-# Event firehose v1 — the external event stream (product spec, r2)
+# Event firehose v1 — the external event stream (product spec, r2.1)
 
-Status: DRAFT r2, 2026-08-20. r2 folds Mike's nine review comments from the
+Status: DRAFT r2.1, 2026-08-20. r2.1 adds §Client workflows (rationale) per
+Mike's changelog comment: the cursor as a stable scroll-back point, and the
+workflows the protocol exists to support, written into the doc as the why. r2 folds Mike's nine review comments from the
 r1 reading copy (artifact comments pulled 2026-08-20): observability
 framing corrected, class vocabulary enumerated in-doc, tail and
 scroll-back history reads added, per-view cursors clarified, the read-only
@@ -270,6 +272,32 @@ History pages never move the subscription's live position.
 H3. The intended UI shape (Mike, r1 comment): boot with `tail`, mark
 newness against the saved per-view cursor, page backward with `history` as
 the user scrolls. The cursor is never required just to fetch content.
+
+## Client workflows (rationale, non-normative)
+
+These are client concerns, outside the ws layer's purview — but the
+protocol exists to make them buildable, and they are why the shapes above
+are what they are (Mike, r2 comment).
+
+W1. **Cold boot.** Subscribe with `tail: 50`. The last 50 events render
+immediately; the saved per-view cursor marks which of them are unseen; live
+events append. No query, no replay ceremony.
+
+W2. **Jump to first unread.** The saved cursor is a stable position in the
+global order, not an offset — so "scroll up to where unseen starts" is:
+page backward with `history` from the live head until the page spans the
+saved cursor, land the viewport there. Offsets would rot as events arrive;
+a position does not. This workflow is why the cursor is `(epoch, seq)`.
+
+W3. **Resume after disconnect or sleep.** Subscribe with the saved cursor;
+everything missed arrives in order, then live delivery continues. The
+client cannot tell a laptop-lid nap from a gateway restart, and does not
+need to.
+
+W4. **A chat client.** Send by calling the normal gateway verbs (wake);
+watch the effect arrive on the stream (`wake.scheduled`, turn and message
+classes). Filter the subscription to the session in view; keep one cursor
+per conversation view for unread marking (T5, W2).
 
 ## Delivery semantics
 
