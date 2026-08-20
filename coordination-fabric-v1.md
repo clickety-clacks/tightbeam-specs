@@ -1,6 +1,9 @@
 # Coordination fabric — bones and cartilage — v1
 
-Status: r5 FOLDED (2026-08-13; executes the AUTHORIZED change requests
+Status: r6 DRAFT (2026-08-20; folds Mike's 2026-08-19 ruling that removes
+holder surrender from the 0.2 fabric and replaces it with typed
+`cannot-proceed`; pending independent cross-vendor review). Prior: r5 FOLDED
+(2026-08-13; executes the AUTHORIZED change requests
 `0.2-change-request-001.md` §C and `0.2-change-request-002.md` D1–D9 —
 both authorized by Mike, 2026-08-13 — in one fold sitting per their
 terms; source log: `emergent-formalization-candidates-2026-08-13.md`).
@@ -75,6 +78,12 @@ rendering of classes (Clawline's business); 0.1.x-line behavior.
   its OWN desk's composed identity at office creation (§6b).
 - **Obligation** — an open assignment, review, or decision-request a
   session holds.
+- **CANNOT-PROCEED report** — a holder-filed, non-terminal
+  `cannot-proceed` lifecycle attest on one assignment. It states why the
+  holder cannot complete that card,
+  keeps the card open, pauses that card's supervision production, and routes
+  a decision obligation to the card's durable opener (§4). It never dissolves
+  the assignment and never asks the substrate to judge the reason.
 - **Summon** — a wake the desk sends its principal carrying a brief;
   the desk's only way to spend the principal's turn.
 - **Turn boundary** — the moment a session's in-flight turn ends; the
@@ -193,13 +202,55 @@ creation. The office exploits the seam:
   exec session.
 - **Obligations stay on the back desk.** The worker holds its assignment cards
   and files its own lifecycle attests — holder-filed doctrine untouched
-  (scoped: LIFECYCLE attests — progress, completion, surrender — are
+  (scoped: LIFECYCLE attests — progress, completion, `cannot-proceed` — are
   holder-only; directive-kind attests on a delegation card may be filed by
   the card's named principal, and by nobody else, refused by name).
 - **The delegation card is the written scope.** The exec holds exactly one
   assignment whose subject IS its bounded verb list (§6). The card names its
   principal at creation. Everything the exec does traces to that card;
   revoking it dissolves the office.
+
+**CANNOT-PROCEED (`cannot-proceed`) is the holder's lawful stop, not a
+lifecycle exit (ruled 2026-08-19; 0.2 only).** An agent may stop work that it
+cannot lawfully or factually complete, but it may not make its obligation
+disappear. The holder files one typed `cannot-proceed` lifecycle attest on the
+exact assignment with a non-empty human-readable reason. The substrate derives
+the authenticated holder and the durable opener from rows; it refuses a
+missing, terminal, wrong-holder, or ambiguous target. The attest records the
+cause and its provenance, but the substrate never parses the reason or judges
+whether the holder is right.
+
+The filing is non-terminal and has four mechanical effects:
+
+1. The assignment stays open on the same holder.
+2. The exact assignment leaves the supervision prodder's match population
+   while its `cannot-proceed` condition stands. Other cards held by the same
+   session remain eligible. This is the existing `work-blocked` production
+   shape, not a mutable flag and not a gate on the turn queue.
+3. The substrate creates or reuses one causally linked decision obligation for
+   the assignment's durable opener. Replays of the same standing report do not
+   create another parent decision.
+4. The decision notice follows the existing proof-driven fault-bubbling climb.
+   A failed parent turn climbs the durable lineage. The terminal user alert
+   remains the existing tokenless path.
+
+One assignment may have at most one standing `cannot-proceed` condition.
+Another filing while it stands returns the existing condition and linked
+parent decision. The holder may append progress evidence without changing the
+condition. Only a durable parent disposition clears or supersedes it.
+
+The parent mind owns the new plan. It may revoke the card, re-scope it, or
+restaff it. The substrate resumes or ends the exact card only from the durable
+execution row for that disposition; a prose answer alone changes nothing.
+Therefore the fabric does not wait on an unrecorded decision and does not
+rebuild adjudication. Stop-and-report remains the agent's lawful "no". Only
+the holder's power to close its own obligation is removed.
+
+The motivating specimen is the T1778 Apple-signing card. Its holder filed
+complete evidence at 03:25 PT on 2026-08-19, then dissolved the card. No open
+obligation paged the parent, and the org stayed silent for 19 hours. Under
+this contract, the same evidence keeps the card visible, stops false effort
+escalation on that card, and routes the plan choice upward.
 
 **The office is the unit of hiring (r5, CR-002 D1).** A hire creates the
 mind and its desk TOGETHER — one office, spawned from the paired seed
@@ -228,8 +279,8 @@ error asymmetry; the exec's verbs cannot hold, judge, or file substance).
 The window cannot persist quietly: the leftover card is an open
 obligation in the prodder watermark (60-min quiet floor) and under
 effort check-in, and a desk that reads its role rebound away while its
-card stands must stand down and surrender (seed exec guidance carries
-the rule). In-flight batched traffic:
+card stands must stand down and file `cannot-proceed` on that card (seed exec
+guidance carries the rule). In-flight batched traffic:
 rows are durable (Law 2), digests are signed (§8); an undelivered wake
 addressed to the ROLE re-resolves at send time per existing law; a wake
 addressed to the dead exec SESSION follows the existing wake-delivery
@@ -781,6 +832,15 @@ Marked blocking (B: blocks the phase named) or non-blocking (NB).
     nurse's verdict (§5b).
 11. (NB) Spirit-interview protocol details (question set, STE style
     guide): the PO playbook's business (workstream 3), not this spec's.
+12. (B: lifecycle increment) Should the parent's disposition menu add
+    **RE-ARM** beside revoke, re-scope, and restaff? RE-ARM would grant a
+    fresh supervision entitlement to the SAME open assignment and accountable
+    holder after the parent judges that the holder should continue. In 0.1.8,
+    an exhausted entitlement cannot be reset from ordinary liveness receipts,
+    so recovery mints a successor assignment and entombs another handle. The
+    0.2 `heard-prods` design makes exhaustion rare and deliberate, which makes
+    same-card re-arming plausible but does not settle its authority, evidence,
+    or replay contract. This question authorizes no verb and no 0.1.8 change.
 
 ## 13. Implementation phases
 
@@ -934,6 +994,17 @@ never cross); `wake-on-fact-v1.md` (consumed primitive); `tightbeam.md`
 (hub — may not lag this file).
 
 ## Revision trail
+
+r6 DRAFT (2026-08-20): folds Mike's 2026-08-19 deletion of holder surrender
+from the 0.2 fabric. §4 replaces both surrender flows with holder-only typed
+`cannot-proceed`: the card stays open, only that card leaves the supervision
+prod match, one parent decision is causally routed, and failed parent delivery
+uses the existing fault-bubbling climb. The substrate records and routes; it
+does not parse the reason or choose the disposition. The T1778 19-hour silent
+failure is the motivating specimen. Open Question 12 records, without ruling,
+whether the parent may RE-ARM the same exhausted assignment. Version 0.1.8 is
+frozen and retains surrender only as historical behavior. This draft has no
+build-card or implementation authority until independent cross-vendor review.
 
 r5 fix round (2026-08-13, same day; Sol fold review, finding 3): §6 layer
 2 sharpened — dispatch rules compile the charter's STRUCTURAL must-nots
