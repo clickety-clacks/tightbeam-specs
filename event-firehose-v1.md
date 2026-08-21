@@ -2,7 +2,7 @@
 
 Status: DRAFT r4.1, 2026-08-21. r4.1: read markers RULED into the spec
 (§Read markers) — user-scoped substrate rows, changes broadcast as
-read_marker.updated. r4: r4 is a rescoping fold of Mike's state-model
+read_marker.updated. r4 was a rescoping fold of Mike's state-model
 ruling (2026-08-21): the EVENTS are not the entity — the TIGHTBEAM STATE
 MODEL is. The ws exists only to tell a client that an aspect of the state
 db changed. There is NO way to fetch previous events from the socket:
