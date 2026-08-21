@@ -19,7 +19,7 @@ The lifecycle mechanism MUST NOT read Kung Fu prose, select a model, switch a mo
 
 A supervising agent that receives a failed-turn notice applies its own currently served Kung Fu model-selection row. The agent MUST try each allowed candidate in that row once, in order. A refused candidate or a harness that is out of tokens advances to the next candidate. Nothing off-list is tried.
 
-Main MUST NOT receive a `model candidates exhausted` report from a failed turn, a provider name, an error string, or an unavailable first candidate. That report is permitted only after an authorized supervising agent files the typed fact defined in ARC-08.
+Main MUST NOT receive a `model candidates exhausted` report from a failed turn, a provider name, an error string, or an unavailable first candidate. That report is permitted only after an authorized supervising principal files the typed fact defined in ARC-08.
 
 ### INV-03 — Lifecycle does not change custody
 
@@ -70,7 +70,7 @@ Close the proven silent-loss gap for new assigned failed turns and accepted assi
 
 ### GOAL-02
 
-When an agent determines that a failed turn cannot continue because the applicable Kung Fu model list is exhausted, Main receives one capability-block marker only after that agent-owned fact commits.
+When an authorized supervisor determines that a failed turn cannot continue because the applicable Kung Fu model list is exhausted, Main receives one capability-block marker only after that supervisor-authored fact commits.
 
 ### GOAL-03
 
@@ -116,7 +116,7 @@ The eligible source forms and stable identifiers are:
 
 | Source | Source id | Eligibility |
 |---|---|---|
-| assigned terminal turn | `turn:<seq>` | `turns.assignmentId` is non-null; status is `failed` or `failed_unknown`; the terminal transaction wrote the ARC-01 source event |
+| assigned terminal turn | `turn:<seq>` | `turns.assignmentId` is non-null; status is `failed` or `failed_unknown`; `requestRef` does not begin `assignment-lifecycle:`; the terminal transaction wrote the ARC-01 source event |
 | assignment disposition | `assignment:<assignmentId>:<outcome>` | outcome is `completed`, `surrendered`, or `revoked`; the closing transaction wrote the ARC-01 source event |
 `episodeId` is `ale:<sourceId>` for a turn or assignment source. A model-list exhaustion fact continues the named turn episode; it does not create a second episode.
 
@@ -130,7 +130,7 @@ A turn whose `requestRef` begins `assignment-lifecycle:` is an attempt, not a ne
 
 The audience is `work_items.ownerUserId` when the assignment has a work item. Otherwise it is the immutable `sessions.ownerUserId` of the assignment holder. Its report stream is `Tightbeam.Org.personal_session_key(audienceUserId)`.
 
-If neither row yields one user, recognition returns the named error `lifecycle_audience_missing`; it does not invent an owner.
+Agent routing does not depend on resolving the audience. If neither row yields one user after all non-Main routes terminate non-delivered, recognition returns the named error `lifecycle_audience_missing`; it does not invent an owner or suppress an available agent route.
 
 ### TERM-03 — Expecter edge
 
@@ -150,18 +150,20 @@ The edge recipient is that assignment's `holderKey`. More than one matching turn
 
 ### TERM-05 — Holder-parent edge
 
-The holder-parent edge starts at `sessions.spawnedBy` for the assignment holder. For a failed-turn source, Bubble walks active ancestors nearest-first with its existing 32-hop and cycle behavior, and lifecycle does not create a second climb. For an assignment-disposition source, lifecycle applies the same active, nearest-first, 32-hop, visited-set rules because no Bubble root exists.
+The holder-parent edge starts at `sessions.spawnedBy` for the assignment holder. For a failed-turn source, Bubble walks active ancestors nearest-first, bounded at 32 hops, and lifecycle does not create a second climb. Its visited set is derived from exact `bubble:<rootTurnSeq>` attempt rows; a repeated recipient or the end of the bound is exhaustion, not a duplicate enqueue. For an assignment-disposition source, lifecycle applies the same active, nearest-first, 32-hop, derived-visited-set rules because no Bubble root exists. No mutable lineage state is added.
 
 ### TERM-06 — Existing route
 
 Existing coverage is one of:
 
-- a Bubble notice for the root failed turn;
+- a Bubble notice whose cause is the root failed turn;
 - an exact supervision controller wake or turn correlated by the existing sidecar to that root turn and assignment; or
 - the work item's `slateWakeId` created in the same assignment-close transaction; or
-- an existing Bubble `lineage_exhausted` event whose exact root is the source turn or a lifecycle-notice turn for the source.
+- after rollback only, an existing Bubble `lineage_exhausted` event whose `cause_seq` is the source turn or a lifecycle-notice turn for the source.
 
 Queued or running coverage keeps the episode `resolving`. Delivered coverage resolves it. A terminal non-delivered route permits the next candidate. A pending slate wake is coverage because its existing domain intentionally routes the zero-assignment decision to Main.
+
+An exact correlated non-delivered route also counts as a prior attempt by its recipient. Lifecycle MUST NOT send that recipient a second notice for the same episode.
 
 ### TERM-07 — Lifecycle notice
 
@@ -194,10 +196,12 @@ The read projection derives one state; no mutable lifecycle state row exists:
 | State | Row predicate |
 |---|---|
 | `resolving` | source event exists; an existing route or lifecycle notice is queued/running, or an untried eligible agent edge remains |
-| `resolved_existing` | a correlated existing route delivered, or a same-transaction slate wake covers an assignment close |
-| `resolved_agent` | an expecter or agent-owner lifecycle notice delivered |
+| `resolved_existing` | a correlated existing route delivered, a same-transaction slate wake covers an assignment close, or a correlated rollback `lineage_exhausted` event exists |
+| `resolved_agent` | an expecter, agent-owner, or holder-parent lifecycle notice delivered |
 | `reported_main` | the deterministic ARC-07 Main marker exists |
 | `refused` | ARC-10's deterministic refusal event exists |
+
+The projection applies the predicates in this first-match order: `reported_main`, `resolved_existing`, `resolved_agent`, `refused`, `resolving`. This order makes the one legal `resolved_agent -> reported_main` transition observable after ARC-08's typed exhaustion fact. The write rules forbid every other overlap.
 
 `resolving -> resolved_existing | resolved_agent | reported_main | refused` is allowed. `resolved_agent -> reported_main` is allowed only after ARC-08's typed exhaustion fact. No transition leaves `refused`, and no other transition exists.
 
@@ -205,7 +209,21 @@ The read projection derives one state; no mutable lifecycle state row exists:
 
 The Main report is one `messages` row with role `assistant`, sender `process:tightbeam`, attention tier `high`, device id `process:tightbeam`, and client message id `assignment-lifecycle:main:<sourceId>`. Its first line is `[assignment lifecycle]`.
 
-An ordinary exhausted-routing body states that no recorded agent route accepted the notice and that model-candidate exhaustion was not established. A typed exhaustion body names the exhaustion fact id and states that an agent reported the applicable candidate list exhausted.
+The ordinary exhausted-routing body is exactly:
+
+```text
+[assignment lifecycle]
+
+Assignment lifecycle source <sourceId> on assignment <assignmentId> needs your action. No recorded non-Main agent route delivered. Model-candidate exhaustion was not established. Tightbeam did not change ownership.
+```
+
+The typed exhaustion body is exactly:
+
+```text
+[assignment lifecycle]
+
+Assignment lifecycle source <sourceId> on assignment <assignmentId> is capability-blocked. Authorized fact <evidenceId> reports that the applicable Kung Fu candidate list was exhausted. Tightbeam did not change ownership.
+```
 
 ### TERM-10 — Capable agent
 
@@ -223,7 +241,7 @@ SQLite transactions and the existing unique indexes on `turns.wakeId` and `(mess
 
 ### ASM-03
 
-The existing terminal publication reconciler retries a terminal turn whose `publishedAt` remains null after a crash. Its `on_terminal` hook runs again before publication is acknowledged.
+The existing terminal publication reconciler enumerates a terminal turn whose `publishedAt` remains null after a crash and invokes the configured terminal hooks. At the implementation baseline, the live lane acknowledges publication before its asynchronous recognition hook; ARC-11 changes that ordering for eligible lifecycle terminals.
 
 ### ASM-04
 
@@ -241,7 +259,7 @@ The shipped `agentic-engineering` Kung Fu defines ordered model candidates by ac
 
 ### ARC-01 — Source admission and persistence
 
-Add lifecycle event kind `assignment_lifecycle_source_v1`. It is written only inside the transaction that wins the terminal source transition.
+Add lifecycle event kind `assignment_lifecycle_source_v1`. It is written only inside the transaction that wins the terminal source transition. The turn path excludes `requestRef` values beginning `assignment-lifecycle:` so a failed notice remains an attempt in its original episode.
 
 The event has this exact existing-table shape:
 
@@ -255,14 +273,18 @@ The event has this exact existing-table shape:
 ```json
 {
   "schemaVersion": "assignment-lifecycle-source-v1",
-  "workItemId": "wi_... or null",
+  "workItemId": null,
   "principal": "process:tightbeam"
 }
 ```
 
+`workItemId` is the exact work-item id string when the assignment has one; otherwise it is JSON null.
+
 The event stores no prompt, error, assignment-subject text, note, outcome copy, model response, or credential. Its presence is the post-activation eligibility boundary. An existing terminal row without this event is historical.
 
-Before inserting, the terminal transaction checks for the exact event kind and subject. If it already exists, the source retains its original episode and the transaction writes no second source event. SQLite's write serialization makes the check and insert one atomic mutation seam. This also means a reopened assignment that later closes with the same outcome rejoins its original canonical `assignment:<assignmentId>:<outcome>` episode.
+Before inserting, the terminal transaction checks for the exact event kind and subject. If it already exists, the source retains its original episode and the transaction writes no second source event. Every such check runs inside the existing single-owner `BEGIN IMMEDIATE` transaction, so the second writer observes the first commit and cannot insert concurrently. This also means a reopened assignment that later closes with the same outcome rejoins its original canonical `assignment:<assignmentId>:<outcome>` episode.
+
+Live lane failure, task-crash failure, unclaimable-turn failure, and boot recovery to `failed_unknown` all invoke the same source-admission helper inside the transaction that wins their guarded terminal update. Assignment completion, surrender, and revocation invoke the assignment form inside their existing close transaction.
 
 ### ARC-02 — Candidate order and exclusion
 
@@ -274,17 +296,19 @@ After correlated existing routes are settled, derive candidates in this order:
 
 For a failed-turn source, Bubble already owns the holder-parent lineage, so step 3 adds no candidate.
 
-Deduplicate equal session keys while preserving the first relation. Exclude the assignment holder, the audience's composed Main key, a `sessions.kind = main` row, a missing session, a non-active session, and any `(episode, recipient)` whose deterministic attempt turn already exists.
+Deduplicate equal session keys while preserving the first relation. Exclude the assignment holder, the audience's composed Main key, a `sessions.kind = main` row, a missing session, a non-active session, and any recipient already used by an exact correlated existing route or lifecycle notice for the episode, regardless of that prior turn's terminal outcome.
 
 If a candidate disappears between selection and enqueue, the transaction returns `skipped`; recognition continues to the next candidate. A role lookup and role rebind are outside this MVP because routing uses immutable session keys.
 
 ### ARC-03 — Failed-turn integration
 
-The Gateway writes ARC-01's source event in the same transaction as an eligible failed turn. Bubble then keeps its existing holder-parent climb.
+The lane or recovery seam writes ARC-01's source event in the same transaction as an eligible failed turn. Bubble then keeps its existing non-Main holder-parent climb.
 
-At Bubble's terminal rung, an eligible assigned root calls the lifecycle evaluator instead of Bubble's owner-wide `user-alerted` terminal alert. Unassigned roots and roots without ARC-01's source event use the existing Bubble path unchanged.
+For an eligible assigned root, Bubble evaluates its non-Main lineage before the legacy owner-wide `user-alerted` suppression. Both `parentless` and exhausted terminal rungs call the lifecycle evaluator instead of writing Bubble's owner-wide marker or `user-alerted` fact. Unassigned roots and roots without ARC-01's source event use the existing Bubble path unchanged.
 
-A terminal lifecycle-notice turn calls the evaluator for its `requestRef` source. `delivered` yields `resolved_agent`. `failed`, `failed_unknown`, or `canceled` permits the next candidate. A queued or running notice prevents another action.
+A terminal lifecycle-notice turn is intercepted before Bubble can treat it as a new cause. It calls the evaluator for its `requestRef` source: `delivered` yields `resolved_agent`; `failed`, `failed_unknown`, or `canceled` permits the next untried candidate. A queued or running notice prevents another action. The active version never starts a second Bubble climb from a lifecycle notice; ARC-12 covers the predecessor doing so after rollback.
+
+A terminal Bubble notice whose cause is an eligible root also re-evaluates that root. Delivered resolves the existing route. Non-delivered continues Bubble or, at its terminal rung, permits the first untried lifecycle edge.
 
 An exact correlated supervision route is considered before a lifecycle candidate. If that route is pending, recognition returns without writing. Its terminal callback re-evaluates the root. If delivered, it yields `resolved_existing`; otherwise evaluation continues.
 
@@ -294,9 +318,11 @@ Every completion, surrender, and revocation seam calls one transaction-local lif
 
 The function writes ARC-01's source event. If the close transaction created a `slateWakeId`, it records `resolved_existing` and writes no notice or report. Otherwise it attempts ARC-02's candidates transaction-locally. If no candidate can be enqueued, it writes ARC-07's Main report in the same transaction.
 
+The close handler carries any newly appended notice or marker as a post-commit delivery result. Only after the outer transaction commits may it publish the message and nudge the target lane through the existing Gateway completion seam. A crash before that step loses no work: message replay exposes a marker, and the existing pending-turn reconciler starts a queued notice.
+
 ### ARC-05 — Deterministic notice insertion
 
-Notice message and turn insertion use the existing Gateway/Ledger transaction seam and TERM-07 identifiers. A new turn and its projection message commit together. An existing identical `wakeId` or `clientMessageId` is success by duplication and creates no second row. Reuse with different content or correlation is `lifecycle_idempotency_conflict` and the transaction aborts.
+Notice message and turn insertion use the existing Gateway/Ledger transaction seam and TERM-07 identifiers. A new turn and its projection message commit together. An existing identical `wakeId` or `clientMessageId` is success by duplication and creates no second row. Reuse with different content or correlation stops that insertion; the same outer transaction preserves the existing row, writes ARC-10's refusal event, and commits the source transition. It does not raise a database error or roll the source back.
 
 ### ARC-06 — Existing-route resolution
 
@@ -319,16 +345,19 @@ The report event subject is the TERM-01 source id. Its detail is:
   "schemaVersion": "assignment-lifecycle-report-v1",
   "episodeId": "ale:...",
   "messageId": "s_...",
-  "reason": "agent_supervision_unavailable | model_candidates_exhausted",
+  "reason": "agent_supervision_unavailable",
+  "evidenceId": null,
   "principal": "process:tightbeam"
 }
 ```
+
+For `agent_supervision_unavailable`, `evidenceId` is JSON null. For `model_candidates_exhausted`, `reason` is that exact string and `evidenceId` is TERM-01's exact `model-exhausted:<conditionFactId>:<turnSeq>` string. No other key or reason value is permitted.
 
 Wire publication occurs after commit. Replay from `messages` is recovery when no client was connected or publication failed.
 
 ### ARC-08 — Model-list exhaustion fact
 
-Add agent-only condition kind `model-candidates-exhausted`. Its scope is an exact `ale:turn:<seq>` episode id.
+Add judgment-only condition kind `model-candidates-exhausted`. In `ConditionFacts` it joins the existing agent-only kind set, which forbids `process:tightbeam`; the Gateway authority check below retains the explicit owner/admin arm. Its scope is an exact `ale:turn:<seq>` episode id.
 
 The condition verb accepts it only when:
 
@@ -336,9 +365,9 @@ The condition verb accepts it only when:
 - the caller is above the failed turn's session in `spawnedBy` lineage or is that session's owning user/admin, using the existing `work-blocked` authority rule; and
 - a correlated expecter, agent-owner, Bubble, or supervision agent turn delivered for the episode.
 
-The substrate does not inspect or count model attempts. The fact is the supervising agent's judgment that it applied the applicable Kung Fu row and exhausted its allowed candidates once each. The agent also uses existing `work-blocked` when current model policy requires the affected session to stop receiving ordinary work.
+The substrate does not inspect or count model attempts. The fact is the authorized supervising principal's judgment that the supervising agent applied the applicable Kung Fu row and exhausted its allowed candidates once each. An owning user/admin can file only after the same correlated delivered agent-route proof; that authority does not replace the proof. The supervising agent also uses existing `work-blocked` when current model policy requires the affected session to stop receiving ordinary work.
 
-The condition fact and ARC-07 report commit in one transaction. The report reason is `model_candidates_exhausted`. Duplicate facts cannot duplicate the deterministic report. The substrate MUST refuse this condition kind from `process:tightbeam` and from the affected session itself.
+The condition fact and ARC-07 report commit in one transaction. Before insertion, that single-writer transaction selects the earliest exact `(kind, scope)` fact. It reuses that fact or inserts exactly one, then derives TERM-01's stable evidence id from it. Therefore retries by the same or another authorized principal cannot create a second fact or change the marker body. The report reason is `model_candidates_exhausted`. The substrate MUST refuse this condition kind from `process:tightbeam` and from the affected session itself.
 
 ### ARC-09 — API and trace
 
@@ -349,15 +378,17 @@ No new public mutation verb is added. The existing `condition` verb accepts ARC-
 ```json
 {
   "episodeId": "ale:...",
-  "sourceId": "turn:... or assignment:...",
+  "sourceId": "turn:<seq>",
   "sourceAt": 0,
-  "state": "resolving | resolved_existing | resolved_agent | reported_main | refused",
+  "state": "resolving",
   "attempts": [
-    {"relation": "bubble | supervision | expecter | agent_owner | holder_parent", "sessionKey": "...", "turnSeq": 0, "status": "..."}
+    {"relation": "expecter", "sessionKey": "...", "turnSeq": 0, "status": "queued"}
   ],
-  "reportMessageId": "s_... or null"
+  "reportMessageId": null
 }
 ```
+
+`sourceId` uses either TERM-01 form. `state` is exactly one TERM-08 value. `relation` is exactly one of `bubble`, `supervision`, `expecter`, `agent_owner`, or `holder_parent`; `status` is the joined row's exact existing status. `reportMessageId` is the exact message id string only in `reported_main`; otherwise it is JSON null.
 
 `job-trace` includes the three lifecycle event kinds and the correlated attempt turns. Neither API returns source error text or report body.
 
@@ -379,11 +410,13 @@ The first four failures write one lifecycle event with kind `assignment_lifecycl
 ```json
 {
   "schemaVersion": "assignment-lifecycle-refusal-v1",
-  "episodeId": "ale:... or null",
-  "code": "one ARC-10 code",
+  "episodeId": null,
+  "code": "lifecycle_source_invalid",
   "principal": "process:tightbeam"
 }
 ```
+
+`episodeId` is the exact TERM-01 episode string when derivable; otherwise it is JSON null. `code` is exactly one of the first four ARC-10 codes and no other value.
 
 The source mutation is not rolled back merely because lifecycle routing cannot proceed. Before insertion, the transaction checks exact kind and subject; a repeated callback writes no second refusal. The callback then completes, so malformed durable state becomes one named terminal value rather than a retry loop or hold.
 
@@ -393,7 +426,9 @@ Each refusal logs the code, source id, episode id when derivable, and principal.
 
 Assignment disposition, slate coverage, source event, notice insertion, and immediate Main fallback share the assignment transition transaction. A crash leaves all or none.
 
-For failed turns, the source event shares the terminal transaction. A crash before routing leaves `publishedAt` null; existing terminal replay re-enters the evaluator. Deterministic turn and message keys make re-entry idempotent. A committed ARC-10 refusal lets publication complete and is not retried.
+For failed turns, the source event shares the guarded terminal transaction. The live lane and terminal reconciler MUST run lifecycle/Bubble recognition to a durable result before setting `publishedAt`. A durable result is one queued/running exact existing route, one deterministic lifecycle notice, one Main marker, one refusal, or a delivered resolution. The reconciler uses a no-lane-nudge delivery mode during its own pass, then its existing pending-session scan starts any queued notice; this avoids a synchronous call back into itself.
+
+A crash before that durable result leaves `publishedAt` null, so terminal replay re-enters the evaluator. A crash after the result but before acknowledgement replays idempotently. Deterministic turn and message keys make both cases converge. A committed ARC-10 refusal is a durable result and is not retried after publication acknowledgement.
 
 SQLite serialization decides candidate-retirement, supervision-route, condition-fact, and report races. Each transaction re-reads eligibility immediately before its write. The committed pre-change or post-change state wins; no check-then-act gap is permitted.
 
@@ -432,11 +467,15 @@ Production files:
 ```text
 lib/tightbeam/assignment_lifecycle.ex          # new; source decoder, edge/query projection, evaluator, report
 lib/tightbeam/assignments.ex                   # transaction-local assignment source hook
+lib/tightbeam/boot.ex                          # failed_unknown recovery admission hook
 lib/tightbeam/condition_facts.ex               # agent-only exhaustion kind and atomic report hook
 lib/tightbeam/event_log.ex                     # typed lifecycle source/report readers and documentation
 lib/tightbeam/gateway.ex                       # failed-turn source hook and transaction-local notice seam
 lib/tightbeam/job_trace.ex                     # derived lifecycle projection
+lib/tightbeam/lane_manager.ex                  # replay recognition before publication acknowledgement
+lib/tightbeam/ledger.ex                        # terminal/recovery callback inside guarded updates
 lib/tightbeam/productions/bubble.ex            # assigned root terminal handoff; notice re-entry
+lib/tightbeam/session_lane.ex                  # live terminal admission and recognition ordering
 lib/tightbeam/wire/payloads.ex                 # document `[assignment lifecycle]` marker
 ```
 
@@ -478,11 +517,11 @@ Given the routing-owner specimen and an eligible failed assigned turn, when Bubb
 
 ### AC-02 — Agent edges precede Main
 
-Given distinct active expecter and agent-owner recipients, when an eligible source is recognized, then the expecter receives one deterministic notice first. If it fails, the agent owner receives one. Main receives no model turn. If either delivers, state is `resolved_agent` and no ordinary Main report exists.
+Given distinct active expecter and agent-owner recipients not already attempted by an exact existing route, when an eligible source is recognized, then the expecter receives one deterministic notice first. If it fails, the agent owner receives one. Main receives no model turn. If either delivers, state is `resolved_agent` and no ordinary Main report exists. A recipient already attempted by Bubble or supervision receives no second notice.
 
 ### AC-03 — Parent lineage and ownership stay unchanged
 
-Given `holder -> parent -> Main`, when a failed assigned turn bubbles, then the existing Bubble turn reaches `parent` before lifecycle tries other edges. No write changes `spawnedBy`, holder, opener, owner, role, or review columns. No user-rooted reparenting or replacement session occurs.
+Given `holder -> parent -> Main`, when a failed assigned turn bubbles, then the existing Bubble turn reaches `parent` before lifecycle tries other edges. A failed lifecycle notice does not start another Bubble climb. No write changes `spawnedBy`, holder, opener, owner, role, or review columns. No user-rooted reparenting or replacement session occurs.
 
 ### AC-04 — Assignment terminal and slate behavior
 
@@ -494,7 +533,7 @@ Given no eligible agent route, when recognition reports Main, then one high-atte
 
 ### AC-06 — Crash and restart
 
-Given a failed-turn source commits and the process crashes before routing, when terminal publication recovery runs, then the same episode resumes. Crashes before and after notice or report commit yield one deterministic turn or marker, never zero after recovery and never two.
+Given a failed-turn source commits and the process crashes before routing, when terminal publication recovery runs, then it recognizes the same episode before acknowledging publication. Crashes before and after notice or report commit yield one deterministic turn or marker, never zero after recovery and never two. Boot-recovered `failed_unknown` and unclaimable assigned turns write their source event in the guarded terminal transaction and pass the same test.
 
 ### AC-07 — Race closure
 
@@ -504,7 +543,7 @@ Given candidate retirement, supervision route insertion, or model-exhaustion fil
 
 Given an agent receives a lifecycle notice and its applicable test Kung Fu row is `[candidate-A, candidate-B, candidate-C]`, when A is refused and B is out of tokens, then the agent tries C once. It does not retry A or B, use an off-list model, or report exhaustion to Main before C also fails.
 
-This is an agent-policy acceptance fixture. The lifecycle substrate proves only the ordered attempts' durable session/assignment/turn rows and the later agent-authored fact; it does not parse the policy or perform the attempts.
+This is an agent-policy acceptance fixture. The lifecycle substrate proves only the ordered attempts' durable session/assignment/turn rows and the later supervisor-authored fact; it does not parse the policy or perform the attempts.
 
 ### AC-09 — Main only after typed exhaustion
 
@@ -551,12 +590,12 @@ The packaged smoke installs the assembled artifact into a fresh prefix and uses 
 |---|---|---|
 | INV-01, INV-03, INV-04 | AC-01 through AC-04, AC-10 | `assignment_lifecycle.ex`, `bubble.ex`, `assignments.ex` |
 | INV-02 | AC-08 through AC-11 | `condition_facts.ex`, `assignment_lifecycle.ex` |
-| INV-05, INV-06 | AC-05 through AC-07 | `assignment_lifecycle.ex`, `gateway.ex`, existing unique indexes |
+| INV-05, INV-06 | AC-05 through AC-07 | `assignment_lifecycle.ex`, `gateway.ex`, `session_lane.ex`, `lane_manager.ex`, `ledger.ex`, existing unique indexes |
 | INV-07 | AC-01, AC-03, AC-04, AC-14 | `bubble.ex`, existing supervision/slate seams |
 | INV-08, INV-10 | AC-05, AC-09, AC-13 | `event_log.ex`, `projection.ex` unchanged, `job_trace.ex` |
 | INV-09 | AC-12 | no schema file change |
 | GOAL-01 | AC-01 through AC-07 | source hooks and evaluator |
-| GOAL-02 | AC-08 through AC-11 | typed agent fact and atomic report |
+| GOAL-02 | AC-08 through AC-11 | typed supervisor fact and atomic report |
 | GOAL-03 | AC-14, AC-15 | fixtures, deterministic tests, packaged smoke |
 | ARC-01 through ARC-08 | AC-01 through AC-12 | production file set in ARC-15 |
 | ARC-09 through ARC-13 | AC-05 through AC-13 | trace, errors, compatibility, observability |
