@@ -65,13 +65,13 @@ The observability read/notify program, ruled by Mike 2026-08-20/21 as
 untargeted (0.2.0 or later; work branches from main tip when it starts;
 none of it is in the 0.2.0 core election):
 
-- `event-firehose-v1.md` r5 — ws state-change notices: live-only doorbell,
+- [event-firehose-v1.md](event-firehose-v1.md) r5 — ws state-change notices: live-only doorbell,
   no history on the socket, canonical public projections shared with REST.
-- `rest-state-api-v1.md` r1 — the formal REST read plane (r2 mechanical
+- [rest-state-api-v1.md](rest-state-api-v1.md) r1 — the formal REST read plane (r2 mechanical
   amendment reviewed-clean, canonical-adoption pending Mike dr_52456ca8;
   SQ2 admin-reads pending dr_bd47c1d7).
-- `rest-vs-cli-adjudication.md` r2 — the ruling: REST is the read plane,
-  verbs the write plane, the CLI is sugar. `rest-state-api-recon.md` is
+- [rest-vs-cli-adjudication.md](rest-vs-cli-adjudication.md) r2 — the ruling: REST is the read plane,
+  verbs the write plane, the CLI is sugar. [rest-state-api-recon.md](rest-state-api-recon.md) is
   the adopted evidence.
 - `wi_cb5734eb` — standing spec ownership: product-owner:rest-state-api,
   under product-owner:tightbeam-codex-sol-relief.
