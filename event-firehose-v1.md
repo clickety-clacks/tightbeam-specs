@@ -1,6 +1,8 @@
-# Event firehose v1 — state-change notifications over ws (product spec, r4)
+# Event firehose v1 — state-change notifications over ws (product spec, r4.1)
 
-Status: DRAFT r4, 2026-08-21. r4 is a rescoping fold of Mike's state-model
+Status: DRAFT r4.1, 2026-08-21. r4.1: read markers RULED into the spec
+(§Read markers) — user-scoped substrate rows, changes broadcast as
+read_marker.updated. r4: r4 is a rescoping fold of Mike's state-model
 ruling (2026-08-21): the EVENTS are not the entity — the TIGHTBEAM STATE
 MODEL is. The ws exists only to tell a client that an aspect of the state
 db changed. There is NO way to fetch previous events from the socket:
@@ -127,8 +129,9 @@ notices. It exists ONLY so a client can detect that delivery hiccuped
 mid-connection (a skip) and trigger its one recovery path: rebuild. It is
 not a resume token; nothing accepts it back.
 
-T5. **Read marker** — a client-facing "the user has seen through here"
-position. NOT a stream concept in r4: see MQ1.
+T5. **Read marker** — a user-scoped "seen through here" position stored as
+a substrate row (§Read markers). Not a stream concept; its changes merely
+broadcast like any other state change.
 
 ## The event vocabulary law
 
@@ -185,7 +188,7 @@ R3. Org shape:
 `role.removed`, `user.added`, `device.approved`, `device.denied`,
 `device.revoked`.
 
-R4. Records: `artifact.recorded`.
+R4. Records: `artifact.recorded`, `read_marker.updated` (RM3).
 
 R5. Dispatch: `verb.accepted`, `verb.denied` — one per gateway verb call,
 with the verb name, origin, and principal in payload/refs. The catch-all:
@@ -257,8 +260,26 @@ notices. Rebuild is the single recovery path and is always correct.
 
 M3. Unread marking ("has the user seen this?") is a position against
 STATE rows (a row id or timestamp per view), never against the stream.
-Where that position lives — client-local vs a shared substrate row — is
-MQ1.
+Shared markers live in substrate rows (RM1); a strictly single-instance
+client MAY keep its marker client-local instead.
+
+## Read markers (RULED, Mike 2026-08-21)
+
+RM1. The substrate SHALL provide user-scoped read-marker rows:
+`(userId, scopeKey, marker)`. `scopeKey` is a client-chosen string naming
+the view (a session, a work item, an ATC view name); `marker` is a row id
+or timestamp meaning "seen through here". The substrate stores and
+broadcasts; it never interprets either field (physics, not judgment).
+
+RM2. Markers are set and read through normal verbs like any state — no ws
+involvement in writing them.
+
+RM3. A marker change broadcasts as an ordinary `read_marker.updated`
+notice. That is the whole multi-instance sync mechanism: one ATC instance
+advances the marker, every other instance holding a matching subscription
+repaints. Precedents for server-side seen-state: IMAP `\Seen`, Slack
+per-user per-channel `last_read`, Matrix read markers, Kafka
+broker-stored consumer-group offsets.
 
 M4. A chat client: model from the transcript read (paginated,
 before/after); send via wake; watch `wake.scheduled` and the turn/message
@@ -328,23 +349,10 @@ forced reconnect, rebuild, convergence.
 
 ## Open questions for Mike
 
-MQ1. **Where does the read marker live?** Every client needs "the user
-has seen through here" per view, and a client that runs on several
-machines at once showing one picture (ATC) needs the marker SHARED across
-instances. Precedents all put shared seen-ness on the server of record:
-IMAP's \Seen flag, Slack's per-user per-channel last_read, Matrix read
-markers, Kafka's broker-stored consumer-group offsets. Recommendation: a
-tiny user-scoped substrate row — (userId, scopeKey, marker), scopeKey
-chosen by the client (a session, a work item, an ATC view), marker a row
-id or timestamp — set and read via normal verbs. Its changes then
-broadcast as an ordinary `read_marker.updated` notice, which is exactly
-how a second ATC instance repaints when the first one advances the
-marker. The ws stays dumb; single-instance clients may keep markers
-client-local instead. Rule: substrate rows (recommended), client-local
-only, or defer to the recon's findings.
-
-Everything else previously open is resolved or mooted by the state-model
-ruling: auth (existing credential), payloads (full row), retention and
-storage and cursor encoding (no event storage exists), table fold (no new
-table exists). The other load-bearing unknown is no longer in this spec —
-whether the query surface suffices is recon wi_9fdc0c07's question.
+None. The read-marker question (r4's MQ1) is RULED 2026-08-21: substrate
+rows, per §Read markers. Everything earlier is resolved or mooted by the
+state-model ruling: auth (existing credential), payloads (full row),
+retention and storage and cursor encoding (no event storage exists),
+table fold (no new table exists). The load-bearing unknown is no longer
+in this spec — whether the query surface suffices is recon wi_9fdc0c07's
+question.
