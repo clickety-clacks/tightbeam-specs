@@ -1,9 +1,9 @@
 # Tightbeam roadmap — living queue (updated 2026-08-21)
 
 One page so nothing lives only in a conversation. Order is the ruled priority; each
-line points at its spec. History and rationale: `tightbeam-decisions.md` and
-`v0.2-program-2026-08-12.md`. The pre-flip 0.1-era queue is preserved at
-`archive/ROADMAP-0.1-era.md`; 0.1.8 is frozen history and main is the only line.
+line points at its spec. History and rationale: [tightbeam-decisions.md](tightbeam-decisions.md) and
+[v0.2-program-2026-08-12.md](v0.2-program-2026-08-12.md). The pre-flip 0.1-era queue is preserved at
+[archive/ROADMAP-0.1-era.md](archive/ROADMAP-0.1-era.md); 0.1.8 is frozen history and main is the only line.
 
 ## Now — the 0.2.0 MVP core (Mike's first-cut ruling, 2026-08-21)
 
@@ -11,7 +11,7 @@ Mike's stance, verbatim: "not looking for perfect operations, but a good core th
 can apply other work items to fix various bugs. just enough that the system could work."
 
 The core is 28 items, elected and tiered by Product owner — Tightbeam 0.2.0
-(spec: `0.2.0-spirit-and-work-sweep.md`, the source of record for membership).
+(spec: [0.2.0-spirit-and-work-sweep.md](0.2.0-spirit-and-work-sweep.md), the source of record for membership).
 An item is core only if the truthful end-to-end work loop needs it, it closes a
 security or data-loss critical, or it unblocks development itself.
 
@@ -54,7 +54,7 @@ Then the loop and the criticals, in the PO's grouping:
 ## Next — post-core (45 items, elected, deferred)
 
 Land as ordinary work-item flow once the core exists. Full list and one-line
-descriptions in `0.2.0-spirit-and-work-sweep.md` §TIER POST-CORE. Flagged dissent,
+descriptions in [0.2.0-spirit-and-work-sweep.md](0.2.0-spirit-and-work-sweep.md) §TIER POST-CORE. Flagged dissent,
 unruled: the park/relaunch/stop primitive (`wi_6937890c`) is post-core, so the core
 can see a wedged turn but not kill one — the 2026-08-20 nineteen-hour stall was
 exactly this. Mike accepts or amends.
