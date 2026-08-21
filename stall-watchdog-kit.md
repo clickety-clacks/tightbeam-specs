@@ -309,3 +309,24 @@ opener's to write and the patrol's to challenge when it sees the signature.
 
 **Proven not to work.** Another version through the same ceremony; adding
 reviewers; treating each sealed run as progress.
+
+### 4.10 Silent deprioritization of a principal's ask
+
+**Signature.** A work item sourced from the principal (routed by Main, or
+opened at their word) sits open with no producing card for days, while its
+owner's cards show only censuses and checkpoints. No row tells the principal
+it was queued, behind what, or until when. Specimen: toplines intent layer,
+routed by Mike, nine days without a producer, discovered only because he
+asked (2026-08-21).
+
+**Cause.** Triage happened — legitimately — but silently. Nothing obliges an
+owner to surface a priority decision to the human whose ask lost.
+
+**Repair.** The owner files one of two rows the moment a principal ask is
+deprioritized: a notice naming what it is parked behind and the expected
+pickup, or an ask ("A or B first?"). Silence is the violation, not the
+triage. Patrols treat principal-sourced items with no producing card and no
+such row as this class.
+
+**Prevented by.** The outcome kind's horizon duty: a goal card must escalate
+itself when its boundary has not moved by its own stated horizon.
