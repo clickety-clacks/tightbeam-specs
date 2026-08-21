@@ -8,3 +8,16 @@ of the findings follows separately; disposition: firehose-side folds are
 tb02's, REST-side findings route to product-owner:rest-state-api
 (wi_cb5734eb).
 
+
+
+## tb02 re-adjudication of F20 (2026-08-21, after Mike's question)
+
+Mike asked whether F20's connect-ticket fix was gymnastics forced by his
+use-existing-credentials ruling. It was not — and the ruling contains the
+fix: the existing chat socket authenticates IN-BAND (connect plain, auth
+frame with the credential as the first message, auth_result; wire/socket.ex
+— how Clawline connects from browsers today). The firehose socket
+authenticates identically. F20 downgrades from design-hole to one missing
+spec sentence, landing in firehose r6: auth is the chat socket's in-band
+auth frame, same credential, same failure behavior. The ticket idea is
+withdrawn.
