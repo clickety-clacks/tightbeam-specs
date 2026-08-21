@@ -42,3 +42,14 @@ declarations the substrate executes.
 8. REJECTED: the 3D layered form (spike 1) — failed first-glance
    legibility; altitude-as-layer did not self-explain. Do not revisit
    without new evidence.
+
+9. REST INTERFACE FOR DRAWING (future, server mode): external agents can
+   draw on the diagram over a small HTTP API — submit a rail declaration
+   (the on/reads/emits/inhibited-by quadruple) and it renders as an
+   audition; list, update, and remove their own auditions. The ATC
+   conventions apply verbatim: every call carries an `author`, which
+   renders on the drawn rail and scopes cleanup (an agent removes only its
+   own work; unqualified clear-all is refused); reads before writes; the
+   API is the authority on itself via a /help endpoint shipped with the
+   server. Drawing is presentation only — nothing submitted through this
+   interface touches the installed ruleset, ever.
