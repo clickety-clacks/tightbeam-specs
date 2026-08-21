@@ -1049,6 +1049,7 @@ lag the satellites.
 | agentic-engineering-guidance-spec | living (guidance CONTENT blocks; conformance via archetypes tests) |
 | client-e2e-v1 | READY (4 rounds) — implementation queued (clawline repo driver + identifiers) |
 | production-machine-v1 | spec review (Fable, REVISE→amended) + code review (Opus 5 distinct, REVISE→revised) — IMPLEMENTED on branch production-machine-v1 at 7ecf02a; suite 1297/0 eezo+shrdlu; e2e smoke 7/7 on shrdlu twice; T-RECOGNITION is its tenet; awaiting Flynn verification |
+| assignment-lifecycle-fallback-escalation-v1 | MVP contract — exact-hash independent `reviewed-clean` required before implementation |
 
 Superseded or historical documents move to `archive/`; `wisdom.md` here is a
 pointer — the working wisdom index ships in the kungfu bundle
