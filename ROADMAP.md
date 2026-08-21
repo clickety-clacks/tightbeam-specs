@@ -59,6 +59,29 @@ unruled: the park/relaunch/stop primitive (`wi_6937890c`) is post-core, so the c
 can see a wedged turn but not kill one — the 2026-08-20 nineteen-hour stall was
 exactly this. Mike accepts or amends.
 
+## Untargeted — specced and owned, not elected (no release target)
+
+The observability read/notify program, ruled by Mike 2026-08-20/21 as
+untargeted (0.2.0 or later; work branches from main tip when it starts;
+none of it is in the 0.2.0 core election):
+
+- `event-firehose-v1.md` r5 — ws state-change notices: live-only doorbell,
+  no history on the socket, canonical public projections shared with REST.
+- `rest-state-api-v1.md` r1 — the formal REST read plane (r2 mechanical
+  amendment reviewed-clean, canonical-adoption pending Mike dr_52456ca8;
+  SQ2 admin-reads pending dr_bd47c1d7).
+- `rest-vs-cli-adjudication.md` r2 — the ruling: REST is the read plane,
+  verbs the write plane, the CLI is sugar. `rest-state-api-recon.md` is
+  the adopted evidence.
+- `wi_cb5734eb` — standing spec ownership: product-owner:rest-state-api,
+  under product-owner:tightbeam-codex-sol-relief.
+- `wi_9fdc0c07` — client-buildability recon (chat-client litmus over
+  queries + notices), uncarded-out, unstaffed.
+- `wi_bdf9a537` — gateway behind tailscale serve (localhost bind, tailnet
+  front, identity headers; kin to security critical wi_9970877d).
+- Substrate findings awaiting owners: `wi_89087a49` (decision requests
+  vanish at the ruling seam), `wi_c05fdbe6` (card-per-recurrence burn).
+
 ## Standing rules that bound this queue
 
 - Gibson runs RELEASE CUTS only — tagged, published, hash-verified (Mike, 2026-08-20).
