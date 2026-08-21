@@ -287,3 +287,25 @@ fixed-by claim that changed, record the file durably, and note what changed.
 
 The "proven not to work" lines are the most valuable part of this document. Each
 one cost somebody a night. Add to them.
+
+### 4.9 One-shot seal on an iterable stage (a PROCESS bug, not an agent stall)
+
+**Signature.** A lane cycles artifact versions (v5, v6, v7...) where each run is
+sealed Red at its first failure, the card forbids retest, and every retry
+requires a parent ruling plus a new immutable artifact plus an independent
+review — while the failures themselves are one-line trivia and the target is a
+reversible stage on a test fixture. Motion is constant; each increment costs a
+governance cycle. Specimen: T1778 TARS install stage, 2026-08-19..21 — eight
+versions, half a day per one-line fix, soak frozen throughout.
+
+**Cause.** One-shot discipline copied from irreversible production mutations
+onto reversible test-fixture work. The card design is the defect (check card
+design before discipline before substrate).
+
+**Repair.** Reclassify the stage: reversible + test fixture ⇒ authorize
+retry-in-place until green, then ONE review of the working artifact.
+Irreversible or production ⇒ one-shot stands. The classification is the card
+opener's to write and the patrol's to challenge when it sees the signature.
+
+**Proven not to work.** Another version through the same ceremony; adding
+reviewers; treating each sealed run as progress.
