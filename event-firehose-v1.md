@@ -1,180 +1,157 @@
-# Event firehose v1 — the external event stream (product spec, r3.1)
+# Event firehose v1 — state-change notifications over ws (product spec, r4)
 
-Status: DRAFT r3.1, 2026-08-20. r3.1: subscriptions are MULTIPLEXED — one
-ws connection carries any number of filtered subscriptions, each with its
-own id and cursor (Mike's r3 comment: per-connection-per-view is too
-heavy; the per-subscription cursor is the load-bearing part, not the
-connection count). r3 folds Mike's freshness ruling (r2.1
-changelog comment): the stream is ONLY a freshness signal, never a client's
-prime model; retention is a configurable few days; past the horizon clients
-reconstruct by fetching. §Position is new and pervades the doc. Companion
-recon carded: wi_9fdc0c07 (client buildability — prove a Clawline-class
-chat client stands on this stream plus the non-streaming APIs). r2.1 added
-§Client workflows; r2 folded the nine r1 review comments (observability
-framing, in-doc class registry, tail and scroll-back reads, per-view
-cursors, chat-over-verbs pattern, payload ruling, MQ rewrites).
-Untargeted (0.2.0 or later,
-undecided). When build work starts it branches from main tip; ws is
-orthogonal enough that merge timing is unconstrained (Mike, 2026-08-20).
+Status: DRAFT r4, 2026-08-21. r4 is a rescoping fold of Mike's state-model
+ruling (2026-08-21): the EVENTS are not the entity — the TIGHTBEAM STATE
+MODEL is. The ws exists only to tell a client that an aspect of the state
+db changed. There is NO way to fetch previous events from the socket:
+missing notices does not matter, because a fresh or reconnecting client
+rebuilds its model from the query surface and subscribes to stay current.
+This deletes replay, cursors, tail, history pages, epochs, event storage,
+and retention — most of r2/r3's machinery. Untargeted (0.2.0 or later).
+When build work starts it branches from main tip.
+
+Revision history: r3.1 multiplexed subscriptions; r3 freshness-not-truth +
+retention; r2.1 client workflows; r2 the nine r1 review comments; r1 the
+firehose rescope of the archived focused design. Their carried-forward
+content is restated here; anything absent from r4 is superseded.
 
 Authority and inputs:
-- Mike's firehose ruling (tightbeam-decisions.md 2026-08-20): the live
-  event stream is PART of the observability layer — the pushed part. The
-  other parts already exist: the CLI's reads (toplines, traces, attests)
-  and direct read-only state-db queries. EVERY substrate event streams out
-  of this endpoint; filters narrow what a subscriber receives and never
-  gate what is streamable; any future UI or agent is a consumer.
-- Mike's auth ruling (same day): no capability/API-key system; a consumer
-  authenticates with the requesting user's existing gateway credential;
-  deployment is localhost or tailscale; revocation is existing session and
-  device revocation. Replay has no admission limit.
-- Mike's payload ruling (r1 comment, 2026-08-20): frames carry everything —
-  a client must be able to display content straight off the stream without
-  an independent query per event. See V3.
-- Input, not authority: the archived focused design
-  (archive/filtered-external-push-subscriptions-recon-v3.md) and draft spec
-  (archive/focused-external-subscriptions-v1-draft.md). Their durable-row,
-  cursor, epoch, and pump mechanics are reused; their single-class
-  vocabulary, capability system, and redacted frames are superseded.
-- observability-v1.md r4: unchanged and complementary. Its doorbells are
-  thin best-effort UI nudges on the existing chat wire, tolerating loss
-  because reads recompute. The firehose is the durable, replayable feed on
-  its own endpoint, complete within its retention window (ST2). Both
-  exist; neither replaces the other.
+- Mike's state-model ruling (2026-08-21, ruled in review): "the events
+  aren't important, the tightbeam state model is, and ws is really only
+  there to tell you when an aspect of the state db has changed... a fresh
+  client would rebuild up to the current point and use a sub to keep the
+  model updated." A subscription starts feeding at the point of
+  subscription; previous events are fetched nowhere — history is the
+  query surface's job.
+- Mike's earlier rulings, still in force: the stream is part of the
+  observability layer alongside CLI reads and direct ro state-db queries
+  (2026-08-20); auth is the requesting user's existing gateway credential,
+  no capability keys, localhost/tailscale deployment (2026-08-20); notice
+  payloads carry the changed row in full, unredacted (r1 comment);
+  subscriptions are multiplexed on one connection, each with its own
+  filters (r3.1 comment); the class vocabulary is enumerated in-doc (r1
+  comment).
+- Companion recon wi_9fdc0c07 (client buildability): with the socket
+  carrying no history at all, the query surface is the ONLY path to the
+  past. The recon proves a Clawline-class chat client stands on queries
+  plus this subscription — its gaps are blocking findings against the
+  query surface.
+- Superseded input: the archived focused design and draft (specs repo
+  archive/) contributed the durable-row/cursor/pump replay machinery that
+  r4 removes. observability-v1.md r4's doorbell contract ("frames are
+  best-effort doorbells; reads recompute") is no longer merely
+  complementary — this spec generalizes exactly that contract to the whole
+  state model on a dedicated endpoint; observability-v1 remains authority
+  for the existing chat wire's doorbells.
+- Related card: wi_bdf9a537 (gateway behind tailscale serve) — transport
+  posture this endpoint would inherit.
 
-## Position — freshness, not truth (Mike's ruling, pervades this doc)
+## Position — the state model is the entity
 
-P1. The event stream exists to keep real-time clients LIVELY: to signal
-that something changed, promptly, so a client refreshes what it shows. It
-is NEVER the prime model of any client.
+P1. Tightbeam's truth is the state db: durable rows, queryable. A client's
+job is to hold a model of the slice it displays, built from the query
+surface (CLI verbs, HTTP reads: transcript, toplines, work-item and
+assignment reads).
 
-P2. A client builds and owns its internal model through the normal
-request/response surface (CLI verbs, HTTP reads: transcript, toplines,
-work-item and assignment reads). The stream only keeps that model fresh.
+P2. The subscription exists only to tell the client that an aspect of that
+state changed, promptly, so the client updates its model without polling.
 
-P3. Therefore no client may RELY on all events existing for all time.
-Events are retained for a bounded, configurable window (ST2). Inside the
-window, replay and history reads work; past it, the client reconstructs by
-fetching — a chat client scrolling deep into the past pages the transcript
-read, not the event stream.
+P3. Missed notices are HARMLESS by design. A subscription feeds from the
+moment of subscription; nothing earlier is available on the socket, ever.
+A fresh client, a reconnecting client, and a client that suspects it
+missed something all do the same thing: rebuild from the query surface,
+then apply notices from a live subscription. There is exactly one recovery
+path and it always works.
 
-P4. Whether the non-streaming surface is sufficient to build a
-Clawline-class chat client this way is the companion recon wi_9fdc0c07;
-gaps it finds are findings against that surface, not reasons to widen this
-stream into a model store.
+P4. This makes the wrong architecture unrepresentable: the stream cannot
+be a client's prime model or its history source, because the socket
+simply does not carry the past.
 
 ## Goal
 
-G1. Tightbeam SHALL provide one WebSocket endpoint from which every
-substrate event streams to external consumers as it commits.
+G1. Tightbeam SHALL provide one WebSocket endpoint that notifies connected
+consumers, promptly after commit, that state changed — with enough in the
+notice to update a model of that state without a follow-up query in the
+common case.
 
-G2. Within the retention window, a consumer SHALL be able to read events
-three ways: resume from a cursor and receive everything missed in order
-without loss; fetch the newest N events to boot cold; and page backward for
-scroll-back. Past the window, reconstruction is the query surface's job
-(P3). The cursor's job for a UI is marking NEWNESS — an event after the
-client's saved cursor is "new to the user" — not gatekeeping how history is
-fetched.
+G2. Every state-changing commit SHALL produce a notice to every connected
+subscription whose filters match. Nothing is excluded from the stream
+itself; filters narrow delivery for one subscriber only.
 
-G3. A subscription MAY carry filters. Filters narrow delivery for that
-subscriber only. Nothing is excluded from the stream itself.
-
-G4. The endpoint SHALL serve any consumer the gateway can authenticate as a
-user: a dashboard, ATC, a script, another agent.
+G3. The endpoint SHALL serve any consumer the gateway can authenticate as
+a user: a dashboard, ATC, a script, another agent.
 
 ## Non-goals
 
-N1. No capability or API-key system, no key expiry, no key wire. Ruled out
-2026-08-20. If a less-trusted consumer ever becomes real, scoped keys are a
-later versioned addition.
+N1. NO history on the socket: no replay, no cursors, no tail, no
+scroll-back pages, no bootstrap. A subscription starts at the point of
+subscription. History is the query surface.
 
-N2. Nothing is sent INTO Tightbeam on this socket. The firehose is
-one-directional: server to client, plus the client's subscribe/history
-requests. A chat-shaped client is a legitimate consumer and the pattern is
-explicit (Mike, r1 comment): it SENDS by calling the normal gateway verbs
-(wake to message a session), and it SEES the effect come down this stream
-as the resulting events (`wake.scheduled`, the turn and message classes).
-The existing Clawline chat wire is untouched by this spec.
+N2. NO event storage and NO retention policy: notices are not persisted
+for consumers. (The substrate's existing internal EventLog tables are out
+of scope — unchanged, still write-only observability.)
 
-N3. No state snapshots on this endpoint. Current state comes from the
-existing query surface (CLI verbs, observability-v1 queries). The firehose
-carries events only; the consistency recipe is §Subscribe-then-query.
+N3. NO delivery guarantee across disconnects, and none needed: the
+recovery path is rebuild-from-queries (P3).
 
-N4. No delivery judgment. The substrate never decides an event is
-uninteresting. Interruption shaping is the consumer's business (philosophy
-gate 5: shape WHEN attention is spent, never WHAT is recorded).
+N4. Nothing is sent INTO Tightbeam on this socket beyond subscribe
+control messages. A chat client sends through the normal gateway verbs
+(wake) and sees the effect arrive as notices.
 
-N5. No webhooks, SSE, or polling interface in v1. Later versioned additions
-if needed.
+N5. No capability or API-key system (ruled 2026-08-20). Auth is the
+existing gateway credential.
 
-N6. This spec does not authorize implementation. It exists so Mike can
-interrogate the design before any build card is cut.
+N6. No delivery judgment: the substrate never decides a change is
+uninteresting (philosophy gate 5).
+
+N7. No webhooks, SSE, or polling interface in v1.
+
+N8. This spec does not authorize implementation.
 
 ## Terms
 
-T1. **Event** — one committed substrate happening, recorded as one durable
-row: a verb accepted or denied, a lifecycle transition, a rail denial, a
-row-changing fact (work item created, assignment opened, attest filed, wake
-scheduled or fired, turn started or ended), a marker, a boot or shutdown.
+T1. **Notice** — one frame telling a subscriber that a state change
+committed: its class, its reference ids, and the changed row's recorded
+content in full.
 
-T2. **Class** — the event's namespaced kind string from the registry in
-§The class registry. The set is OPEN: new substrate mechanisms mint new
-classes freely, and the registry section is amended with them.
+T2. **Class** — the change's namespaced kind string from §The class
+registry. The set is OPEN; new mechanisms mint new classes and amend the
+registry.
 
-T3. **Seq** — the event's position in the single total order, a
-monotonically increasing integer assigned at commit.
+T3. **Subscription** — one filtered view on a connection, opened by a
+subscribe message with a client-chosen `subscriptionId`; every notice for
+it is tagged with that id. A connection multiplexes any number.
 
-T4. **Epoch** — 128 CSPRNG bits, base64url. Identifies one continuous
-history of the store. Rotates only on restore-from-backup.
+T4. **Seq** — a per-connection monotonically increasing counter stamped on
+notices. It exists ONLY so a client can detect that delivery hiccuped
+mid-connection (a skip) and trigger its one recovery path: rebuild. It is
+not a resume token; nothing accepts it back.
 
-T5. **Cursor** — a checkpoint: `(epoch, seq)`, a position in the one global
-order. Cursors are PER SUBSCRIPTION, not global: a client keeps one cursor
-for each filtered subscription it cares about — one for its all-events
-view, one for "events from this agent," one for "events on this work item"
-— and may hold any number, all multiplexed on one connection (S1). Every
-cursor is encoded the same way and is valid with any filter set, because
-the seq underneath is the same global order; a filtered view simply skips
-the rows its filter excludes while the cursor advances past them. A single
-merged cursor over differently-filtered views is rejected on purpose: on
-reconnect every view would have to resume from the slowest one's position,
-and a new filter would have no well-defined resume point.
-
-T5b. **Subscription** — one filtered view on the connection, opened by a
-subscribe message with a client-chosen `subscriptionId`. Every frame the
-server sends for it is tagged with that id. An event matching several of a
-connection's subscriptions is delivered once per matching subscription,
-each tagged.
-
-T6. **Pump** — the serialized server process that drains durable rows to
-connections. Reused from the archived design.
+T5. **Read marker** — a client-facing "the user has seen through here"
+position. NOT a stream concept in r4: see MQ1.
 
 ## The event vocabulary law
 
-V1. Every substrate happening that commits SHALL publish exactly one
-firehose event row, written in the same transaction as the fact it records.
-A happening with no row does not exist to observers; a row written outside
-the transaction can be lost or orphaned. Both are defects.
+V1. Every state-changing commit SHALL emit its notices as part of the
+commit path (post-commit, nonblocking to the transaction): a change with
+no notice class is a defect the registry test catches (A1).
 
 V2. Classes are namespaced `area.happening`, lowercase, dot-separated. The
-registry below is part of this spec (Mike, r1 comment: classes are called
-out in-doc, not deferred). A class name never changes meaning. The
-acceptance test A1 proves the registry matches what the substrate actually
-emits, so registry drift is a red build, not a doc rot.
+registry below is part of this spec. A class name never changes meaning.
 
-V3. **RULED (Mike, r1 comment):** the payload is everything — the full
-recorded truth, the same fields the substrate wrote, unredacted, sufficient
-for a client to display the event without an independent query. The reader
-is the authenticated user on their own gateway; there is nothing to hide
-from them.
+V3. **RULED (Mike):** the notice payload is the changed row's full
+recorded truth, unredacted — sufficient to update a displayed model
+without a follow-up query in the common case. The reader is the
+authenticated user on their own gateway.
 
-V4. Frame shape:
+V4. Notice shape:
 
 ```json
 {
-  "type": "firehose_event",
-  "subscriptionId": "chat-s_775f",
+  "type": "change",
   "schemaVersion": 1,
-  "eventId": {"epoch": "fhe_...", "seq": 40213},
+  "subscriptionId": "chat-s_775f",
+  "seq": 4213,
   "class": "attest.filed",
   "occurredAt": 1786900000000,
   "refs": {"sessionKey": "...", "workItemId": "wi_...",
@@ -183,9 +160,12 @@ V4. Frame shape:
 }
 ```
 
-Every field above the payload is stamped by the substrate. `refs` carries
-whichever reference ids the event has; absent refs are omitted. One
-schemaVersion keeps one meaning; widening the frame bumps it.
+`refs` carries whichever reference ids the change has; absent refs are
+omitted. One schemaVersion keeps one meaning; widening bumps it.
+
+V5. Payload rows SHALL carry the same primary ids the query surface
+returns for the same rows, so a client can match a notice against fetched
+state (the correlation seam; recon wi_9fdc0c07 verifies it).
 
 ## The class registry (initial enumeration, derived from main tip)
 
@@ -193,8 +173,7 @@ R1. Work:
 `work_item.created`, `work_item.updated`, `work_item.iceboxed`,
 `work_item.reopened`, `work_item.closed`, `work_item.failed`,
 `assignment.opened`, `assignment.reopened`, `assignment.closed` (outcome
-completed | revoked | surrendered-while-it-exists in payload),
-`attest.filed` (kind and verdictKind in payload).
+in payload), `attest.filed` (kind and verdictKind in payload).
 
 R2. Attention and escalation:
 `wake.scheduled`, `wake.fired`, `wake.canceled`, `prod.fired`,
@@ -209,46 +188,37 @@ R3. Org shape:
 R4. Records: `artifact.recorded`.
 
 R5. Dispatch: `verb.accepted`, `verb.denied` — one per gateway verb call,
-every verb in the router's vocabulary, with the verb name, origin, and
-principal in payload/refs. These are the catch-all: a happening whose fact
-class is missing still surfaces here, which is how A1 catches registry
-gaps.
+with the verb name, origin, and principal in payload/refs. The catch-all:
+a change whose fact class is missing still surfaces here, which is how A1
+catches registry gaps.
 
 R6. Rails and lifecycle: `rail.denied`, `lifecycle.boot`,
-`lifecycle.clean_shutdown`, `lifecycle.dirty_exit` (recorded by inference
-at the next boot — no component claims to log its own death),
-`lifecycle.takeover`.
+`lifecycle.clean_shutdown`, `lifecycle.dirty_exit`, `lifecycle.takeover`.
 
-R7. This enumeration is derived from main tip's row vocabulary as of
-2026-08-20. The build card verifies it mechanically (A1) and amends this
-section where reality disagrees; new mechanisms amend it as they mint
-classes.
+R7. Derived from main tip's row vocabulary as of 2026-08-20; the build
+card verifies mechanically (A1) and amends where reality disagrees.
 
 ## Connection and auth
 
-C1. The endpoint is a WebSocket upgrade on the gateway's existing HTTP
-listener, at its own path, separate from the chat socket.
+C1. A WebSocket upgrade on the gateway's existing HTTP listener, at its
+own path, separate from the chat socket.
 
 C2. Auth is the existing gateway credential flow, authenticating the
-requesting user, identical in mechanism to the current socket auth. No new
-credential type. A failed auth closes with the existing auth failure
-behavior.
+requesting user. No new credential type.
 
-C3. Transport posture matches the deployment ruling: localhost or tailscale.
-TLS termination, if any, is the operator's reverse proxy, exactly as today.
+C3. Transport posture: localhost or tailscale; TLS termination is the
+operator's proxy (see wi_bdf9a537 for the tailscale-serve posture).
 
 ## Subscribing
 
-S1. After auth, the client opens subscriptions — as many as it wants, all
-on this one connection, each by one subscribe message:
+S1. After auth, the client opens subscriptions — any number, all on this
+one connection:
 
 ```json
 {
   "type": "subscribe",
   "protocolVersion": 1,
   "subscriptionId": "chat-s_775f",
-  "cursor": "fhc_v1_...",
-  "tail": 50,
   "filters": {
     "classes": ["attest.", "work_item."],
     "sessionKey": null,
@@ -259,228 +229,122 @@ on this one connection, each by one subscribe message:
 }
 ```
 
-S2. `filters` and every field in it are optional. `classes` entries match by
-prefix against the registry. Multiple given fields are conjunctive. No
-filters means everything.
+S2. `filters` and every field in it are optional; `classes` match by
+prefix; multiple given fields are conjunctive; no filters means
+everything.
 
-S3. `cursor` is optional. Omitted means "from now": the registration cut is
-the durable head read during serialized registration (the archived design's
-AR148 mechanism, kept verbatim). Supplied means "replay after this cursor,
-then go live."
+S3. The server answers `subscription_ready` (tagged with the
+subscriptionId). Delivery for that subscription begins at the server's
+processing of the subscribe — the registration cut. A change committed
+after the cut is delivered; nothing before it ever is.
 
-S4. `tail` is optional and composes with an omitted cursor: the server
-first delivers the newest `tail` matching events in chronological order,
-then `subscription_ready`, then live delivery. This is the cold-boot read
-(Mike, r1 comment): a booting client shows the last N items immediately,
-uses its SAVED cursor only to mark which of them are new to the user, and
-scroll-back is §History below. `tail` with a supplied cursor is
-`invalid_request` — they answer the same question two ways.
+S4. Changing filters is `{"type": "unsubscribe", "subscriptionId": ...}`
+then a fresh subscribe on the same connection. Duplicate subscriptionId or
+unknown unsubscribe is `invalid_request`.
 
-S5. `{"seq": 0}` at the current epoch is a lawful cursor: replay from the
-retention floor (the oldest retained event).
+S5. No admission or concurrency limit (ruled 2026-08-20).
 
-S6. The server answers `subscription_ready` (tagged with the
-subscriptionId) carrying the cursor at which live delivery begins, after
-that subscription's tail or replay completes. Subscriptions are independent:
-each replays and goes live on its own schedule. Changing a subscription's
-filters is `{"type": "unsubscribe", "subscriptionId": ...}` followed by a
-fresh subscribe — never a new connection. A duplicate subscriptionId or an
-unsubscribe for an unknown one is `invalid_request`.
+## The model recipe (how every client uses this)
 
-S7. There is NO admission or replay concurrency limit (Mike's OQ9 ruling:
-no limit). Any number of consumers may replay any amount of history
-concurrently.
+M1. Subscribe (get `subscription_ready`), THEN snapshot current state
+through the query surface, then apply incoming notices to the model.
+Changes that landed between subscribe and snapshot appear in both; V5's
+shared ids let the client recognize and drop the duplicates.
 
-## History (scroll-back)
+M2. On ANY doubt — reconnect, seq skip (T4), gateway restart, or plain
+suspicion — rebuild: re-snapshot the displayed slice and keep applying
+notices. Rebuild is the single recovery path and is always correct.
 
-H1. On an open subscription the client may request older events at any
-time:
+M3. Unread marking ("has the user seen this?") is a position against
+STATE rows (a row id or timestamp per view), never against the stream.
+Where that position lives — client-local vs a shared substrate row — is
+MQ1.
 
-```json
-{"type": "history", "subscriptionId": "chat-s_775f",
- "before": "fhc_v1_...", "limit": 100}
-```
-
-H2. The server returns the `limit` matching events (that subscription's
-filters) immediately older than `before`, in chronological order:
-
-```json
-{"type": "history_page", "subscriptionId": "chat-s_775f",
- "events": [ ... ], "olderCursor": "fhc_v1_...", "atFloor": false}
-```
-
-`olderCursor` points at the oldest event returned and is a lawful `before`
-for the next page; `atFloor: true` means retained history is exhausted —
-the client's scroll-back continues against the query surface (P3), not this
-socket. History pages never move the subscription's live position.
-
-H3. The intended UI shape (Mike, r1 comment): boot with `tail`, mark
-newness against the saved per-view cursor, page backward with `history` as
-the user scrolls. The cursor is never required just to fetch content.
-
-## Client workflows (rationale, non-normative)
-
-These are client concerns, outside the ws layer's purview — but the
-protocol exists to make them buildable, and they are why the shapes above
-are what they are (Mike, r2 comment).
-
-W1. **Cold boot.** Subscribe with `tail: 50`. The last 50 events render
-immediately; the saved per-view cursor marks which of them are unseen; live
-events append. No query, no replay ceremony.
-
-W2. **Jump to first unread.** The saved cursor is a stable position in the
-global order, not an offset — so "scroll up to where unseen starts" is:
-page backward with `history` from the live head until the page spans the
-saved cursor, land the viewport there. Offsets would rot as events arrive;
-a position does not. This workflow is why the cursor is `(epoch, seq)`. If
-the saved cursor has fallen below the retention floor, the unread boundary
-is older than the window and the client lands via the query surface
-instead (P3).
-
-W3. **Resume after disconnect or sleep.** Subscribe with the saved cursor;
-everything missed arrives in order, then live delivery continues. The
-client cannot tell a laptop-lid nap from a gateway restart, and does not
-need to.
-
-W4. **A chat client.** Send by calling the normal gateway verbs (wake);
-watch the effect arrive on the stream (`wake.scheduled`, turn and message
-classes). Filter the subscription to the session in view; keep one cursor
-per conversation view for unread marking (T5, W2). The conversation itself
-is modeled from the transcript read (paginated, before/after); deep
-scroll-back pages that read once history hits the floor (H2). Whether every
-piece of this stands on today's non-streaming surface is recon
-wi_9fdc0c07.
+M4. A chat client: model from the transcript read (paginated,
+before/after); send via wake; watch `wake.scheduled` and the turn/message
+classes update the model; deep scroll-back pages the transcript read.
+Whether every piece stands on today's query surface is recon wi_9fdc0c07.
 
 ## Delivery semantics
 
-D1. Delivery is at-least-once, in seq order, per connection. An ambiguous
-network break may repeat an event; it never loses one.
+D1. While a connection is healthy, notices for a subscription arrive in
+commit order, each stamped with the next seq. Delivery is best-effort:
+the writer commits, then hands the notice off the transaction path; a
+crashed fan-out loses notices, and that is acceptable because of P3.
 
-D2. The client dedupes by `(epoch, seq)` and persists its cursor only after
-applying the event. (Archived AR160–AR162, kept.)
+D2. The writer never touches a socket in its transaction: commit, then a
+nonblocking hand-off to the fan-out.
 
-D3. The writer never touches a socket in the transaction: after commit it
-sends a nonblocking nudge; the pump drains durable rows. A missing or
-crashed pump never invalidates a row. A 30-second heartbeat compare of
-drained-vs-durable head catches lost nudges. (Archived AR139–AR145,
-AR163–AR164, kept.)
+D3. Slow consumer: each connection has a bounded in-memory queue. On
+overflow the server closes the connection with close code 4008. The
+client reconnects, resubscribes, and rebuilds (M2).
 
-D4. Slow consumer: each connection has a bounded in-memory queue shared by
-its subscriptions. On overflow the server closes THAT connection with close
-code 4008. The client reconnects and resumes each subscription from its own
-persisted cursor (D2); nothing is lost because the rows are durable. This
-is not an admission limit; it is the only alternative to unbounded server
-memory.
-
-D5. Decimation: kill the gateway mid-stream and every consumer resumes from
-its cursor on restart with zero loss. Kill a consumer and the substrate
-does not care.
-
-## Subscribe-then-query (the consistency recipe)
-
-Q1. A consumer that needs current STATE plus updates SHALL: (1) subscribe
-with no cursor and receive `subscription_ready` with cursor K; (2) query
-current state through the existing query surface; (3) apply events after K,
-deduping against what the query already showed. Events between subscribe
-and query are duplicates by construction, and D2 handles duplicates. This
-is the PRIMARY pattern (P1–P3): model from queries, stream for freshness.
-`tail` alone suffices only for a pure recent-events ticker that displays
-nothing older than the retention window.
-
-## Cursors
-
-K1. Cursor encoding (this spec exercises the OQ10 delegation): the
-documented prefix `fhc_v1_` plus unpadded base64url of canonical UTF-8 JSON
-`{"epoch":"...","seq":N}`. The decoder rejects extra fields, non-canonical
-encoding, negative or non-integer seq, and unknown prefixes, all as
-`cursor_invalid`. Decoding stays backward compatible across versions: a
-`fhc_v1_` cursor decodes forever.
-
-K2. A well-formed cursor with a non-current epoch is `cursor_expired`. The
-client re-enters via Q1 or a fresh `tail` subscribe.
-
-K3. A cursor whose seq is below the retention floor is `cursor_expired`,
-same recovery.
-
-K4. A supported restore-from-backup rotates the epoch before the store
-serves any read or write, so a stale-history cursor can never silently
-resume against rewound truth. (Archived AR136–AR138, kept.)
-
-## Storage
-
-ST1. One append-only table, one AUTOINCREMENT seq, rows written in the
-committing transaction (V1). Whether the existing internal EventLog tables
-fold into it is MQ2 below.
-
-ST2. **RULED (Mike, r2.1 comment):** retention is a bounded, configurable
-number of days — long enough to cover reconnects and short scroll-back, a
-few days by default (builder proposes the default; Mike's framing was "a
-couple days"). A sweep deletes event rows past the horizon; a cursor below
-the floor is `cursor_expired` (K3) and the client reconstructs by fetching
-(P3). Keep-everything is rejected: the stream is a freshness signal, not an
-archive — the substrate's durable rows are the archive.
+D4. Gateway shutdown closes connections with 1012. On restart clients
+resubscribe and rebuild. Decimation holds: no server-side consumer state
+exists to lose.
 
 ## Errors and close codes
 
-E1. Before the HTTP-to-WebSocket upgrade handshake completes (the "upgrade"
-is the HTTP request that switches the connection into a WebSocket): existing
-HTTP auth failures as today; `426` for an unsupported protocolVersion.
+E1. Before the HTTP-to-WebSocket upgrade handshake completes (the
+"upgrade" is the HTTP request that switches the connection into a
+WebSocket): existing HTTP auth failures; `426` for an unsupported
+protocolVersion.
 
-E2. After upgrade, one closed error frame shape
-`{"type":"error","code":"...","message":"..."}` with codes:
-`invalid_request` (malformed subscribe/history, or tail+cursor),
-`cursor_invalid` (K1), `cursor_expired` (K2, K3).
+E2. After upgrade, one error frame shape
+`{"type":"error","code":"...","message":"..."}` with the single code
+`invalid_request` (malformed subscribe/unsubscribe, duplicate or unknown
+subscriptionId).
 
-E3. Close codes: 4008 slow-consumer (D4, cursor in reason), 1012 restarting
-(gateway shutdown; resume by cursor), plus the standard codes.
+E3. Close codes: `4008` slow-consumer (D3), `1012` restarting (D4), plus
+the standard codes.
 
 ## Acceptance
 
-A1. Every row-writing verb on main tip produces exactly one firehose event
-in the same transaction, and every emitted class appears in this spec's
-registry — proven by a test that diffs the verb table and emitted classes
-against §The class registry both ways.
+A1. Every state-changing verb on main tip emits notices whose classes
+match §The class registry, both directions — a test diffs the verb table
+and emitted classes against the registry.
 
-A2. Kill -9 the gateway under sustained writes; on restart a consumer with
-a pre-kill cursor replays to head with no gap and no duplicate it cannot
-dedupe.
+A2. A subscriber receives a notice for a matching commit made after its
+registration cut, and never one from before it.
 
-A3. A filtered subscriber (class prefix + workItemId) receives exactly the
-matching events and its cursor still advances past non-matching seqs (a
-filter must not strand a cursor).
+A3. A filtered subscriber receives exactly the matching notices; a change
+matching several of a connection's subscriptions arrives once per
+matching subscription, each tagged.
 
-A4. A consumer executing Q1 arrives at state identical to a fresh query at
-any quiescent moment.
+A4. M1 converges: subscribe-then-snapshot-then-apply reaches a model
+identical to a fresh query at any quiescent moment, duplicates dropped
+via V5's shared ids.
 
-A5. A slow consumer forced into 4008 resumes by cursor with zero loss.
+A5. Kill the gateway mid-stream: clients detect the close, resubscribe,
+rebuild, and converge again (M2). Force a slow consumer into 4008: same.
 
-A6. A cold-boot client using `tail` then `history` renders the same event
-sequence a retention-floor replay would, in the same order.
-
-A6b. Retention: an event past the horizon is gone from the stream; a cursor
-below the floor returns `cursor_expired`; the documented reconstruction
-path (P3) covers what the stream no longer serves — proven by a test that
-ages events past a short test horizon.
+A6. The notice payload for each registry class carries the same row
+content and ids the query surface returns for that row (V5), verified per
+class.
 
 A7. The feature-smoke drives one real external consumer (ATC or a script)
-end to end.
+end to end: cold build from queries, live updates via subscription,
+forced reconnect, rebuild, convergence.
 
 ## Open questions for Mike
 
-MQ1: RULED 2026-08-20 (r2.1 comment) — retention is a configurable few
-days, not keep-everything; see ST2. Closed.
+MQ1. **Where does the read marker live?** Every client needs "the user
+has seen through here" per view, and a client that runs on several
+machines at once showing one picture (ATC) needs the marker SHARED across
+instances. Precedents all put shared seen-ness on the server of record:
+IMAP's \Seen flag, Slack's per-user per-channel last_read, Matrix read
+markers, Kafka's broker-stored consumer-group offsets. Recommendation: a
+tiny user-scoped substrate row — (userId, scopeKey, marker), scopeKey
+chosen by the client (a session, a work item, an ATC view), marker a row
+id or timestamp — set and read via normal verbs. Its changes then
+broadcast as an ordinary `read_marker.updated` notice, which is exactly
+how a second ATC instance repaints when the first one advances the
+marker. The ws stays dumb; single-instance clients may keep markers
+client-local instead. Rule: substrate rows (recommended), client-local
+only, or defer to the recon's findings.
 
-MQ2. **One event table or two systems, the discussion.** Main
-already has internal append-only tables recording some of this (verb calls
-and denials, lifecycle transitions, rail denials — the EventLog, written
-for observability, currently with no consumer). The firehose needs its own
-single-seq table (ST1). Two ways to relate them: (a) FOLD — the firehose
-table becomes THE event log; the old tables' writers write firehose rows
-instead, old tables retire. One source of truth, one seq, matches the
-"state is computed from rows" philosophy; costs a migration of the writer
-call sites. (b) BESIDE — the old tables stay, their writers dual-write a
-firehose row too. No migration, but the same happening then has two rows in
-two places that can drift, and drift between two records of truth is a
-standing bug factory. My recommendation: FOLD, with dual-write only as a
-short transition state inside the build. Rule (a), (b), or leave it to the
-build card.
+Everything else previously open is resolved or mooted by the state-model
+ruling: auth (existing credential), payloads (full row), retention and
+storage and cursor encoding (no event storage exists), table fold (no new
+table exists). The other load-bearing unknown is no longer in this spec —
+whether the query surface suffices is recon wi_9fdc0c07's question.
