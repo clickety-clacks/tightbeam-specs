@@ -1,9 +1,10 @@
 # Coordination fabric — bones and cartilage — v1
 
-Status: r7 DRAFT (2026-08-21; extends the r6 lifecycle fold with Mike's
-ruled `outcome` and `fixture` assignment effects and their opener-only
-classification guidance; pending independent cross-vendor review). Prior:
-r6 DRAFT (2026-08-20; folds Mike's 2026-08-19 ruling that removes holder
+Status: r8 MVP DRAFT (2026-08-21; trims r7 to Mike's ruled MVP:
+`cannot-proceed`, the `outcome` assignment effect, and one opener-only
+guidance line; pending independent cross-vendor review). Prior: r7 DRAFT
+(2026-08-21; added `outcome` and `fixture` before the MVP trim). Prior: r6
+DRAFT (2026-08-20; folds Mike's 2026-08-19 ruling that removes holder
 surrender from the 0.2 fabric and replaces it with typed `cannot-proceed`).
 Prior: r5 FOLDED
 (2026-08-13; executes the AUTHORIZED change requests
@@ -88,10 +89,10 @@ rendering of classes (Clawline's business); 0.1.x-line behavior.
   a decision obligation to the card's durable opener (§4). It never dissolves
   the assignment and never asks the substrate to judge the reason.
 - **Effect kind** — the opener-chosen, immutable classification of the
-  observable effect for which one assignment is accountable. The complete r7
+  observable effect for which one assignment is accountable. The complete r8
   set is `code`, `policy`, `release`, `live_mutation`, `evidence`, `review`,
-  `coordination`, `outcome`, and `fixture`. A missing choice defaults to
-  `code`; a linked review is always forced to `review` (§4).
+  `coordination`, and `outcome`. A missing choice defaults to `code`; a linked
+  review is always forced to `review` (§4).
 - **Outcome assignment** — one work-item-bound assignment accountable for
   the principal's stated goal rather than one subordinate deliverable. It
   survives subordinate churn and can close only from linked subordinate
@@ -99,14 +100,6 @@ rendering of classes (Clawline's business); 0.1.x-line behavior.
 - **Boundary report** — a checkpoint on an `outcome` assignment. It records
   the current decision or dependency boundary and its horizon; it is not a
   claim of progress toward a percentage or date (§4).
-- **Fixture assignment** — an assignment whose every effect can be erased by
-  deleting the test surfaces declared when the card opens. Its completion
-  evidence is a log plus a capture, and any row-observable effect outside the
-  declaration is the violation (§4).
-- **Declared test surface** — the immutable file and host set recorded when a
-  `fixture` assignment opens. It is the complete boundary for effects the
-  fixture card may create or alter; an undeclared surface cannot be added
-  after effects begin (§4).
 - **Summon** — a wake the desk sends its principal carrying a brief;
   the desk's only way to spend the principal's turn.
 - **Turn boundary** — the moment a session's in-flight turn ends; the
@@ -278,10 +271,10 @@ escalation on that card, and routes the plan choice upward.
 **Assignment effects are opener law, not holder self-description (ruled
 2026-08-21; 0.2 only).** The substrate admits exactly these effect kinds:
 `code`, `policy`, `release`, `live_mutation`, `evidence`, `review`,
-`coordination`, `outcome`, and `fixture`. The opener chooses the effect when
-the assignment opens. The holder cannot set or change it. If the opener omits
-the effect, the assignment defaults to `code`. A card linked by `--reviews`
-is mechanically `review` regardless of a requested value.
+`coordination`, and `outcome`. The opener chooses the effect when the
+assignment opens. The holder cannot set or change it. If the opener omits the
+effect, the assignment defaults to `code`. A card linked by `--reviews` is
+mechanically `review` regardless of a requested value.
 
 `outcome` means accountability for the principal's stated work-item goal, not
 for one implementation, report, or review. At most one open `outcome`
@@ -297,39 +290,25 @@ principal's authenticated verdict on that result. The close is derived from
 those rows; subordinate churn never resets the outcome card or mints a second
 one for the same work item.
 
-`fixture` is the only leniency-buying effect kind. The opener must declare all
-test surfaces at card creation. File surfaces use the existing `--files`
-declaration; host surfaces use the fixture-host declaration added by this
-increment. An empty declaration is refused. Retry in place remains lawful
-until the fixture is green. Completion requires attached log and capture
-artifacts and exactly one independent review of the working bytes. Every
-durable effect row produced under the card must resolve to one declared
-surface. A row-observable effect on any other file, host, runtime, identity,
-credential, or external target is itself the violation; the substrate can
-detect that mismatch from declarations and effect rows without interpreting
-the fixture's domain. The card cannot widen its declaration after its first
-effect row. Erasing the declared test surfaces must erase all fixture effects;
-if it does not, the card was misclassified and cannot use fixture leniency.
-
 The opener-facing manual card-opening section and the PO/orchestrator guidance
-carry this eight-line decision table. It is not broadcast to workers. A linked
+carry only this MVP decision table. It is not broadcast to workers. A linked
 review needs no table entry because the substrate always stamps it `review`.
 
 | Deliverable shape | Choose |
 |---|---|
-| software or source behavior bytes / authoritative spec, policy, guidance, Kung Fu, or rail bytes | `code` / `policy`, respectively |
-| release artifact, promotion, or release-record change | `release` |
-| live runtime, configuration, credential, or identity state | `live_mutation` |
-| read-only report, recon, analysis, or advice | `evidence` |
-| routing, handoff, or supervision with no substantive deliverable | `coordination` |
 | accountability for the principal's stated goal across subordinate churn | `outcome` |
-| effects wholly erasable by deleting the test surfaces declared at open | `fixture` |
-| unsure between two: pick the stricter law; unspecified defaults to code | — |
+| unspecified | defaults to `code` |
 
 The enum, its stamped shape migration, the opener-only guidance, and the rails
-that give `outcome` and `fixture` these meanings ship in one landing and pass
-one independent review. No interim convention may advertise either kind
-before the substrate accepts and enforces it.
+that give `outcome` this meaning ship in one landing and pass one independent
+review. No interim convention may advertise the kind before the substrate
+accepts and enforces it.
+
+`fixture` and **RE-ARM** are deferred second-occurrence purchases, not MVP
+scope. Guidance and kit 4.9 already govern retry, and a later `fixture` enum
+addition is a known-cheap stamped migration if another occurrence proves the
+need. The default for RE-ARM is no; successor dispatch remains the lawful
+recovery until Mike rules a later verb.
 
 **The office is the unit of hiring (r5, CR-002 D1).** A hire creates the
 mind and its desk TOGETHER — one office, spawned from the paired seed
@@ -873,7 +852,7 @@ Acceptance (evidence, not vibes; each clause decidable):
    hold, zero attest content judging work products (§6's definition
    decides), and zero acknowledgment-only filings (receipt is behavior,
    never a filing — the no-ack law, §7).
-6. **Effect classification is immutable:** all nine effect kinds admit at
+6. **Effect classification is immutable:** all eight effect kinds admit at
    open, linked reviews always read `review`, omitted kinds read `code`, and
    no holder path can change a stored effect.
 7. **Outcome closure is principal-owned:** a holder completion is refused;
@@ -883,11 +862,6 @@ Acceptance (evidence, not vibes; each clause decidable):
 8. **Outcome horizons escalate:** an unchanged boundary after its recorded
    horizon produces one opener escalation and cannot be satisfied by a new
    unchanged checkpoint.
-9. **Fixture containment is row-decidable:** missing declarations are
-   refused, declared-surface retries remain on one card, log plus capture plus
-   one clean review are required, and any effect row outside the immutable
-   declaration blocks completion as the violation.
-
 Generalize to worker archetypes only after the pilot (Phase 4 entry is a
 RULING on this acceptance, not just the evidence).
 
@@ -928,7 +902,8 @@ Marked blocking (B: blocks the phase named) or non-blocking (NB).
     nurse's verdict (§5b).
 11. (NB) Spirit-interview protocol details (question set, STE style
     guide): the PO playbook's business (workstream 3), not this spec's.
-12. (B: lifecycle increment) Should the parent's disposition menu add
+12. (NB: deferred second-occurrence purchase; default no) Should the parent's
+    disposition menu add
     **RE-ARM** beside revoke, re-scope, and restaff? RE-ARM would grant a
     fresh supervision entitlement to the SAME open assignment and accountable
     holder after the parent judges that the holder should continue. In 0.1.8,
@@ -936,7 +911,8 @@ Marked blocking (B: blocks the phase named) or non-blocking (NB).
     so recovery mints a successor assignment and entombs another handle. The
     0.2 `heard-prods` design makes exhaustion rare and deliberate, which makes
     same-card re-arming plausible but does not settle its authority, evidence,
-    or replay contract. This question authorizes no verb and no 0.1.8 change.
+    or replay contract. Successor dispatch suffices for the MVP. This question
+    authorizes no verb, no build card, and no 0.1.8 change.
 
 ## 13. Implementation phases
 
@@ -944,38 +920,34 @@ Phases gate on EVIDENCE from the prior phase, never on schedule. Each phase
 names its entry gate, contents, and exit evidence. §11's pilot is Phase 3;
 everything "deliberately excluded from v0" is placed, not dropped.
 
-**r7 coordinated lifecycle/effect increment (entry: this r7 fold is
+**r8 coordinated lifecycle/outcome MVP (entry: this r8 fold is
 independently reviewed-clean; one landing, one review).** Do not open these
 build slices before that entry fact. The slices are sized separately for
 custody but integrate atomically:
 
 1. **Shape and admission.** Extend the assignment-effect enum and its SQLite
-   `CHECK` with `outcome` and `fixture`. Use a stamped shape migration in the
+   `CHECK` with `outcome`. Use a stamped shape migration in the
    proven 0.1.7→0.1.8 style: verify the exact old stamp and old table shape;
    create the new constrained table; copy every assignment/effect row without
    reinterpretation; prove row counts and values; swap tables and advance the
    stamp in one transaction; refuse unknown stamps or unexpected shapes. Add
-   the fixture-host declaration relation, its immutable create-path input,
-   and the one-open-outcome-per-work-item constraint. Preserve the existing
-   `code` default and forced linked-review `review` behavior.
+   the one-open-outcome-per-work-item constraint. Preserve the existing `code`
+   default and forced linked-review `review` behavior.
 2. **Lifecycle and evidence rails.** Remove holder surrender and add the r6
    `cannot-proceed` non-terminal route. Add outcome boundary/horizon rows,
    overdue-boundary escalation, subordinate-terminal linkage, and
-   principal-verdict closure. Add fixture declaration freeze, effect-row
-   containment, in-place retry, log-plus-capture completion evidence, and one
-   review of working bytes. Each refusal names its rule. Replays reuse the
-   same condition, escalation, outcome, or fixture row.
-3. **CLI, projections, and opener guidance.** Expose the two enum values and
-   fixture host declarations through assign/dispatch; project declarations,
-   boundary state, principal verdict, and containment failures without
-   inference. Land the eight-line table in the manual card-opening section and
-   PO/orchestrator guidance only. Do not broadcast it to workers. Update help,
-   conformance fixtures, migration tests, replay/concurrency tests, and
-   package membership in the same landing.
+   principal-verdict closure. Each refusal names its rule. Replays reuse the
+   same condition, escalation, or outcome row.
+3. **CLI, projections, and opener guidance.** Expose `outcome` through
+   assign/dispatch; project boundary state and principal verdict without
+   inference. Land the outcome line plus `unspecified` default in the manual
+   card-opening section and PO/orchestrator guidance only. Do not broadcast it
+   to workers. Update help, conformance fixtures, migration tests,
+   replay/concurrency tests, and package membership in the same landing.
 
 Exit evidence: old-shape upgrade and fresh-database fixtures converge on the
-same new stamp; all acceptance clauses 6–9 pass; the manual and both opener
-guidance surfaces contain the exact table; worker guidance does not; one
+same new stamp; all acceptance clauses 6–8 pass; the manual and both opener
+guidance surfaces contain the exact two-row table; worker guidance does not; one
 independent exact-tip review is clean. Version 0.1.8 and its surrender history
 remain byte-for-byte unchanged.
 
@@ -1125,6 +1097,19 @@ never cross); `wake-on-fact-v1.md` (consumed primitive); `tightbeam.md`
 (hub — may not lag this file).
 
 ## Revision trail
+
+r8 MVP DRAFT (2026-08-21): applies Mike's MVP trim to r7. The landing keeps
+the load-bearing `cannot-proceed` lifecycle, the `outcome` effect with its
+principal-owned closure and boundary-horizon semantics, and only the opener
+guidance line for `outcome` plus `unspecified` defaulting to `code`. It removes
+`fixture` from the live enum, migration, rails, CLI, acceptance, and guidance;
+guidance and kit 4.9 continue to govern retry. It leaves RE-ARM as a
+non-blocking deferred question with default no; successor dispatch suffices.
+`fixture` and RE-ARM are second-occurrence purchases. The MVP enum migration,
+cannot-proceed rails, outcome rails, projections, and opener guidance remain
+one landing and one review. No build card or implementation is authorized
+before this r8 fold is independently reviewed-clean. Version 0.1.8 remains
+frozen.
 
 r7 DRAFT (2026-08-21): adds Mike's ruled `outcome` and `fixture` assignment
 effects to the r6 lifecycle fold. The opener alone classifies; omitted kinds
