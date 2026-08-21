@@ -3,9 +3,12 @@
 Status: READY FOR INDEPENDENT RE-REVIEW  
 Work item: `wi_cbb56e71-5c93-41c0-bfb9-e5db2dc87c91`  
 Producer assignment: `asg_aaaa71d9-273e-454f-bd32-cdc77a9ab7cd`  
-Supersedes artifact: `art_1dca486c`, SHA-256
-`1e5193b68b9054ae507650a60b7f056365bd5e1d40c6aed22c1da726fe8d2d2c`  
-Revision basis: changes-requested `att_10a6b91d`, report `art_4d9afce2`
+Supersedes artifacts: `art_1dca486c`, SHA-256
+`1e5193b68b9054ae507650a60b7f056365bd5e1d40c6aed22c1da726fe8d2d2c`,
+and `art_fd6e93bc`, SHA-256
+`17409b8046d4e478b30370ac5ac1d29a84b98beaadd60a48e706f0bc55e250bf`
+Revision basis: changes-requested `att_10a6b91d` / `art_4d9afce2` and
+`att_17dc4980` / `art_31e37e3c`
 
 ## Canonical home
 
@@ -92,7 +95,12 @@ There is no fourth state.
   its pacing row is due immediately. The periodic sweep is the liveness backstop. A nudge
   is only a latency hint.
 - **Probe lease** is the persisted, adapter-key-scoped right to run one readiness prompt for
-  one open window revision. It has an owner, attempt number, lease expiry, and next due time.
+  the open outage window. At most one lease is active for the key, even when the window
+  revision changes. The lease carries the revision it claimed as fenced payload, plus its
+  owner, attempt number, expiry, and next due time.
+- **Database time** is the timestamp captured by the database owner inside the transaction
+  that claims, releases, expires, or completes a probe. Callers cannot supply it. Persisted
+  time comparisons use this authority; host wall clocks do not decide eligibility.
 
 ## Required design
 
@@ -101,7 +109,10 @@ There is no fourth state.
 A matching `:DOWN` for an adapter instance that reached ready state appends one occurrence
 before the coordinator schedules its replacement. The transaction upserts the one open
 window for the adapter key, increments its revision, records the dead instance and failed
-generation, and attaches the current affected assignments. A fast recovery cannot overtake
+generation, attaches the current affected assignments, and creates or refreshes the
+window-scoped harness-suppression effect for every attached assignment. The commit that
+first opens the window or later joins an occurrence establishes suppression before any
+replacement scheduling or supervision action may proceed. A fast recovery cannot overtake
 this write.
 
 An absorbed `:DOWN` for a previously ready instance appends another occurrence to the same
@@ -137,8 +148,10 @@ of these durable predicates hold:
 The reconciliation transaction uses the same open-window upsert, revision increment,
 occurrence identity, and membership attachment as `:DOWN`. It also marks surviving
 nonterminal turns from the lost generation failed with unknown external effects before any
-new prompt can run. Replaying boot reconciliation writes nothing after the occurrence key
-exists.
+new prompt can run. In that same transaction it creates or refreshes the window-scoped
+harness-suppression effect for every attached assignment. Replacement scheduling and
+supervision remain fenced until the transaction commits. Replaying boot reconciliation
+writes nothing after the occurrence key exists.
 
 Initial boot has no prior ready generation and opens no window. A clean gateway shutdown
 has planned-close rows and opens no window. A never-ready generation opens no window. These
@@ -150,16 +163,28 @@ The current adapter instance must first reach the existing instance-scoped ready
 stale ready signal, planned recycle, process spawn, or successful ACP `initialize` call is
 not a recovery edge.
 
-The harness-health patrol may claim at most one in-flight probe lease for an adapter key and
-window revision. Claim is a compare-and-set on the persisted lease row. The row records
-`attempt`, `leaseOwner`, `leaseUntil`, and `nextProbeAt`.
+The harness-health patrol may claim at most one in-flight probe lease for an adapter key
+while its outage window is open. Claim is a compare-and-set on the one persisted key-scoped
+lease row. The row records `claimedWindowId`, `claimedRevision`, `attempt`, `leaseOwner`,
+`leaseUntil`, and `nextProbeAt`. A later occurrence may increment the window revision, but
+it does not release or supersede the in-flight right. The old completion will be fenced by
+its claimed revision, and no probe for the new revision may begin until the active lease
+completes or expires. A unique database constraint on the adapter key makes a second active
+lease impossible across revisions or gateway processes.
 
-A failed prompt or committed transport failure releases the lease, increments the attempt,
-and computes `nextProbeAt` from the canonical bounded backoff policy. No probe may start
-before that time. A gateway crash leaves the lease durable. Boot reconciliation expires a
-lease only after `leaseUntil`; it never treats an unknown external prompt result as proof.
-The next claimant runs a new prompt after the due time. Tightbeam never replays the old
-prompt.
+An idle row starts with `attempt = 0`. Claim atomically increments it and stores the claimed
+attempt, so the first prompt is attempt 1. Claim captures database time as `claimedAt` and
+sets `leaseUntil = claimedAt + 120_000ms`. A failed prompt or committed transport failure
+releases the lease but retains the claimed attempt number. Its deterministic, jitter-free
+delay is `min(60_000ms, 1_000ms * 2^(min(attempt - 1, 6)))`, where `attempt` is the attempt
+that just failed. The failure transaction captures `failureCommittedAt` from database time
+and writes `nextProbeAt = failureCommittedAt + delay`. No claim may succeed before database
+time reaches `nextProbeAt`; the next successful claim increments the stored attempt.
+
+A gateway crash leaves the lease durable. Boot reconciliation may clear an abandoned lease
+only when database time is at or beyond `leaseUntil`; a revision change alone never expires
+it. An unknown external prompt result is not proof. The next claimant runs a new prompt
+after both the lease and due-time fences permit it. Tightbeam never replays the old prompt.
 
 A successful normal user or agent turn can supply proof without owning the patrol lease.
 It must still bind the same open window revision and satisfy the generation fence. If it
@@ -175,7 +200,9 @@ persisted lease boundary permits it.
 
 When an outage window opens or gains an occurrence, it attaches every open assignment held
 by an active session on the adapter key. While it remains open, the same derived query
-attaches newly opened or newly assigned work on that key.
+attaches newly opened or newly assigned work on that key. Membership attachment and creation
+or refresh of that window's harness-suppression effect commit together, before supervision
+may act on the newly attached assignment.
 
 Recorded membership answers only the historical question, "was this assignment on the
 affected adapter during this window?" It never replaces the assignments table as the
@@ -204,8 +231,12 @@ For each still-open assignment on the recovered key, the transaction must:
 
 The transaction appends one `adapter_recovery_armed` lifecycle row. Its detail carries the
 window id and revision, adapter key, occurrence count, failed-generation range, recovered
-generation, proof turn id, cause principal, and counts for armed, already-continuing,
-closed, retired, and moved assignments. Membership rows carry the exact assignment list.
+generation, proof turn id, `proofSource` (`patrol_probe` or `normal_turn`), `recoveryActor`,
+and counts for armed, already-continuing, closed, retired, and moved assignments. The
+authenticated database principal that commits the transition is `recoveryActor`; it is not
+an outage cause principal. Each occurrence retains its own typed cause principal. Membership
+rows carry the exact assignment list and the authenticated transition actor where an actor
+is required. No aggregate lifecycle `cause principal` exists.
 
 Only the compare-and-set winner arms assignments and clears suppression. A repeated handler
 returns `already_recovered` and writes nothing. All occurrences in the closed window settle
@@ -277,6 +308,11 @@ fallback. If the dependency does not land, this design remains blocked.
   It is replay-safe across repeated crashes.
 - A gateway restart with an open window preserves probe attempt, lease, backoff, membership,
   and suppression. It does not infer proof from logs or an external prompt response.
+- One adapter key has at most one active probe lease. A revision increment fences the
+  claimed proof but cannot release the lease; a new-revision probe waits for completion or
+  database-time expiry of the old lease.
+- Probe eligibility, expiry, and backoff use database time only. Restarts and host-clock
+  changes cannot shorten a persisted lease or due time.
 - A crash after recovery commit but before nudges loses only latency. Due pacing remains.
 - A new assignment opened after recovery follows ordinary supervision and does not join the
   closed window.
@@ -287,7 +323,9 @@ fallback. If the dependency does not land, this design remains blocked.
 ## Operator-visible record
 
 The incident, occurrence, proof, membership, and `adapter_recovery_armed` lifecycle rows are
-the complete operator record. Each row carries its cause and principal.
+the complete operator record. Occurrences carry their typed cause and cause principal.
+Proof and lifecycle rows carry their proof source and authenticated recovery actor instead
+of collapsing recovery activity into the outage cause.
 
 This design adds no chat marker. The prior `[adapter recovered]` stored marker is deleted:
 it duplicated authoritative evidence and could be lost after recovery commit. A future
@@ -323,7 +361,9 @@ acceptance; it is not part of this invariant.
 6. **Assignment race.** Close, revoke, move, and retire races produce no stale wake.
 7. **Concurrent deaths.** Two ready deaths before proof create two occurrence rows in one
    open window. The second increments revision. A proof for the first revision is fenced.
-   One proof for the final revision closes once and writes one lifecycle row.
+   The revision increment does not release the first probe lease, so no second probe is in
+   flight. After that lease completes or expires, one proof for the final revision closes
+   once and writes one lifecycle row.
 8. **Death versus close.** A death committed before recovery joins and fences proof. A death
    committed after recovery opens the next window. Neither ordering loses responsibility.
 9. **Replay.** Repeating an occurrence, proof, or recovery handler writes no duplicate row
@@ -335,11 +375,15 @@ acceptance; it is not part of this invariant.
     boot, and durable responsibility facts before replacement or probe.
 12. **Reconciliation replay.** Crash again during boot reconciliation. The occurrence key,
     window upsert, failed-turn settlement, and membership remain exactly once.
-13. **Failed probe.** A failed probe releases one lease, increments attempt, preserves
-    suppression, and sets bounded `nextProbeAt`. No second probe runs before due time.
+13. **Failed probe.** Attempt 1 fails at database time `T`, releases one lease, preserves
+    suppression, retains `attempt = 1`, and writes `nextProbeAt = T + 1_000ms`. Later
+    attempts use the exact jitter-free formula and 60-second cap above. A claim one
+    database-time unit before due is refused; a claim at due may proceed and records
+    `attempt = 2`.
 14. **Crash during prompt.** Crash after external probe success but before its transaction.
-    No proof exists. The lease prevents concurrent retry, then expires. A new prompt proves
-    recovery once; the old prompt is not replayed.
+    No proof exists. The key-scoped lease prevents concurrent retry even if another death
+    increments the revision, then expires only at its database-time boundary. A new prompt
+    proves recovery once; the old prompt is not replayed.
 15. **External success race.** A normal successful turn and patrol probe race. One revision
     CAS wins; the loser writes no recovery or duplicate fan-out.
 16. **Failure after recovery.** Adapter failure before the first resumed assignment finishes
@@ -354,20 +398,46 @@ acceptance; it is not part of this invariant.
     harness-scope manifest, run the real-response matrix. Evidence records harness id,
     adapter binary content digest, gateway commit, failed-turn rows, window/occurrence rows,
     proof row, recovery row, and resumed-turn rows. No fixed harness count appears here.
+21. **Suppression-before-replacement.** In both `:DOWN` and boot-reconciled loss, the window,
+    occurrence, membership, and suppression commit atomically. Replacement and supervision
+    cannot issue a prompt between loss observation and suppression creation. A later
+    occurrence refreshes the same window-scoped suppression without creating a second one.
+22. **Recovery attribution.** A normal user turn and a patrol probe each record the correct
+    `proofSource` and authenticated `recoveryActor`; neither overwrites any occurrence's
+    cause principal.
+23. **Legacy open migration.** A fully typed legacy open incident maps once to revision 1,
+    one legacy-derived occurrence, immediate-due idle probe state, membership, and
+    suppression. Restarting migration writes nothing further.
+24. **Legacy refusal.** Missing generation, identity, principal, or boot-epoch evidence;
+    duplicate open keys; and malformed adapter keys refuse the entire migration before any
+    row changes. Legacy closed rows remain immutable.
 
 ## Compatibility and migration
 
 This is an internal recovery and supervision contract. It changes no public CLI or wire
 request shape. Existing failed turns remain terminal and readable.
 
-Migrate existing harness-health incidents by adding window revision, occurrence rows, and
-probe-lease fields. A legacy open incident becomes revision 1 with one migration occurrence
-whose cause and principal identify the migration. A legacy closed incident remains immutable
-history and receives no synthetic recovery action.
+Migration first validates the complete legacy set inside one database-owner transaction.
+It may map a legacy open incident only when durable typed columns provide its adapter key,
+incident id, dead instance, failed generation, observation kind, original cause principal,
+and boot epoch. It must not recover missing values from logs, prose, timestamps, or sentinel
+defaults. Duplicate open adapter keys, malformed keys, duplicate incident ids, or any
+missing fence field refuse the whole migration before a schema or data write commits.
 
-Add a unique partial constraint for one open outage window per adapter key and a unique
-occurrence identity constraint. Migration must refuse if existing open rows violate the
-one-window invariant; an operator must reconcile those rows explicitly.
+For each valid legacy open incident, migration creates the outage window at revision 1 and
+one occurrence whose stable identity is `legacy:<legacyIncidentId>`. The occurrence retains
+the legacy observation kind and cause principal; migration does not become the outage cause.
+It derives and attaches current affected membership, creates the window-scoped suppression,
+and initializes one key-scoped probe row with `attempt = 0`, no lease owner or expiry, and
+`nextProbeAt` equal to the transaction's database time so the first post-migration claim is
+immediately due. A replay sees the stable legacy identity and writes nothing.
+
+A legacy closed incident remains immutable history and receives no window, occurrence,
+lease, suppression, proof, or recovery action. Add the unique partial constraint for one
+open outage window per adapter key, the unique occurrence identity constraint, and the
+unique adapter-key probe-lease constraint in the same all-or-nothing migration. A restart
+before commit repeats validation; a restart after commit observes the constraints and
+stable identities and is a no-op.
 
 ACP provides `session/load` only to restore model context and `session/prompt` to start a
 turn. It provides no assignment-resume operation. This invariant stays above that seam:
@@ -388,14 +458,13 @@ tests. Prose alone is not the invariant.
 
 ## Open questions and stop conditions
 
-1. Which canonical commit will satisfy
+1. **Blocking — implementation and integration.** Which canonical commit will satisfy
    `wi_a57dee58-7dc6-43e4-b36d-a45959e64ad6`? The implementation card must pin it. Until
    then, implementation and integration stop; there is no side-population fallback.
-2. Which registered harnesses and adapter binary digests belong to a release candidate?
-   The release-scope manifest answers this for each candidate. This spec intentionally does
-   not hardcode the answer.
-3. If a future product requires user-facing recovery notification, it needs a separate
-   durable-delivery design and review. This invariant supplies operator evidence only.
+2. **Blocking — release evidence only; non-blocking for implementation and integration.**
+   Which registered harnesses and adapter binary digests belong to a release candidate?
+   The release-scope manifest must answer this before the release evidence gate runs. This
+   spec intentionally does not hardcode the answer.
 
 ## Review amendment map
 
@@ -404,17 +473,33 @@ tests. Prose alone is not the invariant.
 - **F2:** Added deterministic boot reconciliation for unobserved ready-generation loss.
 - **F3:** Added assumptions, pinned dependency stop conditions, open questions, migration,
   and canonical repository custody.
-- **F4:** Defined one persisted in-flight probe lease per adapter key and window revision,
-  with attempt, expiry, bounded backoff, restart, and replay rules.
+- **F4:** Defined one persisted in-flight probe lease per adapter key and open window, with
+  a claimed-revision fence, exact database-time expiry, deterministic backoff, restart, and
+  replay rules.
 - **F5:** Deleted the crash-prone stored chat marker.
 - **F6:** Replaced a fixed two-harness smoke with the release-scope registry manifest and
   pinned binary content digests.
+- **R1:** Made suppression creation or refresh part of the same window-open or occurrence-
+  join transaction, before replacement or supervision can act.
+- **R2:** Made the active probe right adapter-key scoped across revision changes.
+- **R3:** Defined the database time authority, lease duration, attempt numbering, and exact
+  jitter-free retry formula.
+- **R4:** Classified each open question by its blocking gate and removed the duplicate
+  notification non-goal.
+- **R5:** Defined all-or-nothing typed legacy migration, deterministic field mapping,
+  replay-safe identities, and restart behavior.
+- **R6:** Separated per-occurrence cause principals from lifecycle proof source and
+  authenticated recovery actor.
 
 ## Evidence folded into this revision
 
 - Original frozen design: `art_1dca486c`, SHA-256
   `1e5193b68b9054ae507650a60b7f056365bd5e1d40c6aed22c1da726fe8d2d2c`.
 - Independent changes-requested review: `att_10a6b91d`, `art_4d9afce2`.
+- First canonical revision: `art_fd6e93bc`, SHA-256
+  `17409b8046d4e478b30370ac5ac1d29a84b98beaadd60a48e706f0bc55e250bf`,
+  commit `f26ca0df4cf77165b8a01b24212a85f363b30f13`.
+- Independent re-review changes requested: `att_17dc4980`, `art_31e37e3c`.
 - Mike-confirmed harness-health distillate:
   `tightbeam-product/huddle-harness-health-patrol-DISTILLATE.md`.
 - Live-work terminal-path recon `art_78b2dc50`: 263 corrected zero-path open assignments,
