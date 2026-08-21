@@ -7,10 +7,11 @@ workflow, artifact, release, deployment, service, fleet, or product state.
 
 ## Spec home
 
-The canonical repository home is
-`docs/release/openclaw-tightbeam-release-split.md` in
-`clickety-clacks/surf-ace`. Until reviewed bytes merge there, the immutable
-Tightbeam artifact ID and SHA-256 named by the review are the authority.
+The sole canonical repository home is `surf-ace-release-split-r5.md` in
+`clickety-clacks/tightbeam-specs`. Landing and review evidence record the
+containing commit and file SHA-256; this specification does not embed its
+self-referential containing commit. Any product-repository copy is generated
+and non-authoritative; it is not an amendment or review authority.
 
 ## Goal
 
@@ -42,8 +43,9 @@ smoke before publication.
   earlier gates pass. An agent may prepare evidence but may not create, move,
   delete, or push a branch or tag under this specification.
 - **Tooling ref**: immutable tag `surf-ace-release-tooling-v0.1.0` at the exact
-  reviewed implementation commit that contains the canonical spec, workflows,
-  build programs, and smoke programs. It is not a product source tag.
+  reviewed implementation commit that contains the workflows, build programs,
+  and smoke programs. Its tooling metadata records the canonical spec
+  repository, commit, path, and file SHA-256. It is not a product source tag.
 - **Artifact smoke**: install, health, upgrade, rollback, and post-rollback
   health checks against the packaged files in a new environment.
 - **Immutable**: an existing tag or published file is never moved, deleted,
@@ -162,7 +164,9 @@ Gate 2 adds the repository-owned release programs under
 `scripts/release/` and workflows under `.github/workflows/`. An independent
 review approves their exact implementation commit. The release owner then
 creates `surf-ace-release-tooling-v0.1.0` at that commit and verifies the
-remote tag peels to the reviewed full SHA.
+remote tag peels to the reviewed full SHA. That commit does not require a spec
+copy. Any generated copy is non-authoritative. Its tooling metadata points to
+the sole canonical spec by repository, commit, path, and file SHA-256.
 
 Every release job checks that tooling tag into `tooling/` and checks the
 product source tag into a separate new `source/` directory. Commands that
@@ -501,11 +505,15 @@ smoke before it supersedes the bad release.
 The release must follow these gates in order:
 
 1. An independent reviewer approves the exact revision-5 bytes.
-2. A reviewed implementation lands the canonical spec, GitHub Actions,
-   pinned tools, direct immutable-checkout tests, deterministic package
-   programs, and both smoke programs in `clickety-clacks/surf-ace`. The
-   release owner creates `surf-ace-release-tooling-v0.1.0` at that exact
-   reviewed commit and verifies its remote peel.
+2. A reviewed implementation lands GitHub Actions, pinned tools, direct
+   immutable-checkout tests, deterministic package programs, and both smoke
+   programs in `clickety-clacks/surf-ace`. Its tooling metadata records the
+   canonical `clickety-clacks/tightbeam-specs` repository, containing commit,
+   `surf-ace-release-split-r5.md` path, and file SHA-256. It does not require a
+   product-repository spec copy. Any generated copy is non-authoritative and
+   cannot act as amendment or review authority. The release owner creates
+   `surf-ace-release-tooling-v0.1.0` at that exact reviewed commit and verifies
+   its remote peel.
 3. The release owner creates `release/openclaw-final` and immutable tag
    `surf-ace-openclaw-v0.1.0` at exact commit `58ac8c4`. The owner verifies
    both remote refs peel to that commit.
