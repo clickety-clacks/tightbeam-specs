@@ -53,3 +53,18 @@ declarations the substrate executes.
    API is the authority on itself via a /help endpoint shipped with the
    server. Drawing is presentation only — nothing submitted through this
    interface touches the installed ruleset, ever.
+
+10. LINE LABELS — label what a reader would grep for; hidden at rest,
+    shown only on an isolated hydra, always duplicated in the panel:
+    - trigger: the event qualifier ("on: filed", "on: horizon passed"),
+      not the row name — the endpoint already shows that;
+    - read: the predicate ("effectKind ∈ {code,policy,release,
+      live_mutation}", "verdict = reviewed-clean") — a read without its
+      condition is meaningless, and the predicate is where the rule's
+      logic lives;
+    - create: what is minted and for whom ("prod (rung 2)",
+      "DR → principal");
+    - veto: the exact refusal string the victim sees
+      ("rule_denied: completion-requires-review") — so an agent can grep
+      the diagram by the error it just received and land on the line
+      that fired it.
