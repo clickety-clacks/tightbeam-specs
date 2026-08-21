@@ -1,6 +1,6 @@
-# Idle-worker parent disposition v1 — revision 2 sealed review candidate
+# Idle-worker parent disposition v1 — revision 3 sealed review candidate
 
-Status: sealed immutable review candidate responding only to F1-F4 in `changes-requested` verdict `att_739eec29-bd70-4645-8ab0-3fb57abbc069`. The cold digest is complete. Implementation remains prohibited until the existing sole linked review records `reviewed-clean`. The artifact row records the content SHA-256 outside these self-referential bytes.
+Status: sealed immutable review candidate responding only to F1-F2 in `changes-requested` verdict `att_ee14c813` under owner ruling `att_5501810e-18c3-41e2-b230-e697e45c4d77`. The cold digest is complete. Implementation remains prohibited until a fresh linked exact-byte review records `reviewed-clean`. The artifact row records the content SHA-256 outside these self-referential bytes.
 
 Canonical home: `specs/tightbeam/idle-worker-parent-disposition-v1.md` in `clickety-clacks/tightbeam-specs`
 
@@ -15,6 +15,8 @@ Current specification provenance: `clickety-clacks/tightbeam-specs` `origin/main
 Owner authority: `att_5fc0e23c-6b9c-4d3e-b47e-45ae7d296efb` and `att_29616387-319f-442e-add8-3ad737ee7fa0`
 
 Revision 1 review evidence: predecessor `art_3609851e` at SHA-256 `8c6d3dd4beaeb4afe9335d13f1e59ff0c7c232873fe8a179b891ae30a49dac2`; sole linked verdict `att_739eec29-bd70-4645-8ab0-3fb57abbc069`; full clause report `art_88f15a24` at SHA-256 `e9f8959b5ed5799506dab4a954b38cef1215223205f3cc5c3a7d1e5c0e1d8c83`
+
+Revision 2 review evidence: predecessor `art_71c2aa0f` at SHA-256 `7342549e9b1430deaff508b4e987247b5da712a3078f0574e8d4ee7d8ee33f99`; linked verdict `att_ee14c813`; full clause report `art_02ee285f` at SHA-256 `fecf6778c93dcbde152818ebec11ddc6cf2c95c6777b3fdf4a980988046bb82f`
 
 Historical evidence only: archived recon artifact `art_9af25de4`, SHA-256 `6e383299345f37bd1737ac33c29da4e23da289f88ec371f6ebf49b22ff439f46`
 
@@ -51,7 +53,7 @@ ADD wins because the current maintenance line has no durable idle-worker parent 
 11. The feature does not parse prompt prose to recover identity, generation, authority, state, or action.
 12. The feature does not backfill obligations for sessions that already have zero open assignments when the schema activates.
 13. The feature does not alter existing wake-cancellation rows or the accepted requester combinations for other producers.
-14. The feature does not split the reviewed implementation into an eighteen-path phase. The open overlapping assignment `asg_8429e570-f9a2-4510-bc60-87b65589c46f` remains a separate custody gate for `lib/tightbeam/supervision.ex` and `test/supervision_test.exs`.
+14. The feature does not split the reviewed implementation into an eighteen-path phase or treat historical assignment `asg_8429e570-f9a2-4510-bc60-87b65589c46f` as a live custody gate. That assignment is revoked evidence only. The feature does not bypass the two live full-path custody recensuses in AR12.
 15. The feature does not merge, release, deploy, restart a live service, or probe a live work row as part of specification or implementation verification.
 
 ## Terms
@@ -69,12 +71,12 @@ ADD wins because the current maintenance line has no durable idle-worker parent 
 11. **Immediate parent**: the `sessions.spawnedBy` value recorded on the child row.
 12. **Responsible parent**: the first active same-owner session in the child's `spawnedBy` lineage. A cross-owner row ends the lineage walk.
 13. **Main fallback**: the active root Main for the child's `ownerUserId`, selected when the lineage yields no responsible parent.
-14. **Authorized disposition principal**: the owner's user principal, the current responsible parent session, or the current Main fallback session. A process, foreign-owner session, unrelated same-owner session, and retired session are not authorized.
+14. **Authorized disposition principal**: the current responsible parent session or the current Main fallback session. A user principal, process, foreign-owner session, unrelated same-owner session, and retired session are not authorized for retain or generation-bound retire.
 15. **Initial prompt**: the immediate `process:tightbeam` prompt wake addressed to the responsible parent or Main fallback when the request opens.
 16. **Current action deadline**: `decision_requests.deadlineAt`. It starts at the configured decision deadline. Each changed-blocker deferral moves it to that proof's greatest blocker hard deadline in the same transaction that replaces the reminder.
 17. **Deadline reminder**: the one delayed `process:tightbeam` prompt wake linked through `decision_requests.parkWakeId`, due exactly at the current action deadline. A deferral can replace this wake only through the typed replacement seam defined below.
 18. **Generation fence**: the optional positive `--generation <n>` supplied to `retire`. The gateway checks it against the target child's current pending generation before lease scheduling, wake creation, or lifecycle mutation.
-19. **Manual retire**: the existing `retire --session <key>` call without `--generation`. Its authorization, legacy idempotency, subtree order, critical-lease intent wakes, response, and terminal behavior remain authoritative.
+19. **Manual retire**: the existing `retire --session <key>` call without `--generation`. Its separate owner rule authorizes any caller that existing manual-retire law authorizes, including an unrelated active same-owner session. Its authorization, legacy idempotency, subtree order, critical-lease intent wakes, response, and terminal behavior remain authoritative. Manual authorization grants no retain or generation-bound-retire authority.
 20. **Generation-bound retire**: `retire --session <childSessionKey> --generation <generation>` copied from an idle-worker prompt. It uses the same retirement lifecycle and a different critical-lease deferral projection so the pending decision request remains the only obligation.
 21. **Retain action**: `retain --session <childSessionKey> --generation <generation>`. It exists only for a current pending idle-worker generation.
 22. **Lifecycle input digest**: lowercase hexadecimal SHA-256 over the UTF-8 RFC 8785 canonical JSON object `{"generation":<n>,"sessionKey":"<raw child session key>"}`. The ledger key already scopes owner, operation, and idempotency key; the digest binds every remaining lifecycle input.
@@ -98,7 +100,7 @@ ADD wins because the current maintenance line has no durable idle-worker parent 
 10. Current `wake_cancellations` has the exact eighteen-column shape and requester matrix at product `origin/0.1.8:4af89039`. Current Schema activation validates exact owned-object SQL and rolls back an interrupted additive activation.
 11. Current `wire_idempotency` has the four-column legacy shape owned by `lib/tightbeam/idempotency.ex`. Its operation CHECK admits `spawn`, `retire`, `wake`, `assign`, `condition`, and `work-item-create`; its primary key is `(ownerUserId, operation, idempotencyKey)`.
 12. The current repository verification authority is `.github/workflows/ci.yml` on product `origin/0.1.8:4af89039`. Its Linux and macOS jobs run the shipped-privacy and public-rule gates, build a fresh release CLI before Mix, run the same pinned toolchains and test order, and build packages only after tests pass.
-13. The reviewed implementation boundary is the twenty recovered paths plus `lib/tightbeam/idempotency.ex` required by F1, as listed in Architecture AR12. Tightbeam file custody must accept that complete set before implementation edits begin.
+13. The reviewed implementation boundary is the twenty recovered paths plus `lib/tightbeam/idempotency.ex` required by revision-1 F1, as listed in Architecture AR12. Exact zero-overlap receipts from both live full-path custody recensuses must exist before implementation edits begin.
 
 If an assumption is false, implementation stops and reports the exact contrary row, source clause, or command result. The implementer does not infer a replacement rule.
 
@@ -126,7 +128,7 @@ The disposition request stores the child's owner, a finite current action deadli
 
 ### I6 — The substrate records; a mind chooses
 
-No timer, delivery result, failed turn, missing response, critical-lease expiry, restart, or retry changes a generation to retain or retire. Only an authorized `retain` call or an authorized retirement transaction records the disposition.
+No timer, delivery result, failed turn, missing response, critical-lease expiry, restart, or retry changes a generation to retain or retire. Only a disposition-principal-authorized `retain` or generation-bound-retire call, or a separately authorized manual-retire transaction, records the disposition.
 
 ### I7 — Retain is generation-fenced and atomic
 
@@ -146,11 +148,11 @@ A generation-bound retire verifies authorization, target state, current generati
 
 ### I11 — Retirement stays terminal and atomic
 
-When no critical lease blocks the target subtree, request-backed acknowledgment and the existing subtree retirement commit together. For each retiring session, a pending generation resolves request-backed retire; an armed generation resolves direct retire; no generation or request stays pending for a retired session. Existing descendant-first interruption, session state, queued-turn drain, broadcast, and post-commit reap behavior remains authoritative.
+When no critical lease blocks the target subtree, request-backed acknowledgment and the existing subtree retirement commit together. For each retiring session, a pending generation resolves request-backed retire; an armed generation resolves direct retire; no generation or request stays pending for a retired session. A manual-retire caller authorized by the separate existing owner rule can cause either resolution without becoming an authorized disposition principal. Existing descendant-first interruption, session state, queued-turn drain, broadcast, and post-commit reap behavior remains authoritative.
 
 ### I12 — Retirement interruption creates no redundant request
 
-The exact `holder_retired` and `tightbeam:retirement` terminal assignment cause is ineligible for request creation. If the child has an armed generation, the retirement transaction uses the direct retire shape. If a request was pending before retirement began, the retirement transaction uses the request-backed shape and cancels its pending wakes.
+The exact `holder_retired` and `tightbeam:retirement` terminal assignment cause is ineligible for request creation. If the child has an armed generation, the retirement transaction uses the direct retire shape. If a request was pending before retirement began, the retirement transaction atomically consumes the request, uses the request-backed shape, and cancels its pending wakes. These rules apply to an authorized manual retirement as well as a generation-bound retirement.
 
 ### I13 — Lease deferral leaves the choice open
 
@@ -166,7 +168,7 @@ The blocker digest is lowercase hexadecimal SHA-256 over one UTF-8 JSON value se
 
 ### I16 — Parent authority derives from rows
 
-Request creation, request visibility, wake delivery, and each disposition action resolve the current responsible parent from same-owner lineage, then Main fallback. The generation preserves the parent selected at request creation as routing evidence; it does not freeze later authority. The mechanism does not use a role, display name, prompt text, or hard-coded topology. The owner user remains authorized. A foreign ancestor is a lineage boundary and receives no row or wake.
+Request creation, request visibility, wake delivery, and each retain or generation-bound-retire action resolve the current responsible parent from same-owner lineage, then Main fallback. The generation preserves the parent selected at request creation as routing evidence; it does not freeze later authority. The mechanism does not use a role, display name, prompt text, or hard-coded topology. The owner user retains request visibility but is not a disposition principal. Manual retirement resolves its caller through the separate existing owner rule. A foreign ancestor is a lineage boundary and receives no row or wake.
 
 ### I17 — Cause and principal are explicit
 
@@ -192,7 +194,7 @@ Root Main behavior, never-worked active sessions, ordinary assignment prods, wor
 
 ### I21 — Terminal lifecycle replay is durable and full-input bound
 
-For `retain` and generation-bound `retire`, a non-null idempotency key names one owner, operation, lifecycle input digest, and terminal canonical result. The transaction checks the ledger before current-generation or current-session-state refusal. A row with the matching digest returns its stored result JSON exactly, even after the request resolves or the child retires. A row with a different digest, or a legacy row whose digest is null, returns the existing idempotency-conflict response and changes no domain row. A successful lifecycle choice writes its digest and result JSON in the same transaction as its domain effects. A refusal or `retire_deferred` response writes no terminal lifecycle idempotency row. Manual retire without generation preserves replay for a legacy null-digest row. A manual call that meets a digest-bearing generation-bound row returns idempotency conflict.
+For `retain` and generation-bound `retire`, a non-null idempotency key names one owner, operation, lifecycle input digest, and terminal canonical result. Every call resolves the current caller and authorizes that caller for the requested action before idempotency lookup or result return. A disposition-principal caller then checks the ledger before current-generation or current-session-state refusal. A row with the matching digest returns its stored result JSON exactly, even after the request resolves or the child retires, only while that caller remains authorized for that requested action. An unauthorized equal-digest replay returns `forbidden` and does not reveal or return the stored result. A row with a different digest, or a legacy row whose digest is null, returns the existing idempotency-conflict response and changes no domain row. A successful lifecycle choice writes its digest and result JSON in the same transaction as its domain effects. A refusal or `retire_deferred` response writes no terminal lifecycle idempotency row. Manual retire without generation first applies the separate existing manual-retire owner rule, then preserves replay for a legacy null-digest row. A manual call that meets a digest-bearing generation-bound row returns idempotency conflict.
 
 ## Architecture
 
@@ -302,7 +304,7 @@ Both lifecycle actions use these observable refusal classes:
 | CLI omits generation from retain or supplies a nonpositive/non-integer generation | exact retain usage error; no dispatch |
 | wire generation is absent where mandatory, nonpositive, or non-integer | HTTP 400 `invalid_message`; no gateway call |
 | target is absent or belongs to another owner | `not_found`; no domain-row change |
-| target exists for the owner, but the caller is not the owner user, current responsible parent, or current Main fallback | `forbidden`; no domain-row change |
+| target exists for the owner, but the caller is not the current responsible parent or current Main fallback | `forbidden`; no domain-row change and no idempotency-result disclosure |
 | generation is not the target's current pending generation, including an armed, resolved, or retired target | `stale_disposition_generation`, with `requestedGeneration` and nullable `currentGeneration`; no domain-row change |
 | idempotency key names a different committed operation input | existing idempotency-conflict code and response; no domain-row change |
 
@@ -318,11 +320,11 @@ tightbeam retire --session <key> [--generation <n>] [--key <idempotencyKey>]
 
 The CLI sends `generation` only when supplied. Router admits only a positive integer. Gateway preserves the existing response for calls without generation.
 
-For a generation-bound call, Gateway performs the AR9b idempotency lookup and then validates I10 inside the retire transaction. It computes the canonical subtree and active leases once. With no blockers, it resolves each current child generation immediately before the corresponding session state transition, retaining the canonical descendant-first order. It uses the call's typed origin as `resolvedBy` and commits the terminal result through AR9b.
+For a generation-bound call, Gateway resolves and authorizes the current caller for the requested target action, performs the AR9b idempotency lookup, and then validates the remaining I10 state fence inside the retire transaction. It computes the canonical subtree and active leases once. With no blockers, it resolves each current child generation immediately before the corresponding session state transition, retaining the canonical descendant-first order. It uses the call's typed origin as `resolvedBy` and commits the terminal result through AR9b.
 
 Authorization is checked against the requested target generation. A descendant generation resolved by the existing mandatory cascade does not require a second disposition call; it records the authorized target retirement as its resolution cause and the original call principal as `resolvedBy`.
 
-For manual retire without generation, Gateway keeps existing lease deferral and `w_retire_...` behavior. When the manual call later commits retirement, it resolves any current idle-worker generation in the same transaction as described by I11-I12.
+For manual retire without generation, Gateway first applies the existing manual-retire owner rule and keeps existing lease deferral and `w_retire_...` behavior. An unrelated active same-owner caller that this rule authorizes can perform manual retire but gains no retain or generation-bound-retire authority. When the manual call later commits retirement, it atomically resolves any current idle-worker generation and consumes any pending disposition request in the same transaction as described by I11-I12.
 
 ### AR8 — Critical-lease proof and reminder replacement
 
@@ -361,15 +363,15 @@ The target CHECKs admit these row shapes only:
 
 A non-null digest contains exactly 64 lowercase hexadecimal characters. A non-null completion time is a nonnegative integer. A non-null result is valid JSON. Lifecycle result JSON admits null, booleans, integers, UTF-8 strings, arrays, and string-keyed objects; it rejects floating-point numbers. Schema restart validation canonicalizes each non-null result with the same encoder and requires byte equality.
 
-`lib/tightbeam/idempotency.ex` adds transaction-scoped lifecycle lookup and terminal put functions. For `retain`, the operation is `retain`; for both manual and generation-bound retirement, it is `retire`. A generation-bound call computes the Terms 22 digest before lookup. Lookup occurs inside the lifecycle transaction after caller-owner resolution but before target state, generation, request, or lease checks.
+`lib/tightbeam/idempotency.ex` adds transaction-scoped lifecycle lookup and terminal put functions. For `retain`, the operation is `retain`; for both manual and generation-bound retirement, it is `retire`. A generation-bound call computes the Terms 22 digest before lookup. Lookup occurs inside the lifecycle transaction only after Gateway resolves the current caller and target facts needed for information-safe authorization and authorizes the caller for the requested action. For retain and generation-bound retire, authorization requires the current responsible parent or Main fallback. For manual retire, authorization uses the separate existing manual-retire owner rule. Only after authorization can lookup precede the remaining target state, generation, request, or lease checks.
 
 The lookup has exactly three outcomes:
 
-1. no row: continue with authorization and lifecycle checks;
+1. no row: continue with the remaining lifecycle checks;
 2. row with equal non-null `inputDigest`: decode `resultJson`, require its RFC 8785 canonical re-encoding to equal the stored bytes, and return that exact result without domain mutation;
 3. row with a different digest or null digest: return the existing idempotency-conflict response without domain mutation.
 
-On successful retain or successful generation-bound retirement with a key, Gateway RFC 8785-canonicalizes the exact public success response and inserts `sessionKey`, digest, canonical result JSON, and completion time in the domain transaction. A uniqueness race rereads the winning row and applies the same three outcomes. Refusals and lease deferrals insert no row. Manual retirement without generation continues to write the legacy `sessionKey`-only shape. A manual replay of a legacy row keeps its current response; a manual call that meets a digest-bearing generation-bound row returns idempotency conflict because the input modes differ. Other operations ignore the added columns and remain unchanged.
+On successful retain or successful generation-bound retirement with a key, Gateway RFC 8785-canonicalizes the exact public success response and inserts `sessionKey`, digest, canonical result JSON, and completion time in the domain transaction. A uniqueness race reauthorizes the current caller before it rereads the winning row and applies the same three outcomes. Refusals and lease deferrals insert no row. Manual retirement without generation continues to write the legacy `sessionKey`-only shape. A currently manual-authorized caller replaying a legacy row keeps its current response; a manual call that meets a digest-bearing generation-bound row returns idempotency conflict because the input modes differ. An unauthorized caller receives `not_found` or `forbidden` before any replay result. Other operations ignore the added columns and remain unchanged.
 
 ### AR10 — Activation, backfill, restart, and refusal
 
@@ -442,14 +444,19 @@ The implementation owns exactly these twenty-one paths as one reviewed unit. Ent
 20. `test/cli_integration_test.exs`
 21. `test/archetypes_test.exs`
 
-The canonical spec path lives in the separate spec commons and is represented as path 1 for cross-repository assignment custody. Before product editing, the owner must open one code assignment containing this exact set and Tightbeam must accept it without `files_overlap`. The present overlap on `lib/tightbeam/supervision.ex` and `test/supervision_test.exs` under `asg_8429e570-f9a2-4510-bc60-87b65589c46f` blocks implementation but does not alter this spec.
+The canonical spec path lives in the separate spec commons and is represented as path 1 for cross-repository assignment custody. Historical assignment `asg_8429e570-f9a2-4510-bc60-87b65589c46f` is revoked. It is evidence only and is not a live implementation or custody gate.
+
+The orchestrator performs two live full-path custody recensuses against all open assignments. The first census occurs immediately before it opens any implementation card. It names all twenty-one paths above, records the exact command, timestamp, and result, and checks each open assignment's declared custody. Any overlap, including an overlap on `lib/tightbeam/supervision.ex` or `test/supervision_test.exs`, must be sequenced or released before the orchestrator opens the implementation card. An exact zero-overlap receipt for the complete set permits the orchestrator to open one implementation card that owns all twenty-one paths. It must not open a placeholder, partial, or split-scope implementation card.
+
+The second census occurs immediately before the holder's first product source edit. It repeats the same complete open-assignment custody check and records the exact command, timestamp, and result. A new overlap stops source editing until the orchestrator sequences or releases it. An exact zero-overlap receipt for all twenty-one paths clears the source-edit gate. Neither receipt authorizes implementation before this specification has a fresh linked `reviewed-clean` verdict.
 
 ### AR13 — Recoverable-authority delta
 
 | Subject | Recoverable prior authority | Fresh spec ruling |
 | --- | --- | --- |
 | Artifact identity | `art_d1b8493a` was expected at SHA `f4f085d3...`, but its row has no content hash or archive home and its bytes are absent. | A new artifact identity and SHA bind this text. No old review transfers. |
-| Revision 1 review | `art_3609851e` SHA `8c6d3dd4...` received changes-requested in `att_739eec29`; `art_88f15a24` SHA `e9f8959b...` records F1-F4. | Revision 1 remains immutable history. This revision changes only F1-F4 plus superseding homing and provenance rulings, and requires the existing sole linked review to assess its new exact bytes. |
+| Revision 1 review | `art_3609851e` SHA `8c6d3dd4...` received changes-requested in `att_739eec29`; `art_88f15a24` SHA `e9f8959b...` records F1-F4. | Revision 1 remains immutable history. Revision 2 closed only F1-F4 plus superseding homing and provenance rulings. |
+| Revision 2 review | `art_71c2aa0f` SHA `7342549e...` received changes-requested in `att_ee14c813`; `art_02ee285f` SHA `fecf6778...` records F1-F2. | Revision 2 remains immutable history. Revision 3 changes only the two reported findings under exact owner ruling `att_5501810e`; it requires one fresh linked review of its new exact bytes. |
 | Product basis | Lost artifact used `6c13efcbe9e1ae247b8aa7e91a374015c74dc947`; revision 1 used historical `origin/0.1.x:ce686fa`. | Re-census source provenance only at product `origin/0.1.8:4af89039dbb55291383a657ef28700b1acd8122f`. No product bytes change in this assignment. |
 | Branch | Historical cards named `main`; a later stale correction named nonexistent `0.1.9`. | The later owner no-`0.1.9` triage supersedes that correction. This spec lands from specs `origin/main:6b0aa95e` on `work/asg-9aaee147-idle-worker-respec`; product `origin/0.1.8` is provenance only. |
 | Canonical home | Prior owner ruling named `shared/specs/tightbeam/idle-worker-parent-disposition-v1.md`; revision 1 remained in session scratch. | Org-local homing law maps the canonical authority to `clickety-clacks/tightbeam-specs:specs/tightbeam/idle-worker-parent-disposition-v1.md`. Scratch and artifact rows remain evidence pointers. |
@@ -464,19 +471,21 @@ The canonical spec path lives in the separate spec commons and is represented as
 | Wake provenance | Accepted cancellation F1 required truthful `tightbeam:idle-worker-disposition` requester and exact table evolution. | Preserved in I17 and rebased to the current product `origin/0.1.8:4af89039` eighteen-column source shape in AR9. |
 | Proof integrity | Accepted proof F2 required sealed history and enforceable generation linkage. | Preserved in I14-I15 and AR8/AR10. |
 | Schema activation | Prior F3/F5 required canonical Schema ownership, deterministic epoch basis, rollback, and malformed-shape refusal. | Preserved in I19 and AR10; source shape and branch basis are current. |
-| Generic compatibility | Prior reviews required unchanged unrelated requesters, manual retire, root, and never-worked behavior. | Preserved in I20 and Acceptance A4/A8/A16. |
+| Generic compatibility | Prior reviews required unchanged unrelated requesters, manual retire, root, and never-worked behavior. | Preserved in I20 and Acceptance A4/A8/A16. Revision-3 F2 makes the existing manual-retire owner rule explicit without granting disposition-principal authority. |
 | Guidance | Accepted I2 required exact commands, authority, refusal, deferred retry, and source guard. | Preserved in AR11 with the current command forms. |
-| Implementation paths | Recon `art_9af25de4` recovered the exact twenty-path boundary and two-path overlap. | All twenty recovered paths remain in AR12; F1 adds only `lib/tightbeam/idempotency.ex`, for a twenty-one-path boundary. The two named overlap paths remain a separate custody gate. |
+| Implementation paths | Recon `art_9af25de4` recovered the exact twenty-path boundary and a historical two-path overlap. | All twenty recovered paths remain in AR12; revision-1 F1 added only `lib/tightbeam/idempotency.ex`, for a twenty-one-path boundary. Revoked `asg_8429e570` is not a live gate. Two full-path live recensuses now gate implementation-card creation and first source edit. |
 | Verification | Prior artifact named Mix, Rust, packaging, real smoke, and exact-commit review gates. | Preserved and updated to the exact product `origin/0.1.8:4af89039` CI order, clean baseline/after counts, packaged-binary smoke, and frozen-tip Linux+macOS review in A18-A20. |
 
 ### AR14 — Changes-requested closure ledger
 
-| Finding | Revision 2 closure |
+| Finding | Closure |
 | --- | --- |
 | F1 — terminal full-input idempotency was unspecified and `lib/tightbeam/idempotency.ex` was outside custody | Terms 22, I7, I13, I21, AR6-AR7, AR9b, AR10, AR12, A5, A10, A12, and A15 define digest-bound stored-result replay, defer-without-record behavior, legacy manual compatibility, schema evolution, tests, and the added owner path. |
 | F2 — lease deferral did not rule whether `decision_requests.deadlineAt` changes | Terms 16-17, I4-I5, I13-I15, AR2-AR3, AR8, AR11, A7, A10, and A11 make the request deadline, reminder due time, and latest proof retry time equal in one transaction while retaining `initialDeadlineAt`. |
 | F3 — repository gates omitted public-rule, fresh release CLI, and frozen-tip two-platform CI | Assumption 12 and A18-A20 bind the exact current CI order, both local baseline/after runs, and successful Linux+macOS checks for the frozen commit. |
 | F4 — generated prompt commands did not shell-quote session keys | Terms 23, AR3-AR4, AR11, and A17 define one POSIX quoting transform, use it in both generated commands, and test the real custom-key grammar through a shell. |
+| Revision-2 F1 — the spec treated revoked `asg_8429e570` as an open overlap gate | Non-Goal 14, AR12, AR13, A20, and the closing handoff state mark that assignment as historical evidence and replace it with two exact live full-path custody recensuses. |
+| Revision-2 F2 — manual-retire authority and equal-digest replay authorization were ambiguous | Terms 14 and 19, I6, I11-I12, I16, I21, AR6-AR7, AR9b, and A5/A8/A9/A12/A16 separate existing manual-retire authority from disposition authority and require current action authorization before every replay lookup or result return. |
 
 ### AR15 — Prior clause preservation ledger
 
@@ -517,7 +526,7 @@ Given built-in Main closes its last assignment, then no idle-worker generation, 
 
 ### A5 — Retain authority, idempotency, and refusal
 
-Given pending generation 1 addressed to parent `P`, when `P` runs retain with key `K` and generation 1, then generation, request, wakes, event, and the AR9b terminal row commit atomically and `C` remains active. After any later state change, replay the same owner, operation, key, child, and generation; it returns byte-identical stored result JSON. Reuse `K` with another child or generation; it returns the existing idempotency-conflict response with zero effects. Inject failure before each transaction statement and prove neither domain effects nor the terminal row commits alone. Run owner user and Main fallback success fixtures. Run foreign target, unrelated same-owner session, process principal, retired parent, wrong child, nonpositive generation, stale generation, legacy-null-digest, and conflicting idempotency fixtures; each returns the exact AR6 or AR9b refusal and changes no domain row.
+Given pending generation 1 addressed to parent `P`, when `P` runs retain with key `K` and generation 1, then generation, request, wakes, event, and the AR9b terminal row commit atomically and `C` remains active. After any later target state change, while `P` remains the current responsible parent, replay the same owner, operation, key, child, and generation; it returns byte-identical stored result JSON. While `P` is also the current disposition principal for another child, reuse `K` with that child or another generation; it returns the existing idempotency-conflict response with zero effects. Inject failure before each transaction statement and prove neither domain effects nor the terminal row commits alone. Run responsible-parent and Main-fallback success fixtures. Run owner user, foreign target, unrelated same-owner session, process principal, retired parent, wrong child, nonpositive generation, stale generation, legacy-null-digest, and conflicting idempotency fixtures; each returns the exact AR6 or AR9b refusal and changes no domain row. After `P` succeeds, make another same-owner session the caller and replay the equal key and digest; it returns `forbidden`, does not return the stored result, and changes no row.
 
 ### A6 — New work supersedes pending
 
@@ -529,11 +538,11 @@ Given a pending reminder exists and a generation-bound retire observes a changed
 
 ### A8 — Stale retire fence and manual compatibility
 
-Given a prompt for generation 1 and current generation 2, when an authorized parent runs retire with generation 1, then the response is `stale_disposition_generation`; active leases, generic retire-intent wakes, proof rows, requests, sessions, assignments, lifecycle events, and idempotency rows remain unchanged. Given the same caller omits generation, then the current manual-retire contract executes unchanged, including its existing critical-lease response, generic intent wake, and replay of legacy null-digest rows. Reuse a key first committed by one retire input mode from the other mode; the call returns idempotency conflict and changes no domain row.
+Given a prompt for generation 1 and current generation 2, when an authorized parent runs retire with generation 1, then the response is `stale_disposition_generation`; active leases, generic retire-intent wakes, proof rows, requests, sessions, assignments, lifecycle events, and idempotency rows remain unchanged. Given the same caller omits generation, then the current manual-retire contract executes unchanged, including its existing critical-lease response, generic intent wake, and replay of legacy null-digest rows. Given unrelated active same-owner session `S` is authorized by the existing manual-retire owner rule, when `S` manually retires a child with a pending request, then the terminal transaction consumes that request and resolves the generation without making `S` a disposition principal. The same `S` receives `forbidden` for retain and generation-bound retire. Reuse a key first committed by one retire input mode from the other mode; after authorization for the requested mode, the call returns idempotency conflict and changes no domain row.
 
 ### A9 — Successful retirement and race
 
-Given pending generation 1, no active subtree lease, and authorized parent `P`, when `P` runs generation-bound retire with key `K`, then request consumption, generation resolution, descendant-before-ancestor cascade, assignment interruption, session retirement, queue drain, events, and terminal result row commit once. Replaying `K` returns the stored success after retirement. Given manual retire races the eligible last close of an armed generation, serialization yields one of two outcomes: the eligible close wins and retire consumes its request, or retire wins and the interruption creates no request. No committed outcome leaves a pending request for a retired child, a pending initial prompt after the choice, or a terminal idempotency row without its matching lifecycle outcome.
+Given pending generation 1, no active subtree lease, and authorized parent `P`, when `P` runs generation-bound retire with key `K`, then request consumption, generation resolution, descendant-before-ancestor cascade, assignment interruption, session retirement, queue drain, events, and terminal result row commit once. While `P` remains the current responsible parent, replaying `K` returns the stored success after retirement. An unrelated same-owner caller replaying the equal key and digest returns `forbidden` without the stored result. Given manual retire races the eligible last close of an armed generation, serialization yields one of two outcomes: the eligible close wins and the separately manual-authorized retire consumes its request, or retire wins and the interruption creates no request. No committed outcome leaves a pending request for a retired child, a pending initial prompt after the choice, or a terminal idempotency row without its matching lifecycle outcome.
 
 ### A10 — Deferred retirement
 
@@ -545,7 +554,7 @@ Given proof version 1 is sealed, execute direct SQL attempts to add a blocker, u
 
 ### A12 — Concurrent lifecycle choices
 
-Given one pending generation, run retain versus retain with the same and different keys, retain versus generation-bound retire, two generation-bound retires with the same key and with different keys, new assignment versus retain, and new assignment versus retire behind deterministic barriers. In each pair one serialized current-state result wins. A matching committed key returns its byte-identical stored result before stale-state checks; a different input under the same key returns idempotency conflict; an uncommitted key can return `stale_disposition_generation`. Request, generation, wakes, proofs, terminal ledger, assignment count, and session state match one complete legal outcome. A deferred retire never becomes the terminal winner and remains retryable under its key.
+Given one pending generation, run retain versus retain with the same and different keys, retain versus generation-bound retire, two generation-bound retires with the same key and with different keys, new assignment versus retain, and new assignment versus retire behind deterministic barriers. In each pair one serialized current-state result wins. A caller that remains authorized for the requested action and presents a matching committed key receives its byte-identical stored result before stale-state checks. A currently unauthorized caller receives `forbidden` before lookup even when key and digest match. A different input under the same key returns idempotency conflict only after the caller passes current action authorization; an uncommitted key can return `stale_disposition_generation`. Run cross-principal fixtures for manual retire, retain, generation-bound retire, and equal-digest replay: an unrelated active same-owner session can pass the existing manual-retire owner rule but cannot retain, run request-bound retire, or replay either action's stored result. Request, generation, wakes, proofs, terminal ledger, assignment count, and session state match one complete legal outcome. A deferred retire never becomes the terminal winner and remains retryable under its key by a caller that still passes current action authorization.
 
 ### A13 — Transaction-scoped open count
 
@@ -553,7 +562,7 @@ Instrument `Assignments.open_count/2` to fail if called from the DB owner. Given
 
 ### A14 — Parent chain and cascade
 
-Given immediate parent `P1` is inactive, same-owner ancestor `P2` is active, and Main `M` is active, then request creation records `P2` and lineage rung 2. Given no active same-owner ancestor, then it records `M` and Main fallback. Given a foreign-owner ancestor appears, then no foreign wake or visibility row appears and routing falls back to `M`. Given the recorded parent becomes inactive while the request remains pending, then the newly current responsible parent can list and act on the request, while the historical parent cannot. Given a parent retirement cascades through children, then each current child generation resolves retire descendant-first and no idle request is created by retirement interruptions.
+Given immediate parent `P1` is inactive, same-owner ancestor `P2` is active, and Main `M` is active, then request creation records `P2` and lineage rung 2. Given no active same-owner ancestor, then it records `M` and Main fallback. Given a foreign-owner ancestor appears, then no foreign wake or visibility row appears and routing falls back to `M`. Given the recorded parent becomes inactive while the request remains pending, then the newly current responsible parent can list and act on the request, while the historical parent cannot. The owner user can list the request but receives `forbidden` for retain and generation-bound retire. Given a parent retirement cascades through children, then each current child generation resolves retire descendant-first and no idle request is created by retirement interruptions.
 
 ### A15 — Activation, interruption, and restart refusal
 
@@ -561,7 +570,7 @@ From the exact product `origin/0.1.8:4af89039` source database shape, inject fai
 
 ### A16 — Compatibility and source guards
 
-Run the existing focused tests for assignments, escalation, gateway retirement, schema shape, supervision, wakes, router, CLI integration, and archetype/manual projection. Their existing assertions pass unchanged except assertions that add the new documented fields or commands. A source guard proves unrelated requester maps and CHECK arms remain present; generic statute/effort request behavior remains unchanged; only the reserved idle statute returns `lifecycle_action_required`; root, never-worked, ordinary prods, work-item brackets, and manual retire preserve their observable behavior.
+Run the existing focused tests for assignments, escalation, gateway retirement, schema shape, supervision, wakes, router, CLI integration, and archetype/manual projection. Their existing assertions pass unchanged except assertions that add the new documented fields or commands. A source guard proves unrelated requester maps and CHECK arms remain present; generic statute/effort request behavior remains unchanged; only the reserved idle statute returns `lifecycle_action_required`; root, never-worked, ordinary prods, and work-item brackets preserve their observable behavior. Manual retire preserves its existing owner authorization, response, lease, wake, subtree, and legacy replay behavior; it only gains atomic pending-generation and request resolution when its terminal transaction intersects this feature.
 
 ### A17 — CLI and operating manual
 
@@ -602,10 +611,10 @@ The smoke records package path and SHA, source commit, CLI and gateway paths, to
 
 ### A20 — Frozen-tip review and handoff
 
-After A1-A19 pass, freeze and push one bounded product implementation commit based on the owner-selected `origin/0.1.8` source tip. Record the canonical spec repository/path/commit/SHA, exact twenty-one-path custody and diff, baseline and after gates, package artifact SHA, smoke evidence, and current overlap resolution. Open or update one pull request for that exact frozen commit. The required GitHub `ci` checks for both `linux` and `macos` must succeed on that same commit; a later push invalidates the evidence. One independent exact-commit review must compare that frozen tip with this reviewed spec and the real smoke. Implementation completion requires its `reviewed-clean` verdict. Merge, release, deployment, service restart, and cross-port remain separately owner-authorized actions.
+Before opening the implementation card, record the first exact zero-overlap receipt from the complete AR12 census. Immediately before the first product source edit, record the second exact zero-overlap receipt from the repeated complete census. After A1-A19 pass, freeze and push one bounded product implementation commit based on the owner-selected `origin/0.1.8` source tip. Record the canonical spec repository/path/commit/SHA, exact twenty-one-path custody and diff, both census receipts, baseline and after gates, package artifact SHA, and smoke evidence. Open or update one pull request for that exact frozen commit. The required GitHub `ci` checks for both `linux` and `macos` must succeed on that same commit; a later push invalidates the evidence. One independent exact-commit review must compare that frozen tip with this reviewed spec and the real smoke. Implementation completion requires its `reviewed-clean` verdict. Merge, release, deployment, service restart, and cross-port remain separately owner-authorized actions.
 
 ## Open Questions
 
 None.
 
-The owner settled fresh-respec authority, canonical home, source provenance, retain-only rearm, terminal retirement, complete path boundary, custody separation, review count, and missing-artifact treatment. Implementation remains blocked until this exact canonical revision receives the sole linked fresh `reviewed-clean` verdict and the complete twenty-one-path assignment clears the separate overlap gate.
+The owner settled fresh-respec authority, canonical home, source provenance, retain-only rearm, terminal retirement, manual-retire separation, replay authorization order, complete path boundary, live custody recensuses, review count, and missing-artifact treatment. Implementation remains blocked until this exact canonical revision receives a fresh linked `reviewed-clean` verdict, the orchestrator records the pre-card zero-overlap receipt, one full twenty-one-path implementation card owns the work, and the holder records the pre-edit zero-overlap receipt.
