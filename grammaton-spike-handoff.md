@@ -1,14 +1,19 @@
-# Rails hydra spike — handoff
+# Grammaton spike — handoff
 
 Written 2026-08-21 by tb02 after a working session with Mike. Audience: the
-agent who picks this up. Read `rails-visualization-invariants.md` FIRST —
+agent who picks this up. Read `grammaton-invariants.md` FIRST —
 it is the ruled design (10 invariants); this doc covers only what the spike
 settled beneath them, the engine lessons, and what is open.
 
+Naming (Mike, 2026-08-21): the visualization/app is **Grammaton**
+(Equilibrium's law-enforcing order; also "four letters", matching the
+on/reads/emits/inhibited-by quadruple). "Hydra" remains the word for one
+rail's drawn shape only.
+
 ## Artifacts
-- `rails-hydra-spike.html` (this repo) — canonical copy of the accepted 2D
-  spike. Deployed copies: serenity:~/rails-hydra.html (Mike's review copy),
-  gibson:/tmp/claude-1000/rails-hydra/index.html (working copy; /tmp is
+- `grammaton-spike.html` (this repo) — canonical copy of the accepted 2D
+  spike. Deployed copies: serenity:~/grammaton.html (Mike's review copy),
+  gibson:/tmp/claude-1000/grammaton/index.html (working copy; /tmp is
   volatile — this repo's copy is the durable one).
 - eezo:~/rails-spike.html — spike 1, the 3D layered form. REJECTED
   (invariant 8). Reference only for what not to do.

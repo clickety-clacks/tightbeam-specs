@@ -1,7 +1,8 @@
-# Rails visualization — initial invariants
+# Grammaton (rails visualization) — initial invariants
 
 Status: recorded 2026-08-21 from the working session with Mike; not scheduled.
-Spikes: eezo:~/rails-spike.html (3D, rejected), serenity:~/rails-hydra.html
+Named Grammaton (Mike, 2026-08-21); "hydra" names one rail's drawn shape only.
+Spikes: eezo:~/rails-spike.html (3D, rejected), serenity:~/grammaton.html
 (2D circle+hydra, accepted as the base). Work item: see wi reference below.
 
 ## What it is

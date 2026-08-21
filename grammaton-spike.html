@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tightbeam rails — hydra map</title>
+<title>Grammaton · Tightbeam rails</title>
 <style>
   :root {
     --bg: #10141c;
@@ -63,7 +63,40 @@
     position: absolute; left: 14px; bottom: 14px;
     background: rgba(23,29,40,.92); border: 1px solid var(--line); border-radius: 6px;
     padding: 12px 14px; font-size: 11.5px; line-height: 1.4; color: var(--text);
+    transition: opacity .25s;
+    cursor: pointer;
   }
+  /* click the legend to minimize it to the "i" chip; the chip restores it.
+     Minimized also hides the title block. */
+  #legendIcon {
+    position: absolute; left: 14px; bottom: 14px; display: none;
+    width: 28px; height: 28px; align-items: center; justify-content: center;
+    background: rgba(23,29,40,.92); border: 1px solid var(--line); border-radius: 50%;
+    color: var(--text); font: italic 600 15px Georgia, serif; cursor: pointer;
+    transition: opacity .25s; user-select: none;
+  }
+  #stage.minlegend #legend { display: none; }
+  #stage.minlegend #title { visibility: hidden; }
+  #stage.minlegend #legendIcon { display: flex; }
+  /* while zoomed into a selection the legend would sit over the fitted view;
+     the panel explains the rail there, so the legend chrome yields */
+  .zoomed #legend, .zoomed #legendIcon { opacity: 0; pointer-events: none; }
+  /* layer controls: archetype families + substrate, ATC-style visibility chips */
+  #layers {
+    position: absolute; right: 14px; top: 14px;
+    display: flex; flex-direction: column; gap: 6px; align-items: flex-end;
+    transition: opacity .25s;
+  }
+  .layerchip {
+    display: flex; align-items: center; gap: 7px; padding: 5px 11px;
+    background: rgba(23,29,40,.92); border: 1px solid var(--line); border-radius: 14px;
+    font-size: 11.5px; color: var(--text); cursor: pointer; user-select: none;
+  }
+  .layerchip .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c); flex: none; }
+  .layerchip .n { color: var(--dim); }
+  .layerchip.off { opacity: .4; }
+  .layerchip.off .dot { background: transparent; border: 1.5px solid var(--c); }
+  .zoomed #layers { opacity: 0; pointer-events: none; }
   #legend .row { display: flex; align-items: center; gap: 9px; margin: 4px 0; }
   #legend svg { width: 44px; height: 14px; flex: none; }
   #title {
@@ -83,8 +116,8 @@
 <body>
 <div id="stage">
   <div id="title">
-    <div class="t">Tightbeam rails</div>
-    <div class="s">each hydra is one rail &middot; hover or click a hub or curve &middot; click empty space to reset</div>
+    <div class="t">Grammaton</div>
+    <div class="s">Tightbeam rails &middot; each hydra is one rail &middot; hover or click a hub or curve &middot; click empty space to reset</div>
   </div>
   <svg id="svg" viewBox="0 0 900 900" preserveAspectRatio="xMidYMid meet"></svg>
   <div id="legend">
@@ -94,12 +127,14 @@
   <div class="row"><span style="width:12px;height:12px;border-radius:3px;background:hsl(40,90%,58%);flex:none"></span>economy — no turns into dead ends</div>
   <div class="row"><span style="width:12px;height:12px;border-radius:3px;background:hsl(0,80%,62%);flex:none"></span>safety — irreversible forbidden</div>
   <div class="row" style="border-top:1px solid #333;margin-top:6px;padding-top:6px"></div>
-    <div class="row"><svg><line x1="2" y1="7" x2="42" y2="7" stroke="#9db2ff" stroke-width="2.5"/></svg>trigger (solid)</div>
+    <div class="row"><svg><circle cx="7" cy="7" r="5" fill="none" stroke="#9db2ff" stroke-width="1.5"/><line x1="12" y1="7" x2="42" y2="7" stroke="#9db2ff" stroke-width="2.5"/></svg>trigger (solid, ring at its row)</div>
     <div class="row"><svg><line x1="2" y1="7" x2="42" y2="7" stroke="#9db2ff" stroke-width="1.1" stroke-dasharray="1.5 9"/></svg>read (dashed thin)</div>
     <div class="row"><svg><line x1="2" y1="7" x2="34" y2="7" stroke="#9db2ff" stroke-width="2"/><polygon points="42,7 32,3 32,11" fill="#9db2ff"/></svg>creates (arrow into row type)</div>
     <div class="row"><svg><line x1="2" y1="7" x2="28" y2="7" stroke="#ff5566" stroke-width="2"/><circle cx="36" cy="7" r="5.5" fill="none" stroke="#ff5566" stroke-width="1.6"/><line x1="32.2" y1="10.8" x2="39.8" y2="3.2" stroke="#ff5566" stroke-width="1.6"/></svg>vetoes (returns to trigger, &#8856;)</div>
     <div class="row"><svg><line x1="2" y1="7" x2="42" y2="7" stroke="#9db2ff" stroke-width="2" stroke-dasharray="14 7" opacity=".6"/></svg>dashed hydra = planned, not built</div>
   </div>
+  <div id="legendIcon" title="show legend">i</div>
+  <div id="layers"></div>
 </div>
 <div id="panel">
   <div id="panelbody"></div>
@@ -316,6 +351,7 @@ function addPath(g, d, attrs) {
 
 const hydraEls = [];
 const hydraEdgeData = [];
+const triggerRings = {}; // per row type: rings already drawn, to nest concentrically
 HYDRAS.forEach((h, i) => {
   const hub = hubs[i];
   const col = color(i);
@@ -324,9 +360,14 @@ HYDRAS.forEach((h, i) => {
   const dashSolid = planned ? "16 8" : "none";
   const recs = [];
 
-  // trigger: solid bezier from trigger row type into hub
+  // trigger: origin ring circling the trigger row's dot, then a solid bezier
+  // into the hub launching from the ring's edge
   const tp = nodePos[h.trigger.t];
-  const tq = quad(tp, hub, 26 + (i % 3) * 9, 11, 8);
+  const ringR = 12 + (triggerRings[h.trigger.t] || 0) * 3;
+  triggerRings[h.trigger.t] = (triggerRings[h.trigger.t] || 0) + 1;
+  el("circle", { cx: tp.x, cy: tp.y, r: ringR, fill: "none", stroke: col,
+    "stroke-width": 1.6, "stroke-dasharray": planned ? "6 4" : "none" }, g);
+  const tq = quad(tp, hub, 26 + (i % 3) * 9, ringR + 2, 8);
   addPath(g, tq.d, { stroke: col, "stroke-width": 2.4, "stroke-dasharray": dashSolid });
   edgeLabel(g, tq, "on: " + (h.trigger.q || "filed"), col);
   recs.push({ kind: "on", mid: tq.mid,
@@ -397,6 +438,31 @@ const calloutLayer = el("g", { "pointer-events": "none", id: "calloutLayer" }, s
 const CALLOUT_R = R + 150;           // radial distance of callout anchors from center
 const CALL_W = 222;                  // box width incl. borders (div 220 + 2×1px)
 const CALL_MARGIN = 8, CALL_GAP = 8; // viewport margin, min vertical gap
+const HAZ_PAD = 10;                  // clearance between a box and the hydra's ink
+
+// sample the hydra's drawn ink as points: curves, hub, glyphs, lit node labels.
+// Boxes may cross hairline leaders and dimmed background hydras, never this ink.
+function bboxPts(b, out) {
+  for (let sx = 0; sx <= 2; sx++) for (let sy = 0; sy <= 2; sy++)
+    out.push({ x: b.x + b.width * sx / 2, y: b.y + b.height * sy / 2 });
+}
+function hydraHazards(i) {
+  const pts = [];
+  hydraEls[i].querySelectorAll("path").forEach(p => {
+    if (p.getAttribute("stroke") === "transparent") return;
+    const L = p.getTotalLength();
+    for (let s = 0; s <= L; s += 14) {
+      const q = p.getPointAtLength(s);
+      pts.push({ x: q.x, y: q.y });
+    }
+  });
+  hydraEls[i].querySelectorAll("circle, polygon, .hublabel, .plannedtag")
+    .forEach(n => bboxPts(n.getBBox(), pts));
+  const h = HYDRAS[i];
+  new Set([h.trigger.t].concat(h.reads.map(e => e.t), h.creates.map(e => e.t),
+    h.vetoes.map(e => e.t))).forEach(t => bboxPts(nodeEls[t].getBBox(), pts));
+  return pts;
+}
 
 function calloutHeight(text) {
   // estimate: bold kind line + wrapped body at ~33 chars/line, plus padding
@@ -423,43 +489,111 @@ const LEADER_AT = 0.6;    // leader starts this far into the box flight
 
 function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
+// ---------- view zoom: on select, fit the hydra + its callouts ----------
+// Animated by writing the viewBox ATTRIBUTE from a rAF loop (user units, no
+// compositor) — same discipline as the callout flight. Deselect zooms back out.
+let calloutSeats = [];               // last-seated callout boxes, user units
+const FULL_VIEW = { x: 0, y: 0, w: 900, h: 900 };
+let view = { ...FULL_VIEW };
+let zoomGen = 0, zoomRAF = 0;
+const ZOOM_MS = 420, ZOOM_PAD = 26;
+
+function setView(v) {
+  view = v;
+  svg.setAttribute("viewBox",
+    `${v.x.toFixed(2)} ${v.y.toFixed(2)} ${v.w.toFixed(2)} ${v.h.toFixed(2)}`);
+}
+function zoomTo(t) {
+  zoomGen++;
+  if (zoomRAF) { cancelAnimationFrame(zoomRAF); zoomRAF = 0; }
+  if (REDUCED_MOTION || !CAN_ANIMATE) { setView(t); return; }
+  const gen = zoomGen, from = { ...view }, t0 = performance.now();
+  const frame = now => {
+    if (gen !== zoomGen) return;
+    // clamp below too: the first rAF timestamp can precede t0, and a negative
+    // progress would extrapolate the view past its start for one frame
+    const k = easeOutCubic(Math.min(Math.max((now - t0) / ZOOM_MS, 0), 1));
+    setView({ x: from.x + (t.x - from.x) * k, y: from.y + (t.y - from.y) * k,
+              w: from.w + (t.w - from.w) * k, h: from.h + (t.h - from.h) * k });
+    zoomRAF = k < 1 ? requestAnimationFrame(frame) : 0;
+  };
+  zoomRAF = requestAnimationFrame(frame);
+}
+function zoomToSelection() {
+  if (selected == null) { zoomTo({ ...FULL_VIEW }); return; }
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  hydraHazards(selected).forEach(p => {
+    if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x;
+    if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y;
+  });
+  calloutSeats.forEach(b => {
+    x0 = Math.min(x0, b.x); x1 = Math.max(x1, b.x + CALL_W);
+    y0 = Math.min(y0, b.y); y1 = Math.max(y1, b.y + b.h);
+  });
+  if (x0 > x1) { zoomTo({ ...FULL_VIEW }); return; }
+  x0 = Math.max(0, x0 - ZOOM_PAD); y0 = Math.max(0, y0 - ZOOM_PAD);
+  x1 = Math.min(900, x1 + ZOOM_PAD); y1 = Math.min(900, y1 + ZOOM_PAD);
+  zoomTo({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+}
+
 function renderCallouts(i) {
   if (i != null && i === calloutShown) return; // same selection already shown
   animGen++;
   if (animRAF) { cancelAnimationFrame(animRAF); animRAF = 0; }
   while (calloutLayer.firstChild) calloutLayer.removeChild(calloutLayer.firstChild);
   calloutShown = i;
-  if (i == null) return;
+  if (i == null) { calloutSeats = []; return; }
   const col = color(i);
   const items = hydraEdgeData[i].map(r => {
     const d = vnorm(vsub(r.mid, { x: CX, y: CY }));
     const a = vadd({ x: CX, y: CY }, vscale(d, CALLOUT_R));
     return { rec: r, ax: a.x, ay: a.y, h: calloutHeight(r.text), x: 0, y: 0 };
   });
-  // resolve overlaps per side: sort by anchor angle (≈ projected y), nudge apart ≥ CALL_GAP
+  // seat boxes per side, in anchor order. A box may not cover the hydra's ink
+  // (hairline leaders and dimmed background hydras are fine), overlap an
+  // already-seated box, or leave the viewport. Express every blocker as a
+  // forbidden interval for the box's TOP y, merge, then take the valid seat
+  // nearest the anchor. Boundaries of forbidden intervals are the candidates.
+  const hazards = hydraHazards(i);
   [items.filter(c => c.ax < CX), items.filter(c => c.ax >= CX)].forEach(side => {
     side.sort((a, b) => a.ay - b.ay);
+    const placed = [];
     side.forEach(c => {
       c.x = c.ax >= CX
         ? Math.min(c.ax, 900 - CALL_MARGIN - CALL_W)
         : Math.max(c.ax - CALL_W, CALL_MARGIN);
-      c.y = c.ay - c.h / 2;
+      const lim = 900 - CALL_MARGIN - c.h;
+      const forb = [];
+      hazards.forEach(p => {
+        if (p.x > c.x - HAZ_PAD && p.x < c.x + CALL_W + HAZ_PAD)
+          forb.push([p.y - HAZ_PAD - c.h, p.y + HAZ_PAD]);
+      });
+      placed.forEach(b => {
+        if (b.x < c.x + CALL_W + CALL_GAP && b.x + CALL_W + CALL_GAP > c.x)
+          forb.push([b.y - CALL_GAP - c.h, b.y + b.h + CALL_GAP]);
+      });
+      forb.sort((a, b) => a[0] - b[0]);
+      const merged = [];
+      forb.forEach(r => {
+        const m = merged[merged.length - 1];
+        if (m && r[0] <= m[1]) m[1] = Math.max(m[1], r[1]);
+        else merged.push([r[0], r[1]]);
+      });
+      const desired = Math.min(Math.max(c.ay - c.h / 2, CALL_MARGIN), lim);
+      const ok = y => y >= CALL_MARGIN && y <= lim &&
+        !merged.some(r => y > r[0] && y < r[1]);
+      let best = null;
+      const consider = y => {
+        if (ok(y) && (best == null || Math.abs(y - desired) < Math.abs(best - desired)))
+          best = y;
+      };
+      consider(desired);
+      merged.forEach(r => { consider(r[0]); consider(r[1]); });
+      c.y = best != null ? best : desired; // no clear seat exists: accept overlap
+      placed.push(c);
     });
-    let cur = CALL_MARGIN;
-    side.forEach(c => { c.y = Math.max(c.y, cur); cur = c.y + c.h + CALL_GAP; });
-    // pull boxes back up: off the bottom edge, and out of the legend's corner
-    // (HTML legend overlays the SVG's bottom-left; keep boxes above it there)
-    const LEGEND_RIGHT = 268, LEGEND_TOP = 634;
-    let nextTop = Infinity;
-    for (let k = side.length - 1; k >= 0; k--) {
-      const c = side[k];
-      const lim = Math.min(c.x < LEGEND_RIGHT ? LEGEND_TOP : 900 - CALL_MARGIN,
-                           nextTop - CALL_GAP);
-      if (c.y + c.h > lim) c.y = lim - c.h;
-      nextTop = c.y;
-    }
-    if (side.length && side[0].y < CALL_MARGIN) side[0].y = CALL_MARGIN;
   });
+  calloutSeats = items.map(c => ({ x: c.x, y: c.y, h: c.h }));
   // stagger in reading order (top-to-bottom, left before right on ties)
   items.slice().sort((a, b) => (a.y - b.y) || (a.x - b.x))
     .forEach((c, k) => { c.delay = k * ENTER_MS; });
@@ -553,7 +687,7 @@ function renderCallouts(i) {
 // ---------- interaction ----------
 
 const panelbody = document.getElementById("panelbody");
-let selected = null, hovered = null;
+let selected = null, hovered = null, zoomSel = null;
 
 function baseOpacity(h) { return h.layer === "planned" ? 0.27 : 0.45; }
 function fullOpacity(h) { return h.layer === "planned" ? 0.8 : 1; }
@@ -596,25 +730,94 @@ function renderPanel(i) {
   panelbody.innerHTML = html;
 }
 
+// ---------- layers: archetype families + substrate, ATC-style toggles ----------
+// Every rail belongs to exactly one layer. Families are hand-declared in this
+// spike; a real build compiles membership from a declared archetype field in
+// the rules format — never inferred.
+const LAYERS = [
+  { id: "completion-requires-*", label: "completion requires proof", members: [0, 1, 2],
+    color: PROMISE_COLOR.proof, eyebrow: "ARCHETYPE — shared form",
+    desc: "One form, three predicates: a completion attest cannot stand unless its proof row is on file. The veto is the form; what counts as proof is the instance." },
+  { id: "git-safety-statutes", label: "git safety", members: [6], count: 5,
+    color: PROMISE_COLOR.safety, eyebrow: "ARCHETYPE — shared form",
+    desc: "Five commands that destroy uncommitted work, refused outright: one form, five statutes, drawn compressed as a single hydra." },
+  { id: "outcome-*-rail", label: "outcome rails", members: [11, 12, 13],
+    color: PROMISE_COLOR.proof, eyebrow: "ARCHETYPE — planned family",
+    desc: "Planned family: an outcome card cannot drift. Closing, deadlines, and checkpoints each get a rail cut from the same form." },
+  { id: "substrate", label: "substrate physics", members: [7, 8, 9, 10],
+    color: "#9db2ff", eyebrow: "SUBSTRATE — the laws the engine itself executes",
+    desc: "Fault bubbling, the prod ladder, the harness gate, the DR outbox: physics no org rule can switch off." },
+  { id: "culture-unfamilied", label: "culture · unfamilied", members: [3, 4, 5],
+    color: "#7f8ba0", eyebrow: "CULTURE — unfamilied rules",
+    desc: "Org rules that belong to no archetype yet: review needs passing tests, refix needs diagnosis, spec dispatch needs its spirit doc." },
+];
+const layerOf = [];
+LAYERS.forEach((L, li) => L.members.forEach(m => layerOf[m] = li));
+const layerOff = new Set();
+let layerHover = null;
+
+function renderLayerPanel(li) {
+  const L = LAYERS[li];
+  panelbody.innerHTML =
+    `<div class="eyebrow" style="color:${L.color}">${L.eyebrow}</div>
+     <div class="headline">${esc(L.desc)}</div>
+     <div class="railtag" style="border-color:${L.color}; color:${L.color}">${esc(L.id)}<span class="layer"> · ×${L.count || L.members.length}</span></div>
+     <div style="--railcolor:${L.color}">
+     <div class="sect">Rails</div><ul>${L.members.map(m => `<li>${esc(HYDRAS[m].id)}</li>`).join("")}</ul>
+     <div class="note">Click the chip to show or hide this layer. Grouping is hand-declared in this spike; a real build compiles archetype membership from the rules format.</div></div>`;
+}
+
+const layersEl = document.getElementById("layers");
+LAYERS.forEach((L, li) => {
+  const c = document.createElement("div");
+  c.className = "layerchip";
+  c.style.setProperty("--c", L.color);
+  c.innerHTML = `<span class="dot"></span>${esc(L.label)}&nbsp;<span class="n">×${L.count || L.members.length}</span>`;
+  c.addEventListener("click", () => {
+    if (layerOff.has(li)) layerOff.delete(li);
+    else {
+      layerOff.add(li);
+      if (selected != null && layerOf[selected] === li) selected = null;
+      if (hovered != null && layerOf[hovered] === li) hovered = null;
+    }
+    c.classList.toggle("off", layerOff.has(li));
+    apply();
+  });
+  c.addEventListener("mouseenter", () => { layerHover = li; apply(); });
+  c.addEventListener("mouseleave", () => { layerHover = null; apply(); });
+  layersEl.appendChild(c);
+});
+
 function apply() {
   const active = hovered != null ? hovered : selected;
-  // callouts belong to the click-selection only; hover shows short labels.
-  // While hovering a different hydra, callouts step aside.
-  const co = selected != null && (hovered == null || hovered === selected) ? selected : null;
+  // callouts belong to the click-selection; hovering another hydra never
+  // dismisses them. Only deselect or selecting another rail clears them.
+  const co = selected;
+  // hovering a chip isolates its layer (if shown), like hovering a hydra
+  const fam = layerHover != null && active == null && !layerOff.has(layerHover)
+    ? new Set(LAYERS[layerHover].members) : null;
   hydraEls.forEach((g, i) => {
     const h = HYDRAS[i];
-    g.style.opacity = active == null ? baseOpacity(h) : (i === active ? fullOpacity(h) : 0.15);
-    g.classList.toggle("focused", active === i);
+    const off = layerOff.has(layerOf[i]);
+    g.style.opacity = off ? 0
+      : active != null ? (i === active ? fullOpacity(h) : 0.15)
+      : fam ? (fam.has(i) ? fullOpacity(h) : 0.12)
+      : baseOpacity(h);
+    g.style.pointerEvents = off ? "none" : "auto";
+    g.classList.toggle("focused", !off && (active === i || (fam != null && fam.has(i))));
     g.classList.toggle("callouts", co === i);
   });
   renderCallouts(co);
+  if (selected !== zoomSel) { zoomSel = selected; zoomToSelection(); }
+  document.getElementById("stage").classList.toggle("zoomed", selected != null);
   const lit = new Set();
-  if (active != null) {
-    const h = HYDRAS[active];
-    [h.trigger].concat(h.reads, h.creates, h.vetoes).forEach(e => lit.add(e.t));
-  }
+  const litFrom = h => [h.trigger].concat(h.reads, h.creates, h.vetoes).forEach(e => lit.add(e.t));
+  if (active != null) litFrom(HYDRAS[active]);
+  else if (fam) fam.forEach(m => litFrom(HYDRAS[m]));
   ROWTYPES.forEach(rt => nodeEls[rt.id].classList.toggle("lit", lit.has(rt.id)));
-  renderPanel(active);
+  if (active != null) renderPanel(active);
+  else if (layerHover != null) renderLayerPanel(layerHover);
+  else renderPanel(null);
 }
 
 hydraEls.forEach((g, i) => {
@@ -626,6 +829,12 @@ bg.addEventListener("click", () => { selected = null; apply(); });
 document.getElementById("stage").addEventListener("click", ev => {
   if (ev.target === svg || ev.target.id === "stage") { selected = null; apply(); }
 });
+const stageEl = document.getElementById("stage");
+document.getElementById("legend").title = "hide legend";
+document.getElementById("legend").addEventListener("click",
+  () => stageEl.classList.add("minlegend"));
+document.getElementById("legendIcon").addEventListener("click",
+  () => stageEl.classList.remove("minlegend"));
 
 apply();
 </script>
