@@ -1,11 +1,25 @@
-# REST vs CLI — the state-read adjudication (tb02, draft r1)
+# REST vs CLI — the state-read adjudication (tb02, r2 — reconciled)
 
-Status: DRAFT r1, 2026-08-21, adjudicated by tb02 per Mike's ruling that
-the classification is the orchestrator's call and recon output is input
-("you are smarter at looking at a pool of functions and classifying
-them"). Pending reconciliation with recon wi_9239a7f1's report
-(recon:rest-state-api, running); its inventory may add rows to the tables
-below but the decision rule stands unless Mike overrules. Feeds
+Status: r2, 2026-08-21 — RECONCILED with recon wi_9239a7f1's report
+(NFS shared/specs/tightbeam/rest-state-api-recon.md; recon accepted the
+three-plane ruling and its inventory corrections are adjudicated in).
+Accepted from the recon: coordination-share and digest-members are pure
+reads and move to the read plane (code-verified); REST homes for the
+seven gateway read verbs the CLI does not surface (facts-read,
+artifact-get, assignment-get, work-item-list, decision-request,
+role-list, critical-state inspect); a paged /api/sessions split from the
+small /api/org document; first-class bulk /api/attests, /api/wakes,
+/api/turns (ATC's SQL is the demand evidence); doctor stays local (not a
+state resource); canonical public projections with secrets structurally
+excluded; notices carry resource+op with delete tombstones; keyset-only
+pagination on immutable orders (the transcript precedent), whitelist
+filters, no fields/sort/include/join params; bearer-credential auth with
+no asUser query parameter. Rejected: nothing material. The recon's
+"Formal REST contract" section (envelopes, pagination rules, filter
+tables, resource routes, projection minima, migration order, acceptance
+proofs) is ADOPTED as the baseline for the REST spec. Spec-side folds
+landed as event-firehose-v1.md r5. Adjudicated by tb02 per Mike's ruling
+that recon output is input to my classification. Feeds
 event-firehose-v1.md P5.
 
 ## The decision rule
@@ -62,11 +76,14 @@ wake, condition, cancel, critical, tune, attest, assign, dispatch,
 revoke-assignment, reopen-assignment, work-item-create/-update/-icebox/
 -reopen/-close/-fail, rule, effort-rule, waive, revoke-waiver, withdraw,
 ask, answer, spawn, retire, role-create/-bind/-rm, approve-device/
-deny-device/revoke-device, promote-user, add-user, config, register-host,
-host-env-set/-unset, update-clients, identity-edit/-relearn/-repoint/
--apply, learn, unlearn, kungfu-scaffold, onboard, artifact-record,
-attend, coordination-share, digest-members. All mutate or carry org
-semantics; none becomes a REST endpoint.
+deny-device/revoke-device, promote-user, add-user, config (writes),
+register-host, host-env-set/-unset, update-clients,
+identity-edit/-relearn/-repoint/-apply, learn, unlearn, kungfu-scaffold,
+onboard, artifact-record, attend. All mutate or carry org semantics; none
+becomes a REST endpoint. (r2 correction: coordination-share and
+digest-members were listed here in r1 and are in fact pure reads — moved
+to the read plane: GET /api/sessions/:key/coordination-share and
+GET /api/wakes/:wakeId/digest-members.)
 
 ## Disposition — existing HTTP routes
 
@@ -93,8 +110,9 @@ semantics; none becomes a REST endpoint.
   model build is the canonical consumer (spec M4). CLI wrapper stays for
   agents reading a colleague's conversation.
 - **work-item-trace**: REST composed resource; the CLI wrapper stays.
-- **attend / coordination-share / digest-members**: verbs — they change
-  attention/membership state, they are not reads.
+- **attend**: verb — it changes attention state. **coordination-share
+  and digest-members**: r2 correction — pure reads (gateway.ex confirms
+  "files nothing, rules nothing"), so read plane with CLI wrappers.
 - **read markers**: split by plane exactly like everything else — GET on
   REST, set via verb (spec RM2), change notice on the ws (RM3).
 
