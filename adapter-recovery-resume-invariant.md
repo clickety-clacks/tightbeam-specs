@@ -9,8 +9,11 @@ and `art_fd6e93bc`, SHA-256
 `17409b8046d4e478b30370ac5ac1d29a84b98beaadd60a48e706f0bc55e250bf`
 and `art_34024d2f`, SHA-256
 `feea465338780b1d04fb4eba5b2c632eff58dc3345fd1ec433cbd9ab0d46f0ed`
+and `art_909414fe`, SHA-256
+`41553723a450ce17517fbd5c5c9bfc6f1ab5681ae8706b3254b34e2814fcf489`
 Revision basis: changes-requested `att_10a6b91d` / `art_4d9afce2`,
-`att_17dc4980` / `art_31e37e3c`, and `att_00019ad5` / `art_84ae0369`
+`att_17dc4980` / `art_31e37e3c`, `att_00019ad5` / `art_84ae0369`, and
+`att_51556476` / `art_5ceea0d8`
 
 ## Canonical home
 
@@ -110,7 +113,9 @@ There is no fourth state.
   adapter key, full claim token, action (`cancel_probe` or `terminate_instance`), claimed
   instance and generation, state, cause, principal, creation time, and settlement time. A
   unique `{claimToken, action}` constraint makes delivery and restart replay idempotent. It
-  never contains prompt text or provider credentials.
+  never contains prompt text or provider credentials. A cancellation intent may become
+  obsolete when its exact call first reaches a durable terminal. A termination intent is
+  irrevocable after commit.
 - **Acknowledged prompt terminal** is durable adapter evidence that the exact call no longer
   exists in its in-flight set and cannot later deliver a success. Delivery of a cancellation
   request, a local timeout, or loss of the caller alone does not qualify.
@@ -202,20 +207,42 @@ cancellation intent for the exact adapter call. The typed durable intent is keye
 claim token, records cause and principal, commits with the state transition, and is delivered
 idempotently after commit. If the call has not reached a durable terminal by
 `settlementDeadline`, the database owner changes the state to `terminate_requested` and
-commits one similarly keyed adapter-instance termination intent. The adapter supervisor
-consumes that intent and proves the claimed instance terminal. Only an acknowledged prompt
-terminal or a durable terminal for that exact adapter instance settles the lease. A timeout
-or transport observation that does not prove the local call terminal cannot settle it. Time
-passage alone never makes a successor claimable. A late completion with an inactive token
-records `stale_probe_completion` and cannot record proof, close a window, alter pacing, or
-arm supervision.
+commits one similarly keyed adapter-instance termination intent. That transaction also
+marks the claimed instance `terminating` and removes it from ready routing before the intent
+can be delivered. Termination is then irrevocable: a later prompt terminal records its
+result but cannot settle the lease, withdraw the intent, restore ready routing, or permit a
+claim. Only the durable terminal of that exact instance settles a termination-requested
+lease. The adapter supervisor consumes the intent until that terminal exists.
 
-A failed prompt, acknowledged cancellation, or committed transport failure settles the
-lease while retaining the claimed attempt number. Its deterministic, jitter-free delay is
-`min(60_000ms, 1_000ms * 2^(min(attempt - 1, 6)))`, where `attempt` is the attempt that just
-settled without proof. The settlement transaction captures `settledAt` from database time
-and writes `nextProbeAt = settledAt + delay`. No claim may succeed before database time
-reaches `nextProbeAt`; the next successful claim increments the stored attempt.
+Before a termination intent commits, an acknowledged prompt terminal may settle the lease
+and atomically mark a pending cancellation intent `obsolete`. Prompt-terminal settlement,
+normal-proof recovery, and termination creation all lock the adapter-key lease first and then
+the claimed instance and control-intent rows in one canonical order before they recheck the
+full active token. If prompt-terminal settlement won first, the termination transaction
+writes no termination intent. If normal-proof recovery won first while the patrol call
+remained live, the token stays cancellation-requested and termination may still commit at its
+deadline. If termination won first, its routing fence makes the normal proof ineligible. A
+timeout, disconnect, or other transport observation that does not prove the exact
+local call terminal never settles the lease. It may only change `running` to
+`cancel_requested` and commit the token-keyed cancellation intent. Time passage alone never
+makes a successor claimable. A late completion with an inactive token records
+`stale_probe_completion` and cannot record proof, close a window, alter pacing, or arm
+supervision.
+
+Every non-proof terminal settlement selects exactly one branch from current database state:
+
+1. If the claimed window is still the unique current open window, retain the claimed
+   attempt and write `nextProbeAt = settledAt + delay`, where
+   `delay = min(60_000ms, 1_000ms * 2^(min(attempt - 1, 6)))`.
+2. If the claimed window is closed and no current window exists for the key, archive the
+   attempt terminal and reset the key row to idle with `attempt = 0`, no due time, and the
+   monotonic lease epoch retained.
+3. If a different current open window exists, archive the old attempt terminal and bind the
+   key row to that window with `attempt = 0` and `nextProbeAt = settledAt`.
+
+These branches are mutually exclusive. The generic failure backoff applies only to branch
+1. No claim may succeed before its branch's due-time and terminal-settlement fences permit
+it; the next successful claim increments attempt and lease epoch.
 
 A gateway crash leaves the running, cancellation-requested, or termination-requested lease
 and its intent durable. Boot reconciliation redelivers the same keyed intent or proves the
@@ -224,10 +251,14 @@ prompt result is not proof. The next claimant runs a new prompt only after durab
 settlement and the due-time fence. Tightbeam never replays the old prompt.
 
 A successful normal user or agent turn can supply proof without owning the patrol lease.
-It must still bind the same open window revision and satisfy the generation fence. If it
-wins recovery while a patrol probe is active, the recovery transaction changes that lease
-to `cancel_requested` and emits its idempotent cancellation intent. A later patrol completion
-settles the exact token but cannot recover or fan out again.
+It must still bind the same open window revision, satisfy the generation fence, and prove
+that its adapter instance remains durably ready and routable with no committed termination
+intent. If it wins recovery while a patrol probe is active, the recovery transaction changes
+that lease to `cancel_requested` and emits its idempotent cancellation intent. If the exact
+patrol call remains live through its settlement deadline, the lease may later advance
+irrevocably to `terminate_requested`. If termination committed first, the normal proof is
+fenced. A later exact-call or instance terminal settles the token through the applicable
+branch above and cannot recover or fan out again.
 
 For a normal turn, the ledger's `delivered` terminal and recovery transition commit in one
 database transaction. For a patrol probe, its success row and recovery transition commit in
@@ -302,9 +333,12 @@ The same transaction reconciles the key lease. A patrol proof consumes its exact
 When no external patrol call is active, recovery resets `claimedWindowId`, claimed revision,
 instance, generation, owner, deadlines, state, `nextProbeAt`, and `attempt` to the idle
 cross-window values while retaining monotonic `leaseEpoch`. When a normal turn wins over a
-live patrol call, recovery leaves that token in `cancel_requested`; its later terminal
-settlement performs the reset. Recovery does not wait for cancellation before it arms
-assignments, but no later outage probe may claim until the old external call is terminal.
+live patrol call, recovery leaves that token in `cancel_requested`; a still-live call may
+later advance to `terminate_requested` under the same deadlines and lock order. Its terminal
+settlement must use branch 2 or 3, never the branch-1 backoff. Recovery does not wait for
+cancellation or termination before it arms
+assignments, but no later outage probe may claim until the old external call or terminating
+instance is durably terminal.
 
 After commit, Tightbeam nudges supervision once per affected holder. Supervision may queue
 at most one recovery-driven turn per holder at a time. Other due assignments for that holder
@@ -333,10 +367,10 @@ window is closed.
 The new-window transaction never inherits the closed window's attempt or backoff history.
 If the key lease is idle, it binds the row to the new window with `attempt = 0`, no owner or
 deadlines, and `nextProbeAt` equal to database time. If a prior-window cancellation is still
-unsettled, the row retains its exact old token and blocks claims. Its terminal settlement
-then binds the row to the unique current open window with the same fresh values. The
-monotonic lease epoch never resets, so a late prior-window completion cannot match a future
-claim.
+unsettled or its termination is irrevocable, the row retains its exact old token and blocks
+claims. Its exact call or instance terminal then follows branch 3 and binds the row to the
+unique current open window with the same fresh values. The monotonic lease epoch never
+resets, so a late prior-window completion cannot match a future claim.
 
 Such a failed turn must not consume a heard-prod rung. It must not remove the assignment
 from supervision. The next revision-bound service proof performs the same transition for
@@ -391,6 +425,12 @@ fallback. If the dependency does not land, this design remains blocked.
   cross-window tokens can record only a stale-completion terminal.
 - Cancellation and instance-termination intents are durable, token-keyed, idempotent, and
   replayed after restart until the exact call or instance reaches a durable terminal.
+- A committed termination intent is irrevocable and its instance is not routable. Prompt
+  terminal settlement can prevent termination only by committing first under the same token
+  lock. No successor can reuse an instance with a pending or delivered termination intent.
+- An observation-only transport failure can request cancellation but cannot settle a lease.
+- Non-proof settlement chooses exactly one current-window branch; only the still-open
+  claimed-window branch retains attempt and applies backoff.
 - A crash after recovery commit but before nudges loses only latency. Due pacing remains.
 - A new assignment opened after recovery follows ordinary supervision and does not join the
   closed window.
@@ -459,26 +499,38 @@ acceptance; it is not part of this invariant.
     boot, and durable responsibility facts before replacement or probe.
 12. **Reconciliation replay.** Crash again during boot reconciliation. The occurrence key,
     window upsert, failed-turn settlement, and membership remain exactly once.
-13. **Failed probe.** Attempt 1 fails at database time `T`, releases one lease, preserves
+13. **Failed probe.** Attempt 1 records an acknowledged prompt terminal at database time
+    `T`, releases one lease, preserves
     suppression, retains `attempt = 1`, and writes `nextProbeAt = T + 1_000ms`. Later
     attempts use the exact jitter-free formula and 60-second cap above. A claim one
     database-time unit before due is refused; a claim at due may proceed and records
-    `attempt = 2`.
+    `attempt = 2`. A timeout or disconnect without acknowledged call-terminal or exact
+    instance-terminal evidence writes a cancellation intent but does not release the lease.
 14. **Crash or live hang during prompt.** Crash after external probe success but before its
     transaction: no proof exists, boot re-establishes cancellation or instance-terminal
     evidence, and no successor starts early. Keep a gateway live while its probe call hangs:
     one durable cancellation intent commits after 115 seconds; one durable instance-
     termination intent commits after 120 seconds if needed; deadline passage alone does not
     unlock a successor. Crash and restart after either intent and prove idempotent redelivery.
-    After durable settlement, one successor may claim. A late completion fails the full-
-    token fence and produces no proof or recovery action.
+    In one ordering, prompt-terminal settlement commits first under the common lock order,
+    atomically obsoletes cancellation, and makes the termination transaction write nothing.
+    In the other, termination commits first,
+    removes the instance from routing, ignores later prompt settlement as an unlock, and
+    waits for the instance terminal. Only then may one successor claim. A late completion
+    fails the full-token fence and produces no proof or recovery action.
 15. **External success race.** A normal successful turn and patrol probe race. One revision
     CAS wins. If the normal turn wins, it requests cancellation of the exact patrol token;
-    the patrol terminal settles that lease and writes no recovery or duplicate fan-out.
+    the patrol terminal uses branch 2 when no new outage exists, resets attempt and due time,
+    and writes no recovery or duplicate fan-out. If that patrol call stays live through its
+    settlement deadline, termination may still commit; the instance leaves routing before
+    delivery, and only its terminal settles through branch 2 or branch 3 according to the
+    then-current window state. If termination committed first, the instance-ready fence
+    rejects the normal proof and only the instance terminal unlocks the lease.
 16. **Failure after recovery.** Adapter failure before the first resumed assignment finishes
     consumes no heard-prod rung and opens the next window. The new window starts at attempt
     0 with no inherited backoff. If an old cancellation remains live, it blocks the first
-    claim until settlement, then the row binds to the new window and is immediately due.
+    claim until settlement, then branch 3 binds the row to the new window and makes it
+    immediately due. The branch-1 failure backoff never applies to this cross-window reset.
 17. **Per-holder pacing.** Several recovered assignments for one holder queue one attributed
     recovery turn at a time; the rest remain due.
 18. **Crash after commit.** Crash after recovery commit and before nudges. The periodic sweep
@@ -595,6 +647,12 @@ tests. Prose alone is not the invariant.
   successor probe.
 - **S3:** Defined lease settlement for patrol and normal-turn recovery, fresh attempt state
   for the next window, and monotonic epochs that fence cross-window late completions.
+- **T1:** Made committed instance termination irrevocable, removed the instance from routing,
+  and serialized prompt-terminal settlement against termination creation.
+- **T2:** Removed observation-only transport failure as a settlement path; it can request
+  cancellation but cannot unlock a successor.
+- **T3:** Replaced conflicting reset/backoff prose with three mutually exclusive settlement
+  branches selected from the current outage-window state.
 
 ## Evidence folded into this revision
 
@@ -609,6 +667,10 @@ tests. Prose alone is not the invariant.
   `feea465338780b1d04fb4eba5b2c632eff58dc3345fd1ec433cbd9ab0d46f0ed`,
   commit `53dc6d90a1622bbe5d576f3291a8984a1641e8de`.
 - Independent second re-review changes requested: `att_00019ad5`, `art_84ae0369`.
+- Third canonical revision: `art_909414fe`, SHA-256
+  `41553723a450ce17517fbd5c5c9bfc6f1ab5681ae8706b3254b34e2814fcf489`,
+  commit `7bf4a422cbd8522975b1430039a8f8b1e0d174ac`.
+- Independent third re-review changes requested: `att_51556476`, `art_5ceea0d8`.
 - Mike-confirmed harness-health distillate:
   `tightbeam-product/huddle-harness-health-patrol-DISTILLATE.md`.
 - Live-work terminal-path recon `art_78b2dc50`: 263 corrected zero-path open assignments,
