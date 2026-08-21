@@ -1,6 +1,9 @@
-# Event firehose v1 — state-change notifications over ws (product spec, r4.1)
+# Event firehose v1 — state-change notifications over ws (product spec, r4.2)
 
-Status: DRAFT r4.1, 2026-08-21. r4.1: read markers RULED into the spec
+Status: DRAFT r4.2, 2026-08-21. r4.2 (lavish review): M1 hardened —
+subscribe-first is normative and the model-build algorithm SHALL be
+idempotent under duplicates; REST-vs-CLI recon carded and staffed (see
+P5). r4.1: read markers RULED into the spec
 (§Read markers) — user-scoped substrate rows, changes broadcast as
 read_marker.updated. r4 was a rescoping fold of Mike's state-model
 ruling (2026-08-21): the EVENTS are not the entity — the TIGHTBEAM STATE
@@ -68,6 +71,15 @@ path and it always works.
 P4. This makes the wrong architecture unrepresentable: the stream cannot
 be a client's prime model or its history source, because the socket
 simply does not carry the past.
+
+P5. HOW clients read state is under active recon (Mike-ordered in this
+review): direct SQL against the db is not a product interface; the CLI
+exists to make common things easy for agents, not to re-create SQL; bulk
+model-building reads likely belong on a formal REST surface exported
+directly to clients. The recon recommends the CLI-vs-REST split and the
+shape of that REST state API given the full internal schema; this spec
+may grow a companion REST-API section (or a sibling spec) from its
+findings.
 
 ## Goal
 
@@ -249,10 +261,16 @@ S5. No admission or concurrency limit (ruled 2026-08-20).
 
 ## The model recipe (how every client uses this)
 
-M1. Subscribe (get `subscription_ready`), THEN snapshot current state
-through the query surface, then apply incoming notices to the model.
-Changes that landed between subscribe and snapshot appear in both; V5's
-shared ids let the client recognize and drop the duplicates.
+M1. Subscribe (get `subscription_ready`) FIRST, then snapshot current
+state through the query surface, then apply incoming notices to the
+model. Mike's review note is normative: the danger zone is the gap
+between building the model and receiving the first notice — subscribing
+first closes it, and the worst case becomes duplicate records, never
+missed ones. Therefore the client's model-build algorithm SHALL be
+IDEMPOTENT under duplicate records: applying a notice for a row the
+snapshot already delivered (or applying the same notice twice) converges
+to the same model. V5's shared ids are what make that idempotency
+implementable.
 
 M2. On ANY doubt — reconnect, seq skip (T4), gateway restart, or plain
 suspicion — rebuild: re-snapshot the displayed slice and keep applying
