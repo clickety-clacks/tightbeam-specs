@@ -1,3 +1,10 @@
+> **SUPERSEDED 2026-08-21.** This queue is the pre-flip 0.1-era roadmap, frozen at
+> its 2026-08-12 import (content last updated 2026-07-20). It is history, not the
+> plan. The living program state is:
+> - `v0.2-program-2026-08-12.md` — the 0.2 program: rulings, staffing, phases, ledgers
+> - `0.2-build-ledger.md` — one entry per landing on main
+> - `0.2.0-spirit-and-work-sweep.md` — the 0.2.0 election: 67 elected, 28-item MVP core
+
 # Tightbeam roadmap — living queue (updated 2026-07-20)
 
 One page so nothing lives only in a conversation. Order is the ruled
