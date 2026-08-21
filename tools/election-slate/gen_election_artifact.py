@@ -5,7 +5,7 @@ import json
 import re
 import sys
 
-sys.path.insert(0, __file__.rsplit("/", 1)[0])
+sys.path.insert(0, "/tmp/claude-1000/-home-mike-src-tightbeam/87d6a2a3-cad7-4ef4-aed8-ca21d19e65a6/scratchpad")
 from eli5 import ELI5
 WITH_DIFF = "--with-diff" in sys.argv
 PENDING = {"c4450c8d", "7f068d0c"}  # Mike 2026-08-21: selection pends on the force-roles ruling
@@ -42,6 +42,8 @@ b_ids = {i for i, _ in list_b}
 overlap = a_ids & b_ids
 n_a, n_b, n_u = len(a_ids), len(b_ids), len(a_ids | b_ids)
 
+req_m = re.search(r"## TIER REQUIRED[^\n]*\n(.*?)(?=\n## )", text, re.S)
+req_body = req_m.group(1).strip() if req_m else ""
 core_m = re.search(r"### TIER CORE.*?(?=### TIER POST-CORE)", text, re.S)
 core_ids = set(re.findall(r"`(wi_[0-9a-f-]+)`", core_m.group(0))) if core_m else set()
 n_core = len(core_ids)
@@ -182,6 +184,8 @@ p.append("""<title>Tightbeam 0.2.0 Election</title>
     padding: .8rem 1.1rem; margin: 1.2rem 0; font-size: .97rem;
   }
   .callout p { margin: .4rem 0; }
+  .callout.required { border-left-color: var(--bug); }
+  .callout.required b { color: var(--ink); }
   ol { padding-left: 1.4rem; }
   ol li { margin: .3rem 0; }
   a { color: var(--accent-ink); }
@@ -200,11 +204,12 @@ p.append("""<title>Tightbeam 0.2.0 Election</title>
     source of record: <b>0.2.0-spirit-and-work-sweep.md</b> in tightbeam-specs
   </p>
   <nav aria-label="Sections">
-    <a href="#rule">election rule</a><a href="#lista">list A</a><a href="#listb">list B</a><a href="#evidence">evidence rows</a><a href="#outside">outside</a><a href="#transferred">transferred</a><a href="#exclusions">exclusions</a>
+    <a href="#required">tier required</a><a href="#rule">election rule</a><a href="#lista">list A</a><a href="#listb">list B</a><a href="#evidence">evidence rows</a><a href="#outside">outside</a><a href="#transferred">transferred</a><a href="#exclusions">exclusions</a>
   </nav>""")
 
 p.append(f"""
   <div class="stats">
+    <div class="stat"><b>0</b><span>existence-required</span></div>
     <div class="stat"><b>{n_u}</b><span>elected items</span></div>
     <div class="stat"><b>{n_core}</b><span>MVP core</span></div>
     <div class="stat"><b>{n_u - n_core}</b><span>post-core</span></div>
@@ -212,6 +217,20 @@ p.append(f"""
     <div class="stat"><b>{n_b}</b><span>list B &middot; pressing bugs</span></div>
   </div>
 </header>
+
+<h2 id="required"><span class="no">&sect;0</span>Tier required — the existence ruling</h2>
+<div class="callout required">
+<p><b>Finding: 0 existing items pass the existence test.</b> Mike's bar (2026-08-21): would
+the worker/exec topology fail to function <b>at all</b> without the item? Every one of the
+67 elected rows repairs or extends a topology that must already exist; removing any one makes
+it unreliable, unsafe, lossy, or false &mdash; but not inoperative. Calibration specimen:
+the blocked-worker handoff (<code>f6b4b8ad</code>) &mdash; the architecture operates without
+it ever being defined.</p>
+<p><b>Consequence:</b> 0.2.0's first work is <b>new construction of the worker/exec model
+itself</b>. No existing card names that outcome; this is a product-gap finding. The 28-core /
+39-post-core split below remains as the secondary robustness cut for what lands after the
+topology exists.</p>
+</div>
 
 <h2 id="rule"><span class="no">&sect;1</span>The election rule</h2>
 <p>0.2.0 is the first version built on the worker/exec nervous-system model. Its topology is
@@ -298,7 +317,7 @@ requires a current 0.2 decision.</p>
 
 if WITH_DIFF:
     import os
-    SNAP = __file__.rsplit("/", 1)[0] + "/lista_rows_prev.txt"
+    SNAP = "/tmp/claude-1000/-home-mike-src-tightbeam/87d6a2a3-cad7-4ef4-aed8-ca21d19e65a6/scratchpad/lista_rows_prev.txt"
     new_lines = []
     for _, _, rows in a_groups:
         for wid, desc in rows:
