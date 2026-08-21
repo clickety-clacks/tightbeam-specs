@@ -126,9 +126,9 @@ never re-create SQL.
 
 ## Reconciliation state
 
-- Recon wi_9239a7f1 (running): its full inventory reconciles against
-  these tables; disagreements surface here as amendments, and Mike
-  adjudicates anything I change my mind on.
+- Recon wi_9239a7f1: DONE and reconciled (this r2). Report:
+  NFS shared/specs/tightbeam/rest-state-api-recon.md. Verdict filed on
+  asg_9a1b4764.
 - Kin: wi_9fdc0c07 (client buildability) supplies the demand side;
-  event-firehose-v1.md r4.2 (P5, M-recipe, RM) is the consumer of this
-  ruling.
+  event-firehose-v1.md r5 (P5, V3-V5, registry, A6) carries the
+  spec-side folds of this ruling.
