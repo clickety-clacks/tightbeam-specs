@@ -1,6 +1,12 @@
-# Event firehose v1 — state-change notifications over ws (product spec, r4.2)
+# Event firehose v1 — state-change notifications over ws (product spec, r5)
 
-Status: DRAFT r4.2, 2026-08-21. r4.2 (lavish review): M1 hardened —
+Status: DRAFT r5, 2026-08-21. r5 folds the tb02 adjudication of recon
+wi_9239a7f1's report (rest-state-api-recon.md on the NFS; adjudication in
+rest-vs-cli-adjudication.md r2): V3 now means canonical public
+projections, never raw rows (the db stores credentials); notices carry
+resource + op with delete tombstones; message.created joins the registry;
+verb/lifecycle/rail classes are marked observational-only, outside the
+rebuildable-state contract. r4.2: r4.2 (lavish review): M1 hardened —
 subscribe-first is normative and the model-build algorithm SHALL be
 idempotent under duplicates; REST-vs-CLI recon carded and staffed (see
 P5). r4.1: read markers RULED into the spec
@@ -154,10 +160,14 @@ no notice class is a defect the registry test catches (A1).
 V2. Classes are namespaced `area.happening`, lowercase, dot-separated. The
 registry below is part of this spec. A class name never changes meaning.
 
-V3. **RULED (Mike):** the notice payload is the changed row's full
-recorded truth, unredacted — sufficient to update a displayed model
-without a follow-up query in the common case. The reader is the
-authenticated user on their own gateway.
+V3. **RULED (Mike), refined r5:** the notice payload is the resource's
+CANONICAL PUBLIC PROJECTION — the full recorded product fields and user
+content, unredacted after authorization, sufficient to update a displayed
+model without a follow-up query. "Unredacted" never means raw rows: the
+db stores credentials (session cliToken, device token, harness
+identityToken) and no projection ever carries a storage secret. One
+serializer per resource owns the projection; REST detail and notice
+payload are byte-equivalent (A6).
 
 V4. Notice shape:
 
@@ -168,12 +178,19 @@ V4. Notice shape:
   "subscriptionId": "chat-s_775f",
   "seq": 4213,
   "class": "attest.filed",
+  "resource": "attests",
+  "op": "upsert",
   "occurredAt": 1786900000000,
   "refs": {"sessionKey": "...", "workItemId": "wi_...",
            "assignmentId": "asg_...", "origin": "...", "principal": "..."},
   "payload": { }
 }
 ```
+
+`resource` and `op` (`upsert` | `delete`) spare model code from parsing
+class strings. A delete carries the final public projection as its
+tombstone payload and the client removes the key — required because some
+rows hard-delete today (roles).
 
 `refs` carries whichever reference ids the change has; absent refs are
 omitted. One schemaVersion keeps one meaning; widening bumps it.
@@ -202,13 +219,21 @@ R3. Org shape:
 
 R4. Records: `artifact.recorded`, `read_marker.updated` (RM3).
 
-R5. Dispatch: `verb.accepted`, `verb.denied` — one per gateway verb call,
-with the verb name, origin, and principal in payload/refs. The catch-all:
-a change whose fact class is missing still surfaces here, which is how A1
-catches registry gaps.
+R4b. Conversation: `message.created` — without it a chat client cannot be
+lively (M4 promised message classes; recon wi_9239a7f1 caught the
+registry gap).
 
-R6. Rails and lifecycle: `rail.denied`, `lifecycle.boot`,
-`lifecycle.clean_shutdown`, `lifecycle.dirty_exit`, `lifecycle.takeover`.
+R5. Dispatch (OBSERVATIONAL-ONLY): `verb.accepted`, `verb.denied` — one
+per gateway verb call, with the verb name, origin, and principal in
+payload/refs. The catch-all: a change whose fact class is missing still
+surfaces here, which is how A1 catches registry gaps. Observational-only
+means: these stream (every event streams), but they are OUTSIDE the
+rebuildable-state contract — no REST resource replays them, and a model
+must never depend on having seen one (they are audit, not state).
+
+R6. Rails and lifecycle (OBSERVATIONAL-ONLY, same contract): `rail.denied`,
+`lifecycle.boot`, `lifecycle.clean_shutdown`, `lifecycle.dirty_exit`,
+`lifecycle.takeover`.
 
 R7. Derived from main tip's row vocabulary as of 2026-08-20; the build
 card verifies mechanically (A1) and amends where reality disagrees.
@@ -357,9 +382,12 @@ via V5's shared ids.
 A5. Kill the gateway mid-stream: clients detect the close, resubscribe,
 rebuild, and converge again (M2). Force a slow consumer into 4008: same.
 
-A6. The notice payload for each registry class carries the same row
-content and ids the query surface returns for that row (V5), verified per
-class.
+A6. For every state (non-observational) class, the notice payload and the
+REST detail item are BYTE-EQUIVALENT after removing envelope fields — one
+serializer owns both (V3). Verified per class by a table-driven test that
+also names each class's resource, op, and primary-key mapping. And no
+public projection anywhere contains cliToken, a device token, an
+identityToken, or a secret host-env value.
 
 A7. The feature-smoke drives one real external consumer (ATC or a script)
 end to end: cold build from queries, live updates via subscription,
