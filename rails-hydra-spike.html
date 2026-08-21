@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tightbeam rails — hydra map</title>
+<style>
+  :root {
+    --bg: #10141c;
+    --panel: #171d28;
+    --line: #2a3242;
+    --text: #d7dde8;
+    --dim: #8b93a7;
+    --veto: #ff5566;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+  #stage { flex: 1; min-width: 0; position: relative; }
+  #stage svg { width: 100%; height: 100%; display: block; }
+  #panel {
+    width: 320px;
+    flex: none;
+    background: var(--panel);
+    border-left: 1px solid var(--line);
+    padding: 22px 20px;
+    overflow-y: auto;
+  }
+  #panel h1 { font-size: 15px; font-weight: 600; letter-spacing: .02em; margin-bottom: 6px; }
+  #panel .sub { font-size: 12px; color: var(--dim); line-height: 1.5; margin-bottom: 16px; }
+  #calloutLayer, #calloutLayer *, #calloutLayer foreignObject, #calloutLayer div { pointer-events: none !important; }
+  .edgelabel { font-size: 10px; opacity: 0; pointer-events: none; paint-order: stroke; stroke: #10141c; stroke-width: 3px; }
+  .hydra.focused .edgelabel { opacity: 1; }
+  .hydra.focused.callouts .edgelabel { opacity: 0; }
+  #panel .eyebrow { font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; margin-bottom: 8px; }
+  #panel .headline { font-size: 17px; line-height: 1.45; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+  #panel .railtag { display: inline-block; font-family: ui-monospace, monospace; font-size: 11px; border: 1px solid; border-radius: 4px; padding: 2px 7px; margin-bottom: 14px; }
+  #panel .railtag .layer { opacity: 0.6; }
+  #panel .badge {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; padding: 3px 8px; border-radius: 3px; margin-bottom: 14px;
+  }
+  .badge.physics { background: #1f3a4d; color: #7fd4ff; }
+  .badge.culture { background: #3d2f4d; color: #d3a6ff; }
+  .badge.planned { background: #3d3a22; color: #e8d878; border: 1px dashed #a89b4a; }
+  #panel .sect { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--dim); margin: 14px 0 5px; }
+  #panel ul { list-style: none; }
+  #panel li { font-size: 13px; line-height: 1.6; padding-left: 14px; position: relative; }
+  #panel li::before { content: ""; position: absolute; left: 0; top: 8px; width: 7px; height: 7px;
+    border-radius: 50%; background: var(--railcolor, var(--dim)); }
+  #panel li.veto::before { background: none; border: 1.5px solid var(--veto); width: 6px; height: 6px; top: 7px; }
+  #panel li .qual { color: var(--dim); font-size: 12px; }
+  #panel .inhib { font-size: 13px; line-height: 1.5; }
+  #panel .note { font-size: 12px; color: var(--dim); margin-top: 12px; line-height: 1.5; font-style: italic; }
+  #legend {
+    position: absolute; left: 14px; bottom: 14px;
+    background: rgba(23,29,40,.92); border: 1px solid var(--line); border-radius: 6px;
+    padding: 12px 14px; font-size: 11.5px; line-height: 1.4; color: var(--text);
+  }
+  #legend .row { display: flex; align-items: center; gap: 9px; margin: 4px 0; }
+  #legend svg { width: 44px; height: 14px; flex: none; }
+  #title {
+    position: absolute; left: 16px; top: 12px; pointer-events: none;
+  }
+  #title .t { font-size: 16px; font-weight: 700; letter-spacing: .02em; }
+  #title .s { font-size: 11.5px; color: var(--dim); margin-top: 2px; }
+  .hydra { transition: opacity .18s ease; cursor: pointer; }
+  .hydra path, .hydra circle, .hydra text, .hydra polygon, .hydra line { transition: opacity .18s ease; }
+  .rowtype text { fill: var(--text); font-size: 13px; }
+  .rowtype circle { fill: #6b7590; stroke: #10141c; stroke-width: 1.5; }
+  .rowtype.lit circle { fill: #cfd6e6; }
+  .hublabel { font-size: 9px; fill: currentColor; pointer-events: none; }
+  .plannedtag { font-size: 8.5px; fill: #e8d878; letter-spacing: .06em; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="title">
+    <div class="t">Tightbeam rails</div>
+    <div class="s">each hydra is one rail &middot; hover or click a hub or curve &middot; click empty space to reset</div>
+  </div>
+  <svg id="svg" viewBox="0 0 900 900" preserveAspectRatio="xMidYMid meet"></svg>
+  <div id="legend">
+  <div class="row" style="font-weight:600;margin-bottom:2px">Color = the promise</div>
+  <div class="row"><span style="width:12px;height:12px;border-radius:3px;background:hsl(140,65%,58%);flex:none"></span>proof — no claim without evidence</div>
+  <div class="row"><span style="width:12px;height:12px;border-radius:3px;background:hsl(210,85%,62%);flex:none"></span>attention — needs-a-mind reaches one</div>
+  <div class="row"><span style="width:12px;height:12px;border-radius:3px;background:hsl(40,90%,58%);flex:none"></span>economy — no turns into dead ends</div>
+  <div class="row"><span style="width:12px;height:12px;border-radius:3px;background:hsl(0,80%,62%);flex:none"></span>safety — irreversible forbidden</div>
+  <div class="row" style="border-top:1px solid #333;margin-top:6px;padding-top:6px"></div>
+    <div class="row"><svg><line x1="2" y1="7" x2="42" y2="7" stroke="#9db2ff" stroke-width="2.5"/></svg>trigger (solid)</div>
+    <div class="row"><svg><line x1="2" y1="7" x2="42" y2="7" stroke="#9db2ff" stroke-width="1.1" stroke-dasharray="1.5 9"/></svg>read (dashed thin)</div>
+    <div class="row"><svg><line x1="2" y1="7" x2="34" y2="7" stroke="#9db2ff" stroke-width="2"/><polygon points="42,7 32,3 32,11" fill="#9db2ff"/></svg>creates (arrow into row type)</div>
+    <div class="row"><svg><line x1="2" y1="7" x2="28" y2="7" stroke="#ff5566" stroke-width="2"/><circle cx="36" cy="7" r="5.5" fill="none" stroke="#ff5566" stroke-width="1.6"/><line x1="32.2" y1="10.8" x2="39.8" y2="3.2" stroke="#ff5566" stroke-width="1.6"/></svg>vetoes (returns to trigger, &#8856;)</div>
+    <div class="row"><svg><line x1="2" y1="7" x2="42" y2="7" stroke="#9db2ff" stroke-width="2" stroke-dasharray="14 7" opacity=".6"/></svg>dashed hydra = planned, not built</div>
+  </div>
+</div>
+<div id="panel">
+  <div id="panelbody"></div>
+</div>
+
+<script>
+"use strict";
+
+// ---------- data ----------
+
+const ROWTYPES = [
+  { id: "assignment", promise: "proof",          label: "assignment" },
+  { id: "completionAttest", promise: "proof",    label: "completion attest" },
+  { id: "checkpointAttest", promise: "proof",    label: "checkpoint attest" },
+  { id: "verdict", promise: "proof",             label: "verdict" },
+  { id: "reviewCard", promise: "proof",          label: "review card" },
+  { id: "decisionRequest", promise: "proof",     label: "decision request" },
+  { id: "wake", promise: "proof",                label: "wake" },
+  { id: "conditionFact", promise: "proof",       label: "condition fact" },
+  { id: "workItem", promise: "proof",            label: "work item" },
+  { id: "artifact", promise: "proof",            label: "artifact" },
+  { id: "terminalTurn", promise: "proof",        label: "terminal turn" },
+  { id: "supervisionCounters", promise: "proof", label: "supervision counters" }
+];
+
+// layer: "physics" | "culture" | "planned"
+// trigger: {t, q, qf}; reads/creates/vetoes: [{t, q, qf}]
+// (t = row type id, q = short qualifier for hover labels, qf = full predicate for click callouts)
+const HYDRAS = [
+  { id: "completion-requires-review", promise: "proof", desc: "You cannot mark code, policy, release, or live-mutation work done on your own say-so: a separate session must have reviewed it and its verdict must be on file.", short: "review", layer: "culture",
+    trigger: { t: "completionAttest", qf: "a completion attest is filed on the assignment" },
+    reads: [ { t: "assignment", q: "effectKind", qf: "effectKind ∈ {code, policy, release, live_mutation}" },
+             { t: "reviewCard", qf: "a linked review card exists for this assignment" },
+             { t: "verdict", qf: "the linked review's verdict is reviewed-clean" } ],
+    creates: [], vetoes: [ { t: "completionAttest" } ] },
+  { id: "completion-requires-verification", promise: "proof", desc: "Done means verified: a completion needs its verification evidence recorded, not just claimed.", short: "verify", layer: "culture",
+    trigger: { t: "completionAttest", qf: "a completion attest is filed on the assignment" },
+    reads: [ { t: "artifact", qf: "verification evidence for this completion is recorded" } ],
+    creates: [], vetoes: [ { t: "completionAttest" } ] },
+  { id: "completion-requires-results-artifact", promise: "proof", desc: "Finished work must leave a results artifact behind; no artifact, no completion.", short: "results", layer: "culture",
+    trigger: { t: "completionAttest", qf: "a completion attest is filed on the assignment" },
+    reads: [ { t: "artifact", qf: "a results artifact is attached to the work" } ],
+    creates: [], vetoes: [ { t: "completionAttest" } ] },
+  { id: "code-review-requires-passing-tests", promise: "proof", desc: "A reviewer cannot approve code that has not passed its tests; the tests-passed record must exist first.", short: "tests", layer: "culture",
+    trigger: { t: "verdict", qf: "a review verdict is about to be filed" },
+    reads: [ { t: "checkpointAttest", q: "tests-passed", qf: "a tests-passed attest is on file for the reviewed commit" } ],
+    creates: [], vetoes: [ { t: "verdict" } ] },
+  { id: "refix-requires-diagnosis", promise: "proof", desc: "You cannot dispatch a second fix for the same bug without a recorded diagnosis of why the first one failed.", short: "refix", layer: "culture",
+    trigger: { t: "assignment", q: "re-fix dispatch", qf: "a dispatch that re-fixes an already-fixed defect" },
+    reads: [ { t: "artifact", q: "diagnosis", qf: "a recorded diagnosis of why the prior fix failed" } ],
+    creates: [], vetoes: [ { t: "assignment" } ] },
+  { id: "spec-dispatch-requires-spirit", promise: "proof", desc: "Spec work cannot be dispatched without the governing spirit/spec document on file to build against.", short: "spirit", layer: "culture",
+    trigger: { t: "assignment", q: "dispatch", qf: "a spec-work dispatch" },
+    reads: [ { t: "artifact", q: "spec/spirit", qf: "the governing spec/spirit document is on file" } ],
+    creates: [], vetoes: [ { t: "assignment" } ] },
+  { id: "git-safety statutes (×5)", promise: "safety", desc: "Five commands that destroy uncommitted work (stash, reset --hard, clean -f, checkout --, restore) are refused outright.", short: "git ×5", layer: "culture",
+    trigger: { t: "terminalTurn", q: "tool call", qf: "a shell tool call matching stash / reset --hard / clean -f / checkout -- / restore" },
+    reads: [], creates: [], vetoes: [ { t: "terminalTurn" } ],
+    note: "One hydra representing five git-safety statutes." },
+  { id: "fault bubbling", promise: "attention", desc: "When a turn fails terminally, the substrate climbs the family tree with notices until someone demonstrably able to act hears it; if nobody can, it tells the human directly.", short: "fault", layer: "physics",
+    trigger: { t: "terminalTurn", q: "failure", qf: "a turn ends failed or failed_unknown" },
+    reads: [ { t: "assignment", qf: "the failed turn's assignment, to find the family tree" } ],
+    creates: [ { t: "wake", q: "climb notice", qf: "a climb notice to the next able ancestor" },
+               { t: "conditionFact", q: "user-alerted", qf: "user-alerted — the human has been told directly" } ],
+    vetoes: [] },
+  { id: "prod ladder", promise: "economy", desc: "Quiet holders of open work get prodded on a paced ladder; each silence climbs a rung, and the ladder freezes rather than burns when the engine itself is down.", short: "prod", layer: "physics",
+    trigger: { t: "supervisionCounters", q: "schedule", qf: "supervision sweep tick over an open, quiet assignment" },
+    reads: [ { t: "assignment", qf: "open assignments and who holds them" },
+             { t: "supervisionCounters", qf: "the ladder rung and pacing counters" },
+             { t: "conditionFact", qf: "standing facts that pause the ladder" } ],
+    creates: [ { t: "wake", q: "prod", qf: "a prod wake to the quiet holder" },
+               { t: "supervisionCounters", q: "stall stamp", qf: "a stall stamp on the ladder rung" } ],
+    vetoes: [] },
+  { id: "harness gate", promise: "economy", desc: "No prods are spent into a dead engine: if the holder's harness has a standing auth-dead or rate-limit fact, supervision waits instead of wasting the ladder.", short: "harness", layer: "physics",
+    trigger: { t: "wake", q: "prod about to send", qf: "a prod wake is about to be sent" },
+    reads: [ { t: "conditionFact", q: "harness-dead", qf: "harness-auth-dead or harness-rate-limit-dead standing at this harness+host scope" } ],
+    creates: [], vetoes: [ { t: "wake" } ] },
+  { id: "DR outbox", promise: "attention", desc: "The instant a decision request is filed anywhere, a wake to its owner's Main is committed in the same transaction — a decision cannot exist unnoticed.", short: "DR", layer: "physics",
+    trigger: { t: "decisionRequest", q: "insert", qf: "a decision_request row wins its insert" },
+    reads: [],
+    creates: [ { t: "wake", q: "to owner's Main", qf: "a wake to the owner's Main, committed in the same transaction" } ],
+    vetoes: [] },
+  { id: "outcome done-rail", promise: "proof", desc: "An outcome card cannot be closed by its holder: it needs finished subordinate work on file plus the goal-stater's own verdict that the goal is true.", short: "done", layer: "planned",
+    trigger: { t: "completionAttest", qf: "a completion attest on an outcome-kind card" },
+    reads: [ { t: "verdict", q: "principal", qf: "the principal's verdict that the goal is true" },
+             { t: "completionAttest", q: "subordinate terminal", qf: "terminal evidence from at least one subordinate card" } ],
+    creates: [], vetoes: [ { t: "completionAttest" } ] },
+  { id: "outcome horizon-rail", promise: "proof", desc: "Every outcome card carries a deadline; if the boundary has not moved by then, the substrate itself asks the principal what to do — silence becomes a page.", short: "horizon", layer: "planned",
+    trigger: { t: "supervisionCounters", q: "clock past horizon", qf: "now() passes the card's horizon with no boundary-moved filing since" },
+    reads: [ { t: "assignment", qf: "the card's horizon and declared boundary" },
+             { t: "checkpointAttest", qf: "boundary-moved filings since the horizon was set" } ],
+    creates: [ { t: "decisionRequest", qf: "a decision request to the principal: horizon passed" } ],
+    vetoes: [] },
+  { id: "outcome boundary-rail", promise: "proof", desc: "Checkpoints on an outcome card must name the boundary and whether it moved; 'still working' is not writable.", short: "boundary", layer: "planned",
+    trigger: { t: "checkpointAttest", qf: "a checkpoint attest on an outcome-kind card lacking the typed boundary field" },
+    reads: [ { t: "assignment", q: "kind=outcome", qf: "the card is outcome-kind and declares a boundary" } ],
+    creates: [], vetoes: [ { t: "checkpointAttest" } ] }
+];
+
+const INHIBITION = {
+  culture: "org identity edit / operator ruling",
+  physics: "none — substrate physics",
+  planned: "TBD"
+};
+
+// ---------- geometry ----------
+
+const CX = 450, CY = 450, R = 330;
+const nodePos = {};
+ROWTYPES.forEach((rt, i) => {
+  const a = -Math.PI / 2 + i * 2 * Math.PI / ROWTYPES.length;
+  nodePos[rt.id] = { x: CX + R * Math.cos(a), y: CY + R * Math.sin(a), a };
+});
+
+function vsub(a, b) { return { x: a.x - b.x, y: a.y - b.y }; }
+function vadd(a, b) { return { x: a.x + b.x, y: a.y + b.y }; }
+function vscale(a, s) { return { x: a.x * s, y: a.y * s }; }
+function vlen(a) { return Math.hypot(a.x, a.y); }
+function vnorm(a) { const l = vlen(a) || 1; return { x: a.x / l, y: a.y / l }; }
+function vperp(a) { return { x: -a.y, y: a.x }; }
+
+// hub positions: centroid of involved row types pulled inward, then relaxed apart
+const hubs = HYDRAS.map(h => {
+  const involved = [h.trigger.t]
+    .concat(h.reads.map(e => e.t), h.creates.map(e => e.t), h.vetoes.map(e => e.t));
+  let sx = 0, sy = 0;
+  involved.forEach(t => { sx += nodePos[t].x; sy += nodePos[t].y; });
+  let p = { x: sx / involved.length, y: sy / involved.length };
+  let d = vsub(p, { x: CX, y: CY });
+  let r = vlen(d);
+  const target = Math.min(Math.max(r * 0.55, 95), 235);
+  d = r < 1 ? { x: 1, y: 0 } : vnorm(d);
+  return { x: CX + d.x * target, y: CY + d.y * target };
+});
+for (let it = 0; it < 220; it++) {
+  for (let i = 0; i < hubs.length; i++) {
+    for (let j = i + 1; j < hubs.length; j++) {
+      const d = vsub(hubs[j], hubs[i]);
+      let dist = vlen(d);
+      const min = 64;
+      if (dist < min) {
+        const push = vscale(dist < 1 ? { x: 1, y: 0 } : vnorm(d), (min - dist) / 2);
+        hubs[i] = vsub(hubs[i], push);
+        hubs[j] = vadd(hubs[j], push);
+      }
+    }
+    // keep hubs inside the ring
+    const c = vsub(hubs[i], { x: CX, y: CY });
+    if (vlen(c) > R - 70) hubs[i] = vadd({ x: CX, y: CY }, vscale(vnorm(c), R - 70));
+  }
+}
+
+function hue(i) { return Math.round(i * 360 / HYDRAS.length + 8); }
+const PROMISE_COLOR = { proof: "hsl(140, 65%, 58%)", attention: "hsl(210, 85%, 62%)", economy: "hsl(40, 90%, 58%)", safety: "hsl(0, 80%, 62%)" };
+const PROMISE_LABEL = { proof: "PROOF — no claim without evidence", attention: "ATTENTION — what needs a mind reaches one", economy: "ECONOMY — no turns into dead ends", safety: "SAFETY — irreversible actions forbidden" };
+function color(i) { return PROMISE_COLOR[HYDRAS[i].promise] || `hsl(${hue(i)}, 72%, 63%)`; }
+
+// quadratic bezier between two points with sideways bend; trimmed at both ends
+function quad(p0, p1, bend, trim0, trim1) {
+  const mid = vscale(vadd(p0, p1), 0.5);
+  const n = vperp(vnorm(vsub(p1, p0)));
+  const c = vadd(mid, vscale(n, bend));
+  const s = vadd(p0, vscale(vnorm(vsub(c, p0)), trim0));
+  const e = vsub(p1, vscale(vnorm(vsub(p1, c)), trim1));
+  return { mid: { x: 0.25*p0.x + 0.5*c.x + 0.25*p1.x, y: 0.25*p0.y + 0.5*c.y + 0.25*p1.y }, d: `M ${s.x.toFixed(1)} ${s.y.toFixed(1)} Q ${c.x.toFixed(1)} ${c.y.toFixed(1)} ${e.x.toFixed(1)} ${e.y.toFixed(1)}`,
+           end: e, endDir: vnorm(vsub(e, c)), start: s };
+}
+
+// ---------- render ----------
+
+const NS = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("svg");
+function el(tag, attrs, parent) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+
+// background click-catcher
+const bg = el("rect", { x: 0, y: 0, width: 900, height: 900, fill: "transparent" }, svg);
+
+const edgeLayer = el("g", {}, svg);
+const hubLayer = el("g", {}, svg);
+const nodeLayer = el("g", {}, svg);
+
+// row-type nodes
+const nodeEls = {};
+ROWTYPES.forEach(rt => {
+  const p = nodePos[rt.id];
+  const g = el("g", { class: "rowtype" }, nodeLayer);
+  el("circle", { cx: p.x, cy: p.y, r: 7 }, g);
+  const cos = Math.cos(p.a), sin = Math.sin(p.a);
+  const tx = p.x + cos * 16, ty = p.y + sin * 16 + 4;
+  const anchor = cos > 0.35 ? "start" : cos < -0.35 ? "end" : "middle";
+  const dy = anchor === "middle" ? (sin > 0 ? 10 : -8) : 0;
+  el("text", { x: tx, y: ty + dy, "text-anchor": anchor }, g).textContent = rt.label;
+  nodeEls[rt.id] = g;
+});
+
+function edgeLabel(g, q, text, col, dy) {
+  if (!text) return;
+  const mx = q.mid ? q.mid.x : (q.start ? (q.start.x + q.end.x) / 2 : 0);
+  const my = q.mid ? q.mid.y : (q.start ? (q.start.y + q.end.y) / 2 : 0);
+  const t = el("text", { class: "edgelabel", x: mx, y: my + (dy || -6), "text-anchor": "middle", fill: col }, g);
+  t.textContent = text;
+}
+function addPath(g, d, attrs) {
+  const p = el("path", Object.assign({ d, fill: "none" }, attrs), g);
+  // fat invisible twin for easy hovering
+  el("path", { d, fill: "none", stroke: "transparent", "stroke-width": 12 }, g);
+  return p;
+}
+
+const hydraEls = [];
+const hydraEdgeData = [];
+HYDRAS.forEach((h, i) => {
+  const hub = hubs[i];
+  const col = color(i);
+  const planned = h.layer === "planned";
+  const g = el("g", { class: "hydra", color: col, "data-i": i }, edgeLayer);
+  const dashSolid = planned ? "16 8" : "none";
+  const recs = [];
+
+  // trigger: solid bezier from trigger row type into hub
+  const tp = nodePos[h.trigger.t];
+  const tq = quad(tp, hub, 26 + (i % 3) * 9, 11, 8);
+  addPath(g, tq.d, { stroke: col, "stroke-width": 2.4, "stroke-dasharray": dashSolid });
+  edgeLabel(g, tq, "on: " + (h.trigger.q || "filed"), col);
+  recs.push({ kind: "on", mid: tq.mid,
+    text: h.trigger.qf || h.trigger.q || ("a " + rtLabel(h.trigger.t) + " row is filed") });
+
+  // reads: dashed thinner beziers into hub
+  h.reads.forEach((e, k) => {
+    const p = nodePos[e.t];
+    const bend = (k % 2 ? -1 : 1) * (22 + k * 9) + (e.t === h.trigger.t ? 46 : 0);
+    const q = quad(p, hub, bend, 11, 8);
+    addPath(g, q.d, { stroke: col, "stroke-width": 1.1, "stroke-dasharray": "1.5 9" });
+    edgeLabel(g, q, e.q ? ("reads: " + e.q) : "reads", col, 10);
+    recs.push({ kind: "reads", mid: q.mid, text: e.qf || e.q || rtLabel(e.t) });
+  });
+
+  // creates: bezier from hub out, arrowhead into the target node
+  h.creates.forEach((e, k) => {
+    const p = nodePos[e.t];
+    const sameAsTrigger = e.t === h.trigger.t;
+    const bend = (k % 2 ? -1 : 1) * (26 + k * 10) + (sameAsTrigger ? -52 : 0);
+    const q = quad(hub, p, bend, 8, 15);
+    addPath(g, q.d, { stroke: col, "stroke-width": 2, "stroke-dasharray": dashSolid });
+    edgeLabel(g, q, "creates: " + (e.q || ROWTYPES.find(r => r.id === e.t)?.label || e.t), col);
+    recs.push({ kind: "creates", mid: q.mid, text: e.qf || e.q || rtLabel(e.t) });
+    const d = q.endDir, n = vperp(d), e1 = q.end;
+    const b = vsub(e1, vscale(d, 9));
+    el("polygon", {
+      points: `${e1.x},${e1.y} ${b.x + n.x * 4.2},${b.y + n.y * 4.2} ${b.x - n.x * 4.2},${b.y - n.y * 4.2}`,
+      fill: col }, g);
+  });
+
+  // vetoes: curve returns to the triggering row type, ends beside it in a red no-entry glyph
+  h.vetoes.forEach((e, k) => {
+    const p = nodePos[e.t];
+    const toward = vnorm(vsub(hub, p));
+    const side = vperp(toward);
+    const tip = vadd(vadd(p, vscale(toward, 24)), vscale(side, 16));
+    const q = quad(hub, tip, -(48 + k * 14) - (i % 4) * 7, 8, 9);
+    addPath(g, q.d, { stroke: col, "stroke-width": 2, "stroke-dasharray": planned ? "16 8" : "none" });
+    edgeLabel(g, q, "rule_denied: " + h.id, col, -8);
+    recs.push({ kind: "refused", mid: q.mid, text: e.qf || ("rule_denied: " + h.id) });
+    const vg = el("g", {}, g);
+    el("circle", { cx: tip.x, cy: tip.y, r: 7, fill: "#10141c", stroke: "var(--veto)", "stroke-width": 1.8 }, vg);
+    el("line", { x1: tip.x - 4.7, y1: tip.y + 4.7, x2: tip.x + 4.7, y2: tip.y - 4.7,
+      stroke: "var(--veto)", "stroke-width": 1.8 }, vg);
+  });
+
+  // hub
+  const hg = el("g", {}, g);
+  el("circle", { cx: hub.x, cy: hub.y, r: 9, fill: "#171d28", stroke: col,
+    "stroke-width": 2.2, "stroke-dasharray": planned ? "14 7" : "none" }, hg);
+  el("circle", { cx: hub.x, cy: hub.y, r: 3.2, fill: col }, hg);
+  el("title", {}, hg).textContent = h.id;
+  el("text", { class: "hublabel", x: hub.x, y: hub.y + 20, "text-anchor": "middle", fill: col }, g)
+    .textContent = h.short;
+  if (planned)
+    el("text", { class: "plannedtag", x: hub.x, y: hub.y - 15, "text-anchor": "middle" }, g)
+      .textContent = "PLANNED";
+
+  hydraEls.push(g);
+  hydraEdgeData.push(recs);
+});
+
+// ---------- callouts (full predicates, shown on click-select) ----------
+
+const XHTML = "http://www.w3.org/1999/xhtml";
+const calloutLayer = el("g", { "pointer-events": "none", id: "calloutLayer" }, svg);
+const CALLOUT_R = R + 150;           // radial distance of callout anchors from center
+const CALL_W = 222;                  // box width incl. borders (div 220 + 2×1px)
+const CALL_MARGIN = 8, CALL_GAP = 8; // viewport margin, min vertical gap
+
+function calloutHeight(text) {
+  // estimate: bold kind line + wrapped body at ~33 chars/line, plus padding
+  const lines = Math.max(1, Math.ceil(text.length / 33));
+  return 18 + lines * 15 + 13;
+}
+
+// entrance animation state. The flight is driven by ONE rAF loop writing the
+// SVG transform ATTRIBUTE on a <g> wrapping each foreignObject — pure user
+// units through the normal SVG transform stack. No CSS/WAAPI transform on
+// foreignObject content: WebKit promotes that to a compositing layer it
+// places without the viewBox scale (flight lands wrong, then snaps).
+// Teardown = bump animGen + cancel the single rAF; the loop checks its
+// generation before touching any node, so nothing animates removed nodes.
+let calloutShown = null;
+let animGen = 0, animRAF = 0;
+const REDUCED_MOTION = typeof matchMedia === "function" &&
+  matchMedia("(prefers-reduced-motion: reduce)").matches;
+const CAN_ANIMATE = typeof requestAnimationFrame === "function";
+const ENTER_MS = 90;      // stagger between callout starts
+const BOX_MS = 340;       // box flight (anchor -> margin slot)
+const LEADER_MS = 220;    // leader draw
+const LEADER_AT = 0.6;    // leader starts this far into the box flight
+
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+function renderCallouts(i) {
+  if (i != null && i === calloutShown) return; // same selection already shown
+  animGen++;
+  if (animRAF) { cancelAnimationFrame(animRAF); animRAF = 0; }
+  while (calloutLayer.firstChild) calloutLayer.removeChild(calloutLayer.firstChild);
+  calloutShown = i;
+  if (i == null) return;
+  const col = color(i);
+  const items = hydraEdgeData[i].map(r => {
+    const d = vnorm(vsub(r.mid, { x: CX, y: CY }));
+    const a = vadd({ x: CX, y: CY }, vscale(d, CALLOUT_R));
+    return { rec: r, ax: a.x, ay: a.y, h: calloutHeight(r.text), x: 0, y: 0 };
+  });
+  // resolve overlaps per side: sort by anchor angle (≈ projected y), nudge apart ≥ CALL_GAP
+  [items.filter(c => c.ax < CX), items.filter(c => c.ax >= CX)].forEach(side => {
+    side.sort((a, b) => a.ay - b.ay);
+    side.forEach(c => {
+      c.x = c.ax >= CX
+        ? Math.min(c.ax, 900 - CALL_MARGIN - CALL_W)
+        : Math.max(c.ax - CALL_W, CALL_MARGIN);
+      c.y = c.ay - c.h / 2;
+    });
+    let cur = CALL_MARGIN;
+    side.forEach(c => { c.y = Math.max(c.y, cur); cur = c.y + c.h + CALL_GAP; });
+    // pull boxes back up: off the bottom edge, and out of the legend's corner
+    // (HTML legend overlays the SVG's bottom-left; keep boxes above it there)
+    const LEGEND_RIGHT = 268, LEGEND_TOP = 634;
+    let nextTop = Infinity;
+    for (let k = side.length - 1; k >= 0; k--) {
+      const c = side[k];
+      const lim = Math.min(c.x < LEGEND_RIGHT ? LEGEND_TOP : 900 - CALL_MARGIN,
+                           nextTop - CALL_GAP);
+      if (c.y + c.h > lim) c.y = lim - c.h;
+      nextTop = c.y;
+    }
+    if (side.length && side[0].y < CALL_MARGIN) side[0].y = CALL_MARGIN;
+  });
+  // stagger in reading order (top-to-bottom, left before right on ties)
+  items.slice().sort((a, b) => (a.y - b.y) || (a.x - b.x))
+    .forEach((c, k) => { c.delay = k * ENTER_MS; });
+  const anims = [];
+  items.forEach(c => {
+    const r = c.rec;
+    const onLeft = c.ax < CX;
+    // hairline leader from the box's inner edge to the curve midpoint
+    const edgeX = onLeft ? c.x + CALL_W : c.x;
+    const edgeY = c.y + c.h / 2;
+    const line = el("line", { x1: edgeX, y1: edgeY, x2: r.mid.x, y2: r.mid.y,
+      stroke: col, "stroke-width": 1, opacity: 0.5 }, calloutLayer);
+    const wrap = el("g", {}, calloutLayer);
+    const fo = el("foreignObject", { x: c.x, y: c.y, width: CALL_W, height: c.h + 60,
+      style: "overflow:visible" }, wrap);
+    const div = document.createElementNS(XHTML, "div");
+    div.setAttribute("style",
+      "box-sizing:border-box;width:220px;max-width:220px;" +
+      "font:11px 'Helvetica Neue',Helvetica,Arial,sans-serif;line-height:1.35;color:#d7dde8;" +
+      "background:#171d28f0;border:1px solid " + col + ";border-radius:6px;padding:6px 9px;");
+    const head = document.createElementNS(XHTML, "div");
+    head.setAttribute("style", "font-weight:700;margin-bottom:2px;color:" +
+      (r.kind === "refused" ? "#ff5566" : col));
+    head.textContent = r.kind + ":";
+    div.appendChild(head);
+    const body = document.createElementNS(XHTML, "div");
+    body.textContent = r.text;
+    div.appendChild(body);
+    fo.appendChild(div);
+
+    if (REDUCED_MOTION || !CAN_ANIMATE) return;   // appear instantly, final state
+    // flight endpoints, BOTH in SVG user units: anchor = the edge's curve
+    // midpoint; landed center = box center (fo x + w/2, leader attach y).
+    const len = Math.hypot(r.mid.x - edgeX, r.mid.y - edgeY);
+    line.setAttribute("stroke-dasharray", len);
+    line.setAttribute("stroke-dashoffset", len);  // hidden until its draw starts
+    wrap.setAttribute("opacity", "0");            // hidden until its flight starts
+    anims.push({ wrap, line, len, delay: c.delay, landed: false, drawn: false,
+      cx: c.x + CALL_W / 2, cy: edgeY, ax: r.mid.x, ay: r.mid.y });
+  });
+
+  if (!anims.length) return;
+  const gen = animGen;
+  let t0 = null;
+  function frame(ts) {
+    if (gen !== animGen) return;                  // torn down: touch nothing
+    if (t0 == null) t0 = ts;
+    const t = ts - t0;
+    let pending = false;
+    for (const a of anims) {
+      // box flight: center travels anchor -> landed center, scale .6 -> 1,
+      // opacity 0 -> 1, ease-out; landing removes both attributes so the
+      // settled DOM is identical to the no-animation render.
+      const bt = (t - a.delay) / BOX_MS;
+      if (bt < 1) {
+        pending = true;
+        if (bt > 0) {
+          const p = easeOutCubic(bt);
+          const s = 0.6 + 0.4 * p;
+          const mx = a.ax + (a.cx - a.ax) * p;
+          const my = a.ay + (a.cy - a.ay) * p;
+          a.wrap.setAttribute("opacity", p.toFixed(3));
+          a.wrap.setAttribute("transform", "translate(" + mx.toFixed(2) + " " +
+            my.toFixed(2) + ") scale(" + s.toFixed(4) + ") translate(" +
+            (-a.cx).toFixed(2) + " " + (-a.cy).toFixed(2) + ")");
+        }
+      } else if (!a.landed) {
+        a.landed = true;
+        a.wrap.removeAttribute("transform");
+        a.wrap.removeAttribute("opacity");
+      }
+      // leader draw: dashoffset len -> 0 reveals from x1/y1 (the box edge)
+      // toward the curve midpoint, starting ~60% into the box flight.
+      const lt = (t - a.delay - BOX_MS * LEADER_AT) / LEADER_MS;
+      if (lt < 1) {
+        pending = true;
+        if (lt > 0)
+          a.line.setAttribute("stroke-dashoffset",
+            (a.len * (1 - easeOutCubic(lt))).toFixed(2));
+      } else if (!a.drawn) {
+        a.drawn = true;
+        a.line.removeAttribute("stroke-dashoffset");
+        a.line.removeAttribute("stroke-dasharray");
+      }
+    }
+    animRAF = pending ? requestAnimationFrame(frame) : 0;
+  }
+  animRAF = requestAnimationFrame(frame);
+}
+
+// ---------- interaction ----------
+
+const panelbody = document.getElementById("panelbody");
+let selected = null, hovered = null;
+
+function baseOpacity(h) { return h.layer === "planned" ? 0.27 : 0.45; }
+function fullOpacity(h) { return h.layer === "planned" ? 0.8 : 1; }
+
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function rtLabel(t) { return ROWTYPES.find(r => r.id === t).label; }
+function itemHTML(e, veto) {
+  const q = e.q ? ` <span class="qual">(${esc(e.q)})</span>` : "";
+  return `<li${veto ? ' class="veto"' : ""}>${esc(rtLabel(e.t))}${q}${veto ? " — vetoed" : ""}</li>`;
+}
+
+function renderPanel(i) {
+  if (i == null) {
+    panelbody.innerHTML =
+      `<h1>Rails over the row circle</h1>
+       <div class="sub">Row types sit on the circle. Each rail is one hydra: its origins
+       (trigger, solid; reads, dashed) converge into a hub, and its heads reach out to the
+       row types it creates (arrow) or vetoes (red ⊘ beside the triggering type).<br><br>
+       Hover or click any hub or curve for the rail's card. Click empty space to reset.<br><br>
+       ${HYDRAS.length} rails: ${HYDRAS.filter(h => h.layer === "physics").length} physics,
+       ${HYDRAS.filter(h => h.layer === "culture").length} culture,
+       ${HYDRAS.filter(h => h.layer === "planned").length} planned.</div>`;
+    return;
+  }
+  const h = HYDRAS[i];
+  const layerText = { physics: "physics — substrate", culture: "culture — org rule", planned: "planned" }[h.layer];
+  let html = `<div class="eyebrow" style="color:${color(i)}">${PROMISE_LABEL[h.promise]||""}</div><div class="headline">${esc(h.desc||h.id)}</div><div class="railtag" style="border-color:${color(i)}; color:${color(i)}">${esc(h.id)}<span class="layer"> · ${h.layer}</span></div>
+    <span class="badge ${h.layer}">${layerText}</span>
+    <div style="--railcolor:${color(i)}">
+    <div class="sect">Triggers on</div><ul>${itemHTML(h.trigger)}</ul>`;
+  html += `<div class="sect">Reads</div><ul>${
+    h.reads.length ? h.reads.map(e => itemHTML(e)).join("") : '<li style="color:var(--dim)">nothing else</li>'}</ul>`;
+  const emits = h.creates.map(e => itemHTML(e)).concat(h.vetoes.map(e => itemHTML(e, true)));
+  html += `<div class="sect">Emits / vetoes</div><ul>${emits.join("") || '<li style="color:var(--dim)">nothing</li>'}</ul>`;
+  html += `<div class="sect">Inhibition</div><div class="inhib">${esc(INHIBITION[h.layer])}</div>`;
+  if (h.note) html += `<div class="note">${esc(h.note)}</div>`;
+  html += `</div>`;
+  panelbody.innerHTML = html;
+}
+
+function apply() {
+  const active = hovered != null ? hovered : selected;
+  // callouts belong to the click-selection only; hover shows short labels.
+  // While hovering a different hydra, callouts step aside.
+  const co = selected != null && (hovered == null || hovered === selected) ? selected : null;
+  hydraEls.forEach((g, i) => {
+    const h = HYDRAS[i];
+    g.style.opacity = active == null ? baseOpacity(h) : (i === active ? fullOpacity(h) : 0.15);
+    g.classList.toggle("focused", active === i);
+    g.classList.toggle("callouts", co === i);
+  });
+  renderCallouts(co);
+  const lit = new Set();
+  if (active != null) {
+    const h = HYDRAS[active];
+    [h.trigger].concat(h.reads, h.creates, h.vetoes).forEach(e => lit.add(e.t));
+  }
+  ROWTYPES.forEach(rt => nodeEls[rt.id].classList.toggle("lit", lit.has(rt.id)));
+  renderPanel(active);
+}
+
+hydraEls.forEach((g, i) => {
+  g.addEventListener("mouseenter", () => { hovered = i; apply(); });
+  g.addEventListener("mouseleave", () => { hovered = null; apply(); });
+  g.addEventListener("click", ev => { ev.stopPropagation(); selected = i; apply(); });
+});
+bg.addEventListener("click", () => { selected = null; apply(); });
+document.getElementById("stage").addEventListener("click", ev => {
+  if (ev.target === svg || ev.target.id === "stage") { selected = null; apply(); }
+});
+
+apply();
+</script>
+</body>
+</html>
