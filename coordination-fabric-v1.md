@@ -4,6 +4,10 @@ Status: r5 FOLDED (2026-08-13; executes the AUTHORIZED change requests
 `0.2-change-request-001.md` §C and `0.2-change-request-002.md` D1–D9 —
 both authorized by Mike, 2026-08-13 — in one fold sitting per their
 terms; source log: `emergent-formalization-candidates-2026-08-13.md`).
+Amended 2026-08-22 by Mike's direct ruling on wi_f3f1ae8f: a decision
+reader may return an insufficient-information agent question to its asker
+without answering it; the typed return is terminal, reasoned, and auditable
+(§7, Phase 1 seam ③).
 Prior: r4 READY (2026-08-13; declared after the cross-vendor delta
 re-check + its prescribed fix round — see `review-gate-findings-2026-08-13.md`).
 Folded from the 2026-08-13 review gate
@@ -77,6 +81,10 @@ rendering of classes (Clawline's business); 0.1.x-line behavior.
   session holds.
 - **Summon** — a wake the desk sends its principal carrying a brief;
   the desk's only way to spend the principal's turn.
+- **Returned question** — an agent question whose asked principal declined
+  to answer because the filed information was insufficient. It is a
+  terminal disposition of that exact immutable row, not an answer, ruling,
+  withdrawal, hold, or silent deletion (§7).
 - **Turn boundary** — the moment a session's in-flight turn ends; the
   org's natural delivery quantum.
 - **Prodder** — the deterministic starvation floor (§5): the watermark bone.
@@ -557,6 +565,34 @@ skeletal change (§8) — lawful via the identity tree, never silent.
 | `blocker` | progress stopped | desk immediately; summon at desk's judgment, floor-bounded / principal immediately | prodder floor |
 | `algedonic` | genuine pain (constitution violation, spirit drift, data loss) | bypasses every bone and every desk: delivered to the principal AND the org's configured human channel (seed default: both; skeletal to reshape). Never batched, never digested, never triaged | none — immediate |
 
+**Insufficient-information return (Mike, 2026-08-22).** The principal who
+was asked an agent question — the exact session resolved at file time, or
+its stamped accountable owner — may return an OPEN question with a required,
+non-blank reason instead of answering it. The return changes only that
+question's typed disposition from `open` to `returned`; it records
+`returnedBy`, `returnReason`, and `returnedAt` in the same transaction and
+files a named lifecycle event. The original question, target, context,
+assignment reference, and filing provenance never change.
+
+The return removes the row from the default open queue. It does not answer,
+rule, consume, withdraw, authorize, unblock, reopen, or mutate the asker's
+work. The substrate notifies the original asker after commit with the exact
+question and reason. If the answer is still needed, the asker — and no
+reader-side mechanism — must revise the question or file a replacement.
+Revision means a NEW request row; the returned row cannot become open again.
+That preserves both attempts and makes the full sequence legible instead of
+editing history in place.
+
+Authorization is checked before request existence or kind is disclosed, on
+the same principal boundary as `answer`. A missing id, a non-agent id, and an
+agent question addressed elsewhere refuse identically. The transition is one
+`open`-scoped compare-and-swap: answer, withdraw, and return race to one
+terminal winner. An exact return retry by the same principal with the same
+reason is idempotent and emits no second event or notification; a changed
+reason or a different terminal winner refuses `not_open`. `returned` is a
+legal explicit list filter and appears in forensic/all reads with its actor,
+reason, and timestamp.
+
 Class is **advisory metadata extending `attend`** — sender-elected. The
 classifier stamps only unclassified traffic (§5); a receiver may
 RE-CLASSIFY for its own handling, recorded as its own row with the sender's
@@ -805,8 +841,9 @@ holder-verdict-wins.
 `algedonic` bypass per §7's seed default) + the acceptance-№1 classed-row
 query (§12 Q5). ② Delivery-policy seam in `wakes.ex`: class→immediacy
 table, ceilings, turn-boundary digests materializing one turn for N
-payloads, signed provenance. ③ decision-request create-path (issue #11) as
-the `input-needed` carrier. ④ `--after` cursors on attests and toplines
+payloads, signed provenance. ③ decision-request create/answer/withdraw/return
+paths (issue #11) as the `input-needed` carrier; the return path follows
+§7's terminal, reasoned, principal-authorized contract. ④ `--after` cursors on attests and toplines
 (issue #13). Ships WITH a minimal operating-manual amendment teaching the
 classes and the create-path verb (rubric check 8; Phase 2 expands it).
 Exit: conformance fixtures per seam; classes visible in transcript and
@@ -934,6 +971,13 @@ never cross); `wake-on-fact-v1.md` (consumed primitive); `tightbeam.md`
 (hub — may not lag this file).
 
 ## Revision trail
+
+2026-08-22 decision-reader return amendment: Mike directly authorized
+wi_f3f1ae8f. Terms, §7, and Phase 1 seam ③ now define the typed `returned`
+disposition, immutable source row, required return reason, stamped actor and
+time, open-queue removal, asker notification, owner-only revision/replacement
+choice, existence-oracle-safe authorization, and single-winner/idempotent
+race behavior. No hold, ruling, or substrate judgment was added.
 
 r5 fix round (2026-08-13, same day; Sol fold review, finding 3): §6 layer
 2 sharpened — dispatch rules compile the charter's STRUCTURAL must-nots
