@@ -1,3 +1,10 @@
+> **SUPERSEDED PRE-AUTHORITY (2026-08-22).** This draft landed from a lane that had
+> already been superseded when the landing was fulfilled (race disclosed in
+> att on asg_507b144d). It is EVIDENCE, not the design of record, and must not be
+> adopted or revised as a second design. The authoritative completion-rails
+> decisions spec is being produced under `wi_a7fd5022` by
+> spec-writer:completion-rails-decisions; that document wins on every point.
+
 # Completion policy — composable named rails
 
 Status: proposed 0.2 design for
