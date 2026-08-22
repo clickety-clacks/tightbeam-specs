@@ -3,6 +3,9 @@
 Status: REVIEW DRAFT r3, 2026-08-22. r3 folds the REST-side adjudicated
 findings F1/F8/F9/F13/F14/F16/F21/F22 from
 `review-gate-observability-2026-08-21.md` and aligns with firehose r6.
+This successor resolves changes-requested `att_71210c7b` against exact commit
+`c8eb1d080890ad571c5319b2514230c71a021427`; its closure map is in the
+adjudication companion.
 It also consumes Mike's ruled SQ2: the admin read plane includes users,
 devices, ops metadata, and first-class archetype, kungfu, rail, and guidance
 content, all admin-only with secrets structurally excluded.
@@ -31,6 +34,86 @@ Authority and inputs:
   events; SQL against state.db is not a product interface; the CLI makes
   common things easy and never re-creates SQL; auth is the existing
   gateway credential, no API keys; deployment is localhost/tailscale.
+- rest-state-api-r3-adjudication.md: durable REST finding text, source
+  message identifiers, the closure map, and the SQ2 ruling pointer.
+- rest-state-api-v1-wire-schema.md: normative JSON types, nested shapes,
+  enum domains, nullability, and canonical ordering for R7/R7a.
+- Companion mapping ruling `art_4a1cce6e`, SHA-256
+  `5db8aab3496747d008fb8c024a4f1617f92695d144c89481bca3a1f20842550a`:
+  condition facts and critical leases enter firehose R8 with the exact R8 rows
+  below; it supersedes the fact-only `art_5d8bacb2`.
+
+## Spec homing
+
+The canonical spec lives only in the `tightbeam-specs` repository as
+`rest-state-api-v1.md`. The two companion documents above live beside it and
+are normative for r3. A worktree, artifact row, transcript, or review report
+is evidence, not canonical custody. Canonical r2 remains effective until this
+exact r3 set passes independent review and lands on the canonical branch.
+
+## Goal
+
+Define a complete, authorized, deterministic REST read plane from which ATC,
+Clawline, and future clients can rebuild every admitted shared-state model and
+correlate later firehose notices without reading SQLite or replaying history.
+
+## Non-goals
+
+- REST v1 does not create a general mutation API.
+- REST v1 does not expose SQLite rows, `rowid`, credentials,
+  credential-bearing paths, or unrestricted configuration and environment
+  values.
+- REST v1 does not turn the firehose into an event log or make observational
+  notices rebuildable state.
+- REST v1 does not retire compatibility aliases or decide future tailnet
+  identity.
+- REST v1 does not authorize implementation, deployment, or client migration.
+
+## Assumptions
+
+AS1. Every admitted credential resolves to exactly one user or session
+principal before a read handler runs. A conformance test falsifies this if one
+credential resolves ambiguously.
+
+AS2. The write seam can allocate a durable integer version after a successful
+state mutation and before commit. Crash/restart and delete/recreate tests
+falsify this if a version repeats or moves backward.
+
+AS3. The served-identity repository revision and the config,
+host-environment, and credential stores are distinct inputs. A source-boundary
+test falsifies this if an admin content query reads the latter stores.
+
+AS4. Each collection has a stable public natural key. A schema test fails
+before a route ships if any item lacks that key.
+
+## Invariants
+
+I1. Authorization precedes subscription filtering, serialization, byte open,
+and existence-dependent error selection.
+
+I2. Every projection is closed-world. This file owns field names and the
+wire-schema companion owns their types and deterministic encoding.
+
+I3. A cursor contains only an immutable ordering tuple and request binding. It
+never resolves through a live row or stores `rowid`.
+
+I4. One query and one item serializer serve REST, CLI wrappers, and every
+firehose class in the A6 overlap.
+
+I5. A stored-state mutation has one registered state notice mapping or an
+explicit companion-spec exclusion. Silence is never an implicit mapping.
+
+I6. Versions increase across update, delete, and recreation of the same public
+key. A process restart does not reset the version floor.
+
+## Architecture
+
+The read plane has four seams. A principal resolver produces one authenticated
+principal. A resource query applies the AU4 visibility function and fixed
+filters. The R7 serializer emits the closed wire item defined by the wire
+schema. An outer adapter places that item in a REST envelope, compatibility
+envelope, CLI result, or firehose notice. Composed views declare their source
+classes in R9 and use a dependency digest instead of a notice class.
 
 ## Spirit (read this before quizzing Mike)
 
@@ -124,6 +207,11 @@ R3. Mechanical views: GET /api/toplines[/:id], /api/facts, and
 SR2 and SR5 still exclude secrets. Mechanical and admin views are not part of
 a normal display-model bootstrap.
 
+`/api/facts` is the append-only condition-fact collection.
+`/api/critical-state` returns every recorded critical-lease row, including an
+expired row; it never removes a row merely because wall time passed. A client
+derives current activity as `expiresAt > now`.
+
 R4. Envelopes. List:
 `{"schemaVersion":1,"resource":"assignments","items":[],"page":{"oldestCursor":null,"newestCursor":null,"hasMoreBefore":false,"hasMoreAfter":false}}`.
 Detail: `{"schemaVersion":1,"resource":"assignments","item":{}}`.
@@ -162,18 +250,20 @@ R5a. Stable collection orders and cursor tuples are:
 | guidance | `(name)` |
 | rails | `(name)` |
 | config | `(key)` |
-| host environment | `(updatedAt, host, harness, name)` |
+| host environment | `(host, harness, name)` |
 | harness processes | `(startedAt, id)` |
 | users | `(createdAt, userId)` |
 | devices | `(createdAt, deviceId)` |
-| read markers | `(updatedAt, userId, scopeKey)` |
+| read markers | `(userId, scopeKey)` |
+| facts | `(id)` |
+| critical state | `(sessionKey)` |
 
 R5b. Read-marker collection identity is the composite key
 `(userId, scopeKey)`. The caller's user id remains implicit for ordinary
 user reads, but it remains in the cursor tuple. Two users with the same
-`scopeKey`, and two markers with the same `updatedAt`, page without loss or
-duplication. A marker update can move that marker in a later fresh snapshot;
-one active page chain retains its encoded boundary and filter fingerprint.
+`scopeKey` page without loss or duplication. Updates cannot move a marker or
+host-environment row because those collections order only by their immutable
+natural keys.
 
 R6. Filters are whitelisted per resource:
 
@@ -200,12 +290,17 @@ R6. Filters are whitelisted per resource:
 | harness processes | sessionKey, host, harness, provider, model, state |
 | users and devices | status and ownership filters |
 | read markers | caller user by default; scopeKey exact or prefix |
+| facts | kind exact, scope exact, origin exact, tsFromInclusive, tsToExclusive |
+| critical state | sessionKey exact |
 
 Filters are conjunctive across fields and disjunctive within a repeated
 field. Unknown enum = typed 400. Unknown exact-id filter = empty collection,
 never an existence oracle. No `fields`, `sort`, `include`, or join parameters
-exist in v1. The technical specification must pin wire names and inclusivity
-for every bounded-time pair; this product spec does not invent them.
+exist in v1. Every bounded-time filter is an epoch-millisecond integer named
+`<field>FromInclusive` or `<field>ToExclusive`. The lower comparison is `>=`;
+the upper comparison is `<`. Wakes admit `dueAt` and `firedAt`; turns admit
+`createdAt`, `startedAt`, and `endedAt`; facts admit `ts`. A missing bound is
+open. Any other time-filter name returns `400 invalid_filter`.
 
 R7. Projection fields are closed-world and normative. Every item contains
 exactly the keys in its row below. Nullable keys remain present with `null`;
@@ -233,7 +328,8 @@ adapter may add a storage column or a caller-selected field.
 | roles | `name`, `boundSessionKey`, `ownerUserId`, `createdAt`, `updatedAt`, `rowVersion` |
 | users | `userId`, `isAdmin`, `createdAt`, `rowVersion` |
 | devices | `deviceId`, `userId`, `claimedName`, `status`, `platform`, `model`, `createdAt`, `rowVersion` |
-| condition facts | `id`, `ts`, `kind`, `scope`, `origin`, `rowVersion` |
+| facts (`/api/facts`) | `id`, `ts`, `kind`, `scope`, `origin`, `rowVersion` |
+| critical state (`/api/critical-state`) | `sessionKey`, `reason`, `startedAt`, `expiresAt`, `hardDeadline`, `updatedAt`, `rowVersion` |
 | toplines | `id`, `ownerUserId`, `title`, `state`, `createdActor`, `createdAt`, `updatedAt`, `closedAt`, `activeWorkCount`, `openConcernCount`, `workMemberships`, `concerns`, `dependencyVersion` |
 | coordination share | `sessionKey`, `from`, `to`, `turns`, `wakeTurns`, `classedTurns`, `coordinationTurns`, `summons`, `algedonic`, `byClass`, `share`, `dependencyVersion` |
 | digest members | `wakeId`, `prompt`, `class`, `classElection`, `createdAt`, `dependencyVersion` |
@@ -248,7 +344,7 @@ environment names are sorted and their values never enter the projection.
 
 | Resource | Canonical item fields |
 |---|---|
-| identity | `name`, `liveRevision`, `sessionRevisions`, `staleness`, `conflicts`, `rowVersion` |
+| identity | `name`, `liveRevision`, `state`, `sessionRevisions`, `staleness`, `conflicts`, `rowVersion` |
 | archetypes | `name`, `skills`, `where`, `defaults`, `references`, `modelPreferences`, `containment`, `mcpServers`, `compiledGuidance`, `sourceSha256`, `dependencyVersion` |
 | kungfu | `name`, `purpose`, `phrases`, `rootArchetype`, `installedRevision`, `status`, `documents`, `rowVersion` |
 | guidance | `name`, `content`, `sha256`, `dependencyVersion` |
@@ -256,6 +352,12 @@ environment names are sorted and their values never enter the projection.
 | config | `key`, `value`, `updatedAt`, `rowVersion` |
 | host environment | `host`, `harness`, `name`, `value`, `valuePresent`, `updatedAt`, `rowVersion` |
 | harness processes | `id`, `sessionKey`, `host`, `harness`, `provider`, `model`, `pid`, `state`, `startedAt`, `endedAt`, `rowVersion` |
+
+R7c. `rest-state-api-v1-wire-schema.md` is normative. A route is not frozen
+under M1 until its R7/R7a field row and wire-schema row both exist. The wire
+schema fixes JSON types, nullability, nested object keys, enum domains, and
+array order. An unknown enum value fails serialization and emits no partial
+response.
 
 R7b. `/download/:assetId` returns bytes, not a JSON projection. The asset row
 is its sole authorization metadata; no inferred artifact or work-item link
@@ -285,11 +387,19 @@ remain outside this table.
 | `read_marker.updated` after set | read markers | upsert | `userId` + `scopeKey` |
 | `read_marker.updated` after clear | read markers | delete | `userId` + `scopeKey` |
 | `message.created` | transcript messages | upsert | `messageId` |
+| `condition_fact.filed` | facts | upsert | `factId` |
+| `critical_lease.updated` | critical state | upsert | `sessionKey` |
 | `config.updated` | config | upsert | `key` |
 | `host_env.updated` | host environment | upsert | `host` + `harness` + `name` |
 | `identity.updated` | identity | upsert | `name` |
 | `kungfu.updated` | kungfu | upsert | `name` |
 | `host.registered` | hosts | upsert | `host` |
+
+`condition_fact.filed` uses the append-only fact `id` as `rowVersion` and
+emits once after a successful committed insert. `critical_lease.updated` emits
+once after a committed lease change and uses the R7 version. An idempotent
+no-change replay emits no state notice. Both use the same AU4 visibility and
+exact R7 serializer as their REST resources, per `art_4a1cce6e`.
 
 SQ2 admits every admin row above. They enter the REST/firehose A6 overlap and
 use the same admin-only visibility function. Archetypes, guidance, and rails
@@ -304,6 +414,7 @@ that prefix.
 | Composed resource | Refetch dependencies |
 |---|---|
 | org | `host.registered`, `config.updated`, `identity.updated`, `kungfu.updated` |
+| harness catalog | `host.registered`, `host_env.updated`, `config.updated` |
 | toplines | `work_item.*`, `assignment.*`, `attest.filed`, `session.*`, `role.*`, `wake.*`, `turn.*`, `decision_request.*` |
 | coordination share | `wake.*`, `turn.*`, `prod.fired` |
 | digest members | `wake.scheduled`, `wake.canceled`, `wake.fired` |
@@ -317,6 +428,14 @@ a composed query requires the same reviewed change to this list. Each composed
 response carries `dependencyVersion` equal to a stable digest of the ordered
 `(resource primary key, rowVersion)` dependency vector, so equal dependencies
 produce equal versions and any dependency change produces a different version.
+
+R10. `rowVersion` has resource-key lifetime. The write seam allocates it from
+a durable monotonic sequence and stores a version floor keyed by
+`(resource, primary key)`. An upsert version exceeds the prior upsert or delete
+version for that key. A delete notice carries a version greater than the row's
+last upsert. Recreating a hard-deleted key carries a version greater than that
+tombstone. Version floors survive process restart and are never collected
+while a v1 client can present buffered notices.
 
 ## Requirements — projections and serializers
 
@@ -342,15 +461,35 @@ primary-key table). A client applies last-version-wins upsert by
 
 SR5. Safe-value exposure is explicit and default-deny. In v1 the complete
 config value allowlist is `default-archetype`. No other config key returns a
-value. The host-environment value allowlist is empty: its route
+value: every live key remains visible to an admin as metadata, but its `value`
+is `null`. Unknown detail means the key does not exist, not that its value is
+hidden. The host-environment value allowlist is empty: its route
 may return `host`, `harness`, `name`, `valuePresent`, and timestamps, but its
 `value` is always `null`. Identity, kungfu, and harness-process projections
 return only the R7a fields. Archetype, kungfu, rail, and guidance content is
 admitted only through its named R7a projection after admin authorization; it
-does not widen the config or environment allowlists. Any unlisted key or field remains absent from
-collections and returns the same 404 as unknown on detail. A new safe key or
-field requires a reviewed amendment to this allowlist; a name-pattern,
+does not widen the config or environment allowlists. Any unlisted projection
+field remains absent. An existing config key outside the value allowlist keeps
+its metadata row with `value:null`; other unknown detail keys return 404. A new
+safe value or projection field requires a reviewed amendment; a name-pattern,
 denylist, or “not known secret” test cannot admit it.
+
+SR6. Admin content is source-bound and sanitized. Archetypes and compiled
+guidance read only the committed served-identity tree at its live revision.
+Guidance reads only built-in served guidance and `identity/guidance/*.md`.
+Rails read only parsed `identity/rails/*.toml` statutes. Kungfu `documents`
+read only `README.md`, `capabilities.md`, and `preferred-models.md` beneath
+`identity/kungfu/<name>/`; symlinks, `..`, dotfiles, receipts, manifests, and
+all other paths are excluded. `documents.path` is relative and matches
+`^[A-Za-z0-9][A-Za-z0-9._/-]*$`.
+
+Before serialization, one content sanitizer replaces a full secret-bank
+value, a PEM private-key block, a bearer/API-token assignment, or an absolute
+path rooted in the Tightbeam base directory or an operating-system home
+directory with `[redacted-secret]` or `[redacted-host-path]`. It runs on
+`compiledGuidance`, guidance `content`, kungfu document `content`, and rail
+`pattern` and `text`. It never reads environment values to enrich output. The
+same sanitized item bytes serve REST and firehose.
 
 ## Requirements — auth and visibility
 
@@ -395,7 +534,7 @@ not borrow that bit.
 | decision requests — effort | named expecter session or user; holder of the linked assignment; admin |
 | decision requests — agent question | asker session; asked session; stamped accountable owner user; admin |
 | read markers | marker's `userId` user principal; admin |
-| condition facts | filing session; filing session owner; admin; process-origin facts are admin-only |
+| facts | filing session; filing session owner; admin; process-origin facts are admin-only |
 | toplines | topline owner; admin |
 | critical state | admin only |
 | identity, archetypes, kungfu, guidance, rails, config, host environment, harness processes, users, devices | admin only |
@@ -416,6 +555,23 @@ authenticated principal. Only an allowed row may then be tested against
 filters. A subscription filter never broadens visibility and never becomes an
 existence oracle. Delete uses the last pre-delete projection for this first
 step, as firehose A2b requires.
+
+AU7. Cursor error precedence is deterministic. Base64/version/signature,
+resource, and filter-fingerprint failures return `400 invalid_cursor` without
+a row lookup. A valid cursor also binds the authenticated principal kind and
+stable principal id. A binding mismatch returns the same 404 as unknown. For
+the correct binding, rows hidden now or hidden since cursor creation are
+simply absent from the authorized page; the server never reports that they
+exist. “Unauthorized cursor use” means a binding mismatch or a request whose
+resource itself is forbidden.
+
+AU8. “Same timing class” means unknown and forbidden paths use the same
+handler stages, database statement shape, response encoder, and optional
+minimum-duration pad. In a warmed in-process test of at least 10,000 randomized
+requests per case, forbidden and unknown p50 and p95 latency must each differ
+by no more than 5%, and neither case may perform a byte open. The test records
+the statement count and requires exact equality. Production network latency is
+not part of this conformance measure.
 
 ## Requirements — relationship to the CLI
 
@@ -463,20 +619,26 @@ explicit allowlist.
 A4. Subscribe-first multi-resource snapshot plus buffered notices converges
 under concurrent creates/updates/deletes by last-version-wins upsert on
 `(primary key, rowVersion)`; reconnect + fresh rebuild converges with no event
-history. An older snapshot row applied after a newer notice is a no-op.
+history. An older snapshot row applied after a newer notice is a no-op. Delete
+and recreate the same role name across a process restart; the recreate version
+exceeds the tombstone and stale pre-delete notices cannot remove it.
 A5. Pagination proofs: tied timestamps, a deleted boundary row, deleted
 neighbors, empty pages, before/after, default 50, cap 500, wrong-resource
 cursor, and changed-filter cursor. Tests decode each cursor and prove it holds
-the complete R5a tuple and no SQLite `rowid` or live storage locator.
+the complete R5a tuple and no SQLite `rowid` or live storage locator. While
+paging host environment and read markers, update every visited row; their
+immutable natural-key order produces no skip or duplicate.
 A6. Unauthorized detail, nested child, cursor use, and download are
-indistinguishable from unknown in body, status, headers, and timing class.
+indistinguishable from unknown in body, status, headers, and the AU8 measured
+timing class. Malformed, wrong-resource, changed-filter, wrong-principal, and
+now-hidden-row cursor cases each assert AU7 precedence.
 A7. ATC builds its current model with zero SQLite access; Clawline lists
 sessions, pages transcript, fetches work state, and correlates notices
 by exact ids.
 A8. CLI wrappers return the same item shapes as REST for equivalent
 reads.
-A9. Read-marker pagination creates two users with the same `scopeKey` and
-multiple markers at the same `updatedAt`; paging each authorized view visits
+A9. Read-marker pagination creates two users with the same `scopeKey`;
+paging each authorized view visits
 every `(userId, scopeKey)` exactly once.
 A10. For every AU4 row, a table tests each allowed principal and one denied
 session owned by an otherwise allowed user. The denied session remains denied
@@ -491,7 +653,8 @@ An asset denied by its metadata visibility function never opens or stats its
 bytes, including for a session owned by the asset's `ownerUserId`.
 A13. Safe-value proof enumerates all live config keys and host environment
 names. Only `default-archetype` returns a config value; no host environment
-value returns. Adding any unlisted key fails until SR5 changes by review.
+value returns. An unlisted live config key appears with `value:null`, and its
+`config.updated` notice carries the identical redacted item.
 A14. Every R9 composed view has a test that mutates one row for each declared
 dependency and observes a changed dependency digest. A state class not in the
 declared list leaves the digest unchanged. Query dependency extraction and the
@@ -502,11 +665,22 @@ because both sessions share `ownerUserId` or that owner is admin.
 A16. An admin can list and fetch each SQ2 resource, including archetype,
 kungfu, rail, and guidance content. A user or session principal receives the
 unknown 404 for every one. Archetype MCP entries expose sorted environment
-names but never commands, arguments, values, or host paths.
+names but never commands, arguments, values, or host paths. Fixtures place a
+secret-bank value, PEM block, token assignment, Tightbeam base path, home path,
+symlink, `..`, receipt, and non-allowlisted kungfu document in every admitted
+content source; SR6 redacts or excludes each and preserves ordinary prose.
+A17. The wire-schema suite validates every R7/R7a item against its exact JSON
+types, nullability, nested keys, and enum domain. It randomizes input map and
+set order 1,000 times and requires byte-identical item serialization and
+dependency digests. Semantic sequences retain their declared order.
+A18. Facts and critical-state rows have immutable cursors, complete R7 wire
+schemas, AU4 visibility tests, and exactly one R8 state mapping. The suite
+fails if either companion firehose class is absent from the adopted registry.
 
-## Spirit questions for Mike (the PO's quiz list)
+## Open questions — Spirit questions for Mike
 
-SQ1. The org-token GET identity carrier (AU2): design a reviewed header
+SQ1. **Open; blocks M4 transport only.** The org-token GET identity carrier
+(AU2): design a reviewed header
 scheme so the CLI can hit GETs directly, or keep CLI reads on dispatch
 indefinitely? (Interim posture is safe; this is about ergonomics.)
 
@@ -516,14 +690,16 @@ installed kungfu, safe config values, and first-class archetype, kungfu, rail,
 and guidance content. The R7/R7a closed field lists, SR2/SR5 exclusions, and
 AU4 admin-only row are the ruling's security boundary.
 
-SQ3. Compatibility alias retirement: aggressive (retire when Clawline+ATC
+SQ3. **Open; non-blocking for v1.** Compatibility alias retirement: aggressive (retire when Clawline+ATC
 migrate) or indefinite tolerance?
 
-SQ4. Sequencing: does the REST plane ship before, with, or after the
+SQ4. **Open; blocks migration scheduling, not contract review.** Sequencing:
+does the REST plane ship before, with, or after the
 firehose socket? They share serializers, so building REST first makes the
 firehose payloads nearly free; confirm that ordering instinct.
 
-SQ5. Tailnet identity: wi_bdf9a537 (gateway behind tailscale serve) would
+SQ5. **Open; non-blocking because v1 remains bearer-only.** Tailnet identity:
+wi_bdf9a537 (gateway behind tailscale serve) would
 add tailscale identity headers — should AU1 anticipate accepting tailnet
 identity as a principal source once that lands, or stay
 bearer-credential-only in v1?
