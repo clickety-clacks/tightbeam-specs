@@ -13,6 +13,44 @@ Source baselines:
 - revision-verification `origin/main` at commit
   `8d0baa789c4aea1513a6d77ed53a6d54d76d1fb6`.
 
+## Spec homing
+
+The canonical specification identity is
+`tightbeam-specs/wake-delivery-conservation.md`. Work item
+`wi_113d569f-7aff-412b-aec3-0c21f2e87f40` and producer assignment
+`asg_3c5b8c9e-0da8-428f-9710-52582557d273` own its revision and review history.
+Each review and build handoff shall bind the canonical file by a SHA-256 artifact and
+the commit that contains those bytes. Editing occurs only in a writer-owned
+`~/.tightbeam/work/<workspace>` clone on a non-main branch; shared checkouts are not
+canonical edit surfaces.
+
+This specification has these governing relationships:
+
+- It amends `coordination-fabric-v1.md` for the ordinary prompt-wake act edge while
+  preserving that specification's classifier, batcher, delivery-rule, and ceiling
+  semantics.
+- It amends the fault-bubbling and turn-end portions of `production-machine-v1.md` by
+  adding wake outcomes and a separate typed Bubble-notice dedupe identity. The existing
+  capable-parent climb and terminal owner alert remain controlling.
+- It amends `supervision-v1.md` only with R11's typed GAGGED consumption. The existing
+  entitlement and prod ladder remain controlling after that gate.
+- It must be read with `escalation-delivery-v1.md`. That specification's notification
+  wake producers, `targetGate`, and durable scheduling remain controlling; this
+  specification replaces their split post-enqueue fired mark with R1-R4's atomic
+  admission seam.
+- It supersedes only the Bug A wake-outcome and sender-notice clauses in the reviewed
+  S2c retirement amendment, artifact `art_aac9cafc`, while preserving its binding rule:
+  queued carrier cancellation, its terminal outcome, and its sender-visible final cause
+  commit in the retirement transaction, and retirement creates no automatic retry. The
+  S2c managed-process clauses for `wi_a8a7cca0-9642-46e6-b9c5-0e52443d0ab9` remain
+  outside this specification.
+- `wake-known-unrunnable-recipient-amendment.md` is a proposed sibling amendment. It does
+  not govern this specification until its own frozen hash receives the required clean
+  review and handoff.
+
+No other specification is superseded. A build that changes one of these relationships
+shall amend this canonical file and publish a new content hash before implementation.
+
 ## Goal
 
 Tightbeam conserves the intent carried by an ordinary prompt wake from scheduling to
@@ -87,14 +125,24 @@ the closed controller order omitted the live prompt batcher, and R18 did not def
 shape-stamped migration, typed `alert_user_unknown` cancellation, or dependent schema
 objects. This revision closes those gaps in R1, R4, R18, the Architecture, A8, and A10.
 
+Fresh stronger-model review `asg_f9dbe0e5-4bda-46f6-b44b-caba2ce78700` returned the
+changes-requested verdict `att_9ea2ff40-df43-4b0b-b023-6f4423005b41` and report
+`art_e760ebbf`. It confirmed the batcher and stamped-migration direction. It found four
+remaining blocking gaps: Bubble's legacy dedupe occupied `turns.wakeId`; retirement,
+unclaimable, and boot terminal writers bypassed the wake-outcome transaction; the
+migration did not mechanically name the complete affected-object registry; and the
+canonical spec set was not homed. It also corrected two baseline citations. This
+revision closes those gaps in Spec homing, R5-R9, R15-R18, the Architecture, A2-A3, and
+A6-A8.
+
 ### Baseline reconciliation
 
 | Limb | Source evidence | Ruling in this specification |
 |---|---|---|
 | A — cancel versus admission | `Wakes.cancel_in_txn/3` accepts a pending row. The scheduler runs the live digest batcher before due-row selection; its group transaction creates a carrier and commits typed member replacement (`lib/tightbeam/wakes.ex:1461-1495,1701-1761,2166-2170`). Legacy timed prompt wakes still deliver and then mark fired; condition/fallback wakes instead mark and enqueue in one transaction (`lib/tightbeam/wakes.ex:1-19,2168-2209,2538-2636`). The shared gateway transaction also admits and settles supervision controllers, consumes unavailable controllers, re-arms routing brackets, and optionally marks a process wake (`lib/tightbeam/gateway.ex:1032-1229`). Work-blocked suppression cancels and refunds a supervision wake before delivery (`lib/tightbeam/wakes.ex:2213-2288`). | R1-R4 replace only the split prompt admission edge. They retain these controllers in one closed order and make their existing cancellation outcomes precede delivery outcomes. A10 proves each controller survives. |
 | B — outcomes, retry, and bubble | Wake state remains `pending | fired | canceled`; turn state is durable and `wakeId` is unique, but the ledger explicitly performs no automatic retry (`lib/tightbeam/wakes.ex`; `lib/tightbeam/ledger.ex`). Bubble derives owner, lineage, cause, and its durable sweep cursor from turns only (`lib/tightbeam/productions/bubble.ex:37-328`; `lib/tightbeam/productions/bubble_sweeper.ex:27-139`). | R5-R10 add typed wake outcomes and bounded retries. Null-turn final outcomes carry a scheduling-time alert route. Bubble consumes them through a second durable cursor while retaining the existing engine and owner-alert path. |
-| C — queued turn and model swap | The ledger reads the session's selected model and harness when it claims a queued turn, and the test queues before tuning then proves the live selection was stamped (`lib/tightbeam/ledger.ex:179-271`; `test/ledger_test.exs:104-133`). Model and harness changes use the session lane's turn boundary (`lib/tightbeam/session_lane.ex:90-111`; current-main `lib/tightbeam/gateway.ex:4229-4235,4361-4403`; `test/gateway_test.exs:3764-3883,5117-5257`). | R14 retains the fixed structure. A5 adds the missing combined wake regression. No model-switch mechanism is added. |
-| D — quiescence | The incident row names later owner activity as the stale-premise event (`att_48fa113d-9907-4126-aff5-a1e0449b25e4`). Current main adds assignment liveness checkpoint binding for a self-scheduled wake, but it does not compare owner activity before delivery (`lib/tightbeam/gateway.ex:3535-3569`; `lib/tightbeam/supervision.ex:253-294`). The checkpoint binding is absent from 0.1.7. | R12-R13 add one typed owner-activity invalidation guard. Existing checkpoint semantics remain. |
+| C — queued turn and model swap | The ledger reads the session's selected model and harness when it claims a queued turn, and the test queues before tuning then proves the live selection was stamped (`lib/tightbeam/ledger.ex:179-271`; `test/ledger_test.exs:104-133`). Model and harness changes use the session lane's turn boundary (`lib/tightbeam/session_lane.ex:90-111`; current-main `lib/tightbeam/gateway.ex:4435,4530,4689`; `test/gateway_test.exs:3764-3883,5117-5257`). | R14 retains the fixed structure. A5 adds the missing combined wake regression. No model-switch mechanism is added. |
+| D — quiescence | The incident row names later owner activity as the stale-premise event (`att_48fa113d-9907-4126-aff5-a1e0449b25e4`). Current main adds assignment liveness checkpoint binding for a self-scheduled wake, but it does not compare owner activity before delivery (`lib/tightbeam/gateway.ex:3735-3837`; `lib/tightbeam/supervision.ex:253-294`). The checkpoint binding is absent from 0.1.7. | R12-R13 add one typed owner-activity invalidation guard. Existing checkpoint semantics remain. |
 | E — reliable handoff | Dispatch already commits the assignment, prompt echo, and turn in one transaction (`lib/tightbeam/assignments.ex:540-579,596-623`). An arbitrary wake remains a hint whose later carrier failure is not conserved, as recorded in `att_08870951-f045-42dc-844c-bc0addf16fba`. | Atomic dispatch remains authoritative. This specification closes only the ordinary wake carrier. |
 | F — GAGGED versus negligence | The prod left-hand side checks terminal existence but does not read terminal status or failure class; a failed terminal can match the negligence ladder (`lib/tightbeam/supervision.ex:854-905,1000-1025,1114-1140`). | R11 makes the typed terminal failure a higher-priority, consumed fact. |
 | G — O6 | O6 commits `078919d`, `67e1bcf`, `f64ffa7`, `81fbc2d`, and merge `ba5952b` are ancestors of both baselines. O6 regression tests remain at `test/gateway_test.exs:6452-6765`. | O6 is superseded for this work and stays closed. |
@@ -158,16 +206,26 @@ the existing Bubble production consumes the new `undeliverable` cause.
   Target absence, an unsafe failure, and exhaustion of the retry schedule can produce it.
 - **Retry-safe failure**: a typed `could_not_run` result that proves the adapter did not
   admit the prompt to an inference run. Text matching does not supply this proof.
+- **Carrier-canceled failure**: a typed `carrier_canceled` result for an admitted but
+  still-queued wake turn canceled because its recipient retired. The carrier did not
+  run, but retirement is an explicit final disposition and authorizes no automatic
+  retry.
 - **GAGGED**: the durable derived condition that the terminal under supervision is a
   mechanical `failed`, `failed_unknown`, or wake-linked `canceled` turn.
-  `could_not_run`, `run_failed`, `run_canceled`, and `outcome_unknown` are runtime
-  GAGGED classes; `legacy_outcome_unknown` is the migration class. GAGGED is not an
-  agent-authored standing fact and does not assert `work-blocked`.
+  `could_not_run`, `run_failed`, `run_canceled`, `carrier_canceled`, and
+  `outcome_unknown` are runtime GAGGED classes; `legacy_outcome_unknown` is the
+  migration class. GAGGED is not an agent-authored standing fact and does not assert
+  `work-blocked`.
 - **Negligence prod**: the existing supervision prompt that says a holder's turn ended
   without a filing or continuation (`lib/tightbeam/supervision.ex:3856-3865`).
 - **Logical wake bubble**: the existing Bubble climb with one undeliverable wake as its
   cause. Failed notice turns can move that one climb to another recipient; they do not
   create another wake cause.
+- **Bubble notice identity**: the typed tuple
+  `{noticeKind='bubble', noticeCauseKind, noticeCauseId, recipientSessionKey}` stored on
+  a Bubble notice turn. It is unique per cause and recipient. Its turn has null
+  `wakeId` and `wakeAttempt`, so it is not a wake carrier and cannot create a wake
+  delivery outcome.
 - **Wake Bubble route**: immutable context captured when a prompt wake is scheduled. It
   names the user who receives a terminal alert and, when one exists, the resolved target
   session whose lineage starts the climb. A role name is presentation and cause context;
@@ -180,6 +238,10 @@ the existing Bubble production consumes the new `undeliverable` cause.
   `coordination-fabric-v1-phase1-v4`. It validates the predecessor name, applies the R18
   mapping under exclusive database custody, and stamps the successor only after its
   checks pass.
+- **Terminalization bridge**: `Ledger.terminalize_in_txn/3`. It performs one guarded
+  terminal update with `RETURNING`, then calls the `Wakes` terminal mutation for each
+  returned wake-linked turn before the caller can commit. Session-lane completion,
+  retirement drain, the unclaimable backstop, and boot recovery use this bridge.
 - **Owner turn admitted**: a row in `turns` whose `origin='user:<ownerUserId>'`, whose
   target session has that `ownerUserId`, and whose `seq` is greater than a stored cursor.
   Terminal status does not change this activity fact.
@@ -206,7 +268,7 @@ the existing Bubble production consumes the new `undeliverable` cause.
 4. A retry can reuse the first attempt's prompt echo and message id. `turns.messageId`
    does not have a uniqueness constraint.
 5. The current gateway identifies checkout, session, and prompt failure stages
-   (`lib/tightbeam/gateway.ex:1874-2033`). Adapter protocols do not all prove whether a
+   (`lib/tightbeam/gateway.ex:1874-2033`). Some adapter protocols do not prove whether a
    prompt-stage inference run was admitted. R7 treats absent proof as
    `outcome_unknown`.
 6. Product composition supplies the finite retry delays. This specification pins the
@@ -269,8 +331,8 @@ The database shall reject a second turn for the same identity and a second queue
 running turn for the same wake.
 
 A retry shall reuse the source wake's settled controller, attribution, and condition or
-fallback provenance. It shall not charge or settle a supervision controller again, re-arm
-a routing bracket again, refund a prod, or write a second `firedBy` lifecycle event.
+fallback provenance. It shall retain the existing supervision charge and settlement,
+routing-bracket arm, prod accounting, and single `firedBy` lifecycle event.
 
 ### R4 — Check and act are indivisible
 
@@ -322,7 +384,7 @@ The scheduling transaction for a prompt wake shall store one Wake Bubble route. 
 derive `bubbleAlertUserId` in this order: typed user origin; owner of the typed session
 origin; linked work-item owner; linked assignment's work-item owner; target owner. It
 shall store the target session resolved in that transaction as
-`bubbleStartSessionKey`, or null when no session resolves. If none of those durable rows
+`bubbleStartSessionKey`, or null when no session resolves. If this search identifies no
 supplies an alert user, scheduling shall return `unknown_wake_alert_user` and insert no
 wake.
 
@@ -345,19 +407,29 @@ equals the wake origin, or the caller owns the target session. It shall return
 
 ### R6 — Turn terminalization settles wake state atomically
 
-When a wake-linked turn wins its terminal CAS, `SessionLane` shall call the `Wakes`
-terminal mutation seam inside the same transaction.
+Each runtime turn terminal writer shall call `Ledger.terminalize_in_txn/3`. The bridge
+shall perform the writer's guarded terminal update with `RETURNING` and shall call
+`Wakes.settle_terminal_rows_in_txn/4` for the returned rows before the transaction can
+commit. A guard loser shall change no turn and append no wake outcome.
 
-A delivered terminal shall append one `handled` outcome. A `failed`, `failed_unknown`,
-or wake-linked `canceled` terminal shall append one `failed` outcome. The canceled case
-shall append `undeliverable` in that transaction. A terminal CAS loser shall append no
-wake outcome.
+`SessionLane` shall use the bridge for a running turn's normal terminal CAS.
+`Ledger.drain_queued_for_retire_in_txn` shall use it inside the session-retirement
+transaction. `Ledger.fail_unclaimable` shall use it with the existing no-active-session
+predicate in the guarded update. `Ledger.recover_running` shall use it for each
+running-to-`failed_unknown` boot transition. A failure while settling one returned
+wake-linked row shall roll back that writer's turn updates and wake outcomes together.
+
+For a returned row with null `wakeId` and `wakeAttempt`, the bridge shall commit the
+turn terminal only. This includes a Bubble notice turn. For a wake-linked delivered
+terminal, `Wakes` shall append one `handled` outcome. For a wake-linked `failed`,
+`failed_unknown`, or `canceled` terminal, it shall append one `failed` outcome. It shall
+apply R8 retry or finality from the stored class in that transaction.
 
 ### R7 — Failure classification is typed at the run boundary
 
-The gateway shall persist one of `could_not_run`, `run_failed`, or `outcome_unknown` on a
-failed turn and its wake-linked failed outcome. The session lane shall persist
-`run_canceled` when a wake-linked admitted turn wins the existing canceled-terminal CAS.
+The terminalization bridge shall persist one of `could_not_run`, `run_failed`,
+`run_canceled`, `carrier_canceled`, or `outcome_unknown` on a runtime failed terminal
+and its wake-linked failed outcome.
 
 Checkout failure and session-establishment failure shall produce `could_not_run`.
 Prompt-stage failure shall produce `could_not_run` only when the adapter returns typed
@@ -368,11 +440,31 @@ produce `outcome_unknown`. Boot recovery and a lost runner outcome shall also pr
 
 A runtime `could_not_run` or `run_failed` terminal shall use turn status `failed`. A
 runtime `outcome_unknown` terminal shall use `failed_unknown`. A canceled carrier shall
-retain turn status `canceled` and use failure class `run_canceled`.
+retain turn status `canceled`. A running carrier canceled through the existing
+current-run seam shall use `run_canceled`. A queued carrier canceled by the retirement
+drain, or by the unclaimable backstop with reason `session_retired`, shall use
+`carrier_canceled`.
+
+The unclaimable backstop reason `no_session` shall use status `failed` and class
+`could_not_run` for a wake-linked row. A runtime guard prevents a new wake carrier from
+entering that shape; the classification covers a row admitted before the guard existed.
+
+The terminalization source shall supply this closed cause and principal mapping:
+
+| Source | Expected source state | Terminal/class | Outcome cause | Principal |
+|---|---|---|---|---|
+| session lane delivered | `running` | `delivered` / null | `turn_terminal`, `turn:<seq>` | `process:tightbeam` |
+| session lane failed | `running` | class-derived `failed` or `failed_unknown` | `turn_terminal`, `turn:<seq>` | `process:tightbeam` |
+| current-run cancellation | `running` | `canceled` / `run_canceled` | `turn_terminal`, `turn:<seq>` | `process:tightbeam` |
+| retirement drain | `queued` | `canceled` / `carrier_canceled` | `recipient_retired`, `session:<sessionKey>` | authenticated retirement principal |
+| unclaimable `session_retired` | `queued` plus no active session | `canceled` / `carrier_canceled` | `recipient_unclaimable`, `session:<sessionKey>:session_retired` | `process:tightbeam` |
+| unclaimable `no_session` | `queued` plus no session row | `failed` / `could_not_run` | `recipient_unclaimable`, `session:<sessionKey>:no_session` | `process:tightbeam` |
+| boot recovery | `running` | `failed_unknown` / `outcome_unknown` | `boot_recovery`, `turn:<seq>` | `process:tightbeam` |
 
 The implementation shall derive an adapter failure class exclusively from the typed
-stage and adapter run-admission disposition. It shall derive `run_canceled` exclusively
-from the existing canceled-terminal CAS.
+stage and adapter run-admission disposition. It shall derive `run_canceled` only from
+the existing current-run canceled-terminal CAS and `carrier_canceled` only from the two
+closed queued-recipient paths above.
 
 ### R8 — Retry is finite, backoff-bound, and replay-safe
 
@@ -380,22 +472,28 @@ For the shipped retry schedule `[5000, 30000, 120000]`, a wake can have attempt 
 `0`, `1`, `2`, and `3`. The scheduler shall make attempt `n + 1` eligible at
 `failedAt + retryDelays[n]` for a `could_not_run` failure.
 
-A `run_failed`, `run_canceled`, or `outcome_unknown` failure shall transition the wake to
-`undeliverable` in the terminal transaction. The scheduler shall create no retry for
-those classes.
+A `run_failed`, `run_canceled`, `carrier_canceled`, or `outcome_unknown` failure shall
+transition the wake to `undeliverable` in the terminal transaction. The scheduler shall
+create no retry for those classes. This preserves the reviewed retirement rule that an
+agent, not automatic replay, decides whether to send new intent after recipient
+retirement.
 
 A `could_not_run` failure on attempt `3` shall append `undeliverable` in the terminal
 transaction. A final wake outcome shall make later scheduler passes inert.
 
-### R9 — Exhaustion starts one logical Bubble cause
+### R9 — Final undeliverability starts one logical Bubble cause
 
 The Bubble production shall ignore a wake-linked failed turn while that wake has a
 retry-eligible failed outcome.
 
 One runtime `undeliverable` outcome shall admit one logical Bubble cause keyed by the
-wake id. Bubble notice turns shall use deterministic identity
-`bubble:wake:<wakeId>:<recipientSessionKey>`. Re-recognition of the outcome shall reuse
-that identity.
+wake id. A notice for that cause shall store Bubble notice identity
+`{'bubble','wake',<wakeId>,<recipientSessionKey>}`. A notice for an existing turn cause
+shall store `{'bubble','turn',<causeTurnSeq>,<recipientSessionKey>}`. The database shall
+reject a second turn for either tuple. Each notice turn shall keep null `wakeId` and
+`wakeAttempt`. R5-R8 shall treat it as a non-wake turn: the bridge shall commit its turn
+terminal only, and the retry and wake-cause queries shall select linked wake attempts.
+Its own failed or canceled terminal shall continue the existing capable-parent climb.
 
 Bubble shall accept a committed runtime `undeliverable` outcome through two inputs: a
 post-commit cast naming the outcome id and a sweep of outcome ids above the Wake outcome
@@ -404,7 +502,7 @@ cursor. The sweep shall run at boot and on the existing Bubble tick. It shall ad
 ordered append-only batch only after it recognizes the batch. It shall exclude
 `causeKind='legacy_import'`. A crash after the final
 outcome commits and before notice admission or cursor advance shall delay that logical
-cause; it shall not lose or duplicate it.
+cause; replay shall preserve one logical cause and one notice per recipient.
 
 For an outcome with a linked turn, Bubble shall derive the starting session and alert
 user from that turn and session rows. For a null-turn outcome, Bubble shall use the
@@ -412,16 +510,17 @@ stored Wake Bubble route. When `bubbleStartSessionKey` names a session row, Bubb
 start with that session's existing lineage and shall skip inactive rungs through the
 existing resolver. When it is null or names no session row, Bubble shall go directly to
 the existing terminal-alert transaction for `bubbleAlertUserId`. An absent target owner
-shall not block or redirect this route.
+shall leave this stored route controlling.
 
 Notice turns for a wake cause shall carry `requestRef='bubble:wake:<wakeId>'`. Bubble
 shall re-derive their prompt and terminal alert from the final outcome, its linked turn
-when present, and its stored route. It shall not parse prompt text or substitute the role
-name as a session lineage key.
+when present, and its stored route. Those structured rows shall be the sole prompt and
+lineage inputs.
 
 The first sentence of a wake Bubble notice shall name the wake id and the final linked
 turn sequence, when one exists. Existing non-wake Bubble causes shall keep their current
-turn-sequence identity and routing behavior.
+turn-sequence identity and routing behavior, but shall store that identity in the typed
+notice columns instead of `turns.wakeId`.
 
 ### R10 — Handled and undeliverable are mutually final
 
@@ -453,8 +552,8 @@ resolved owner user id and the greatest admitted owner-turn sequence visible in 
 transaction.
 
 For an accepted role target, the guard shall pin the wake's stored session key as its
-delivery target. A later role rebind shall not retarget that guarded wake. Unguarded role
-wakes retain their existing delivery-time re-resolution.
+delivery target. A guarded wake shall keep that target after a later role rebind.
+Unguarded role wakes retain their existing delivery-time re-resolution.
 
 The wire field shall be `invalidationKind='ownerTurnAdmitted'`. The CLI spelling shall be
 `--cancel-on-owner-activity`. Missing this flag shall preserve ordinary wake behavior.
@@ -486,8 +585,15 @@ The existing session lane shall remain the sole model-migration path.
 
 `Tightbeam.Wakes` shall be the only module that inserts wake delivery outcomes or changes
 the wake row for admission, cancellation, invalidation, retry eligibility, handling, or
-undeliverability. Gateway, SessionLane, recovery, and migration code shall call a `Wakes`
-function inside their existing transaction.
+undeliverability. `Ledger.terminalize_in_txn/3` shall be the only runtime turn-terminal
+update bridge. It shall call a `Wakes` function inside the same transaction for each
+returned wake-linked row. Gateway, SessionLane, retirement, the unclaimable backstop,
+and boot recovery shall use these seams.
+
+The R18 transition may materialize its closed successor rows through `Schema` and the
+named `Wakes` migration helpers. That pre-boot copy is not a runtime terminal event. The
+v3-to-v4 transition is the sole migration path authorized to insert a wake outcome or
+normalize a wake-linked terminal row.
 
 ### R16 — Cause and principal survive each transition
 
@@ -497,13 +603,21 @@ forms. Scheduler admission, retry, terminal settlement, GAGGED consumption, inva
 and Bubble transitions shall use `process:tightbeam`; the source wake retains its creator
 and origin principal.
 
+The retirement drain shall retain the authenticated retirement principal on its
+`recipient_retired` failed and final outcomes. The unclaimable and boot-recovery paths
+shall use `process:tightbeam`. A terminalization caller shall supply its closed source
+tag; neither `Ledger` nor `Wakes` shall infer a cause or principal from the error string.
+
 ### R17 — Restart recovery preserves eligibility
 
 Gateway restart shall reconstruct due retry work from wake outcomes and clocks while
 preserving attempt numbers, `retryAt`, and the unique final outcome.
 
-A running wake turn recovered as `failed_unknown` shall enter R8's immediate
-`undeliverable` path and shall produce zero replacement turns.
+A running wake turn recovered as `failed_unknown` shall use R6's terminalization bridge,
+store `outcome_unknown`, enter R8's immediate `undeliverable` path, and produce zero
+replacement turns. A boot-recovery transaction failure while writing one linked outcome
+shall roll back the selected running-turn transitions and leave them eligible for the
+next exact recovery pass.
 
 Boot recovery shall start the existing Bubble sweeper with both cursor feeds. The
 `bubble:wake-outcome` feed shall resume after its committed outcome id and shall
@@ -530,11 +644,18 @@ apply this closed mapping:
 | `pending` prompt wake without a turn whose alert user cannot be derived | Insert the typed `alert_user_unknown` cancellation below; change the wake to `canceled` at the same migration timestamp; backfill null-turn `attempt` plus `undeliverable` with `causeKind='legacy_import'`; record `wake_migration_conflict` with the prior row and reason `alert_user_unknown`. |
 | `canceled` wake without a turn | Preserve it without a delivery outcome. Its typed cancellation remains final. |
 | `fired` wake without a turn | Backfill null-turn `attempt` plus `undeliverable` with `causeKind='legacy_import'`, a null failure class, and no Bubble route. |
+| exact legacy Bubble notice turn | When `origin='process:tightbeam'`, `requestRef='bubble:<decimalTurnSeq>'`, `wakeId=requestRef || ':' || sessionKey`, and no wake row has that id, store `noticeKind='bubble'`, `noticeCauseKind='turn'`, the decimal turn sequence as `noticeCauseId`, and the target as `noticeRecipientSessionKey`; set `wakeId` and `wakeAttempt` null; create no wake outcome. |
 | unlinked turn in `failed` or `failed_unknown` | Preserve its status, set `failureClass=legacy_outcome_unknown`, and create no wake outcome. |
 | unlinked turn in `queued`, `running`, `delivered`, or `canceled` | Preserve it with a null failure class and create no wake outcome. |
 | linked turn, wake state `fired` | Set `wakeAttempt=0`; backfill `attempt` and `admitted`; then apply the terminal mapping below. |
 | linked turn, wake state `pending` | Normalize the wake to `fired`, record its prior state in `wake_migration_conflict`, and apply the linked-turn mapping. The turn is durable admission evidence. |
 | linked turn, wake state `canceled` | Preserve the wake and cancellation rows, record both prior states in `wake_migration_conflict`, and apply the linked-turn mapping. |
+
+The transition shall treat a non-null legacy `turns.wakeId` as a wake link only when a
+`wakes` row has that exact id. It shall treat it as a Bubble notice only when the complete
+typed relation above holds. Another non-null legacy value has no lawful interpretation;
+the transition shall return `ShapeError`, roll back, and preserve v3 rather than infer a
+cause from the string.
 
 The terminal mapping is also closed. `delivered` gains `handled`. `failed` and
 `failed_unknown` retain their status, gain failure class `legacy_outcome_unknown`, and
@@ -543,7 +664,7 @@ gain `failed` plus `undeliverable`. `canceled` retains its status, gains failure
 turn under a `fired` wake retains its status and continues through normal claim or boot
 recovery. A queued or running turn under a `canceled` wake is normalized to
 `failed_unknown` with failure class `legacy_outcome_unknown` and an ended-at migration
-time; it gains `failed` plus `undeliverable` and never runs.
+time; it gains `failed` plus `undeliverable`, and the claim query excludes it.
 
 The `alert_user_unknown` cancellation shall use this closed provenance:
 
@@ -573,18 +694,38 @@ outcome. A null-turn legacy `undeliverable` has no `failed` row, so its `failure
 and `wake-get.failureClass` shall be null. Its `legacy_import` cause records why the
 outcome exists.
 
-The transition shall recreate each index, trigger, and foreign-key relation that depends
-on a rebuilt table before it changes the shape stamp. The set includes the existing
-`turns_pending`, `turns_session`, `turns_unpublished`, `turns_job_ref`, and
-`turns_assignment_id` indexes; `supervision_fired_lineage_turn_immutable_update` and
-`supervision_fired_lineage_turn_immutable_delete`; the
-`supervision_liveness_checkpoint_bindings.sourceTurnSeq` relation;
-`supervision_checkpoint_binding_insert_coherent`;
-`wakes_cancellation_state`, `wake_cancellations_pending_insert`, and
-`wakes_typed_cancellation_required`; and the new wake-delivery indexes and triggers. The
-transition shall run `PRAGMA foreign_key_check` and `PRAGMA integrity_check` against the
-successor objects. A non-empty foreign-key result or an integrity result other than `ok`
-shall roll back the transaction and preserve the predecessor stamp.
+`Schema.successor_registry/0` shall be the complete, ordered transition input and the
+complete clean-v4 bootstrap input. It shall concatenate the same exported object records
+used by `Wakes.ensure_schema/1`, `Ledger.ensure_schema/1`,
+`Schema.ensure_supervision_liveness_v1_in_txn/2`, and the supervision enforcement pass.
+Each record shall contain `{owner, type, name, sql, dependsOn}`. A table-level foreign
+key shall appear in its table's record; an index or trigger shall have its own record.
+The product shall contain no second DDL string for an owned v4 object.
+
+The transition shall compute the dependency closure whose `dependsOn` contains
+`wakes`, `wake_cancellations`, or `turns`. That closure necessarily contains the five
+existing turn indexes; the wake due, delivery, condition, and cancellation-state
+indexes; the pending-insert and typed-cancellation triggers; the supervision sidecar,
+pending-controller, fired-lineage sidecar, fired-lineage turn, and checkpoint-binding
+triggers; the checkpoint binding's `sourceTurnSeq` foreign key; and each new notice,
+outcome, conflict, and append-only object. The registry, not this explanatory list, is
+the complete authority.
+
+For each table record in that closure, the transition shall create a temporary
+successor and copy its rows before it drops the predecessor. R18's closed mapping shall
+change only copied `wakes`, `wake_cancellations`, and `turns` rows, and it shall populate
+the new outcome and conflict tables. The transition shall copy another affected child
+table value-for-value. It shall drop predecessor indexes and triggers before tables,
+drop child tables before parent
+tables, rename parent successors before child successors, and then create indexes and
+triggers in registry dependency order.
+
+Before it changes the stamp, the transition shall require one normalized
+`sqlite_master` row matching each registry record, no duplicate owned name, an empty
+`PRAGMA foreign_key_check` result, and an `ok` `PRAGMA integrity_check` result. A
+missing, extra duplicate, or mismatched owned object shall roll back the transaction and
+preserve the predecessor stamp. Post-commit `Schema.ensure_all/1` and a clean v4 restart
+shall validate that same registry without adding an object.
 
 ### R19 — Guidance follows the implemented mechanism
 
@@ -630,17 +771,27 @@ Rebuild `turns` in the existing pre-boot schema migration to replace table-level
 wakeAttempt INTEGER NULL CHECK (wakeAttempt >= 0),
 failureClass TEXT NULL
   CHECK (failureClass IN
-    ('could_not_run','run_failed','run_canceled','outcome_unknown',
-     'legacy_outcome_unknown'))
+    ('could_not_run','run_failed','run_canceled','carrier_canceled','outcome_unknown',
+     'legacy_outcome_unknown')),
+
+noticeKind TEXT NULL CHECK (noticeKind = 'bubble'),
+noticeCauseKind TEXT NULL CHECK (noticeCauseKind IN ('turn','wake')),
+noticeCauseId TEXT NULL CHECK (length(noticeCauseId) > 0),
+noticeRecipientSessionKey TEXT NULL REFERENCES sessions(sessionKey)
 ```
 
 The rebuilt table adds a check that `failed` and `failed_unknown` rows carry a non-null
-failure class; a wake-linked `canceled` row carries `run_canceled` or
-`legacy_outcome_unknown`; and every other turn row carries a null failure class.
+failure class; a wake-linked `canceled` row carries `run_canceled`,
+`carrier_canceled`, or `legacy_outcome_unknown`; and another terminal row carries a null
+class unless R7 assigns one.
 Another table check requires `wakeId` and `wakeAttempt` to be null together or populated
 together. This prevents the nullable-column behavior of a unique index from admitting
 an unnumbered wake turn. The rebuilt table also declares
 `UNIQUE(seq, wakeId, wakeAttempt)` for the outcome link below.
+
+A second check requires the four notice columns to be null together or populated
+together. A third check forbids a row from carrying both a wake-attempt identity and a
+notice identity. An ordinary non-wake, non-notice turn can leave both identities null.
 
 Create these indexes after the rebuild:
 
@@ -652,6 +803,10 @@ CREATE UNIQUE INDEX turns_wake_attempt
 CREATE UNIQUE INDEX turns_one_active_per_wake
   ON turns(wakeId)
   WHERE wakeId IS NOT NULL AND status IN ('queued','running');
+
+CREATE UNIQUE INDEX turns_notice_dedupe
+  ON turns(noticeKind, noticeCauseKind, noticeCauseId, noticeRecipientSessionKey)
+  WHERE noticeKind IS NOT NULL;
 ```
 
 Add the append-only outcome table:
@@ -668,13 +823,14 @@ CREATE TABLE wake_delivery_outcomes (
   retryAt      INTEGER NULL,
   failureClass TEXT NULL CHECK
                  (failureClass IN
-                   ('could_not_run','run_failed','run_canceled','outcome_unknown',
-                    'legacy_outcome_unknown')),
+                   ('could_not_run','run_failed','run_canceled','carrier_canceled',
+                    'outcome_unknown','legacy_outcome_unknown')),
   bubbleAlertUserId TEXT NULL,
   bubbleStartSessionKey TEXT NULL,
   causeKind    TEXT NOT NULL CHECK
                  (causeKind IN
                    ('scheduler_due','retry_due','turn_terminal','target_unresolvable',
+                    'recipient_retired','recipient_unclaimable','boot_recovery',
                     'retry_exhausted','unsafe_failure','legacy_import')),
   causeId      TEXT NOT NULL CHECK (length(causeId) > 0),
   principal    TEXT NOT NULL CHECK
@@ -759,7 +915,10 @@ The mutation seam uses these cause pairs:
 |---|---|---|
 | initial `attempt` and `admitted` | `scheduler_due` | `wake:<wakeId>` |
 | retry `attempt` and `admitted` | `retry_due` | `outcome:<priorFailedOutcomeId>` |
-| `handled` and `failed` | `turn_terminal` | `turn:<turnSeq>` |
+| session-lane `handled` and `failed` | `turn_terminal` | `turn:<turnSeq>` |
+| retirement `failed` and `undeliverable` | `recipient_retired` | `session:<sessionKey>` |
+| unclaimable `failed` and any immediate `undeliverable` | `recipient_unclaimable` | `session:<sessionKey>:<closedReason>` |
+| boot-recovery `failed` and `undeliverable` | `boot_recovery` | `turn:<turnSeq>` |
 | target-resolution `undeliverable` | `target_unresolvable` | `role:<targetRole>` when a role was requested; otherwise `session:<sessionKey>` |
 | exhausted `undeliverable` | `retry_exhausted` | `outcome:<finalFailedOutcomeId>` |
 | unsafe `undeliverable` | `unsafe_failure` | `outcome:<failedOutcomeId>` |
@@ -884,16 +1043,26 @@ the exact failed row's retry eligibility in one transaction. It does not rerun i
 prompt controllers. The uniqueness constraints make replay return the existing
 admission.
 
-Turn finalization changes from a ledger-only terminal transaction to this composition:
+Turn finalization changes from separate terminal writers to this composition:
 
-1. `Ledger.finish_in_txn` wins the running-to-terminal CAS.
-2. `Wakes.finish_prompt_attempt_in_txn` appends `handled` or `failed`.
-3. A retry-safe failure stores the exact next `retryAt`, or appends `undeliverable` at
-   exhaustion.
-4. An unsafe failure appends `undeliverable` immediately.
-5. The existing typed harness lifecycle writer runs.
+1. The source writer calls `Ledger.terminalize_in_txn/3` with a closed source tag,
+   terminal values, and its source-specific guard.
+2. The bridge applies the guarded update with `RETURNING`. The SessionLane guard is the
+   running-to-terminal CAS. The retirement guard selects queued turns for the retiring
+   session. The unclaimable guard selects queued turns with the closed no-active-session
+   predicate. The boot guard selects running turns for recovery.
+3. For each returned wake-linked row, the bridge calls
+   `Wakes.settle_terminal_rows_in_txn/4`. A delivered row appends `handled`. A failed,
+   failed-unknown, or canceled row appends `failed` and either stores the exact retry or
+   appends `undeliverable` under R8.
+4. A returned non-wake row commits only its turn terminal state. A Bubble notice is a
+   non-wake row because its wake identity is null.
+5. The source writer adds its existing typed lifecycle effects in the same transaction.
 6. The transaction commits, then terminal publication, supervision recognition, and
    Bubble recognition run from the committed rows.
+
+A failure in steps 2-5 rolls back the source writer's returned turn rows, wake outcomes,
+and lifecycle effects together. A guard loser returns no row and creates no outcome.
 
 ### Wake Bubble route capture
 
@@ -916,9 +1085,18 @@ gateway maps checkout and session-stage failures directly to `could_not_run`. Ad
 implementations map protocol evidence to `could_not_run`, `run_failed`, or
 `outcome_unknown`. The default for absent protocol evidence is `outcome_unknown`.
 
-Bubble extends its cause parser with `bubble:wake:<wakeId>`. For a wake-linked failed
-turn, its left-hand side reads the wake's final outcome. A retry-pending failure does not
-match. An undeliverable runtime outcome matches once.
+Bubble extends its cause model with a typed wake cause. The display request reference is
+`bubble:wake:<wakeId>`, but the durable dedupe identity is the R9 notice tuple. For a
+wake-linked failed turn, its left-hand side reads the wake's final outcome. A
+retry-pending failure does not match. An undeliverable runtime outcome matches once.
+
+Gateway notice admission accepts `notice_dedupe={kind, causeKind, causeId,
+recipientSessionKey}` separately from `wake_id` and `wake_attempt`. Bubble supplies the
+notice tuple and omits both wake fields. Ledger maps the unique notice-index conflict to
+the existing already-admitted result. Existing non-wake Bubble causes retain their
+request references and prompts while moving their dedupe identity out of `turns.wakeId`.
+This prevents a notice terminal from creating a wake outcome, retry, or recursive wake
+cause.
 
 `BubbleSweeper` retains its turn cursor and adds the `bubble:wake-outcome` cursor over
 append-only outcome ids. Both the terminal cast and the outcome-id cast are hints; both
@@ -959,54 +1137,67 @@ bound.
 The application shall call `Schema.migrate_known_shape/1` before `Schema.ensure_all/1`
 and before `Wakes`, `LaneManager`, `Supervision`, or Bubble starts. The migration shall
 select its plan only from the exact stamp. For the v3 plan, the database-owner connection
-shall disable foreign-key enforcement before it begins the exclusive transaction. That
-transaction shall:
+shall disable foreign-key enforcement before it begins the exclusive transaction. The
+transition and clean-v4 bootstrap shall both consume `Schema.successor_registry/0`.
+The transaction shall:
 
 1. acquire the write lock and recheck that exactly one v3 stamp remains;
-2. create code-defined temporary v4 successors for rebuilt `wakes`,
-   `wake_cancellations`, and `turns` tables;
-3. copy existing values, add route and quiescence columns, set the linked-turn attempt
-   identity, and apply only R18's closed wake and turn normalizations;
-4. create the v4 outcome and migration-conflict tables;
+2. load the registry, reject a duplicate owned name or missing dependency, and compute
+   the complete dependency closure for each rebuilt predecessor table;
+3. create code-defined temporary v4 successors for each table in the affected closure,
+   including `wakes`, `wake_cancellations`, and `turns`, then create the new outcome and
+   migration-conflict successor tables;
+4. copy another affected child table value-for-value; add route and quiescence columns;
+   set each lawful linked-turn attempt identity; migrate each exact legacy Bubble
+   identity into the typed notice columns; and reject another non-null legacy turn wake
+   id with `ShapeError`;
 5. derive the Wake Bubble route for each preserved pending prompt wake;
 6. for each R18 `alert_user_unknown` case, insert its typed cancellation while the wake
    is pending and then change that wake to the cancellation's state and timestamp;
 7. backfill R18 outcomes and conflict rows from structured pre-normalization values;
-8. replace the predecessor tables and recreate the code-defined v4 object registry,
-   including the named turn indexes, turn-immutability triggers, typed-cancellation
-   triggers, the liveness-binding foreign-key relation, and the new outcome objects;
-9. require an empty `PRAGMA foreign_key_check` result and an `ok`
-   `PRAGMA integrity_check` result;
-10. change the single shape stamp from v3 to v4 as the final mutation and commit.
+8. drop the affected predecessor triggers and indexes in reverse dependency order,
+   then drop affected child tables before their rebuilt parents;
+9. rename successor parents before successor children, then create the registry's
+   remaining tables, indexes, and triggers in dependency order;
+10. compare normalized `sqlite_master` SQL with each registry record, reject a missing,
+    mismatched, extra duplicate, or unreachable owned object, and require an empty
+    `PRAGMA foreign_key_check` plus an `ok` `PRAGMA integrity_check`;
+11. change the single shape stamp from v3 to v4 as the final mutation and commit.
 
 After commit, the owner connection shall restore foreign-key enforcement, re-read the
-single v4 stamp, and run `Schema.ensure_all/1`. A failure before commit shall roll back
-the successor tables, copied rows, normalizations, cancellation rows, outcome rows,
-conflict rows, dependent objects, and stamp change. No database-consuming component
-shall start after that failure. A later v4 startup shall validate without running these
-steps again.
+single v4 stamp, and run `Schema.ensure_all/1`. The application shall repeat that
+validation on a clean restart. Neither validation may add or replace an object. A
+failure before commit shall roll back the successor tables, copied rows, normalizations,
+cancellation rows, outcome rows, conflict rows, dependent objects, and stamp change. No
+database-consuming component shall start after that failure. A later v4 startup shall
+validate without running the transition again.
 
 The migration reads structured row columns. It does not parse chat or error prose.
 
 ### Exact implementation surfaces
 
-- Extend `lib/tightbeam/schema.ex` with the exact v3-to-v4 shape gate, successor tables,
-  successor cancellation vocabulary, code-defined dependent-object registry, checks,
-  rollback, and final stamp change.
+- Extend `lib/tightbeam/schema.ex` with the exact v3-to-v4 shape gate,
+  `successor_registry/0`, successor tables, complete dependency closure, normalized
+  object checks, rollback, and final stamp change. Use the same registry for clean-v4
+  bootstrap and validation.
 - Amend `lib/tightbeam/application.ex` so the known-shape gate and successor validation
   finish before another database consumer starts.
 - Extend `lib/tightbeam/wakes.ex` with the outcome schema, controller-aware admission
   CAS, retry query, terminal seam, quiescence guard, Wake Bubble route, projections, and
   migration helpers. Preserve the batcher's group membership, `digest=1` carrier,
   typed member replacement, lifecycle, rollback, and before-due-selection position.
-- Extend `lib/tightbeam/ledger.ex` with `wakeAttempt`, `failureClass`, composite dedupe,
-  and finalization parameters.
-- Amend prompt delivery composition in `lib/tightbeam/gateway.ex`; remove the prompt
-  path's split `mark_fired` edge.
-- Amend `lib/tightbeam/session_lane.ex` so terminal CAS and wake settlement share one
-  transaction.
+- Extend `lib/tightbeam/ledger.ex` with `wakeAttempt`, `failureClass`, the typed notice
+  columns and unique notice dedupe, plus `terminalize_in_txn/3`. Replace each direct
+  bulk terminal writer with that bridge.
+- Amend prompt delivery and notice admission in `lib/tightbeam/gateway.ex`; remove the
+  prompt path's split `mark_fired` edge, accept `notice_dedupe` separately from wake
+  identity, and pass the authenticated retirement principal into the bridge.
+- Amend `lib/tightbeam/session_lane.ex` so the lane terminal CAS uses the bridge. Amend
+  `Ledger.drain_queued_for_retire_in_txn`, `Ledger.fail_unclaimable`, and
+  `Ledger.recover_running` so their current transactions use the same bridge.
 - Amend `lib/tightbeam/productions/bubble.ex` to recognize a runtime undeliverable wake
-  as one named cause from linked-turn or stored null-turn context.
+  as one typed cause from linked-turn or stored null-turn context and to admit each
+  notice with null wake identity plus the typed notice tuple.
 - Amend `lib/tightbeam/productions/bubble_sweeper.ex` with the append-only outcome-id
   feed and `bubble:wake-outcome` cursor while retaining its turn feed.
 - Amend `lib/tightbeam/supervision.ex` with the typed GAGGED no-match and atomic
@@ -1027,14 +1218,14 @@ surface.
 | Requirement | Implementation seam | Acceptance |
 |---|---|---|
 | R1-R4 | Batcher group transaction, Wakes admission/cancel CAS, Gateway transaction, existing prompt controllers, turn indexes | A1, A10 |
-| R5-R7 | outcome table, Wake Bubble route, Ledger failure class, SessionLane terminal transaction | A2, A3, A6, A10 |
-| R8-R10 | retry query, scheduler, Bubble wake cause | A2, A3, A6, A7 |
+| R5-R7 | outcome table, Wake Bubble route, Ledger terminalization bridge, lane, retirement, unclaimable, and boot writers | A2, A3, A6, A10 |
+| R8-R10 | retry query, scheduler, typed Bubble cause and notice dedupe | A2, A3, A6, A7 |
 | R11 | Supervision terminal LHS, watermark, lifecycle | A3 |
 | R12-R13 | wake guard columns, scheduling handler, admission transaction | A4 |
 | R14 | existing claim and turn-boundary seams | A5 |
-| R15-R16 | Wakes mutation API and schema checks | A1-A4, A6 |
-| R17 | boot recovery, retry query, and both Bubble cursors | A2, A6, A7 |
-| R18 | Schema exact-shape gate, Wakes migration seam, Ledger successor table, dependent-object registry | A8 |
+| R15-R16 | Wakes mutation API, Ledger terminalization bridge, closed source tags, and authenticated retirement principal | A1-A4, A6 |
+| R17 | bridged boot recovery, retry query, and both Bubble cursors | A2, A6, A7 |
+| R18 | Schema exact-shape gate, successor registry, notice migration, Wakes migration seam, and Ledger successor table | A8 |
 | R19 | CLI help and operating-manual wake paragraph | A9 |
 
 ## Acceptance
@@ -1072,6 +1263,12 @@ reaches each retry time, then three attempt identities and three turns exist. At
 commits one undeliverable outcome. Repeating the scheduler and Bubble recognizer creates
 no fourth attempt and no second logical wake cause. Proves R3-R10, R15-R17.
 
+Given that exhausted wake cause and one existing turn-sequence Bubble cause both target
+the same recipient, when Bubble admits their notices, then the rows carry distinct typed
+identities `{'bubble','wake',wakeId,recipient}` and
+`{'bubble','turn',turnSeq,recipient}`. Each notice has null `wakeId` and `wakeAttempt`.
+Terminalizing either notice creates no wake outcome, retry, or recursive wake cause.
+
 When `wake-get` and the linked work-item trace read that exhausted fixture, then they
 expose `undeliverable`, attempt count 3, the final turn sequence, a null next retry, and
 `could_not_run`. `wake-get` returns the outcomes in id order; each row carries its
@@ -1090,6 +1287,10 @@ When the final failure also commits undeliverable, then the existing Bubble path
 one logical escalation whose first notice says the exact wake id and final turn sequence.
 Repeated supervision sweeps and Bubble recognition create no negligence prod and no
 second logical cause. Proves R7-R11, R16.
+
+Given the retirement and boot-recovery fixtures from A6, when Supervision observes their
+`carrier_canceled` and `outcome_unknown` terminals before another prod cycle, then it
+consumes each as GAGGED with the stored class and creates no negligence prod.
 
 ### A4 — Stale-quiescence invalidation
 
@@ -1144,6 +1345,22 @@ Given a running wake turn exists when the gateway stops, when boot recovery chan
 turn to `failed_unknown` with class `outcome_unknown`, then it records failed plus
 undeliverable and admits no replacement turn. Proves R6-R10 and R17.
 
+Given a queued wake carrier belongs to a session that an authenticated principal retires,
+when the retirement transaction drains that queue, then the shared terminalization
+bridge changes the turn to `canceled` with `carrier_canceled`, appends failed plus
+undeliverable with cause `recipient_retired`, retains the authenticated retirement
+principal, schedules no retry, and leaves the original wake final. Bubble admits one
+sender-visible cause. An injected outcome-write failure rolls back the turn, outcomes,
+retirement lifecycle effects, and session retirement together.
+
+Given a queued wake carrier becomes unclaimable because its session is retired, when the
+backstop transaction runs, then the same bridge changes the turn to `canceled` with
+`carrier_canceled`, appends failed plus undeliverable with cause
+`recipient_unclaimable`, uses `process:tightbeam`, and schedules no retry. Given the
+closed legacy `no_session` fixture instead, the bridge stores `failed` with
+`could_not_run` and applies the normal retry rule. A repeated backstop pass changes no
+row and appends no duplicate outcome.
+
 Given an initial wake's target becomes unresolvable before admission, when the wake acts,
 then one null-turn attempt and one target-unresolvable undeliverable outcome commit, the
 compatibility wake state becomes canceled through typed provenance, one wake-named
@@ -1172,6 +1389,11 @@ first notice, when it restarts, then Bubble admits one wake-named logical cause.
 restart creates no second notice for the same recipient and no second logical cause.
 Proves R9 and R17.
 
+Given one wake cause and one existing turn cause each crash after their first notice
+commits but before their cursors advance, when Bubble restarts and recognizes both causes
+again, then the typed wake and turn notice tuples return the existing rows. The restart
+adds no notice, wake outcome, retry, or recursive cause.
+
 ### A8 — Legacy migration preserves evidence
 
 Given an exact v3-stamped fixture with one row for each R18 wake-shape and terminal
@@ -1199,6 +1421,26 @@ references its source turn, and both fired-lineage immutability triggers still r
 update or delete. The checkpoint-binding coherence trigger shall still reject an
 incoherent insert. The successor outcome append-only and final-outcome triggers shall
 reject their prohibited mutations.
+
+Given the fixture contains an exact legacy Bubble notice identity, when migration
+commits, then its request reference, prompt, origin, target, status, and timestamps stay
+equal; its typed notice tuple names the turn cause and recipient; its wake fields are
+null; and it creates no wake outcome. Given a non-null legacy `turns.wakeId` that matches
+neither a wake row nor the exact Bubble relation, when migration runs, then it returns
+`ShapeError`, preserves v3, and changes no row or object.
+
+The migration test shall enumerate `Schema.successor_registry/0` and assert that its
+normalized records equal the complete owned-object set produced by clean-v4 bootstrap.
+It shall reject a missing, duplicate, mismatched, or dependency-unreachable record. The
+transition shall rebuild each affected table, index, and trigger in registry dependency
+order. Immediate `Schema.ensure_all/1` and a clean restart shall execute no DDL and shall
+leave each normalized object definition equal.
+
+A source census shall reject a schema-owner `CREATE TABLE`, `CREATE INDEX`, or
+`CREATE TRIGGER` statement that does not originate from one exported registry record.
+This check covers `Wakes`, `Ledger`, supervision liveness, and supervision enforcement,
+so a clean bootstrap cannot make an unregistered owned object invisible to the registry
+comparison.
 
 Given a non-empty database with no stamp, multiple stamps, or a stamp other than v3 or
 v4, when the shape gate runs, then startup returns `ShapeError`, runs no successor DDL,
@@ -1266,7 +1508,8 @@ pre-act fixture. Proves R1-R5 and R15-R16.
 
 ## Open Questions
 
-None. The specification has no blocking or non-blocking hole. A change to the retry
-schedule, safe-failure vocabulary, named owner activity, final-outcome vocabulary, or
+No open question remains. The specification has no blocking or non-blocking hole. A
+change to the retry schedule, safe-failure vocabulary, named owner activity,
+final-outcome vocabulary, or
 legacy migration ruling requires an amendment and a new content hash before build
 handoff.
