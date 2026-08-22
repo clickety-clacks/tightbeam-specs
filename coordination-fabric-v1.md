@@ -1,8 +1,10 @@
 # Coordination fabric — bones and cartilage — v1
 
-Status: r8 MVP DRAFT (2026-08-21; trims r7 to Mike's ruled MVP:
-`cannot-proceed`, the `outcome` assignment effect, and one opener-only
-guidance line; pending independent cross-vendor review). Prior: r7 DRAFT
+Status: r9 MVP REVIEW CANDIDATE (2026-08-21; makes r8's `outcome`
+boundary, horizon, and done rails decidable under the served wake-matching
+rule; pending independent cross-vendor review). Prior: r8 MVP DRAFT
+(2026-08-21; trims r7 to Mike's ruled MVP: `cannot-proceed`, the `outcome`
+assignment effect, and one opener-only guidance line). Prior: r7 DRAFT
 (2026-08-21; added `outcome` and `fixture` before the MVP trim). Prior: r6
 DRAFT (2026-08-20; folds Mike's 2026-08-19 ruling that removes holder
 surrender from the 0.2 fabric and replaces it with typed `cannot-proceed`).
@@ -48,7 +50,9 @@ decides, never by auto-spawn (Invariant 4, §8c); adjudicate promotions —
 the pipeline's tiers are org-authored defaults that minds execute, and the
 owner's station is veto-with-context (§8b); serve as a workflow engine that
 contains inference. Out of scope for this spec: cross-org federation; UI
-rendering of classes (Clawline's business); 0.1.x-line behavior.
+rendering of classes (Clawline's business); 0.1.x-line behavior. The r9 MVP
+does not add `fixture` or RE-ARM; both remain deferred second-occurrence
+purchases (§4, Open Question 12).
 
 ## Terms
 
@@ -89,7 +93,7 @@ rendering of classes (Clawline's business); 0.1.x-line behavior.
   a decision obligation to the card's durable opener (§4). It never dissolves
   the assignment and never asks the substrate to judge the reason.
 - **Effect kind** — the opener-chosen, immutable classification of the
-  observable effect for which one assignment is accountable. The complete r8
+  observable effect for which one assignment is accountable. The complete r9
   set is `code`, `policy`, `release`, `live_mutation`, `evidence`, `review`,
   `coordination`, and `outcome`. A missing choice defaults to `code`; a linked
   review is always forced to `review` (§4).
@@ -97,9 +101,20 @@ rendering of classes (Clawline's business); 0.1.x-line behavior.
   the principal's stated goal rather than one subordinate deliverable. It
   survives subordinate churn and can close only from linked subordinate
   terminal evidence plus the principal's verdict (§4).
-- **Boundary report** — a checkpoint on an `outcome` assignment. It records
-  the current decision or dependency boundary and its horizon; it is not a
-  claim of progress toward a percentage or date (§4).
+- **Outcome principal** — the immutable `user:<id>` or `role:<name>` identity
+  named when an `outcome` assignment opens. It must resolve to an identity
+  other than the holder at open and verdict time. Only this identity may file
+  the verdict that closes the outcome (§4).
+- **Boundary report** — a holder-filed typed row on an `outcome` assignment.
+  It names one current boundary, the row or external target that proves the
+  boundary, the lawful wait instrument, and one accountability horizon. It is
+  not a percentage-complete claim. Waiting on an in-org row is a condition
+  subscription, not a checkpoint or timed poll (§4).
+- **Accountability horizon** — the epoch-ms deadline after which one unchanged
+  outcome boundary escalates to the outcome assignment's opener. A horizon
+  bounds accountable ownership; it never decides the dependency or the
+  outcome and never substitutes for the boundary's lawful wait instrument
+  (§4).
 - **Summon** — a wake the desk sends its principal carrying a brief;
   the desk's only way to spend the principal's turn.
 - **Turn boundary** — the moment a session's in-flight turn ends; the
@@ -250,6 +265,11 @@ The filing is non-terminal and has four mechanical effects:
    A failed parent turn climbs the durable lineage. The terminal user alert
    remains the existing tokenless path.
 
+Target validation, the non-terminal attest, the standing condition, the
+exact-card prodder exclusion, and the linked decision obligation commit in one
+transaction. Decision delivery derives after that commit from the durable
+obligation. A failed validation commits none of those rows.
+
 One assignment may have at most one standing `cannot-proceed` condition.
 Another filing while it stands returns the existing condition and linked
 parent decision. The holder may append progress evidence without changing the
@@ -257,7 +277,8 @@ condition. Only a durable parent disposition clears or supersedes it.
 
 The parent mind owns the new plan. It may revoke the card, re-scope it, or
 restaff it. The substrate resumes or ends the exact card only from the durable
-execution row for that disposition; a prose answer alone changes nothing.
+execution row for that disposition; condition clearing and disposition
+execution commit together. A prose answer alone changes nothing.
 Therefore the fabric does not wait on an unrecorded decision and does not
 rebuild adjudication. Stop-and-report remains the agent's lawful "no". Only
 the holder's power to close its own obligation is removed.
@@ -278,17 +299,66 @@ mechanically `review` regardless of a requested value.
 
 `outcome` means accountability for the principal's stated work-item goal, not
 for one implementation, report, or review. At most one open `outcome`
-assignment may bind one work item. The card survives subordinate revocation,
-replacement, failure, and retry. Its checkpoints are boundary reports by
-definition: each names the present boundary, cites its evidence, and states
-that boundary's horizon. If the same boundary remains past its own horizon,
-the holder must escalate it to the opener; filing another unchanged
-checkpoint does not discharge that duty. A holder-filed completion can never
-close an `outcome` card. Closure requires both (a) terminal evidence from the
-linked subordinate assignments that establish the claimed result and (b) the
-principal's authenticated verdict on that result. The close is derived from
-those rows; subordinate churn never resets the outcome card or mints a second
-one for the same work item.
+assignment may bind one work item. Opening it requires an immutable
+`principalRef` in `user:<id>` or `role:<name>` form. The substrate refuses an
+opener that names the holder as the principal. It rechecks that separation
+when a principal verdict arrives. The card survives subordinate revocation,
+replacement, failure, and retry.
+
+**Boundary rail.** The holder reports its current boundary with a typed row
+containing `boundaryKind`, `boundaryRef`, `evidenceRef`, `instrumentRef`, and
+`horizonAt`. The substrate admits only these three structurally verifiable
+shapes:
+
+| `boundaryKind` | `boundaryRef` and evidence | Required `instrumentRef` |
+|---|---|---|
+| `in-org-row` | the exact assignment, work item, review, artifact, ruling, or fact condition whose row releases the boundary | a pending condition wake for the exact fact kind and scope; a timed prompt wake does not qualify |
+| `external-system` | the stable external run, deploy, provider operation, or device probe; `evidenceRef` names its latest recorded result | a pending scheduled recheck wake to the holder |
+| `human-decision` | the exact open decision-request row | that decision request; a scheduled wake does not qualify |
+
+The substrate validates the referenced rows, their ownership, and the
+instrument shape without parsing prose. An `in-org-row` condition scope must
+equal `boundaryRef`; an `external-system` wake must bind to this outcome and
+holder; a `human-decision` request must name this outcome in its `about`
+field. It keys one standing boundary by
+`(outcomeAssignmentId, boundaryKind, boundaryRef)`. A replay returns that row.
+A new boundary may supersede it only when `boundaryKind` or `boundaryRef`
+changes. Therefore a repeated note, a replacement timer, or a new percentage
+cannot disguise an unchanged boundary. Self-work is not an outcome boundary:
+the holder uses the existing scheduled continuation wake and progress rows
+without minting a boundary report.
+
+A matched in-org fact or a decision request reaching an answer ends that
+boundary mechanically. An external recheck wake firing does not end its
+boundary: the holder records the probe result and either changes the boundary
+or attaches the next lawful recheck. New `evidenceRef` and `instrumentRef`
+values on the same external boundary preserve its original row identity,
+creation time, and horizon. Canceling an instrument without a valid
+replacement does not end the boundary or reset its horizon. Existing
+external-probe guidance still requires the holder to stop after three
+unchanged probes and report to the opener; that report reuses an existing
+overdue-boundary escalation, and this rail adds no second counter.
+
+**Horizon rail.** `horizonAt` must be later than the boundary row's creation
+time. If the same boundary is current when its horizon passes, the substrate
+creates or reuses one causally linked overdue-boundary escalation to the
+outcome assignment's durable opener. Another report for the same boundary
+cannot extend the horizon or discharge the escalation. This escalation does
+not poll an in-org row or a human and does not decide the result. It reports
+that accountable ownership has crossed its declared boundary. Existing
+fault-bubbling carries a failed or silent opener delivery up the durable
+lineage.
+
+**Done rail.** A holder-filed completion cannot close an `outcome` card. To
+accept the goal, the authenticated `principalRef` files an `outcome-achieved`
+verdict that cites at least one exact terminal evidence row from an explicitly
+linked subordinate assignment on the same work item. In one transaction, the
+substrate verifies the open outcome, the principal identity, every cited
+terminal row, each subordinate's terminal state, and every subordinate link;
+then it records the verdict and closes that outcome. A failed check records
+neither the verdict nor the close. Verdict replay returns the existing result.
+Subordinate churn never resets the outcome card or mints a second open one for
+the same work item.
 
 The opener-facing manual card-opening section and the PO/orchestrator guidance
 carry only this MVP decision table. It is not broadcast to workers. A linked
@@ -831,6 +901,8 @@ under the delegation card). Until the r5 dispatch-rule mechanism ships
 (§13), the exec matrix binds as seed convention — the delegation card's
 verb list is the law's text either way.
 
+## Acceptance
+
 Acceptance (evidence, not vibes; each clause decidable):
 
 1. **Coordination-turn drop:** PO-session turns materialized by
@@ -852,16 +924,38 @@ Acceptance (evidence, not vibes; each clause decidable):
    hold, zero attest content judging work products (§6's definition
    decides), and zero acknowledgment-only filings (receipt is behavior,
    never a filing — the no-ack law, §7).
-6. **Effect classification is immutable:** all eight effect kinds admit at
-   open, linked reviews always read `review`, omitted kinds read `code`, and
-   no holder path can change a stored effect.
-7. **Outcome closure is principal-owned:** a holder completion is refused;
-   subordinate terminal evidence alone is insufficient; matching linked
-   evidence plus the principal verdict closes exactly one outcome card; and
-   subordinate churn leaves the same card open.
-8. **Outcome horizons escalate:** an unchanged boundary after its recorded
-   horizon produces one opener escalation and cannot be satisfied by a new
-   unchanged checkpoint.
+6. **Cannot-proceed stays accountable:** Given one open assignment and a
+   second open assignment on the same holder, when the authenticated holder
+   files `cannot-proceed` with a non-empty reason on the first assignment,
+   then the first card stays open on that holder, only the first card leaves
+   prod matching, and exactly one decision obligation exists for its durable
+   opener. When the holder replays the filing, then the same condition and
+   decision return. When opener delivery fails, then existing fault-bubbling
+   advances the same decision while the second assignment remains prod
+   eligible.
+7. **Effect classification is immutable:** Given each admitted effect kind,
+   an omitted kind, and a linked review, when an opener creates the cards and
+   a holder attempts an effect change, then the cards read their requested
+   kinds, `code`, and `review` respectively, and the holder change is refused.
+8. **Outcome done rail is principal-owned:** Given one open outcome, one
+   linked subordinate terminal evidence row, and a different authenticated
+   principal, when the holder files completion or the principal cites no
+   terminal row, then the outcome stays open; when the principal files
+   `outcome-achieved` citing that linked terminal row, then the verdict and
+   close commit together exactly once. Given subordinate replacement, when
+   the successor remains non-terminal, then the same outcome remains open.
+9. **Outcome boundary rail matches the wait:** Given each of the three boundary
+   kinds, when the holder cites the required instrument from §4, then one
+   boundary row admits. Given an in-org boundary with only a timed wake or a
+   human boundary with a scheduled wake, when the holder files the report,
+   then the substrate refuses it with the boundary rule named.
+10. **Outcome horizon rail cannot be reset:** Given one current boundary and
+   its future horizon, when the horizon passes unchanged, then exactly one
+   opener escalation exists. When the holder replays the report or supplies a
+   replacement timer for the same boundary, then the original horizon and
+   escalation remain unchanged. The escalation neither closes the outcome nor
+   creates another human decision request.
+
 Generalize to worker archetypes only after the pilot (Phase 4 entry is a
 RULING on this acceptance, not just the evidence).
 
@@ -920,7 +1014,14 @@ Phases gate on EVIDENCE from the prior phase, never on schedule. Each phase
 names its entry gate, contents, and exit evidence. §11's pilot is Phase 3;
 everything "deliberately excluded from v0" is placed, not dropped.
 
-**r8 coordinated lifecycle/outcome MVP (entry: this r8 fold is
+The canonical `reporting-contract-system.md` groups this work item with
+wi_2629d68d-5706-4c2d-8893-a509b2e32ea7 and
+wi_a8de6fe5-5450-41c8-ac9b-f623d349d0cc as one three-work-item, four-part
+0.2.x release. The slices below size only this fold; they do not remove or
+defer either sibling. Omitting any of the four system parts requires Mike's
+explicit ruling.
+
+**r9 coordinated lifecycle/outcome MVP (entry: this r9 fold is
 independently reviewed-clean; one landing, one review).** Do not open these
 build slices before that entry fact. The slices are sized separately for
 custody but integrate atomically:
@@ -931,13 +1032,17 @@ custody but integrate atomically:
    create the new constrained table; copy every assignment/effect row without
    reinterpretation; prove row counts and values; swap tables and advance the
    stamp in one transaction; refuse unknown stamps or unexpected shapes. Add
-   the one-open-outcome-per-work-item constraint. Preserve the existing `code`
-   default and forced linked-review `review` behavior.
+   the one-open-outcome-per-work-item constraint and the immutable
+   `principalRef` required for `outcome`. Admit only `user:<id>` and
+   `role:<name>` forms. Refuse a principal that resolves to the holder at open
+   or verdict time. Preserve the existing `code` default and forced
+   linked-review `review` behavior.
 2. **Lifecycle and evidence rails.** Remove holder surrender and add the r6
-   `cannot-proceed` non-terminal route. Add outcome boundary/horizon rows,
-   overdue-boundary escalation, subordinate-terminal linkage, and
-   principal-verdict closure. Each refusal names its rule. Replays reuse the
-   same condition, escalation, or outcome row.
+   `cannot-proceed` non-terminal route. Add the three typed outcome boundary
+   shapes, immutable same-boundary horizon, one overdue-boundary escalation,
+   subordinate-terminal linkage, and atomic principal-verdict closure. Each
+   refusal names its rule. Replays reuse the same condition, boundary,
+   escalation, verdict, or outcome row.
 3. **CLI, projections, and opener guidance.** Expose `outcome` through
    assign/dispatch; project boundary state and principal verdict without
    inference. Land the outcome line plus `unspecified` default in the manual
@@ -946,7 +1051,7 @@ custody but integrate atomically:
    replay/concurrency tests, and package membership in the same landing.
 
 Exit evidence: old-shape upgrade and fresh-database fixtures converge on the
-same new stamp; all acceptance clauses 6–8 pass; the manual and both opener
+same new stamp; all acceptance clauses 6–10 pass; the manual and both opener
 guidance surfaces contain the exact two-row table; worker guidance does not; one
 independent exact-tip review is clean. Version 0.1.8 and its surrender history
 remain byte-for-byte unchanged.
@@ -1084,6 +1189,7 @@ explicit word.
 ## Spec-homing
 
 Canonical set for this design: this file (design authority);
+`reporting-contract-system.md` (three-work-item release grouping);
 `coordination-fabric-pragmatics-2026-08-12.md` (sealed Q&A record);
 `coordination-fabric-ideation-2026-08-12.md` (sealed provenance);
 `v0.2-program-2026-08-12.md` (program record: workstreams, staffing,
@@ -1097,6 +1203,22 @@ never cross); `wake-on-fact-v1.md` (consumed primitive); `tightbeam.md`
 (hub — may not lag this file).
 
 ## Revision trail
+
+r9 MVP REVIEW CANDIDATE (2026-08-21): makes r8's outcome contract buildable
+without changing its ruled scope. The boundary rail admits only three typed
+wait shapes and structurally requires the served instrument for each: a
+condition wake for an in-org row, a timed recheck for an external system, or
+an open decision request for a human. Self-work remains ordinary progress plus
+a continuation wake, not a dependency boundary. The horizon rail escalates one
+unchanged boundary to the opener without polling
+the dependency or resetting on prose. The done rail pins a principal distinct
+from the holder and atomically closes only on that principal's achieved
+verdict citing linked subordinate terminal evidence. Delete lost because an
+`outcome` kind without these rails preserves the silent-accountability hole;
+accept lost because the hole is the failure this MVP exists to make visible.
+The opener guidance remains the exact two-row r8 table. `fixture`, RE-ARM,
+0.1.8, build cards, and implementation remain outside this fold until the
+required independent review clears it.
 
 r8 MVP DRAFT (2026-08-21): applies Mike's MVP trim to r7. The landing keeps
 the load-bearing `cannot-proceed` lifecycle, the `outcome` effect with its
