@@ -1,7 +1,7 @@
 # Declarative required-process gates
 
-Status: changes-requested specification amended after round-5 verdict
-`att_d79ab7ad-c2cd-4358-a00a-aed25784686b`; the amended bytes require a cold
+Status: changes-requested specification amended after round-6 verdict
+`att_eec61d75-14d2-4c89-8b74-899efe76a052`; the amended bytes require a cold
 digest and re-review for `wi_f165cdbd-72c0-4add-bb8d-2113908c3e55`. This
 specification authorizes no
 implementation, identity publication, deployment, runtime mutation, or release
@@ -52,6 +52,10 @@ Authority and evidence:
   database owner after publication and append an obsolete process or target
   reference. This revision adds a transaction-start generation fence and
   defines capture behavior while a Git compare-and-swap is in flight.
+- Round-6 review `att_eec61d75-14d2-4c89-8b74-899efe76a052` found one remaining
+  B1 blocker: the existing Dispatch applies rule effects before a fenced
+  mutation can request its generation retry. This revision defers those effects
+  and restarts the complete Dispatch attempt from its live-generation capture.
 
 ## Goal
 
@@ -156,8 +160,9 @@ proof would defeat the opt-in contract.
   tuple from one atomic runtime pointer when no publication Git
   compare-and-swap is in flight. During that compare-and-swap, capture waits
   for the publication lease to release or for the serving supervisor to stop.
-  A request uses its captured tuple for each identity revision and served-law
-  read in that request.
+  Dispatch stores the tuple on one attempt. The attempt uses that tuple for
+  each identity revision and served-law read. A generation retry discards that
+  attempt and begins a new Dispatch attempt with a new tuple.
 - **Open catalog reference:** An exact process, target, selected-rail, or fact
   identity reachable from the current organization revision; from the current
   local revision of a nonterminal object; from a Topline revision inherited by
@@ -285,16 +290,33 @@ identity, rail identity, or fact-contract identity. The response names the
 missing identity and two remedies: restore that exact installed contract, or
 append an authorized scope revision that resolves to an installed contract.
 
-Each policy, target-binding, and receipt mutation carries its ingress live
-generation into its database-owner transaction. Before the transaction reads an
-idempotency row, current revision, binding, or catalog, it compares the carried
-generation revision with the revision returned by
-`Tightbeam.Identity.Live.capture/0`. If they differ, the gateway
-rolls back that attempt without a domain, idempotency, or response row and
-restarts the whole handler from ingress with the current generation. The
-attempt that reaches catalog resolution therefore uses the generation current
-while it owns the database transaction. A publication that begins later waits
-behind that transaction and validates its post-mutation database snapshot.
+Dispatch captures one live generation before it evaluates rules for each
+policy, target-binding, or receipt mutation. It attaches that generation to
+the mutation call and retains the rule decision, `to_close` list,
+denial event, remedy, escalation, and response event as an uncommitted effect
+plan. It passes the planned authorization-consumption list to the mutation
+handler. Dispatch materializes its retained plan only after the mutation
+returns a generation-final result. A rule denial, remedy, or escalation invokes
+no mutation handler; Dispatch treats that decision as the attempt's
+generation-final result and materializes its same-generation plan.
+
+Each mutation carries the Dispatch attempt's live generation into its
+database-owner transaction. Before that transaction reads an idempotency row,
+current revision, binding, or catalog, it compares the carried generation
+revision with the revision returned by `Tightbeam.Identity.Live.capture/0`. If
+they differ, the transaction writes no mutation row and returns
+`{:retry_live_generation}` to Dispatch. Dispatch discards the complete
+old-generation effect plan and begins a new attempt before `Rules.decide/2`.
+It writes no old-generation domain, idempotency, decision, denial, remedy,
+notice, authorization-consumption, or response row. The attempt that reaches
+catalog resolution first calls `Escalation.consume_in_txn/2` for each planned
+authorization while it owns that same transaction. A lost authorization aborts
+the mutation and idempotency append, then returns the existing `rule_denied`
+result with no planned allow effects. A successful consumption, mutation
+append, and idempotency result commit together. The attempt therefore uses the
+generation current while it owns the database transaction. A publication that
+begins later waits behind that transaction and validates its post-mutation
+database snapshot.
 
 ### I8 — Completion check and state change are one transaction
 
@@ -424,9 +446,11 @@ generation uses that complete new generation. No request combines the two.
 `cas_in_flight` lease. It waits for that lease to release. On a confirmed
 publication, it returns the installed generation. On an ambiguous or post-CAS
 failure, the `Live` supervisor-stop path ends the waiting request without a
-handler response or database commit. A request that captured before the lease
-must still pass I7's transaction-start generation comparison before it can
-read or append a mutable policy, target-binding, or receipt row.
+handler response or database commit. A Dispatch attempt that captured before
+the lease must still pass I7's transaction-start generation comparison before
+it can read or append a mutable policy, target-binding, or receipt row. If that
+comparison requests a retry, Dispatch discards its pending generation-specific
+rule effects before it starts the next attempt.
 
 ### I19 — V5 dependency cannot fall back
 
@@ -1017,14 +1041,39 @@ or law. The handler passes the captured generation through its rule, catalog,
 and identity calls. A live-ref or served-law reader does not read Git or an
 independent persistent-term key after it has captured that generation.
 
-At the start of each policy, target-binding, or receipt database-owner
-transaction, the mutation handler captures the current generation again and
-compares its revision to the ingress generation. A mismatch rolls back the
-attempt before idempotency or catalog resolution and restarts the handler from
-ingress. The handler performs its eventual catalog resolution and append under
-the matching generation while it owns the database transaction. A publisher
-therefore sees that append in its validation snapshot, or the mutation retries
-against the installed candidate generation.
+For `required-processes-set`, `delivery-target-set`, and
+`delivery-landed-record`, `Tightbeam.Dispatch` owns a live-generation attempt.
+It captures the generation before `Rules.decide/2`, passes that generation to
+the rule fold and handler, and keeps `Rules.decide/2`'s `to_close` and
+resulting denial, remedy, escalation, and event as an effect plan. It passes
+the `to_consume` outputs into the handler's database-owner transaction. For
+these verbs, Dispatch does not close an episode, send a remedy notice, append a
+decision or denial event, or return a response before the handler returns a
+generation-final result. It does not call `Escalation.consume/2`. Other verbs
+retain the existing Dispatch effect order.
+
+When `Rules.decide/2` returns a denial, remedy, or escalation for a fenced
+verb, Dispatch does not call the mutation handler. It materializes that
+attempt's same-generation effect plan and returns that final result. Only an
+allow decision can reach the fenced handler and return `{:retry_live_generation}`.
+
+At the start of each fenced mutation's database-owner transaction, the handler
+captures the current generation again and compares its revision to the Dispatch
+attempt generation. On a mismatch, the handler writes no mutation or
+idempotency row and returns `{:retry_live_generation}`. Dispatch discards the
+attempt's effect plan and starts a new attempt at its live-generation capture;
+it does not replay or compensate an old effect because it materialized none.
+After a matching comparison and before catalog resolution, the handler calls
+`Escalation.consume_in_txn/2` for each `to_consume` entry using its supplied
+transaction. `consume_in_txn/2` does not call `Tightbeam.DB.transaction/2`.
+If any consumption loses, the handler aborts the transaction without a mutation
+or idempotency row and returns the existing `rule_denied` result with an empty
+allow-effect plan. If each consumption succeeds, the consumption, catalog
+resolution, mutation append, and idempotency result commit in one transaction.
+On a generation-final result, Dispatch materializes that result's retained
+effect plan once, using the existing order, then returns that result. A
+publisher therefore sees the matching-generation append in its validation
+snapshot, or Dispatch retries against the installed candidate generation.
 
 Before a publisher calls `advanceRef`, it obtains a `Live` publication lease.
 After its database validation succeeds and immediately before the Git call, it
@@ -1104,7 +1153,11 @@ This path census is a build boundary, not implementation authority:
 - Add handlers in `lib/tightbeam/gateway.ex`, wire declarations in
   `lib/tightbeam/wire/router.ex` and `lib/tightbeam/wire/payloads.ex`, and CLI
   parsing plus request encoding in `cli/src/args.rs` and
-  `cli/src/dispatch.rs`.
+  `cli/src/dispatch.rs`. Evolve `lib/tightbeam/dispatch.ex` so the three
+  fenced mutation verbs defer a generation-specific rule effect plan and
+  restart from Dispatch capture on `{:retry_live_generation}`. Add
+  `Escalation.consume_in_txn/2` in `lib/tightbeam/escalation.ex` for the
+  handler's supplied database-owner transaction.
 - Add `lib/tightbeam/identity/live.ex` to own the single live-generation
   pointer, writer serialization, candidate preload, ingress capture, and
   post-CAS fatal recovery. Evolve `lib/tightbeam/identity.ex` to obtain each
@@ -1125,7 +1178,7 @@ This path census is a build boundary, not implementation authority:
 - Add focused proofs in `test/required_processes_test.exs`,
   `test/delivery_targets_test.exs`, `test/work_items_test.exs`,
   `test/toplines_test.exs`, `test/rules_test.exs`, `test/gateway_test.exs`,
-  `test/router_test.exs`, `test/payloads_test.exs`, capability and
+  `test/router_test.exs`, `test/payloads_test.exs`, `test/dispatch_test.exs`, capability and
   identity-publication suites, `test/identity_live_test.exs`, `test/org_test.exs`,
   `test/application_test.exs`, and the CLI suites.
 - Add Kung Fu declarations under `priv/kungfu/<bundle>/processes/*.toml` and
@@ -1205,6 +1258,9 @@ database-owner transaction, when the transaction begins, then the generation
 fence restarts the whole request before it reads idempotency or writes a scope
 revision. Given the restarted request resolves `P` under `G2`, then it returns
 `unknown_required_process` and writes no scope or idempotency row for `P`.
+Given the discarded `G1` Dispatch attempt plans an episode close and a ruled
+authorization consumption, when Dispatch begins the `G2` attempt, then it
+writes neither G1 effect before the G2 attempt returns.
 
 ### A9 — Completion and policy changes serialize
 
@@ -1334,6 +1390,21 @@ installs `G2`, when the waiting request resumes, then it captures `G2`. Given
 the publisher takes the publication-incomplete stop path, when the waiting
 request ends, then it returns no handler response and commits no database row.
 
+Given a fenced mutation Dispatch attempt captures `G1`, and `Rules.decide/2`
+plans an episode close and ruled-authorization consumption, when `G2` installs
+after that decision but before the handler starts its database-owner
+transaction, then the handler returns `{:retry_live_generation}`. Given that
+signal, when Dispatch restarts from its capture point, then it writes no `G1`
+episode close, remedy notice, authorization consumption, decision event, denial
+event, or response event. Given the restarted attempt evaluates under `G2`,
+then it performs one `G2` rule evaluation and returns one `G2` result.
+
+Given a fenced mutation passes the generation fence and one planned ruling is
+already consumed by another request, when its handler calls
+`Escalation.consume_in_txn/2`, then it returns the existing `rule_denied`
+result, commits no mutation, idempotency, or partial consumption row, and
+writes no planned allow effect.
+
 Given the ref compare-and-swap succeeds and `installGeneration` faults before
 the atomic generation replacement, when the publisher handles that fault, then
 it returns neither success nor a recoverable error, does not roll back the Git
@@ -1397,6 +1468,9 @@ when the transaction begins, then the generation fence restarts the whole
 request before it reads idempotency or writes a binding. Given the restarted
 request resolves `D` under `G2`, then it returns `unknown_delivery_target` and
 writes no target binding or idempotency row.
+Given the discarded G1 attempt plans an episode close, remedy notice,
+authorization consumption, or response event, when Dispatch begins the G2
+attempt, then it writes none of those G1 effects.
 
 ### A21 — Catalog selection is deterministic
 
@@ -1412,6 +1486,9 @@ Given a scope request captures `G1` while the selection index names `P@1`, and
 transaction, when the transaction begins, then the generation fence restarts
 the request. Given the restarted request resolves stable name `P` under `G2`,
 then its new scope row stores `P@2`, and the request writes no new `P@1` row.
+Given the discarded G1 attempt plans an episode close, remedy notice,
+authorization consumption, or response event, when Dispatch begins the G2
+attempt, then it writes none of those G1 effects.
 
 ### A22 — Wrong-scope process selection refuses
 
