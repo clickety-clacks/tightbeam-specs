@@ -283,7 +283,13 @@ subscriptions to force it.
 ## Connection and auth
 
 C1. A WebSocket upgrade on the gateway's existing HTTP listener, at its
-own path, separate from the chat socket.
+own path, separate from the chat socket. RULED (Mike, 2026-08-22): this
+socket ADDS to the product, it does not replace Clawline's chat ws —
+the two coexist indefinitely: GET /ws stays the chat wire exactly as
+today; the firehose mounts at its own path (working name /ws/changes)
+on the SAME port. No new port: WebSockets are distinguished by path,
+and one listener means one auth surface, one tailscale-serve config,
+one firewall story.
 
 C2. Auth is IN-BAND, exactly like the existing chat socket: connect
 plain, send an `auth` frame carrying the existing gateway credential as
