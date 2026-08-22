@@ -1,7 +1,7 @@
 # Declarative required-process gates
 
-Status: changes-requested specification amended after round-7 verdict
-`att_d97ff1b2-0f4a-42da-a661-250f6c35e40a`; the amended bytes require a cold
+Status: changes-requested specification amended after round-8 verdict
+`att_4845c82a-d461-4b46-81d3-71674e37d8c6`; the amended bytes require a cold
 digest and re-review for `wi_f165cdbd-72c0-4add-bb8d-2113908c3e55`. This
 specification authorizes no
 implementation, identity publication, deployment, runtime mutation, or release
@@ -61,6 +61,11 @@ Authority and evidence:
   final rule-effect plan could be lost after its mutation committed. This
   revision adds an authorization-preserving replay precheck, a finalizer race
   marker, and a narrow durable fenced-effect outbox with stable-id recovery.
+- Round-8 review `att_4845c82a-d461-4b46-81d3-71674e37d8c6` found that the
+  outbox did not define a durable idempotent writer contract for every effect
+  kind and duplicated its entry plan in a parent JSON column. This revision
+  makes the entries the sole persisted plan and defines per-kind stable-id
+  application, collision refusal, and recovery evidence.
 
 ## Goal
 
@@ -171,8 +176,13 @@ proof would defeat the opt-in contract.
 - **Fenced effect outbox:** The durable, generation-final record for one
   fenced mutation's ordered rule effects. It has the same transactional fate
   as that mutation's idempotency result. Its stable effect ids let the existing
-  episode, event, and wake writers apply or recover one effect without
-  duplication.
+  episode, remedy, event, and wake writers apply or recover one effect without
+  duplication. Its entry rows, ordered by `ordinal`, are the only durable
+  representation of the final effect plan.
+- **Fenced writer application:** One durable effect writer result identified by
+  an outbox entry's `effectId`, kind, and canonical payload hash. A matching
+  prior result returns its original effect reference. A differing kind or
+  payload hash for that id is a `fenced_effect_collision` refusal.
 - **Open catalog reference:** An exact process, target, selected-rail, or fact
   identity reachable from the current organization revision; from the current
   local revision of a nonterminal object; from a Topline revision inherited by
@@ -343,20 +353,41 @@ generation current while it owns the database transaction. A publication that
 begins later waits behind that transaction and validates its post-mutation
 database snapshot.
 
-The outbox stores the generation revision, canonical complete effect plan,
-checked principal, command cause, final response, and one ordered entry per
-effect. Its unique key is the committed idempotency key and fingerprint. An
-entry's stable id is the SHA-256 of canonical
+The outbox stores the generation revision, checked principal, command cause,
+final response, and one ordered entry per effect. Its entries are the durable
+complete effect plan; Dispatch retains no second persisted plan. Its unique
+key is the committed idempotency key and fingerprint. An entry's stable id is
+the SHA-256 of canonical
 `{"kind":"<kind>","ordinal":<integer>,"outboxId":"<id>"}` bytes. After
 commit, Dispatch drains the outbox in its existing effect
-order before it returns the final response. The materializer invokes the
-existing episode, event, remedy, and wake writers with that stable id, then
-marks the entry applied. A crash leaves an unapplied entry for the
-dispatch-owned recovery scan under existing supervision and startup. A retry uses the same stable id, so the
-existing writer returns its prior effect and the materializer can mark the
-entry applied. A replay returns the stored response and does not drain or
-write the outbox; recovery owns any pending entry. A generation retry occurs
-before finalization and therefore has no old-generation outbox or effect.
+order before it returns the final response. The materializer uses the
+per-kind fenced writer application contract below, then marks the entry
+applied. A crash leaves an unapplied entry for the dispatch-owned recovery
+scan under existing supervision and startup. A replay returns the stored
+response and does not drain or write the outbox; recovery owns any pending
+entry. A generation retry occurs before finalization and therefore has no
+old-generation outbox or effect.
+
+For each entry, the materializer calls exactly one of these narrow adapters:
+`episode-close` calls the RailEpisodes fenced close adapter; `remedy` calls the
+RailRemedy fenced close adapter; `escalation` calls the Wakes fenced enqueue
+adapter; and `decision-event`, `denial-event`, and `response-event` call the
+EventLog fenced append adapter with their respective event type. Each adapter
+accepts the entry `effectId`, `payloadJson`, payload SHA-256, cause, and
+principal. In the database-owner transaction that creates its durable effect,
+the adapter inserts its one-to-one row in
+`fenced_dispatch_effect_applications`, which globally keys the `effectId` and
+records the kind, payload SHA-256, outbox id, ordinal, and durable effect
+reference. On a new id, the adapter creates the effect and that receipt
+atomically, then returns `{:applied, effect_ref}`. On a prior id with the same
+kind and payload SHA-256, it returns
+`{:already_applied, effect_ref}` without a writer mutation. On a prior id with
+a different kind or payload SHA-256, it returns `fenced_effect_collision`
+without a writer mutation. The materializer sets `appliedAt` only after an
+`applied` or `already_applied` result. On collision it leaves `appliedAt`
+null, records the existing supervision failure evidence with the outbox id,
+effect id, expected and stored hashes, cause, and principal, and performs no
+second effect application or a later entry from that outbox.
 
 ### I8 — Completion check and state change are one transaction
 
@@ -682,7 +713,7 @@ canonical bytes.
 
 ### Fenced mutation effect outbox
 
-Add two narrow dispatch-owned tables. They serve only
+Add three narrow dispatch-owned tables. They serve only
 `required-processes-set`, `delivery-target-set`, and
 `delivery-landed-record`; they are not a general job or release model.
 
@@ -695,7 +726,6 @@ fenced_dispatch_effect_outboxes
   fingerprintSha256      exact request fingerprint
   generationRevision     final live generation revision
   finalResponseJson      canonical stored response
-  planJson               canonical ordered final-generation plan
   cause                  command receipt id
   principalKind          user | session
   principalRef           checked principal id
@@ -707,7 +737,17 @@ fenced_dispatch_effect_entries
   effectId               SHA-256 of canonical {kind,ordinal,outboxId} bytes
   kind                   episode-close | remedy | escalation | decision-event | denial-event | response-event
   payloadJson            canonical existing-writer payload
+  payloadSha256          SHA-256 of payloadJson canonical bytes
   appliedAt              nullable epoch milliseconds
+
+fenced_dispatch_effect_applications
+  effectId               global stable writer-application id
+  kind                   entry kind at first application
+  payloadSha256          entry payload hash at first application
+  outboxId               source outbox id
+  ordinal                source entry ordinal
+  effectRef              durable episode, remedy, wake, or event reference
+  createdAt              epoch milliseconds
 ```
 
 The outbox primary key is `id`. Its unique key is
@@ -720,7 +760,21 @@ database-owner transaction. The idempotency insert is the concurrency fence:
 if it loses the unique race, the transaction rolls back its consumption,
 mutation, outbox, and entries; it reads the committed row and returns
 `{:idempotency_final, ...}`. No caller selects an effect order or a recovery
-owner.
+owner. The entries ordered by `ordinal` are the sole durable final-generation
+plan. The finalizer derives `payloadSha256` from each exact `payloadJson` in
+that transaction; a row whose stored hash does not equal those canonical bytes
+is a database integrity fault and does not enter materialization.
+
+`fenced_dispatch_effect_applications` has `effectId` as its primary key and
+`(outboxId, ordinal)` as its unique source key. Each concrete writer carries a
+narrow fenced-application adapter: RailEpisodes creates an `episode-close`,
+RailRemedy creates a `remedy`, Wakes creates an `escalation`, and EventLog
+creates a decision, denial, or response event. In the same database-owner
+transaction, the adapter creates that concrete effect and its application row.
+The application row returns the existing effect reference only after it
+validates the same kind and payload hash. It refuses a collision without
+changing the existing effect. This is not a generic event or job identity
+model: only a fenced-dispatch entry may create an application row.
 
 ### Scope rows and mutation seam
 
@@ -1167,20 +1221,26 @@ idempotency recheck. Thus a publisher sees the matching-generation append in
 its validation snapshot, or Dispatch retries against the installed candidate
 generation.
 
-The outbox row stores its final response, generation revision, principal,
-command cause, canonical plan, and ordered entries. Its unique key is the
-committed `(callerUserId, operation, idempotencyKey, fingerprint)`. The
-materializer reads the stored stable `effectId` for each entry, invokes the
-existing effect writer with that idempotency key, and
-then records the entry as applied. Dispatch drains the newly committed outbox
-in the established effect order before it returns its first response. The
-dispatch-owned recovery scan under existing supervision/startup drains pending
-entries after a crash. A crash
-after an effect writer runs and before the applied marker commits retries that
-writer with the same `effectId`; the existing episode, event, and wake writer
-returns the already-created effect. A replay returns stored bytes without
-draining, claiming, or writing an outbox entry. A generation retry occurs
-before finalization, so it leaves no old-generation outbox entry or effect.
+The outbox row stores its final response, generation revision, principal, and
+command cause. Its ordered entry rows are its sole durable plan. Its unique key
+is the committed `(callerUserId, operation, idempotencyKey, fingerprint)`. The
+materializer validates each entry's payload hash, then invokes its exact
+fenced adapter: RailEpisodes for an episode close, RailRemedy for a remedy,
+Wakes for an escalation, and EventLog for a decision, denial, or response
+event. Each adapter atomically persists the `effectId` and payload hash in the
+global one-to-one application receipt with its durable effect. A prior matching
+id returns the original effect reference. A prior id with a different kind or
+payload hash returns `fenced_effect_collision` and makes no writer mutation or
+later entry application from that outbox.
+The materializer records `appliedAt` only for an applied or matching-prior
+result. Dispatch drains the newly committed outbox in the established effect
+order before it returns its first response. The dispatch-owned recovery scan
+under existing supervision/startup drains pending entries after a crash. A
+crash after an effect writer runs and before the applied marker commits retries
+that writer with the same `effectId`; its matching-prior result permits the
+marker commit. A replay returns stored bytes without draining, claiming, or
+writing an outbox entry. A generation retry occurs before finalization, so it
+leaves no old-generation outbox entry or effect.
 
 Before a publisher calls `advanceRef`, it obtains a `Live` publication lease.
 After its database validation succeeds and immediately before the Git call, it
@@ -1262,8 +1322,15 @@ This path census is a build boundary, not implementation authority:
   parsing plus request encoding in `cli/src/args.rs` and
   `cli/src/dispatch.rs`. Add the fenced-verbs authorization-preserving replay
   precheck and `Tightbeam.FencedMutation.finalize/5`; register its narrow
-  `fenced_dispatch_effect_outboxes` and entries schemas and add its recovery
-  scan under existing supervision/startup. Evolve `lib/tightbeam/dispatch.ex` so the three fenced
+  `fenced_dispatch_effect_outboxes` and entries schemas, without a duplicate
+  parent plan JSON column, and add its recovery scan under existing
+  supervision/startup. Register the narrow global
+  `fenced_dispatch_effect_applications` schema. Evolve the RailEpisodes,
+  RailRemedy, Wakes, and EventLog adapters so each kind atomically creates its
+  durable effect and application receipt, returns the original effect reference
+  for a matching retry, and refuses a hash or kind collision before mutation.
+  Evolve
+  `lib/tightbeam/dispatch.ex` so the three fenced
   mutation verbs persist and drain a generation-final effect plan, discard it
   on `{:retry_live_generation}` or `{:idempotency_final, _}`, and never apply
   it from replay. Add `Escalation.consume_in_txn/2` in
@@ -1543,14 +1610,20 @@ Given a generation-final fenced mutation commits its mutation, idempotency
 result, and fenced effect outbox, when Dispatch dies before it drains the
 outbox, then the supervision/startup scan applies the stored final-generation
 entries in their declared order and the same-key replay returns only the stored
-response. Given a crash after an entry's episode, event, or wake writer runs
-and before its applied marker commits, when recovery retries that entry, then
-it passes the identical stable `effectId` and the existing writer returns the
-one prior effect. The fixture injects death after finalizer commit and after
-each entry. It proves that each planned final-generation closure, notice,
-decision, denial, remedy, and response event occurs once in plan order; it
-proves that a planned consumption commits once; it proves zero duplicate effect
-and zero old-generation effect.
+response. Given a crash after an entry writer commits and before its
+`appliedAt` marker commits, when recovery retries that entry, then the
+per-kind adapter receives the identical stable `effectId`, kind, and payload
+hash and returns the one prior effect reference without another writer
+mutation. The fixture injects that death after finalizer commit and once for
+each of episode-close, remedy, escalation, decision-event, denial-event, and
+response-event. It proves that each kind persists and reads back its stable id
+and payload hash; it proves that a repeated matching application returns its
+original reference; and it proves that a different kind or payload hash for an
+existing id returns `fenced_effect_collision`, leaves `appliedAt` null, and
+writes no second effect. The fixture also proves that each planned
+final-generation closure, notice, decision, denial, remedy, and response event
+occurs once in plan order, a planned consumption commits once, and no
+old-generation or duplicate effect occurs.
 
 Given the ref compare-and-swap succeeds and `installGeneration` faults before
 the atomic generation replacement, when the publisher handles that fault, then
