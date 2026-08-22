@@ -429,6 +429,12 @@ A1. Every state-changing verb on main tip emits notices whose classes
 match §The class registry, both directions — a test diffs the verb table
 and emitted classes against the registry.
 
+For `condition_fact.filed` and `critical_lease.updated`, the A1 table names
+the shared AU4 visibility function for the R8 resource and tests one allowed
+and one denied principal. The REST detail and firehose fan-out invoke that
+same function; the allowed principal receives the committed notice and the
+denied principal receives neither detail nor notice.
+
 A2. A subscriber receives a notice for a matching commit made after its
 registration cut, and never one from before it.
 
@@ -455,6 +461,13 @@ serializer owns both (V3). Verified per class by a table-driven test that
 also names each class's resource, op, and primary-key mapping. And no
 public projection anywhere contains cliToken, a device token, an
 identityToken, or a secret host-env value.
+
+For `condition_fact.filed` and `critical_lease.updated`, the A6 test uses
+the R8 shared serializer, primary ref, and version fields to apply older,
+duplicate, and newer detail items and notices in both orders for one `factId`
+and one `sessionKey`. It proves per-resource last-version-wins convergence to
+the R7 item: condition facts use equal integer `id`, `refs.factId`, and
+`rowVersion`; critical state uses its R7 `rowVersion`.
 
 A7. The feature-smoke drives one real external consumer (ATC or a script)
 end to end: cold build from queries, live updates via subscription,
