@@ -23,7 +23,7 @@ One unusable candidate does not fail its account or the multi-account aggregate 
 
 ## Terms
 
-- **Candidate window:** a value in a provider location that the adapter already treats as a possible usage window. Codex candidate locations are `rate_limit.primary_window`, `rate_limit.secondary_window`, and each `additional_rate_limits` entry. Claude candidate locations are `five_hour`, `seven_day`, `seven_day_sonnet`, and each member of `limits` when that container can be enumerated.
+- **Candidate window:** a value in a provider location that the adapter treats as a possible usage window. Codex candidate locations are `rate_limit.primary_window`, `rate_limit.secondary_window`, each legacy direct `additional_rate_limits[].rate_limit`, and the current nested `additional_rate_limits[].rate_limit.primary_window` and `.secondary_window` locations. A present JSON `null` window is absent, not unusable. Claude candidate locations are `five_hour`, `seven_day`, `seven_day_sonnet`, and each member of `limits` when that container can be enumerated.
 - **Recognized window:** a candidate whose shape has an explicit normalized mapping in the deployed adapter. For Codex, this is the existing `used_percent` window mapping. For Claude, this is the existing `utilization` bucket mapping for fixed buckets and map-form `limits` members.
 - **Valid recognized window:** a recognized window whose required numeric value is present and in range and whose present optional fields decode to their existing types. Codex `used_percent` is from 0 through 100 inclusive. Claude `utilization` is from 0 through 1 inclusive.
 - **Unusable candidate:** an invalid recognized window, an enumerated candidate with no recognized mapping, or a valid candidate whose normalized ID collides with an ID already retained from an earlier candidate.
@@ -31,7 +31,7 @@ One unusable candidate does not fail its account or the multi-account aggregate 
 - **Raw provider data:** the exact JSON bytes accepted by the existing credential-field safety scan and returned as `UsageSample.raw`.
 - **Diagnostic:** a derived item in `UsageSample.diagnostics` with exactly `code` and `message` string fields. It is neither an API error nor persisted state.
 - **Fatal contract error:** an `UPSTREAM_CONTRACT_CHANGED` result with no `UsageSample`.
-- **Codex window order:** retained primary, retained secondary, then valid additional entries sorted by decoded `name` ascending with source order breaking equal-name ties.
+- **Codex window order:** retained primary, retained secondary, then valid additional entries sorted by decoded `name` or `limit_name` ascending with source order breaking equal-name ties. Within a current nested additional entry, primary precedes secondary.
 - **Claude window order:** retained `five_hour`, `seven_day`, and `seven_day_sonnet`, in that order, then retained map-form `limits` members sorted by their existing map key.
 - **Diagnostic order:** Codex primary, secondary, then additional source order; Claude fixed-bucket order, then sorted map keys or array source order. An unrecognized container occupies its candidate location once.
 
@@ -85,6 +85,8 @@ Each adapter preserves its provider order and existing ID and display-name rules
 
 A retained unnamed Codex additional entry uses its original one-based source position in its ID and display name. Omitted entries do not renumber it. For named Codex entries whose existing slug-derived IDs collide, the adapter retains the first valid entry in Codex window order and omits later colliding entries.
 
+A current nested Codex entry uses `limit_name`. Its retained windows use IDs `additional:<slug>:primary` and `additional:<slug>:secondary` and display names `<limit_name> Primary` and `<limit_name> Secondary`. An unnamed nested entry inserts `:primary` or `:secondary` after the existing `additional:unnamed:<position>` base. A JSON `null` nested or top-level window is absent and emits no diagnostic. Legacy direct additional entries retain their existing IDs, names, ordering, and decoding.
+
 For Claude candidates whose existing IDs collide, the adapter retains the first valid entry in Claude window order and omits later colliding entries. Only retained candidates reserve IDs. Repeated normalization of the same raw JSON produces the same ordered `windows` and the same number and sequence of fixed diagnostics.
 
 ### INV-6 — Diagnostics do not change account or aggregate status
@@ -122,7 +124,7 @@ The named pattern is **adapter-local window degradation**. It applies to candida
 
 Each adapter isolates candidate decoding from top-level decoding. A wrong type in one candidate cannot abort decoding of a sibling candidate. An enumerable unrecognized candidate produces one fixed diagnostic. An unrecognized container that cannot be enumerated produces one fixed diagnostic. Arbitrary fields outside candidate locations stay raw-visible and do not produce diagnostics.
 
-The Codex adapter applies the pattern to primary, secondary, and additional candidates. It preserves the existing deterministic synthetic IDs for unnamed additional entries and the existing order for retained windows.
+The Codex adapter applies the pattern to primary, secondary, legacy direct additional candidates, and both windows inside a current nested additional candidate. It preserves the existing deterministic synthetic IDs for legacy unnamed entries and adds the ruled stable suffixes for current nested entries.
 
 The Claude adapter applies the pattern to fixed buckets and the `limits` container. It combines valid recognized fixed buckets with valid recognized map-form `limits` members instead of allowing one present container to suppress valid siblings. An enumerable `limits` member without an existing mapping stays raw-visible, is omitted, and produces the fixed Claude diagnostic.
 
@@ -141,6 +143,10 @@ Given a synthetic Codex response with one valid recognized window, one additiona
 ### AC-2 — Mixed Claude candidates degrade locally
 
 Given a synthetic Claude response with one valid fixed bucket, one invalid recognized bucket, and one enumerable unrecognized `limits` member, when the adapter normalizes the response, then it returns the valid fixed window, omits the two unusable candidates, preserves raw bytes exactly, emits two exact Claude diagnostics, and returns no error.
+
+### AC-2A — Current nested Codex additional windows remain truthful
+
+Given a synthetic current Codex response with `limit_name`, valid nested primary and secondary windows, a null top-level secondary window, and one valid top-level primary window, when the adapter normalizes it, then it returns the top-level primary followed by `additional:<slug>:primary` and `additional:<slug>:secondary`, uses the ruled display names, preserves raw bytes exactly, emits no diagnostic for the null window, and returns no error. Existing legacy direct-window cases remain unchanged.
 
 ### AC-3 — Unrecognized containers cannot erase valid siblings
 
