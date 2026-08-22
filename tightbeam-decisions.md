@@ -2707,3 +2707,15 @@ With this and the 2026-08-20 firehose ruling above, nothing about the
 streaming feature is waiting on Mike. The next step, whenever someone picks
 it up, is a firehose-scoped spec written off main tip with the archived
 focused design and draft as input.
+
+## 2026-08-22 — Main is merged into, never worked in (Mike, overturning the no-door ruling)
+
+"They need to be working in their own workspaces and then only merging to
+main, not in main itself." This overturns the 2026-08-13 no-door process
+(agents pushing main directly, CI as tripwire). The new law: every agent
+works on its own branch in its own workspace; main receives MERGES only;
+a merge requires the full gate green (the red-suite era proved the
+tripwire model — CI fired for days and nobody was assigned to hear it,
+while ten direct pushes landed on a red main). Enforcement should be a
+bone, not discipline: branch protection on main (merges only, green
+checks required) so the wrong thing is unrepresentable.
