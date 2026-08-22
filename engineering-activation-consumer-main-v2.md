@@ -37,7 +37,7 @@ This policy adds the Engineering consumer adapter because deleting the supported
 
 ## Terms
 
-- **Execution-time main authority**: Git commit `644c04064594328b5ec1c1b76301a1ac893bffc2`, which `refs/heads/main` named at 2026-08-20 23:23 PT. Its root tree is `54f9c06efc8bdbb922b0e0ddba812c5e49168724`. The exact relevant object identities appear under Architecture. The frozen `0.1.8` and `0.1.x` history is evidence, not an integration target for this policy.
+- **Execution-time main authority**: Git commit `2d0bbf056996ca573379bc022f7620b55f309120`, which `refs/heads/main` named at 2026-08-20 23:23 PT. Its root tree is `cc787fbcfa57618d99e481f39cd54fe967ab7d66`. The exact relevant object identities appear under Architecture. The frozen `0.1.8` and `0.1.x` history is evidence, not an integration target for this policy.
 - **Neutral activation primitive**: the one `activation_events` stream and fixed `activation-*` verb family defined by `art_2bc5475e`. Tightbeam verifies identity, shape, order, replay, access, and durable notice mechanics. It does not decide Engineering readiness, authority sufficiency, result meaning, recovery, or acknowledgement policy.
 - **Deployment manager**: the root-privileged local `DeployManager` defined by `art_c4230451`. It is the sole writer of `/opt/tightbeam` deployment state and registered systemd unit files. Root privilege makes it the executor, not the authorizer.
 - **Production installation**: the action defined by `art_c4230451` that makes one exact verified update restart-loadable on a production machine by publishing immutable objects and replacing `active`.
@@ -59,7 +59,7 @@ This policy adds the Engineering consumer adapter because deleting the supported
 
 ## Assumptions
 
-1. Execution-time `origin/main` and the remote `refs/heads/main` both resolve to `644c04064594328b5ec1c1b76301a1ac893bffc2` at 2026-08-20 23:23 PT.
+1. Execution-time `origin/main` and the remote `refs/heads/main` both resolve to `2d0bbf056996ca573379bc022f7620b55f309120` at 2026-08-20 23:23 PT.
 2. That commit contains no `activation_events`, `activation-events-v1`, `activation-attempt`, or `AcceptedActivationAttempt` match.
 3. That commit contains no `cli/src/deploy/` tree and no deploy CLI command.
 4. `README.md` at that commit still directs an operator to run `npm install -g` before service restart.
@@ -76,7 +76,7 @@ This policy adds the Engineering consumer adapter because deleting the supported
 
 **E-01 — one neutral primitive.** Engineering records declaration, authority, attempt, observation, compensation, notice, and acknowledgement through `art_2bc5475e`. The substrate contains no Engineering-specific event kind, verb, state, policy decision, or sibling fact.
 
-**E-02 — pinned main source.** An implementation card derived from this artifact targets commit `644c04064594328b5ec1c1b76301a1ac893bffc2`. A later main commit requires a new read-only reconciliation before implementation authority can bind it.
+**E-02 — pinned main source.** An implementation card derived from this artifact targets commit `2d0bbf056996ca573379bc022f7620b55f309120`. A later main commit requires a new read-only reconciliation before implementation authority can bind it.
 
 **E-03 — authorizer and executor stay distinct.** The neutral `authorizer` and `basis` identify Mike's Ed25519 approval and exact signed envelope for production installation. The neutral `executor` identifies the root deployment manager. Root privilege alone grants no production-installation authority.
 
@@ -119,7 +119,7 @@ This policy adds the Engineering consumer adapter because deleting the supported
 
 | Object at execution-time main | Git object ID | Policy use |
 |---|---|---|
-| root tree | `54f9c06efc8bdbb922b0e0ddba812c5e49168724` | complete source identity |
+| root tree | `cc787fbcfa57618d99e481f39cd54fe967ab7d66` | complete source identity |
 | `README.md` | `992136f271b72000888cefe6f0a90f8596b91f9b` | unsafe npm/Linux/macOS path census |
 | `docs/UPGRADE.md` | `cb9ab47cf8fbd88bff926bfdb686449b684632c5` | unsafe source-checkout path census |
 | `cli/src/args.rs` | `6e422e1c728607bd992638aff0ff22e42b64b63d` | future local command parse seam |
@@ -295,7 +295,7 @@ Cards 1 and 2 can run independently after separate owner authorization. Card 3 d
 
 ## Acceptance
 
-**C-01 — source authority.** Given this artifact and a repository object database, when the reviewer resolves the pinned main commit and each object in the source map, then the commit equals `644c04064594328b5ec1c1b76301a1ac893bffc2` and each object ID matches. A moved `refs/heads/main` does not silently change this artifact's source authority.
+**C-01 — source authority.** Given this artifact and a repository object database, when the reviewer resolves the pinned main commit and each object in the source map, then the commit equals `2d0bbf056996ca573379bc022f7620b55f309120` and each object ID matches. A moved `refs/heads/main` does not silently change this artifact's source authority.
 
 **C-02 — neutral boundary.** Given the implementation's substrate vocabulary, when the neutral self-gate runs, then it contains the one `activation_events` table and fixed neutral verb family from `art_2bc5475e`, with no Engineering or deploy-specific sibling fact, verb, event kind, derived state, or policy evaluator.
 
