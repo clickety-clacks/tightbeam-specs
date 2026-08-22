@@ -387,7 +387,7 @@ remain outside this table.
 | `read_marker.updated` after set | read markers | upsert | `userId` + `scopeKey` |
 | `read_marker.updated` after clear | read markers | delete | `userId` + `scopeKey` |
 | `message.created` | transcript messages | upsert | `messageId` |
-| `condition_fact.filed` | facts | upsert | `factId` |
+| `condition_fact.filed` | condition facts | upsert | `factId` |
 | `critical_lease.updated` | critical state | upsert | `sessionKey` |
 | `config.updated` | config | upsert | `key` |
 | `host_env.updated` | host environment | upsert | `host` + `harness` + `name` |
@@ -395,8 +395,12 @@ remain outside this table.
 | `kungfu.updated` | kungfu | upsert | `name` |
 | `host.registered` | hosts | upsert | `host` |
 
-`condition_fact.filed` uses the append-only fact `id` as `rowVersion` and
-emits once after a successful committed insert. `critical_lease.updated` emits
+The exact firehose `resource` value for `condition_fact.filed` is
+`condition facts`; `/api/facts` is the REST route for that same resource.
+The fact projection `id`, notice `refs.factId`, and natural version are JSON
+integers with the same positive numeric value; `rowVersion` equals `id`.
+`condition_fact.filed` emits once after a successful committed insert.
+`critical_lease.updated` emits
 once after a committed lease change and uses the R7 version. An idempotent
 no-change replay emits no state notice. Both use the same AU4 visibility and
 exact R7 serializer as their REST resources, per `art_4a1cce6e`.
@@ -456,8 +460,11 @@ in firehose V3): "unredacted" governs content, never storage secrets.
 
 SR4. Ids are the correlation contract: each projection's primary id
 equals the id the firehose notice `refs` carry (firehose V5 and its
-primary-key table). A client applies last-version-wins upsert by
-`(primary id, rowVersion)`.
+primary-key table). Identifiers are strings except the condition-fact primary
+id: `facts.id` and `refs.factId` are JSON integers, and their numeric values
+must equal each other and `facts.rowVersion`. A decimal string is not an
+equivalent fact id. A client applies last-version-wins upsert by `(primary id,
+rowVersion)`.
 
 SR5. Safe-value exposure is explicit and default-deny. In v1 the complete
 config value allowlist is `default-archetype`. No other config key returns a
@@ -676,6 +683,12 @@ dependency digests. Semantic sequences retain their declared order.
 A18. Facts and critical-state rows have immutable cursors, complete R7 wire
 schemas, AU4 visibility tests, and exactly one R8 state mapping. The suite
 fails if either companion firehose class is absent from the adopted registry.
+For `condition_fact.filed`, it also requires the exact `condition facts`
+resource value and integer equality across item `id`, `refs.factId`, and
+`rowVersion`. For both companion classes, it tests an allowed and denied
+principal through the shared AU4 function, then applies older, duplicate, and
+newer snapshots and notices in both orders to prove per-primary-key
+last-version-wins convergence.
 
 ## Open questions — Spirit questions for Mike
 

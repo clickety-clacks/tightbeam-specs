@@ -64,5 +64,17 @@ side.
 | F9 cursor and timing ambiguity | AU7 fixes error precedence and principal binding; AU8 defines a measurable in-process timing class; A6 tests each case. |
 | F10 nondeterministic nested data | The wire-schema companion fixes nested keys, enums, nullability, object-key order, array order, serializer bytes, and dependency digest input; A17 randomizes source order. |
 
+## Joint REST and firehose review disposition
+
+The exact-revision joint review `att_8580ca4f` and immutable report
+`art_4301a934` found three remaining cross-plane defects in REST commit
+`72b1f9b` and firehose commit `c4eb42e`.
+
+| Finding | Mechanical disposition |
+|---|---|
+| J1 resource-name conflict | REST R8 now uses the authority's exact `condition facts` firehose resource value and states that `/api/facts` is the route for that resource. |
+| J2 `factId` type conflict | R8, SR4, A18, and the wire schema make item `id`, notice `refs.factId`, and `rowVersion` positive JSON integers with equal numeric values; decimal strings are invalid. |
+| J3 A1/A6 authority-proof gap | REST A18 proves shared AU4 authorization and per-resource last-version-wins behavior for both companion classes. The matching firehose successor must make its A1/A6 proof and both R8 coverage cells explicit before joint review. |
+
 This ledger records authority and required effects. It does not replace the
 main product contract, the wire schema, or the firehose registry.
