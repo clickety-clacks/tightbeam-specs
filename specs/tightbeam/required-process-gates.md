@@ -1,7 +1,9 @@
 # Declarative required-process gates
 
-Status: review-ready specification for
-`wi_f165cdbd-72c0-4add-bb8d-2113908c3e55`. This specification authorizes no
+Status: changes-requested specification amended after
+`att_d9aa11c7-ea16-4797-8e36-ddf05fa6706f`; the amended bytes require a cold
+digest and re-review for `wi_f165cdbd-72c0-4add-bb8d-2113908c3e55`. This
+specification authorizes no
 implementation, identity publication, deployment, runtime mutation, or release
 operation.
 
@@ -28,6 +30,10 @@ Authority and evidence:
 - `completion-rails-decisions.md` remains the authority for assignment-card
   completion rail composition. This specification does not duplicate or
   supersede it.
+- Independent review `att_d9aa11c7-ea16-4797-8e36-ddf05fa6706f` requested six
+  changes: established rail identity reuse, a deterministic V5 capability seam,
+  an exact wire contract, wrong-scope refusal, a concrete catalog-transition
+  gate, and canonical hash bytes. This revision addresses only those blockers.
 
 ## Goal
 
@@ -91,7 +97,7 @@ proof would defeat the opt-in contract.
   a new mutation resolves for a stable name. Older installed identities remain
   addressable for existing rows but are not candidates for new mutations.
 - **Process definition:** An installed Kung Fu declaration that maps one
-  process identity to existing dispatch-tier rule identities for one or both
+  process identity to existing dispatch-tier rail identities for one or both
   completion transitions. It declares the exact fact-contract identities that
   those rules consume.
 - **Required-process rail:** An installed dispatch-tier rule marked
@@ -109,8 +115,9 @@ proof would defeat the opt-in contract.
   `delivery_target.landed@1`. It is true only when the object has one admitted
   receipt for its exact active target-binding revision and identity and that
   receipt carries a nonblank baseline.
-- **Rule identity:** The tuple `(ruleName, definitionSha256)` computed from one
-  installed rule definition.
+- **Rail identity:** The established immutable tuple
+  `(name, version, definitionSha256)` from `completion-rails-decisions.md`.
+  This specification adds no second rule-identity form.
 - **Fact-contract identity:** The immutable tuple `(factName, version, type,
   semanticsSha256)`. A semantic or shape change creates a new version.
 - **Local requirement:** A process that one scope explicitly requires.
@@ -248,14 +255,14 @@ Fu edit does not rewrite that evidence.
 
 A new scope mutation refuses an unknown process name before it writes. A
 completion attempt refuses when the installed catalog lacks the stored process
-identity, rule identity, or fact-contract identity. The response names the
+identity, rail identity, or fact-contract identity. The response names the
 missing identity and two remedies: restore that exact installed contract, or
 append an authorized scope revision that resolves to an installed contract.
 
 ### I8 — Completion check and state change are one transaction
 
 The gateway evaluates the effective process set from one database snapshot.
-It evaluates selected rules and commits the successful close in the same
+It evaluates selected rails and commits the successful close in the same
 serialized transaction. A membership, scope, target, receipt, or object-state
 change cannot occur between the check and the close.
 
@@ -264,7 +271,7 @@ gateway returns the denial. The target state does not change.
 
 ### I9 — A failure names cause, principal, and repair
 
-A failed gate names the selected rule identity, target kind, target id,
+A failed gate names the selected rail identity, target kind, target id,
 gate-set hash, row-visible reason, and supported remedy. A process-selected
 rail also names each selecting process identity in canonical order. The target
 landing rail instead names its binding revision and delivery-target identity.
@@ -366,34 +373,97 @@ process-specific substrate logic.
 
 ### I19 — V5 dependency cannot fall back
 
-Topline-scope policy, Topline target binding, and Topline close gating call the
-V5 intent API only. If the V5 capability is unavailable, these operations return
-`topline_v5_unavailable` and write no policy or target row. They do not consult
-Execution Map telemetry or legacy `toplines` behavior.
+Topline-scope policy, Topline target binding, Topline receipt admission, and
+the added Topline projections call the V5 intent API only. If the V5 capability
+is unavailable, the three mutations return `topline_v5_unavailable` and write
+no policy, binding, or receipt row; this specification adds no projection to a
+legacy Topline response. None consults Execution Map telemetry or legacy
+`toplines` behavior.
 
 The MVP is not runtime-proven until the V5 runtime proof resolves
 `att_a76de51c`. A staged build can expose organization and work-item policy
-first, but it must keep each Topline-specific verb fail-closed until V5 is
-proven and enabled.
+first. It does not register or replace `topline-close`. After the V5
+implementation supplies that reviewed lifecycle, the close handler activates
+this specification's Topline gate only when the exact V5 capability is enabled.
+An absent capability leaves that hook disabled and cannot call an Execution Map
+delegate.
+
+### I20 — Hash inputs have one byte representation
+
+Each definition, catalog revision, gate set, and idempotency fingerprint hash
+uses the canonical JSON bytes specified in Architecture. A producer cannot hash
+TOML source bytes, map iteration order, presentation JSON, or an array before
+its required sort.
+
+### I21 — Process verbs and scope are compatible
+
+Each process definition declares a nonempty subset of `work-item-close` and
+`topline-close`. Completion expands only rails for the attempted verb. A
+work-item scope mutation refuses a process that omits `work-item-close` with
+`required_process_scope_incompatible`. An organization mutation that names a
+process containing `topline-close` requires the V5 capability. A Topline scope
+mutation requires the V5 capability and can select a work-item-only process for
+its active member work items, a Topline-only process for the Topline close, or a
+process for both verbs.
 
 ## Architecture
+
+### Toplines V5 capability seam
+
+Add `Tightbeam.RuntimeCapabilities` and the packaged file
+`priv/runtime-capabilities.toml`. The file has no default `toplines_v5` entry.
+The V5 release can add exactly this entry only after its runtime proof is
+reviewed:
+
+```toml
+[toplines_v5]
+contract_sha256 = "d39dd61cb44f5c6ff0bbc301b28d64a893b294d1a894e148b1449b36d5585bf9"
+schema_version = 5
+```
+
+`Tightbeam.Toplines.capability/0` returns exactly
+`%{contract_sha256: "d39dd61cb44f5c6ff0bbc301b28d64a893b294d1a894e148b1449b36d5585bf9",
+schema_version: 5}` only when the module implements the reviewed V5 intent API,
+active-membership query, and transaction-scoped close hook. At boot,
+`Tightbeam.RuntimeCapabilities.load!/1`
+compares the packaged entry, the module return, the installed schema version,
+and the registered `topline-close` handler. If the file omits the entry, the
+gateway records `toplines_v5` as disabled and continues to serve organization
+and work-item functionality. If the file contains the entry and any comparison
+fails, boot stops with `toplines_v5_capability_invalid` and names the mismatched
+field.
+
+The boot error is canonical JSON
+`{"error":{"code":"toplines_v5_capability_invalid","field":"<field>","message":"toplines v5 capability is invalid"}}`.
+`field` is one of `contractSha256`, `schemaVersion`, `intentApi`,
+`activeMembershipQuery`, or `toplineCloseHandler`.
+
+The three Topline mutation selectors and the V5 Topline projection introduced
+here call
+`Tightbeam.RuntimeCapabilities.require(:toplines_v5)` before object lookup.
+The V5 `topline-close` handler calls the same check before this specification's
+gate hook. The staged build does not add a `topline-close` handler; the V5
+implementation owns that verb and lifecycle. Neither capability branch calls
+legacy telemetry code.
 
 ### Pattern: named process selection over existing rails
 
 Kung Fu projects process declarations to `identity/processes/*.toml`. Each
 declaration contains a stable qualified name, positive version, applicable
 completion verbs, installed required-process rail identities, and fact-contract
-identities. The loader computes the declaration and rule hashes; a declaration
-cannot assert its own hash. A catalog selection index, excluded from definition
-hashes, maps each selectable stable name to one exact installed identity. An
-installed identity absent from the index remains available to existing rows but
-cannot satisfy a new stable-name mutation. The process loader validates the
-full catalog at boot. It rejects a duplicate name/version, an index entry that
-names no exact installed identity, an unsupported fact contract, a rule that
-lacks `attachment = "required-process"`, a rule that targets another verb, a
-rule from another attachment class, or a dependency cycle. Globally selected
-statutes stay outside this attachment class, and a scope clear cannot suppress
-them.
+identities. The loader computes the process declaration hash and consumes each
+rail's established versioned identity from the served rail catalog; a process
+declaration cannot assert either hash. A catalog selection index, excluded from
+definition hashes, maps each selectable stable name to one exact installed
+identity. An installed identity absent from the index remains available to
+existing rows but cannot satisfy a new stable-name mutation. The process loader
+validates the full catalog at boot. It rejects a duplicate name/version, an
+index entry that names no exact installed identity, an empty or unknown
+completion-verb set, an unsupported fact contract, a rail that lacks
+  `attachment = "required-process"`, a rail whose verb is absent from the process
+  completion-verb set, a declared verb with no selected rail, a rail from
+  another attachment class, or a dependency cycle. Globally selected statutes
+  stay outside this attachment class, and a scope clear cannot suppress them.
 
 The core target module reserves and installs
 `delivery-target-landed-work-item` for `work-item-close` and
@@ -406,6 +476,76 @@ another attachment.
 
 The binding layer selects process identities. The rules engine evaluates them.
 The binding layer does not implement a workflow or interpret evidence.
+
+### Canonical bytes and hashes
+
+Canonical JSON uses UTF-8, object keys sorted by UTF-8 byte order, no
+insignificant whitespace, lowercase `true`, `false`, and `null`, and base-10
+integers without leading zeroes. It rejects floating-point values and invalid
+Unicode. A string emits Unicode scalar values as UTF-8, escapes a quotation
+mark as `\"`, escapes a reverse solidus as `\\`, never escapes `/`, and encodes
+each U+0000 through U+001F control as lowercase `\u00xx`; it does not use the
+short control escapes. Each SHA-256 is the lowercase hexadecimal hash of those
+exact bytes. Arrays use the order below before serialization:
+
+- rail identities sort by `name`, then numeric `version`, then
+  `definitionSha256`;
+- fact-contract identities sort by `factName`, then numeric `version`, then
+  `type`, then `semanticsSha256`;
+- process and target identities sort by `name`, then numeric `version`, then
+  `definitionSha256`;
+- source strings sort as `organization`, then `tl_...` by UTF-8 bytes, then
+  `wi_...` by UTF-8 bytes;
+- typed evidence references sort by `kind`, then `id`, both by UTF-8 bytes.
+- completion verbs and stable-name lists sort by UTF-8 bytes.
+
+The closed identity objects used below are:
+
+```json
+{"definitionSha256":"<hex>","name":"<name>","version":1}
+{"factName":"<name>","semanticsSha256":"<hex>","type":"<type>","version":1}
+```
+
+The first shape is a process, target, or rail identity according to its field
+context. The second shape is a fact-contract identity. An error field that can
+carry more than one identity class adds a discriminator and uses exactly one of
+these shapes:
+
+```json
+{"definitionSha256":"<hex>","kind":"process|deliveryTarget|rail","name":"<name>","version":1}
+{"factName":"<name>","kind":"factContract","semanticsSha256":"<hex>","type":"<type>","version":1}
+```
+
+A process `definitionSha256` hashes this closed semantic object:
+
+```json
+{"completionVerbs":["topline-close","work-item-close"],"factContracts":[{"factName":"<name>","semanticsSha256":"<hex>","type":"<type>","version":1}],"name":"<qualified-name>","rails":[{"definitionSha256":"<hex>","name":"<rail-name>","version":1}],"version":1}
+```
+
+The `completionVerbs` array contains only the declared verbs and sorts by UTF-8
+bytes. A delivery-target `definitionSha256` hashes this closed semantic object:
+
+```json
+{"admissionRails":[{"definitionSha256":"<hex>","name":"<rail-name>","version":1}],"factContracts":[{"factName":"<name>","semanticsSha256":"<hex>","type":"<type>","version":1}],"name":"<qualified-name>","version":1}
+```
+
+Rail definition hashes arrive as part of the served rail catalog's established
+versioned identity. This specification treats them as opaque exact values and
+does not compute or redefine them.
+
+The process catalog revision hashes
+`{"active":[{"identity":<process-identity>,"name":"<name>"}],"definitions":[<process-identity>...]}`.
+The target catalog uses the same object with target identities. Both arrays use
+the identity ordering above; `active` sorts by `name`. Selection metadata does
+not enter a definition hash.
+
+The gate-set hash covers exactly
+`{"processes":[{"identity":<process-identity>,"sources":["<source>"...]}],"targetBinding":<null-or-object>}`.
+The non-null target object is
+`{"definitionSha256":"<hex>","name":"<name>","revision":<integer>,"version":<integer>}`.
+The idempotency fingerprint hash covers the exact operation envelope and closed
+parameter shapes in Wire contract below. Stored JSON columns use these same
+canonical bytes.
 
 ### Scope rows and mutation seam
 
@@ -457,6 +597,15 @@ Only an administrator can mutate organization scope. The Topline or work-item
 owner, a session owned by that user, or an administrator can mutate the object
 scope. Authorization and exact-id resolution occur inside the write
 transaction. Unknown and invisible objects return the same bytes.
+
+After active-identity resolution, the same transaction applies I21. A work-item
+scope request containing a process without `work-item-close` returns
+`required_process_scope_incompatible`. A Topline scope request requires the V5
+capability; it accepts a process for either completion verb because the Topline
+is both a close target and an explicit inheritance source for active member
+work items. An organization request containing a `topline-close` process also
+requires the V5 capability. Each refusal writes no scope revision or
+idempotency row.
 
 ### Effective-set projection
 
@@ -539,7 +688,7 @@ objects return the same bytes. A new binding mutation with an unknown target
 name returns `unknown_delivery_target`. An unavailable stored target identity
 or admission contract returns `delivery_target_version_unavailable`. A second
 receipt request for the binding under another idempotency key returns
-`landed_receipt_exists` with the existing receipt id. Each refusal writes no
+`landed_receipt_exists`. Each refusal writes no
 binding revision or landed receipt.
 
 Reads expose `deliveryTarget: null` when unbound. A bound projection exposes
@@ -554,12 +703,12 @@ before the state mutation. The selector returns the effective process
 identities plus the object's corresponding target landing rail when that exact
 object has an active target binding. It computes the gate-set hash and then
 calls the existing rules decision fold in installed deterministic order. It
-evaluates one copy of each selected rule identity and preserves the canonically
+evaluates one copy of each selected rail identity and preserves the canonically
 ordered process identities that selected that rule.
 
 On allow, the handler commits the close and its completion evidence. On denial,
 the handler commits the denial and uses `RailRemedy` with subject
-`<target-kind>:<target-id>:<gate-set-sha256>:<rule-identity>`. Repeated denials
+`<target-kind>:<target-id>:<gate-set-sha256>:<rail-identity>`. Repeated denials
 can leave separate attempt events, but one live remedy subject produces one
 initial notice. When the required fact appears, the next evaluation closes the
 remedy episode through the existing close path. Before recurrence sends a later
@@ -570,13 +719,19 @@ live episode to the newly selected responsible agent.
 ### Idempotency, crash, and replay
 
 Policy, target, and receipt mutations use the existing wire-idempotency
-fingerprint pattern. The fingerprint covers the operation, authenticated
-principal, scope, expected revision when present, and the complete normalized
-wire request. It does not cover a catalog-derived identity or another value
-that can change after the first commit.
+pattern. The idempotency row key is
+`(callerUserId, operation, idempotencyKey)`. Its fingerprint is SHA-256 over
+`{"operation":"<verb>","parameters":{<closed-shape>}}` using the canonical
+bytes below. `parameters` contains each validated request value except
+`idempotencyKey`; it contains no authenticated principal, catalog-derived
+identity, or other value that can change after the first commit.
 
-- The gateway checks a matching committed idempotency row before it resolves
-  the current catalog, binding, evidence, or admission rules.
+- The gateway authenticates the current principal and authorizes the named
+  object before it reads an idempotency row. A direct Topline selector first
+  performs I19's capability check, as fixed in the refusal precedence below.
+- After authorization, the gateway checks a matching committed idempotency row
+  before it resolves the current catalog, mutable revision, binding, evidence,
+  or admission rails.
 - The same key and fingerprint returns the stored response and writes nothing,
   even when the live catalog or binding changed after the first commit.
 - The same key with another fingerprint returns `idempotency_conflict`.
@@ -584,6 +739,126 @@ that can change after the first commit.
 - A crash before commit leaves no revision, receipt, event, or idempotency row.
 - A crash after commit returns the committed result on replay.
 - A completion retry re-reads current rows. It cannot reuse an in-memory pass.
+
+### Wire contract
+
+The CLI sends the existing `/agent/dispatch` envelope and no typed target. For
+a session credential with no identity override, the three mutation bodies have
+exactly these keys; expanded whitespace below is not sent:
+
+```json
+{"params":{"cleared":["<process-name>"],"expectedRevision":3,"idempotencyKey":"<key>","reason":"<reason>","required":["<process-name>"],"scopeKind":"organization|topline|workItem","scopeRef":"organization|tl_...|wi_..."},"verb":"required-processes-set"}
+{"params":{"expectedRevision":3,"idempotencyKey":"<key>","reason":"<reason>","targetId":"tl_...|wi_...","targetKind":"topline|workItem","targetName":"<target-name>"},"verb":"delivery-target-set"}
+{"params":{"baseline":"<opaque-nonblank-text>","bindingRevision":3,"evidence":[{"id":"<row-id>","kind":"<supported-row-kind>"}],"idempotencyKey":"<key>","targetId":"tl_...|wi_...","targetKind":"topline|workItem"},"verb":"delivery-landed-record"}
+```
+
+`targetName: null` is the one target-clear representation. Each other listed
+member is required and non-null. The router returns `invalid_message` for an
+omitted member, an extra member, a wrong JSON type, a scope-kind/id-prefix
+mismatch, duplicate list entries, require/clear overlap, or a list outside its
+required canonical order. `organization` requires `scopeRef: "organization"`
+and an empty `cleared` array. The idempotency fingerprint removes only
+`idempotencyKey` and wraps the remaining `params` as the operation envelope in
+Idempotency, crash, and replay.
+
+The gateway wraps successful handler values in `{"result":...}`. The exact
+handler values are:
+
+```json
+{"requiredProcesses":<required-processes-object>,"scopeKind":"organization|topline|workItem","scopeRef":"organization|tl_...|wi_..."}
+{"bindingRevision":4,"deliveryTarget":<delivery-target-object-or-null>,"targetId":"tl_...|wi_...","targetKind":"topline|workItem"}
+{"landedReceipt":<landed-receipt-object>,"targetId":"tl_...|wi_...","targetKind":"topline|workItem"}
+```
+
+A required-processes object contains exactly `effective`, `effectiveSha256`,
+`localCleared`, `localRequired`, and `localRevision`. Each identity in
+`effective` or `localRequired` contains exactly `definitionSha256`, `name`, and
+`version`; an effective entry also contains `sources`. The arrays and object
+keys use Canonical bytes and hashes ordering. `localRevision` is `0` when the
+scope has no revision.
+
+A non-null delivery-target object contains exactly `baseline`,
+`bindingPrincipal`, `bindingReason`, `bindingRevision`, `definitionSha256`,
+`landedReceiptId`, `name`, and `version`. `baseline` and `landedReceiptId` are
+both null before landing. `bindingPrincipal` is exactly
+`{"kind":"user|session","ref":"<id>"}`. A landed-receipt object contains
+exactly `admissionDecisionId`, `baseline`, `bindingRevision`, `cause`,
+`createdAt`, `evidence`, `id`, `principal`, and `targetIdentity`.
+`targetIdentity` contains exactly `definitionSha256`, `name`, and `version`;
+`principal` has the same actor shape as `bindingPrincipal`.
+
+New handler refusals use exactly
+`{"error":{"code":"<slug>","message":"<message>"}}` unless one of the
+structured exceptions below applies. The closed slug/message mapping is:
+
+| Slug | Message |
+| --- | --- |
+| `binding_revision_conflict` | `binding revision does not match` |
+| `delivery_target_version_unavailable` | `delivery target version is unavailable` |
+| `idempotency_conflict` | `idempotency key conflicts with a prior request` |
+| `invalid_message` | `invalid message` |
+| `landed_receipt_exists` | `landed receipt already exists` |
+| `not_found` | `record not found` |
+| `process_denied` | `process principals cannot mutate required process state` |
+| `required_process_catalog_in_use` | `candidate catalog removes an open required-process reference` |
+| `required_process_identity_conflict` | `required process identities conflict` |
+| `required_process_scope_incompatible` | `required process does not apply to this scope` |
+| `required_process_version_unavailable` | `required process version is unavailable` |
+| `revision_conflict` | `expected revision does not match` |
+| `topline_v5_unavailable` | `toplines v5 capability is unavailable` |
+| `unknown_delivery_target` | `delivery target is not installed` |
+| `unknown_required_process` | `required process is not installed` |
+
+`required_process_catalog_in_use` instead returns exactly:
+
+```json
+{"error":{"code":"required_process_catalog_in_use","message":"candidate catalog removes an open required-process reference","missingIdentity":<discriminated-identity>,"referencingRowIds":["<row-id>"...]}}
+```
+
+`referencingRowIds` sorts by UTF-8 bytes. The boot-only
+`required_process_catalog_incompatible` uses the same inner object and message
+`installed catalog omits an open required-process reference`; boot writes that
+object to its structured startup error rather than an HTTP response.
+
+The unavailable-identity and identity-conflict exceptions return exactly:
+
+```json
+{"error":{"code":"required_process_version_unavailable","message":"required process version is unavailable","missingIdentity":<discriminated-identity>,"remedies":["restore_exact_contract","migrate_scope_revision"]}}
+{"error":{"code":"delivery_target_version_unavailable","message":"delivery target version is unavailable","missingIdentity":<discriminated-identity>,"remedies":["restore_exact_contract","append_target_binding_revision"]}}
+{"error":{"code":"required_process_identity_conflict","conflicts":[{"identity":<process-identity>,"sources":["<source>"...]}...],"message":"required process identities conflict"}}
+```
+
+`conflicts` uses process-identity order. Each `sources` array uses source order.
+These remedies name existing append-only mutation paths; they do not execute a
+repair.
+
+A selected completion rail denial instead returns exactly:
+
+```json
+{"error":{"code":"required_process_denied","gateSetSha256":"<hex>","message":"required process gate denied","processes":[<process-identity>...],"rail":<rail-identity>,"reason":"<installed-reason-code>","remedy":"<installed-remedy-code-or-null>","targetId":"tl_...|wi_...","targetKind":"topline|workItem"}}
+```
+
+For a target landing denial, `processes` is empty and the error also contains
+`"binding":{"definitionSha256":"<hex>","name":"<name>","revision":3,"version":1}`.
+A delivery-admission rail denial is exactly:
+
+```json
+{"error":{"code":"delivery_evidence_denied","message":"delivery evidence denied","rail":<rail-identity>,"reason":"<installed-reason-code>","remedy":"<installed-remedy-code-or-null>","targetId":"tl_...|wi_...","targetIdentity":<target-identity>,"targetKind":"topline|workItem"}}
+```
+
+The installed immutable rail supplies `reason` and `remedy`; tests load a real
+rail fixture rather than inventing response text.
+
+Validation chooses the first applicable refusal in this order: existing exact
+CLI compatibility; transport authentication and principal kind; closed wire
+shape; `toplines_v5` capability for a direct Topline selector; owner-filtered
+object visibility and authorization; idempotency replay or conflict; expected
+scope or binding revision; active catalog resolution; I21 scope compatibility;
+binding and receipt state; typed evidence visibility; selected-rail decision.
+An organization request discovers that a resolved process contains
+`topline-close` during I21 and then applies the capability check. Each refusal
+writes no domain or idempotency row unless I8 explicitly requires a durable
+completion denial.
 
 ### Compatibility and rollout
 
@@ -596,16 +871,33 @@ refusal; it cannot believe a binding applied.
 Execution Map responses remain unchanged. They do not expose, inherit, or
 evaluate required-process or delivery-target state.
 
-Schema migration adds tables and registers the V5 Topline module before the new
-Topline policy modules. It creates no policy revision, target binding, receipt,
-denial, remedy, or wake. The organization setting remains absent until an
-administrator opts in.
+Schema migration adds the new tables. When the V5 Topline module is present,
+boot registers it before the Topline extensions in this specification. A staged
+build without V5 does not register those extensions. Migration creates no
+policy revision, target binding, receipt, denial, remedy, or wake. The
+organization setting remains absent until an administrator opts in.
 
-Before rollout removes an old process definition, target definition, selected
-rail, or fact contract, a compatibility gate must prove that no open catalog
-reference reaches it. Otherwise the release fails closed and names the
-referencing rows. The V5 runtime smoke is a release prerequisite for enabling
-Topline-specific verbs.
+Add `Tightbeam.RequiredProcesses.validate_catalog_transition/3`, with arguments
+`(databaseSnapshot, currentCatalogSet, candidateCatalogSet)`. Each catalog set
+contains its process, target, rail, and fact catalogs. The existing identity
+publication path calls it inside one read transaction before `identity-apply`
+activates a candidate served revision. It walks the open catalog references
+defined in Terms. If the candidate omits one exact
+reachable identity, `identity-apply` returns
+`required_process_catalog_in_use`, names the missing identity and referencing
+row ids, and leaves the served identity and database unchanged. This is the
+identity-law transition gate; this specification adds no release entity or
+release verb.
+
+Binary boot calls the same function after schema migration and before the
+gateway accepts traffic, using the installed catalogs as the candidate. A
+missing referenced identity stops boot with
+`required_process_catalog_incompatible` and the same identity and row ids.
+Core target rails and `delivery_target.landed@1` participate in this boot check.
+A rollout first retains the exact identity or migrates each named current scope
+or binding through its ordinary append-only mutation, then retries the existing
+identity-apply or boot seam. The V5 runtime smoke is a prerequisite for adding
+the `toplines_v5` capability entry.
 
 ### Proposed implementation paths
 
@@ -613,9 +905,14 @@ This path census is a build boundary, not implementation authority:
 
 - Add `lib/tightbeam/required_processes.ex` for catalog validation, scope
   revisions, composition, projections, and transaction-scoped selection.
+- Add `lib/tightbeam/runtime_capabilities.ex` and packaged
+  `priv/runtime-capabilities.toml` for the fail-closed V5 seam. The staged file
+  omits `toplines_v5`.
 - Add `lib/tightbeam/delivery_targets.ex` for target catalog validation,
   binding revisions, receipt admission, and the neutral landed fact.
-- Register both schemas after V5 Toplines in `lib/tightbeam/schema.ex`.
+- Register both schemas in `lib/tightbeam/schema.ex`. When V5 is present, its
+  Topline and membership schemas precede these extensions; staged work-item and
+  organization support does not require a V5 registration.
 - Add transaction-scoped selected-rule evaluation and fact-contract identities
   in `lib/tightbeam/rules.ex`. Reuse `lib/tightbeam/rail_remedy.ex`,
   `lib/tightbeam/supervision.ex`, and existing wake delivery.
@@ -629,10 +926,13 @@ This path census is a build boundary, not implementation authority:
   `lib/tightbeam/wire/router.ex` and `lib/tightbeam/wire/payloads.ex`, and CLI
   parsing plus request encoding in `cli/src/args.rs` and
   `cli/src/dispatch.rs`.
+- Call `validate_catalog_transition/3` from the existing identity-apply path
+  and from boot after migration and before gateway traffic.
 - Add focused proofs in `test/required_processes_test.exs`,
   `test/delivery_targets_test.exs`, `test/work_items_test.exs`,
   `test/toplines_test.exs`, `test/rules_test.exs`, `test/gateway_test.exs`,
-  `test/router_test.exs`, `test/payloads_test.exs`, and the CLI suites.
+  `test/router_test.exs`, `test/payloads_test.exs`, capability and identity-apply
+  suites, and the CLI suites.
 - Add Kung Fu declarations under `priv/kungfu/<bundle>/processes/*.toml` and
   `priv/kungfu/<bundle>/delivery-targets/*.toml` only when a reviewed product
   lane defines actual process or target meaning.
@@ -654,7 +954,7 @@ policy, denial, remedy, wake, target, or receipt row.
 
 Given the organization requires installed process `P` and work item `W` has no
 active V5 membership or local override, when `W` closes without `P`'s required
-evidence, then the gateway denies by exact process and rule identity. Given the
+evidence, then the gateway denies by exact process and rail identity. Given the
 evidence exists, the same close succeeds and records the effective-set hash.
 
 ### A3 — Topline inheritance uses explicit membership
@@ -682,7 +982,9 @@ Given organization scope requires `P`, `T1` clears `P`, `T2` inherits `P`, and
 Given two active sources contribute different identities for stable process
 name `P`, when the object attempts completion, then the gateway returns
 `required_process_identity_conflict`, names both sources, writes the denial,
-and keeps the object open. It does not select a winner.
+and keeps the object open. Each selected rail is named by exact
+`(name, version, definitionSha256)`. The gateway does not select a winner or
+construct a versionless rail identity.
 
 ### A7 — Scope mutation is authorized, atomic, and replay-safe
 
@@ -770,31 +1072,40 @@ truthful.
 
 ### A17 — Contract evolution requires compatibility evidence
 
-Given a process uses fact contract `F@1`, when a release removes or changes
-`F@1` without migrating each open reference or retaining exact compatibility,
-then the catalog or release gate refuses and names the referencing scope rows.
-Given migration appends current scope revisions to `F@2`, then later completion
-uses only `F@2` and preserves the `F@1` history. Given target binding `B` on a
-nonterminal object names target definition `D@1`, when a release removes
-`D@1`, one of its admission rails, or one of its fact contracts, then the
-release gate refuses and names `B`.
+Given a candidate identity revision removes fact contract `F@1` while an open
+catalog reference reaches it, when `identity-apply` validates the transition,
+then it returns `required_process_catalog_in_use`, names `F@1` and the sorted
+referencing row ids, and changes neither served identity nor database. Given an
+installed binary catalog omits that reference, when the gateway boots, then
+boot stops with `required_process_catalog_incompatible` and the same evidence.
+Given migration appends current scope revisions to `F@2`, then a later
+identity-apply succeeds and preserves `F@1` history. The same cases apply to a
+target definition, selected rail, or target fact contract reached by an active
+binding on a nonterminal object.
 
 ### A18 — V5 absence never becomes legacy inference
 
-Given the runtime lacks the enabled V5 intent capability, when a caller sets a
-Topline process, binds a Topline target, records a Topline receipt, or closes a
-Topline through this feature, then the gateway returns
-`topline_v5_unavailable` and writes nothing. An Execution Map row with matching
-creator-turn ancestry does not change the result.
+Given `priv/runtime-capabilities.toml` omits `toplines_v5`, when a caller sets a
+Topline process, binds a Topline target, or records a Topline receipt, then the
+gateway returns `topline_v5_unavailable` and writes nothing. Given the V5 module
+and `topline-close` handler exist while that entry is absent, when the caller
+closes a Topline, then the V5 handler returns `topline_v5_unavailable` before
+this gate hook. Given the staged build has no V5 close handler, then this
+specification does not register one. Given the packaged entry disagrees with
+the V5 module, schema version, or registered handler, then boot stops with
+`toplines_v5_capability_invalid`. An Execution Map row with matching
+creator-turn ancestry changes none of these results.
 
 ### A19 — CLI, wire, and projections agree
 
-Given each new CLI mutation, when the CLI encodes it, then the byte-exact wire
-request contains the selected scope, expected revision, complete snapshot or
-binding data, reason where required, and idempotency key. Gateway and direct
-wire tests return the same named errors. Work-item and V5 Topline reads expose
-the same effective identities, source ids, target revision, receipt id, and
-baseline in stable order.
+Given each new CLI mutation and a session credential without an identity
+override, when the CLI encodes it, then its bytes equal the corresponding
+closed request in Wire contract. Given one fixture for each fixed refusal and
+each selected-rail denial shape, when the CLI and direct wire invoke it, then
+both return the exact canonical error bytes. Given two simultaneously true
+refusals, then the response follows the stated precedence. Work-item and V5
+Topline reads expose the exact required-processes and delivery-target objects in
+canonical order.
 
 ### A20 — Target mutations are authorized and exact
 
@@ -815,6 +1126,28 @@ identity while a scope that already stores `P@1` continues to resolve `P@1`.
 Given a process or target selection index names an identity that is not
 installed, when the gateway boots, then catalog validation refuses startup and
 names the invalid index entry.
+
+### A22 — Wrong-scope process selection refuses
+
+Given process `P` declares only `topline-close`, when an authorized caller sets
+`P` on a work-item scope, then the gateway returns
+`required_process_scope_incompatible` and writes nothing. Given process `Q`
+declares only `work-item-close` and V5 is enabled, when an authorized caller
+sets `Q` on a Topline scope, then the revision commits and `Q` applies only to
+active member work items. Given an organization request names a process that
+contains `topline-close` while V5 is disabled, then it returns
+`topline_v5_unavailable` and writes nothing.
+
+### A23 — Canonical hashes are byte-stable
+
+Given equivalent process declarations whose TOML key order and whitespace
+differ, when the loader canonicalizes their closed semantic object, then both
+produce the same `definitionSha256`. Given one gate set whose input map or
+source enumeration order differs, when both instances sort and serialize under
+Canonical bytes and hashes, then both produce the same gate-set hash. Given one
+request whose JSON member order differs but whose validated closed values are
+equal, when both handlers build the fingerprint envelope, then both produce the
+same fingerprint; changing one semantic value changes it.
 
 ## Open Questions
 
