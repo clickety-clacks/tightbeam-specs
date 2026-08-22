@@ -1,6 +1,12 @@
-# REST state API v1 — the read plane (product spec, r2)
+# REST state API v1 — the read plane (product spec, r3 review draft)
 
-Status: DRAFT r2, 2026-08-22. r2 folds the reviewed mechanical amendment
+Status: REVIEW DRAFT r3, 2026-08-22. r3 folds the REST-side adjudicated
+findings F1/F8/F9/F13/F14/F16/F21/F22 from
+`review-gate-observability-2026-08-21.md` and aligns with firehose r6.
+It also consumes Mike's ruled SQ2: the admin read plane includes users,
+devices, ops metadata, and first-class archetype, kungfu, rail, and guidance
+content, all admin-only with secrets structurally excluded.
+r2 folds the reviewed mechanical amendment
 `art_8e2d8444` (reviewed-clean `att_0b648694`): adopted route/filter
 inventory, interim/final CLI transport, firehose serializer scope, the
 R12-to-M5 repair, and the harness-catalog compatibility ruling. Written
@@ -18,7 +24,7 @@ Authority and inputs:
   shared/specs/tightbeam/rest-state-api-recon.md): the inventory,
   contract baseline, and code evidence. Adopted with zero material
   rejections; its six conditions are folded in as requirements here.
-- event-firehose-v1.md r5: the sibling notice socket. The two contracts
+- event-firehose-v1.md r6: the sibling notice socket. The two contracts
   share serializers (SR series below) — that sharing is the whole
   correlation story.
 - Mike's rulings, 2026-08-20/21: clients build models from state, not
@@ -65,9 +71,11 @@ canonical public projection and a stable primary id.
 T2. **Projection** — the explicit public field list for a resource. One
 serializer owns it (SR1). Storage secrets never appear in any projection.
 
-T3. **Keyset cursor** — the resource's public primary id used as an
-exclusive `before`/`after` boundary, resolved server-side to an immutable
-ordering tuple. Never an offset.
+T3. **Keyset cursor** — an opaque, versioned encoding of the resource name
+and its complete immutable ordering tuple. It is an exclusive
+`before`/`after` boundary. It never contains an SQLite `rowid`, another live
+storage locator, or an offset. Deleting the boundary row does not invalidate
+the cursor.
 
 ## Requirements — surface
 
@@ -82,6 +90,7 @@ R2. Core model resources:
 |---|---|
 | GET /api/org | small org document: archetypes, hosts, model catalog — no embedded session collection |
 | GET /api/catalog/harnesses | canonical harness capability catalog using the v1 response envelope; `/harnesses` remains an undeprecated compatibility alias using its legacy raw-array outer envelope |
+| GET /api/hosts[, /:host] | paged host registry and host detail; the underlying state resource for `host.registered` |
 | GET /api/sessions | paged sessions |
 | GET /api/sessions/:sessionKey | session detail + mechanical status |
 | GET /api/sessions/:sessionKey/messages | paged transcript projection |
@@ -92,6 +101,7 @@ R2. Core model resources:
 | GET /api/wakes[, /:wakeId, /:wakeId/digest-members] | paged wakes, detail, digest audit read |
 | GET /api/turns[, /:seq] | paged turns, detail |
 | GET /api/artifacts[, /:artifactId] | paged artifact metadata, detail (+ existing GET /download/:assetId for bytes) |
+| GET /api/assets[, /:assetId] | paged binary-asset metadata and detail; bytes remain on existing GET /download/:assetId |
 | GET /api/decision-requests[, /:id] | paged collection, detail |
 | GET /api/read-markers[, /:scopeKey] | caller's markers (write stays a verb, firehose RM2) |
 | GET /api/roles | paged role registry |
@@ -106,25 +116,64 @@ complete responses. The canonical route wraps items in the v1 envelope;
 the compatibility alias preserves its legacy raw array.
 
 R3. Mechanical views: GET /api/toplines[/:id], /api/facts, and
-/api/critical-state. The remaining candidate admin reads — /api/identity,
-/api/kungfu, /api/config/:key, /api/host-env, /api/harness-processes,
-/api/users, and /api/devices — remain conditional on SQ2. If adopted,
-their safe projections and admin-only visibility must be frozen before
-routes ship. Mechanical and admin views are not part of a normal
-display-model bootstrap.
+/api/critical-state. Admin reads are GET /api/identity[, /:name],
+/api/archetypes[, /:name], /api/kungfu[, /:name],
+/api/guidance[, /:name], /api/rails[, /:name], /api/config[, /:key],
+/api/host-env, /api/harness-processes, /api/users[, /:userId], and
+/api/devices[, /:deviceId]. SQ2 admits these routes. Every one is admin-only;
+SR2 and SR5 still exclude secrets. Mechanical and admin views are not part of
+a normal display-model bootstrap.
 
 R4. Envelopes. List:
-`{"schemaVersion":1,"resource":"assignments","items":[],"page":{"oldestId":null,"newestId":null,"hasMoreBefore":false,"hasMoreAfter":false}}`.
+`{"schemaVersion":1,"resource":"assignments","items":[],"page":{"oldestCursor":null,"newestCursor":null,"hasMoreBefore":false,"hasMoreAfter":false}}`.
 Detail: `{"schemaVersion":1,"resource":"assignments","item":{}}`.
 For every notice-backed resource, the `item` shape equals the firehose
 notice `payload` shape (SR1).
 
-R5. Pagination: `before`/`after` (mutually exclusive, exclusive bounds),
-`limit` default 50 cap 500 (clamped), no cursor = newest page, page items
-oldest→newest, keyset only on immutable orders (createdAt/openedAt/ts/seq
-+ id tiebreak; the transcript precedent), unknown or forbidden cursor =
-`400 cursor_not_found`, filters fixed within one page chain, offset
-pagination forbidden.
+R5. Pagination: `before`/`after` are mutually exclusive, exclusive bounds.
+`limit` defaults to 50 and caps at 500 by clamping. No cursor means the newest
+page; page items are oldest→newest. Each cursor encodes every component of
+the resource's immutable order, including the stable public key as the final
+tiebreaker. The server compares the encoded tuple directly; it never resolves
+a cursor through a live row. A malformed cursor, wrong-resource cursor, or
+cursor whose filter fingerprint differs from the request returns typed
+`400 invalid_cursor`. Filters stay fixed within one page chain. Offset
+pagination is forbidden.
+
+R5a. Stable collection orders and cursor tuples are:
+
+| Resource | Cursor tuple |
+|---|---|
+| sessions | `(createdAt, sessionKey)` |
+| hosts | `(host)` |
+| roles | `(createdAt, name)` |
+| work items | `(createdAt, id)` |
+| assignments | `(openedAt, id)` |
+| attests | `(ts, id)` |
+| wakes | `(createdAt, wakeId)` |
+| turns | `(seq)` |
+| transcript messages | `(seq, id)` |
+| artifacts | `(createdAt, artifactId)` |
+| assets | `(createdAt, assetId)` |
+| decision requests | `(raisedAt, id)` |
+| identity | `(name)` |
+| archetypes | `(name)` |
+| kungfu | `(name)` |
+| guidance | `(name)` |
+| rails | `(name)` |
+| config | `(key)` |
+| host environment | `(updatedAt, host, harness, name)` |
+| harness processes | `(startedAt, id)` |
+| users | `(createdAt, userId)` |
+| devices | `(createdAt, deviceId)` |
+| read markers | `(updatedAt, userId, scopeKey)` |
+
+R5b. Read-marker collection identity is the composite key
+`(userId, scopeKey)`. The caller's user id remains implicit for ordinary
+user reads, but it remains in the cursor tuple. Two users with the same
+`scopeKey`, and two markers with the same `updatedAt`, page without loss or
+duplication. A marker update can move that marker in a later fresh snapshot;
+one active page chain retains its encoded boundary and filter fingerprint.
 
 R6. Filters are whitelisted per resource:
 
@@ -137,9 +186,19 @@ R6. Filters are whitelisted per resource:
 | wakes | state, sessionKey, creatorSessionKey, workItemId, assignmentId, conditionKind, conditionScope, class, bounded due/fired time |
 | turns | status, sessionKey, assignmentId, workItemId, wakeId, jobRef, bounded created/started/ended time |
 | artifacts | workItemId, createdBySession, kind, state |
+| assets | ownerUserId (admin only), mimeType exact |
 | decision requests | status, kind, ownerUserId, assignmentId, raiserSessionKey, expecterSessionKey |
 | roles | ownerUserId, boundSessionKey |
-| users and devices | admin-only status and ownership filters, only if SQ2 exposes these resources |
+| hosts | host exact |
+| identity | name exact, state |
+| archetypes | skill, host, harness |
+| kungfu | status, rootArchetype |
+| guidance | name exact |
+| rails | mode, tool |
+| config | key exact |
+| host environment | host, harness, name exact |
+| harness processes | sessionKey, host, harness, provider, model, state |
+| users and devices | status and ownership filters |
 | read markers | caller user by default; scopeKey exact or prefix |
 
 Filters are conjunctive across fields and disjunctive within a repeated
@@ -147,6 +206,117 @@ field. Unknown enum = typed 400. Unknown exact-id filter = empty collection,
 never an existence oracle. No `fields`, `sort`, `include`, or join parameters
 exist in v1. The technical specification must pin wire names and inclusivity
 for every bounded-time pair; this product spec does not invent them.
+
+R7. Projection fields are closed-world and normative. Every item contains
+exactly the keys in its row below. Nullable keys remain present with `null`;
+an adapter does not omit them. Every notice-backed stored-state item carries
+`rowVersion`, a monotonically increasing integer derived at the write seam.
+A composed item carries `dependencyVersion` as described in R9 instead. No
+adapter may add a storage column or a caller-selected field.
+
+| Resource | Canonical item fields |
+|---|---|
+| org | `id`, `archetypes`, `hosts`, `modelCatalog`, `dependencyVersion` |
+| harness catalog | `harness`, `provider`, `models`, `capabilities`, `dependencyVersion` |
+| hosts | `host`, `rowVersion` |
+| sessions | `sessionKey`, `displayName`, `kind`, `orderIndex`, `isBuiltIn`, `adopted`, `ownerUserId`, `origin`, `spawnedBy`, `handle`, `archetype`, `overrides`, `identityName`, `identityRevision`, `harness`, `provider`, `model`, `thinkingLevel`, `modelContext`, `host`, `clearedThroughSeq`, `state`, `createdAt`, `updatedAt`, `mechanicalStatus`, `rowVersion` |
+| transcript messages | `id`, `seq`, `sessionKey`, `role`, `content`, `at`, `sender`, `deviceId`, `clientMessageId`, `replyToMessageId`, `replyToClientMessageId`, `llmVisibleMessageId`, `attachments`, `attentionTier`, `turnSeq`, `assignmentId`, `jobRef`, `harness`, `provider`, `model`, `effort`, `context`, `rowVersion` |
+| work items | `id`, `title`, `specRefName`, `specRefSha256`, `isBug`, `ownerUserId`, `state`, `failReason`, `routingWakeId`, `slateWakeId`, `createdByUser`, `createdBySession`, `createdInTurnSeq`, `createdContextKnown`, `createdAt`, `rowVersion` |
+| assignments | `id`, `subject`, `holderKey`, `holderRole`, `holderFallback`, `openedByUser`, `openedBySession`, `openedAt`, `state`, `outcome`, `closedAt`, `closedByUser`, `closedBySession`, `closingAttestId`, `workItemId`, `reviewsAssignmentId`, `holderHarness`, `holderProvider`, `files`, `effectKind`, `derivedStatus`, `rowVersion` |
+| attests | `id`, `assignmentId`, `kind`, `verdictKind`, `note`, `bySession`, `byUser`, `producer`, `producerCommand`, `byHarness`, `byProvider`, `commitRefs`, `ts`, `rowVersion` |
+| wakes | `wakeId`, `sessionKey`, `targetRole`, `origin`, `prompt`, `consumer`, `dueAt`, `state`, `createdAt`, `firedAt`, `reresolve`, `reresolveSeed`, `reresolveRung`, `conditionKind`, `conditionScope`, `conditionAfterId`, `firedBy`, `creatorSessionKey`, `rumination`, `workItemId`, `assignmentId`, `canceledAt`, `targetGate`, `class`, `classElection`, `deliveryRule`, `digest`, `summon`, `rowVersion` |
+| turns | `seq`, `sessionKey`, `messageId`, `wakeId`, `origin`, `prompt`, `roleRef`, `roleFallback`, `assignmentId`, `jobRef`, `model`, `thinkingLevel`, `modelContext`, `harness`, `replyAttention`, `status`, `owner`, `adapterGen`, `requestRef`, `error`, `createdAt`, `startedAt`, `endedAt`, `publishedAt`, `rowVersion` |
+| artifacts | `artifactId`, `kind`, `title`, `description`, `createdBySession`, `workItemId`, `parentSession`, `originPath`, `contentSha256`, `recordedMessageId`, `recordedTurnEvidence`, `state`, `home`, `createdAt`, `updatedAt`, `rowVersion` |
+| assets | `assetId`, `ownerUserId`, `mimeType`, `size`, `filename`, `createdAt`, `rowVersion` |
+| decision requests | `id`, `kind`, `raiserId`, `raiserSessionKey`, `ownerUserId`, `assignmentId`, `expecterSessionKey`, `expecterUserId`, `lineageRung`, `effortGeneration`, `deadlineWakeId`, `raisedAt`, `deadlineAt`, `statuteName`, `question`, `options`, `context`, `status`, `decision`, `rationale`, `ruledBy`, `ruledAt`, `consumedAt`, `withdrawnBy`, `withdrawnReason`, `withdrawnAt`, `askedOfRole`, `answer`, `answeredBy`, `answeredAt`, `rowVersion` |
+| read markers | `userId`, `scopeKey`, `marker`, `updatedAt`, `rowVersion` |
+| roles | `name`, `boundSessionKey`, `ownerUserId`, `createdAt`, `updatedAt`, `rowVersion` |
+| users | `userId`, `isAdmin`, `createdAt`, `rowVersion` |
+| devices | `deviceId`, `userId`, `claimedName`, `status`, `platform`, `model`, `createdAt`, `rowVersion` |
+| condition facts | `id`, `ts`, `kind`, `scope`, `origin`, `rowVersion` |
+| toplines | `id`, `ownerUserId`, `title`, `state`, `createdActor`, `createdAt`, `updatedAt`, `closedAt`, `activeWorkCount`, `openConcernCount`, `workMemberships`, `concerns`, `dependencyVersion` |
+| coordination share | `sessionKey`, `from`, `to`, `turns`, `wakeTurns`, `classedTurns`, `coordinationTurns`, `summons`, `algedonic`, `byClass`, `share`, `dependencyVersion` |
+| digest members | `wakeId`, `prompt`, `class`, `classElection`, `createdAt`, `dependencyVersion` |
+| work-item trace | `workItem`, `assignments`, `causalChildren`, `attribution`, `dependencyVersion` |
+
+R7a. The SQ2 admin resources have these additional closed-world projections.
+Nested `documents` entries contain exactly `path`, `content`, and `sha256`.
+Their content is deliberate product data after admin authorization, not a
+license to expose credentials, environment secrets, or host filesystem paths.
+An archetype's `mcpServers` entries contain exactly `name` and `envNames`; the
+environment names are sorted and their values never enter the projection.
+
+| Resource | Canonical item fields |
+|---|---|
+| identity | `name`, `liveRevision`, `sessionRevisions`, `staleness`, `conflicts`, `rowVersion` |
+| archetypes | `name`, `skills`, `where`, `defaults`, `references`, `modelPreferences`, `containment`, `mcpServers`, `compiledGuidance`, `sourceSha256`, `dependencyVersion` |
+| kungfu | `name`, `purpose`, `phrases`, `rootArchetype`, `installedRevision`, `status`, `documents`, `rowVersion` |
+| guidance | `name`, `content`, `sha256`, `dependencyVersion` |
+| rails | `name`, `on`, `mode`, `tool`, `pattern`, `text`, `dependencyVersion` |
+| config | `key`, `value`, `updatedAt`, `rowVersion` |
+| host environment | `host`, `harness`, `name`, `value`, `valuePresent`, `updatedAt`, `rowVersion` |
+| harness processes | `id`, `sessionKey`, `host`, `harness`, `provider`, `model`, `pid`, `state`, `startedAt`, `endedAt`, `rowVersion` |
+
+R7b. `/download/:assetId` returns bytes, not a JSON projection. The asset row
+is its sole authorization metadata; no inferred artifact or work-item link
+grants access. SR2 and AU5 govern the binary adjunct.
+
+R8. This table seeds firehose R8. Each listed state mutation has one class,
+resource, operation, primary-id ref, and R7 serializer. A class can name more
+than one mutation only when the operation differs, as for read-marker set and
+clear. A build may expand a grouped row into individual rows, but it may not
+change a mapping without a reviewed spec amendment. Observational classes
+remain outside this table.
+
+| Firehose state class | Resource | Op | Primary-id notice ref |
+|---|---|---|---|
+| `work_item.created`, `work_item.updated`, `work_item.iceboxed`, `work_item.reopened`, `work_item.closed`, `work_item.failed` | work items | upsert | `workItemId` |
+| `assignment.opened`, `assignment.reopened`, `assignment.closed` | assignments | upsert | `assignmentId` |
+| `attest.filed` | attests | upsert | `attestId` |
+| `wake.scheduled`, `wake.fired`, `wake.canceled` | wakes | upsert | `wakeId` |
+| `prod.fired`, `turn.started`, `turn.ended` | turns | upsert | `turnSeq` |
+| `decision_request.opened`, `decision_request.ruled`, `decision_request.withdrawn` | decision requests | upsert | `decisionRequestId` |
+| `session.spawned`, `session.retired` | sessions | upsert | `sessionKey` |
+| `role.created`, `role.bound` | roles | upsert | `role` |
+| `role.removed` | roles | delete | `role` |
+| `user.added`, `user.promoted` | users | upsert | `userId` |
+| `device.approved`, `device.denied`, `device.revoked` | devices | upsert | `deviceId` |
+| `artifact.recorded` | artifacts | upsert | `artifactId` |
+| `read_marker.updated` after set | read markers | upsert | `userId` + `scopeKey` |
+| `read_marker.updated` after clear | read markers | delete | `userId` + `scopeKey` |
+| `message.created` | transcript messages | upsert | `messageId` |
+| `config.updated` | config | upsert | `key` |
+| `host_env.updated` | host environment | upsert | `host` + `harness` + `name` |
+| `identity.updated` | identity | upsert | `name` |
+| `kungfu.updated` | kungfu | upsert | `name` |
+| `host.registered` | hosts | upsert | `host` |
+
+SQ2 admits every admin row above. They enter the REST/firehose A6 overlap and
+use the same admin-only visibility function. Archetypes, guidance, and rails
+are composed identity-tree resources, so R9 governs their refetch contract.
+
+R9. A composed resource has no notice class of its own. It declares the exact
+underlying class set that makes a cached instance stale. After visibility
+allows a notice and the class matches one of these dependencies, the client
+refetches the composed resource. Prefixes below mean every class in R8 with
+that prefix.
+
+| Composed resource | Refetch dependencies |
+|---|---|
+| org | `host.registered`, `config.updated`, `identity.updated`, `kungfu.updated` |
+| toplines | `work_item.*`, `assignment.*`, `attest.filed`, `session.*`, `role.*`, `wake.*`, `turn.*`, `decision_request.*` |
+| coordination share | `wake.*`, `turn.*`, `prod.fired` |
+| digest members | `wake.scheduled`, `wake.canceled`, `wake.fired` |
+| work-item trace | `work_item.*`, `assignment.*`, `attest.filed`, `session.*`, `wake.*`, `turn.*` |
+| archetypes | `identity.updated`, `kungfu.updated` |
+| guidance | `identity.updated`, `kungfu.updated` |
+| rails | `identity.updated`, `kungfu.updated` |
+
+An R9 dependency list is closed-world. Adding a source table or state class to
+a composed query requires the same reviewed change to this list. Each composed
+response carries `dependencyVersion` equal to a stable digest of the ordered
+`(resource primary key, rowVersion)` dependency vector, so equal dependencies
+produce equal versions and any dependency change produces a different version.
 
 ## Requirements — projections and serializers
 
@@ -167,12 +337,27 @@ in firehose V3): "unredacted" governs content, never storage secrets.
 
 SR4. Ids are the correlation contract: each projection's primary id
 equals the id the firehose notice `refs` carry (firehose V5 and its
-primary-key table). A client dedupes snapshot-vs-notice by these ids.
+primary-key table). A client applies last-version-wins upsert by
+`(primary id, rowVersion)`.
+
+SR5. Safe-value exposure is explicit and default-deny. In v1 the complete
+config value allowlist is `default-archetype`. No other config key returns a
+value. The host-environment value allowlist is empty: its route
+may return `host`, `harness`, `name`, `valuePresent`, and timestamps, but its
+`value` is always `null`. Identity, kungfu, and harness-process projections
+return only the R7a fields. Archetype, kungfu, rail, and guidance content is
+admitted only through its named R7a projection after admin authorization; it
+does not widen the config or environment allowlists. Any unlisted key or field remains absent from
+collections and returns the same 404 as unknown on detail. A new safe key or
+field requires a reviewed amendment to this allowlist; a name-pattern,
+denylist, or “not known secret” test cannot admit it.
 
 ## Requirements — auth and visibility
 
 AU1. `Authorization: Bearer <existing gateway credential>`. A device
-token resolves to its user; a session CLI token to its session and owner.
+token resolves to its user. A session CLI token resolves to that session
+only. The session row's `ownerUserId` is metadata, not an automatic authority
+escalation. An owner read exists only where AU4 explicitly grants it.
 No new credential type; no `asUser` query parameter ever (query strings
 are logged and are poor identity carriers).
 
@@ -183,9 +368,54 @@ principal, so this migration changes only transport, never authorization.
 
 AU3. Visibility: collections omit rows the principal cannot read; detail
 returns the same 404 for unknown and forbidden (transcript precedent);
-owner-or-admin scoping unless a live spec names stricter; admin resources
-refuse non-admins. REST and firehose subscription filtering use the SAME
-visibility function.
+admin resources refuse non-admins. AU4 is the complete per-resource allow
+matrix. REST and firehose use the same named visibility function for each
+row. Anything the matrix does not grant is denied.
+
+AU4. Per-resource allow matrix. “Owner” means the named user principal, not
+any session that happens to carry that user's id. “Session owner” is an
+explicit grant to the user principal that owns the target session. Admin is
+the authenticated user principal with `isAdmin=true`; a session token does
+not borrow that bit.
+
+| Resource | Allowed principals |
+|---|---|
+| org, harness catalog, hosts, roles | any authenticated user or session in the org |
+| sessions | target session; target session owner; admin |
+| transcript messages, coordination share | target session; target session owner; admin |
+| work items, work-item trace | work-item owner; creating session; a session that holds an assignment on the item; admin |
+| assignments | holder session; work-item owner; opener when the opener is a user or session principal; admin |
+| attests | any principal allowed to read the parent assignment |
+| wakes | target session; creator session; target session owner; creator session owner; admin |
+| digest members | any principal allowed to read the digest-carrier wake |
+| turns | target session; target session owner; admin |
+| artifacts | creating session; work-item owner; any principal allowed to read the linked work item; admin |
+| assets | asset's `ownerUserId` user principal; admin |
+| decision requests — statute | raiser; `ownerUserId` user principal; admin |
+| decision requests — effort | named expecter session or user; holder of the linked assignment; admin |
+| decision requests — agent question | asker session; asked session; stamped accountable owner user; admin |
+| read markers | marker's `userId` user principal; admin |
+| condition facts | filing session; filing session owner; admin; process-origin facts are admin-only |
+| toplines | topline owner; admin |
+| critical state | admin only |
+| identity, archetypes, kungfu, guidance, rails, config, host environment, harness processes, users, devices | admin only |
+
+AU5. Nested routes and binary downloads authorize each hop. A nested child
+is returned only when the caller may read both the parent and the child.
+`/api/assignments/:id/attests`, `/api/wakes/:wakeId/digest-members`, and every
+nested item apply that intersection before lookup results leave the service.
+`/download/:assetId` resolves the exact asset metadata row, applies the asset
+visibility function, and only then opens bytes. Unknown
+parent, unknown child, forbidden parent, forbidden child, and forbidden
+download all return the identical 404 body, status, headers, and timing class.
+
+AU6. Visibility filtering always runs before subscription filtering. The
+server first evaluates the R8 row through its AU4 visibility function for the
+authenticated principal. Only an allowed row may then be tested against
+`classes`, `sessionKey`, `workItemId`, `origin`, or `principal` subscription
+filters. A subscription filter never broadens visibility and never becomes an
+existence oracle. Delete uses the last pre-delete projection for this first
+step, as firehose A2b requires.
 
 ## Requirements — relationship to the CLI
 
@@ -202,7 +432,8 @@ probes the host, it is not a state resource).
 
 ## Migration (order is normative)
 
-M1. Freeze projections and visibility functions. M2. Add REST routes on
+M1. Freeze R7 projections, R8 mappings, R9 dependency lists, and AU4
+visibility functions. M2. Add REST routes on
 those seams. M3. Point the firehose payload builders at the same
 serializers. M4. Point CLI read handlers at the canonical read services.
 Move each wrapper from dispatch to its REST GET only when AU2 has a reviewed
@@ -217,23 +448,61 @@ breaking rename lands before its client moves.
 
 ## Acceptance
 
-A1. Table-driven per-class test: resource, op, primary-key mapping,
-serializer, visibility function (shared with firehose A6).
+A1. Table-driven per-mutation test: every non-observational firehose class has
+at least one R8 row, and every emitting mutation has exactly one row naming
+resource, op, primary-key refs, R7 serializer, AU4 visibility function, and
+`rowVersion` source. The test fails on a missing or extra state mutation.
 A2. For every non-observational rebuildable-state class governed by
 firehose A6, the REST detail item equals the notice payload after envelope
 removal.
-A3. Secret-exclusion sweep over every projection.
-A4. Subscribe-first multi-resource snapshot plus buffered notices
-converges under concurrent creates/updates/deletes; reconnect + fresh
-rebuild converges with no event history.
-A5. Pagination proofs: tied timestamps, deleted cursor neighbors, empty
-pages, before/after, default 50, cap 500.
-A6. Unauthorized detail/cursor indistinguishable from unknown.
+A3. Closed-world projection proof: every collection and detail item has
+exactly its R7 keys and no others. The secret-exclusion sweep rejects
+`cliToken`, device `token`, `identityToken`, credential paths, environment
+secrets including MCP environment values, and every value outside SR5's
+explicit allowlist.
+A4. Subscribe-first multi-resource snapshot plus buffered notices converges
+under concurrent creates/updates/deletes by last-version-wins upsert on
+`(primary key, rowVersion)`; reconnect + fresh rebuild converges with no event
+history. An older snapshot row applied after a newer notice is a no-op.
+A5. Pagination proofs: tied timestamps, a deleted boundary row, deleted
+neighbors, empty pages, before/after, default 50, cap 500, wrong-resource
+cursor, and changed-filter cursor. Tests decode each cursor and prove it holds
+the complete R5a tuple and no SQLite `rowid` or live storage locator.
+A6. Unauthorized detail, nested child, cursor use, and download are
+indistinguishable from unknown in body, status, headers, and timing class.
 A7. ATC builds its current model with zero SQLite access; Clawline lists
 sessions, pages transcript, fetches work state, and correlates notices
 by exact ids.
 A8. CLI wrappers return the same item shapes as REST for equivalent
 reads.
+A9. Read-marker pagination creates two users with the same `scopeKey` and
+multiple markers at the same `updatedAt`; paging each authorized view visits
+every `(userId, scopeKey)` exactly once.
+A10. For every AU4 row, a table tests each allowed principal and one denied
+session owned by an otherwise allowed user. The denied session remains denied
+unless the row explicitly grants that session itself.
+A11. Subscription-order proof: create a row hidden from the subscriber that
+matches every supplied subscription filter. The visibility function runs,
+returns false, and the filter matcher is not invoked. Repeat for a delete
+using the last pre-delete projection. No frame or distinguishable error leaks.
+A12. Nested and download proof: authorize the parent but deny the child, then
+deny the parent while authorizing the child. Both cases equal the unknown 404.
+An asset denied by its metadata visibility function never opens or stats its
+bytes, including for a session owned by the asset's `ownerUserId`.
+A13. Safe-value proof enumerates all live config keys and host environment
+names. Only `default-archetype` returns a config value; no host environment
+value returns. Adding any unlisted key fails until SR5 changes by review.
+A14. Every R9 composed view has a test that mutates one row for each declared
+dependency and observes a changed dependency digest. A state class not in the
+declared list leaves the digest unchanged. Query dependency extraction and the
+R9 list must match exactly.
+A15. A session token reads its own session-scoped rows. It cannot read another
+session, an owner-only read, an owner read marker, or an admin resource merely
+because both sessions share `ownerUserId` or that owner is admin.
+A16. An admin can list and fetch each SQ2 resource, including archetype,
+kungfu, rail, and guidance content. A user or session principal receives the
+unknown 404 for every one. Archetype MCP entries expose sorted environment
+names but never commands, arguments, values, or host paths.
 
 ## Spirit questions for Mike (the PO's quiz list)
 
@@ -241,9 +510,11 @@ SQ1. The org-token GET identity carrier (AU2): design a reviewed header
 scheme so the CLI can hit GETs directly, or keep CLI reads on dispatch
 indefinitely? (Interim posture is safe; this is about ergonomics.)
 
-SQ2. Admin reads exposure (R3): comfortable with users/devices/host-env
-projections existing at all on the read plane, or should admin reads stay
-CLI/dispatch-only on this deployment?
+SQ2. **RULED 2026-08-22 — expose.** REST v1 includes admin-only users,
+devices, host-environment metadata, harness processes, identity publication,
+installed kungfu, safe config values, and first-class archetype, kungfu, rail,
+and guidance content. The R7/R7a closed field lists, SR2/SR5 exclusions, and
+AU4 admin-only row are the ruling's security boundary.
 
 SQ3. Compatibility alias retirement: aggressive (retire when Clawline+ATC
 migrate) or indefinite tolerance?
