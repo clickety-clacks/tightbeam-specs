@@ -1,9 +1,9 @@
 # Declarative required-process gates
 
-Status: review-ready amendment after
-`att_d9aa11c7-ea16-4797-8e36-ddf05fa6706f` and its required cold digest; these
-exact bytes require independent re-review for
-`wi_f165cdbd-72c0-4add-bb8d-2113908c3e55`. This specification authorizes no
+Status: changes-requested specification amended after round-2 verdict
+`att_9b353a42-cd00-48c0-8b0c-f3e244315052`; the amended bytes require a cold
+digest and re-review for `wi_f165cdbd-72c0-4add-bb8d-2113908c3e55`. This
+specification authorizes no
 implementation, identity publication, deployment, runtime mutation, or release
 operation.
 
@@ -34,6 +34,11 @@ Authority and evidence:
   changes: established rail identity reuse, a deterministic V5 capability seam,
   an exact wire contract, wrong-scope refusal, a concrete catalog-transition
   gate, and canonical hash bytes. This revision addresses only those blockers.
+- Round-2 review `att_9b353a42-cd00-48c0-8b0c-f3e244315052` found that the
+  catalog gate named the post-publication `identity-apply` consumer instead of
+  the actual pre-publication `tightbeam/live` boundary, and that invalid scalar
+  wire values lacked exact refusals and precedence. This revision removes the
+  false seam and closes those scalar cases.
 
 ## Goal
 
@@ -772,8 +777,22 @@ exactly these keys; expanded whitespace below is not sent:
 member is required and non-null. The router returns `invalid_message` for an
 omitted member, an extra member, a wrong JSON type, a scope-kind/id-prefix
 mismatch, duplicate list entries, require/clear overlap, or a list outside its
-required canonical order. `organization` requires `scopeRef: "organization"`
-and an empty `cleared` array. The idempotency fingerprint removes only
+required canonical order. It also returns `invalid_message` when
+`expectedRevision` is not an integer greater than or equal to zero,
+`bindingRevision` is not a positive integer, or a required string fails the
+closed scalar constraints below. `organization` requires
+`scopeRef: "organization"` and an empty `cleared` array.
+
+All strings are valid UTF-8 and are stored without trimming. `reason` and
+`baseline` contain 1 through 2,000 Unicode code points and remain nonempty after
+`String.trim/1`. `idempotencyKey`, each process or target name, and each
+evidence `kind` and `id` contain 1 through 200 Unicode code points and remain
+nonempty after `String.trim/1`. A null `targetName` bypasses the target-name
+constraint. A nonblank evidence kind that the existing typed row-reference
+resolver does not support passes wire-shape validation and later returns
+`unsupported_evidence_kind`; a blank kind returns `invalid_message`.
+
+The idempotency fingerprint removes only
 `idempotencyKey` and wraps the remaining `params` as the operation envelope in
 Idempotency, crash, and replay.
 
@@ -824,6 +843,7 @@ structured exceptions below applies. The closed slug/message mapping is:
 | `topline_v5_unavailable` | `toplines v5 capability is unavailable` |
 | `unknown_delivery_target` | `delivery target is not installed` |
 | `unknown_required_process` | `required process is not installed` |
+| `unsupported_evidence_kind` | `evidence kind is not supported` |
 
 `required_process_catalog_in_use` instead returns exactly:
 
@@ -871,7 +891,7 @@ shape; `toplines_v5` capability for a direct Topline selector; owner-filtered
 object visibility and authorization; idempotency replay or conflict; expected
 scope or binding revision; active catalog resolution; I21 scope compatibility;
 effective-set identity conflict; binding and receipt state; typed evidence
-visibility; selected-rail decision.
+kind support; typed evidence existence and visibility; selected-rail decision.
 An organization request discovers that a resolved process contains
 `topline-close` during I21 and then applies the capability check. Each refusal
 writes no domain or idempotency row unless I8 explicitly requires a durable
@@ -896,15 +916,37 @@ organization setting remains absent until an administrator opts in.
 
 Add `Tightbeam.RequiredProcesses.validate_catalog_transition/3`, with arguments
 `(databaseSnapshot, currentCatalogSet, candidateCatalogSet)`. Each catalog set
-contains its process, target, rail, and fact catalogs. The existing identity
-publication path calls it inside one read transaction before `identity-apply`
-activates a candidate served revision. It walks the open catalog references
-defined in Terms. If the candidate omits one exact
-reachable identity, `identity-apply` returns
-`required_process_catalog_in_use`, names the missing identity and referencing
-row ids, and leaves the served identity and database unchanged. This is the
-identity-law transition gate; this specification adds no release entity or
-release verb.
+contains its process, target, rail, and fact catalogs.
+
+The actual pre-publication seam is `Tightbeam.Identity.publish_live!/1`, which
+fast-forwards `refs/heads/tightbeam/live` from the current live object id to the
+candidate `identity/main` object id. Evolve it to `publish_live!/2` with a
+required publication guard. Every existing caller supplies that guard;
+catalog-neutral identity edits validate as a no-op. `identity-apply` only
+materializes a revision that is already live, so it does not participate in
+this transition gate.
+
+The gateway supplies
+`Tightbeam.RequiredProcesses.guard_live_publication/5` with
+`(database, runtimeConfig, currentLiveOid, candidateMainOid, advanceRef)`. The
+guard loads and validates both catalog sets by exact Git object id, then enters
+the same serialized database-owner critical section used by scope, binding,
+receipt, and completion selectors. Inside that section it calls
+`validate_catalog_transition/3` against one database snapshot. If the candidate
+omits one reachable identity, the guard does not call `advanceRef`; the
+publication command returns `required_process_catalog_in_use`, names the
+missing identity and referencing row ids, and leaves `tightbeam/live`, the
+served law registry, and the database unchanged. The candidate commit can
+remain unserved on `identity/main` for an ordinary corrective identity edit.
+
+On allow, the guard preloads the candidate law, invokes `advanceRef` as a
+compare-and-swap from `currentLiveOid` to `candidateMainOid`, swaps the served
+law registry to those already validated bytes, and only then releases the
+critical section. Requests cannot observe a new ref with old served law or old
+ref with new served law. A crash before the compare-and-swap leaves the old ref
+live. A crash or reload failure after it terminates the serving process before
+traffic resumes; boot then validates and loads the exact live object id. This
+reuses the existing publication boundary and adds no release entity or verb.
 
 Binary boot calls the same function after schema migration and before the
 gateway accepts traffic, using the installed catalogs as the candidate. A
@@ -913,8 +955,8 @@ missing referenced identity stops boot with
 Core target rails and `delivery_target.landed@1` participate in this boot check.
 A rollout first retains the exact identity or migrates each named current scope
 or binding through its ordinary append-only mutation, then retries the existing
-identity-apply or boot seam. The V5 runtime smoke is a prerequisite for adding
-the `toplines_v5` capability entry.
+identity publication or boot seam. The V5 runtime smoke is a prerequisite for
+adding the `toplines_v5` capability entry.
 
 ### Proposed implementation paths
 
@@ -943,13 +985,14 @@ This path census is a build boundary, not implementation authority:
   `lib/tightbeam/wire/router.ex` and `lib/tightbeam/wire/payloads.ex`, and CLI
   parsing plus request encoding in `cli/src/args.rs` and
   `cli/src/dispatch.rs`.
-- Call `validate_catalog_transition/3` from the existing identity-apply path
-  and from boot after migration and before gateway traffic.
+- Call `guard_live_publication/5` from the existing `publish_live!/2`
+  pre-publication boundary. Call `validate_catalog_transition/3` from that
+  guard and from boot after migration and before gateway traffic.
 - Add focused proofs in `test/required_processes_test.exs`,
   `test/delivery_targets_test.exs`, `test/work_items_test.exs`,
   `test/toplines_test.exs`, `test/rules_test.exs`, `test/gateway_test.exs`,
-  `test/router_test.exs`, `test/payloads_test.exs`, capability and identity-apply
-  suites, and the CLI suites.
+  `test/router_test.exs`, `test/payloads_test.exs`, capability and
+  identity-publication suites, and the CLI suites.
 - Add Kung Fu declarations under `priv/kungfu/<bundle>/processes/*.toml` and
   `priv/kungfu/<bundle>/delivery-targets/*.toml` only when a reviewed product
   lane defines actual process or target meaning.
@@ -1092,16 +1135,17 @@ truthful.
 
 ### A17 — Contract evolution requires compatibility evidence
 
-Given a candidate identity revision removes fact contract `F@1` while an open
-catalog reference reaches it, when `identity-apply` validates the transition,
-then it returns `required_process_catalog_in_use`, names `F@1` and the sorted
-referencing row ids, and changes neither served identity nor database. Given an
-installed binary catalog omits that reference, when the gateway boots, then
-boot stops with `required_process_catalog_incompatible` and the same evidence.
-Given migration appends current scope revisions to `F@2`, then a later
-identity-apply succeeds and preserves `F@1` history. The same cases apply to a
-target definition, selected rail, or target fact contract reached by an active
-binding on a nonterminal object.
+Given a candidate `identity/main` revision removes fact contract `F@1` while an
+open catalog reference reaches it, when identity publication attempts the
+compare-and-swap advance of `tightbeam/live`, then it returns
+`required_process_catalog_in_use`, names `F@1` and the sorted referencing row
+ids, and changes neither `tightbeam/live`, the served law registry, nor the
+database. Given an installed binary catalog omits that reference, when the
+gateway boots, then boot stops with `required_process_catalog_incompatible` and
+the same evidence. Given migration appends current scope revisions to `F@2`,
+then a later publication succeeds and preserves `F@1` history. The same cases
+apply to a target definition, selected rail, or target fact contract reached by
+an active binding on a nonterminal object.
 
 ### A18 — V5 absence never becomes legacy inference
 
@@ -1126,6 +1170,14 @@ both return the exact canonical error bytes. Given two simultaneously true
 refusals, then the response follows the stated precedence. Work-item and V5
 Topline reads expose the exact required-processes and delivery-target objects in
 canonical order.
+
+Given a blank `reason` and an unknown process name, or a negative
+`expectedRevision` and an unknown process name, then wire-shape validation
+returns exact `invalid_message` bytes before catalog resolution. Given valid
+scalars, a current binding, and a nonblank unsupported evidence kind, then
+receipt admission returns exact `unsupported_evidence_kind` bytes. Given that
+unsupported kind with a stale binding revision, then
+`binding_revision_conflict` wins by the stated precedence.
 
 ### A20 — Target mutations are authorized and exact
 
