@@ -30,6 +30,15 @@ authorized projections and forbidden request fields lacked acceptance proof; and
 trusted-routing migration conflict lacked a durable record and retry contract. This
 revision closes those gaps in R4, R7-R8, the Architecture, and A4, A6-A7.
 
+Fresh stronger-model review `asg_aac50476-4f35-42dc-9726-05f8ca153858`
+returned changes-requested verdict
+`att_043f1725-f43e-4019-b8f8-9a6e85812fed` and report `art_0bb1ed5f`,
+SHA-256 `5930e096e58f2b5f1c9074f547bdcfcf22407ffc7858d6e2b4e10fcc8c854251`.
+It found three blocking gaps: the fact match did not bind an exact execution identity;
+the amendment did not define a stamped transition from the sibling v4 shape; and A7
+required a push message for stream-only notices. This revision closes those gaps in
+the Terms, R1-R2, R8, the Architecture, and A1, A2, and A7.
+
 ## Spec identity and authority
 
 The canonical identity is
@@ -90,11 +99,33 @@ The sender must receive one of two visible results:
   scheduling transaction inserts a wake row.
 - **Act-edge check**: the same check after normal delivery-time target resolution and
   before an accepted wake admits a carrier turn.
-- **Authoritative local fact**: a typed local record that names the affected execution
-  identity, its cause, its principal, and its validity. A fact is current when it has no
-  expiry or when its expiry is later than the transaction clock.
+- **Execution selection**: the exact tuple
+  `{sessionKey, sessionUpdatedAt, host, harness, provider, modelFamily, modelContext,
+  effort}` read inside the checking transaction. A null model context or effort is an
+  exact tuple value; it is not a wildcard.
+- **Adapter token**: the exact tuple
+  `{{harnessId, "shared", host}, adapterGeneration, adapterRevision}` read from the
+  adapter coordinator for the execution selection. It is valid only when both numeric
+  revisions identify the currently registered adapter instance.
+- **Harness-catalog token**: the exact tuple
+  `{host, harness, provider, catalogRevision}` read from the local catalog registry.
+- **Credential token**: the exact tuple
+  `{host, harness, provider, credentialSlotId, credentialRevision}` read from the local
+  credential registry. `credentialSlotId` is an opaque local identifier. A refusal or
+  projection must not expose it.
+- **Authoritative local fact**: a typed local record with `factId`, `factKind`,
+  `matchKey`, `principal`, `observedAt`, and optional `expiresAt`. The fact writer must
+  advance each registry revision named in `matchKey` whenever that registry state
+  changes. A fact is current only when each named revision equals the revision read by
+  the checking transaction and `expiresAt` is null or later than the transaction clock.
+- **Exact fact match**: member-for-member equality between a fact's complete typed
+  `matchKey` and the cause-specific key that R2 constructs from the current execution
+  selection and local registry tokens inside the same transaction. Text compares by
+  exact stored bytes, integers compare by value, and null compares only with null. The
+  check performs no case folding, alias expansion, or default substitution. A missing
+  key member, stale revision, or different tuple member is not a match.
 - **Known-unrunnable target**: the exact resolved session has one current authoritative
-  local fact in the closed precondition set in R2.
+  local fact with an exact fact match in the closed precondition set in R2.
 - **Unknown ability**: no current authoritative local fact proves inability. Unknown
   ability is not a refusal condition.
 - **Pre-admission failure**: Tightbeam accepted a wake earlier, but the act-edge check
@@ -134,7 +165,9 @@ The sender must receive one of two visible results:
 ### R1. Resolve before checking
 
 The gateway must run the existing target-resolution path before the send check. The
-check must examine the exact resolved session and its execution tuple.
+check must construct the execution selection for the exact resolved session. The
+act-edge check must construct a new selection instead of reusing the send-check
+selection.
 
 For a role target, the gateway must preserve the existing fallback result. The check
 must not search for another holder after that result.
@@ -153,9 +186,31 @@ order:
 7. `credential_missing`;
 8. `quota_exhausted`.
 
-The gateway must derive each precondition from its matching current authoritative local
-fact. `quota_exhausted` requires a typed, unexpired local exhaustion fact. A rate or
-quota error string is not that fact.
+The check must build and compare these complete match keys:
+
+| Precondition | Required current local state | Exact `matchKey` |
+|---|---|---|
+| `session_retired` | retired session-state fact | `{executionSelection}` |
+| `session_held` | active session-hold fact | `{executionSelection, holdId, holdRevision}` |
+| `circuit_open` | open adapter-circuit fact | `{executionSelection, adapterToken, circuitId, circuitRevision}` |
+| `adapter_unavailable` | unavailable adapter-instance fact | `{executionSelection, adapterToken}` |
+| `acp_unavailable` | unavailable ACP-instance fact | `{executionSelection, adapterToken}` |
+| `harness_unavailable` | unavailable selected-harness fact | `{executionSelection, harnessCatalogToken}` |
+| `credential_missing` | missing selected-credential fact | `{executionSelection, credentialToken}` |
+| `quota_exhausted` | typed, unexpired quota-window fact | `{executionSelection, credentialToken, quotaWindowId, quotaWindowRevision}` |
+
+Each ID and revision in this table is an opaque typed field from its named local
+registry. The registry must change the revision when its state changes, even when the
+new state later returns to the same value. The check must treat an unavailable token or
+revision as unknown ability and continue through the existing wake path.
+
+The gateway must derive a precondition only from a current authoritative local fact
+whose `factKind` equals that precondition and whose full key equals the constructed key.
+A fact for the same session but an earlier session update, adapter generation, catalog
+revision, credential revision, quota window, harness, provider, model, context, effort,
+or host is not a match.
+`quota_exhausted` requires the typed, unexpired local exhaustion fact in the table. A
+rate or quota error string is not that fact.
 
 If several preconditions are current, the gateway must return the first value in the
 priority order. This makes replay and audit comparison deterministic.
@@ -299,12 +354,23 @@ not reinterpret an old failure from prose. It may map a legacy null-carrier term
 only through the F2 rule: `failed`, `legacy_outcome_unknown`, trusted migrated sender and
 routing identity, and one deterministic notice.
 
+The trusted-routing path must apply the reviewed sender-notice rules without adding a
+new cursor or publication rule. The notice row's `noticeSeq` is its one stream cursor.
+A user, process, or session without a validated same-session `pushSessionKey` must use
+`deliveryMode='stream'`, `state='stream_ready'`, and null `messageId`. Only a failed
+notice whose stored session sender, recipient, and `pushSessionKey` are the same session
+may use `deliveryMode='push'` and `state='pending_push'`. The normal publisher is the
+only writer that may create its deterministic push message and change it to `pushed`.
+
 The successor shape must contain this amendment-owned conflict table:
 
 ```sql
 CREATE TABLE wake_known_unrunnable_migration_conflicts (
   conflictId        TEXT PRIMARY KEY CHECK (length(conflictId) > 0),
-  predecessorShape  TEXT NOT NULL CHECK (length(predecessorShape) > 0),
+  predecessorShape  TEXT NOT NULL
+                      CHECK (predecessorShape IN
+                        ('coordination-fabric-v1-phase1-v3',
+                         'coordination-fabric-v1-phase1-v4')),
   wakeId            TEXT NOT NULL CHECK (length(wakeId) > 0),
   sourceTerminalId  TEXT NOT NULL CHECK (length(sourceTerminalId) > 0),
   reason            TEXT NOT NULL
@@ -331,37 +397,85 @@ BEGIN
 END;
 ```
 
-The schema registry must own the table and both triggers. If the sibling v4 registry is
-present, the combined registry must add these three records without changing the
-sibling `wake_migration_conflicts` table or assigning this amendment's reason to that
-table. The pre-boot schema gate must verify the registered table and both append-only
+The combined successor stamp is
+`coordination-fabric-v1-phase1-v5-known-unrunnable`. The implementation must expose one
+complete ordered `Schema.known_unrunnable_successor_registry/0`. That registry is the
+only DDL authority for a clean v5 bootstrap, each supported transition, v5
+validation, and the source census. It must contain one v5 record for each object name
+owned by the sibling v4 registry, plus the amendment-owned table and both triggers. A
+record unaffected by this amendment must keep the sibling v4 normalized SQL and
+dependencies byte-for-byte. A record that owns a cause or failure-class check must
+replace that SQL with the v5 check from this amendment. Each record must retain the
+sibling registry shape `{owner, type, name, sql, dependsOn}`.
+
+The v5 registry must preserve the sibling `wake_migration_conflicts` table and its
+records without assigning this amendment's conflict reason to that table. It must own
+`wake_known_unrunnable_migration_conflicts` and both append-only triggers as three
+separate records. The product must contain no second DDL string for a v5-owned object.
+
+The pre-boot shape gate must select exactly one of these paths from the durable stamp:
+
+1. An empty new database creates the complete v5 registry and writes the v5 stamp in
+   one transaction.
+2. An exact `coordination-fabric-v1-phase1-v3` database acquires exclusive custody,
+   rechecks that one v3 stamp remains, and runs the sibling R18 mapping and this
+   amendment's mapping in that transaction. It must not commit an intermediate v4 stamp
+   or v4 row shape.
+3. An exact `coordination-fabric-v1-phase1-v4` database acquires exclusive custody,
+   rechecks that one v4 stamp remains, and validates the complete normalized sibling v4
+   registry without mutation. It then runs this amendment's v4-to-v5 mapping in that
+   transaction.
+4. An exact v5 database validates the complete normalized v5 registry without DDL or
+   row mutation.
+
+A non-empty database with no stamp, multiple stamps, or another stamp must return
+`ShapeError`. It must run no successor DDL and start no database consumer.
+
+Both transition paths must load the v5 registry, reject a missing, duplicate,
+mismatched, or dependency-unreachable record, and compute the complete dependency
+closure before they alter a row. The v3 path must apply the sibling's closed v3 mapping
+before it applies this amendment's legacy terminal and trusted-routing rules to the
+copied successors. The v4 path must preserve the already normalized sibling rows and
+apply only this amendment's added columns, checks, vocabulary, conflict records, and
+trusted-routing mapping. Both paths must use structured columns and deterministic IDs;
+they must not parse stored prose.
+
+Before either path changes the stamp, it must compare each normalized `sqlite_master`
+object with the v5 registry, require an empty `PRAGMA foreign_key_check`, and require an
+`ok` `PRAGMA integrity_check`. The stamp change to v5 is the transaction's final
+mutation. A failure during DDL, copy, normalization, conflict creation, object
+validation, either integrity check, or the stamp update must roll back to the exact v3
+or v4 predecessor stamp, rows, and objects. After commit, immediate validation and a
+clean restart must perform read-only v5 validation.
+
+The pre-boot schema gate must verify the registered amendment table and both append-only
 triggers before it evaluates conflict rows.
 
-If trusted routing cannot be derived, the migration transaction must copy the legacy
-wake and public terminal without changing their stored values. It must insert one
-conflict row with deterministic
+If trusted routing cannot be derived, the selected migration transaction must copy the
+legacy wake and public terminal without changing their stored values. It must insert
+one conflict row with deterministic
 `conflictId='wake-routing:<wakeId>:terminal:<sourceTerminalId>'`,
-`causeId='terminal:<sourceTerminalId>'`, and the migration clock as `recordedAt`. It must
-create no notice, message, notice cursor, carrier, route, or sibling-ledger row for that
-wake.
+`causeId='terminal:<sourceTerminalId>'`, and the migration clock as `recordedAt`. It
+must create no notice, message, carrier, route, or sibling-ledger row for that wake.
 
 `sourceTerminalId` must equal the exact stored `terminalOutcomeId` rendered in its
 canonical text form. `predecessorShape` must equal the exact predecessor registry stamp
 observed by that migration transaction. The transaction must use those stored values in
 the conflict ID and cause ID without parsing or normalizing prose.
 
-The migration transaction must commit the successor schema and stamp, copied source
-rows, and conflict row together. After that commit, the pre-boot schema gate must return
+The migration transaction must commit the v5 schema and stamp, copied source rows, and
+conflict row together. After that commit, the pre-boot schema gate must return
 `wake_migration_conflict` with `conflictId`, `wakeId`, `sourceTerminalId`, and `reason`.
 The gate must start no Gateway, Wakes, publisher, Bubble, or session-lane consumer. The
 error must omit any untrusted sender or recipient value.
 
 A restart against the committed conflict must return the same error and change no row.
 The unique conflict identity must prevent a second record. This amendment authorizes no
-automatic repair. An operator can restore the predecessor backup with corrected trusted
-identity and rerun the migration; the migration must then use the normal trusted-routing
-path. A failure before the conflict transaction commits must roll back the successor
-schema, copied rows, conflict row, and stamp together.
+automatic repair. An operator can restore the exact v3 or v4 predecessor backup with
+corrected trusted identity and rerun the selected migration; the migration must then use
+the normal trusted-routing path. A failure before the conflict transaction commits must
+preserve that predecessor's stamp, schema, rows, and objects and leave no v5 conflict
+table or row.
 
 An accepted wake that has no carrier at upgrade remains eligible for the R4 act-edge
 check. An admitted carrier remains eligible only for R5. Migration and boot recovery
@@ -373,11 +487,12 @@ the first result and creates no duplicate.
 The gateway composes the new guard with the existing lifecycle:
 
 1. Resolve the target through the current direct or role-fallback path.
-2. Read the closed local fact sources inside the scheduling transaction.
-3. Return R3 when a current fact proves inability.
+2. Construct the R1 execution selection and the R2 cause-specific key from current
+   local rows inside the scheduling transaction.
+3. Return R3 only when one current fact's complete key equals that constructed key.
 4. Otherwise, run the existing wake insertion path.
 5. At the act edge, first claim and preserve the ordinary, condition-match, or fallback
-   trigger under R4, then repeat steps 1 and 2 against current facts.
+   trigger under R4, then repeat steps 1 and 2 from new current reads.
 6. Commit the R4 trigger evidence, null-carrier public `failed` result, and notice, or
    admit the carrier through the reviewed admission path.
 7. After carrier admission, use only the reviewed `delivered | failed | canceled`
@@ -404,7 +519,10 @@ message.
 The response schema adds only `target_known_unrunnable` and its closed precondition.
 The durable schema extends existing cause and failure-class checks. It adds no wake
 attempt ledger, retry scheduler, alternate recipient, or provider-health probe. It adds
-R8's append-only migration-conflict table and pre-boot conflict gate.
+R8's append-only migration-conflict table, v5 registry and stamp, two exact predecessor
+transitions, and pre-boot conflict gate. `Schema.known_unrunnable_successor_registry/0`
+is the shared source for clean bootstrap, both migrations, validation, and the source
+census.
 
 After implementation passes acceptance, CLI help and the operating manual must state:
 
@@ -426,6 +544,15 @@ reference, and creates no wake, message, carrier, terminal outcome, or sender no
 Given two current facts, when the same request runs, then the response uses R2 priority.
 An idempotent replay returns the same refusal while the same fact remains authoritative.
 
+Given one current matching fact for each R2 row, when the fixture changes only one key
+member before the check, then the old fact does not refuse the request. The fixture must
+exercise a changed session update, host, harness, provider, model family, model context,
+effort, adapter generation, adapter revision, catalog revision, credential revision,
+quota-window revision, hold revision, and circuit revision. It must also exercise a
+fact whose session key differs from the resolved session and a fact whose `factKind`
+differs from the precondition under test. Each case continues through the existing wake
+path unless another exact fact matches.
+
 ### A2. Unknown or expired evidence does not refuse
 
 Given no current authoritative inability fact, when the sender sends a wake, then the
@@ -434,6 +561,11 @@ path.
 
 Given an expired quota fact or untyped provider error prose, when the sender sends a
 wake, then the gateway does not return `quota_exhausted` from that evidence.
+
+Given a current fact whose required adapter, catalog, credential, hold, circuit, or
+quota token cannot be read, when the sender sends a wake, then the gateway treats the
+ability as unknown and continues through the existing wake path. It does not probe an
+adapter, harness, provider, or credential service to fill the missing token.
 
 ### A3. Role fallback stays authoritative
 
@@ -531,28 +663,68 @@ table, when an R4 failure and a legacy null-carrier migration run, then each cre
 public `failed` result and one sender notice and creates no sibling-ledger row. The
 table's non-null carrier constraint remains unchanged.
 
-Given trusted migrated routing for a legacy null-carrier result, when migration and boot
+Given an empty database, when bootstrap runs, then it creates the complete normalized v5
+registry and the one `coordination-fabric-v1-phase1-v5-known-unrunnable` stamp. Immediate
+validation and a clean restart execute no DDL and leave every normalized object and row
+equal. The registry enumeration equals the complete owned-object census and includes
+the amendment table and its two triggers.
+
+Given an exact v3-stamped fixture with one row for each sibling R18 mapping and each
+amendment mapping, when startup runs, then it selects the direct v3-to-v5 plan and
+commits one v5 stamp. The committed database contains the sibling normalizations, the
+amendment vocabulary, and each lawful trusted-routing or conflict result. It never
+contains a committed v4 stamp or intermediate v4 row shape.
+
+Given an exact valid v4-stamped fixture with each amendment mapping, when startup runs,
+then it first validates the complete v4 registry without mutation and commits one
+v4-to-v5 transaction. The v5 database preserves each sibling v4 row and normalized
+object except for the amendment-owned check, vocabulary, routing, and conflict changes.
+
+Given either supported predecessor, when a fixture injects a failure during DDL, copy,
+normalization, trusted-routing settlement, conflict creation, dependency creation,
+normalized-object comparison, either integrity check, or the stamp change, then the
+transaction preserves that exact predecessor stamp, rows, and objects and leaves no v5
+object or row. Given a non-empty fixture with no stamp, multiple stamps, or another
+stamp, startup returns `ShapeError`, runs no DDL, and starts no database consumer.
+
+Given trusted user routing for a legacy null-carrier result, when migration and boot
 recovery each run twice, then the public result is `failed` with
-`legacy_outcome_unknown`; the carrier remains null; one notice, one message identity,
-and one notice cursor exist.
+`legacy_outcome_unknown`; the carrier remains null; and one notice row has one stable
+`noticeSeq`, `deliveryMode='stream'`, `state='stream_ready'`, and null
+`pushSessionKey` and `messageId`. No durable push message exists.
+
+Given trusted process routing for the same result, when migration and boot recovery each
+run twice, then the notice has the same stream-only shape and remains readable through
+exact process authority. No durable push message exists.
+
+Given trusted session routing without a validated same-session push relation, when the
+migration and boot recovery each run twice, then the notice has the same stream-only
+shape and remains readable by the session and its stored owner. No durable push message
+exists.
+
+Given trusted session routing with a validated `pushSessionKey` equal to the stored
+sender and recipient session, when migration commits, then the failed notice has
+`deliveryMode='push'` and `state='pending_push'`. When the publisher and boot recovery
+each run twice, then the notice reaches `state='pushed'`, stores the deterministic
+`wake-notice:<noticeId>` message identity, and one durable message exists. Migration,
+Bubble, and boot recovery do not create another message.
 
 Given routing is not derivable, when migration runs, then it preserves the legacy wake
 and public terminal values, commits one
 `wake_known_unrunnable_migration_conflicts` row with the deterministic conflict ID,
 reason `trusted_sender_routing_unknown`, cause `legacy_import`, exact terminal cause ID,
 exact predecessor stamp, null prior carrier, migration time, and `process:tightbeam`
-principal, and creates no notice, message, cursor, carrier, route, or sibling-ledger row.
-The successor stamp and conflict commit together. The pre-boot gate verifies the
-registered table and triggers, returns `wake_migration_conflict` with the four R8
+principal, and creates no notice, message, carrier, route, or sibling-ledger row. The v5
+stamp and conflict commit together. The pre-boot gate verifies the registered table and
+triggers, returns `wake_migration_conflict` with the four R8
 identifiers, and starts no database consumer.
 
 Given that committed conflict, when startup runs twice, then both runs return the same
 error and the database still contains one conflict row and unchanged copied source rows.
-Given an injected failure before the conflict transaction commits, when migration exits,
-then it retains the predecessor stamp and rows and contains no successor conflict table
-or row. Given the operator restores a predecessor backup whose structured identity now
-proves trusted routing, when migration runs, then it creates the normal legacy terminal
-notice and no conflict row.
+Run this fixture once from v3 and once from v4; each conflict row names that exact
+predecessor stamp. Given the operator restores the same predecessor backup whose
+structured identity now proves trusted routing, when migration runs, then it creates the
+normal legacy terminal notice and no conflict row.
 
 ## Open Questions
 
