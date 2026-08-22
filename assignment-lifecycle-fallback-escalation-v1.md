@@ -19,7 +19,7 @@ The lifecycle mechanism MUST NOT read Kung Fu prose, select a model, switch a mo
 
 A supervising agent that receives a failed-turn notice applies its own currently served Kung Fu model-selection row. The agent MUST try each allowed candidate in that row once, in order. A refused candidate or a harness that is out of tokens advances to the next candidate. Nothing off-list is tried.
 
-Main MUST NOT receive a `model candidates exhausted` report from a failed turn, a provider name, an error string, or an unavailable first candidate. That report is permitted only after an authorized supervising principal files the typed fact defined in ARC-08.
+When the ordered row ends, the supervising agent records the attempted rungs, evidence, and consequence as a capability block on the affected assignment and schedules a re-check. Separable work continues. Model-list exhaustion creates no lifecycle report, and Main is never a model fallback.
 
 ### INV-03 — Lifecycle does not change custody
 
@@ -34,6 +34,8 @@ Routing MUST use stored identifiers and typed rows. It MUST NOT parse prompts, a
 Each eligible source has one derived episode id. Repeated callbacks, process crashes, restarts, and concurrent recognition MUST reuse that id. Each `(episode, recipient)` has at most one notice turn. Each episode has at most one Main report.
 
 This MVP does not coalesce several sources into a mutable per-assignment episode.
+
+ARC-12 permits one predecessor-authored legacy marker beside the episode's one TERM-09 report during one rollback/reactivation cycle. That untyped predecessor marker is not a lifecycle report and never changes the derived episode state.
 
 ### INV-06 — A Main report is its own atomic state
 
@@ -56,11 +58,11 @@ Every feature-authored event, turn, and marker uses principal, origin, or sender
 
 ### INV-09 — Existing shape and rows remain valid
 
-The implementation MUST add no table, column, index, trigger, or shape stamp. The database stamp remains `coordination-fabric-v1-phase1-v3`. Existing rows remain readable and unchanged. Rows without an `assignment_lifecycle_source_v1` event are historical and MUST NOT be backfilled or reported.
+The implementation MUST add no table, column, index, trigger, or shape stamp. The database stamp remains `coordination-fabric-v1-phase1-v3`. Existing rows, including `assignment_reopenings`, remain readable and unchanged. Rows without an `assignment_lifecycle_source_v1` event are historical and MUST NOT be backfilled or reported.
 
 ### INV-10 — No lifecycle row is deleted
 
-The product MUST expose no lifecycle delete or repair operation. Existing deletion and retention behavior for turns, wakes, messages, lifecycle events, condition facts, assignments, sessions, and work items does not change.
+The product MUST expose no lifecycle delete or repair operation. Existing deletion and retention behavior for turns, wakes, messages, lifecycle events, assignments, assignment reopenings, sessions, and work items does not change.
 
 ## Goal
 
@@ -70,7 +72,7 @@ Close the proven silent-loss gap for new assigned failed turns and accepted assi
 
 ### GOAL-02
 
-When an authorized supervisor determines that a failed turn cannot continue because the applicable Kung Fu model list is exhausted, Main receives one capability-block marker only after that supervisor-authored fact commits.
+Preserve the current Kung Fu model-exhaustion boundary: the supervising agent records an assignment capability block and schedules a re-check. The lifecycle mechanism does not report model unavailability to Main. Ordinary Main fallback depends only on whether a recorded non-Main agent route delivered.
 
 ### GOAL-03
 
@@ -86,7 +88,7 @@ This feature does not judge correctness, urgency, importance, staffing, or the n
 
 ### NG-02
 
-This feature does not implement model ring-down. Agents apply the Kung Fu policy through existing spawn, assignment, wake, condition, and credential flows.
+This feature does not implement model ring-down. Agents apply the Kung Fu policy through existing spawn, assignment, wake, and credential flows.
 
 ### NG-03
 
@@ -94,11 +96,11 @@ This feature does not add HarnessHealth, provider suppression, model availabilit
 
 ### NG-04
 
-This MVP does not backfill historical terminals, cover terminal sources committed while the rollback predecessor runs, or coalesce multiple source episodes. Those cases are visible in existing rows and can be added later without changing this MVP's identifiers.
+This MVP does not backfill historical terminals, cover terminal sources committed while the rollback predecessor runs, or coalesce multiple source episodes. It does not deduplicate an untyped legacy Main marker written by the rollback predecessor against the current version's typed TERM-09 report. ARC-12 bounds that accepted degradation to one duplicate during one rollback/reactivation cycle. These cases can be extended later without changing this MVP's identifiers.
 
 ### NG-05
 
-This MVP does not add a general source sweeper, fairness cursor, permanent-failure ledger, transition ledger, or lifecycle mutation command. Recognition uses existing transaction hooks and terminal replay.
+This MVP does not add a continuously running source sweeper, fairness cursor, permanent-failure ledger, transition ledger, or lifecycle mutation command. Recognition uses existing transaction hooks, terminal replay, and ARC-12's one finite activation reconciliation.
 
 ### NG-06
 
@@ -117,12 +119,14 @@ The eligible source forms and stable identifiers are:
 | Source | Source id | Eligibility |
 |---|---|---|
 | assigned terminal turn | `turn:<seq>` | `turns.assignmentId` is non-null; status is `failed` or `failed_unknown`; `requestRef` does not begin `assignment-lifecycle:`; the terminal transaction wrote the ARC-01 source event |
-| assignment disposition | `assignment:<assignmentId>:<outcome>` | outcome is `completed`, `surrendered`, or `revoked`; the closing transaction wrote the ARC-01 source event |
-`episodeId` is `ale:<sourceId>` for a turn or assignment source. A model-list exhaustion fact continues the named turn episode; it does not create a second episode.
+| assignment disposition | `assignment:<assignmentId>:<outcome>:<generation>` | outcome is `completed`, `surrendered`, or `revoked`; `generation` is the positive base-10 integer defined below; the closing transaction wrote the ARC-01 source event |
+`episodeId` is `ale:<sourceId>` for a turn or assignment source.
 
-ARC-08's model-list exhaustion input has evidence id `model-exhausted:<conditionFactId>:<turnSeq>`. It continues the named turn episode and is not a second lifecycle source.
+For an assignment close, `generation = 1 + COUNT(assignment_reopenings.id WHERE assignmentId = <assignmentId>)`, evaluated in the closing transaction after all earlier reopenings and before the source event is inserted. The first close is generation `1`. Reopening records that close in `assignment_reopenings`; the next close is therefore the next generation even when its outcome repeats. The identifier uses canonical decimal digits with no sign and no leading zero.
 
-The assignment source id contains the assignment id and outcome once as canonical correlation and idempotency identity. Those components are not copied into another feature-owned persistence field.
+The assignment source id contains the assignment id, outcome, and close generation once as canonical correlation and idempotency identity. Those components are not copied into another feature-owned persistence field.
+
+After commit, the stored source-event subject is authoritative. A projection MUST NOT recompute an older generation from the assignment's later reopenings.
 
 A turn whose `requestRef` begins `assignment-lifecycle:` is an attempt, not a new source. A `canceled` turn and a routing-wake cancellation are not sources.
 
@@ -158,8 +162,7 @@ Existing coverage is one of:
 
 - a Bubble notice whose cause is the root failed turn;
 - an exact supervision controller wake or turn correlated by the existing sidecar to that root turn and assignment; or
-- the work item's `slateWakeId` created in the same assignment-close transaction; or
-- after rollback only, an existing Bubble `lineage_exhausted` event whose `cause_seq` is the source turn or a lifecycle-notice turn for the source.
+- the work item's `slateWakeId` created in the same assignment-close transaction.
 
 Queued or running coverage keeps the episode `resolving`. Delivered coverage resolves it. A terminal non-delivered route permits the next candidate. A pending slate wake is coverage because its existing domain intentionally routes the zero-assignment decision to Main.
 
@@ -178,7 +181,7 @@ A lifecycle notice is a model turn to a non-Main agent expecter, agent-owner, or
 For a failed-turn source, the prompt is exactly:
 
 ```text
-Assignment lifecycle source <sourceId> on assignment <assignmentId> needs supervision. You are its recorded <expecter|agent owner>. Inspect the durable rows and decide the next action. If the failure is model availability, use your currently served Kung Fu activity row: try each allowed candidate once in order; use nothing off-list; file model-candidates-exhausted for episode <episodeId> only after the list ends. Tightbeam did not change ownership.
+Assignment lifecycle source <sourceId> on assignment <assignmentId> needs supervision. You are its recorded <expecter|agent owner>. Inspect the durable rows and decide the next action. If the failure is model availability, use your currently served Kung Fu activity row: try each allowed candidate once in order; use nothing off-list; if the row ends, record the attempted rungs, evidence, and consequence as a capability block on the affected assignment and schedule a re-check. Do not report to Main merely because the row ended. Tightbeam did not change ownership.
 ```
 
 The prompt contains no source error or assignment subject.
@@ -195,15 +198,15 @@ The read projection derives one state; no mutable lifecycle state row exists:
 
 | State | Row predicate |
 |---|---|
-| `resolving` | source event exists; an existing route or lifecycle notice is queued/running, or an untried eligible agent edge remains |
-| `resolved_existing` | a correlated existing route delivered, a same-transaction slate wake covers an assignment close, or a correlated rollback `lineage_exhausted` event exists |
+| `resolving` | source event exists and none of the four terminal predicates below matches; this includes a queued/running route, an untried eligible agent edge, or a terminal non-delivered attempt awaiting callback or activation reconciliation |
+| `resolved_existing` | a correlated existing route delivered or a same-transaction slate wake covers an assignment close |
 | `resolved_agent` | an expecter, agent-owner, or holder-parent lifecycle notice delivered |
 | `reported_main` | the deterministic ARC-07 Main marker exists |
 | `refused` | ARC-10's deterministic refusal event exists |
 
-The projection applies the predicates in this first-match order: `reported_main`, `resolved_existing`, `resolved_agent`, `refused`, `resolving`. This order makes the one legal `resolved_agent -> reported_main` transition observable after ARC-08's typed exhaustion fact. The write rules forbid every other overlap.
+The projection applies the predicates in this first-match order: `refused`, `reported_main`, `resolved_existing`, `resolved_agent`, `resolving`. Refusal wins over a route that appears later. Lifecycle writes forbid terminal-state overlap; another domain may add a route after refusal, but it cannot change the episode state.
 
-`resolving -> resolved_existing | resolved_agent | reported_main | refused` is allowed. `resolved_agent -> reported_main` is allowed only after ARC-08's typed exhaustion fact. No transition leaves `refused`, and no other transition exists.
+`resolving -> resolved_existing | resolved_agent | reported_main | refused` is allowed. No transition leaves a terminal state.
 
 ### TERM-09 — Main report marker
 
@@ -214,15 +217,7 @@ The ordinary exhausted-routing body is exactly:
 ```text
 [assignment lifecycle]
 
-Assignment lifecycle source <sourceId> on assignment <assignmentId> needs your action. No recorded non-Main agent route delivered. Model-candidate exhaustion was not established. Tightbeam did not change ownership.
-```
-
-The typed exhaustion body is exactly:
-
-```text
-[assignment lifecycle]
-
-Assignment lifecycle source <sourceId> on assignment <assignmentId> is capability-blocked. Authorized fact <evidenceId> reports that the applicable Kung Fu candidate list was exhausted. Tightbeam did not change ownership.
+Assignment lifecycle source <sourceId> on assignment <assignmentId> needs your action. No recorded non-Main agent route delivered. Tightbeam did not change ownership.
 ```
 
 ### TERM-10 — Capable agent
@@ -233,7 +228,7 @@ An agent is capable only when its correlated existing-route or lifecycle-notice 
 
 ### ASM-01
 
-`turns`, `assignments`, `sessions`, `work_items`, `wakes`, `messages`, `condition_facts`, and `lifecycle_events` retain committed rows needed by the derived projection.
+`turns`, `assignments`, `assignment_reopenings`, `sessions`, `work_items`, `wakes`, `messages`, and `lifecycle_events` retain committed rows needed by the derived projection.
 
 ### ASM-02
 
@@ -249,11 +244,11 @@ The current Bubble root correlation is `requestRef = bubble:<rootTurnSeq>`. Supe
 
 ### ASM-05
 
-The controlling implementation baseline is `main@a1cea925563adbb7cca62b463a705658bd07d025`, database shape `coordination-fabric-v1-phase1-v3`, CI file SHA-256 `1ccc8176ca9a8b9c2a677eaf31723e3c9602f6790ed8baccb945a5bc2d000e57`, and rollback predecessor `ef1ef51b8e1b0293d69b1208655a735e42bbf99d`.
+The controlling implementation baseline is `main@2d0bbf056996ca573379bc022f7620b55f309120`, database shape `coordination-fabric-v1-phase1-v3`, CI file SHA-256 `1ccc8176ca9a8b9c2a677eaf31723e3c9602f6790ed8baccb945a5bc2d000e57`, and rollback predecessor `b8e6c47e4631da8345aaf8c6ab73b0858e630bf6`.
 
 ### ASM-06
 
-The shipped `agentic-engineering` Kung Fu defines ordered model candidates by activity and the live catalog decides whether each named candidate is selectable. That content may change without a product database migration.
+At the ASM-05 baseline, `agentic-engineering` Kung Fu's `preferred-models.md` and `orchestrator.md` define the ordered candidates, assignment capability block, and re-check policy. The live catalog decides whether each named candidate is selectable. That guidance may change without a product database migration.
 
 ## Architecture
 
@@ -282,7 +277,7 @@ The event has this exact existing-table shape:
 
 The event stores no prompt, error, assignment-subject text, note, outcome copy, model response, or credential. Its presence is the post-activation eligibility boundary. An existing terminal row without this event is historical.
 
-Before inserting, the terminal transaction checks for the exact event kind and subject. If it already exists, the source retains its original episode and the transaction writes no second source event. Every such check runs inside the existing single-owner `BEGIN IMMEDIATE` transaction, so the second writer observes the first commit and cannot insert concurrently. This also means a reopened assignment that later closes with the same outcome rejoins its original canonical `assignment:<assignmentId>:<outcome>` episode.
+Before inserting, the terminal transaction checks for the exact event kind and subject. If it already exists, the source retains its original episode and the transaction writes no second source event. Every such check runs inside the existing single-owner `BEGIN IMMEDIATE` transaction, so the second writer observes the first commit and cannot insert concurrently. For an assignment disposition, the same transaction derives TERM-01's generation from existing `assignment_reopenings` rows. A retry of one close reuses its source; a close after a reopen has the next generation and therefore creates a distinct source even when the outcome repeats. Deleting the existing reopen surface is outside scope, and accepting same-outcome collapse violates GOAL-01; deriving the generation from its existing papertrail adds no persistence surface.
 
 Live lane failure, task-crash failure, unclaimable-turn failure, and boot recovery to `failed_unknown` all invoke the same source-admission helper inside the transaction that wins their guarded terminal update. Assignment completion, surrender, and revocation invoke the assignment form inside their existing close transaction.
 
@@ -326,7 +321,7 @@ Notice message and turn insertion use the existing Gateway/Ledger transaction se
 
 ### ARC-06 — Existing-route resolution
 
-The evaluator reads only the exact correlations in TERM-06. It does not treat an uncorrelated wake, turn, delivered message, progress attest, matching prose, or same-session activity as resolution.
+The evaluator reads only the exact correlations in TERM-06. It does not treat an uncorrelated wake, turn, delivered message, progress attest, matching prose, same-session activity, or predecessor `lineage_exhausted` event as resolution.
 
 Bubble and supervision keep their own state and mutation seams. Lifecycle adds no receipt table. Their existing durable turn, wake, and sidecar rows are the receipts for this MVP.
 
@@ -346,32 +341,23 @@ The report event subject is the TERM-01 source id. Its detail is:
   "episodeId": "ale:...",
   "messageId": "s_...",
   "reason": "agent_supervision_unavailable",
-  "evidenceId": null,
   "principal": "process:tightbeam"
 }
 ```
 
-For `agent_supervision_unavailable`, `evidenceId` is JSON null. For `model_candidates_exhausted`, `reason` is that exact string and `evidenceId` is TERM-01's exact `model-exhausted:<conditionFactId>:<turnSeq>` string. No other key or reason value is permitted.
+`reason` is exactly `agent_supervision_unavailable`. No other key or reason value is permitted.
 
 Wire publication occurs after commit. Replay from `messages` is recovery when no client was connected or publication failed.
 
-### ARC-08 — Model-list exhaustion fact
+### ARC-08 — Model-exhaustion boundary
 
-Add judgment-only condition kind `model-candidates-exhausted`. In `ConditionFacts` it joins the existing agent-only kind set, which forbids `process:tightbeam`; the Gateway authority check below retains the explicit owner/admin arm. Its scope is an exact `ale:turn:<seq>` episode id.
+Lifecycle adds no model-exhaustion condition kind, event, report reason, API, or state transition. A supervising agent applies its currently served Kung Fu row. When the ordered row ends, that agent records the attempted rungs, evidence, and consequence as a capability block on the affected assignment and schedules a re-check through the existing assignment and wake seams.
 
-The condition verb accepts it only when:
-
-- the episode decodes to an eligible ARC-01 assigned failed turn;
-- the caller is above the failed turn's session in `spawnedBy` lineage or is that session's owning user/admin, using the existing `work-blocked` authority rule; and
-- a correlated expecter, agent-owner, Bubble, or supervision agent turn delivered for the episode.
-
-The substrate does not inspect or count model attempts. The fact is the authorized supervising principal's judgment that the supervising agent applied the applicable Kung Fu row and exhausted its allowed candidates once each. An owning user/admin can file only after the same correlated delivered agent-route proof; that authority does not replace the proof. The supervising agent also uses existing `work-blocked` when current model policy requires the affected session to stop receiving ordinary work.
-
-The condition fact and ARC-07 report commit in one transaction. Before insertion, that single-writer transaction selects the earliest exact `(kind, scope)` fact. It reuses that fact or inserts exactly one, then derives TERM-01's stable evidence id from it. Therefore retries by the same or another authorized principal cannot create a second fact or change the marker body. The report reason is `model_candidates_exhausted`. The substrate MUST refuse this condition kind from `process:tightbeam` and from the affected session itself.
+The capability block and re-check are agent-policy records. They are not lifecycle sources, routes, delivery receipts, or Main-report triggers. The lifecycle evaluator neither reads nor writes them. Removing this typed-report path is smaller than retaining a second escalation mechanism, and accepting a model-driven Main report would violate INV-01 and INV-02.
 
 ### ARC-09 — API and trace
 
-No new public mutation verb is added. The existing `condition` verb accepts ARC-08's new kind.
+No new public mutation verb is added.
 
 `assignment-get` adds `lifecycleEpisodes`, ordered by source event `(ts, id)`. Each entry has exactly:
 
@@ -402,8 +388,6 @@ The implementation uses these named failures:
 | `lifecycle_source_invalid` | refusal event commits; malformed source is not routed |
 | `lifecycle_edge_ambiguous` | refusal event commits; no candidate is guessed |
 | `lifecycle_idempotency_conflict` | existing row is preserved and refusal event commits |
-| `model_exhaustion_not_authorized` | condition command returns a value error and writes no fact/report |
-| `model_exhaustion_unproven_route` | no delivered agent route exists; condition command writes nothing |
 
 The first four failures write one lifecycle event with kind `assignment_lifecycle_refused_v1`, subject equal to the source id, and exact detail:
 
@@ -428,17 +412,23 @@ Assignment disposition, slate coverage, source event, notice insertion, and imme
 
 For failed turns, the source event shares the guarded terminal transaction. The live lane and terminal reconciler MUST run lifecycle/Bubble recognition to a durable result before setting `publishedAt`. A durable result is one queued/running exact existing route, one deterministic lifecycle notice, one Main marker, one refusal, or a delivered resolution. The reconciler uses a no-lane-nudge delivery mode during its own pass, then its existing pending-session scan starts any queued notice; this avoids a synchronous call back into itself.
 
-A crash before that durable result leaves `publishedAt` null, so terminal replay re-enters the evaluator. A crash after the result but before acknowledgement replays idempotently. Deterministic turn and message keys make both cases converge. A committed ARC-10 refusal is a durable result and is not retried after publication acknowledgement.
+A crash before that durable result leaves `publishedAt` null, so terminal replay re-enters the evaluator. A crash after the result but before acknowledgement replays idempotently. Deterministic turn and message keys make both cases converge. A committed ARC-10 refusal is a durable result and is not retried after publication acknowledgement. The evaluator checks refusal before any route predicate; once refused, it performs no further lifecycle write even if another domain later inserts or delivers a correlated route.
 
-SQLite serialization decides candidate-retirement, supervision-route, condition-fact, and report races. Each transaction re-reads eligibility immediately before its write. The committed pre-change or post-change state wins; no check-then-act gap is permitted.
+SQLite serialization decides candidate-retirement, supervision-route, and report races. Each transaction re-reads eligibility immediately before its write. The committed pre-change or post-change state wins; no check-then-act gap is permitted.
 
 ### ARC-12 — Migration, rollback, and compatibility
 
 There is no DDL migration. The shape stamp remains `coordination-fabric-v1-phase1-v3`.
 
-The immediate predecessor `ef1ef51b8e1b0293d69b1208655a735e42bbf99d` ignores the new lifecycle event kinds and can read all new rows. It may execute already queued lifecycle notice turns as ordinary turns. Rollback MUST NOT delete or rewrite any event, turn, wake, message, condition fact, assignment, or work-item row.
+The immediate predecessor `b8e6c47e4631da8345aaf8c6ab73b0858e630bf6` ignores the new lifecycle event kinds and can read all new rows. It may execute already queued lifecycle notice turns as ordinary turns and may write its legacy `lineage_exhausted` event and marker. Rollback MUST NOT delete or rewrite any event, turn, wake, message, assignment, assignment-reopening, or work-item row.
 
-On reactivation, exact source events written by this version remain eligible and idempotent. Terminal sources committed only before first activation or while the predecessor runs have no source event and remain outside this MVP by NG-04.
+At each activation of this version, before it accepts new work, Boot reads the maximum existing `lifecycle_events.id`. It enumerates each `assignment_lifecycle_source_v1` event at or below that fixed boundary in `(ts, id)` order and invokes the evaluator. A source that is resolved, refused, or waiting on a pending route is an idempotent no-op. A source after the boundary uses its normal terminal hook. A crash restarts the finite pass from the same rows; deterministic identifiers make repetition safe. The pass stores no cursor or receipt.
+
+This activation pass is required because the predecessor can acknowledge a lifecycle-notice terminal after writing only its own untyped rows; ordinary `publishedAt` replay then has no terminal left to revisit. Deleting the pass would restore silent loss. Treating the predecessor event as delivery violates INV-01, and adding a receipt or cursor loses to the finite idempotent scan.
+
+On reactivation, exact source events written by this version remain eligible and idempotent. The evaluator uses the exact source and attempt rows, ignores the predecessor's unversioned `lineage_exhausted` detail, and never parses its prose. When no refusal, typed current-version report, delivered or pending route, or untried agent candidate exists, it writes TERM-09's one deterministic marker. During one supported rollback/reactivation cycle, this can leave one predecessor legacy marker and one current TERM-09 marker for the same underlying failure. Current-version replays add no second TERM-09 marker. This named duplicate is safer than treating an event written with no Main stream as delivery, and avoiding it would require forbidden prose parsing or a new receipt surface.
+
+Terminal sources committed only before first activation or while the predecessor runs have no source event and remain outside this MVP by NG-04. Repeated rollback/reactivation cycles and cross-version legacy-marker deduplication are deferred; they do not change current source identifiers or rows.
 
 ### ARC-13 — Observability, security, and deletion
 
@@ -460,6 +450,8 @@ Implementation commits these immutable, real-row fixtures and a provenance file:
 
 Fixtures preserve identifiers, principals, correlations, timestamps, state, and terminal columns. They redact prompts, errors, subjects, notes, model context, message content, and credentials with byte length and SHA-256 evidence. Hand-written ideal fixtures do not pass.
 
+ARC-14 fixture validation and AC-15 packaged smoke are release-blocking for this MVP because a hand-written, mock-only, or source-tree-only pass can conceal silent loss, duplicate terminal escalation, false attribution, or human-principal impersonation. Each is an incredibly detrimental failure under owner ruling `att_a8418685-4f10-4a91-90b0-9ac9b6bceb48`. This rationale adds no fixture or smoke scope.
+
 ### ARC-15 — Exact implementation decomposition
 
 Production files:
@@ -468,7 +460,6 @@ Production files:
 lib/tightbeam/assignment_lifecycle.ex          # new; source decoder, edge/query projection, evaluator, report
 lib/tightbeam/assignments.ex                   # transaction-local assignment source hook
 lib/tightbeam/boot.ex                          # failed_unknown recovery admission hook
-lib/tightbeam/condition_facts.ex               # agent-only exhaustion kind and atomic report hook
 lib/tightbeam/event_log.ex                     # typed lifecycle source/report readers and documentation
 lib/tightbeam/gateway.ex                       # failed-turn source hook and transaction-local notice seam
 lib/tightbeam/job_trace.ex                     # derived lifecycle projection
@@ -483,9 +474,7 @@ Tests and evidence files:
 
 ```text
 test/tightbeam/assignment_lifecycle_test.exs
-test/tightbeam/assignment_lifecycle_model_exhaustion_test.exs
 test/tightbeam/assignments_test.exs
-test/tightbeam/condition_facts_test.exs
 test/tightbeam/job_trace_test.exs
 test/tightbeam/productions/bubble_test.exs
 test/fixtures/assignment_lifecycle/routing-owner-present.json
@@ -505,9 +494,11 @@ Normative intent originates in `art_9d7e1cd9` at SHA-256 `009d3659f5c16729dccdd3
 
 This MVP consumes ninth-review report `art_52f72ba6` at SHA-256 `93c916f24657d40c66d96e7d4cc0e02df4bffbe954ce25ddd2eb2b62a43f6fde`, owner source ruling `att_dc857f39-585b-4d12-985f-d4a40e60a89d`, custody ruling `att_57bb03f4-81d9-4511-9434-d6ff0e81b8fe`, and Mike's focused-correction/MVP ruling delivered on 2026-08-21.
 
+The first MVP review covered `art_c0dd2b7e` at SHA-256 `34f38864174b6b95525f0fb1a6497b1df6087cee6bd096aadec5792b375a393e` and filed changes-requested verdict `att_08478431-132c-41d6-a9ca-902f3fedb4a4` with report `art_ac28c6c8` at SHA-256 `d11a405ca630ce829ffbb3141209e7a6d9ccdf6573627271dcb6b79f357f74c7`. Operator decision `dr_cfe612db-7289-4a1f-acd5-5bb26701fbfc` authorized the minimal F1/F2 closure: close-generation assignment identity, deletion of untyped predecessor events as coverage, and the bounded rollback duplicate in ARC-12. Owner re-pin `att_7d588233-c56b-4641-a90e-1c8af14f1cf0` adopts `main@b8e6c47e4631da8345aaf8c6ab73b0858e630bf6` and deletes typed model-exhaustion-to-Main behavior from this MVP. Owner ruling `att_a8418685-4f10-4a91-90b0-9ac9b6bceb48` advances the baseline to `main@2d0bbf056996ca573379bc022f7620b55f309120` with rollback predecessor `b8e6c47e4631da8345aaf8c6ab73b0858e630bf6` and supplies the exact blocking-fixture rationale in ARC-14, AC-14, and AC-15.
+
 The prior frozen candidate `art_1fbd7a55` at SHA-256 `5caf7d2dba7f90532c339d11b230bf4ba86d6e29ac1cf0ff8002403140272ca6` remains historical review evidence. It is not implementation authority.
 
-The builder MUST recheck remote `refs/heads/main`. If it differs from `a1cea925563adbb7cca62b463a705658bd07d025`, implementation stops for an owner re-pin.
+The builder MUST recheck remote `refs/heads/main`. If it differs from `2d0bbf056996ca573379bc022f7620b55f309120`, implementation stops for an owner re-pin.
 
 ## Acceptance
 
@@ -527,6 +518,8 @@ Given `holder -> parent -> Main`, when a failed assigned turn bubbles, then the 
 
 Given completion, surrender, and revocation in separate cases, when each commits without a slate wake, then its exact source event and one agent notice or Main report commit atomically with the assignment transition. Given the close creates a slate wake, then state is `resolved_existing` and lifecycle creates no notice or report.
 
+Given an assignment closes `completed`, reopens, and closes `completed` again, then the first source ends in `:completed:1`, the second ends in `:completed:2`, and both have distinct episodes and routing outcomes. Replaying either close callback ten times does not create another source for that generation.
+
 ### AC-05 — Atomic report and idempotency
 
 Given no eligible agent route, when recognition reports Main, then one high-attention marker and one report event commit in one transaction with `process:tightbeam` attribution. Replaying the callback ten times leaves one marker and one report event. Injected failure at either write commits neither.
@@ -537,29 +530,35 @@ Given a failed-turn source commits and the process crashes before routing, when 
 
 ### AC-07 — Race closure
 
-Given candidate retirement, supervision route insertion, or model-exhaustion filing races evaluation, when both transactions finish, then SQLite order produces exactly the pre-change or post-change valid result. No report commits while a route visible to its transaction remains pending or delivered.
+Given candidate retirement or supervision route insertion races evaluation, when both transactions finish, then SQLite order produces exactly the pre-change or post-change valid result. No report commits while a route visible to its transaction remains pending or delivered.
+
+Given ARC-10 refusal commits and an independently owned route is inserted or delivered later, when the episode is read and recognition is retried, then its state remains `refused` and lifecycle writes no notice or report.
 
 ### AC-08 — Kung Fu ring-down
 
-Given an agent receives a lifecycle notice and its applicable test Kung Fu row is `[candidate-A, candidate-B, candidate-C]`, when A is refused and B is out of tokens, then the agent tries C once. It does not retry A or B, use an off-list model, or report exhaustion to Main before C also fails.
+Given an agent receives a lifecycle notice and its applicable test Kung Fu row is `[candidate-A, candidate-B, candidate-C]`, when A is refused and B is out of tokens, then the agent tries C once. It does not retry A or B, use an off-list model, or report model unavailability to Main.
 
-This is an agent-policy acceptance fixture. The lifecycle substrate proves only the ordered attempts' durable session/assignment/turn rows and the later supervisor-authored fact; it does not parse the policy or perform the attempts.
+Given C also fails, when the row ends, then the agent records A, B, C, their evidence, and the consequence as a capability block on the affected assignment and schedules one re-check. Separable work continues. No lifecycle Main marker or report event is created.
 
-### AC-09 — Main only after typed exhaustion
+This is an agent-policy acceptance fixture. The lifecycle substrate proves only its no-report boundary; it does not parse the policy, perform the attempts, create the capability block, or schedule the re-check.
 
-Given the same episode and a delivered supervisor notice, when the authorized supervisor files `model-candidates-exhausted`, then the fact, one Main marker, and one report event commit atomically. The body cites the fact and says the applicable list was exhausted. A raw failed turn, first unavailable candidate, generic `work-blocked`, error text, provider, or `process:tightbeam` filing produces no such marker.
+### AC-09 — Model exhaustion never reports Main
+
+Given a delivered supervisor notice and an exhausted ordered model row, when the agent records its assignment capability block and schedules a re-check, then the lifecycle episode remains `resolved_agent`. No lifecycle Main marker, report event, or additional lifecycle state transition appears.
 
 ### AC-10 — No capable supervisor
 
-Given all recorded non-Main agent routes terminate non-delivered and no exhaustion fact exists, when recognition reaches fallback, then Main receives one `agent_supervision_unavailable` marker. It states that model-candidate exhaustion was not established. It does not claim a capability block.
+Given all recorded non-Main agent routes terminate non-delivered, when recognition reaches fallback, then Main receives one `agent_supervision_unavailable` marker. The marker states only that no recorded non-Main route delivered. It makes no model-availability or capability-block claim.
 
-### AC-11 — Authority refusals
+### AC-11 — Capability-block isolation
 
-Given the affected session itself, an unrelated agent, `process:tightbeam`, an assignment outcome episode, or a turn episode with no delivered agent route, when each files `model-candidates-exhausted`, then the command returns ARC-10's named refusal and writes no fact or report.
+Given an assignment capability block and its scheduled re-check exist before or after lifecycle recognition, when the evaluator reads the episode, then it ignores both records as lifecycle routing evidence. They create no lifecycle source, route, resolution, refusal, or Main report.
 
 ### AC-12 — Historical compatibility and rollback
 
-Given existing terminal rows without ARC-01 events, when the new binary starts, then it reports none and changes no existing row. Given new rows, when the predecessor binary starts against the same store, then the shape check passes and it preserves them. Reinstalling the new binary does not duplicate prior notices or reports.
+Given existing terminal rows without ARC-01 events, when the new binary starts, then it reports none and changes no existing row. Given new rows, when the predecessor binary starts against the same store, then the shape check passes and it preserves them.
+
+Given the last queued lifecycle notice enters the predecessor during one rollback/reactivation cycle and the predecessor acknowledges that terminal, then the restored rows project `resolving`, not an absent state. When the current version activates, its fixed-boundary pass visits the typed source. If the predecessor wrote `lineage_exhausted` with no active Main stream, the evaluator ignores that event and writes exactly one current TERM-09 marker. If an active Main stream instead received one predecessor legacy marker, the evaluator writes exactly one current TERM-09 marker, yielding the one named duplicate. Ten pass or evaluator replays add no additional marker. No test parses predecessor event detail or marker text.
 
 ### AC-13 — Trace, security, and deletion
 
@@ -569,33 +568,37 @@ Given one episode in each derived state, including `refused`, when `assignment-g
 
 Given the reviewed capture source, when the five ARC-14 files are validated, then every named id, timestamp, principal, correlation, state, terminal field, redaction length, and redaction SHA matches the real source. Changing one preserved value or using a hand-written row causes failure. The Fable cancellation fixture creates no lifecycle source.
 
+This validation is release-blocking for the exact ARC-14 rationale. It adds no fixture.
+
 ### AC-15 — Deterministic and packaged gates
 
-The exact implementation commit MUST pass on Linux and macOS under the CI definition whose SHA-256 is `1ccc8176ca9a8b9c2a677eaf31723e3c9602f6790ed8baccb945a5bc2d000e57`:
+The exact implementation commit MUST pass on Linux and macOS under the CI definition whose SHA-256 is `1ccc8176ca9a8b9c2a677eaf31723e3c9602f6790ed8baccb945a5bc2d000e57`. Commands use these exact working directories:
 
-```text
-mix format --check-formatted
-scripts/verify_mix.sh
-mix test
-cargo fmt --check --manifest-path native/tightbeam_cli/Cargo.toml
-cargo test --manifest-path native/tightbeam_cli/Cargo.toml
-sh packaging/assemble.sh
-```
+| Working directory | Command |
+|---|---|
+| repository root | `mix format --check-formatted` |
+| repository root | `scripts/verify_mix.sh` |
+| repository root | `mix test` |
+| `cli/` | `cargo fmt --check` |
+| `cli/` | `cargo test` |
+| repository root | `sh packaging/assemble.sh` |
 
-The packaged smoke installs the assembled artifact into a fresh prefix and uses a fresh database. It runs one real available Claude or Codex agent route selected through the live permitted catalog, proves a delivered agent notice suppresses Main, proves an agent-supervision-unavailable Main marker without invoking a model, and proves a typed exhaustion marker after captured real unavailable-candidate evidence on throwaway sessions. A mock harness, source-tree-only run, unavailable candidate retry, or unrecorded credential block does not pass. If no candidate in the smoke activity's allowed row is available, the gate reports `capability_blocked` with the attempted ordered candidates; it does not silently pass or substitute.
+The packaged smoke installs the assembled artifact into a fresh prefix and uses a fresh database. It runs one real available Claude or Codex agent route selected through the live permitted catalog, proves a delivered agent notice suppresses Main, and proves an `agent_supervision_unavailable` Main marker without invoking a model. A separate throwaway agent-policy case exhausts an ordered candidate row, records the attempted candidates and evidence as the affected assignment's capability block, schedules a re-check, and proves no lifecycle Main marker appears. A mock harness, source-tree-only run, unavailable candidate retry, or unrecorded credential block does not pass. If no candidate in the smoke activity's allowed row is available, the gate records the attempted ordered candidates and evidence as the affected assignment's capability block and schedules a re-check; it does not silently pass, substitute, or report Main.
+
+This packaged smoke is release-blocking for the exact ARC-14 rationale. It adds no smoke case.
 
 ### AC-16 — Clause map
 
 | Requirement | Acceptance | Proposed files |
 |---|---|---|
-| INV-01, INV-03, INV-04 | AC-01 through AC-04, AC-10 | `assignment_lifecycle.ex`, `bubble.ex`, `assignments.ex` |
-| INV-02 | AC-08 through AC-11 | `condition_facts.ex`, `assignment_lifecycle.ex` |
-| INV-05, INV-06 | AC-05 through AC-07 | `assignment_lifecycle.ex`, `gateway.ex`, `session_lane.ex`, `lane_manager.ex`, `ledger.ex`, existing unique indexes |
+| INV-01, INV-03, INV-04 | AC-01 through AC-04, AC-10, AC-12 | `assignment_lifecycle.ex`, `bubble.ex`, `assignments.ex` |
+| INV-02 | AC-08 through AC-11 | `assignment_lifecycle.ex`; existing Kung Fu, assignment, and wake seams unchanged |
+| INV-05, INV-06 | AC-04 through AC-07, AC-12 | `assignment_lifecycle.ex`, `gateway.ex`, `session_lane.ex`, `lane_manager.ex`, `ledger.ex`, existing unique indexes |
 | INV-07 | AC-01, AC-03, AC-04, AC-14 | `bubble.ex`, existing supervision/slate seams |
-| INV-08, INV-10 | AC-05, AC-09, AC-13 | `event_log.ex`, `projection.ex` unchanged, `job_trace.ex` |
-| INV-09 | AC-12 | no schema file change |
-| GOAL-01 | AC-01 through AC-07 | source hooks and evaluator |
-| GOAL-02 | AC-08 through AC-11 | typed supervisor fact and atomic report |
+| INV-08, INV-10 | AC-05, AC-13 | `event_log.ex`, `projection.ex` unchanged, `job_trace.ex` |
+| INV-09 | AC-04, AC-12 | `assignments.ex`; no schema file change |
+| GOAL-01 | AC-01 through AC-07, AC-12 | source hooks and evaluator |
+| GOAL-02 | AC-08 through AC-11 | lifecycle no-report boundary; existing agent-policy records unchanged |
 | GOAL-03 | AC-14, AC-15 | fixtures, deterministic tests, packaged smoke |
 | ARC-01 through ARC-08 | AC-01 through AC-12 | production file set in ARC-15 |
 | ARC-09 through ARC-13 | AC-05 through AC-13 | trace, errors, compatibility, observability |
