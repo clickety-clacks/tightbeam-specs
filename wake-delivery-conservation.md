@@ -147,6 +147,16 @@ terminalization bridge; and the runtime outcome principal rule conflicted with t
 retirement prose. This revision closes them in R6-R9, R12-R16, R18, the Architecture,
 and A4-A6.
 
+Fresh stronger-model review `asg_0fcc18f6-35bc-4328-bde7-0e0958aa98fa` returned the
+changes-requested verdict `att_8119568a-5392-4afa-8bb8-2b84c8df0cce` and report
+`art_c4e21b23`, SHA-256
+`ce6f82cf5c46b075b10b0b6e2059446584131e0dbbf85d125c88acb7d849fabf`. It confirmed
+that the prior four findings are closed. It found one migration-scope defect: R18 and
+A8 assigned prompt-delivery failure history to successful fired internal consumers.
+The pinned baseline proves that `effort_deadline` can complete, mark its own wake fired,
+and create no prompt turn. This revision closes that defect in Baseline reconciliation,
+R18, the Architecture, and A8.
+
 ### Baseline reconciliation
 
 | Limb | Source evidence | Ruling in this specification |
@@ -159,6 +169,7 @@ and A4-A6.
 | F — GAGGED versus negligence | The prod left-hand side checks terminal existence but does not read terminal status or failure class; a failed terminal can match the negligence ladder (`lib/tightbeam/supervision.ex:854-905,1000-1025,1114-1140`). | R11 makes the typed terminal failure a higher-priority, consumed fact. |
 | G — O6 | O6 commits `078919d`, `67e1bcf`, `f64ffa7`, `81fbc2d`, and merge `ba5952b` are ancestors of both baselines. O6 regression tests remain at `test/gateway_test.exs:6452-6765`. | O6 is superseded for this work and stays closed. |
 | H — schema custody | Current main stamps the merged shape as `coordination-fabric-v1-phase1-v3` and refuses an unreadable shape before normal use (`lib/tightbeam/schema.ex:65,764-1014`). The turn table has five named indexes (`lib/tightbeam/ledger.ex:68-75`). Checkpoint bindings reference `turns(seq)`, and fired-lineage triggers forbid attribution update or deletion (`lib/tightbeam/schema.ex:471-510,704-737`). | R18 defines one exact v3-to-v4 transition, recreates the code-defined dependent objects, validates the successor, and preserves the predecessor on failure. A8 tests those rails. |
+| I — internal consumers | The scheduler invokes a non-prompt consumer directly and creates no prompt carrier (`lib/tightbeam/wakes.ex:2183-2205,2342-2355`). `EffortCheckin.deadline/3` marks the consumed `effort_deadline` wake fired, and the regression fixture retains a pending replacement deadline (`lib/tightbeam/effort_checkin.ex:1400-1405`; `test/escalation_delivery_test.exs:193-208`). | R18 selects `consumer='prompt'` before any delivery-outcome backfill. It preserves each non-prompt wake and its consumer-specific history without a delivery outcome. A8 tests the fired original and pending replacement. |
 
 ## Non-Goals
 
@@ -686,26 +697,32 @@ shall pass validation without a second migration.
 
 The shape transition shall preserve existing wake, cancellation, turn, message,
 lifecycle, and Bubble rows except for the closed conflict normalizations below. It shall
-apply this closed mapping:
+select the wake consumer before it applies this closed mapping. Only a wake with
+`consumer='prompt'` can enter a delivery-outcome backfill or Wake Bubble route mapping.
 
 | Legacy shape | Migration result |
 |---|---|
-| `pending` wake without a turn | Preserve it without an outcome. For a prompt wake, derive and store the R5 Wake Bubble route. Its first later act uses attempt `0`. |
+| non-prompt wake without a turn, in any state | Preserve its wake, cancellation, message, and consumer-specific lifecycle values. Create no wake delivery outcome, conflict normalization, or Wake Bubble route. Do not apply a prompt mapping below. |
+| `pending` prompt wake without a turn | Preserve it without an outcome. Derive and store the R5 Wake Bubble route. Its first later act uses attempt `0`. |
 | `pending` prompt wake without a turn whose alert user cannot be derived | Insert the typed `alert_user_unknown` cancellation below; change the wake to `canceled` at the same migration timestamp; backfill null-turn `attempt` plus `undeliverable` with `causeKind='legacy_import'`; record `wake_migration_conflict` with the prior row and reason `alert_user_unknown`. |
-| `canceled` wake without a turn | Preserve it without a delivery outcome. Its typed cancellation remains final. |
-| `fired` wake without a turn | Backfill null-turn `attempt` plus `undeliverable` with `causeKind='legacy_import'`, a null failure class, and no Bubble route. |
+| `canceled` prompt wake without a turn | Preserve it without a delivery outcome. Its typed cancellation remains final. |
+| `fired` prompt wake without a turn | Backfill null-turn `attempt` plus `undeliverable` with `causeKind='legacy_import'`, a null failure class, and no Bubble route. |
 | exact legacy Bubble notice turn | When `origin='process:tightbeam'`, `requestRef='bubble:<decimalTurnSeq>'`, `wakeId=requestRef || ':' || sessionKey`, and no wake row has that id, store `noticeKind='bubble'`, `noticeCauseKind='turn'`, the decimal turn sequence as `noticeCauseId`, and the target as `noticeRecipientSessionKey`; set `wakeId` and `wakeAttempt` null; create no wake outcome. |
 | unlinked turn in `failed` or `failed_unknown` | Preserve its status, set `failureClass=legacy_outcome_unknown`, and create no wake outcome. |
 | unlinked turn in `queued`, `running`, `delivered`, or `canceled` | Preserve it with a null failure class and create no wake outcome. |
-| linked turn, wake state `fired` | Set `wakeAttempt=0`; backfill `attempt` and `admitted`; then apply the terminal mapping below. |
-| linked turn, wake state `pending` | Normalize the wake to `fired`, record its prior state in `wake_migration_conflict`, and apply the linked-turn mapping. The turn is durable admission evidence. |
-| linked turn, wake state `canceled` | Preserve the wake and cancellation rows, record both prior states in `wake_migration_conflict`, and apply the linked-turn mapping. |
+| linked turn, prompt wake state `fired` | Set `wakeAttempt=0`; backfill `attempt` and `admitted`; then apply the terminal mapping below. |
+| linked turn, prompt wake state `pending` | Normalize the wake to `fired`, record its prior state in `wake_migration_conflict`, and apply the linked-turn mapping. The turn is durable admission evidence. |
+| linked turn, prompt wake state `canceled` | Preserve the wake and cancellation rows, record both prior states in `wake_migration_conflict`, and apply the linked-turn mapping. |
 
 The transition shall treat a non-null legacy `turns.wakeId` as a wake link only when a
 `wakes` row has that exact id. It shall treat it as a Bubble notice only when the complete
 typed relation above holds. Another non-null legacy value has no lawful interpretation;
 the transition shall return `ShapeError`, roll back, and preserve v3 rather than infer a
 cause from the string.
+
+A turn linked to a non-prompt wake also has no lawful prompt-attempt interpretation.
+The transition shall return `ShapeError`, roll back, and preserve v3 instead of assigning
+that turn an attempt number or delivery outcome.
 
 The terminal mapping is also closed. `delivered` gains `handled`. `failed` and
 `failed_unknown` retain their status, gain failure class `legacy_outcome_unknown`, and
@@ -1051,6 +1068,8 @@ seven scalar summary fields but does not duplicate the history array.
 A pending wake and an R18 canceled-without-turn wake have `latestOutcome=null`,
 `attemptCount=0`, null turn, retry, and failure fields, and an empty history. Aggregate
 `state`, not a fabricated delivery outcome, reports their pending or canceled condition.
+An R18-preserved non-prompt wake has the same empty delivery projection while its
+aggregate state continues to report its consumer-specific state.
 
 The read handler applies R5 authorization before it queries the history. The new exact-id
 read leaves the existing pending-wake list unchanged.
@@ -1075,6 +1094,11 @@ For a remaining supervision-owned prompt wake, `WakeScheduler` next runs the exi
 work-blocked recognition. Its successful typed cancellation and prod refund stop the
 act. Internal consumers retain their existing consumer-specific delivery path and do
 not enter the delivery-outcome mechanism.
+
+During the R18 v3-to-v4 transition, `Schema` applies the same boundary before it maps a
+legacy wake. It preserves a non-prompt wake and its consumer-specific history without a
+delivery outcome or Wake Bubble route. It applies attempt, admission, and final-outcome
+backfills only to `consumer='prompt'` rows.
 
 Each remaining prompt wake enters one transaction. `Wakes.claim_prompt_in_txn` loads
 the row, rechecks its ordinary-due, condition-fact, or fallback-deadline guard, and runs
@@ -1510,22 +1534,32 @@ adds no notice, wake outcome, retry, or recursive cause.
 
 Given an exact v3-stamped fixture with one row for each R18 wake-shape and terminal
 mapping, when the application starts, then the shape gate selects the v3-to-v4 plan,
-unchanged columns compare equal, each linked turn has `wakeAttempt=0`, each shape has the
-specified outcomes, and each normalization has one conflict row that preserves its
-prior state. A canceled wake's queued or running carrier is `failed_unknown` and does
-not run. Restarting the v4 database produces no second backfill row, conflict row,
-retry, or retroactive Bubble notice. Proves R18.
+unchanged columns compare equal, each linked prompt turn has `wakeAttempt=0`, each shape
+has the specified outcomes, and each normalization has one conflict row that preserves
+its prior state. A canceled prompt wake's queued or running carrier is `failed_unknown`
+and does not run. Restarting the v4 database produces no second backfill row, conflict
+row, retry, or retroactive Bubble notice. Proves R18.
 
-The fired-without-turn fixture shall have `attempt` plus `undeliverable`,
+The fired prompt-without-turn fixture shall have `attempt` plus `undeliverable`,
 `causeKind='legacy_import'`, a null `failureClass`, and no Bubble route. `wake-get` shall
-return a null failure class for it. The pending prompt fixture whose alert user cannot be
-derived shall first gain one cancellation with the exact requester, reason, causal
-source, outcome, work-impact, liveness, action-needed, replacement, and timestamp fields
-from R18. It shall then become canceled at that same timestamp, gain the specified
-`alert_user_unknown` conflict and legacy outcomes, and cease to be eligible for runtime
-admission. The typed pending-insert and wake-update cancellation triggers shall accept
-that migration pair and shall continue to reject an unproved cancellation or another
-requester using the new reason or causal-source value.
+return a null failure class for it.
+
+Given a successful fired `consumer='effort_deadline'` wake with no prompt turn and its
+pending replacement deadline, when migration commits, then the original retains its
+exact consumer, state, fired time, payload, and consumer-specific lifecycle rows. The
+replacement retains its exact pending state and schedule. Both rows have a null Wake
+Bubble route and zero delivery outcomes. Their exact-id reads return
+`latestOutcome=null`, `attemptCount=0`, a null linked turn, and an empty outcome history.
+Restarting v4 changes no row and creates no outcome, conflict, retry, or Bubble notice.
+
+The pending prompt fixture whose alert user cannot be derived shall first gain one
+cancellation with the exact requester, reason, causal source, outcome, work-impact,
+liveness, action-needed, replacement, and timestamp fields from R18. It shall then
+become canceled at that same timestamp, gain the specified `alert_user_unknown`
+conflict and legacy outcomes, and cease to be eligible for runtime admission. The typed
+pending-insert and wake-update cancellation triggers shall accept that migration pair
+and shall continue to reject an unproved cancellation or another requester using the
+new reason or causal-source value.
 
 The clean-v4 and migrated-v4 cancellation DDL and validator shall also accept only R13's
 `tightbeam:quiescence-guard | quiescence_invalidated | owner_turn_admitted |
@@ -1546,6 +1580,10 @@ equal; its typed notice tuple names the turn cause and recipient; its wake field
 null; and it creates no wake outcome. Given a non-null legacy `turns.wakeId` that matches
 neither a wake row nor the exact Bubble relation, when migration runs, then it returns
 `ShapeError`, preserves v3, and changes no row or object.
+
+Given a legacy turn links to a non-prompt wake, when migration runs, then it returns
+`ShapeError`, preserves v3, and creates no attempt number, delivery outcome, or Bubble
+route.
 
 The migration test shall enumerate `Schema.successor_registry/0` and assert that its
 normalized records equal the complete owned-object set produced by clean-v4 bootstrap.
