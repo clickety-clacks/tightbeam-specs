@@ -971,15 +971,17 @@ verb.
 
 `Gateway.preflight/1` calls `Identity.init!/1` only to create or verify the
 three identity refs. It does not mint or publish a grandfather receipt.
-`Tightbeam.Boot` runs after schema migration and before the gateway accepts
-traffic. It detects a pending grandfather receipt there, creates its candidate
-identity commit, and calls the outer publisher. Boot also calls that outer
-publisher for its exact live catalog check. A missing referenced identity stops
-boot with `required_process_catalog_incompatible` and the same identity and row
-ids. Core target rails and `delivery_target.landed@1` participate in this boot
+The post-schema startup phase in `Gateway.children_after_preflight/1` runs
+after its `Schema.ensure_all/1` call and before `reload_law!/2` and the Bandit
+child can accept traffic. That phase detects a pending grandfather receipt,
+creates its candidate identity commit, and calls the outer publisher with the
+gateway runtime configuration. It also calls that outer publisher for the
+exact live catalog check. A missing referenced identity stops startup with
+`required_process_catalog_incompatible` and the same identity and row ids.
+Core target rails and `delivery_target.landed@1` participate in this startup
 check. A rollout first retains the exact identity or migrates each named current
 scope or binding through its ordinary append-only mutation, then retries the
-existing identity publication or boot seam. The V5 runtime smoke is a
+existing identity publication or startup seam. The V5 runtime smoke is a
 prerequisite for adding the `toplines_v5` capability entry.
 
 ### Proposed implementation paths
@@ -1011,7 +1013,8 @@ This path census is a build boundary, not implementation authority:
   `cli/src/dispatch.rs`.
 - Evolve `lib/tightbeam/identity.ex` to provide the outer guarded publisher and
   the supplied-transaction publisher. Move grandfather-receipt minting out of
-  `Identity.init!/1` into `lib/tightbeam/boot.ex` after schema migration.
+  `Identity.init!/1` into `Gateway.children_after_preflight/1` after schema
+  migration and before law loading or traffic startup.
 - Evolve `lib/tightbeam/org.ex` so `release_archetypes` passes its transaction
   to its combined-release callback. Evolve `lib/tightbeam/gateway.ex` so
   unlearn calls the in-transaction publisher through that callback. Each
@@ -1186,11 +1189,12 @@ combined-release path has no archetype or catalog reference, when it publishes
 the candidate, then the one supplied transaction performs the reference check,
 catalog validation, ref compare-and-swap, and law activation before it releases
 the archetype fence. Given gateway preflight sees a pending grandfather receipt,
-when preflight completes, then it has not changed `tightbeam/live`. Given boot
-later runs after schema migration, when that receipt remains pending, then boot
-uses the outer publisher and either activates the compatible candidate before
-traffic or stops with its catalog incompatibility evidence while retaining the
-previous live revision.
+when preflight completes, then it has not changed `tightbeam/live`. Given
+startup later reaches `Gateway.children_after_preflight/1` after schema migration,
+when that receipt remains pending, then the post-schema startup phase uses the
+outer publisher and either activates the compatible candidate before law
+loading or traffic startup, or stops with its catalog incompatibility evidence
+while retaining the previous live revision.
 
 ### A18 — V5 absence never becomes legacy inference
 
