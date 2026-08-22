@@ -1,6 +1,6 @@
 # Bug A amendment: known-unrunnable wake recipients
 
-Status: FROZEN FOR ONE LINKED INDEPENDENT REVIEW
+Status: FROZEN FOR FRESH INDEPENDENT REVIEW
 
 Date: 2026-08-18 UTC
 
@@ -14,6 +14,26 @@ Work items:
 Reviewed base: `art_aac9cafc`, SHA-256
 `a8fc963dd141721df2253a52644a60da7f9ef8792579518f7d65a3377829a990`,
 reviewed-clean in `att_cb9a06bc-3ad3-4d6f-818e-8e78c51616b9`.
+
+Independent review `asg_6089b268-2884-42a5-8dfd-93fc8447611a` returned
+changes-requested verdict `att_3e944294-55a5-4704-9869-c5a4cf10c68d`. This
+revision closes its two blocking findings: the null-carrier public terminal is
+reconciled with the proposed parent ledger, and condition-match or fallback
+settlement preserves its trigger evidence before terminalization.
+
+## Spec identity and authority
+
+The canonical identity is
+`tightbeam-specs/wake-known-unrunnable-recipient-amendment.md`. Assignment
+`asg_0c4356a4-29af-4c18-95c1-c2f1db2ba8d1` owns its revisions. Each review and
+handoff must bind this file by its SHA-256 digest and containing commit.
+
+The reviewed base `art_aac9cafc` and the final F2 ruling control the public terminal
+contract. The proposed sibling `wake-delivery-conservation.md` does not override that
+contract while its producer assignment remains open. If both specifications reach
+handoff, the integration table in R8 is binding: an implementation must not combine
+the sibling's non-null `failed.turnSeq` constraint with this amendment's accepted
+null-carrier failure.
 
 Controlling sequencing: `att_a034fbd6-2542-4404-8fa5-f22a3ffa7be5`.
 Historical partial implementation pointer `art_7409e650` remains integrity and custody
@@ -77,16 +97,16 @@ The sender must receive one of two visible results:
 
 ## Assumptions
 
-1. Revision 6 remains authoritative for public terminal values, identical-principal
+1. The reviewed base remains authoritative for public terminal values, identical-principal
    notice routing, authorization, outbox recovery, and exactly-once notice identity.
 2. The final F2 ruling keeps the public terminal set exactly
    `delivered | failed | canceled`. A legacy null-carrier result maps to `failed` with
    `failureClass=legacy_outcome_unknown`, trusted migrated sender and routing identity,
    and one notice. The design creates no fabricated carrier and no absent
    attempt/admitted/handled/undeliverable ledger.
-   Source: the amendment assignment subject for
-   `asg_0c4356a4-29af-4c18-95c1-c2f1db2ba8d1`, preserved by
-   `att_694b3367-b8aa-41c8-b78a-18eea1b615a6`.
+   Direct source: product-owner ruling wake `w_da8051d5`, issued by owner session
+   `s_fde9b2be`. Its exact ruling is also carried without alteration in sole Bug A
+   implementation assignment `asg_e7556f25-d909-42f1-ba89-68e1714e6cef`.
 3. Normal resolution returns one exact session after it applies the existing direct,
    role-fallback, and owner-Main rules.
 4. The gateway can read current session, hold, circuit, harness, ACP, adapter,
@@ -149,20 +169,37 @@ outcome, or sender notice for this refusal. The authenticated caller receives th
 refusal directly. Existing request audit may retain the stable error, target,
 precondition, and evidence reference.
 
-### R4. Preserve accepted delayed and condition wakes
+### R4. Settle accepted delayed and condition wakes in trigger order
 
 A delayed or condition wake that passes the send check remains accepted under its
 existing due-time, condition, fallback, cancellation, and role-resolution semantics.
 
-At its act edge, the gateway must resolve the target through the existing path and run
-the check again. If the check finds no precondition, normal carrier admission continues.
+At its act edge, one Wakes transaction must use this order:
 
-If the check finds a precondition before a carrier exists, the existing Wakes mutation
-owner must commit one public `failed` terminal outcome and one sender notice in the same
-transaction. The outcome must use a null carrier sequence,
+1. Load the accepted wake and recheck its ordinary due time, matching condition fact,
+   or elapsed fallback deadline.
+2. For a condition match or fallback, win the existing claim compare-and-set and write
+   its existing `firedBy` value and lifecycle provenance. A matched condition must retain
+   the condition kind, scope, fact identity, and fact timestamp already used by that
+   lifecycle. A fallback must retain its fallback deadline. A losing trigger writes
+   nothing.
+3. Resolve the target through the existing path and run the act-edge check.
+4. If the check finds no precondition, continue through normal carrier admission.
+5. If the check finds a precondition before a carrier exists, commit the trigger claim,
+   its lifecycle provenance, one public `failed` terminal result, and one sender notice
+   together.
+
+The step 5 public terminal must use a null carrier sequence,
 `causeKind=target_known_unrunnable`, the R2 precondition as its typed failure class, the
-exact target session, the authoritative evidence reference, and
+exact resolved target session, the authoritative evidence reference, and
 `principal=process:tightbeam`. The transaction must not fabricate a carrier.
+This result is final and retry-ineligible. A later runnable fact does not reopen it; the
+sender may submit a new wake.
+
+The public terminal result is the reviewed `delivered | failed | canceled` record. It
+is not a `wake_delivery_outcomes(kind='failed')` row from the proposed sibling ledger.
+That proposed row requires a carrier sequence and therefore cannot represent this
+cause. No `attempt`, `admitted`, `handled`, or `undeliverable` row is created.
 
 ### R5. Settle admitted carrier failures through the reviewed path
 
@@ -178,12 +215,15 @@ supervision pass must not create another logical notice.
 
 ### R6. Preserve exactly-once settlement
 
-One accepted wake must have one public terminal outcome. One terminal outcome must have
+One accepted wake must have one public terminal result. One terminal result must have
 one logical sender notice for the stored authenticated sender principal.
 
-The terminal outcome and notice must commit together. Transaction replay must return the
-same outcome and notice identities. Publisher replay may redeliver transport, but it
-must not create a second durable message or notice.
+The trigger claim, terminal result, and notice must commit together when R4 applies.
+The notice must keep the reviewed deterministic identity for the tuple of accepted wake,
+public terminal result, and stored authenticated sender principal. Its durable row must
+link that terminal result and wake. Transaction replay must return the same terminal and
+notice identities. Publisher replay may redeliver transport, but it must not create a
+second durable message or notice.
 
 The synchronous R3 refusal is not an accepted wake and therefore has no terminal outcome
 or sender notice.
@@ -198,17 +238,51 @@ neutral precondition code, and an authorized evidence reference. Existing `wake-
 `wake-notices`, work-item trace, sender-owner, process, and administrator authorization
 rules remain controlling.
 
-### R8. Preserve compatibility evidence
+For an R4 result, `wake-get` and the work-item trace must project public terminal
+`failed`, a null carrier, `target_known_unrunnable`, the R2 failure class, the exact
+target, the authorized evidence reference, and the winning trigger provenance. They
+must not project a sibling-ledger `attempt`, `failed`, or `undeliverable` event.
+`wake-notices` must return the one linked sender notice.
+
+Bubble and boot recovery must consume the committed public terminal and linked notice.
+They must not require or synthesize a `wake_delivery_outcomes` cursor entry. Bubble may
+publish the committed notice through the reviewed outbox path; it must not create a
+second notice or start a second logical failure climb.
+
+### R8. Integrate and migrate without inventing a ledger
 
 The public terminal enum and existing terminal rows remain unchanged. The durable cause
 vocabulary gains `target_known_unrunnable`; the typed failure-class vocabulary gains the
 R2 values for runtime rows.
 
-Migration must preserve every existing wake, terminal outcome, notice, sender and
+This table is normative:
+
+| Case | Public terminal record | Carrier link | Proposed sibling ledger | Notice |
+|---|---|---|---|---|
+| synchronous R3 refusal | none | none | none | none |
+| accepted wake, R4 known-unrunnable before carrier | `failed`, class from R2 | null | no row | one deterministic sender notice |
+| admitted carrier failure | `failed`, reviewed carrier class | exact carrier | any separately approved carrier ledger may link the carrier | same reviewed notice identity |
+| retirement cancels admitted queued carrier | `canceled`, `session_retired` | exact carrier | any separately approved carrier ledger may link the carrier | same reviewed notice identity |
+| legacy null-carrier terminal | `failed`, `legacy_outcome_unknown` | null | no row | one notice from trusted migrated routing |
+
+The sibling proposal's `CHECK (kind NOT IN ('admitted','handled','failed') OR turnSeq IS
+NOT NULL)` remains valid for its carrier ledger because this amendment writes no row to
+that ledger. A build must not project the R4 public failure into that ledger, relax its
+carrier-integrity constraint, or create an `undeliverable` substitute. If a branch
+already added the proposed table, migration must leave it unchanged and empty for every
+R4 or legacy null-carrier result.
+
+Migration must preserve every existing wake, public terminal result, notice, sender and
 recipient principal, notice cursor, message identity, cause, and carrier link. It must
-not reinterpret an old failure from prose. An accepted wake that has no carrier at
-upgrade remains eligible for the R4 act-edge check. An admitted carrier remains eligible
-only for the reviewed terminal path in R5.
+not reinterpret an old failure from prose. It may map a legacy null-carrier terminal
+only through the F2 rule: `failed`, `legacy_outcome_unknown`, trusted migrated sender and
+routing identity, and one deterministic notice. If trusted routing cannot be derived,
+migration must stop and record the conflicting row; it must not fabricate a sender.
+
+An accepted wake that has no carrier at upgrade remains eligible for the R4 act-edge
+check. An admitted carrier remains eligible only for R5. Migration and boot recovery
+must use the same deterministic terminal and notice identities, so a second run reads
+the first result and creates no duplicate.
 
 ## Architecture
 
@@ -218,9 +292,10 @@ The gateway composes the new guard with the existing lifecycle:
 2. Read the closed local fact sources inside the scheduling transaction.
 3. Return R3 when a current fact proves inability.
 4. Otherwise, run the existing wake insertion path.
-5. At the act edge, repeat steps 1 and 2 against current facts.
-6. Commit the R4 null-carrier `failed` outcome and notice, or admit the carrier through
-   the reviewed admission path.
+5. At the act edge, first claim and preserve the ordinary, condition-match, or fallback
+   trigger under R4, then repeat steps 1 and 2 against current facts.
+6. Commit the R4 trigger evidence, null-carrier public `failed` result, and notice, or
+   admit the carrier through the reviewed admission path.
 7. After carrier admission, use only the reviewed `delivered | failed | canceled`
    terminal and notice path.
 
@@ -231,11 +306,11 @@ Traceability is explicit in both directions:
 | R1 | Steps 1 and 5 | A1 and A3 |
 | R2 | Steps 2 and 5; response schema | A1, A2, and A4 |
 | R3 | Step 3; response schema | A1 and A2 |
-| R4 | Steps 4 through 6; Wakes transaction owner | A2 and A4 |
+| R4 | Steps 4 through 6; Wakes transaction owner | A4 |
 | R5 | Step 7; terminal and notice path | A5 |
 | R6 | Steps 6 and 7; Wakes transaction owner and publisher | A4 and A5 |
 | R7 | Response schema and existing authorization projections | A6 |
-| R8 | Durable schema and migration contract | A6 |
+| R8 | Durable integration and migration contract | A6 and A7 |
 
 The Wakes transaction owner remains the only writer for accepted-wake terminal outcomes
 and sender notices. The normal publisher remains the only failed-or-canceled push
@@ -286,10 +361,25 @@ the sender sends a wake, then the existing path targets `T` unchanged.
 
 ### A4. Accepted wake fails before carrier admission
 
-Given an accepted delayed wake with no carrier, when its resolved target gains a current
-`quota_exhausted`, `session_retired`, or unavailable-execution fact before the act edge,
-then the act-edge transaction commits one public `failed` outcome with a null carrier,
-one typed cause, and one sender notice. It creates no carrier.
+Given an accepted delayed ordinary wake with no carrier, when its resolved target gains
+a current `quota_exhausted`, `session_retired`, or unavailable-execution fact before the
+act edge, then the act-edge transaction commits one public `failed` result with a null
+carrier, one typed cause, and one sender notice. It creates no carrier or sibling-ledger
+row.
+
+Given one matching condition fact and one condition wake whose target is known
+unrunnable, when the act edge runs, then the same transaction commits
+`firedBy='condition'`, the matched condition kind, scope, fact identity and timestamp,
+the null-carrier `failed` result, and one notice. A replay returns the same identities.
+
+Given an elapsed fallback and no matching condition fact, when the same target is known
+unrunnable, then the transaction commits `firedBy='fallback'`, the fallback deadline,
+the null-carrier `failed` result, and one notice. A later condition fact does not replace
+the winning trigger.
+
+Given a condition match and fallback become eligible concurrently, when both workers
+race, then one existing trigger-claim compare-and-set wins. The loser commits no trigger
+provenance, terminal result, or notice.
 
 When the terminal transaction, publisher, Bubble recognizer, and boot recovery each run
 twice, then the wake still has one terminal outcome, one notice, and at most one durable
@@ -321,6 +411,19 @@ revealing credential or quota details.
 Given pre-amendment terminal and notice fixtures, when migration runs twice, then their
 public values, IDs, sender routing, notice cursors, messages, causes, and carrier links
 remain byte-for-byte equal. No new notice, terminal, or carrier appears.
+
+### A7. Null-carrier integration and recovery
+
+Given a schema fixture that includes the proposed sibling `wake_delivery_outcomes`
+table, when an R4 failure and a legacy null-carrier migration run, then each creates one
+public `failed` result and one sender notice and creates no sibling-ledger row. The
+table's non-null carrier constraint remains unchanged.
+
+Given trusted migrated routing for a legacy null-carrier result, when migration and boot
+recovery each run twice, then the public result is `failed` with
+`legacy_outcome_unknown`; the carrier remains null; one notice, one message identity,
+and one notice cursor exist. Given routing is not derivable, migration stops on the
+named conflict and creates no terminal, notice, carrier, or routing identity.
 
 ## Open Questions
 
