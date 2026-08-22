@@ -13,8 +13,16 @@ OUT = sys.argv[1]
 text = open(SRC).read()
 m = re.search(r"## Egregious and dangerous problems[^\n]*\n(.*?)(?=\n## )", text, re.S)
 body = m.group(1)
+slate = re.search(r"### Approved danger slate\n(.*)\Z", body, re.S)
+slate_body = slate.group(1) if slate else body
 items = [(w, " ".join(d.split())) for w, d in
-         re.findall(r"^- `(wi_[0-9a-f-]+)` — (.+?)(?=\n- `|\n\n|\Z)", body, re.M | re.S)]
+         re.findall(r"^- `(wi_[0-9a-f-]+)` — (.+?)(?=\n- `|\n\n|\Z)", slate_body, re.M | re.S)]
+directive = re.search(r"\*\*Current-main directive:\*\*(.*?)\n\n", text, re.S)
+directive = " ".join(directive.group(1).split()) if directive else ""
+groups = re.findall(r"^- \*\*(.+?)\*\*(.*?)(?=\n- \*\*|\n\n### |\Z)",
+                    re.search(r"### Initial shared-system grouping pass\n(.*?)(?=\n### )", body, re.S).group(1),
+                    re.M | re.S)
+drops = re.findall(r"^- `(wi_[0-9a-f]{8})[0-9a-f-]*`: \"(.+?)\"", body, re.M | re.S)
 n = len(items)
 audited = re.search(r"checked all (\d+) actionable", body).group(1)
 
@@ -101,6 +109,10 @@ page = f"""<title>Tightbeam 0.2.0 Election</title>
   .badge.new {{ color: var(--bug); background: var(--bug-bg); border-color: var(--bug); }}
   .eli5 {{ display: block; color: var(--muted); font-size: .88rem; line-height: 1.5;
     margin-top: .2rem; max-width: 62ch; }}
+  .callout.directive {{ border-left-color: var(--bug); }}
+  ul.lanes li {{ box-shadow: none; padding-left: 0; }}
+  .dim li {{ color: var(--muted); box-shadow: none; padding-left: 0; }}
+  .dim li .wid {{ color: var(--muted); }}
   .callout {{ background: var(--surface); border-left: 3px solid var(--accent);
     padding: .8rem 1.1rem; margin: 1.2rem 0; font-size: .97rem; }}
   .callout p {{ margin: .4rem 0; }}
@@ -110,13 +122,13 @@ page = f"""<title>Tightbeam 0.2.0 Election</title>
 
 <div class="sheet">
 <header>
-  <p class="kicker">Tightbeam &middot; 0.2.0 &middot; dangerous problems &middot; r4</p>
+  <p class="kicker">Tightbeam &middot; 0.2.0 &middot; dangerous problems &middot; r5</p>
   <h1>Tightbeam 0.2.0 — dangerous problems to land</h1>
   <p class="statusline">
     repurposed by <b>Mike, 2026-08-21</b> &middot; audited <b>{audited} actionable items</b>
     (183 open, 35 iceboxed), no nervous-system filter &middot; by
     <b>Product owner — Tightbeam 0.2.0</b> &middot; source of record:
-    <b>0.2.0-spirit-and-work-sweep.md</b> in tightbeam-specs (commit 6c42b62)
+    <b>0.2.0-spirit-and-work-sweep.md</b> in tightbeam-specs (r5, commit 96dfe8c)
   </p>
   <div class="stats">
     <div class="stat"><b>{n}</b><span>dangerous problems</span></div>
@@ -125,6 +137,8 @@ page = f"""<title>Tightbeam 0.2.0 Election</title>
   </div>
 </header>
 
+<div class="callout directive"><p><b>Current-main directive:</b> {html.escape(directive)}</p></div>
+
 <h2><span class="no">&sect;1</span>The danger bar</h2>
 <p>An item qualifies only when the present defect creates a direct <b>security</b>,
 <b>privacy</b>, <b>data-loss</b>, <b>identity-forgery</b>, <b>silent-intent-loss</b>, or
@@ -132,12 +146,24 @@ page = f"""<title>Tightbeam 0.2.0 Election</title>
 smooth-operation defects do not qualify, and relationship to the nervous-system model is
 irrelevant. Landing this list changes no custody, assignment, or existing release target.</p>
 
-<h2><span class="no">&sect;2</span>The list ({n})</h2>
+<h2><span class="no">&sect;2</span>Shared-system lanes ({len(groups)})</h2>
+<p class="prov">Staffing recommendation only: items in one lane share a mechanism and belong
+with one orchestrator/coder. Existing custody and ordered staffing remain authoritative.</p>
+<ul class="items lanes">
+{chr(10).join(f'<li><span><b>{html.escape(t.strip().rstrip("."))}</b>{html.escape(" ".join(rest.split()))}</span></li>' for t, rest in groups)}
+</ul>
+
+<h2><span class="no">&sect;3</span>The approved slate ({n})</h2>
 <ul class="items">
 {chr(10).join(row(w, d) for w, d in items)}
 </ul>
 
-<h2><span class="no">&sect;3</span>Record appendix</h2>
+<h2><span class="no">&sect;4</span>Dropped by Mike, 2026-08-22</h2>
+<ul class="items dim">
+{chr(10).join(f'<li><code class="wid">{w}</code><span>&ldquo;{html.escape(r)}&rdquo;</span></li>' for w, r in drops)}
+</ul>
+
+<h2><span class="no">&sect;5</span>Record appendix</h2>
 <div class="callout">
 <p>The former nervous-system election (67 elected, 28-core/39-post-core tiers, family map)
 is preserved in the sweep doc's record appendix; it no longer controls the headline. One
