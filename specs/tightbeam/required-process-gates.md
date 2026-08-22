@@ -990,24 +990,31 @@ or law. The handler passes the captured generation through its rule, catalog,
 and identity calls. A live-ref or served-law reader does not read Git or an
 independent persistent-term key after it has captured that generation.
 
-On allow, `publish_live_in_txn/6` invokes `advanceRef` as a compare-and-swap
-from `currentLiveOid` to `candidateMainOid`. It then invokes
-`installGeneration` once to atomically replace the `Tightbeam.Identity.Live`
-pointer with the preloaded candidate generation. The publisher returns to its
-owner only after that replacement succeeds. The outer publisher commits its
-transaction only after that return. The combined-release seam releases its
-archetype fence only after the same return. A request captured before the
-replacement continues against its complete old generation even if the Git ref
-has advanced. A request captured after the replacement uses the complete new
-generation. Thus a request cannot combine revisions.
+Before a publisher calls `advanceRef`, it obtains a `Live` publication lease.
+`Live` records `(currentLiveOid, candidateMainOid, cas_in_flight)` and monitors
+the publisher process. The publisher invokes `advanceRef` as a compare-and-swap
+from `currentLiveOid` to `candidateMainOid`. A confirmed compare-and-swap
+conflict releases the lease and returns the ordinary publication conflict. A
+confirmed pre-CAS validation or preload failure releases the lease and leaves
+the old Git ref and old generation active.
 
-A failure before the compare-and-swap leaves the old Git ref and old live
-generation active. A compare-and-swap conflict returns the ordinary publication
-conflict and leaves the old live generation active. If the compare-and-swap
-succeeds and `installGeneration` raises, returns an error, or the process
-crashes before its atomic replacement, the publisher does not return a success
-or recoverable error and does not attempt a Git rollback. It terminates the
-serving supervisor before another request starts. On restart, the post-schema
+After a confirmed compare-and-swap success, the publisher invokes
+`installGeneration` once to atomically replace the `Tightbeam.Identity.Live`
+pointer with the preloaded candidate generation, then releases the lease. The
+publisher returns to its owner only after that replacement succeeds. The outer
+publisher commits its transaction only after that return. The combined-release
+seam releases its archetype fence only after the same return. A request captured
+before the replacement continues against its complete old generation even if
+the Git ref has advanced. A request captured after the replacement uses the
+complete new generation. Thus a request cannot combine revisions.
+
+If the monitored publisher dies while its lease is `cas_in_flight`, or if a
+confirmed compare-and-swap success is followed by an `installGeneration` raise,
+error, or crash before the atomic replacement, `Live` calls
+`Supervisor.stop(Tightbeam.Supervisor, {:shutdown, :publication_incomplete})`.
+It does not return a success or recoverable error and does not attempt a Git
+rollback. This conservative stop also covers a crash during the external Git
+call, whose outcome is unknown to the process. On restart, the post-schema
 startup phase reads the exact `tightbeam/live` object id, preloads and validates
 one live generation from it, atomically installs that generation, and starts
 law loading and traffic only after that installation succeeds. A preload or
@@ -1079,7 +1086,7 @@ This path census is a build boundary, not implementation authority:
   `test/delivery_targets_test.exs`, `test/work_items_test.exs`,
   `test/toplines_test.exs`, `test/rules_test.exs`, `test/gateway_test.exs`,
   `test/router_test.exs`, `test/payloads_test.exs`, capability and
-  identity-publication suites, `test/org_test.exs`,
+  identity-publication suites, `test/identity_live_test.exs`, `test/org_test.exs`,
   `test/application_test.exs`, and the CLI suites.
 - Add Kung Fu declarations under `priv/kungfu/<bundle>/processes/*.toml` and
   `priv/kungfu/<bundle>/delivery-targets/*.toml` only when a reviewed product
@@ -1261,11 +1268,16 @@ one request observes `G1` from one live reader and `G2` from another.
 Given the ref compare-and-swap succeeds and `installGeneration` faults before
 the atomic generation replacement, when the publisher handles that fault, then
 it returns neither success nor a recoverable error, does not roll back the Git
-ref, and terminates the serving supervisor before another request begins. Given
-the next startup reads that ref, when it preloads and validates `G2`, then it
-installs `G2` before starting traffic. Given that preload or validation faults,
-then startup stops before traffic. Given a fault before the ref
-compare-and-swap, then the old ref and `G1` remain active.
+ref, and `Live` calls `Supervisor.stop(Tightbeam.Supervisor, {:shutdown,
+:publication_incomplete})` before another request begins. Given the publisher
+dies after `Live` records `cas_in_flight` and before it reports the Git-call
+result, then `Live` makes the same stop. The test runs that death with the Git
+call leaving the old ref and with it advancing the new ref. Given the next
+startup reads either exact ref, when it preloads and validates that ref's
+generation, then it installs that generation before starting traffic. Given
+that preload or validation faults, then startup stops before traffic. Given a
+confirmed fault before the ref compare-and-swap begins, then the old ref and
+`G1` remain active.
 
 ### A18 — V5 absence never becomes legacy inference
 
