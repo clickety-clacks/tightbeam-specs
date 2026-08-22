@@ -37,7 +37,7 @@ This policy adds the Engineering consumer adapter because deleting the supported
 
 ## Terms
 
-- **Execution-time main authority**: Git commit `2d0bbf056996ca573379bc022f7620b55f309120`, which `refs/heads/main` named at 2026-08-20 23:23 PT. Its root tree is `cc787fbcfa57618d99e481f39cd54fe967ab7d66`. The exact relevant object identities appear under Architecture. The frozen `0.1.8` and `0.1.x` history is evidence, not an integration target for this policy.
+- **Execution-time main authority**: Git commit `2d0bbf056996ca573379bc022f7620b55f309120`, selected by the read-only reconciliation recorded at 2026-08-21 22:15 PT. Its root tree is `cc787fbcfa57618d99e481f39cd54fe967ab7d66`. The exact relevant object identities appear under Architecture. The frozen `0.1.8` and `0.1.x` history is evidence, not an integration target for this policy.
 - **Neutral activation primitive**: the one `activation_events` stream and fixed `activation-*` verb family defined by `art_2bc5475e`. Tightbeam verifies identity, shape, order, replay, access, and durable notice mechanics. It does not decide Engineering readiness, authority sufficiency, result meaning, recovery, or acknowledgement policy.
 - **Deployment manager**: the root-privileged local `DeployManager` defined by `art_c4230451`. It is the sole writer of `/opt/tightbeam` deployment state and registered systemd unit files. Root privilege makes it the executor, not the authorizer.
 - **Production installation**: the action defined by `art_c4230451` that makes one exact verified update restart-loadable on a production machine by publishing immutable objects and replacing `active`.
@@ -59,7 +59,7 @@ This policy adds the Engineering consumer adapter because deleting the supported
 
 ## Assumptions
 
-1. Execution-time `origin/main` and the remote `refs/heads/main` both resolve to `2d0bbf056996ca573379bc022f7620b55f309120` at 2026-08-20 23:23 PT.
+1. The read-only reconciliation recorded at 2026-08-21 22:15 PT resolves execution-time `origin/main` and the remote `refs/heads/main` to `2d0bbf056996ca573379bc022f7620b55f309120`.
 2. That commit contains no `activation_events`, `activation-events-v1`, `activation-attempt`, or `AcceptedActivationAttempt` match.
 3. That commit contains no `cli/src/deploy/` tree and no deploy CLI command.
 4. `README.md` at that commit still directs an operator to run `npm install -g` before service restart.
