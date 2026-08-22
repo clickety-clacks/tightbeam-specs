@@ -33,6 +33,7 @@ One unusable candidate does not fail its account or the multi-account aggregate 
 - **Fatal contract error:** an `UPSTREAM_CONTRACT_CHANGED` result with no `UsageSample`.
 - **Codex window order:** retained primary, retained secondary, then valid additional entries sorted by decoded `name` or `limit_name` ascending with source order breaking equal-name ties. Within a current nested additional entry, primary precedes secondary.
 - **Claude window order:** retained `five_hour`, `seven_day`, and `seven_day_sonnet`, in that order, then retained map-form `limits` members sorted by their existing map key.
+- **Claude fixed-window duration:** `five_hour` has `window_seconds: 18000`; `seven_day` and `seven_day_sonnet` have `window_seconds: 604800`. A mapped Claude window with no provider-defined duration keeps `window_seconds: null`.
 - **Diagnostic order:** Codex primary, secondary, then additional source order; Claude fixed-bucket order, then sorted map keys or array source order. An unrecognized container occupies its candidate location once.
 
 ## Assumptions
@@ -88,6 +89,8 @@ A retained unnamed Codex additional entry uses its original one-based source pos
 A current nested Codex entry uses `limit_name`. Its retained windows use IDs `additional:<slug>:primary` and `additional:<slug>:secondary` and display names `<limit_name> Primary` and `<limit_name> Secondary`. An unnamed nested entry inserts `:primary` or `:secondary` after the existing `additional:unnamed:<position>` base. A JSON `null` nested or top-level window is absent and emits no diagnostic. Legacy direct additional entries retain their existing IDs, names, ordering, and decoding.
 
 For Claude candidates whose existing IDs collide, the adapter retains the first valid entry in Claude window order and omits later colliding entries. Only retained candidates reserve IDs. Repeated normalization of the same raw JSON produces the same ordered `windows` and the same number and sequence of fixed diagnostics.
+
+A JSON `null` Claude candidate is absent and emits no diagnostic. Arbitrary top-level Claude fields outside the named candidate locations remain raw-visible and produce neither a normalized window nor a diagnostic, even when their object shape resembles a usage bucket. The adapter does not infer product semantics from an opaque provider key.
 
 ### INV-6 — Diagnostics do not change account or aggregate status
 
@@ -147,6 +150,10 @@ Given a synthetic Claude response with one valid fixed bucket, one invalid recog
 ### AC-2A — Current nested Codex additional windows remain truthful
 
 Given a synthetic current Codex response with `limit_name`, valid nested primary and secondary windows, a null top-level secondary window, and one valid top-level primary window, when the adapter normalizes it, then it returns the top-level primary followed by `additional:<slug>:primary` and `additional:<slug>:secondary`, uses the ruled display names, preserves raw bytes exactly, emits no diagnostic for the null window, and returns no error. Existing legacy direct-window cases remain unchanged.
+
+### AC-2B — Claude nulls and known durations remain truthful
+
+Given a synthetic Claude response with valid `five_hour` and `seven_day` buckets, a null `seven_day_sonnet`, and an opaque top-level bucket-like object, when the adapter normalizes it, then it returns only `five_hour` and `seven_day`, assigns their fixed durations of 18000 and 604800 seconds, preserves the whole raw response exactly, emits no diagnostic for either absent or opaque field, and returns no error.
 
 ### AC-3 — Unrecognized containers cannot erase valid siblings
 
