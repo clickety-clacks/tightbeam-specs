@@ -1,7 +1,7 @@
 # Declarative required-process gates
 
-Status: changes-requested specification amended after round-2 verdict
-`att_9b353a42-cd00-48c0-8b0c-f3e244315052`; the amended bytes require a cold
+Status: changes-requested specification amended after round-3 verdict
+`att_b8ea74ae-3a7f-410d-a8ad-410557983264`; the amended bytes require a cold
 digest and re-review for `wi_f165cdbd-72c0-4add-bb8d-2113908c3e55`. This
 specification authorizes no
 implementation, identity publication, deployment, runtime mutation, or release
@@ -39,6 +39,10 @@ Authority and evidence:
   the actual pre-publication `tightbeam/live` boundary, and that invalid scalar
   wire values lacked exact refusals and precedence. This revision removes the
   false seam and closes those scalar cases.
+- Round-3 review `att_b8ea74ae-3a7f-410d-a8ad-410557983264` found one remaining
+  B1 blocker: the publication guard must use the existing
+  `Org.release_archetypes` database transaction without re-entering its owner,
+  and grandfather-receipt publication must not occur during gateway preflight.
 
 ## Goal
 
@@ -920,43 +924,63 @@ contains its process, target, rail, and fact catalogs.
 
 The actual pre-publication seam is `Tightbeam.Identity.publish_live!/1`, which
 fast-forwards `refs/heads/tightbeam/live` from the current live object id to the
-candidate `identity/main` object id. Evolve it to `publish_live!/2` with a
-required publication guard. Every existing caller supplies that guard;
-catalog-neutral identity edits validate as a no-op. `identity-apply` only
-materializes a revision that is already live, so it does not participate in
-this transition gate.
+candidate `identity/main` object id. Evolve it to an outer publisher and an
+in-transaction publisher. `publish_live!/2` accepts a required publication
+guard for callers that do not own a database transaction. The guard opens the
+database-owner transaction exactly once and calls
+`Tightbeam.RequiredProcesses.publish_live_in_txn/6` with that transaction.
+`publish_live_in_txn/6` accepts `(txn, runtimeConfig, currentLiveOid,
+candidateMainOid, advanceRef, activateCandidate)`. It only uses `txn`; it does
+not call `Tightbeam.DB.transaction/2`, `Org.release_archetypes/3`, or a helper
+that calls the database owner. Every catalog-neutral identity edit supplies the
+same publication guard, which validates as a no-op when neither catalog set
+changes. `identity-apply` only materializes a revision that is already live, so
+it does not participate in this transition gate.
 
-The gateway supplies
-`Tightbeam.RequiredProcesses.guard_live_publication/5` with
-`(database, runtimeConfig, currentLiveOid, candidateMainOid, advanceRef)`. The
-guard loads and validates both catalog sets by exact Git object id, then enters
-the same serialized database-owner critical section used by scope, binding,
-receipt, and completion selectors. Inside that section it calls
-`validate_catalog_transition/3` against one database snapshot. If the candidate
-omits one reachable identity, the guard does not call `advanceRef`; the
-publication command returns `required_process_catalog_in_use`, names the
-missing identity and referencing row ids, and leaves `tightbeam/live`, the
-served law registry, and the database unchanged. The candidate commit can
+Evolve `Org.release_archetypes/3` into a transaction-aware combined-release
+seam. Its release callback receives the current `txn`, after its existing
+archetype-reference check succeeds. The gateway's unlearn path calls
+`Identity.unlearn!` with a publication callback that invokes
+`publish_live_in_txn/6` using that supplied `txn`; it does not call the outer
+publisher from the release callback. The combined seam holds the archetype
+reference fence until its transaction returns the release or refusal result. Thus an
+unlearn candidate cannot remove either a referenced archetype or a required
+process identity while a writer queued behind the fence relies on the old
+catalog.
+
+`publish_live_in_txn/6` loads both catalog sets by exact Git object id, calls
+`validate_catalog_transition/3` against the supplied transaction's one
+database snapshot, and preloads the candidate law before it advances the ref.
+If the candidate omits one reachable identity, it does not call `advanceRef`;
+the publication command returns `required_process_catalog_in_use`, names the
+missing identity and sorted referencing row ids, and leaves `tightbeam/live`,
+the served law registry, and the database unchanged. The candidate commit can
 remain unserved on `identity/main` for an ordinary corrective identity edit.
 
-On allow, the guard preloads the candidate law, invokes `advanceRef` as a
-compare-and-swap from `currentLiveOid` to `candidateMainOid`, swaps the served
-law registry to those already validated bytes, and only then releases the
-critical section. Requests cannot observe a new ref with old served law or old
-ref with new served law. A crash before the compare-and-swap leaves the old ref
-live. A crash or reload failure after it terminates the serving process before
-traffic resumes; boot then validates and loads the exact live object id. This
-reuses the existing publication boundary and adds no release entity or verb.
+On allow, `publish_live_in_txn/6` invokes `advanceRef` as a compare-and-swap
+from `currentLiveOid` to `candidateMainOid`, invokes `activateCandidate` to
+swap the served law registry to the already validated bytes, and then returns
+to its owner. The outer publisher commits its transaction only after that
+return. The combined-release seam releases its archetype fence only after the
+same return. Requests cannot observe a new ref with old served law or old ref
+with new served law. A crash before the compare-and-swap leaves the old ref
+live. A crash or activation failure after it terminates the serving process
+before traffic resumes; boot then validates and loads the exact live object id.
+This reuses the existing publication boundary and adds no release entity or
+verb.
 
-Binary boot calls the same function after schema migration and before the
-gateway accepts traffic, using the installed catalogs as the candidate. A
-missing referenced identity stops boot with
-`required_process_catalog_incompatible` and the same identity and row ids.
-Core target rails and `delivery_target.landed@1` participate in this boot check.
-A rollout first retains the exact identity or migrates each named current scope
-or binding through its ordinary append-only mutation, then retries the existing
-identity publication or boot seam. The V5 runtime smoke is a prerequisite for
-adding the `toplines_v5` capability entry.
+`Gateway.preflight/1` calls `Identity.init!/1` only to create or verify the
+three identity refs. It does not mint or publish a grandfather receipt.
+`Tightbeam.Boot` runs after schema migration and before the gateway accepts
+traffic. It detects a pending grandfather receipt there, creates its candidate
+identity commit, and calls the outer publisher. Boot also calls that outer
+publisher for its exact live catalog check. A missing referenced identity stops
+boot with `required_process_catalog_incompatible` and the same identity and row
+ids. Core target rails and `delivery_target.landed@1` participate in this boot
+check. A rollout first retains the exact identity or migrates each named current
+scope or binding through its ordinary append-only mutation, then retries the
+existing identity publication or boot seam. The V5 runtime smoke is a
+prerequisite for adding the `toplines_v5` capability entry.
 
 ### Proposed implementation paths
 
@@ -985,14 +1009,20 @@ This path census is a build boundary, not implementation authority:
   `lib/tightbeam/wire/router.ex` and `lib/tightbeam/wire/payloads.ex`, and CLI
   parsing plus request encoding in `cli/src/args.rs` and
   `cli/src/dispatch.rs`.
-- Call `guard_live_publication/5` from the existing `publish_live!/2`
-  pre-publication boundary. Call `validate_catalog_transition/3` from that
-  guard and from boot after migration and before gateway traffic.
+- Evolve `lib/tightbeam/identity.ex` to provide the outer guarded publisher and
+  the supplied-transaction publisher. Move grandfather-receipt minting out of
+  `Identity.init!/1` into `lib/tightbeam/boot.ex` after schema migration.
+- Evolve `lib/tightbeam/org.ex` so `release_archetypes` passes its transaction
+  to its combined-release callback. Evolve `lib/tightbeam/gateway.ex` so
+  unlearn calls the in-transaction publisher through that callback. Each
+  identity path that is not an unlearn path calls the outer publisher. Call
+  `validate_catalog_transition/3` only through the appropriate publisher.
 - Add focused proofs in `test/required_processes_test.exs`,
   `test/delivery_targets_test.exs`, `test/work_items_test.exs`,
   `test/toplines_test.exs`, `test/rules_test.exs`, `test/gateway_test.exs`,
   `test/router_test.exs`, `test/payloads_test.exs`, capability and
-  identity-publication suites, and the CLI suites.
+  identity-publication suites, `test/org_test.exs`,
+  `test/application_test.exs`, and the CLI suites.
 - Add Kung Fu declarations under `priv/kungfu/<bundle>/processes/*.toml` and
   `priv/kungfu/<bundle>/delivery-targets/*.toml` only when a reviewed product
   lane defines actual process or target meaning.
@@ -1146,6 +1176,21 @@ the same evidence. Given migration appends current scope revisions to `F@2`,
 then a later publication succeeds and preserves `F@1` history. The same cases
 apply to a target definition, selected rail, or target fact contract reached by
 an active binding on a nonterminal object.
+
+Given an unlearn candidate removes `F@1` after `Org.release_archetypes` has
+entered its database-owner transaction, when the in-transaction publisher finds
+the reachable reference, then it returns `required_process_catalog_in_use`
+without a database-owner re-entry or deadlock, and preserves the archetype
+fence, `tightbeam/live`, served law registry, and database. Given the same
+combined-release path has no archetype or catalog reference, when it publishes
+the candidate, then the one supplied transaction performs the reference check,
+catalog validation, ref compare-and-swap, and law activation before it releases
+the archetype fence. Given gateway preflight sees a pending grandfather receipt,
+when preflight completes, then it has not changed `tightbeam/live`. Given boot
+later runs after schema migration, when that receipt remains pending, then boot
+uses the outer publisher and either activates the compatible candidate before
+traffic or stops with its catalog incompatibility evidence while retaining the
+previous live revision.
 
 ### A18 — V5 absence never becomes legacy inference
 
