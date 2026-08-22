@@ -1,4 +1,6 @@
 ELI5 = {
+"38df6905": "Retiring a session deletes its worktree even when it holds uncommitted work or unpushed commits -- the org can destroy a human's or agent's real work as routine cleanup. Retirement must refuse until the worktree is pushed, merged, and clean (the enforcement half is 472aa5d8).",
+
 "ddbf576f": "The harness's shell-snapshot machinery copies the OPERATOR's live shell environment into agent prompt bodies: a wake to a reviewer carried your own transcript paths, a live curl posting under another identity, and private worktree paths. Your working environment bleeds into every agent's context. Scope the snapshot to what the agent needs.",
 "3f0cab47": "On a fresh Mac, something in install/first-boot touches protected HOME folders (Documents, Music), firing macOS permission prompts that read as malware to a new user. Find which component walks outside Tightbeam-owned directories and scope everything to base_dir and workdirs.",
 "65477046": "Deploy staging replaces the live systemd binary on disk BEFORE the build is verified or the ship authorized, and keeps no rollback copy. A red build becomes loadable on any spontaneous restart, and there is no way back. Stage elsewhere; swap only after verify-plus-authorize; always keep the rollback artifact.",
