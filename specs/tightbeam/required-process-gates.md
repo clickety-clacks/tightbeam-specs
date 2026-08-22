@@ -1,6 +1,6 @@
 # Declarative required-process gates
 
-Status: draft specification pending the required cold digest for
+Status: review-ready specification for
 `wi_f165cdbd-72c0-4add-bb8d-2113908c3e55`. This specification authorizes no
 implementation, identity publication, deployment, runtime mutation, or release
 operation.
@@ -87,6 +87,9 @@ proof would defeat the opt-in contract.
   name. The substrate resolves it to an installed immutable definition.
 - **Process identity:** The tuple `(name, version, definitionSha256)`. A scope
   revision stores the exact tuple that it resolved.
+- **Active catalog identity:** The one process or delivery-target identity that
+  a new mutation resolves for a stable name. Older installed identities remain
+  addressable for existing rows but are not candidates for new mutations.
 - **Process definition:** An installed Kung Fu declaration that maps one
   process identity to existing dispatch-tier rule identities for one or both
   completion transitions. It declares the exact fact-contract identities that
@@ -94,6 +97,18 @@ proof would defeat the opt-in contract.
 - **Required-process rail:** An installed dispatch-tier rule marked
   `attachment = "required-process"`. It stays outside global rule selection and
   participates only when an effective process definition selects it.
+- **Target landing rail:** One of the two core rules
+  `delivery-target-landed-work-item` and `delivery-target-landed-topline`, each
+  marked `attachment = "delivery-target"` and targeted to its named completion
+  verb. An active target binding selects the corresponding rule.
+- **Delivery-admission rail:** An installed dispatch-tier rule marked
+  `attachment = "delivery-target-admission"`. It stays outside global rule
+  selection and participates only when an exact delivery-target identity
+  selects it during `delivery-landed-record`.
+- **Neutral landed fact:** The core boolean fact contract
+  `delivery_target.landed@1`. It is true only when the object has one admitted
+  receipt for its exact active target-binding revision and identity and that
+  receipt carries a nonblank baseline.
 - **Rule identity:** The tuple `(ruleName, definitionSha256)` computed from one
   installed rule definition.
 - **Fact-contract identity:** The immutable tuple `(factName, version, type,
@@ -107,16 +122,28 @@ proof would defeat the opt-in contract.
 - **Effective process set:** The exact process identities that apply to one
   completion attempt after organization, active Topline membership, and
   work-item scope composition.
+- **Gate-set hash:** The SHA-256 of the canonical effective process identities,
+  their sources, and the active target-binding revision and identity or null.
+  It changes when any completion-gating input changes.
+- **Open catalog reference:** An exact process, target, selected-rail, or fact
+  identity reachable from the current organization revision; from the current
+  local revision of a nonterminal object; from a Topline revision inherited by
+  a nonterminal member work item; or from an active target binding on a
+  nonterminal object.
 - **Delivery target:** An installed, versioned Kung Fu declaration. The
   substrate treats its name and evidence contract as opaque data.
+- **Delivery-target identity:** The tuple
+  `(name, version, definitionSha256)`. A target binding stores the exact tuple
+  that it resolved.
 - **Target binding:** One append-only revision that binds one work item or one
   V5 Topline to zero or one exact delivery-target identity.
 - **Declared baseline:** The opaque, nonblank baseline string in a landed
   receipt. The defining Kung Fu decides whether it denotes a commit, branch,
   tag, build, design revision, domain state, or another value.
-- **Landed receipt:** An append-only row that states that one exact target
-  binding landed at one declared baseline. It names the evidence rows, the
-  admission rule result, cause, principal, and time.
+- **Landed receipt:** The one append-only row for one exact target-binding
+  revision. It states that the binding landed at one declared baseline and
+  names the evidence rows, admission result, cause, principal, and time. A new
+  baseline requires a new binding revision.
 - **Responsible agent:** The deterministic existing session that receives a
   remedy notice for one failed gate, as defined in Architecture.
 
@@ -219,11 +246,11 @@ Fu edit does not rewrite that evidence.
 
 ### I7 — Unknown or unavailable law refuses
 
-A scope mutation refuses an unknown process name before it writes. A completion
-attempt refuses when the installed catalog lacks the stored process identity,
-rule identity, or fact-contract identity. The response names the missing
-identity and two remedies: restore that exact installed contract, or append an
-authorized scope revision that resolves to an installed contract.
+A new scope mutation refuses an unknown process name before it writes. A
+completion attempt refuses when the installed catalog lacks the stored process
+identity, rule identity, or fact-contract identity. The response names the
+missing identity and two remedies: restore that exact installed contract, or
+append an authorized scope revision that resolves to an installed contract.
 
 ### I8 — Completion check and state change are one transaction
 
@@ -237,10 +264,12 @@ gateway returns the denial. The target state does not change.
 
 ### I9 — A failure names cause, principal, and repair
 
-A failed gate names the process identity, selected rule identity, target kind,
-target id, effective-set revision hash, row-visible reason, and supported
-remedy. The durable denial records the checked principal and the command cause.
-A satisfied gate is silent.
+A failed gate names the selected rule identity, target kind, target id,
+gate-set hash, row-visible reason, and supported remedy. A process-selected
+rail also names each selecting process identity in canonical order. The target
+landing rail instead names its binding revision and delivery-target identity.
+The durable denial records the checked principal and the command cause. A
+satisfied gate is silent.
 
 ### I10 — Existing custody receives the remedy
 
@@ -256,6 +285,13 @@ For a Topline, the target scope contains assignments on its active member work
 items. For a work item, it contains assignments on that item. The remedy uses
 the existing wake, supervision, and recurrence mechanisms. It does not spawn,
 assign, reassign, or change object state.
+
+The substrate repeats this selection from current rows before each remedy
+notice. A recurrence has no caller session and starts at step 2. An episode does
+not pin a holder. Before a recurrence notice, the substrate also recomputes the
+object's current gate-set hash. If the hash changed or the episode's rule is no
+longer selected, supervision closes that episode as `gate_set_superseded` and
+sends no notice.
 
 ### I11 — Opt-out is silent
 
@@ -274,29 +310,32 @@ Topline. Organization scope does not carry a target binding in this MVP.
 ### I13 — Target meaning stays in Kung Fu
 
 A target definition declares its immutable identity, its receipt-admission
-rules, and its exact fact contracts. Tightbeam stores and compares the identity,
-baseline, evidence references, and rule result. It does not parse a repository,
-branch, tag, build, environment, deployment, design, or domain value.
+rails, and its exact fact contracts. Each admission rail carries
+`attachment = "delivery-target-admission"`. Tightbeam stores and compares the
+identity, baseline, evidence references, and rule result. It does not parse a
+repository, branch, tag, build, environment, deployment, design, or domain
+value.
 
 ### I14 — A binding requires a matching landed receipt
 
-Target-binding presence selects the neutral installed required-process rail
-`delivery-target-landed` for that object's close. The rail passes only when
-an admitted landed receipt names the active binding revision, exact target
-identity, and one nonblank declared baseline. A receipt for an earlier binding,
-another object, another target version, or another baseline does not satisfy
-the rail.
+Target-binding presence selects the neutral installed target landing rail for
+that object's close. The rail passes only when an admitted landed receipt names
+the active binding revision, exact target identity, and one nonblank declared
+baseline. A receipt for an earlier binding, another object, or another target
+identity does not satisfy the rail. The rail does not compare the opaque
+baseline with an inferred or substrate-defined baseline.
 
 Clearing a target binding removes this rail from later completion attempts. The
 clear and older receipts remain visible history.
 
 ### I15 — Landing evidence is admitted before completion
 
-`delivery-landed-record` runs the active target definition's installed
-admission rules against durable evidence references. The command writes the
-receipt and its idempotency result in one transaction only after those rules
-pass. A completion transaction reads the receipt; it does not contact an
-external system.
+`delivery-landed-record` runs the binding's exact installed target definition
+and admission rails against durable evidence references. Each selected rail
+must allow. The command writes the one receipt for that binding revision and
+its idempotency result in one transaction only after the fold allows. A
+completion transaction reads the receipt; it does not contact an external
+system.
 
 ### I16 — Completion truth does not decay
 
@@ -313,17 +352,17 @@ poll, target change, catalog change, or membership change.
 
 Required processes and target landing gate successful close only. They do not
 gate `work-item-fail` or `work-item-icebox`. An authorized principal can append
-a reasoned process clear or target clear before a Topline close when the intent
-should end without the selected process or target.
+a reasoned process clear or target clear before a Topline close when the owner
+chooses to end the intent without the selected process or target.
 
 ### I18 — Contract evolution is explicit
 
 A rule predicate, fact type, fact meaning, target evidence contract, or process
 meaning change creates a new immutable version and hash. A deployment keeps an
-old referenced contract installed, or migrates each affected open scope through
-the ordinary append-only policy seam before removing it. Missing compatibility
-evidence fails closed. The migration uses no special process-specific substrate
-logic.
+old open catalog reference installed, or migrates each affected current scope
+or target binding through its ordinary append-only seam before removing it.
+Missing compatibility evidence fails closed. The migration uses no
+process-specific substrate logic.
 
 ### I19 — V5 dependency cannot fall back
 
@@ -345,11 +384,25 @@ Kung Fu projects process declarations to `identity/processes/*.toml`. Each
 declaration contains a stable qualified name, positive version, applicable
 completion verbs, installed required-process rail identities, and fact-contract
 identities. The loader computes the declaration and rule hashes; a declaration
-cannot assert its own hash. The process loader validates the full catalog at
-boot. It rejects a duplicate name/version, an unsupported fact contract, a rule
-that lacks `attachment = "required-process"`, a rule that targets another verb,
-or a dependency cycle. Globally selected statutes stay outside this attachment
-class, and a scope clear cannot suppress them.
+cannot assert its own hash. A catalog selection index, excluded from definition
+hashes, maps each selectable stable name to one exact installed identity. An
+installed identity absent from the index remains available to existing rows but
+cannot satisfy a new stable-name mutation. The process loader validates the
+full catalog at boot. It rejects a duplicate name/version, an index entry that
+names no exact installed identity, an unsupported fact contract, a rule that
+lacks `attachment = "required-process"`, a rule that targets another verb, a
+rule from another attachment class, or a dependency cycle. Globally selected
+statutes stay outside this attachment class, and a scope clear cannot suppress
+them.
+
+The core target module reserves and installs
+`delivery-target-landed-work-item` for `work-item-close` and
+`delivery-target-landed-topline` for `topline-close`. Both rules carry
+`attachment = "delivery-target"`. Both deny when the core
+`delivery_target.landed@1` fact is false. The fact resolver reads only the exact
+active binding and its one admitted receipt. Boot refuses if the fact contract
+or either reserved rule is absent, duplicated, targets another verb, or has
+another attachment.
 
 The binding layer selects process identities. The rules engine evaluates them.
 The binding layer does not implement a workflow or interpret evidence.
@@ -376,11 +429,11 @@ required_process_scope_revisions
 
 The primary key is `(scopeKind, scopeRef, revision)`. The mutation creates its
 durable receipt in the same transaction; that receipt id is the revision's
-cause. The current revision is the greatest committed revision. Organization current-state discovery uses the
-existing `org_settings` key `required-process-policy-revision`, which stores the
-current organization revision number. The scope revision and this setting
-change in one transaction. Topline and work-item current revisions need no
-mutable pointer.
+cause. The current revision is the greatest committed revision. Organization
+current-state discovery uses the existing `org_settings` key
+`required-process-policy-revision`, which stores the current organization
+revision number. The scope revision and this setting change in one transaction.
+Topline and work-item current revisions need no mutable pointer.
 
 The one mutation verb is:
 
@@ -430,7 +483,15 @@ effective set on the work item.
 
 Kung Fu projects target declarations to `identity/delivery-targets/*.toml`.
 Each target declaration contains a stable qualified name, positive version,
-content hash, receipt-admission rule identities, and fact-contract identities.
+computed definition hash, receipt-admission rail identities, and fact-contract
+identities. A catalog selection index, excluded from definition hashes, maps
+each selectable stable name to one exact installed identity. An installed
+identity absent from the index remains available to existing bindings but
+cannot satisfy a new stable-name mutation. The target loader rejects a
+duplicate name/version, an index entry that names no exact installed identity,
+an unsupported fact contract, an admission rule that lacks
+`attachment = "delivery-target-admission"`, or an admission rule that targets a
+verb other than `delivery-landed-record`.
 
 Add append-only `delivery_target_binding_revisions` and
 `delivery_landed_receipts` tables. A binding revision stores target kind, target
@@ -438,7 +499,8 @@ id, revision, nullable exact target identity, reason, cause, principal, owner,
 and time. A null identity is an explicit clear. A receipt stores its own id,
 binding revision, exact target identity, declared baseline, canonical typed
 evidence-row references, admission decision id, cause, principal, owner, and
-time.
+time. A unique constraint on `(targetKind, targetId, bindingRevision)` permits
+one receipt for one binding revision.
 
 The binding mutation is:
 
@@ -463,12 +525,25 @@ tightbeam delivery-landed-record
 ```
 
 The receipt command accepts only typed references supported by the existing
-row-reference resolver. The target's admission rules decide which references
+row-reference resolver. The target's admission rails decide which references
 and facts are required. The substrate validates existence, visibility, exact
 binding identity, and the installed rule result.
 
+The target object's owner, a session owned by that user, or an administrator
+can set or clear its binding and record its landed receipt. Authorization and
+object lookup occur inside each write transaction. A binding mutation resolves
+the named active target identity inside that transaction. A receipt mutation
+reads the binding's exact stored target identity and evaluates that identity's
+installed admission contract inside the transaction. Unknown and invisible
+objects return the same bytes. A new binding mutation with an unknown target
+name returns `unknown_delivery_target`. An unavailable stored target identity
+or admission contract returns `delivery_target_version_unavailable`. A second
+receipt request for the binding under another idempotency key returns
+`landed_receipt_exists` with the existing receipt id. Each refusal writes no
+binding revision or landed receipt.
+
 Reads expose `deliveryTarget: null` when unbound. A bound projection exposes
-the exact identity, binding revision, binding principal and reason, latest
+the exact identity, binding revision, binding principal and reason, the
 matching receipt id, and declared baseline. It does not expose domain-specific
 interpretation.
 
@@ -476,25 +551,34 @@ interpretation.
 
 `work-item-close` and V5 `topline-close` call one transaction-scoped selector
 before the state mutation. The selector returns the effective process
-identities plus `delivery-target-landed` when that exact object has an
-active target binding. It then calls the existing rules decision fold in
-installed deterministic order.
+identities plus the object's corresponding target landing rail when that exact
+object has an active target binding. It computes the gate-set hash and then
+calls the existing rules decision fold in installed deterministic order. It
+evaluates one copy of each selected rule identity and preserves the canonically
+ordered process identities that selected that rule.
 
 On allow, the handler commits the close and its completion evidence. On denial,
 the handler commits the denial and uses `RailRemedy` with subject
-`<target-kind>:<target-id>:<effective-sha256>:<rule-identity>`. Repeated denials
+`<target-kind>:<target-id>:<gate-set-sha256>:<rule-identity>`. Repeated denials
 can leave separate attempt events, but one live remedy subject produces one
-notice. When the required fact appears, the next evaluation closes the remedy
-episode through the existing close path.
+initial notice. When the required fact appears, the next evaluation closes the
+remedy episode through the existing close path. Before recurrence sends a later
+notice, supervision recomputes the current gate-set hash and current
+responsible agent. It closes a superseded episode without a notice and routes a
+live episode to the newly selected responsible agent.
 
 ### Idempotency, crash, and replay
 
 Policy, target, and receipt mutations use the existing wire-idempotency
-fingerprint pattern. The fingerprint covers the operation, scope, expected
-revision, complete request body, checked owner, and resolved exact catalog
-identities.
+fingerprint pattern. The fingerprint covers the operation, authenticated
+principal, scope, expected revision when present, and the complete normalized
+wire request. It does not cover a catalog-derived identity or another value
+that can change after the first commit.
 
-- The same key and fingerprint returns the stored response and writes nothing.
+- The gateway checks a matching committed idempotency row before it resolves
+  the current catalog, binding, evidence, or admission rules.
+- The same key and fingerprint returns the stored response and writes nothing,
+  even when the live catalog or binding changed after the first commit.
 - The same key with another fingerprint returns `idempotency_conflict`.
 - A stale expected revision returns `revision_conflict` and writes nothing.
 - A crash before commit leaves no revision, receipt, event, or idempotency row.
@@ -517,10 +601,11 @@ Topline policy modules. It creates no policy revision, target binding, receipt,
 denial, remedy, or wake. The organization setting remains absent until an
 administrator opts in.
 
-Before rollout removes an old rule or fact contract, a compatibility gate must
-prove that no open scope or target binding references it. Otherwise the release
-fails closed and names the referencing rows. The V5 runtime smoke is a release
-prerequisite for enabling Topline-specific verbs.
+Before rollout removes an old process definition, target definition, selected
+rail, or fact contract, a compatibility gate must prove that no open catalog
+reference reaches it. Otherwise the release fails closed and names the
+referencing rows. The V5 runtime smoke is a release prerequisite for enabling
+Topline-specific verbs.
 
 ### Proposed implementation paths
 
@@ -604,8 +689,9 @@ and keeps the object open. It does not select a winner.
 Given scope revision `3`, when an authorized caller submits a complete local
 snapshot with expected revision `3`, then revision `4`, its cause/principal
 event, and its idempotency result commit together. A same-key replay returns
-revision `4`. A changed fingerprint, stale revision, invisible id, or injected
-fault writes no partial revision.
+revision `4` even after the active catalog identity changes. A changed
+fingerprint, stale revision, invisible id, or injected fault writes no partial
+revision.
 
 ### A8 — Unknown and removed definitions fail closed
 
@@ -625,23 +711,29 @@ completion evidence.
 
 ### A10 — Remedy targets existing custody once
 
-Given a session caller holds an open assignment in the target scope, when a
-process gate denies, then one live remedy episode targets that session. Given no
-caller-held assignment and exactly one distinct holder, the episode targets
-that holder. Given ambiguous or empty holder custody, it targets the owner's
-personal Main. Repeated denial for the same subject produces no spawn,
-assignment, reassignment, or duplicate live notice.
+Given a session caller holds an open assignment on an active member work item
+of Topline `T`, when `T`'s process gate denies, then one live remedy episode
+targets that session. Given no caller-held assignment and exactly one distinct
+holder in `T`'s active members, the episode targets that holder. Given ambiguous
+or empty holder custody, including a closable work item with no open
+assignment, it targets the owner's personal Main. Repeated denial for the same
+subject produces no spawn, assignment, reassignment, or duplicate live notice.
+Given custody changes before recurrence, when the episode remains current, then
+the next notice targets the newly selected responsible agent. Given the
+gate-set hash changes before recurrence, then supervision closes the old
+episode as `gate_set_superseded` and sends no notice.
 
 ### A11 — Work-item target does not roll up
 
 Given work item `W` has a target binding and its Topline `T` has none, when `W`
-closes without a matching receipt, then `delivery-target-landed` denies.
+closes without a matching receipt, then `delivery-target-landed-work-item`
+denies.
 When `T` closes, `W`'s binding does not participate.
 
 ### A12 — Topline target does not roll down
 
 Given Topline `T` has a target binding and member work item `W` has none, when
-`T` closes without a matching receipt, then `delivery-target-landed`
+`T` closes without a matching receipt, then `delivery-target-landed-topline`
 denies. When `W` closes, `T`'s binding does not participate.
 
 ### A13 — Receipt admission stays domain-owned
@@ -649,8 +741,11 @@ denies. When `W` closes, `T`'s binding does not participate.
 Given a target definition requires evidence facts `E`, when an authorized
 caller records a receipt without `E`, then the target's installed admission
 rule denies and no receipt commits. Given `E` exists and the active binding,
-target identity, baseline, and references match, then one receipt and its
-admission decision commit.
+target identity, and references match, and the caller supplies a nonblank
+baseline, then one receipt and its admission decision commit. A same-key replay
+returns that receipt after a later binding or catalog change. A different-key
+request for the same binding returns `landed_receipt_exists` and writes no
+second receipt.
 
 ### A14 — Stale receipt cannot satisfy a new binding
 
@@ -679,7 +774,10 @@ Given a process uses fact contract `F@1`, when a release removes or changes
 `F@1` without migrating each open reference or retaining exact compatibility,
 then the catalog or release gate refuses and names the referencing scope rows.
 Given migration appends current scope revisions to `F@2`, then later completion
-uses only `F@2` and preserves the `F@1` history.
+uses only `F@2` and preserves the `F@1` history. Given target binding `B` on a
+nonterminal object names target definition `D@1`, when a release removes
+`D@1`, one of its admission rails, or one of its fact contracts, then the
+release gate refuses and names `B`.
 
 ### A18 — V5 absence never becomes legacy inference
 
@@ -697,6 +795,26 @@ binding data, reason where required, and idempotency key. Gateway and direct
 wire tests return the same named errors. Work-item and V5 Topline reads expose
 the same effective identities, source ids, target revision, receipt id, and
 baseline in stable order.
+
+### A20 — Target mutations are authorized and exact
+
+Given object owner `U`, when another non-administrator user sets its target or
+records its receipt, then the gateway returns the same response bytes as for an
+unknown object and writes nothing. Given `U`, a session owned by `U`, or an
+administrator names an unknown target in a new binding request, then the
+gateway returns `unknown_delivery_target` and writes nothing. Given an
+authorized caller binds an active target identity and that exact installed
+identity later disappears, then receipt admission returns
+`delivery_target_version_unavailable` and writes nothing.
+
+### A21 — Catalog selection is deterministic
+
+Given two installed versions for stable process name `P`, when the process
+selection index names `P@2`, then a new scope mutation stores the exact `P@2`
+identity while a scope that already stores `P@1` continues to resolve `P@1`.
+Given a process or target selection index names an identity that is not
+installed, when the gateway boots, then catalog validation refuses startup and
+names the invalid index entry.
 
 ## Open Questions
 
