@@ -326,7 +326,11 @@ S4. Changing filters is `{"type": "unsubscribe", "subscriptionId": ...}`
 then a fresh subscribe on the same connection. Duplicate subscriptionId or
 unknown unsubscribe is `invalid_request`.
 
-S5. No admission or concurrency limit (ruled 2026-08-20).
+S5. No admission or concurrency limit (ruled 2026-08-20) — with one
+sanity cap (Mike, 2026-08-22, resolving review finding F23): at most 100
+subscriptions per connection; the 101st subscribe is refused with a typed
+invalid_request naming the cap. Not an admission limit — a runaway-client
+backstop no real client hits.
 
 ## The model recipe (how every client uses this)
 

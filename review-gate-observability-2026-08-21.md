@@ -21,3 +21,9 @@ authenticates identically. F20 downgrades from design-hole to one missing
 spec sentence, landing in firehose r6: auth is the chat socket's in-band
 auth frame, same credential, same failure behavior. The ticket idea is
 withdrawn.
+
+## F23 resolution (Mike, 2026-08-22)
+
+Overruled the accepted-risk drop: a sanity cap of 100 subscriptions per
+connection lands in firehose S5 (typed refusal on the 101st). The
+no-limits ruling stands for replay/admission.
