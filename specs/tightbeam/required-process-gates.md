@@ -1,9 +1,9 @@
 # Declarative required-process gates
 
-Status: changes-requested specification amended after
-`att_d9aa11c7-ea16-4797-8e36-ddf05fa6706f`; the amended bytes require a cold
-digest and re-review for `wi_f165cdbd-72c0-4add-bb8d-2113908c3e55`. This
-specification authorizes no
+Status: review-ready amendment after
+`att_d9aa11c7-ea16-4797-8e36-ddf05fa6706f` and its required cold digest; these
+exact bytes require independent re-review for
+`wi_f165cdbd-72c0-4add-bb8d-2113908c3e55`. This specification authorizes no
 implementation, identity publication, deployment, runtime mutation, or release
 operation.
 
@@ -302,10 +302,11 @@ sends no notice.
 
 ### I11 — Opt-out is silent
 
-When the organization has no requirements, the object has no local scope
-revision, and the object has no target binding, a completion follows its
-existing path. Required-process code writes no denial, remedy episode, wake,
-receipt, or policy event. It does not add a latency-bearing external check.
+When the object's effective process set is empty and the object has no target
+binding, completion follows its existing path. Required-process code writes no
+denial, remedy episode, wake, receipt, or policy event. It does not add a
+latency-bearing external check. An empty local revision and clears that produce
+an empty effective set stay silent under the same rule.
 
 ### I12 — Target binding has exact scope
 
@@ -346,7 +347,7 @@ system.
 
 ### I16 — Completion truth does not decay
 
-A successful close records the effective process-set hash, target-binding
+A successful close records the gate-set hash, target-binding
 revision if present, landed-receipt id if present, and declared baseline in its
 completion event. Later branch, design, build, target, process, or fact-contract
 drift does not change that historical result.
@@ -460,10 +461,10 @@ existing rows but cannot satisfy a new stable-name mutation. The process loader
 validates the full catalog at boot. It rejects a duplicate name/version, an
 index entry that names no exact installed identity, an empty or unknown
 completion-verb set, an unsupported fact contract, a rail that lacks
-  `attachment = "required-process"`, a rail whose verb is absent from the process
-  completion-verb set, a declared verb with no selected rail, a rail from
-  another attachment class, or a dependency cycle. Globally selected statutes
-  stay outside this attachment class, and a scope clear cannot suppress them.
+`attachment = "required-process"`, a rail whose verb is absent from the process
+completion-verb set, a declared verb with no selected rail, a rail from another
+attachment class, or a dependency cycle. Globally selected statutes stay
+outside this attachment class, and a scope clear cannot suppress them.
 
 The core target module reserves and installs
 `delivery-target-landed-work-item` for `work-item-close` and
@@ -529,6 +530,18 @@ bytes. A delivery-target `definitionSha256` hashes this closed semantic object:
 {"admissionRails":[{"definitionSha256":"<hex>","name":"<rail-name>","version":1}],"factContracts":[{"factName":"<name>","semanticsSha256":"<hex>","type":"<type>","version":1}],"name":"<qualified-name>","version":1}
 ```
 
+A fact contract's `semanticsSha256` hashes this closed semantic object:
+
+```json
+{"factName":"<name>","semantics":"<nonblank-contract-text>","type":"<type>","version":1}
+```
+
+The served fact catalog retains the exact semantic text and computed identity.
+The canonical serializer performs no Unicode normalization or text trimming.
+A semantic-text, type, or shape change creates a new version and hash.
+Removing this byte binding would permit in-place semantic replacement;
+accepting that failure would make catalog compatibility non-deterministic.
+
 Rail definition hashes arrive as part of the served rail catalog's established
 versioned identity. This specification treats them as opaque exact values and
 does not compute or redefine them.
@@ -590,7 +603,7 @@ tightbeam required-processes-set
 Revision `0` means that no prior scope revision exists. `--require` and
 `--clear` are complete local snapshots, not incremental patches. Empty arrays
 restore inheritance. Organization calls require an empty clear array. Lists use
-stable-name lexical order in stored canonical JSON. The gateway rejects
+stable-name UTF-8 byte order in stored canonical JSON. The gateway rejects
 duplicates and require/clear overlap.
 
 Only an administrator can mutate organization scope. The Topline or work-item
@@ -619,8 +632,7 @@ Work-item and V5 Topline reads add a `requiredProcesses` object:
   ],
   "localRevision": 2,
   "localRequired": [],
-  "localCleared": [],
-  "effectiveSha256": "..."
+  "localCleared": []
 }
 ```
 
@@ -704,7 +716,7 @@ identities plus the object's corresponding target landing rail when that exact
 object has an active target binding. It computes the gate-set hash and then
 calls the existing rules decision fold in installed deterministic order. It
 evaluates one copy of each selected rail identity and preserves the canonically
-ordered process identities that selected that rule.
+ordered process identities that selected that rail.
 
 On allow, the handler commits the close and its completion evidence. On denial,
 the handler commits the denial and uses `RailRemedy` with subject
@@ -713,8 +725,12 @@ can leave separate attempt events, but one live remedy subject produces one
 initial notice. When the required fact appears, the next evaluation closes the
 remedy episode through the existing close path. Before recurrence sends a later
 notice, supervision recomputes the current gate-set hash and current
-responsible agent. It closes a superseded episode without a notice and routes a
-live episode to the newly selected responsible agent.
+responsible agent, then evaluates the episode's exact selected rail against
+current durable facts. It closes a superseded episode without a notice. If the
+rail now allows, it closes the episode as `gate_now_satisfied` without a notice.
+Otherwise, it routes the live episode to the newly selected responsible agent.
+Deleting recurrence would discard existing prodding; accepting a notice after
+the rail allows would violate I9's satisfied-gate silence.
 
 ### Idempotency, crash, and replay
 
@@ -770,8 +786,8 @@ handler values are:
 {"landedReceipt":<landed-receipt-object>,"targetId":"tl_...|wi_...","targetKind":"topline|workItem"}
 ```
 
-A required-processes object contains exactly `effective`, `effectiveSha256`,
-`localCleared`, `localRequired`, and `localRevision`. Each identity in
+A required-processes object contains exactly `effective`, `localCleared`,
+`localRequired`, and `localRevision`. Each identity in
 `effective` or `localRequired` contains exactly `definitionSha256`, `name`, and
 `version`; an effective entry also contains `sources`. The arrays and object
 keys use Canonical bytes and hashes ordering. `localRevision` is `0` when the
@@ -854,7 +870,8 @@ CLI compatibility; transport authentication and principal kind; closed wire
 shape; `toplines_v5` capability for a direct Topline selector; owner-filtered
 object visibility and authorization; idempotency replay or conflict; expected
 scope or binding revision; active catalog resolution; I21 scope compatibility;
-binding and receipt state; typed evidence visibility; selected-rail decision.
+effective-set identity conflict; binding and receipt state; typed evidence
+visibility; selected-rail decision.
 An organization request discovers that a resolved process contains
 `topline-close` during I21 and then applies the capability check. Each refusal
 writes no domain or idempotency row unless I8 explicitly requires a durable
@@ -945,9 +962,10 @@ failure contracts pass their acceptance cases.
 
 ### A1 — No opt-in preserves existing completion
 
-Given no organization revision, no local revision, and no target binding, when
-an authorized principal closes an otherwise closable work item, then the
-existing close response and state transition succeed. The feature writes no
+Given an object's effective process set is empty and it has no target binding,
+when an authorized principal closes the otherwise closable object, then the
+existing close response and state transition succeed. This remains true when
+empty local revisions or clears produce that empty set. The feature writes no
 policy, denial, remedy, wake, target, or receipt row.
 
 ### A2 — Organization requirements reach ungrouped work
@@ -955,7 +973,7 @@ policy, denial, remedy, wake, target, or receipt row.
 Given the organization requires installed process `P` and work item `W` has no
 active V5 membership or local override, when `W` closes without `P`'s required
 evidence, then the gateway denies by exact process and rail identity. Given the
-evidence exists, the same close succeeds and records the effective-set hash.
+evidence exists, the same close succeeds and records the gate-set hash.
 
 ### A3 — Topline inheritance uses explicit membership
 
@@ -1024,6 +1042,8 @@ Given custody changes before recurrence, when the episode remains current, then
 the next notice targets the newly selected responsible agent. Given the
 gate-set hash changes before recurrence, then supervision closes the old
 episode as `gate_set_superseded` and sends no notice.
+Given the hash is unchanged but the missing durable fact now exists, then
+recurrence closes the episode as `gate_now_satisfied` and sends no notice.
 
 ### A11 — Work-item target does not roll up
 
@@ -1140,14 +1160,17 @@ contains `topline-close` while V5 is disabled, then it returns
 
 ### A23 — Canonical hashes are byte-stable
 
-Given equivalent process declarations whose TOML key order and whitespace
-differ, when the loader canonicalizes their closed semantic object, then both
-produce the same `definitionSha256`. Given one gate set whose input map or
-source enumeration order differs, when both instances sort and serialize under
-Canonical bytes and hashes, then both produce the same gate-set hash. Given one
-request whose JSON member order differs but whose validated closed values are
-equal, when both handlers build the fingerprint envelope, then both produce the
-same fingerprint; changing one semantic value changes it.
+Given equivalent process, target, or fact-contract declarations whose TOML key
+order and formatting whitespace differ while their string values are equal,
+when the loader canonicalizes their closed semantic object, then both produce
+the same definition or semantics hash. Given equivalent catalogs whose
+map or declaration enumeration differs, then both produce the same catalog
+revision hash. Given one gate set whose input map or source enumeration order
+differs, when both instances sort and serialize under Canonical bytes and
+hashes, then both produce the same gate-set hash. Given one request whose
+validated closed values are equal, when both handlers build the fingerprint
+envelope, then both produce the same fingerprint; changing one semantic value
+changes it.
 
 ## Open Questions
 
