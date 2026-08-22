@@ -84,6 +84,9 @@ The sender must receive one of two visible results:
    `failureClass=legacy_outcome_unknown`, trusted migrated sender and routing identity,
    and one notice. The design creates no fabricated carrier and no absent
    attempt/admitted/handled/undeliverable ledger.
+   Source: the amendment assignment subject for
+   `asg_0c4356a4-29af-4c18-95c1-c2f1db2ba8d1`, preserved by
+   `att_694b3367-b8aa-41c8-b78a-18eea1b615a6`.
 3. Normal resolution returns one exact session after it applies the existing direct,
    role-fallback, and owner-Main rules.
 4. The gateway can read current session, hold, circuit, harness, ACP, adapter,
@@ -216,9 +219,23 @@ The gateway composes the new guard with the existing lifecycle:
 3. Return R3 when a current fact proves inability.
 4. Otherwise, run the existing wake insertion path.
 5. At the act edge, repeat steps 1 and 2 against current facts.
-6. Commit the R4 null-carrier `failed` outcome and notice, or admit the carrier normally.
+6. Commit the R4 null-carrier `failed` outcome and notice, or admit the carrier through
+   the reviewed admission path.
 7. After carrier admission, use only the reviewed `delivered | failed | canceled`
    terminal and notice path.
+
+Traceability is explicit in both directions:
+
+| Requirement | Architecture source | Acceptance evidence |
+|---|---|---|
+| R1 | Steps 1 and 5 | A1 and A3 |
+| R2 | Steps 2 and 5; response schema | A1, A2, and A4 |
+| R3 | Step 3; response schema | A1 and A2 |
+| R4 | Steps 4 through 6; Wakes transaction owner | A2 and A4 |
+| R5 | Step 7; terminal and notice path | A5 |
+| R6 | Steps 6 and 7; Wakes transaction owner and publisher | A4 and A5 |
+| R7 | Response schema and existing authorization projections | A6 |
+| R8 | Durable schema and migration contract | A6 |
 
 The Wakes transaction owner remains the only writer for accepted-wake terminal outcomes
 and sender notices. The normal publisher remains the only failed-or-canceled push
