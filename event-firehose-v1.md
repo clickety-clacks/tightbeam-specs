@@ -1,6 +1,14 @@
-# Event firehose v1 — state-change notifications over ws (product spec, r5)
+# Event firehose v1 — state-change notifications over ws (product spec, r6)
 
-Status: DRAFT r5, 2026-08-21. r5 folds the tb02 adjudication of recon
+Status: DRAFT r6, 2026-08-22. r6 folds the adjudicated Sol review-gate
+findings (review-gate-observability-2026-08-21.md): row versions +
+always-upsert (F7), seq heartbeat (F6), revocation closes sockets (F12),
+visibility-change rebuild (F11), pre-delete authorization (F18), class
+mapping table (F2), mutation classes (F3), composed-view refetch rule
+(F4), op:"observe" (F5), read-marker verb semantics (F10), refs id law
+(F17), protocolVersion at upgrade (F19), in-band auth like the chat
+socket (F20 — Mike's catch: no tickets, the existing protocol already
+solves it). r5: r5 folds the tb02 adjudication of recon
 wi_9239a7f1's report (rest-state-api-recon.md on the NFS; adjudication in
 rest-vs-cli-adjudication.md r2): V3 now means canonical public
 projections, never raw rows (the db stores credentials); notices carry
@@ -169,6 +177,11 @@ identityToken) and no projection ever carries a storage secret. One
 serializer per resource owns the projection; REST detail and notice
 payload are byte-equivalent (A6).
 
+V4a. Every payload carries the row's monotonically increasing version
+(`rowVersion`, or the resource's natural one: `updatedAt`, seq). Clients
+apply notices and snapshot rows by LAST-VERSION-WINS upsert — "dedupe"
+does not exist as a concept (M1).
+
 V4. Notice shape:
 
 ```json
@@ -192,8 +205,10 @@ class strings. A delete carries the final public projection as its
 tombstone payload and the client removes the key — required because some
 rows hard-delete today (roles).
 
-`refs` carries whichever reference ids the change has; absent refs are
-omitted. One schemaVersion keeps one meaning; widening bumps it.
+`refs` SHALL always include the resource's primary id (per the R8
+mapping); other reference ids appear when the change has them. One
+schemaVersion keeps one meaning; widening bumps it. Observational
+classes (R5, R6) use `op: "observe"` and omit `resource`.
 
 V5. Payload rows SHALL carry the same primary ids the query surface
 returns for the same rows, so a client can match a notice against fetched
@@ -235,16 +250,45 @@ R6. Rails and lifecycle (OBSERVATIONAL-ONLY, same contract): `rail.denied`,
 `lifecycle.boot`, `lifecycle.clean_shutdown`, `lifecycle.dirty_exit`,
 `lifecycle.takeover`.
 
+R6b. Admin-state mutations (F3): `config.updated`, `host_env.updated`,
+`identity.updated`, `host.registered`, `kungfu.updated`,
+`user.promoted` — state classes, so their REST models cannot rot behind
+observational verb notices.
+
 R7. Derived from main tip's row vocabulary as of 2026-08-20; the build
 card verifies mechanically (A1) and amends where reality disagrees.
+
+R8. The build card materializes the class mapping TABLE the acceptance
+tests presuppose: every state class row names its resource, op
+(upsert|delete), primary-id ref key, and serializer — seeded from the
+adopted recon's primary-key table (rest-state-api-recon.md §WebSocket
+correlation contract). A class without a row is a red build.
+
+R9. Composed views (toplines, coordination-share, digest-members, org)
+have no notices of their own. Each composed REST resource DECLARES its
+underlying state classes; a client refreshes the view when a matching
+notice arrives. The REST spec carries the per-view dependency lists.
+
+R10. Visibility-affecting classes (`role.bound`, `role.removed`,
+`user.promoted`, `device.revoked`, `session.retired`, `user.added`) are
+rebuild triggers: a client receiving one that touches its own principal
+re-snapshots (M2); the server MAY instead close the affected
+subscriptions to force it.
 
 ## Connection and auth
 
 C1. A WebSocket upgrade on the gateway's existing HTTP listener, at its
 own path, separate from the chat socket.
 
-C2. Auth is the existing gateway credential flow, authenticating the
-requesting user. No new credential type.
+C2. Auth is IN-BAND, exactly like the existing chat socket: connect
+plain, send an `auth` frame carrying the existing gateway credential as
+the first message, receive `auth_result` (same failure vocabulary).
+Browser-compatible by construction — no Authorization header on the
+upgrade, no tickets, no credential in the URL. No new credential type.
+
+C4. Revocation closes sockets: a `device.revoked` or `session.retired`
+affecting a connection's principal closes that connection (1008); the
+client's reconnect re-auths and rebuilds (M2).
 
 C3. Transport posture: localhost or tailscale; TLS termination is the
 operator's proxy (see wi_bdf9a537 for the tailscale-serve posture).
@@ -292,10 +336,10 @@ model. Mike's review note is normative: the danger zone is the gap
 between building the model and receiving the first notice — subscribing
 first closes it, and the worst case becomes duplicate records, never
 missed ones. Therefore the client's model-build algorithm SHALL be
-IDEMPOTENT under duplicate records: applying a notice for a row the
-snapshot already delivered (or applying the same notice twice) converges
-to the same model. V5's shared ids are what make that idempotency
-implementable.
+IDEMPOTENT under duplicate records — implemented as last-version-wins
+upsert on (id, rowVersion) (V4a): an older version over a newer one is a
+no-op, anything applied twice converges. Plain drop-by-id is FORBIDDEN
+(it silently keeps stale rows).
 
 M2. On ANY doubt — reconnect, seq skip (T4), gateway restart, or plain
 suspicion — rebuild: re-snapshot the displayed slice and keep applying
@@ -314,8 +358,10 @@ the view (a session, a work item, an ATC view name); `marker` is a row id
 or timestamp meaning "seen through here". The substrate stores and
 broadcasts; it never interprets either field (physics, not judgment).
 
-RM2. Markers are set and read through normal verbs like any state — no ws
-involvement in writing them.
+RM2. Markers are set through a named verb (`read-marker-set`: scopeKey +
+marker + optional expected-current for conditional write, refusing on
+mismatch) and cleared through `read-marker-clear` — the lawful repair
+path for a wrong marker. Reads via REST. No ws involvement in writing.
 
 RM3. A marker change broadcasts as an ordinary `read_marker.updated`
 notice. That is the whole multi-instance sync mechanism: one ATC instance
@@ -336,6 +382,12 @@ commit order, each stamped with the next seq. Delivery is best-effort:
 the writer commits, then hands the notice off the transaction path; a
 crashed fan-out loses notices, and that is acceptable because of P3.
 
+D1b. Heartbeat: the server sends each connection a periodic frame
+(`{"type":"heartbeat","seq":N}`, ~15s) with the connection's latest seq.
+A missed heartbeat window or a seq mismatch is a rebuild trigger (M2) —
+this is what makes a lost TRAILING notice detectable; a bare gap check
+cannot see it.
+
 D2. The writer never touches a socket in its transaction: commit, then a
 nonblocking hand-off to the fan-out.
 
@@ -349,10 +401,10 @@ exists to lose.
 
 ## Errors and close codes
 
-E1. Before the HTTP-to-WebSocket upgrade handshake completes (the
-"upgrade" is the HTTP request that switches the connection into a
-WebSocket): existing HTTP auth failures; `426` for an unsupported
-protocolVersion.
+E1. The client states `protocolVersion` in the upgrade request itself
+(query parameter on the ws path); an unsupported version is refused `426`
+before the upgrade completes. Auth failures happen in-band after upgrade
+(C2), not at the HTTP layer.
 
 E2. After upgrade, one error frame shape
 `{"type":"error","code":"...","message":"..."}` with the single code
@@ -370,6 +422,12 @@ and emitted classes against the registry.
 
 A2. A subscriber receives a notice for a matching commit made after its
 registration cut, and never one from before it.
+
+A2b. Delete notices are authorized against the row's LAST pre-delete
+state (F18): whoever could see the row learns it is gone; nobody else
+learns it existed. Kill a subscriber's credential: the socket closes
+within one notice/heartbeat (C4). Suppress the fan-out for one commit:
+the next heartbeat exposes the gap and the client rebuilds (D1b).
 
 A3. A filtered subscriber receives exactly the matching notices; a change
 matching several of a connection's subscriptions arrives once per
