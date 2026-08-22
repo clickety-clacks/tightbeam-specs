@@ -330,3 +330,65 @@ such row as this class.
 
 **Prevented by.** The outcome kind's horizon duty: a goal card must escalate
 itself when its boundary has not moved by its own stated horizon.
+
+### 4.11 Ratified false premise (a laundered park)
+
+**Signature.** A lane is parked by legitimate machinery — a surrender, an
+operator decision request, a ruling, a condition wake — and every row is in
+order, but the factual claim at the bottom of the chain was false when it was
+filed, and nothing between filing and ruling ever tested it. The park is
+invisible to 4.5 because a standing blocker fact DOES exist; ratification
+upgraded prose to rows without verifying the prose. Specimen: wi_a55a4ce7,
+2026-08-20..22 — surrender att_4ae89aa9 claimed ATC main has no
+test/test_weather_gen.py; commit 29e0a74 had landed that file on canonical
+main ~40 hours EARLIER (the producer read a stale clone). The false claim
+flowed unchecked through dr_5c0d394a to a user ruling ("wait for the shared
+evidence spec") and a 7-day condition park, freezing the card and its
+dependent (wi_c8d1b6a3). One git command would have refuted it at any hop.
+
+**Cause.** Each actor in the escalation chain trusts the row below it. A
+surrender's factual claims are treated as evidence the moment they are
+attested; the DR quotes the surrender; the ruler reads the DR. Verification
+is nobody's step, so a stale-clone misread becomes org law. Ironic sub-case:
+the false claim is itself an instance of the disease the parked card exists
+to fix (evidence read from a disposable location instead of canonical).
+
+**Repair.** Before honoring any park, re-test its premise against the
+CANONICAL source it names — repo, release, service — not against the claimant's
+workspace. If the premise fails the test, file the refutation on the card,
+notify the ruler their ruling is moot, and wake the holder with the exact
+evidence. Patrol duty: any park older than a day whose premise is one
+command to check, check it.
+
+**Proven not to work.** Treating attested prose as verified fact; ruling on
+a DR without testing its one falsifiable claim; waiting out the fallback
+timer.
+
+### 4.12 Dead-letter escalation to the human rung
+
+**Signature.** The effort ladder or an authorization refusal correctly
+resolves that only the human principal (or a party outside the org) can act
+— and then produces a row addressed to them that nothing delivers, nothing
+re-raises with accumulated age, and nobody else may rule. The lane below is
+lawfully waiting; the row above is unread. Ledger test, 2026-08-22:
+effort DRs addressed to a session were 1443 ruled / 200 superseded; DRs
+addressed to user:mike were 1 ruled / 423 superseded / 9 open (oldest
+2026-08-14). Sub-case: a not_authorized refusal (e.g. revoke of a
+superseded shell, wi_8bc90e19) is recorded as prose and never routed to the
+party who IS authorized — even when that party is a live session.
+
+**Cause.** The ladder was built to end at the human, and the machinery that
+reaches humans was never built. Daily supersession resets the visible age,
+so the graveyard always looks fresh. Wakes fired at Main satisfy delivery
+on paper while Main's turns end with no filing.
+
+**Repair.** For a user-addressed DR: verify a delivery the human actually
+sees (not a Main wake), and carry the ORIGINAL raisedAt forward across
+supersession. For a refusal: read who holds the power the refusal names;
+if a live session holds it, route the request there with one exact pointer.
+Patrol duty: list open user-addressed DRs each pass; any with a superseded
+ancestor chain is this class, whatever its timestamp says.
+
+**Proven not to work.** Another wake at Main; superseding into a fresh row;
+assuming ruledBy user:X means the human acted (as-user actions are
+indistinguishable in the ledger).
