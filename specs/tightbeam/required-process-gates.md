@@ -1,7 +1,7 @@
 # Declarative required-process gates
 
-Status: changes-requested specification amended after round-6 verdict
-`att_eec61d75-14d2-4c89-8b74-899efe76a052`; the amended bytes require a cold
+Status: changes-requested specification amended after round-7 verdict
+`att_d97ff1b2-0f4a-42da-a661-250f6c35e40a`; the amended bytes require a cold
 digest and re-review for `wi_f165cdbd-72c0-4add-bb8d-2113908c3e55`. This
 specification authorizes no
 implementation, identity publication, deployment, runtime mutation, or release
@@ -56,6 +56,11 @@ Authority and evidence:
   B1 blocker: the existing Dispatch applies rule effects before a fenced
   mutation can request its generation retry. This revision defers those effects
   and restarts the complete Dispatch attempt from its live-generation capture.
+- Round-7 review `att_d97ff1b2-0f4a-42da-a661-250f6c35e40a` found two remaining
+  B1 blockers: an existing idempotency replay reached `Rules.decide/2`, and a
+  final rule-effect plan could be lost after its mutation committed. This
+  revision adds an authorization-preserving replay precheck, a finalizer race
+  marker, and a narrow durable fenced-effect outbox with stable-id recovery.
 
 ## Goal
 
@@ -163,6 +168,11 @@ proof would defeat the opt-in contract.
   Dispatch stores the tuple on one attempt. The attempt uses that tuple for
   each identity revision and served-law read. A generation retry discards that
   attempt and begins a new Dispatch attempt with a new tuple.
+- **Fenced effect outbox:** The durable, generation-final record for one
+  fenced mutation's ordered rule effects. It has the same transactional fate
+  as that mutation's idempotency result. Its stable effect ids let the existing
+  episode, event, and wake writers apply or recover one effect without
+  duplication.
 - **Open catalog reference:** An exact process, target, selected-rail, or fact
   identity reachable from the current organization revision; from the current
   local revision of a nonterminal object; from a Topline revision inherited by
@@ -290,33 +300,63 @@ identity, rail identity, or fact-contract identity. The response names the
 missing identity and two remedies: restore that exact installed contract, or
 append an authorized scope revision that resolves to an installed contract.
 
-Dispatch captures one live generation before it evaluates rules for each
-policy, target-binding, or receipt mutation. It attaches that generation to
-the mutation call and retains the rule decision, `to_close` list,
-denial event, remedy, escalation, and response event as an uncommitted effect
-plan. It passes the planned authorization-consumption list to the mutation
-handler. Dispatch materializes its retained plan only after the mutation
-returns a generation-final result. A rule denial, remedy, or escalation invokes
-no mutation handler; Dispatch treats that decision as the attempt's
-generation-final result and materializes its same-generation plan.
+After closed-wire validation, direct-Topline capability validation, and
+owner-filtered object authorization, the gateway runs the three fenced verbs'
+authorization-preserving idempotency precheck before Dispatch captures a live
+generation or calls `Rules.decide/2`. The precheck reads only the committed
+idempotency key and fingerprint for that authorized principal and operation.
+It reads no catalog, mutable object state, fact, rail, or remedy. A matching
+row returns its stored response immediately. A different fingerprint returns
+`idempotency_conflict` immediately. Neither result creates a Dispatch attempt,
+rule evaluation, effect plan, authorization consumption, event, or outbox row.
 
-Each mutation carries the Dispatch attempt's live generation into its
-database-owner transaction. Before that transaction reads an idempotency row,
-current revision, binding, or catalog, it compares the carried generation
-revision with the revision returned by `Tightbeam.Identity.Live.capture/0`. If
-they differ, the transaction writes no mutation row and returns
-`{:retry_live_generation}` to Dispatch. Dispatch discards the complete
-old-generation effect plan and begins a new attempt before `Rules.decide/2`.
-It writes no old-generation domain, idempotency, decision, denial, remedy,
-notice, authorization-consumption, or response row. The attempt that reaches
-catalog resolution first calls `Escalation.consume_in_txn/2` for each planned
-authorization while it owns that same transaction. A lost authorization aborts
-the mutation and idempotency append, then returns the existing `rule_denied`
-result with no planned allow effects. A successful consumption, mutation
-append, and idempotency result commit together. The attempt therefore uses the
+For a precheck miss, Dispatch captures one live generation before it evaluates
+rules. It attaches that generation to the mutation call and retains the rule
+decision, `to_close` list, denial event, remedy, escalation, and response
+event as an uncommitted effect plan. It passes the planned
+authorization-consumption list to the finalizer. The finalizer owns the
+database transaction for both an allowed mutation and a denied rule result.
+
+Each finalizer transaction first compares the carried generation revision with
+the revision returned by `Tightbeam.Identity.Live.capture/0`. It performs this
+comparison before its in-transaction idempotency recheck, current revision,
+binding, or catalog read. A mismatch writes no row and returns
+`{:retry_live_generation}`. A matching transaction then rechecks idempotency.
+If a concurrent request committed the same fingerprint after the precheck, it
+returns `{:idempotency_final, stored_response}`. If it committed another
+fingerprint, it returns `{:idempotency_final, idempotency_conflict}`. Dispatch
+discards its retained plan for either marker and returns that result without
+materializing or writing an effect.
+
+On a no-row recheck, an allowed finalizer calls
+`Escalation.consume_in_txn/2` for each planned authorization before catalog
+resolution. A lost authorization rolls back that transaction without a
+mutation, idempotency, or consumption row. Dispatch then finalizes the existing
+`rule_denied` result in a new transaction that repeats the generation fence and
+idempotency recheck. That result has no allow effects. On a successful
+consumption, the consumption, catalog resolution, mutation append, idempotency
+result, and one fenced effect outbox commit together. For a denial, remedy, or
+escalation from `Rules.decide/2`, the finalizer performs the same generation
+fence and idempotency recheck, then commits the denial result, idempotency
+result, and its fenced effect outbox together. The attempt therefore uses the
 generation current while it owns the database transaction. A publication that
 begins later waits behind that transaction and validates its post-mutation
 database snapshot.
+
+The outbox stores the generation revision, canonical complete effect plan,
+checked principal, command cause, final response, and one ordered entry per
+effect. Its unique key is the committed idempotency key and fingerprint. An
+entry's stable id is the SHA-256 of canonical
+`{"kind":"<kind>","ordinal":<integer>,"outboxId":"<id>"}` bytes. After
+commit, Dispatch drains the outbox in its existing effect
+order before it returns the final response. The materializer invokes the
+existing episode, event, remedy, and wake writers with that stable id, then
+marks the entry applied. A crash leaves an unapplied entry for the
+dispatch-owned recovery scan under existing supervision and startup. A retry uses the same stable id, so the
+existing writer returns its prior effect and the materializer can mark the
+entry applied. A replay returns the stored response and does not drain or
+write the outbox; recovery owns any pending entry. A generation retry occurs
+before finalization and therefore has no old-generation outbox or effect.
 
 ### I8 — Completion check and state change are one transaction
 
@@ -640,6 +680,48 @@ The idempotency fingerprint hash covers the exact operation envelope and closed
 parameter shapes in Wire contract below. Stored JSON columns use these same
 canonical bytes.
 
+### Fenced mutation effect outbox
+
+Add two narrow dispatch-owned tables. They serve only
+`required-processes-set`, `delivery-target-set`, and
+`delivery-landed-record`; they are not a general job or release model.
+
+```text
+fenced_dispatch_effect_outboxes
+  id                     durable row id
+  callerUserId           authenticated idempotency principal
+  operation              fenced mutation verb
+  idempotencyKey         exact request key
+  fingerprintSha256      exact request fingerprint
+  generationRevision     final live generation revision
+  finalResponseJson      canonical stored response
+  planJson               canonical ordered final-generation plan
+  cause                  command receipt id
+  principalKind          user | session
+  principalRef           checked principal id
+  createdAt              epoch milliseconds
+
+fenced_dispatch_effect_entries
+  outboxId               parent outbox id
+  ordinal                positive canonical plan position
+  effectId               SHA-256 of canonical {kind,ordinal,outboxId} bytes
+  kind                   episode-close | remedy | escalation | decision-event | denial-event | response-event
+  payloadJson            canonical existing-writer payload
+  appliedAt              nullable epoch milliseconds
+```
+
+The outbox primary key is `id`. Its unique key is
+`(callerUserId, operation, idempotencyKey, fingerprintSha256)`. An entry's
+primary key is `(outboxId, ordinal)` and its `effectId` is the SHA-256 of
+`{"kind":"<kind>","ordinal":<integer>,"outboxId":"<id>"}` under Canonical
+bytes and is unique. The
+finalizer inserts the idempotency result, outbox, and entries in the same
+database-owner transaction. The idempotency insert is the concurrency fence:
+if it loses the unique race, the transaction rolls back its consumption,
+mutation, outbox, and entries; it reads the committed row and returns
+`{:idempotency_final, ...}`. No caller selects an effect order or a recovery
+owner.
+
 ### Scope rows and mutation seam
 
 Add one append-only revision family:
@@ -823,17 +905,27 @@ bytes below. `parameters` contains each validated request value except
 identity, or other value that can change after the first commit.
 
 - The gateway authenticates the current principal and authorizes the named
-  object before it reads an idempotency row. A direct Topline selector first
-  performs I19's capability check, as fixed in the refusal precedence below.
-- After authorization, the gateway checks a matching committed idempotency row
-  before it resolves the current catalog, mutable revision, binding, evidence,
-  or admission rails.
+  object before it runs the fenced-verbs idempotency precheck. A direct Topline
+  selector first performs I19's capability check, as fixed in the refusal
+  precedence below.
+- The precheck returns a matching committed idempotency response, or an
+  `idempotency_conflict`, before Dispatch captures a generation or evaluates
+  selected rules. It resolves no current catalog, mutable revision, binding,
+  evidence, admission rail, fact, remedy, or event.
+- A precheck miss permits one Dispatch attempt. Its finalizer repeats the
+  idempotency lookup after the generation fence. A concurrently committed row
+  returns an `idempotency_final` marker; Dispatch discards the pending effect
+  plan and returns the marker result without a write.
 - The same key and fingerprint returns the stored response and writes nothing,
-  even when the live catalog or binding changed after the first commit.
+  even when the live catalog, facts, rules, remedy state, or binding changed
+  after the first commit.
 - The same key with another fingerprint returns `idempotency_conflict`.
 - A stale expected revision returns `revision_conflict` and writes nothing.
-- A crash before commit leaves no revision, receipt, event, or idempotency row.
-- A crash after commit returns the committed result on replay.
+- A crash before finalizer commit leaves no revision, receipt, effect outbox,
+  event, or idempotency row.
+- A crash after finalizer commit returns the committed result on replay. The
+  dispatch-owned recovery scan under existing supervision/startup applies any
+  pending stable-id effect independently of that replay.
 - A completion retry re-reads current rows. It cannot reuse an in-memory pass.
 
 ### Wire contract
@@ -1042,38 +1134,53 @@ and identity calls. A live-ref or served-law reader does not read Git or an
 independent persistent-term key after it has captured that generation.
 
 For `required-processes-set`, `delivery-target-set`, and
-`delivery-landed-record`, `Tightbeam.Dispatch` owns a live-generation attempt.
-It captures the generation before `Rules.decide/2`, passes that generation to
-the rule fold and handler, and keeps `Rules.decide/2`'s `to_close` and
-resulting denial, remedy, escalation, and event as an effect plan. It passes
-the `to_consume` outputs into the handler's database-owner transaction. For
-these verbs, Dispatch does not close an episode, send a remedy notice, append a
-decision or denial event, or return a response before the handler returns a
-generation-final result. It does not call `Escalation.consume/2`. Other verbs
-retain the existing Dispatch effect order.
+`delivery-landed-record`, the gateway performs an authorization-preserving
+idempotency precheck after wire, capability, visibility, and authority checks.
+The precheck reads only the caller's key/fingerprint row. A replay or conflict
+returns before `Tightbeam.Dispatch` captures a generation or calls
+`Rules.decide/2`. A miss lets `Tightbeam.Dispatch` own a live-generation
+attempt. It captures the generation, passes it to the rule fold, and retains
+`Rules.decide/2`'s `to_close`, denial, remedy, escalation, decision event, and
+response event as one canonical effect plan. It passes `to_consume` to the
+finalizer's database-owner transaction. It does not call
+`Escalation.consume/2`. Other verbs retain the existing Dispatch effect order.
 
-When `Rules.decide/2` returns a denial, remedy, or escalation for a fenced
-verb, Dispatch does not call the mutation handler. It materializes that
-attempt's same-generation effect plan and returns that final result. Only an
-allow decision can reach the fenced handler and return `{:retry_live_generation}`.
+`Tightbeam.FencedMutation.finalize/5` receives either the allowed mutation
+operation or the nonallow rule result, the generation, the idempotency envelope,
+and that plan. Its transaction first captures and compares the current live
+generation. A mismatch returns `{:retry_live_generation}` before it reads an
+idempotency row. A match repeats the idempotency lookup before it reads mutable
+state or catalog. An existing row returns
+`{:idempotency_final, stored_response|idempotency_conflict}`. Dispatch
+discards its plan and returns that marker without an effect or a write.
 
-At the start of each fenced mutation's database-owner transaction, the handler
-captures the current generation again and compares its revision to the Dispatch
-attempt generation. On a mismatch, the handler writes no mutation or
-idempotency row and returns `{:retry_live_generation}`. Dispatch discards the
-attempt's effect plan and starts a new attempt at its live-generation capture;
-it does not replay or compensate an old effect because it materialized none.
-After a matching comparison and before catalog resolution, the handler calls
-`Escalation.consume_in_txn/2` for each `to_consume` entry using its supplied
-transaction. `consume_in_txn/2` does not call `Tightbeam.DB.transaction/2`.
-If any consumption loses, the handler aborts the transaction without a mutation
-or idempotency row and returns the existing `rule_denied` result with an empty
-allow-effect plan. If each consumption succeeds, the consumption, catalog
-resolution, mutation append, and idempotency result commit in one transaction.
-On a generation-final result, Dispatch materializes that result's retained
-effect plan once, using the existing order, then returns that result. A
-publisher therefore sees the matching-generation append in its validation
-snapshot, or Dispatch retries against the installed candidate generation.
+For an allowed no-row finalization, `finalize/5` calls
+`Escalation.consume_in_txn/2` for `to_consume` before catalog resolution.
+`consume_in_txn/2` uses the supplied transaction and does not call
+`Tightbeam.DB.transaction/2`. If consumption loses, that transaction rolls
+back; a new fenced finalization records the `rule_denied` result with zero
+allow effects. If consumption succeeds, the consumption, catalog resolution,
+mutation append, idempotency result, and one `fenced_dispatch_effect_outboxes`
+row commit in one transaction. A nonallow rule result uses the same finalizer
+and commits its idempotency result and outbox after its generation fence and
+idempotency recheck. Thus a publisher sees the matching-generation append in
+its validation snapshot, or Dispatch retries against the installed candidate
+generation.
+
+The outbox row stores its final response, generation revision, principal,
+command cause, canonical plan, and ordered entries. Its unique key is the
+committed `(callerUserId, operation, idempotencyKey, fingerprint)`. The
+materializer reads the stored stable `effectId` for each entry, invokes the
+existing effect writer with that idempotency key, and
+then records the entry as applied. Dispatch drains the newly committed outbox
+in the established effect order before it returns its first response. The
+dispatch-owned recovery scan under existing supervision/startup drains pending
+entries after a crash. A crash
+after an effect writer runs and before the applied marker commits retries that
+writer with the same `effectId`; the existing episode, event, and wake writer
+returns the already-created effect. A replay returns stored bytes without
+draining, claiming, or writing an outbox entry. A generation retry occurs
+before finalization, so it leaves no old-generation outbox entry or effect.
 
 Before a publisher calls `advanceRef`, it obtains a `Live` publication lease.
 After its database validation succeeds and immediately before the Git call, it
@@ -1153,11 +1260,15 @@ This path census is a build boundary, not implementation authority:
 - Add handlers in `lib/tightbeam/gateway.ex`, wire declarations in
   `lib/tightbeam/wire/router.ex` and `lib/tightbeam/wire/payloads.ex`, and CLI
   parsing plus request encoding in `cli/src/args.rs` and
-  `cli/src/dispatch.rs`. Evolve `lib/tightbeam/dispatch.ex` so the three
-  fenced mutation verbs defer a generation-specific rule effect plan and
-  restart from Dispatch capture on `{:retry_live_generation}`. Add
-  `Escalation.consume_in_txn/2` in `lib/tightbeam/escalation.ex` for the
-  handler's supplied database-owner transaction.
+  `cli/src/dispatch.rs`. Add the fenced-verbs authorization-preserving replay
+  precheck and `Tightbeam.FencedMutation.finalize/5`; register its narrow
+  `fenced_dispatch_effect_outboxes` and entries schemas and add its recovery
+  scan under existing supervision/startup. Evolve `lib/tightbeam/dispatch.ex` so the three fenced
+  mutation verbs persist and drain a generation-final effect plan, discard it
+  on `{:retry_live_generation}` or `{:idempotency_final, _}`, and never apply
+  it from replay. Add `Escalation.consume_in_txn/2` in
+  `lib/tightbeam/escalation.ex` for the finalizer's supplied database-owner
+  transaction.
 - Add `lib/tightbeam/identity/live.ex` to own the single live-generation
   pointer, writer serialization, candidate preload, ingress capture, and
   post-CAS fatal recovery. Evolve `lib/tightbeam/identity.ex` to obtain each
@@ -1244,6 +1355,18 @@ revision `4` even after the active catalog identity changes. A changed
 fingerprint, stale revision, invisible id, or injected fault writes no partial
 revision.
 
+Given the revision-`4` request used key `K` and fingerprint `F`, and current
+facts or rules would now deny or plan `to_close`, when the same authorized
+principal replays `K/F`, then the authorization-preserving precheck returns the
+stored revision-`4` bytes before `Rules.decide/2`, catalog resolution, or an
+effect plan. It writes no closure, notice, consumption, decision, denial,
+remedy, response event, scope revision, idempotency, or outbox row. Given `K`
+with a different fingerprint, then that precheck returns
+`idempotency_conflict` with the same zero writes. Given two `K/F` requests
+both miss precheck and one commits first, then the other finalizer returns its
+`idempotency_final` marker, discards its retained plan, and returns the stored
+bytes with zero effect writes.
+
 ### A8 — Unknown and removed definitions fail closed
 
 Given a caller names an uninstalled process, when it sets policy, then the
@@ -1309,6 +1432,14 @@ baseline, then one receipt and its admission decision commit. A same-key replay
 returns that receipt after a later binding or catalog change. A different-key
 request for the same binding returns `landed_receipt_exists` and writes no
 second receipt.
+
+Given a receipt request commits with key `K` and fingerprint `F`, and a later
+rule, fact, catalog, or binding change would otherwise deny it, when the same
+authorized principal replays `K/F`, then the precheck returns the stored receipt
+bytes before rule or catalog evaluation and writes no effect, receipt,
+idempotency, or outbox row. Given concurrent `K/F` requests both miss the
+precheck, when one finalizer commits first, then the other returns its stored
+result through `idempotency_final` and discards its plan.
 
 ### A14 — Stale receipt cannot satisfy a new binding
 
@@ -1401,9 +1532,25 @@ then it performs one `G2` rule evaluation and returns one `G2` result.
 
 Given a fenced mutation passes the generation fence and one planned ruling is
 already consumed by another request, when its handler calls
-`Escalation.consume_in_txn/2`, then it returns the existing `rule_denied`
-result, commits no mutation, idempotency, or partial consumption row, and
-writes no planned allow effect.
+`Escalation.consume_in_txn/2`, then that transaction rolls back with no
+mutation, idempotency, or partial consumption row. Given the same generation
+still passes the new finalizer transaction, then it commits the existing
+`rule_denied` response, its idempotency result, and a zero-allow-effect outbox.
+Given a concurrent committed idempotency row or a generation change, then the
+finalizer returns its `idempotency_final` or retry marker without that outbox.
+
+Given a generation-final fenced mutation commits its mutation, idempotency
+result, and fenced effect outbox, when Dispatch dies before it drains the
+outbox, then the supervision/startup scan applies the stored final-generation
+entries in their declared order and the same-key replay returns only the stored
+response. Given a crash after an entry's episode, event, or wake writer runs
+and before its applied marker commits, when recovery retries that entry, then
+it passes the identical stable `effectId` and the existing writer returns the
+one prior effect. The fixture injects death after finalizer commit and after
+each entry. It proves that each planned final-generation closure, notice,
+decision, denial, remedy, and response event occurs once in plan order; it
+proves that a planned consumption commits once; it proves zero duplicate effect
+and zero old-generation effect.
 
 Given the ref compare-and-swap succeeds and `installGeneration` faults before
 the atomic generation replacement, when the publisher handles that fault, then
@@ -1450,6 +1597,14 @@ scalars, a current binding, and a nonblank unsupported evidence kind, then
 receipt admission returns exact `unsupported_evidence_kind` bytes. Given that
 unsupported kind with a stale binding revision, then
 `binding_revision_conflict` wins by the stated precedence.
+
+Given a valid replay key and fingerprint whose current selected rails would
+deny, then both CLI and direct wire return the stored canonical result before
+selected-rail evaluation and produce no effect rows. Given the same key with a
+different fingerprint, then both return exact `idempotency_conflict` bytes at
+that same precedence point. Given two simultaneous valid `K/F` requests that
+miss the precheck, then one finalizer result is stored and the other response
+is byte-identical to it without materializing its retained plan.
 
 ### A20 — Target mutations are authorized and exact
 
