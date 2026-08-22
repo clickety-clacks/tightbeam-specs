@@ -6,6 +6,11 @@ choices in `completion-policy-named-rails.md`; that file remains evidence only.
 This spec authorizes no implementation, deployment, runtime mutation, identity
 change, or 0.1-line change.
 
+Revision note: the amendment after review verdict
+`att_6a11fb3a-3a89-4310-b892-e5ababb338d6` adds the frozen legacy-selector
+mapping and the companion-authority contract. It does not change the attachment,
+repair, subtree, vocabulary, or deletion decisions.
+
 Authority and evidence:
 
 - Mike opened `asg_507b144d-dc35-4f9a-b150-0e36c0027090` to produce this
@@ -103,12 +108,20 @@ The model must make these outcomes possible without substrate judgment:
   release path so it is present in the rail catalog.
 - **Repair:** Append a new rail revision to an open assignment through the one
   assignment-scoped amendment verb defined here.
+- **Replay corpus:** The finite cross-product of stored legacy selectors,
+  holder-archetype classes, and completion-fact presence, plus the exhaustive
+  input-normalization rows defined in the `effectKind` cutover. Its ledger
+  records or references the matching legacy decision, migrated decision, and
+  first non-pass for every case.
+- **Authority preflight:** The fail-closed check that resolves this spec through
+  its work-item content pin and verifies every companion path, revision, and
+  SHA-256 before implementation begins.
 
 ## Assumptions
 
-1. `statute-engine-v1.md`, `check-tier-v1.md`, and
-   `rails-mechanism-v1.md` remain the dispatch-tier rule engine, fact boundary,
-   and remedy/escalation mechanism.
+1. The companion files pinned under `Spec homing and authority` remain the
+   dispatch-tier rule engine, fact boundary, remedy/escalation mechanism, and
+   identity-governance authority for this design.
 2. The served identity path can publish versioned, reviewed rule definitions
    separately from a Tightbeam substrate release. The serving process may still
    require its existing restart or identity-apply procedure to load them.
@@ -116,8 +129,9 @@ The model must make these outcomes possible without substrate judgment:
    be resolved for a held assignment.
 4. Assignment creation and append-only assignment amendment can commit their
    policy rows in the same database transaction as their idempotency result.
-5. Existing completion rules selected through `effectKind` can be represented as
-   named rails over row-visible facts before `effectKind` is removed.
+5. The frozen legacy selectors listed under `effectKind` cutover can be
+   represented as the three named rails in that section over row-visible facts
+   before `effectKind` is removed.
 6. A verdict row can identify its review assignment, reviewed assignment,
    verdict kind, authoring principal, and nonblank rationale. A durable delivery
    row can identify its target session and causal verdict.
@@ -247,6 +261,39 @@ bytes under an existing identity.
 
 ## Architecture
 
+### Spec homing and authority
+
+The canonical home of this spec is
+`clickety-clacks/tightbeam-specs/completion-rails-decisions.md`. Its
+implementation authority is the exact byte sequence for which
+`wi_a7fd5022-1926-4e9b-ad11-14590bff7907.specRefName` equals
+`completion-rails-decisions.md` and whose SHA-256 equals that work item's
+`specRefSha256`. A repository branch, local checkout, artifact copy, or unbound
+commit is not implementation authority. The work-item pin remains empty until a
+reviewed-clean revision exists. Implementation-card opening and implementation
+are blocked while either pin field is absent, the name differs, or the resolved
+bytes do not match the hash.
+
+The following companions are frozen at canonical `tightbeam-specs` commit
+`f27f05ae52c027a00e244aa7f5dc5a1bede9031c`:
+
+| Canonical path | SHA-256 | Governing clauses |
+|---|---|---|
+| `statute-engine-v1.md` | `20bb78619f85f1e4c783b0328b8970149673140316c3e12b777672427a0469cb` | `Invariants (the acceptance lens)`, `Rule files`, `Fact vocabulary`, `Operators & typing`, `Evaluation`, and `Validation` |
+| `check-tier-v1.md` | `b07d1357f00a0bbedaa34a17e310bf051c0b18d898d2e3c58b7d9ca30f53409e` | `Ruled decisions`, `Verbs`, `Statute facts`, `Response shapes`, and `Invariants (acceptance lens)` |
+| `rails-mechanism-v1.md` | `434a4aaf18f3d31534f81b70eb19a009eba5159b1dbcf34b33c8f966a86b7900` | `Invariants (the acceptance lens)`, `A. Script guards`, `B. Hybrid dispatch`, `C. Remedies`, `E. Legibility`, and `F. Rail-set satisfiability` |
+| `tightbeam-decisions.md` | `5f7a63b8bf726feb1817176969dd75e7a81467f99bbea25a3886dc70d629a459` | `Agency-preserving supervision`, `Org learning: codifying emergent structure`, and `Rails: hard law`, including the `propose` staging seam, Flynn merge authority, one engine, and structured-fact boundary |
+
+An implementation preflight fetches that exact canonical commit, hashes each
+companion byte-for-byte, and verifies the work-item pin for this spec. A missing
+path, unavailable revision, hash mismatch, absent work-item pin, or companion
+whose declared grammar cannot express a required rail returns
+`completion_rails_authority_unavailable` and writes no implementation card,
+migration row, rail definition, or runtime state. The remedy is a canonical spec
+amendment followed by reviewed-clean review and a new work-item content pin.
+There is no fallback to repository main, a local latest file, the superseded
+candidate, or a compatible-looking rule.
+
 ### Pattern: completion rail composition
 
 This pattern applies only to completion-attachable dispatch rules. Constitutional
@@ -275,9 +322,12 @@ wildcards, version ranges, and in-place replacement are invalid.
 The initial migration and reviewer scenario require these installed identities:
 
 - `completion/independent-reviewed-clean@1`: the linked producer has an
-  independent `reviewed-clean` verdict.
-- `completion/verification-recorded@1`: the declared verification record exists.
-- `completion/results-recorded@1`: the declared results artifact or record exists.
+  independent qualifying `reviewed-clean` verdict.
+- `completion/verification-recorded@1`: `assignment.verdicts` contains
+  `verified`.
+- `completion/results-recorded@1`: `assignment.artifact_kinds` contains at
+  least one of `report`, `spec`, `doc`, `data`, or `other` recorded by the holder
+  on the assignment's work item.
 - `completion/verdict-delivered-to-parent@1`: exactly one reviewer-authored
   linked `reviewed-clean` or `changes-requested` verdict, its nonblank rationale,
   and its atomically committed parent delivery receipt exist.
@@ -319,6 +369,9 @@ principal.
 Each assignment rail revision stores the complete effective set and each source
 entry. Reads expose both. A consumer reads the stored revision instead of
 reconstructing old policy from a current archetype manifest or binding set.
+An archetype default snapshots only when its card opens. A later archetype
+revision does not add, remove, or replace defaults on an existing card; an
+authorized amendment is required for that card.
 
 ### Mutation seams
 
@@ -388,10 +441,93 @@ does not decide whether the child is capable.
 
 ### `effectKind` cutover
 
-The migration snapshots the currently selected output-specific completion rules
-for each open card as exact legacy-migration source entries. It proves decision
-equivalence before it removes the old selector. New cards use archetype defaults,
-card requirements and omissions, and subtree bindings only.
+The frozen pre-cutover product authority is `clickety-clacks/tightbeam` commit
+`b8e6c47e4631da8345aaf8c6ab73b0858e630bf6`. The complete legacy-selector
+inventory is:
+
+| Source at the frozen revision | SHA-256 | Legacy authority used by the migration |
+|---|---|---|
+| `priv/kungfu/agentic-engineering/rules/engineering.toml` | `089c32545f3d64f6399806c0d8d4f5eb4be3e0085d66c19e13b2731eae6883ce` | `completion-requires-review` and its remedy |
+| `priv/kungfu/agentic-engineering/rules/verification.toml` | `835cc90cee4ad00d958b6eeb901b9f1dcbacfa2d044ec4a8ada79b74b6226f4c` | `completion-requires-verification`, `completion-requires-results-artifact`, and their remedies |
+| `lib/tightbeam/rules.ex` | `5d33e8534562286926a8af3aa97517f3bed34fd0157ab87b0ae8746e7416c20c` | sorted rule-file loading, preserved in-file order, closed facts, and first non-pass evaluation |
+| `lib/tightbeam/assignments.ex` | `7181469c65883a2d8b6bedc87d2e37fd3710712d55cbd983141810e3dd5c4261` | accepted values and storage defaulting: a linked review stores `review`; an omitted non-review stores `code` |
+| `test/verification_papertrail_test.exs` | `607df181a9fe0c09adb0a70b497d5df229c98e45d1ae60534dcf3f380f9c9fbd` | shipped rule order and the legacy completion-gate contracts |
+
+The migration reads each open assignment's stored value after the legacy
+defaulting above. It creates the following exact legacy-migration sources:
+
+| Frozen legacy selector | Exact attached rail | Source mode |
+|---|---|---|
+| `effectKind` is `code`, `policy`, `release`, or `live_mutation` | `completion/independent-reviewed-clean@1` | `omittable` |
+| `effectKind` is `evidence`, `review`, or `coordination` | no review rail | n/a |
+| holder archetype is `coder` | `completion/verification-recorded@1` | `omittable` |
+| holder archetype is `coder`, `reviewer`, `spec-writer`, or `recon` | `completion/results-recorded@1` | `omittable` |
+| any other holder archetype | no verification or results rail | n/a |
+
+The card's migrated set is the union of all matching rows in that table. The
+`omittable` mode permits a named, authorized repair while retaining the legacy
+source and omission history. The three migrated rail contracts preserve these
+legacy predicates and remedies exactly:
+
+| Legacy rule | Migrated rail pass condition | Migrated non-pass remedy |
+|---|---|---|
+| `completion-requires-review` | `assignment.qualifying_review_verdict_kinds` contains `reviewed-clean` | assign one linked card to role `reviewer`, producing `reviewed-clean`, and surface the denial |
+| `completion-requires-verification` | `assignment.verdicts` contains `verified` | wake the exact holder session to file `verified` |
+| `completion-requires-results-artifact` | `assignment.artifact_kinds` contains at least one of `report`, `spec`, `doc`, `data`, or `other` | wake the exact holder session to record an artifact on the card's work item |
+
+All three retain the legacy `attest.kind = completion` guard. The attachment
+mapping replaces only the legacy selector predicates shown in the first table.
+The three migrated rails evaluate in frozen legacy first-denial order:
+`completion/independent-reviewed-clean@1`, then
+`completion/verification-recorded@1`, then
+`completion/results-recorded@1`. Installed global law continues to run before
+the attachable set as specified elsewhere; the migration does not reorder it.
+
+Before cutover, the migrator emits a replay ledger for the complete Cartesian
+product of:
+
+- each stored `effectKind`: `code`, `policy`, `release`, `live_mutation`,
+  `evidence`, `review`, and `coordination`;
+- each holder-archetype class: `coder`, `reviewer`, `spec-writer`, `recon`, and
+  `other`; and
+- both present and absent values for `reviewed-clean`, `verified`, and a holder
+  artifact whose kind is one of `report`, `spec`, `doc`, `data`, or `other` on
+  the card's work item.
+
+`other` represents every holder-archetype value outside the four named values;
+the frozen predicates cannot distinguish members of that class. Each fact bit
+represents absence versus a list containing the named accepted value; the frozen
+membership predicates cannot distinguish other members within either class.
+The cross-product therefore produces exactly `7 * 5 * 2 * 2 * 2 = 280`
+exhaustive decision cases.
+
+The ledger also contains 16 exhaustive input-normalization rows:
+
+- eight linked-review requests, one for an omitted requested value and one for
+  each of the seven accepted requested values; every row stores `review`;
+- one non-review request with an omitted value; it stores `code`; and
+- seven non-review requests, one for each accepted explicit value; each stores
+  the requested value unchanged.
+
+Each decision row records all inputs, the stored legacy selector, the legacy
+selected rules in evaluation order, the migrated exact rail set in evaluation
+order, the legacy result, the migrated result, and the first non-pass rule or
+rail plus remedy. Each normalization row records its request inputs and stored
+selector, then references the matching decision row by its complete key. The
+cutover proceeds only when all 280 decision rows and all 16 normalization rows
+match on stored selector and, where applicable, pass versus non-pass,
+first-denial position, reason fact, and remedy class. A mismatch returns
+`completion_rails_migration_replay_mismatch`, names the ledger row, and writes no
+cutover or migrated source.
+
+After that replay and the exact serving-catalog check pass, the migration
+snapshots each open card's matching rails as exact legacy-migration source
+entries. It does not retroactively attach defaults from the newly served
+archetype revision to an existing card. In particular, an open legacy review
+card does not acquire `completion/verdict-delivered-to-parent@1` during the
+decision-equivalence migration. Cards opened after that archetype revision is
+served use archetype defaults, card requirements and omissions, and subtree
+bindings only.
 
 After the behavior-preserving snapshot and serving-catalog check, the 0.2
 contract removes `effectKind` from current assignment storage, assignment input,
@@ -419,8 +555,9 @@ vocabulary whose mapping could drift from the named rails.
 | Reviewer verdict reaches parent | reviewer default plus verdict/delivery rows | A6 |
 | Open cards can be repaired truthfully | append-only amendment verb | A7, A8 |
 | Rail law can ship without binary release | identity mint/install boundary | A10 |
-| `effectKind` does not remain a second selector | migration then deletion | A11, A12 |
+| `effectKind` does not remain a second selector | frozen mapping, exhaustive replay, then deletion | A11, A12 |
 | Failures are loud and actionable | named denial/remedy/escalation | A13 |
+| Implementation reads only reviewed, pinned authority | spec and companion preflight | A17 |
 
 This spec teaches no new agent operating pattern before implementation exists.
 When the mechanism ships, served guidance must teach the attachment vocabulary,
@@ -500,10 +637,10 @@ fault before commit, no rail revision or member row commits.
 
 ### A9 — `effectKind` cannot select a rail
 
-Given two new assignments have identical rail sources and different historical
-effect labels in a migration fixture, when completion is evaluated after
-cutover, then both select the same exact rail set and receive the same rail
-decision. No runtime path reads the label.
+Given two migrated assignments have identical committed rail sources and
+different retained `effectKind` values in their historical event payloads, when
+completion is evaluated after cutover, then both select the same exact rail set
+and receive the same rail decision. No runtime path reads the historical label.
 
 ### A10 — An org installs law without a substrate release
 
@@ -516,10 +653,17 @@ the gateway refuses it by exact name and writes no policy row.
 
 ### A11 — Migration preserves current open-card decisions
 
-Given the pre-cutover database contains open assignments selected by the current
-`effectKind` completion branches, when migration snapshots their exact legacy
-rail sources, then a fixture replay of each completion attempt produces the same
-pass or first named non-pass before and after the snapshot.
+Given the frozen legacy sources and the 296-row corpus, when the migration
+generates its replay ledger, then all 280 decision rows contain the required
+inputs, ordered legacy rules, ordered migrated rails, both results, and both
+first non-pass records. All decision rows match on pass versus non-pass,
+first-denial position, reason fact, and remedy class. All 16 normalization rows
+match their required stored selector and reference the matching decision row.
+Given any mismatch, missing case, duplicate case, or changed source hash, the
+migration returns the named failure and writes no cutover or migrated source.
+Given the ledger matches, each real open card receives only the union specified
+by the frozen mapping, not a later archetype default, before the old selector is
+removed.
 
 ### A12 — `effectKind` is gone after cutover
 
@@ -563,6 +707,18 @@ card whose archetype or card sources include
 Given the immutable parent row exists but is inactive, the durable notification
 can still be addressed to that exact inbox; this rail does not infer parent
 capability or wait for the parent to take a turn.
+
+### A17 — Implementation authority fails closed
+
+Given the work item lacks either spec pin, the pinned spec name or bytes differ,
+a companion or frozen product-source path or revision is unavailable, any
+declared SHA-256 differs, or the pinned grammar cannot express a required rail,
+when implementation preflight runs, then it returns
+`completion_rails_authority_unavailable` and writes no implementation card,
+migration row, rail definition, or runtime state. Given all pins and hashes
+match, the preflight records the resolved spec hash, companion commit and
+hashes, and frozen product-source commit and hashes in the implementation
+handoff ledger before any build work starts.
 
 ## Open Questions
 
