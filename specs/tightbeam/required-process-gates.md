@@ -1,7 +1,7 @@
 # Declarative required-process gates
 
-Status: changes-requested specification amended after round-4 verdict
-`att_c298d03a-d4bd-4a27-9cde-0a62544a7ced`; the amended bytes require a cold
+Status: changes-requested specification amended after round-5 verdict
+`att_d79ab7ad-c2cd-4358-a00a-aed25784686b`; the amended bytes require a cold
 digest and re-review for `wi_f165cdbd-72c0-4add-bb8d-2113908c3e55`. This
 specification authorizes no
 implementation, identity publication, deployment, runtime mutation, or release
@@ -47,6 +47,11 @@ Authority and evidence:
   B1 blocker: a request could observe the Git live ref and served law through
   separate readers. This revision defines one captured live generation and
   fatal recovery after a post-CAS activation failure.
+- Round-5 review `att_d79ab7ad-c2cd-4358-a00a-aed25784686b` found one remaining
+  B1 blocker: a request captured under an old generation could enter the
+  database owner after publication and append an obsolete process or target
+  reference. This revision adds a transaction-start generation fence and
+  defines capture behavior while a Git compare-and-swap is in flight.
 
 ## Goal
 
@@ -148,8 +153,11 @@ proof would defeat the opt-in contract.
 - **Live generation:** One immutable tuple `(revision, archetypes, rails,
   rules, processCatalog, targetCatalog, factCatalog)` loaded from one exact
   `tightbeam/live` object id. `Tightbeam.Identity.Live.capture/0` returns the
-  tuple from one atomic runtime pointer. A request uses its captured tuple for
-  each identity revision and served-law read in that request.
+  tuple from one atomic runtime pointer when no publication Git
+  compare-and-swap is in flight. During that compare-and-swap, capture waits
+  for the publication lease to release or for the serving supervisor to stop.
+  A request uses its captured tuple for each identity revision and served-law
+  read in that request.
 - **Open catalog reference:** An exact process, target, selected-rail, or fact
   identity reachable from the current organization revision; from the current
   local revision of a nonterminal object; from a Topline revision inherited by
@@ -277,6 +285,17 @@ identity, rail identity, or fact-contract identity. The response names the
 missing identity and two remedies: restore that exact installed contract, or
 append an authorized scope revision that resolves to an installed contract.
 
+Each policy, target-binding, and receipt mutation carries its ingress live
+generation into its database-owner transaction. Before the transaction reads an
+idempotency row, current revision, binding, or catalog, it compares the carried
+generation revision with the revision returned by
+`Tightbeam.Identity.Live.capture/0`. If they differ, the gateway
+rolls back that attempt without a domain, idempotency, or response row and
+restarts the whole handler from ingress with the current generation. The
+attempt that reaches catalog resolution therefore uses the generation current
+while it owns the database transaction. A publication that begins later waits
+behind that transaction and validates its post-mutation database snapshot.
+
 ### I8 — Completion check and state change are one transaction
 
 The gateway evaluates the effective process set from one database snapshot.
@@ -400,6 +419,14 @@ live values through `Tightbeam.Identity.Live`; they do not resolve Git or read
 their own persistent-term key. A request that captures an old generation may
 finish with that complete old generation. A request that captures a new
 generation uses that complete new generation. No request combines the two.
+
+`Live.capture/0` does not return a generation while a publisher holds its
+`cas_in_flight` lease. It waits for that lease to release. On a confirmed
+publication, it returns the installed generation. On an ambiguous or post-CAS
+failure, the `Live` supervisor-stop path ends the waiting request without a
+handler response or database commit. A request that captured before the lease
+must still pass I7's transaction-start generation comparison before it can
+read or append a mutable policy, target-binding, or receipt row.
 
 ### I19 — V5 dependency cannot fall back
 
@@ -990,13 +1017,26 @@ or law. The handler passes the captured generation through its rule, catalog,
 and identity calls. A live-ref or served-law reader does not read Git or an
 independent persistent-term key after it has captured that generation.
 
+At the start of each policy, target-binding, or receipt database-owner
+transaction, the mutation handler captures the current generation again and
+compares its revision to the ingress generation. A mismatch rolls back the
+attempt before idempotency or catalog resolution and restarts the handler from
+ingress. The handler performs its eventual catalog resolution and append under
+the matching generation while it owns the database transaction. A publisher
+therefore sees that append in its validation snapshot, or the mutation retries
+against the installed candidate generation.
+
 Before a publisher calls `advanceRef`, it obtains a `Live` publication lease.
-`Live` records `(currentLiveOid, candidateMainOid, cas_in_flight)` and monitors
-the publisher process. The publisher invokes `advanceRef` as a compare-and-swap
-from `currentLiveOid` to `candidateMainOid`. A confirmed compare-and-swap
-conflict releases the lease and returns the ordinary publication conflict. A
-confirmed pre-CAS validation or preload failure releases the lease and leaves
-the old Git ref and old generation active.
+After its database validation succeeds and immediately before the Git call, it
+marks that lease `cas_in_flight`. `Live` records
+`(currentLiveOid, candidateMainOid, cas_in_flight)` and monitors the publisher
+process. A `Live.capture/0` call that arrives after this mark waits; it does
+not return `G1` or enter a mutation transaction. The publisher invokes
+`advanceRef` as a compare-and-swap from `currentLiveOid` to `candidateMainOid`.
+A confirmed compare-and-swap conflict clears and releases the lease, then
+returns the ordinary publication conflict. A confirmed pre-CAS validation or
+preload failure releases the lease and leaves the old Git ref and old generation
+active.
 
 After a confirmed compare-and-swap success, the publisher invokes
 `installGeneration` once to atomically replace the `Tightbeam.Identity.Live`
@@ -1159,6 +1199,13 @@ scope references an exact identity that the served catalog lacks, when the
 object closes, then `required_process_version_unavailable` names restoration
 and scope-migration remedies.
 
+Given a policy request captures `G1` for process `P`, and publication installs
+`G2` that removes or deactivates `P` before that request enters its
+database-owner transaction, when the transaction begins, then the generation
+fence restarts the whole request before it reads idempotency or writes a scope
+revision. Given the restarted request resolves `P` under `G2`, then it returns
+`unknown_required_process` and writes no scope or idempotency row for `P`.
+
 ### A9 — Completion and policy changes serialize
 
 Given one transaction changes an active membership or scope revision while
@@ -1265,6 +1312,28 @@ use `G1`. Given the publisher installs `G2`, when later request `S` captures a
 generation, then `S`'s rule and identity calls both use `G2`. The test fails if
 one request observes `G1` from one live reader and `G2` from another.
 
+Given request `R` captures `G1` for a policy mutation that names process `P`,
+and a publisher installs `G2` that removes or deactivates `P` before `R` enters
+the database-owner transaction, when `R` begins that transaction, then the
+generation fence rolls back the first attempt before any idempotency or policy
+row and restarts `R` from ingress. Given `G2` lacks `P`, when the restarted
+request resolves its catalog, then it returns `unknown_required_process` and
+writes no row that names `P`. Given the same timing for a target-binding
+mutation that names target `D`, and `G2` removes or deactivates `D`, when the
+restarted request resolves its catalog, then it returns
+`unknown_delivery_target` and writes no binding or idempotency row for `D`.
+
+Given request `R` captures `G1` and enters the database-owner transaction
+before a publisher validates `G2`, when `R` passes the generation fence and
+appends a valid reference that `G2` removes, then the publisher's later
+database validation returns `required_process_catalog_in_use` and does not
+advance `tightbeam/live`. Given a publisher marks its lease `cas_in_flight`,
+when a new request captures a generation, then `Live.capture/0` waits until the
+publisher installs `G2` or the serving supervisor stops. Given the publisher
+installs `G2`, when the waiting request resumes, then it captures `G2`. Given
+the publisher takes the publication-incomplete stop path, when the waiting
+request ends, then it returns no handler response and commits no database row.
+
 Given the ref compare-and-swap succeeds and `installGeneration` faults before
 the atomic generation replacement, when the publisher handles that fault, then
 it returns neither success nor a recoverable error, does not roll back the Git
@@ -1322,6 +1391,13 @@ authorized caller binds an active target identity and that exact installed
 identity later disappears, then receipt admission returns
 `delivery_target_version_unavailable` and writes nothing.
 
+Given a target-binding request captures `G1` for target `D`, and `G2` removes
+or deactivates `D` before that request enters its database-owner transaction,
+when the transaction begins, then the generation fence restarts the whole
+request before it reads idempotency or writes a binding. Given the restarted
+request resolves `D` under `G2`, then it returns `unknown_delivery_target` and
+writes no target binding or idempotency row.
+
 ### A21 — Catalog selection is deterministic
 
 Given two installed versions for stable process name `P`, when the process
@@ -1330,6 +1406,12 @@ identity while a scope that already stores `P@1` continues to resolve `P@1`.
 Given a process or target selection index names an identity that is not
 installed, when the gateway boots, then catalog validation refuses startup and
 names the invalid index entry.
+
+Given a scope request captures `G1` while the selection index names `P@1`, and
+`G2` changes that index to `P@2` before the request enters its database-owner
+transaction, when the transaction begins, then the generation fence restarts
+the request. Given the restarted request resolves stable name `P` under `G2`,
+then its new scope row stores `P@2`, and the request writes no new `P@1` row.
 
 ### A22 — Wrong-scope process selection refuses
 
