@@ -253,7 +253,8 @@ Before returning a callback refusal, the manager writes raw callback failure evi
 |---|---|
 | intent durable; neutral attempt absent | replay or append the exact neutral request; invoke zero renames until a committed response returns |
 | neutral attempt committed; response lost | exact replay returns the original event and wake IDs; changed replay refuses; invoke zero renames before the replayed response |
-| acceptance fact durable; rename proven absent | revalidate target truth and reconstruct the accepted-attempt value from the exact replay plus acceptance fact; invoke the one intended rename |
+| acceptance fact durable; active-pointer rename proven absent | revalidate target truth and reconstruct the accepted-attempt value from the exact replay plus acceptance fact; invoke exactly one active-pointer rename |
+| acceptance fact durable; all planned unit-file-set member renames proven absent | revalidate target truth and the complete ordered unit plan; reconstruct the accepted-attempt value from the exact replay plus acceptance fact; invoke the complete ordered per-member rename sequence and record each on-disk result durably before the next rename |
 | rename may have run | invoke zero additional renames; read active-pointer or unit truth; record observation or indeterminate evidence against the original attempt |
 | pointer, unit, registry, process, or evidence truth contradicts intent | derive `held`; preserve involved objects; require explicit human adjudication through a separate authority path |
 | raw-failure evidence cannot become durable | invoke zero renames; return the evidence-persistence failure and preserve the unresolved intent |
@@ -330,7 +331,7 @@ Cards 1 and 2 can run independently after separate owner authorization. Card 3 d
 
 **C-15 — evidence-persistence failure.** Given a callback failure and injected failure at raw-evidence file write, file fsync, or directory fsync, when the manager refuses, then the mutation spy records zero renames and the returned result names the evidence-persistence boundary.
 
-**C-16 — lost response replay.** Given a committed attempted event whose response is lost, when recovery uses the same principal, idempotency key, and canonical request, then the neutral service returns the original event and wake IDs. The mutation spy records zero calls before that replay response and one intended rename after target revalidation.
+**C-16 — lost response replay.** Given a committed attempted event whose response is lost, when recovery uses the same principal, idempotency key, and canonical request, then the neutral service returns the original event and wake IDs. For the active-pointer seam, the mutation spy records zero calls before that replay response and exactly one active-pointer rename after target revalidation. For the unit-file-set seam with all planned member renames proven absent, the mutation spy records zero calls before that replay response and then records the complete ordered per-member rename sequence after target and unit-plan revalidation, with each correct member index and each on-disk result durable before the next rename.
 
 **C-17 — post-rename recovery.** Given a crash after either rename may have run and before observation, when recovery runs, then it invokes zero additional renames, reports namespace and systemd truth, and appends one observation or indeterminate record against the original attempt.
 
