@@ -714,8 +714,9 @@ migrate) or indefinite tolerance?
 
 SQ4. **RULED 2026-08-23 — REST-first.** Build the shared M1 seams, ship M2
 REST as the rebuildable state source, then ship the M3 firehose freshness
-plane. The ruling is `dr_96055b44-b18b-47b6-81f8-f2d64f709a2a` and does not
-change projections, authorization, or serializer identity.
+plane. Mike's direct auto-adjudication message
+`s_75aeaab2-94e1-4a80-ab87-004570ec75a9` is the ruling authority. The ruling
+does not change projections, authorization, or serializer identity.
 
 SQ5. **Open; non-blocking because v1 remains bearer-only.** Tailnet identity:
 wi_bdf9a537 (gateway behind tailscale serve) would

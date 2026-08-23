@@ -29,9 +29,11 @@ contain the finding bodies.
 - Joint successor review `att_45676d30` is reviewed-clean. Canonical merge
   `c84b1b8dc856861baeaa7b5ff781317ded568cb1` lands the exact reviewed REST
   bytes.
-- Mike's SQ4 ruling `dr_96055b44-b18b-47b6-81f8-f2d64f709a2a` selects
-  REST-first: M2 REST provides rebuildable state before the M3 firehose adds
-  freshness. It changes sequencing only.
+- Mike's direct SQ4 auto-adjudication message
+  `s_75aeaab2-94e1-4a80-ab87-004570ec75a9` selects REST-first: M2 REST
+  provides rebuildable state before the M3 firehose adds freshness. It changes
+  sequencing only. The still-open request `dr_96055b44` records the question
+  and options; it is not the ruling authority.
 
 ## Assigned findings and required effect
 
