@@ -1,6 +1,6 @@
-# REST state API v1 — the read plane (product spec, r3 review draft)
+# REST state API v1 — the read plane (product spec, canonical r3)
 
-Status: REVIEW DRAFT r3, 2026-08-22. r3 folds the REST-side adjudicated
+Status: CANONICAL r3, 2026-08-22. r3 folds the REST-side adjudicated
 findings F1/F8/F9/F13/F14/F16/F21/F22 from
 `review-gate-observability-2026-08-21.md` and aligns with firehose r6.
 This successor resolves changes-requested `att_71210c7b` against exact commit
@@ -48,8 +48,9 @@ Authority and inputs:
 The canonical spec lives only in the `tightbeam-specs` repository as
 `rest-state-api-v1.md`. The two companion documents above live beside it and
 are normative for r3. A worktree, artifact row, transcript, or review report
-is evidence, not canonical custody. Canonical r2 remains effective until this
-exact r3 set passes independent review and lands on the canonical branch.
+is evidence, not canonical custody. Canonical r3 passed joint independent
+review at `att_45676d30` and landed on the canonical branch in merge
+`c84b1b8dc856861baeaa7b5ff781317ded568cb1`.
 
 ## Goal
 
@@ -609,6 +610,11 @@ sessions + transcript GETs). M7. Migrate ATC off direct SQLite. M8.
 Retire aliases only under a separate versioned decision (SQ3). No
 breaking rename lands before its client moves.
 
+SQ4 is ruled REST-first: M2 ships before M3. The firehose is the freshness
+plane, while REST is the rebuildable state source. A client must be able to
+snapshot supported state before it relies on live notices. This sequencing
+ruling does not change projections, authorization, or serializer identity.
+
 ## Acceptance
 
 A1. Table-driven per-mutation test: every non-observational firehose class has
@@ -706,10 +712,11 @@ AU4 admin-only row are the ruling's security boundary.
 SQ3. **Open; non-blocking for v1.** Compatibility alias retirement: aggressive (retire when Clawline+ATC
 migrate) or indefinite tolerance?
 
-SQ4. **Open; blocks migration scheduling, not contract review.** Sequencing:
-does the REST plane ship before, with, or after the
-firehose socket? They share serializers, so building REST first makes the
-firehose payloads nearly free; confirm that ordering instinct.
+SQ4. **RULED 2026-08-23 — REST-first.** Build the shared M1 seams, ship M2
+REST as the rebuildable state source, then ship the M3 firehose freshness
+plane. Mike's direct auto-adjudication message
+`s_75aeaab2-94e1-4a80-ab87-004570ec75a9` is the ruling authority. The ruling
+does not change projections, authorization, or serializer identity.
 
 SQ5. **Open; non-blocking because v1 remains bearer-only.** Tailnet identity:
 wi_bdf9a537 (gateway behind tailscale serve) would
