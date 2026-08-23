@@ -37,7 +37,9 @@ This specification has these governing relationships:
 - It must be read with `escalation-delivery-v1.md`. That specification's notification
   wake producers, `targetGate`, and durable scheduling remain controlling; this
   specification replaces their split post-enqueue fired mark with R1-R4's atomic
-  admission seam.
+  admission seam. Its `targetGate=0` decision-notification subtype keeps the existing
+  pending-until-admitted recovery and receives no wake-delivery outcome, retry state,
+  or Bubble cause under R5-R10. This specification does not supersede that restraint.
 - It supersedes only the Bug A wake-outcome and sender-notice clauses in the reviewed
   S2c retirement amendment, artifact `art_aac9cafc`, while preserving its binding rule:
   queued carrier cancellation, its terminal outcome, and its sender-visible final cause
@@ -53,12 +55,17 @@ shall amend this canonical file and publish a new content hash before implementa
 
 ## Goal
 
-Tightbeam conserves the intent carried by an ordinary prompt wake from scheduling to
-one observable end. A caller can cancel the wake before admission. After admission,
-the linked turn either reaches `handled`, enters a bounded retry sequence after a
-typed retry-safe failure, or reaches `undeliverable` and starts one logical fault
-bubble. The durable history names the wake, each attempt, each admitted turn, the
+Tightbeam conserves the intent carried by an outcome-governed prompt wake from
+scheduling to one observable end. A caller can cancel the wake before admission. After
+admission, the linked turn either reaches `handled`, enters a bounded retry sequence
+after a typed retry-safe failure, or reaches `undeliverable` and starts one logical
+fault bubble. The durable history names the wake, each attempt, each admitted turn, the
 cause, and the principal that wrote the transition.
+
+Every prompt wake keeps one atomic cancel-versus-admit decision. The `targetGate=0`
+decision-notification subtype is admission-only: before admission it keeps the recovery
+defined by `escalation-delivery-v1.md`; after admission it creates no delivery outcome,
+retry, or Bubble cause. That boundary preserves the governing no-retry policy.
 
 Tightbeam also distinguishes a failed carrier turn from agent negligence. Supervision
 consumes the failed turn's typed GAGGED evidence before it can issue a negligence prod.
@@ -157,19 +164,31 @@ The pinned baseline proves that `effort_deadline` can complete, mark its own wak
 and create no prompt turn. This revision closes that defect in Baseline reconciliation,
 R18, the Architecture, and A8.
 
+Fresh stronger-model review `asg_bbc373cf-f474-4b58-890d-bdea0b53321b` returned the
+changes-requested verdict `att_ee6d0d0c-22c8-4948-bf85-143169e16e9b` and report
+`art_a8eb311e`, SHA-256
+`63818c3bbb5d90a31d8ccfb721b3b41e3b3e74f3410d9322b073a36ffe2713ed`. It confirmed
+the internal-consumer migration repair and found one remaining scope conflict: the
+generic outcome and retry clauses included `targetGate=0` escalation decision
+notifications even though `escalation-delivery-v1.md` keeps those wakes on its existing
+pending-until-admitted recovery and forbids retry state. This revision closes that gap
+in Spec homing, Terms, R1-R10, R15, R17-R18, the Architecture, A1-A2, A6-A8, and
+traceability. It does not expand escalation policy.
+
 ### Baseline reconciliation
 
 | Limb | Source evidence | Ruling in this specification |
 |---|---|---|
 | A — cancel versus admission | `Wakes.cancel_in_txn/3` accepts a pending row. The scheduler runs the live digest batcher before due-row selection; its group transaction creates a carrier and commits typed member replacement (`lib/tightbeam/wakes.ex:1461-1495,1701-1761,2166-2170`). Legacy timed prompt wakes still deliver and then mark fired; condition/fallback wakes instead mark and enqueue in one transaction (`lib/tightbeam/wakes.ex:1-19,2168-2209,2538-2636`). The shared gateway transaction also admits and settles supervision controllers, consumes unavailable controllers, re-arms routing brackets, and optionally marks a process wake (`lib/tightbeam/gateway.ex:1032-1229`). Work-blocked suppression cancels and refunds a supervision wake before delivery (`lib/tightbeam/wakes.ex:2213-2288`). | R1-R4 replace only the split prompt admission edge. They retain these controllers in one closed order and make their existing cancellation outcomes precede delivery outcomes. A10 proves each controller survives. |
-| B — outcomes, retry, and bubble | Wake state remains `pending | fired | canceled`; turn state is durable and `wakeId` is unique, but the ledger explicitly performs no automatic retry (`lib/tightbeam/wakes.ex`; `lib/tightbeam/ledger.ex`). Bubble derives owner, lineage, cause, and its durable sweep cursor from turns only (`lib/tightbeam/productions/bubble.ex:37-328`; `lib/tightbeam/productions/bubble_sweeper.ex:27-139`). | R5-R10 add typed wake outcomes and bounded retries. Null-turn final outcomes carry a scheduling-time alert route. Bubble consumes them through a second durable cursor while retaining the existing engine and owner-alert path. |
+| B — outcomes, retry, and bubble | Wake state remains `pending | fired | canceled`; turn state is durable and `wakeId` is unique, but the ledger explicitly performs no automatic retry (`lib/tightbeam/wakes.ex`; `lib/tightbeam/ledger.ex`). Bubble derives owner, lineage, cause, and its durable sweep cursor from turns only (`lib/tightbeam/productions/bubble.ex:37-328`; `lib/tightbeam/productions/bubble_sweeper.ex:27-139`). | R5-R10 add typed wake outcomes and bounded retries only for outcome-governed prompt wakes. The `targetGate=0` decision-notification subtype retains the governing escalation specification's pending-until-admitted recovery and no-retry rule. Null-turn final outcomes carry a scheduling-time alert route. Bubble consumes them through a second durable cursor while retaining the existing engine and owner-alert path. |
 | C — queued turn and model swap | The ledger reads the session's selected model and harness when it claims a queued turn (`lib/tightbeam/ledger.ex:179-271`; `test/ledger_test.exs:104-133`). The live tune boundary refuses while any durable turn is queued or running (`lib/tightbeam/gateway.ex:4681-4705,5131-5164`; `test/gateway_test.exs:2718,3764-3883,5117-5257`). | R14 retains the fixed structure. A5 proves that a queued wake makes tune return `turn_in_progress`, the queued carrier claims the unchanged selection, and a later tune succeeds only after the turn ends. No model-switch mechanism is added. |
 | D — quiescence | The incident row names later owner activity as the stale-premise event (`att_48fa113d-9907-4126-aff5-a1e0449b25e4`). Current main adds assignment liveness checkpoint binding for a self-scheduled wake, but it does not compare owner activity before delivery (`lib/tightbeam/gateway.ex:3735-3837`; `lib/tightbeam/supervision.ex:253-294`). The checkpoint binding is absent from 0.1.7. | R12-R13 add one typed owner-activity invalidation guard. Existing checkpoint semantics remain. |
-| E — reliable handoff | Dispatch already commits the assignment, prompt echo, and turn in one transaction (`lib/tightbeam/assignments.ex:540-579,596-623`). An arbitrary wake remains a hint whose later carrier failure is not conserved, as recorded in `att_08870951-f045-42dc-844c-bc0addf16fba`. | Atomic dispatch remains authoritative. This specification closes only the ordinary wake carrier. |
+| E — reliable handoff | Dispatch already commits the assignment, prompt echo, and turn in one transaction (`lib/tightbeam/assignments.ex:540-579,596-623`). An arbitrary wake remains a hint whose later carrier failure is not conserved, as recorded in `att_08870951-f045-42dc-844c-bc0addf16fba`. | Atomic dispatch remains authoritative. This specification closes only the outcome-governed wake carrier. |
 | F — GAGGED versus negligence | The prod left-hand side checks terminal existence but does not read terminal status or failure class; a failed terminal can match the negligence ladder (`lib/tightbeam/supervision.ex:854-905,1000-1025,1114-1140`). | R11 makes the typed terminal failure a higher-priority, consumed fact. |
 | G — O6 | O6 commits `078919d`, `67e1bcf`, `f64ffa7`, `81fbc2d`, and merge `ba5952b` are ancestors of both baselines. O6 regression tests remain at `test/gateway_test.exs:6452-6765`. | O6 is superseded for this work and stays closed. |
 | H — schema custody | Current main stamps the merged shape as `coordination-fabric-v1-phase1-v3` and refuses an unreadable shape before normal use (`lib/tightbeam/schema.ex:65,764-1014`). The turn table has five named indexes (`lib/tightbeam/ledger.ex:68-75`). Checkpoint bindings reference `turns(seq)`, and fired-lineage triggers forbid attribution update or deletion (`lib/tightbeam/schema.ex:471-510,704-737`). | R18 defines one exact v3-to-v4 transition, recreates the code-defined dependent objects, validates the successor, and preserves the predecessor on failure. A8 tests those rails. |
 | I — internal consumers | The scheduler invokes a non-prompt consumer directly and creates no prompt carrier (`lib/tightbeam/wakes.ex:2183-2205,2342-2355`). `EffortCheckin.deadline/3` marks the consumed `effort_deadline` wake fired, and the regression fixture retains a pending replacement deadline (`lib/tightbeam/effort_checkin.ex:1400-1405`; `test/escalation_delivery_test.exs:193-208`). | R18 selects `consumer='prompt'` before any delivery-outcome backfill. It preserves each non-prompt wake and its consumer-specific history without a delivery outcome. A8 tests the fired original and pending replacement. |
+| J — escalation notifications | `escalation-delivery-v1.md` makes decision notifications `consumer='prompt'`, `origin='process:tightbeam'`, and `targetGate=0`; it requires a pending wake to survive pre-admission delivery failure and forbids adding retry state. No other producer is authorized there to set `targetGate=0` (`escalation-delivery-v1.md:35-80,112-139,396-402`). | `targetGate=0` is the closed durable classifier for this admission-only subtype. R1-R4 retain its atomic admission and existing pending recovery. R5-R10, the retry part of R17, and outcome backfill exclude it. A2 and A7 prove the boundary. |
 
 ## Non-Goals
 
@@ -207,24 +226,33 @@ the existing Bubble production consumes the new `undeliverable` cause.
 - **Ordinary prompt wake**: a row in `wakes` with `consumer='prompt'`. The term includes
   immediate and delayed wakes from user, agent, and process principals. It excludes an
   internal consumer wake.
-- **Wake attempt**: one scheduler act for one ordinary prompt wake. Attempts are numbered
-  from `0`. An attempt that reaches admission has one linked turn.
+- **Decision-notification wake**: the closed `targetGate=0` ordinary prompt-wake subtype
+  armed by a winning decision-request insert or effort-expecter CAS under
+  `escalation-delivery-v1.md`. It has `origin='process:tightbeam'` and immediate `dueAt`.
+  No other producer may set `targetGate=0` without amending both specifications and
+  publishing a new hash.
+- **Outcome-governed prompt wake**: an ordinary prompt wake with `targetGate=1`. It uses
+  R5-R10 delivery outcomes, retry, and Bubble finality. A decision-notification wake is
+  not outcome-governed.
+- **Wake attempt**: one scheduler act for one outcome-governed prompt wake. Attempts are
+  numbered from `0`. An attempt that reaches admission has one linked turn.
 - **Admission**: one database transaction commits the prompt echo, the linked queued turn,
-  the `attempt` outcome, the `admitted` outcome, and the wake's pending-to-fired CAS. An
-  admitted turn has not yet run.
+  and the wake's pending-to-fired CAS. For an outcome-governed prompt wake it also
+  commits the `attempt` outcome and the `admitted` outcome. An admitted turn has not yet
+  run.
 - **Prompt controller**: an existing typed mechanism that can consume, suppress, charge,
   settle, attribute, or re-arm a prompt wake at its act edge. The closed set in this
   specification is digest materialization and typed member replacement, work-blocked
   suppression and refund, supervision-controller admission and settlement,
   unavailable-target cancellation, routing-bracket re-arm, and condition/fallback
   `firedBy` plus lifecycle provenance.
-- **Handled**: the linked turn reaches `turns.status='delivered'`, and the same terminal
-  transaction commits the wake's `handled` outcome. This term says nothing about semantic
-  compliance with the prompt.
-- **Failed**: the linked turn reaches `failed`, `failed_unknown`, or wake-linked
-  `canceled`, and the same terminal transaction commits a `failed` wake outcome with a
-  closed failure class. A canceled carrier is a delivery failure even when the turn
-  cancellation itself was requested.
+- **Handled**: an outcome-governed linked turn reaches `turns.status='delivered'`, and
+  the same terminal transaction commits the wake's `handled` outcome. This term says
+  nothing about semantic compliance with the prompt.
+- **Failed**: an outcome-governed linked turn reaches `failed`, `failed_unknown`, or
+  wake-linked `canceled`, and the same terminal transaction commits a `failed` wake
+  outcome with a closed failure class. A canceled carrier is a delivery failure even
+  when the turn cancellation itself was requested.
 - **Undeliverable**: a terminal wake outcome. It means no later attempt is authorized.
   Target absence, an unsafe failure, and exhaustion of the retry schedule can produce it.
 - **Retry-safe failure**: a typed `could_not_run` result that proves the adapter did not
@@ -249,10 +277,10 @@ the existing Bubble production consumes the new `undeliverable` cause.
   a Bubble notice turn. It is unique per cause and recipient. Its turn has null
   `wakeId` and `wakeAttempt`, so it is not a wake carrier and cannot create a wake
   delivery outcome.
-- **Wake Bubble route**: immutable context captured when a prompt wake is scheduled. It
-  names the user who receives a terminal alert and, when one exists, the resolved target
-  session whose lineage starts the climb. A role name is presentation and cause context;
-  it is not a lineage key.
+- **Wake Bubble route**: immutable context captured when an outcome-governed prompt wake
+  is scheduled. It names the user who receives a terminal alert and, when one exists,
+  the resolved target session whose lineage starts the climb. A role name is presentation
+  and cause context; it is not a lineage key.
 - **Wake outcome cursor**: the `production_cursors` row named `bubble:wake-outcome`. Its
   numeric value is the greatest append-only wake-delivery outcome id that Bubble finished
   recognizing.
@@ -263,8 +291,10 @@ the existing Bubble production consumes the new `undeliverable` cause.
   checks pass.
 - **Terminalization bridge**: `Ledger.terminalize_in_txn/3`. It performs one guarded
   terminal update with `RETURNING`, then calls the `Wakes` terminal mutation for each
-  returned wake-linked turn before the caller can commit. Session-lane completion,
-  retirement drain, the unclaimable backstop, and boot recovery use this bridge.
+  returned outcome-governed wake-linked turn before the caller can commit. It commits a
+  decision-notification terminal without a wake-delivery mutation. Session-lane
+  completion, retirement drain, the unclaimable backstop, and boot recovery use this
+  bridge.
 - **Owner turn admitted**: a row in `turns` whose `origin='user:<ownerUserId>'`, whose
   target session has that `ownerUserId`, and whose `seq` is greater than a stored cursor.
   Terminal status does not change this activity fact.
@@ -301,10 +331,10 @@ the existing Bubble production consumes the new `undeliverable` cause.
    path (`lib/tightbeam/productions/bubble.ex:1-30,112-180,332-365`).
 8. User-origin turns preserve their typed `origin`, target session, and sequence in the
    turn ledger.
-9. Session rows are not hard-deleted. A prompt wake can therefore retain a resolved
-   session key as lineage context after that session retires. When no session resolves,
-   the scheduling transaction can still derive an alert user from the typed origin,
-   linked assignment or work item, or the target's durable owner row.
+9. Session rows are not hard-deleted. An outcome-governed prompt wake can therefore
+   retain a resolved session key as lineage context after that session retires. When no
+   session resolves, the scheduling transaction can still derive an alert user from the
+   typed origin, linked assignment or work item, or the target's durable owner row.
 
 ## Invariants
 
@@ -316,14 +346,16 @@ and committing the member's existing typed replacement cancellation in one group
 transaction. A row that remains after the pre-admission controllers shall enter one
 controller-aware admission transaction.
 
-`Wakes` shall admit attempt `0` only when the admission transaction changes the source
-wake from `pending` to `fired` with a guarded update and verifies one changed wake row
-before commit. A condition or fallback claim shall write its existing `firedBy` value in
-that same guarded update.
+`Wakes` shall perform initial admission only when the admission transaction changes the
+source wake from `pending` to `fired` with a guarded update and verifies one changed wake
+row before commit. An outcome-governed initial admission is attempt `0`. A condition or
+fallback claim shall write its existing `firedBy` value in that same guarded update.
 
-The same transaction shall commit the echo, turn, `attempt`, and `admitted` outcomes. A
-zero-row wake update shall roll back those writes and return the losing cancel-versus-
-admit result.
+The same transaction shall commit the echo and turn. For an outcome-governed prompt
+wake, it shall also commit `attempt` and `admitted` outcomes and set
+`turns.wakeAttempt=0`. For a decision-notification wake, it shall leave
+`turns.wakeAttempt` null and create no delivery outcome. A zero-row wake update shall
+roll back the applicable writes and return the losing cancel-versus-admit result.
 
 An existing prompt controller can consume or cancel the wake before that guarded update.
 That controller outcome shall commit through its existing typed seam with no prompt echo,
@@ -335,8 +367,10 @@ turn, `attempt`, or `admitted` outcome.
 cancellation row, changes the wake from `pending` to `canceled`, and observes no
 `admitted` outcome for that wake.
 
-After one `admitted` outcome commits, a cancellation call shall return the existing
-false result and shall preserve the wake, turn, message, and outcome rows.
+After one outcome-governed `admitted` outcome commits, or after one
+decision-notification admission changes the wake to `fired`, a cancellation call shall
+return the existing false result and shall preserve the wake, turn, message, and any
+outcome rows.
 
 This rule governs runtime cancellation after migration. An R18
 `wake_migration_conflict` preserves a pre-release canceled-with-admission history as
@@ -344,7 +378,8 @@ evidence; it does not make a later cancellation call succeed.
 
 ### R3 — Retry admission has one CAS identity
 
-`Wakes` shall identify a retry by `{wakeId, attemptNo}`. A retry transaction shall admit
+R3 applies only to an outcome-governed prompt wake. `Wakes` shall identify a retry by
+`{wakeId, attemptNo}`. A retry transaction shall admit
 attempt `n + 1` only when attempt `n` has one retry-eligible `failed` outcome, its
 `retryAt` is not later than the transaction clock, and no later attempt or final wake
 outcome exists.
@@ -379,8 +414,9 @@ Initial admission shall preserve this closed order:
    Its cancellation stops admission.
 7. The transaction appends the prompt echo and enqueues the turn.
 8. The existing supervision controller settles against the turn sequence.
-9. `Wakes` appends `attempt` and `admitted`, applies R1's guarded wake update, and checks
-   one changed row.
+9. For an outcome-governed prompt wake, `Wakes` appends `attempt` and `admitted`. For a
+   decision-notification wake, it appends no delivery outcome. `Wakes` applies R1's
+   guarded wake update and checks one changed row in either case.
 10. The existing routing-bracket re-arm runs once.
 11. A condition or fallback wake writes its existing typed lifecycle event once.
 
@@ -392,8 +428,10 @@ transaction.
 
 ### R5 — The wake outcome history is typed and queryable
 
-`Wakes` shall append only these wake delivery kinds: `attempt`, `admitted`, `handled`,
-`failed`, and `undeliverable`.
+R5-R10 apply only to an outcome-governed prompt wake. A decision-notification wake shall
+have no delivery-outcome row, Wake Bubble route, retry eligibility, or Bubble wake cause.
+`Wakes` shall append only these wake delivery kinds for an outcome-governed prompt wake:
+`attempt`, `admitted`, `handled`, `failed`, and `undeliverable`.
 
 An `admitted`, `handled`, or `failed` row shall name one `turnSeq`. An `attempt` or
 `undeliverable` row shall name the turn when a turn exists. A target-resolution failure
@@ -403,8 +441,9 @@ Each outcome shall store `wakeId`, `attemptNo`, event time, cause kind, cause id
 principal. A failed outcome shall also store its closed failure class and optional
 `retryAt`.
 
-The scheduling transaction for a prompt wake shall store one Wake Bubble route. It shall
-derive `bubbleAlertUserId` in this order: typed user origin; owner of the typed session
+The scheduling transaction for an outcome-governed prompt wake shall store one Wake
+Bubble route. It shall derive `bubbleAlertUserId` in this order: typed user origin;
+owner of the typed session
 origin; linked work-item owner; linked assignment's work-item owner; target owner. It
 shall store the target session resolved in that transaction as
 `bubbleStartSessionKey`, or null when no session resolves. If this search finds no alert
@@ -421,7 +460,10 @@ The caller-visible `wake-get` projection and a linked work-item trace shall expo
 `nextRetryAt`, and the latest failed attempt's `failureClass`. `wake-get` shall also
 return the ordered outcome history. A null-turn runtime `undeliverable` history row shall
 include `bubbleRoute: {alertUserId, startSessionKey}`. Other outcome rows shall omit that
-field.
+field. A decision-notification wake shall expose its aggregate `pending | fired |
+canceled` state and an empty delivery history, with zero attempts and null outcome,
+turn-summary, retry, and failure fields. Its governing request evidence remains in the
+decision-request and escalation records.
 
 The gateway shall authorize `wake-get` when the caller is an admin, the caller origin
 equals the wake origin, or the caller owns the target session. It shall return
@@ -431,15 +473,18 @@ equals the wake origin, or the caller owns the target session. It shall return
 
 Each runtime turn terminal writer shall call `Ledger.terminalize_in_txn/3`. The bridge
 shall perform the writer's guarded terminal update with `RETURNING` and shall call
-`Wakes.settle_terminal_rows_in_txn/4` for the returned rows before the transaction can
-commit. A guard loser shall change no turn and append no wake outcome.
+`Wakes.settle_terminal_rows_in_txn/4` for each returned outcome-governed wake-linked row
+before the transaction can commit. It shall commit a decision-notification terminal
+without calling the outcome writer. A guard loser shall change no turn and append no
+wake outcome.
 
 `SessionLane` shall use the bridge for a running turn's normal terminal CAS.
 `Ledger.drain_queued_for_retire_in_txn` shall use it inside the session-retirement
 transaction. `Ledger.fail_unclaimable` shall use it with the existing no-active-session
 predicate in the guarded update. `Ledger.recover_running` shall use it for each
 running-to-`failed_unknown` boot transition. A failure while settling one returned
-wake-linked row shall roll back that writer's turn updates and wake outcomes together.
+outcome-governed wake-linked row shall roll back that writer's turn updates and wake
+outcomes together.
 
 `Supervision.transition_in_txn` shall use the same bridge for the queued transfer carrier
 that `parent_target_retired` currently invalidates before it re-arms or elevates
@@ -452,16 +497,20 @@ the later generic retirement drain runs. A bridge, replacement, sidecar, or reti
 failure shall roll back the whole outer transaction.
 
 For a returned row with null `wakeId` and `wakeAttempt`, the bridge shall commit the
-turn terminal only. This includes a Bubble notice turn. For a wake-linked delivered
-terminal, `Wakes` shall append one `handled` outcome. For a wake-linked `failed`,
-`failed_unknown`, or `canceled` terminal, it shall append one `failed` outcome. It shall
-apply R8 retry or finality from the stored class in that transaction.
+turn terminal only. This includes a Bubble notice turn. For a returned
+decision-notification row with non-null `wakeId`, null `wakeAttempt`, and a referenced
+`targetGate=0` wake, the bridge shall also commit the turn terminal only. For an
+outcome-governed wake-linked delivered terminal, `Wakes` shall append one `handled`
+outcome. For an outcome-governed wake-linked `failed`, `failed_unknown`, or `canceled`
+terminal, it shall append one `failed` outcome and apply R8 retry or finality from the
+stored class in that transaction.
 
 ### R7 — Failure classification is typed at the run boundary
 
 The terminalization bridge shall persist one of `could_not_run`, `run_failed`,
-`run_canceled`, `carrier_canceled`, or `outcome_unknown` on a runtime failed terminal
-and its wake-linked failed outcome.
+`run_canceled`, `carrier_canceled`, or `outcome_unknown` on a runtime failed terminal.
+For an outcome-governed wake-linked turn it shall store the same class on the failed
+outcome. A decision-notification terminal has no failed outcome.
 
 Checkout failure and session-establishment failure shall produce `could_not_run`.
 Prompt-stage failure shall produce `could_not_run` only when the adapter returns typed
@@ -478,8 +527,10 @@ drain, or by the unclaimable backstop with reason `session_retired`, shall use
 `carrier_canceled`.
 
 The unclaimable backstop reason `no_session` shall use status `failed` and class
-`could_not_run` for a wake-linked row. A runtime guard prevents a new wake carrier from
-entering that shape; the classification covers a row admitted before the guard existed.
+`could_not_run` for a wake-linked row. An outcome-governed row applies R8; a
+decision-notification row creates no wake outcome or retry. A runtime guard prevents a
+new wake carrier from entering that shape; the classification covers a row admitted
+before the guard existed.
 
 The terminalization source shall supply this closed cause and principal mapping:
 
@@ -494,6 +545,10 @@ The terminalization source shall supply this closed cause and principal mapping:
 | unclaimable `no_session` | `queued` plus no session row | `failed` / `could_not_run` | `recipient_unclaimable`, `session:<sessionKey>:no_session` | `process:tightbeam` |
 | boot recovery | `running` | `failed_unknown` / `outcome_unknown` | `boot_recovery`, `turn:<seq>` | `process:tightbeam` |
 
+For a decision-notification turn, this table still controls the terminal status,
+failure class, cause, and process principal. R5's scope boundary suppresses only the
+wake-delivery outcome, retry, and Bubble wake cause.
+
 The implementation shall derive an adapter failure class exclusively from the typed
 stage and adapter run-admission disposition. It shall derive `run_canceled` only from
 the existing current-run canceled-terminal CAS and `carrier_canceled` only from the
@@ -501,7 +556,8 @@ three closed queued-recipient paths above.
 
 ### R8 — Retry is finite, backoff-bound, and replay-safe
 
-For the shipped retry schedule `[5000, 30000, 120000]`, a wake can have attempt numbers
+R8 applies only to an outcome-governed prompt wake. For the shipped retry schedule
+`[5000, 30000, 120000]`, a wake can have attempt numbers
 `0`, `1`, `2`, and `3`. The scheduler shall make attempt `n + 1` eligible at
 `failedAt + retryDelays[n]` for a `could_not_run` failure.
 
@@ -516,7 +572,8 @@ transaction. A final wake outcome shall make later scheduler passes inert.
 
 ### R9 — Final undeliverability starts one logical Bubble cause
 
-The Bubble production shall ignore a wake-linked failed turn while that wake has a
+R9 applies only to an outcome-governed prompt wake. The Bubble production shall ignore
+an outcome-governed wake-linked failed turn while that wake has a
 retry-eligible failed outcome.
 
 Except for R6's atomically replaced `parent_target_retired` transfer, one runtime
@@ -568,9 +625,9 @@ notice columns instead of `turns.wakeId`.
 
 ### R10 — Handled and undeliverable are mutually final
 
-The database shall permit one `handled` or one `undeliverable` outcome for one wake. It
-shall reject a history containing both final kinds. A final outcome shall have no
-`retryAt`.
+For an outcome-governed prompt wake, the database shall permit one `handled` or one
+`undeliverable` outcome. It shall reject a history containing both final kinds. A final
+outcome shall have no `retryAt`.
 
 ### R11 — Supervision consumes GAGGED before negligence
 
@@ -646,8 +703,10 @@ The existing session lane shall remain the sole model-migration path.
 the wake row for admission, cancellation, invalidation, retry eligibility, handling, or
 undeliverability. `Ledger.terminalize_in_txn/3` shall be the only runtime turn-terminal
 update bridge. It shall call a `Wakes` function inside the same transaction for each
-returned wake-linked row. Gateway, SessionLane, retirement, the unclaimable backstop,
-parent-target retirement in Supervision, and boot recovery shall use these seams.
+returned outcome-governed wake-linked row. For a returned decision-notification row, the
+bridge shall verify the `targetGate=0` source and commit only the guarded turn terminal.
+Gateway, SessionLane, retirement, the unclaimable backstop, parent-target retirement in
+Supervision, and boot recovery shall use these seams.
 
 The R18 transition may materialize its closed successor rows through `Schema` and the
 named `Wakes` migration helpers. That pre-boot copy is not a runtime terminal event. The
@@ -671,14 +730,23 @@ string.
 
 ### R17 — Restart recovery preserves eligibility
 
-Gateway restart shall reconstruct due retry work from wake outcomes and clocks while
-preserving attempt numbers, `retryAt`, and the unique final outcome.
+Gateway restart shall reconstruct due retry work only for outcome-governed prompt wakes
+from wake outcomes and clocks while preserving attempt numbers, `retryAt`, and the
+unique final outcome. Its retry query shall reject `targetGate=0` source wakes.
 
-A running wake turn recovered as `failed_unknown` shall use R6's terminalization bridge,
-store `outcome_unknown`, enter R8's immediate `undeliverable` path, and produce zero
-replacement turns. A boot-recovery transaction failure while writing one linked outcome
-shall roll back the selected running-turn transitions and leave them eligible for the
-next exact recovery pass.
+Gateway restart shall preserve the decision-notification recovery defined by
+`escalation-delivery-v1.md`: a committed, due `targetGate=0` wake that has not admitted a
+turn remains `pending` and returns through the ordinary due-pending scheduler. After its
+atomic admission changes it to `fired`, restart shall recover only its turn state and
+shall create no wake outcome or replacement turn.
+
+An outcome-governed running wake turn recovered as `failed_unknown` shall use R6's
+terminalization bridge, store `outcome_unknown`, enter R8's immediate `undeliverable`
+path, and produce zero replacement turns. A decision-notification running turn recovered
+as `failed_unknown` shall store its terminal class without a wake outcome or replacement
+turn. A boot-recovery transaction failure while writing one linked outcome shall roll
+back the selected running-turn transitions and leave them eligible for the next exact
+recovery pass.
 
 Boot recovery shall start the existing Bubble sweeper with both cursor feeds. The
 `bubble:wake-outcome` feed shall resume after its committed outcome id and shall
@@ -697,22 +765,24 @@ shall pass validation without a second migration.
 
 The shape transition shall preserve existing wake, cancellation, turn, message,
 lifecycle, and Bubble rows except for the closed conflict normalizations below. It shall
-select the wake consumer before it applies this closed mapping. Only a wake with
-`consumer='prompt'` can enter a delivery-outcome backfill or Wake Bubble route mapping.
+select the wake consumer and `targetGate` before it applies this closed mapping. Only a
+wake with `consumer='prompt' AND targetGate=1` can enter a delivery-outcome backfill or
+Wake Bubble route mapping. A `targetGate=0` decision notification remains admission-only.
 
 | Legacy shape | Migration result |
 |---|---|
 | non-prompt wake without a turn, in any state | Preserve its wake, cancellation, message, and consumer-specific lifecycle values. Create no wake delivery outcome, conflict normalization, or Wake Bubble route. Do not apply a prompt mapping below. |
-| `pending` prompt wake without a turn | Preserve it without an outcome. Derive and store the R5 Wake Bubble route. Its first later act uses attempt `0`. |
-| `pending` prompt wake without a turn whose alert user cannot be derived | Insert the typed `alert_user_unknown` cancellation below; change the wake to `canceled` at the same migration timestamp; backfill null-turn `attempt` plus `undeliverable` with `causeKind='legacy_import'`; record `wake_migration_conflict` with the prior row and reason `alert_user_unknown`. |
-| `canceled` prompt wake without a turn | Preserve it without a delivery outcome. Its typed cancellation remains final. |
-| `fired` prompt wake without a turn | Backfill null-turn `attempt` plus `undeliverable` with `causeKind='legacy_import'`, a null failure class, and no Bubble route. |
+| `targetGate=0` decision-notification wake, with or without a linked turn | Preserve its wake, cancellation, message, and escalation lifecycle values. Preserve a linked `wakeId`, set `wakeAttempt` null, and create no delivery outcome, conflict normalization, or Wake Bubble route. A linked `failed`, `failed_unknown`, or `canceled` terminal receives `legacy_outcome_unknown`; another linked turn receives a null failure class. A pending row remains eligible for the governing due-pending scheduler and committed-turn backstop. Do not apply an outcome-governed mapping below. |
+| `pending` outcome-governed prompt wake without a turn | Preserve it without an outcome. Derive and store the R5 Wake Bubble route. Its first later act uses attempt `0`. |
+| `pending` outcome-governed prompt wake without a turn whose alert user cannot be derived | Insert the typed `alert_user_unknown` cancellation below; change the wake to `canceled` at the same migration timestamp; backfill null-turn `attempt` plus `undeliverable` with `causeKind='legacy_import'`; record `wake_migration_conflict` with the prior row and reason `alert_user_unknown`. |
+| `canceled` outcome-governed prompt wake without a turn | Preserve it without a delivery outcome. Its typed cancellation remains final. |
+| `fired` outcome-governed prompt wake without a turn | Backfill null-turn `attempt` plus `undeliverable` with `causeKind='legacy_import'`, a null failure class, and no Bubble route. |
 | exact legacy Bubble notice turn | When `origin='process:tightbeam'`, `requestRef='bubble:<decimalTurnSeq>'`, `wakeId=requestRef || ':' || sessionKey`, and no wake row has that id, store `noticeKind='bubble'`, `noticeCauseKind='turn'`, the decimal turn sequence as `noticeCauseId`, and the target as `noticeRecipientSessionKey`; set `wakeId` and `wakeAttempt` null; create no wake outcome. |
 | unlinked turn in `failed` or `failed_unknown` | Preserve its status, set `failureClass=legacy_outcome_unknown`, and create no wake outcome. |
 | unlinked turn in `queued`, `running`, `delivered`, or `canceled` | Preserve it with a null failure class and create no wake outcome. |
-| linked turn, prompt wake state `fired` | Set `wakeAttempt=0`; backfill `attempt` and `admitted`; then apply the terminal mapping below. |
-| linked turn, prompt wake state `pending` | Normalize the wake to `fired`, record its prior state in `wake_migration_conflict`, and apply the linked-turn mapping. The turn is durable admission evidence. |
-| linked turn, prompt wake state `canceled` | Preserve the wake and cancellation rows, record both prior states in `wake_migration_conflict`, and apply the linked-turn mapping. |
+| linked turn, outcome-governed prompt wake state `fired` | Set `wakeAttempt=0`; backfill `attempt` and `admitted`; then apply the terminal mapping below. |
+| linked turn, outcome-governed prompt wake state `pending` | Normalize the wake to `fired`, record its prior state in `wake_migration_conflict`, and apply the linked-turn mapping. The turn is durable admission evidence. |
+| linked turn, outcome-governed prompt wake state `canceled` | Preserve the wake and cancellation rows, record both prior states in `wake_migration_conflict`, and apply the linked-turn mapping. |
 
 The transition shall treat a non-null legacy `turns.wakeId` as a wake link only when a
 `wakes` row has that exact id. It shall treat it as a Bubble notice only when the complete
@@ -763,8 +833,9 @@ existing Bubble and cancellation rows remain escalation and disposition evidence
 second migration pass shall insert no second outcome or conflict row.
 
 `legacy_outcome_unknown` remains a turn failure class. The migration shall assign it only
-to a `failed`, `failed_unknown`, or wake-linked `canceled` turn and its linked `failed`
-outcome. A null-turn legacy `undeliverable` has no `failed` row, so its `failureClass`
+to a `failed`, `failed_unknown`, or wake-linked `canceled` turn and, for an
+outcome-governed wake, its linked `failed` outcome. A null-turn legacy `undeliverable`
+has no `failed` row, so its `failureClass`
 and `wake-get.failureClass` shall be null. Its `legacy_import` cause records why the
 outcome exists.
 
@@ -858,13 +929,14 @@ The rebuilt table adds a check that `failed` and `failed_unknown` rows carry a n
 failure class; a wake-linked `canceled` row carries `run_canceled`,
 `carrier_canceled`, or `legacy_outcome_unknown`; and another terminal row carries a null
 class unless R7 assigns one.
-Another table check requires `wakeId` and `wakeAttempt` to be null together or populated
-together. This prevents the nullable-column behavior of a unique index from admitting
-an unnumbered wake turn. The rebuilt table also declares
-`UNIQUE(seq, wakeId, wakeAttempt)` for the outcome link below.
+Another table check requires a non-null `wakeAttempt` to have a non-null `wakeId`.
+An outcome-governed turn carries both values. A decision-notification turn carries a
+non-null `wakeId` and null `wakeAttempt`. The closed scope triggers below reject the
+opposite pairing against the referenced wake's `targetGate`. The rebuilt table also
+declares `UNIQUE(seq, wakeId, wakeAttempt)` for the outcome link below.
 
 A second check requires the four notice columns to be null together or populated
-together. A third check forbids a row from carrying both a wake-attempt identity and a
+together. A third check forbids a row with either non-null wake field from carrying a
 notice identity. An ordinary non-wake, non-notice turn can leave both identities null.
 
 Create these indexes after the rebuild:
@@ -872,7 +944,11 @@ Create these indexes after the rebuild:
 ```sql
 CREATE UNIQUE INDEX turns_wake_attempt
   ON turns(wakeId, wakeAttempt)
-  WHERE wakeId IS NOT NULL;
+  WHERE wakeAttempt IS NOT NULL;
+
+CREATE UNIQUE INDEX turns_decision_notification
+  ON turns(wakeId)
+  WHERE wakeId IS NOT NULL AND wakeAttempt IS NULL;
 
 CREATE UNIQUE INDEX turns_one_active_per_wake
   ON turns(wakeId)
@@ -882,6 +958,19 @@ CREATE UNIQUE INDEX turns_notice_dedupe
   ON turns(noticeKind, noticeCauseKind, noticeCauseId, noticeRecipientSessionKey)
   WHERE noticeKind IS NOT NULL;
 ```
+
+Create insert and update scope triggers for a non-null `turns.wakeId`. They shall load
+the exact referenced wake and require exactly one of these pairs:
+
+| Source wake | Turn identity |
+|---|---|
+| `consumer='prompt' AND targetGate=1` | non-null `wakeAttempt` |
+| `consumer='prompt' AND targetGate=0` | null `wakeAttempt` |
+
+The trigger shall abort for a missing wake, a non-prompt wake, or the opposite pair.
+The existing fired-lineage immutability triggers continue to forbid changing a committed
+wake link or attempt. This makes the decision-notification exclusion durable without
+adding a retry column or a second notification marker.
 
 Add the append-only outcome table:
 
@@ -1026,8 +1115,10 @@ bubbleStartSessionKey TEXT NULL,
 CHECK (bubbleStartSessionKey IS NULL OR bubbleAlertUserId IS NOT NULL)
 ```
 
-`schedule_in_txn` writes them once for a prompt wake under R5. Migration writes them
-only for a preserved pending prompt wake. No later target re-resolution mutates them.
+`schedule_in_txn` writes them once for an outcome-governed prompt wake under R5.
+Migration writes them only for a preserved pending outcome-governed prompt wake. A
+decision-notification wake leaves both columns null. No later target re-resolution
+mutates them.
 
 Existing `wakes.state` remains the compatibility aggregate:
 
@@ -1041,8 +1132,10 @@ Existing `wakes.state` remains the compatibility aggregate:
 
 The existing `wake_fired` lifecycle marker and `wakes.state='fired'` mean that the prompt
 act edge was claimed. A condition or fallback target failure can be fired without a
-turn. Only an `admitted` outcome proves admission, and only a typed final outcome proves
-handling or undeliverability.
+turn. For an outcome-governed wake, only an `admitted` outcome proves admission and only
+a typed final outcome proves handling or undeliverability. For a decision notification,
+the governing committed `turns.wakeId` relation plus the atomic fired mark proves
+admission; no delivery outcome is authorized.
 
 ### Read projection
 
@@ -1064,6 +1157,10 @@ is non-null only while a retry-eligible failed outcome has no later attempt or f
 outcome. `failureClass` is the newest failed outcome's class, including after final
 undeliverable. `outcomes` is ordered by outcome id. The linked work-item trace embeds the
 seven scalar summary fields but does not duplicate the history array.
+
+These scalar calculations use delivery outcomes, not a raw turn lookup. A
+decision-notification wake therefore returns a null `turnSeq` and `failureClass` in this
+projection even when its request evidence links a carrier turn.
 
 A pending wake and an R18 canceled-without-turn wake have `latestOutcome=null`,
 `attemptCount=0`, null turn, retry, and failure fields, and an empty history. Aggregate
@@ -1097,8 +1194,10 @@ not enter the delivery-outcome mechanism.
 
 During the R18 v3-to-v4 transition, `Schema` applies the same boundary before it maps a
 legacy wake. It preserves a non-prompt wake and its consumer-specific history without a
-delivery outcome or Wake Bubble route. It applies attempt, admission, and final-outcome
-backfills only to `consumer='prompt'` rows.
+delivery outcome or Wake Bubble route. It also preserves a `targetGate=0` decision
+notification without a delivery outcome or Wake Bubble route. It applies attempt,
+admission, and final-outcome backfills only to
+`consumer='prompt' AND targetGate=1` rows.
 
 Each remaining prompt wake enters one transaction. `Wakes.claim_prompt_in_txn` loads
 the row, rechecks its ordinary-due, condition-fact, or fallback-deadline guard, and runs
@@ -1106,13 +1205,15 @@ R13. The gateway then runs the existing target, reply, enqueueability, and super
 controller seams. A controller cancellation commits its current cancellation,
 entitlement, refund, and lifecycle effects with no delivery outcome.
 
-After those gates admit, the transaction appends one prompt echo, enqueues
-`{wakeId, wakeAttempt=0}`, settles the supervision controller, appends `attempt` and
-`admitted`, changes the wake through R1's checked CAS, runs routing-bracket re-arm, and
-writes condition/fallback lifecycle provenance. Commit is followed by the existing echo
+After those gates admit, the transaction appends one prompt echo. For an
+outcome-governed wake it enqueues `{wakeId, wakeAttempt=0}` and appends `attempt` plus
+`admitted`. For a decision-notification wake it enqueues `{wakeId, wakeAttempt=null}`
+and appends no delivery outcome. It then settles the supervision controller, changes the
+wake through R1's checked CAS, runs routing-bracket re-arm, and writes
+condition/fallback lifecycle provenance. Commit is followed by the existing echo
 publication and lane nudge. Any error rolls back that closed set.
 
-An ordinary target-resolution failure appends a null-turn `attempt` and
+An outcome-governed ordinary target-resolution failure appends a null-turn `attempt` and
 `undeliverable`, copies the Wake Bubble route, and consumes the pending wake as
 `canceled` through typed target-unresolvable cancellation. A condition or fallback
 target-resolution failure performs the same outcome writes after its variant claim, so
@@ -1138,12 +1239,14 @@ Turn finalization changes from separate terminal writers to this composition:
    session. The parent-target retirement guard selects the one queued transfer carrier
    named by its transfer evidence. The unclaimable guard selects queued turns with the
    closed no-active-session predicate. The boot guard selects running turns for recovery.
-3. For each returned wake-linked row, the bridge calls
+3. For each returned outcome-governed wake-linked row, the bridge calls
    `Wakes.settle_terminal_rows_in_txn/4`. A delivered row appends `handled`. A failed,
    failed-unknown, or canceled row appends `failed` and either stores the exact retry or
    appends `undeliverable` under R8.
-4. A returned non-wake row commits only its turn terminal state. A Bubble notice is a
-   non-wake row because its wake identity is null.
+4. A returned non-wake row or decision-notification row commits only its turn terminal
+   state. A Bubble notice is a non-wake row because its wake identity is null. A
+   decision-notification row is distinguished by its non-null `wakeId`, null
+   `wakeAttempt`, and referenced `targetGate=0` source.
 5. The source writer adds its existing typed lifecycle effects in the same transaction.
 6. The transaction commits, then terminal publication, supervision recognition, and
    Bubble recognition run from the committed rows.
@@ -1174,7 +1277,8 @@ implementations map protocol evidence to `could_not_run`, `run_failed`, or
 
 Bubble extends its cause model with a typed wake cause. The display request reference is
 `bubble:wake:<wakeId>`, but the durable dedupe identity is the R9 notice tuple. For a
-wake-linked failed turn, its left-hand side reads the wake's final outcome. A
+outcome-governed wake-linked failed turn, its left-hand side reads the wake's final
+outcome. A
 retry-pending failure does not match. An undeliverable runtime outcome matches once.
 
 Gateway notice admission accepts `notice_dedupe={kind, causeKind, causeId,
@@ -1238,7 +1342,7 @@ The transaction shall:
    set each lawful linked-turn attempt identity; migrate each exact legacy Bubble
    identity into the typed notice columns; and reject another non-null legacy turn wake
    id with `ShapeError`;
-5. derive the Wake Bubble route for each preserved pending prompt wake;
+5. derive the Wake Bubble route for each preserved pending outcome-governed prompt wake;
 6. for each R18 `alert_user_unknown` case, insert its typed cancellation while the wake
    is pending and then change that wake to the cancellation's state and timestamp;
 7. backfill R18 outcomes and conflict rows from structured pre-normalization values;
@@ -1271,11 +1375,14 @@ The migration reads structured row columns. It does not parse chat or error pros
   finish before another database consumer starts.
 - Extend `lib/tightbeam/wakes.ex` with the outcome schema, controller-aware admission
   CAS, retry query, terminal seam, quiescence guard, Wake Bubble route, projections, and
-  migration helpers. Preserve the batcher's group membership, `digest=1` carrier,
+  migration helpers. Use `targetGate=1` as the closed outcome-governed scope and keep
+  `targetGate=0` decision notifications out of the outcome and retry queries. Preserve
+  the batcher's group membership, `digest=1` carrier,
   typed member replacement, lifecycle, rollback, and before-due-selection position.
 - Extend `lib/tightbeam/ledger.ex` with `wakeAttempt`, `failureClass`, the typed notice
-  columns and unique notice dedupe, plus `terminalize_in_txn/3`. Replace each direct
-  bulk terminal writer with that bridge.
+  columns, decision-notification and attempt uniqueness, scope triggers, and unique
+  notice dedupe, plus `terminalize_in_txn/3`. Replace each direct bulk terminal writer
+  with that bridge.
 - Amend prompt delivery and notice admission in `lib/tightbeam/gateway.ex`; remove the
   prompt path's split `mark_fired` edge, accept `notice_dedupe` separately from wake
   identity, pass `process:tightbeam` as the wake-outcome principal, and retain the
@@ -1313,15 +1420,15 @@ surface.
 
 | Requirement | Implementation seam | Acceptance |
 |---|---|---|
-| R1-R4 | Batcher group transaction, Wakes admission/cancel CAS, Gateway transaction, existing prompt controllers, turn indexes | A1, A10 |
-| R5-R7 | outcome table, Wake Bubble route, Ledger terminalization bridge, lane, parent-target retirement, generic retirement, unclaimable, and boot writers | A2, A3, A6, A10 |
+| R1-R4 | Batcher group transaction, Wakes admission/cancel CAS, Gateway transaction, existing prompt controllers, `targetGate` scope triggers, and turn indexes | A1, A2, A7, A10 |
+| R5-R7 | outcome table, Wake Bubble route, decision-notification exclusion, Ledger terminalization bridge, lane, parent-target retirement, generic retirement, unclaimable, and boot writers | A2, A3, A6, A10 |
 | R8-R10 | retry query, scheduler, typed Bubble cause and notice dedupe | A2, A3, A6, A7 |
 | R11 | Supervision terminal LHS, watermark, lifecycle | A3 |
 | R12-R13 | wake guard columns, scheduling handler, admission transaction | A4 |
 | R14 | existing claim and turn-boundary seams | A5 |
 | R15-R16 | Wakes mutation API, Ledger terminalization bridge, closed source tags, process outcome principal, and authenticated cancellation/sidecar retirement principal | A1-A4, A6 |
-| R17 | bridged boot recovery, retry query, and both Bubble cursors | A2, A6, A7 |
-| R18 | Schema exact-shape gate, successor registry, notice migration, Wakes migration seam, and Ledger successor table | A8 |
+| R17 | bridged boot recovery, outcome-governed retry query, decision-notification due-pending recovery, and both Bubble cursors | A2, A6, A7 |
+| R18 | Schema exact-shape gate, successor registry, decision-notification exclusion, notice migration, Wakes migration seam, and Ledger successor table | A8 |
 | R19 | CLI help and operating-manual wake paragraph | A9 |
 
 ## Acceptance
@@ -1333,8 +1440,9 @@ maps do not satisfy the adapter-boundary cases.
 
 ### A1 — Deterministic cancel-versus-admit race
 
-Given one pending prompt wake and barriers that force cancellation to commit before the
-admission CAS, when admission resumes, then cancellation returns success, the wake is
+Given one pending outcome-governed prompt wake and barriers that force cancellation to
+commit before the admission CAS, when admission resumes, then cancellation returns
+success, the wake is
 `canceled`, one typed cancellation exists, and no message, turn, `attempt`, or `admitted`
 outcome exists.
 
@@ -1345,8 +1453,9 @@ plus one `admitted` outcome links that turn. Proves R1-R4, R15-R16.
 
 ### A2 — Failed retry, recovery, and exhaustion
 
-Given retry delays `[10, 20]`, a fake clock, and a captured adapter response classified
-`could_not_run`, when attempt 0 fails at time 100, then one failed outcome links attempt
+Given one outcome-governed prompt wake, retry delays `[10, 20]`, a fake clock, and a
+captured adapter response classified `could_not_run`, when attempt 0 fails at time 100,
+then one failed outcome links attempt
 0, `retryAt=110`, no final outcome exists, and Bubble has no wake cause. A scheduler pass
 at 109 admits no turn. A pass at 110 admits attempt 1 once.
 
@@ -1371,9 +1480,24 @@ expose `undeliverable`, attempt count 3, the final turn sequence, a null next re
 specified cause and `process:tightbeam` principal. A caller with no R5 authority receives
 `denied`; an authorized query for an absent id receives `unknown_wake`.
 
+Given a decision request transaction commits one due `targetGate=0` notification wake,
+when an injected pre-admission delivery error aborts R1's admission transaction, then the
+wake remains `pending` and no message, turn, Wake Bubble route, or delivery outcome
+exists. When the dependency heals and the next ordinary scheduler tick runs, exactly one
+message and one queued turn commit with the wake's `wakeId`, null `wakeAttempt`, and the
+wake becomes `fired`; no delivery outcome exists.
+
+Given that admitted decision-notification carrier then terminates with typed
+`could_not_run`, when terminalization and two later scheduler passes commit and the
+gateway restarts, then the turn is `failed` with `could_not_run`, the wake remains
+`fired`, and no delivery outcome, retry, replacement turn, Wake Bubble route, or Bubble
+cause exists. This fixture binds R1-R8 and R17 to the no-retry relationship with
+`escalation-delivery-v1.md`.
+
 ### A3 — Repeated carrier failure precedes negligence prod
 
-Given a holder with an open assignment and the exhausting fixture from A2, when
+Given a holder with an open assignment and the outcome-governed exhausting fixture from
+A2, when
 Supervision inspects each failed terminal, then `prod_production_matches?` returns the
 `holder_gagged` no-match and `evaluate` returns `:gagged`. Each evaluation advances the
 terminal watermark once, writes one typed GAGGED lifecycle row, preserves the prod
@@ -1431,8 +1555,9 @@ turn and the later owner turn does not rewrite that outcome.
 
 ### A5 — Queued wake preserves the tune boundary
 
-Given session `S` selects model A and its live lane is idle, when a prompt wake admits
-attempt 0 while a barrier holds the post-commit lane nudge, then its queued turn has no
+Given session `S` selects model A and its live lane is idle, when an outcome-governed
+prompt wake admits attempt 0 while a barrier holds the post-commit lane nudge, then its
+queued turn has no
 claimed model or adapter generation. When an authorized caller attempts to tune `S` to
 model B while that row is queued, then the tune returns `turn_in_progress`; the session
 selection and engine remain model A and the queued row remains unchanged.
@@ -1447,6 +1572,8 @@ tune changed no model, harness, adapter generation, or engine process. Proves R1
 retains the fixed C limb.
 
 ### A6 — Unsafe and recovered failures do not replay
+
+Every wake carrier in A6 is outcome-governed unless the fixture says otherwise.
 
 Given one wake turn fails after prompt admission with class `run_failed`, when its
 terminal transaction commits, then it records failed plus undeliverable, schedules no
@@ -1516,7 +1643,8 @@ second logical wake cause.
 
 ### A7 — Restart preserves a due retry
 
-Given attempt 0 commits `could_not_run` with `retryAt=110` and the gateway stops at 105,
+Given an outcome-governed attempt 0 commits `could_not_run` with `retryAt=110` and the
+gateway stops at 105,
 when it restarts at 110, then the boot scheduler admits attempt 1 once. A second restart
 preserves both attempt identities and does not move `retryAt`. Proves R3, R8, R17.
 
@@ -1530,17 +1658,25 @@ commits but before their cursors advance, when Bubble restarts and recognizes bo
 again, then the typed wake and turn notice tuples return the existing rows. The restart
 adds no notice, wake outcome, retry, or recursive cause.
 
+Given a committed, due `targetGate=0` decision notification is still `pending` because
+its pre-admission transaction failed, when the gateway restarts after the dependency
+heals, then the existing due-pending scheduler admits its one null-attempt carrier and
+changes the wake to `fired`. A second restart creates no second turn, delivery outcome,
+retry, or Bubble cause. Proves the decision-notification limb of R17.
+
 ### A8 — Legacy migration preserves evidence
 
 Given an exact v3-stamped fixture with one row for each R18 wake-shape and terminal
 mapping, when the application starts, then the shape gate selects the v3-to-v4 plan,
-unchanged columns compare equal, each linked prompt turn has `wakeAttempt=0`, each shape
-has the specified outcomes, and each normalization has one conflict row that preserves
-its prior state. A canceled prompt wake's queued or running carrier is `failed_unknown`
-and does not run. Restarting the v4 database produces no second backfill row, conflict
-row, retry, or retroactive Bubble notice. Proves R18.
+unchanged columns compare equal, each linked outcome-governed prompt turn has
+`wakeAttempt=0`, each shape has the specified outcomes, and each normalization has one
+conflict row that preserves its prior state. A canceled outcome-governed prompt wake's
+queued or running carrier is `failed_unknown` and does not run. Restarting the v4
+database produces no second backfill row, conflict row, retry, or retroactive Bubble
+notice. Proves R18.
 
-The fired prompt-without-turn fixture shall have `attempt` plus `undeliverable`,
+The fired outcome-governed prompt-without-turn fixture shall have `attempt` plus
+`undeliverable`,
 `causeKind='legacy_import'`, a null `failureClass`, and no Bubble route. `wake-get` shall
 return a null failure class for it.
 
@@ -1552,7 +1688,16 @@ Bubble route and zero delivery outcomes. Their exact-id reads return
 `latestOutcome=null`, `attemptCount=0`, a null linked turn, and an empty outcome history.
 Restarting v4 changes no row and creates no outcome, conflict, retry, or Bubble notice.
 
-The pending prompt fixture whose alert user cannot be derived shall first gain one
+Given a fired `consumer='prompt' AND targetGate=0` decision notification with one linked
+delivered turn, when migration commits, then the wake retains its exact escalation
+fields, the turn retains its `wakeId` and gains null `wakeAttempt`, and both Wake Bubble
+route columns remain null. It gains no outcome or migration conflict. Given a second
+pending `targetGate=0` notification without a turn, migration preserves it as pending
+for the governing due-pending scheduler. Restarting v4 creates no backfill, retry, or
+Bubble cause for either row.
+
+The pending outcome-governed prompt fixture whose alert user cannot be derived shall
+first gain one
 cancellation with the exact requester, reason, causal source, outcome, work-impact,
 liveness, action-needed, replacement, and timestamp fields from R18. It shall then
 become canceled at that same timestamp, gain the specified `alert_user_unknown`
