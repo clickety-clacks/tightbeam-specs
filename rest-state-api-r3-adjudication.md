@@ -1,6 +1,7 @@
 # REST state API r3 — durable adjudication ledger
 
-Status: normative review input for the r3 amendment set, 2026-08-22.
+Status: normative adjudication companion for canonical r3, 2026-08-22;
+updated 2026-08-23 for SQ4.
 
 This file makes the REST findings inspectable in the canonical spec set. The
 short `review-gate-observability-2026-08-21.md` routes ownership but does not
@@ -25,6 +26,12 @@ contain the finding bodies.
   `5db8aab3496747d008fb8c024a4f1617f92695d144c89481bca3a1f20842550a`,
   adopts both missing firehose mappings and supersedes fact-only
   `art_5d8bacb2`.
+- Joint successor review `att_45676d30` is reviewed-clean. Canonical merge
+  `c84b1b8dc856861baeaa7b5ff781317ded568cb1` lands the exact reviewed REST
+  bytes.
+- Mike's SQ4 ruling `dr_96055b44-b18b-47b6-81f8-f2d64f709a2a` selects
+  REST-first: M2 REST provides rebuildable state before the M3 firehose adds
+  freshness. It changes sequencing only.
 
 ## Assigned findings and required effect
 
