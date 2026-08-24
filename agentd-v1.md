@@ -1,6 +1,6 @@
 # agentd v1 — truthful local registry and event stream for coding agents
 
-Status: READY FOR INDEPENDENT SPEC REVIEW
+Status: READY FOR INDEPENDENT SPEC RE-REVIEW
 
 Date: 2026-08-24
 
@@ -12,6 +12,9 @@ Authority:
 
 - Owner Spirit gate: `att_f86bed15-e1bd-490f-a45f-d1970d12059d`.
 - Orchestrator digest: `att_a7fa9792-fec8-411f-9a5c-7e1c0e65fd66`.
+- Changes-requested review: `att_aecc2141-763b-43df-a472-5454434bd484` with full
+  report `art_2405714e` against commit
+  `b14cc5f3165cbc4bb1161127397b21030911e870`.
 - The independent spec review must clear an exact content hash before implementation starts.
 
 ## Goal
@@ -89,9 +92,19 @@ one rule in this closed v1 table:
 | `codex` | `codex` |
 | `claude` | `claude`, `claude.exe` |
 
-An **agent root** is a harness candidate that has no ancestor in the same completed
-procfs scan that matches the same harness. This rule collapses helper descendants into
-one roster entry. Sibling candidates remain separate entries.
+A **local harness candidate** is a harness candidate whose effective UID equals the
+daemon's effective UID.
+
+A **validated local harness candidate** is a local harness candidate whose two stat
+reads in one scan report the same positive start time. The second read must still match
+the harness rule and a non-zombie process state.
+
+An **agent root** is a validated local harness candidate whose observed parent chain
+contains no ancestor that is also a validated local harness candidate for the same
+harness in the same completed procfs scan. The parent-chain walk passes through
+processes that are not harness candidates. This rule collapses same-user helper
+descendants into one roster entry. A different-UID ancestor does not disqualify a local
+harness candidate. Sibling validated local harness candidates remain separate entries.
 
 The harness value reports which rule matched. It does not authenticate the executable,
 the command line, or the vendor.
@@ -101,14 +114,15 @@ the command line, or the vendor.
 **Presence** is the result of the latest procfs observation for one process identity:
 
 - `present`: the scanner read the same positive start time twice during one scan, the
-  effective UID matched the daemon's effective UID, and the second stat read still
-  matched the harness rule and a non-zombie process state.
+  process qualified as an agent root, and the second stat read still matched the
+  harness rule and a non-zombie process state.
 - `unknown`: the scanner previously proved the identity, but a non-absence read failure
   prevented the next scan from proving or disproving it.
 - `absent`: a complete scan proved that procfs no longer exposed the identity as a
   qualifying local-user agent. Disappearance, start-time change, harness mismatch,
-  zombie state, or effective-UID mismatch proves this result. An absent identity is not
-  stored in the roster; its removal appears in the next snapshot.
+  zombie state, effective-UID mismatch, or loss of agent-root qualification proves this
+  result. An absent identity is not stored in the roster; its removal appears in the
+  next snapshot.
 
 ### Activity claim
 
@@ -185,8 +199,9 @@ that uncertainty into absence.
 I1.1. The scanner adds an agent record only after two reads of
 `/proc/<pid>/stat` return the same positive field-22 start time during one scan.
 
-I1.2. The scanner keeps `presence.state=present` only when the second stat read still
-matches the same harness rule and a non-zombie process state.
+I1.2. The scanner keeps `presence.state=present` only when the completed scan qualifies
+the identity as an agent root and the second stat read still matches the same harness
+rule and a non-zombie process state.
 
 I1.3. The daemon removes an old process identity after a complete scan proves that the
 identity no longer satisfies the `present` rule.
@@ -206,16 +221,20 @@ removal no later than 2 seconds after that condition begins.
 
 I2.1. The scanner uses the command-name table in Terms to classify v1 harnesses.
 
-I2.2. The scanner retains a harness candidate only when the effective UID in
+I2.2. The scanner classifies a harness candidate as local only when the effective UID in
 `/proc/<pid>/status` equals the daemon's effective UID.
 
-I2.3. The scanner emits one record for each agent root.
+I2.3. The scanner walks the complete observed parent chain for each validated local
+harness candidate. Only a same-harness validated local candidate in that chain
+disqualifies the process as an agent root.
 
-I2.4. The scanner labels each record with `detectedBy="proc_comm"`.
+I2.4. The scanner emits one record for each agent root.
 
-I2.5. The scanner reads no command line or environment value for detection or output.
+I2.5. The scanner labels each record with `detectedBy="proc_comm"`.
 
-I2.6. A process outside the closed command-name table, or a process whose effective UID
+I2.6. The scanner reads no command line or environment value for detection or output.
+
+I2.7. A process outside the closed command-name table, or a process whose effective UID
 differs from the daemon's effective UID, does not enter the roster.
 
 ### I3 — Unknown remains explicit
@@ -275,6 +294,11 @@ fixed configured bound and is not an application event queue.
 
 I4.9. The daemon runs at most one procfs scan at a time. Scan commits occur in scan-start
 order.
+
+I4.10. When an identity leaves the roster, the daemon discards its activity claim.
+
+I4.11. If the same process identity later regains agent-root qualification, the daemon
+adds it with activity `unknown`.
 
 ### I5 — One local Unix socket carries the contract
 
@@ -383,34 +407,47 @@ when cwd is known. `activity.source` is `none` exactly when activity is unknown.
 
 ### I7 — CLI inspection uses the socket contract
 
-I7.1. `agentd list` sends a snapshot request and prints one human-readable roster.
+I7.1. `agentd list` sends a snapshot request and prints one human-readable snapshot.
 
 I7.2. `agentd list --json` prints the snapshot frame unchanged, followed by LF.
 
-I7.3. `agentd watch` sends a subscribe request and prints the initial roster plus each
-changed roster.
+I7.3. `agentd watch` sends a subscribe request and prints one human-readable snapshot
+for the initial frame and each changed frame.
 
 I7.4. `agentd watch --json` prints each received snapshot frame unchanged as NDJSON.
 
 I7.5. `agentd activity --pid <positive-integer> --state active|idle` reads the current
 start time from procfs and sends an activity request for the exact identity.
 
-I7.6. The human roster prints the process ID, start-time ticks, harness, presence, cwd,
-and activity. It prints the word `unknown` for each unknown value.
+I7.6. Each human-readable snapshot starts with this exact header field order:
+`instance=<instanceId> revision=<revision> scan=<state> agents=<count>`.
 
-I7.7. A successful command exits 0. A usage, socket, protocol, or daemon error exits 1
-and writes one error line to stderr that names the failed operation and cause.
+I7.7. The human-readable snapshot prints one line for each scan issue in serialized
+order as `issue pid=<pid|none> field=<field> cause=<cause>`.
+
+I7.8. The human-readable snapshot prints one line for each agent in serialized order
+with the process ID, start-time ticks, harness, presence, cwd, and activity. It prints
+the word `unknown` for each unknown value.
+
+I7.9. A zero-agent human-readable snapshot prints its header and each scan issue.
+
+I7.10. `agentd list` exits 0 after printing a valid complete or degraded snapshot. A
+degraded scan is not a command error.
+
+I7.11. `agentd watch` prints a valid degraded snapshot and keeps the subscription open.
+
+I7.12. A usage, socket, protocol, or daemon error exits 1 and writes one error line to
+stderr that names the failed operation and cause.
 
 ### I8 — The systemd user service owns runtime lifecycle
 
 I8.1. The repository ships `packaging/systemd/agentd.service` for the systemd user
 manager.
 
-I8.2. The unit sets
-`ExecStart=%h/.local/bin/agentd daemon --socket %t/agentd.sock`.
+I8.2. The unit sets `ExecStart=%h/.local/bin/agentd daemon`.
 
-I8.3. The unit passes `%t/agentd.sock` as the daemon socket path. `%t` denotes the user
-runtime directory.
+I8.3. Daemon mode resolves its sole socket as `$XDG_RUNTIME_DIR/agentd.sock`, using the
+runtime environment from the systemd user manager.
 
 I8.4. The unit uses `Restart=on-failure` and joins `default.target` through its
 `[Install]` section.
@@ -482,14 +519,17 @@ The scanner performs this sequence:
 6. Read each harness candidate's status record and extract the effective UID from the
    second value in its `Uid:` row. Retain only candidates whose effective UID equals the
    daemon's effective UID.
-7. Walk the observed parent relation to retain agent roots.
-8. Read each root's cwd link.
-9. Re-read each root's stat record.
-10. Drop a new root whose second read disappeared, changed start time, changed harness,
-   or became a zombie.
-11. Reconcile old identities under I1 and I3.
-12. Carry hook activity only across an exact identity match.
-13. Submit the complete proposed snapshot to observe-then-commit once.
+7. Re-read each local harness candidate's stat record. Drop the candidate when the
+   second read disappeared, changed start time, changed harness, or became a zombie.
+8. Walk each validated local harness candidate's full observed parent chain. Retain the
+   candidate as an agent root only when no ancestor is a validated local candidate for
+   the same harness.
+9. Read each root's cwd link.
+10. Reconcile old identities under I1 and I3. Remove a retained identity when it loses
+    agent-root qualification. Add an existing process identity when it gains agent-root
+    qualification and passes the two stat reads.
+11. Carry hook activity only across an exact identity match.
+12. Submit the complete proposed snapshot to observe-then-commit once.
 
 The parser rejects a zero start time, an integer overflow, a stat record without all
 fields through field 22, a status record without a valid four-value `Uid:` row, or a
@@ -537,10 +577,11 @@ without serving a v1 goal.
 
 ### E. CLI and service packaging
 
-The `agentd` binary contains the daemon and CLI commands. Inspection commands resolve
-the socket as `$XDG_RUNTIME_DIR/agentd.sock`. When `XDG_RUNTIME_DIR` is unset, the error
-names that variable. When the socket is unavailable, the error names the resolved path
-and `systemctl --user status agentd.service` as the diagnostic command.
+The `agentd` binary contains the daemon and CLI commands. Daemon and inspection commands
+resolve the sole socket as `$XDG_RUNTIME_DIR/agentd.sock`. The CLI exposes no socket-path
+configuration. When `XDG_RUNTIME_DIR` is unset, the error names that variable. When the
+socket is unavailable, the error names the resolved path and
+`systemctl --user status agentd.service` as the diagnostic command.
 
 The systemd user unit starts the same binary in daemon mode. The unit expresses login
 lifecycle, restart policy, and the runtime socket path. The README states the install,
@@ -563,6 +604,19 @@ known cwd equals that directory, with three `codex` records and one `claude` rec
 The test filters by the dedicated cwd so unrelated host agents do not affect the count.
 Each record has a distinct process identity. Helper descendants do not add records.
 Each activity state is `unknown`.
+
+**Given** a local-UID `bash` parent and its local-UID `codex` child, **when** one complete
+scan qualifies only the child as a Codex root and the next scan observes the same parent
+identity with command name `codex`, **then** one commit adds the parent root and removes
+the child root. The child keeps running but no longer appears in the roster.
+
+**When** the next complete scan observes the parent identity with command name `bash`
+again, **then** one commit removes the parent root and adds the child root. The child
+returns with activity `unknown` because its preceding claim was discarded on removal.
+
+**Given** a local-UID Codex candidate with a different-UID Codex ancestor, **when** the
+scanner computes roots, **then** it retains the local candidate because the ancestor is
+outside the local-candidate domain.
 
 ### A2 — Hook independence and enrichment (G2; I1, I3, I5)
 
@@ -647,8 +701,19 @@ connection. A valid 65,536-byte object followed by LF does not fail as oversized
 ### A9 — CLI inspection (G4; I7)
 
 **Given** a roster with one known cwd and one injected unknown cwd, **when** a user runs
-`agentd list`, **then** the human output includes each required field and prints
-`unknown` for the unknown cwd.
+`agentd list`, **then** the first line reports the instance, revision, scan state, and
+agent count. Each agent line includes the required fields. The unknown cwd prints as
+`unknown`.
+
+**Given** a first scan whose `/proc` enumeration fails, **when** a user runs
+`agentd list`, **then** it exits 0 and prints a header with `scan=degraded agents=0`.
+It also prints `issue pid=none field=proc cause=proc_unavailable`. It prints no agent
+line.
+
+**Given** a daemon whose current snapshot is degraded with zero agents after a full
+`/proc` enumeration failure, **when** a user runs `agentd watch`, **then** its first
+frame has `scan=degraded agents=0` and the `proc_unavailable` issue. The command keeps
+the subscription open.
 
 **When** the user runs `agentd list --json`, **then** stdout equals the daemon's snapshot
 frame plus LF.
@@ -662,6 +727,9 @@ the initial complete frame and a later complete frame without that identity.
 follows the documented install commands, **then** `systemctl --user is-enabled
 agentd.service` and `systemctl --user is-active agentd.service` both succeed, and the
 socket exists at `$XDG_RUNTIME_DIR/agentd.sock` with mode `0600`.
+
+**When** the test reads the installed unit's expanded `ExecStart`, **then** it contains
+the absolute installed binary followed by `daemon` and no socket-path argument.
 
 **When** a client connects immediately after the socket starts accepting connections,
 **then** a snapshot request returns revision 1 or later; no pre-snapshot state is visible.
@@ -678,11 +746,11 @@ disappears within 5 seconds.
 **Given** an owned stale socket with no listener, **when** the service starts, **then**
 the daemon replaces it and begins listening.
 
-**Given** a regular file, a socket owned by another user, or a live listener at the
-configured path, **when** a second daemon starts, **then** it exits 1, names the conflict,
+**Given** a regular file, a socket owned by another user, or a live listener at the fixed
+socket path, **when** a second daemon starts, **then** it exits 1, names the conflict,
 and leaves the path unchanged.
 
-### A12 — Privacy and local-only transport (Non-Goals; I2.5, I9)
+### A12 — Privacy and local-only transport (Non-Goals; I2.6, I9)
 
 **Given** real agent processes whose command lines and environments contain distinct
 sentinel secrets, **when** the test captures daemon stdout, stderr, logs, list output,
