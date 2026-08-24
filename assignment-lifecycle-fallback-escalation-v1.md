@@ -255,7 +255,7 @@ The current Bubble root correlation is `requestRef = bubble:<rootTurnSeq>`. Slat
 
 ### ASM-05
 
-The controlling implementation baseline is `main@8eeccbd6dfd221fe9d105783459637fb7a17ea83`, database shape `coordination-fabric-v1-phase1-v5`, CI file SHA-256 `1ccc8176ca9a8b9c2a677eaf31723e3c9602f6790ed8baccb945a5bc2d000e57`, and supported application rollback baseline `8eeccbd6dfd221fe9d105783459637fb7a17ea83` on the same v5 store. Historical commit `b8e6c47e4631da8345aaf8c6ab73b0858e630bf6` is a v3 binary and MUST refuse a v5 store; it is not a runnable rollback predecessor.
+The controlling implementation baseline is `main@d00e06aea578d711e608637d38a97872487df15e`, database shape `coordination-fabric-v1-phase1-v5`, CI file SHA-256 `1ccc8176ca9a8b9c2a677eaf31723e3c9602f6790ed8baccb945a5bc2d000e57`, and supported application rollback baseline `8eeccbd6dfd221fe9d105783459637fb7a17ea83` on the same v5 store. Historical commit `b8e6c47e4631da8345aaf8c6ab73b0858e630bf6` is a v3 binary and MUST refuse a v5 store; it is not a runnable rollback predecessor.
 
 ### ASM-06
 
@@ -523,11 +523,13 @@ Fresh independent review assignment `asg_1be7c264-605d-4338-a964-fa9b61534a13` c
 
 Fresh independent review assignment `asg_00702aaf-936f-4258-b8b9-4b30fa48ce9e` covered frozen `art_e95e53a4` at SHA-256 `eef15876b44a72fd34213f86d1a2aedda02e0ccdacc0a72a6a8d2c627fe031e0` and filed changes-requested verdict `att_dd1ca4f0-8b58-4e00-a858-b122a4619982`. Full report `art_eb59029e` at SHA-256 `2bcb2950762321c19a3ce4805deaf1196b48e85fad3adda15dc5911e97193ec6` found that the current supervision sidecar has no durable root-turn identity and therefore cannot produce exact episode coverage or `resolved_existing`. Operator decision `dr_815a42b0-7c71-4d90-a052-1cbf06f41d02` selected `authorize-one-named-supervision-duplicate`: retain only the current assignment-scoped pending hold, never project supervision as exact episode coverage, and permit current supervision activity on the assignment and one deterministic lifecycle escalation chain for a source episode to coexist without inferring a causal relation. Adding a typed root-to-controller link loses because that option was not selected; treating supervision as exact coverage loses because it can silently suppress the wrong source. The prior review's current-row routing, public trace, and owner-mismatch closures remain unchanged. The ruling grants no implementation, merge, release, deployment, completion, or disposition authority.
 
+Operator decision `dr_d214f178-9217-41d5-8f73-4662cfe37e71` and owner ruling `att_7f385ee5-3225-422b-b767-edbb151ddf5c` re-pin this spec to product `main@d00e06aea578d711e608637d38a97872487df15e` and specs base `20b1d3ef4d1344729ee74d1002a67d921e47a967`. The exact product delta from `8eeccbd6dfd221fe9d105783459637fb7a17ea83` is two guidance-only commits that add nine lines to `priv/kungfu/agentic-engineering/guidance/product-owner.md`; every lifecycle, persistence, routing, Bubble, supervision, API, schema, CLI, packaging, CI, and acceptance seam is byte-identical. The database shape and CI hash in ASM-05 therefore remain unchanged, and `dr_815a42b0-7c71-4d90-a052-1cbf06f41d02` remains controlling for lifecycle behavior.
+
 The immediately prior frozen candidate `art_e95e53a4` at SHA-256 `eef15876b44a72fd34213f86d1a2aedda02e0ccdacc0a72a6a8d2c627fe031e0` remains historical review evidence. It is not implementation authority.
 
 The prior frozen candidate `art_1fbd7a55` at SHA-256 `5caf7d2dba7f90532c339d11b230bf4ba86d6e29ac1cf0ff8002403140272ca6` remains historical review evidence. It is not implementation authority.
 
-The builder MUST recheck remote `refs/heads/main`. If it differs from `8eeccbd6dfd221fe9d105783459637fb7a17ea83`, implementation stops for an owner re-pin.
+The builder MUST recheck remote `refs/heads/main`. If it differs from `d00e06aea578d711e608637d38a97872487df15e`, implementation stops for an owner re-pin.
 
 ## Acceptance
 
