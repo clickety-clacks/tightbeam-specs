@@ -9,7 +9,7 @@ Product owner assignment: `asg_0bd4c0ab-68a0-463e-92c4-e5d11a8135c5`
 
 ### INV-01 — A lifecycle source reaches an agent before Main
 
-For each eligible source, Tightbeam MUST first use any correlated existing route and the source's normal resolver result, then the recorded agent expecter and agent owner. A failed-turn source keeps Bubble's non-Main `sessions.operationalParent` climb. A completed-assignment source keeps the completion domain's explicit report-to route when declared and otherwise its `sessions.spawnedBy` parent route. Other disposition sources keep their own normal resolver. Tightbeam MAY write one report to the owning user's personal Main stream only when no such route remains pending or able to accept a turn.
+For each eligible source, Tightbeam MUST first use any correlated existing route and TERM-05's current-surface route, then the recorded agent expecter and agent owner. A failed-turn source keeps Bubble's non-Main `sessions.operationalParent` climb. A completed-assignment source derives at most one route from the holder session's immutable `sessions.spawnedBy`. A surrendered or revoked assignment has no source-specific route in this MVP. Tightbeam MAY write one report to the owning user's personal Main stream only when no such route remains pending or able to accept a turn.
 
 Main is a report audience. Main MUST NOT be inserted into the agent-candidate list and MUST NOT receive a lifecycle model turn.
 
@@ -23,7 +23,7 @@ When the ordered row ends, the supervising agent records the attempted rungs, ev
 
 ### INV-03 — Lifecycle does not change custody
 
-The feature MUST NOT change a work-item owner, assignment opener, assignment holder, `sessions.spawnedBy`, `sessions.operationalParent`, an explicit report-to declaration, role binding, or review relationship. It MUST NOT create a work item, assignment, session, or replacement model session.
+The feature MUST NOT change a work-item owner, assignment opener, assignment holder, `sessions.spawnedBy`, `sessions.operationalParent`, role binding, or review relationship. It MUST NOT create a work item, assignment, session, or replacement model session.
 
 ### INV-04 — Rows, not prose, determine routing
 
@@ -33,7 +33,7 @@ Routing MUST use stored identifiers and typed rows. It MUST NOT parse prompts, a
 
 Each eligible source has one derived episode id. Repeated callbacks, process crashes, restarts, and concurrent recognition MUST reuse that id. Each `(episode, recipient)` has at most one notice turn. Each episode has at most one Main report.
 
-The typed source form selects one source-specific normal resolver. A retry MUST derive the same resolver from that stored source form and MUST NOT invoke another source's resolver, even when `spawnedBy` and `operationalParent` name different sessions.
+The typed source form selects one TERM-05 rule. A retry MUST derive the same current-surface route from that stored source form and MUST NOT apply another source's rule, even when `spawnedBy` and `operationalParent` name different sessions.
 
 This MVP does not coalesce several sources into a mutable per-assignment episode.
 
@@ -49,7 +49,6 @@ The change MUST preserve:
 
 - assignment-open routing-wake cancellation;
 - Bubble's existing `operationalParent` climb for failed turns;
-- completion's existing explicit report-to or `spawnedBy` route;
 - supervision of stalled open assignments; and
 - the zero-open-assignment slate wake.
 
@@ -111,7 +110,7 @@ This MVP does not add structured marker columns or require client-specific rende
 
 ### NG-07
 
-This feature does not alter assignment-open routing cancellation, wake-cancellation attribution, Bubble for unassigned turns, supervision thresholds, slate timing, work-item disposition, or a source domain's normal resolver. Lifecycle consumes that resolver's typed recipient result.
+This feature does not alter assignment-open routing cancellation, wake-cancellation attribution, Bubble for unassigned turns, supervision thresholds, slate timing, or work-item disposition. It adds no report-to field, outcome-route field, or disposition resolver. TERM-05 derives the MVP route only from the pinned product's existing assignment and session rows.
 
 ## Terms
 
@@ -155,15 +154,15 @@ The agent-owner assignment is the one assignment attributed to the expecter's tu
 
 The edge recipient is that assignment's `holderKey`. More than one matching turn is an invariant error; no match produces a null edge. The immutable turn and assignment rows are the edge record. No feature table copies them.
 
-### TERM-05 — Source-specific normal route
+### TERM-05 — Source-specific current-surface route
 
-A source-specific normal route is the ordered recipient result of that source domain's typed resolver. Lifecycle consumes the result; it does not reinterpret one parent field as another.
+A source-specific current-surface route is the result of `Tightbeam.AssignmentLifecycle.source_route_in_txn/3` for the typed source form and the pinned product's existing rows. The result is exactly `{:ok, []}`, `{:ok, [session_key]}`, or `{:error, :lifecycle_source_invalid}`; it never contains more than one session key.
 
-- For an assigned failed-turn source, Bubble walks active `sessions.operationalParent` ancestors nearest-first, bounded at 32 hops. Bubble owns that walk, and lifecycle creates no second climb. Its visited set is derived from exact `bubble:<rootTurnSeq>` attempt rows; a repeated recipient or the end of the bound is exhaustion, not a duplicate enqueue.
-- For a completed-assignment source, the completion resolver uses its typed explicit report-to declaration when one exists. Otherwise it seeds its existing active, same-owner parent route from the holder's immutable `sessions.spawnedBy`. Lifecycle consumes those ordered recipients as `source_route` candidates.
-- For surrendered or revoked assignment sources, lifecycle consumes the existing outcome-specific resolver result. It does not start a `spawnedBy` or `operationalParent` walk.
+- For an assigned failed-turn source, `source_route_in_txn/3` returns `{:ok, []}`. Bubble's existing `next_active_ancestor/3` walk uses `sessions.operationalParent` nearest-first and is bounded at 32 hops. Bubble owns that walk, and lifecycle creates no second candidate. Its visited set is derived from exact `bubble:<rootTurnSeq>` attempt rows; a repeated recipient or the end of the bound is exhaustion, not a duplicate enqueue.
+- For a completed-assignment source, the function reads the assignment's existing `holderKey`, then reads `ownerUserId` and `spawnedBy` from the holder's `sessions` row. A missing holder row returns `{:error, :lifecycle_source_invalid}`. A null `spawnedBy` returns `{:ok, []}`. Otherwise the function reads the exact parent `sessions` row named by `spawnedBy` and returns `{:ok, [spawnedBy]}` only when that parent has `state = active`, `kind != main`, and the holder's `ownerUserId`. A missing parent, retired parent, Main parent, or owner mismatch returns `{:ok, []}`.
+- For a surrendered or revoked assignment source, the source-specific route is the empty list. Lifecycle does not read `spawnedBy` or `operationalParent` for either outcome.
 
-The typed source form selects the resolver kind. The resolver's ordered recipients are deduplicated with every existing-route, expecter, and agent-owner recipient for that episode. No resolver kind, recipient list, mutable lineage state, or universal parent edge is persisted by lifecycle.
+The typed source form selects one of these three rules. The selected recipients are deduplicated with every existing-route, expecter, and agent-owner recipient for that episode. Lifecycle persists no route kind, recipient list, mutable lineage state, or universal parent edge.
 
 ### TERM-06 — Existing route
 
@@ -290,19 +289,19 @@ Before inserting, the terminal transaction checks for the exact event kind and s
 
 Live lane failure, task-crash failure, unclaimable-turn failure, and boot recovery to `failed_unknown` all invoke the same source-admission helper inside the transaction that wins their guarded terminal update. Assignment completion, surrender, and revocation invoke the assignment form inside their existing close transaction.
 
-The source event's typed `subject` stores the source form that selects the TERM-05 resolver. Re-entry decodes the same stored form and therefore reuses that resolver; it never runs both completion-parent and failed-turn-parent routing for one source.
+The source event's typed `subject` stores the source form that selects the TERM-05 rule. Re-entry decodes the same stored form and therefore reuses that rule; it never runs both completion-parent and failed-turn-parent routing for one source.
 
 ### ARC-02 — Candidate order and exclusion
 
 After correlated existing routes are settled, derive candidates in this order:
 
-1. each TERM-05 source-specific normal-route recipient, in the source resolver's order;
+1. TERM-05's source-specific current-surface recipient, when one exists;
 2. the expecter edge; and
 3. the agent-owner edge.
 
-For a failed-turn source, Bubble already owns the `operationalParent` lineage, so step 1 adds no second candidate. For a completed-assignment source, step 1 consumes the completion resolver's explicit report-to result or its `spawnedBy` result without translating either to `operationalParent`. For surrendered and revoked sources, step 1 consumes only their existing outcome-specific resolver result and starts no parent walk.
+For a failed-turn source, Bubble already owns the `operationalParent` lineage, so step 1 adds no second candidate. For a completed-assignment source, step 1 derives the eligible `spawnedBy` candidate from the current rows defined in TERM-05 and never translates it to `operationalParent`. For surrendered and revoked sources, step 1 is empty and starts no parent walk.
 
-Deduplicate equal session keys while preserving the first relation. Exclude the assignment holder, the audience's composed Main key, a `sessions.kind = main` row, a missing session, a non-active session, and any recipient already used by an exact correlated existing route or lifecycle notice for the episode, regardless of that prior turn's terminal outcome.
+Deduplicate equal session keys while preserving the first relation. Exclude the assignment holder, the audience's composed Main key, a `sessions.kind = main` row, a missing session, a non-active session, a source-route session whose `ownerUserId` differs from the holder session's `ownerUserId`, and any recipient already used by an exact correlated existing route or lifecycle notice for the episode, regardless of that prior turn's terminal outcome.
 
 If a candidate disappears between selection and enqueue, the transaction returns `skipped`; recognition continues to the next candidate. A role lookup and role rebind are outside this MVP because routing uses immutable session keys.
 
@@ -320,7 +319,7 @@ An exact correlated supervision route is considered before a lifecycle candidate
 
 ### ARC-04 — Assignment-disposition integration
 
-Every completion, surrender, and revocation seam calls one transaction-local lifecycle function after the assignment row, source-specific normal resolver, supervision terminus, and slate result are final but before commit. Completion passes its explicit report-to or `spawnedBy` resolver result. Surrender and revocation pass only their existing outcome-specific resolver result. The lifecycle function does not read either parent column to replace the result.
+Every completion, surrender, and revocation seam calls `Tightbeam.AssignmentLifecycle.admit_assignment_source_in_txn/2` after the assignment row, supervision terminus, and slate result are final but before commit. That function stores the TERM-01 source form and invokes `source_route_in_txn/3` in the same transaction. For completion, the route function derives TERM-05's one eligible `spawnedBy` candidate from the assignment and session rows. For surrender and revocation, it returns `{:ok, []}`. It never reads `operationalParent` for an assignment disposition.
 
 The function writes ARC-01's source event. If the close transaction created a `slateWakeId`, it records `resolved_existing` and writes no notice or report. Otherwise it attempts ARC-02's candidates transaction-locally. If no candidate can be enqueued, it writes ARC-07's Main report in the same transaction.
 
@@ -370,7 +369,7 @@ The capability block and re-check are agent-policy records. They are not lifecyc
 
 No new public mutation verb is added.
 
-`assignment-get` adds `lifecycleEpisodes`, ordered by source event `(ts, id)`. Each entry has exactly:
+The existing Gateway wire verb `assignment-get` adds `lifecycleEpisodes`, ordered by source event `(ts, id)`. The pinned Rust CLI does not expose `assignment-get`; this feature adds no CLI command. Each entry has exactly:
 
 ```json
 {
@@ -387,7 +386,7 @@ No new public mutation verb is added.
 
 `sourceId` uses either TERM-01 form. `state` is exactly one TERM-08 value. `relation` is exactly one of `bubble`, `supervision`, `source_route`, `expecter`, or `agent_owner`; `status` is the joined row's exact existing status. `reportMessageId` is the exact message id string only in `reported_main`; otherwise it is JSON null.
 
-`job-trace` includes the three lifecycle event kinds and the correlated attempt turns. Neither API returns source error text or report body.
+The existing `work-item-trace` wire verb and `tightbeam work-item-trace <workItemId>` CLI command include the three lifecycle event kinds and the correlated attempt turns through `Tightbeam.JobTrace`. Neither projection returns source error text or report body.
 
 ### ARC-10 — Error behavior
 
@@ -472,7 +471,7 @@ ARC-14 fixture validation and AC-15 packaged smoke are release-blocking for this
 Production files:
 
 ```text
-lib/tightbeam/assignment_lifecycle.ex          # new; source decoder, edge/query projection, evaluator, report
+lib/tightbeam/assignment_lifecycle.ex          # new; source decoder, source_route_in_txn/3, evaluator, query projection, report
 lib/tightbeam/assignments.ex                   # transaction-local assignment source hook
 lib/tightbeam/boot.ex                          # failed_unknown recovery admission hook
 lib/tightbeam/event_log.ex                     # typed lifecycle source/report readers and documentation
@@ -513,7 +512,9 @@ The first MVP review covered `art_c0dd2b7e` at SHA-256 `34f38864174b6b95525f0fb1
 
 Independent review assignment `asg_5df4205e-ca2f-4e97-a53f-ddb289fe895b` covered `art_71a67610` at SHA-256 `bf27ef2b7a1b190cc8175ce070c2a0c9d8ece363636b16851cbae66b7d80c8e1` and filed changes-requested verdict `att_1bcebc61` with report `art_b5a5f51e` at SHA-256 `3f8b1d9803278865b0c61aefa54e2dda769d6ce573b663812a9daf2d3b5f26dd`. Mike's direct ruling in transcript message `s_10c2b127-a7d6-42bc-b189-8453879e3d33` authorizes one current-main re-pin, that report's F1-only activation correction, and its matching AC-12 case. The re-pin adopts `main@8eeccbd6dfd221fe9d105783459637fb7a17ea83`.
 
-Fresh independent review assignment `asg_06569baa-8488-4632-8830-50477b31718c` covered frozen `art_9b4a467d` at SHA-256 `dbed7b4b138cd9cfc931a4854918ad435f22693e7b3e3f65e2eacde42fb56964` and filed changes-requested verdict `att_5cec5137-d582-44b8-a24d-b945a4141d46`. Full report `art_df1fb359` at SHA-256 `0acb50729960ab412bd679818b9b5bf389de6b31fad356ecee578b7a47a1e5c5` found the v3/v5 compatibility contradiction and the universal `spawnedBy` parent contradiction; it independently found the activation correction closed. Owner ruling `att_b96ca649-8620-4b24-a31f-519d42cae4fb` makes v5 canonical, retains the existing v4-to-v5 upgrade, sets `8eeccbd6...` as the same-shape rollback baseline, makes historical `b8e6c47e...` a refusing non-target, and requires source-specific normal resolvers without translating `spawnedBy` and `operationalParent`. No other product requirement changes.
+Fresh independent review assignment `asg_06569baa-8488-4632-8830-50477b31718c` covered frozen `art_9b4a467d` at SHA-256 `dbed7b4b138cd9cfc931a4854918ad435f22693e7b3e3f65e2eacde42fb56964` and filed changes-requested verdict `att_5cec5137-d582-44b8-a24d-b945a4141d46`. Full report `art_df1fb359` at SHA-256 `0acb50729960ab412bd679818b9b5bf389de6b31fad356ecee578b7a47a1e5c5` found the v3/v5 compatibility contradiction and the universal `spawnedBy` parent contradiction; it independently found the activation correction closed. Owner ruling `att_b96ca649-8620-4b24-a31f-519d42cae4fb` makes v5 canonical, retains the existing v4-to-v5 upgrade, sets `8eeccbd6...` as the same-shape rollback baseline, makes historical `b8e6c47e...` a refusing non-target, and keeps source-specific route semantics without translating `spawnedBy` and `operationalParent`. No other product requirement changes.
+
+Fresh independent review assignment `asg_1be7c264-605d-4338-a964-fa9b61534a13` covered frozen `art_0fe566a1` at SHA-256 `70cbb677365e48b0e7fd53db75654a143925a6066953e531693cfa0cb990e399` and filed changes-requested verdict `att_13640c6a-45be-4dc8-9889-d94c89bd19ca`. Full report `art_df6c1cbe` at SHA-256 `aabe63ab96a799e05516dc3eadf1f7ab6c0bfd9ad2d66eb9ba08549c3d7a62d2` found that the candidate claimed nonexistent report-to and disposition-resolver inputs, named nonexistent `job-trace`, and omitted a same-owner negative acceptance case. Operator decision `dr_0e7b378d-f43c-4e75-a506-1923013f7171` selected `authorize-current-surface-recon`: delete the nonexistent interfaces from this MVP, bind routing and trace to the pinned product's existing rows and verbs, and add the owner-mismatch exclusion. It does not authorize implementation, merge, release, deployment, completion, or disposition.
 
 The prior frozen candidate `art_1fbd7a55` at SHA-256 `5caf7d2dba7f90532c339d11b230bf4ba86d6e29ac1cf0ff8002403140272ca6` remains historical review evidence. It is not implementation authority.
 
@@ -527,13 +528,13 @@ Given the routing-owner specimen and an eligible failed assigned turn, when Bubb
 
 ### AC-02 — Source route and agent edges precede Main
 
-Given distinct active source-route, expecter, and agent-owner recipients not already attempted by an exact existing route, when an eligible source is recognized, then the source-route recipient receives one deterministic notice first. If it fails, the expecter receives one; if that fails, the agent owner receives one. If the source resolver returns no recipient, the expecter is first. Main receives no model turn. If any candidate delivers, state is `resolved_agent` and no ordinary Main report exists. A recipient already attempted by Bubble, supervision, or an earlier candidate receives no second notice.
+Given distinct active source-route, expecter, and agent-owner recipients not already attempted by an exact existing route, when an eligible source is recognized, then the source-route recipient receives one deterministic notice first. If it fails, the expecter receives one; if that fails, the agent owner receives one. If TERM-05 derives no source-route recipient, the expecter is first. Main receives no model turn. If any candidate delivers, state is `resolved_agent` and no ordinary Main report exists. A recipient already attempted by Bubble, supervision, or an earlier candidate receives no second notice.
 
 ### AC-03 — Source-specific parent routes and ownership stay unchanged
 
-Given child `C` has `spawnedBy=P1` and `operationalParent=P2`, when an assigned turn in `C` fails, then Bubble follows `P2` and lifecycle never substitutes `P1`. Given an assignment held by `C` completes without an explicit report-to declaration, then the completion resolver starts from `P1` and lifecycle never substitutes `P2`. Given completion has an explicit report-to declaration `R`, then its resolver uses `R` and does not start from either parent column. Given surrender or revocation, then lifecycle consumes only that outcome's existing resolver result and starts no parent walk.
+Given child `C` and `P1` are active sessions with owner `U`, `C.spawnedBy=P1`, and `C.operationalParent=P2`, when an assigned turn in `C` fails, then Bubble follows `P2` and lifecycle never substitutes `P1`. Given an assignment held by `C` completes, then TERM-05 yields only `P1` as the source-route candidate and never substitutes `P2`. Given `P1` instead has owner `V`, where `V != U`, then completion excludes `P1`, sends it no notice, and continues with the expecter edge. Given `P1` is missing, retired, or `kind = main`, then completion derives an empty source-specific route and continues with the expecter edge. Given surrender or revocation, then TERM-05 derives an empty source-specific route and starts no parent walk.
 
-Repeated terminal callbacks create one source event and at most one notice for each `(episode, recipient)`, even when `P1` and `P2` differ. One source never invokes both the failed-turn and completion resolver or treats both `P1` and `P2` as source-route candidates. A failed lifecycle notice does not start another Bubble climb. No write changes `spawnedBy`, `operationalParent`, report-to, holder, opener, owner, role, or review columns. No user-rooted reparenting or replacement session occurs.
+Repeated terminal callbacks create one source event and at most one notice for each `(episode, recipient)`, even when `P1` and `P2` differ. One source never applies both the failed-turn and completion rules or treats both `P1` and `P2` as source-route candidates. A failed lifecycle notice does not start another Bubble climb. No write changes `spawnedBy`, `operationalParent`, holder, opener, owner, role, or review columns. No user-rooted reparenting or replacement session occurs.
 
 ### AC-04 — Assignment terminal and slate behavior
 
@@ -589,7 +590,7 @@ Given a fixed-boundary source has one untried eligible agent candidate and lane 
 
 ### AC-13 — Trace, security, and deletion
 
-Given one episode in each derived state, including `refused`, when `assignment-get` and `job-trace` run, then they return ARC-09's exact identifiers, states, attempts, and report id. They return no source error or report body. No lifecycle delete command exists, and retirement or disposition deletes no lifecycle evidence.
+Given one episode in each derived state, including `refused`, when the existing Gateway wire verb `assignment-get` and the supported CLI command `tightbeam work-item-trace <workItemId>` run, then they return ARC-09's exact identifiers, states, attempts, and report id. The CLI parser still rejects `assignment-get` as outside its public surface, and no `job-trace` command exists. Neither projection returns source error text or report body. No lifecycle delete command exists, and retirement or disposition deletes no lifecycle evidence.
 
 ### AC-14 — Fixture fidelity
 
