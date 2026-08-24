@@ -18,6 +18,9 @@ Authority:
 - Successor changes-requested review: `att_32cf709c-7667-4ca8-a472-e857b63a8583`
   with full report `art_4ffef7c0` against commit
   `e4a3ae96b1a324c5951df7daaf3448a2b6ef9a21`.
+- Round-three changes-requested review: `att_5f156780-dc9c-4a3f-bb09-0c4bb81e2137`
+  with full report `art_232284fe` against commit
+  `647b269face5e41652ca5dc850b6d2ab3a398faf`.
 - The independent spec review must clear an exact content hash before implementation starts.
 
 ## Goal
@@ -318,12 +321,20 @@ I4.10. When an identity leaves the roster, the daemon discards its activity clai
 I4.11. If the same process identity later regains agent-root qualification, the daemon
 adds it with activity `unknown`.
 
-I4.12. The activity handler resolves the exact identity, verifies present status,
-samples the activity time, replaces the claim, increments the revision, and swaps the
-snapshot as one operation at the observe-then-commit seam.
+I4.12. Without releasing the observe-then-commit seam, the activity handler resolves
+the exact identity, verifies present status, samples the activity time, constructs the
+proposed claim, and compares its serialized activity data with the current claim.
 
 I4.13. If the identity is absent or has unknown presence at that operation, the handler
 returns `unknown_agent`. It leaves the roster, revision, and activity claims unchanged.
+
+I4.14. If the proposed activity data differs from the current claim, the handler
+increments the revision once, swaps the changed snapshot, and offers that snapshot to
+each subscriber before it returns an acknowledgement with the new revision.
+
+I4.15. If the proposed activity data equals the current claim, the handler retains the
+current snapshot, revision, and reason. It offers no subscriber frame and returns a
+successful acknowledgement with the retained revision.
 
 ### I5 — One local Unix socket carries the contract
 
@@ -365,6 +376,9 @@ invalid_activity | unknown_agent`.
 
 I5.10. A subscriber receives complete snapshots only. The protocol exposes no diff,
 cursor, replay, or history request.
+
+I5.11. Each accepted activity request returns one acknowledgement. Its `revision` is
+the new revision from I4.14 or the retained revision from I4.15.
 
 ### I6 — Snapshot schema is total
 
@@ -573,18 +587,19 @@ traffic cannot delay or cancel a scheduled scan.
 ### C. Snapshot commit and broadcast
 
 Observe-then-commit compares the proposed serialized state to the current state without
-the observation timestamp. When the state matches, it refreshes only the current
-snapshot's observation timestamp, retains the revision and reason, and sends no frame.
-Previously captured values remain unchanged. When the state differs, it increments the
-revision once, swaps the full immutable snapshot, and offers that snapshot to each
-subscriber.
+the top-level scan observation timestamp. When a scan proposal's state matches, it
+refreshes only the current snapshot's scan observation timestamp, retains the revision
+and reason, and sends no frame. Previously captured values remain unchanged. When the
+state differs, it increments the revision once, swaps the full immutable snapshot, and
+offers that snapshot to each subscriber.
 
 The activity handler parses the request before entering the mutation seam. At the seam,
-it resolves the exact identity against the then-current immutable snapshot and performs
-the I4.12 operation without releasing the seam. A scan removal that commits first makes
-the handler return `unknown_agent`; the handler cannot restore the removed record. An
-activity commit that lands first is carried or discarded by the later scan under
-I4.3-I4.4.
+it performs I4.12-I4.15 against the then-current immutable snapshot. An identical
+activity proposal retains the complete current snapshot and revision, returns an
+acknowledgement for that revision, and causes no broadcast. A scan removal that commits
+first makes the handler return `unknown_agent`; the handler cannot restore the removed
+record. An activity change that lands first is carried or discarded by the later scan
+under I4.3-I4.4.
 
 The broadcaster stores at most the newest not-yet-started snapshot for a subscriber. It
 can also finish the one application frame buffer whose socket write has started. The
@@ -652,7 +667,7 @@ returns with activity `unknown` because its preceding claim was discarded on rem
 scanner computes roots, **then** it retains the local candidate because the ancestor is
 outside the local-candidate domain.
 
-### A2 — Hook independence and enrichment (G2; I1, I3, I5)
+### A2 — Hook independence and enrichment (G2; I1, I3, I4, I5, I6)
 
 **Given** the four hookless records from A1, **when** the test sends `active` and then
 `idle` for one exact identity, **then** two changed snapshots report those claims with
@@ -661,6 +676,11 @@ server times, while the other three records remain `unknown`.
 **Given** an absent PID or the right PID with the wrong start time, **when** the test
 sends an activity request, **then** the server returns `unknown_agent`, creates no
 record, and changes no retained activity claim.
+
+**Given** a present identity whose current claim is `active` from an acceptance time T
+and a clock fixed at T, **when** the test sends `active` again, **then** the server
+returns an acknowledgement with the current instance ID and retained revision. The
+current snapshot and revision remain unchanged, and a subscriber receives no frame.
 
 ### A3 — Start and exit deadline (I1.3, I1.7)
 
