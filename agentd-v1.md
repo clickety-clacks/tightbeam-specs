@@ -617,8 +617,9 @@ enforces the byte limit before JSON parsing, and dispatches by `version` and `op
 For `snapshot`, the server captures the current immutable snapshot, writes one frame,
 and closes. For `subscribe`, the server registers the subscriber and captures the first
 snapshot under the same commit lock, then writes that frame before changed snapshots.
-For `activity`, the server commits the accepted claim, broadcasts the changed snapshot,
-writes one acknowledgement, and closes.
+For `activity`, the server applies I4.12-I4.15. It broadcasts the changed snapshot only
+after I4.14 changes the activity data. It writes one acknowledgement containing the
+revision identified by I5.11 and closes.
 
 The protocol carries complete snapshots because they make loss and coalescing harmless.
 A diff protocol, replay store, or cursor would add a second reconstruction mechanism
