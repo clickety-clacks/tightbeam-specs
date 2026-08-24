@@ -60,8 +60,10 @@ is the defect this work item changes.
   according to request kind. The expecter fields describe routing preference
   and provenance.
 - **Agent session principal**: the canonical session identity authenticated by
-  the gateway, represented in audit data as `session:<sessionKey>`. A supplied
-  role alias or origin string is not the principal.
+  the gateway, represented in audit data as `session:<sessionKey>`. A role
+  alias or caller-supplied origin that preserves session authentication does
+  not change that principal. `--as-user <id>` changes the authenticated
+  principal to `user:<id>`; it does not preserve the session principal.
 - **Existing human responder**: the user principal already authorized by the
   pinned source: the stamped `expecterUserId` for an `agent` request or the
   current `expecterUserId` for an `effort` request.
@@ -89,8 +91,9 @@ is the defect this work item changes.
 3. The pinned `answer_open`, `return_open`, and `effort_rule_in_txn` paths use
    an `open`-scoped compare-and-set. The agent paths commit the terminal row,
    lifecycle event, and asker notification in one transaction. The effort path
-   commits the ruling, event, generation effect, and deadline-wake disposition
-   in one transaction.
+   commits the ruling, generation effect, and deadline-wake disposition in one
+   transaction. It emits no ruling lifecycle event; existing effort evidence
+   and traces read the stored `ruledBy` and `ruledAt` fields.
 4. The pinned `decision-request` gateway verb is an exact-id read. The Rust CLI
    does not expose it, although the operating manual and CLI help already tell
    agents to use it.
@@ -112,9 +115,10 @@ that session with either expecter field.
 **INV-02 — Principal boundary.** An authenticated agent session may respond to
 an open expecter-bearing request when it supplies the complete request id and
 the response verb matches the request kind. Existing human responders retain
-their pinned-source standing. Other user principals, process principals,
-org-token role calls without a session principal, and anonymous calls gain no
-standing.
+their pinned-source standing. A session invocation attributed with `--as-user
+<id>` is a user principal for standing and audit and follows the existing human
+responder boundary. Other user principals, process principals, org-token role
+calls without a session principal, and anonymous calls gain no standing.
 
 **INV-03 — Statute isolation.** The exact-id affordance and response-standing
 change apply to `agent` and `effort` rows. A `statute` row continues to use its
@@ -151,12 +155,14 @@ winner. The stored actual responder does not change on a retry. Existing
 withdrawal retry semantics stay outside this change.
 
 **INV-08 — Actual responder is canonical and durable.** The winning transaction
-writes the canonical authenticated principal to `answeredBy`, `returnedBy`, or
-`ruledBy`; writes its timestamp; and emits the existing lifecycle event with the
-same canonical actor. A role alias, caller-supplied origin, current expecter, or
-request owner cannot substitute for the actual responder. The answer/return
-notice to the asker names that actor. Effort evidence and traces project the
-stored `ruledBy` actor.
+writes the canonical authenticated principal and timestamp to the response
+fields. An agent answer or return emits its existing lifecycle event with the
+same canonical actor. An effort ruling writes `ruledBy` and `ruledAt`; existing
+effort evidence and traces project that stored actor. The effort path emits no
+ruling lifecycle event.
+A role alias, caller-supplied origin, current expecter, or request owner cannot
+substitute for the actual responder. The answer/return notice to the asker names
+that actor.
 
 **INV-09 — Expecter mechanics continue until disposition.** Request creation
 and effort-rung rotation continue to set the expecter, arm notification and
@@ -308,10 +314,11 @@ row appears. A shortened id and a non-visible statute id each return the same
 
 **A-07 — Human compatibility.** Given the stamped user expecter for an agent or
 effort request, when that user performs its existing response, then the call
-succeeds and records `user:<id>`. Given a different user with the same complete
-id, when it attempts `answer` or `return` on an agent request, then it receives
-`not_found`; when it attempts `effort-rule`, then it receives `not_authorized`.
-No row changes.
+succeeds and records `user:<id>`. A session invocation using `--as-user <id>`
+uses that same user principal for standing, idempotency, and audit. Given a
+different user with the same complete id, when it attempts `answer` or `return`
+on an agent request, then it receives `not_found`; when it attempts
+`effort-rule`, then it receives `not_authorized`. No row changes.
 
 **A-08 — Statute authority.** Given an open statute request and a bystander
 agent session with its complete id, when the agent reads or responds through an
@@ -331,7 +338,9 @@ with `continue` and `dismiss` from distinct sessions, when the transactions are
 released in each deterministic ordering, then either one ruling wins and the
 deadline path no-ops against the terminal row, or rotation wins first and one
 later ruling can still win without an expecter comparison. One ruling actor,
-one ruling event, and one set of generation effects remain.
+one terminal ruling, and one set of generation effects remain. Existing effort
+evidence and traces report the stored `ruledBy` actor. The effort ruling emits
+no lifecycle event.
 
 **A-11 — Idempotent retries.** Given a committed answer, return, continue, or
 dismiss, when the stored actual responder repeats the same verb and normalized
@@ -339,11 +348,12 @@ payload, then the call exits 0 with the committed row and row/event/wake counts
 do not change. When another principal repeats the same payload or the winner
 changes the payload, then the call returns `not_open` and counts do not change.
 
-**A-12 — Actual responder ignores aliases.** Given a session calls through a
-role alias or another accepted origin label, when it wins a response, then the
-row, lifecycle event, trace, and asker notification name
+**A-12 — Session-preserving aliases do not replace the responder.** Given a
+session calls through a role alias or caller-supplied origin while authentication
+remains session-scoped, when it wins a response, then the row and each applicable
+lifecycle event, trace, and asker notification name
 `session:<authenticatedSessionKey>`, not the alias, role, expecter, owner, or
-supplied origin.
+supplied origin. A call attributed with `--as-user <id>` follows A-07 instead.
 
 **A-13 — Ordinary powers do not hitchhike.** Given a non-expecter session can
 read and rule an effort request but its principal cannot revoke, dispatch, or
