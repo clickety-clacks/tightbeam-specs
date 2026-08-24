@@ -9,7 +9,7 @@ Product owner assignment: `asg_0bd4c0ab-68a0-463e-92c4-e5d11a8135c5`
 
 ### INV-01 — A lifecycle source reaches an agent before Main
 
-For each eligible source, Tightbeam MUST first use any correlated existing route and TERM-05's current-surface route, then the recorded agent expecter and agent owner. A failed-turn source keeps Bubble's non-Main `sessions.operationalParent` climb. A completed-assignment source derives at most one route from the holder session's immutable `sessions.spawnedBy`. A surrendered or revoked assignment has no source-specific route in this MVP. Tightbeam MAY write one report to the owning user's personal Main stream only when no such route remains pending or able to accept a turn.
+For each eligible source, Tightbeam MUST first use any exactly correlated existing route and TERM-05's current-surface route, then the recorded agent expecter and agent owner. A failed-turn source keeps Bubble's non-Main `sessions.operationalParent` climb. A completed-assignment source derives at most one route from the holder session's immutable `sessions.spawnedBy`. A surrendered or revoked assignment has no source-specific route in this MVP. During normal live and terminal-replay recognition, a failed-turn source also defers while TERM-06's assignment-scoped supervision hold is present; ARC-12 states the finite activation exception. Tightbeam MAY write one report to the owning user's personal Main stream only when no exact route or applicable hold remains pending and no agent route can accept a turn.
 
 Main is a report audience. Main MUST NOT be inserted into the agent-candidate list and MUST NOT receive a lifecycle model turn.
 
@@ -37,7 +37,7 @@ The typed source form selects one TERM-05 rule. A retry MUST derive the same cur
 
 This MVP does not coalesce several sources into a mutable per-assignment episode.
 
-ARC-12 permits one predecessor-authored legacy marker beside the episode's one TERM-09 report during one rollback/reactivation cycle. That untyped predecessor marker is not a lifecycle report and never changes the derived episode state.
+ARC-12 permits one predecessor-authored legacy marker beside the episode's one TERM-09 report during one rollback/reactivation cycle. That untyped predecessor marker is not a lifecycle report and never changes the derived episode state. TERM-06 separately permits current supervision activity on the assignment and one deterministic lifecycle escalation chain for a failed-source episode to coexist without asserting that the supervision activity belongs to that episode; deterministic episode keys still enforce the lifecycle limits above.
 
 ### INV-06 — A Main report is its own atomic state
 
@@ -52,7 +52,7 @@ The change MUST preserve:
 - supervision of stalled open assignments; and
 - the zero-open-assignment slate wake.
 
-A routing-wake cancellation is never a lifecycle source. Bubble retains its current behavior byte-for-byte for unassigned turns and pre-MVP rows. For an eligible assigned turn, Bubble performs its normal non-Main lineage climb before the lifecycle mechanism tries other recorded agent edges. A correlated supervision or slate route counts as existing coverage and suppresses a duplicate lifecycle notice or report.
+A routing-wake cancellation is never a lifecycle source. Bubble retains its current behavior byte-for-byte for unassigned turns and pre-MVP rows. For an eligible assigned turn, Bubble performs its normal non-Main lineage climb before the lifecycle mechanism tries other recorded agent edges. An exactly correlated Bubble route or same-close slate wake counts as existing coverage and suppresses a duplicate lifecycle notice or report. Current supervision remains assignment-scoped and unchanged; TERM-06's joined pending rows may delay normal recognition but never resolve a root-specific episode.
 
 ### INV-08 — Attribution and content are truthful
 
@@ -110,7 +110,7 @@ This MVP does not add structured marker columns or require client-specific rende
 
 ### NG-07
 
-This feature does not alter assignment-open routing cancellation, wake-cancellation attribution, Bubble for unassigned turns, supervision thresholds, slate timing, or work-item disposition. It adds no report-to field, outcome-route field, or disposition resolver. TERM-05 derives the MVP route only from the pinned product's existing assignment and session rows.
+This feature does not alter assignment-open routing cancellation, wake-cancellation attribution, Bubble for unassigned turns, supervision thresholds, slate timing, or work-item disposition. It adds no report-to field, outcome-route field, disposition resolver, or root-to-supervision link. TERM-05 derives the MVP route only from the pinned product's existing assignment and session rows. Cross-domain deduplication between current supervision activity on an assignment and a lifecycle escalation chain for one of that assignment's source episodes is deferred; TERM-06 names the accepted MVP duplicate and infers no root relation.
 
 ## Terms
 
@@ -164,17 +164,20 @@ A source-specific current-surface route is the result of `Tightbeam.AssignmentLi
 
 The typed source form selects one of these three rules. The selected recipients are deduplicated with every existing-route, expecter, and agent-owner recipient for that episode. Lifecycle persists no route kind, recipient list, mutable lineage state, or universal parent edge.
 
-### TERM-06 — Existing route
+### TERM-06 — Exact existing coverage and assignment-scoped supervision hold
 
-Existing coverage is one of:
+Exact existing coverage is one of:
 
-- a Bubble notice whose cause is the root failed turn;
-- an exact supervision controller wake or turn correlated by the existing sidecar to that root turn and assignment; or
+- a Bubble notice whose cause is the root failed turn; or
 - the work item's `slateWakeId` created in the same assignment-close transaction.
 
-Queued or running coverage keeps the episode `resolving`. Delivered coverage resolves it. A terminal non-delivered route permits the next candidate. A pending slate wake is coverage because its existing domain intentionally routes the zero-assignment decision to Main.
+A queued or running Bubble notice keeps the failed-turn episode `resolving`. Delivered Bubble coverage resolves it. A terminal non-delivered Bubble route permits the next candidate. A pending slate wake resolves the assignment-close episode because its existing domain intentionally routes the zero-assignment decision to Main.
 
-An exact correlated non-delivered route also counts as a prior attempt by its recipient. Lifecycle MUST NOT send that recipient a second notice for the same episode.
+For a failed-turn source only, an assignment-scoped supervision hold exists when `supervision_liveness_sidecar` has a row with the source assignment's `assignmentId`, `controllerOrigin = 'scheduled'`, and `controllerState = 'pending'`, and its referenced `wakes` row has the same `wakeId`, the same `assignmentId`, and `state = 'pending'`. The hold uses only that existing-row join. It is not correlated to the root turn, is not existing coverage, is not a lifecycle attempt or receipt, and cannot yield `resolved_existing`. Normal failed-turn recognition defers without a lifecycle write while the hold exists. Once no matching pending join exists, recognition proceeds without treating a settled, canceled, or delivered supervision controller as coverage.
+
+Current supervision activity and a failed-source lifecycle episode may therefore both become visible on the same assignment. This is the **assignment-scoped supervision duplicate** accepted for the MVP: current supervision may act on the assignment while one deterministic lifecycle escalation chain proceeds for the episode, but no causal or root relation between them is inferred. The lifecycle chain's per-recipient notice and Main-report limits remain those of INV-05. Avoiding this duplicate would require the stable typed root-to-controller link that NG-07 excludes.
+
+An exact correlated non-delivered Bubble route also counts as a prior attempt by its recipient. Lifecycle MUST NOT send that recipient a second notice for the same episode.
 
 ### TERM-07 — Lifecycle notice
 
@@ -206,8 +209,8 @@ The read projection derives one state; no mutable lifecycle state row exists:
 
 | State | Row predicate |
 |---|---|
-| `resolving` | source event exists and none of the four terminal predicates below matches; this includes a queued/running route, an untried eligible agent edge, or a terminal non-delivered attempt awaiting callback or activation reconciliation |
-| `resolved_existing` | a correlated existing route delivered or a same-transaction slate wake covers an assignment close |
+| `resolving` | source event exists and none of the four terminal predicates below matches; this includes a queued/running exact route, an assignment-scoped supervision hold, an untried eligible agent edge, or a terminal non-delivered attempt awaiting callback or activation reconciliation |
+| `resolved_existing` | an exactly correlated Bubble route delivered or a same-transaction slate wake covers an assignment close |
 | `resolved_agent` | a source-route, expecter, or agent-owner lifecycle notice delivered |
 | `reported_main` | the deterministic ARC-07 Main marker exists |
 | `refused` | ARC-10's deterministic refusal event exists |
@@ -230,13 +233,13 @@ Assignment lifecycle source <sourceId> on assignment <assignmentId> needs your a
 
 ### TERM-10 — Capable agent
 
-An agent is capable only when its correlated existing-route or lifecycle-notice turn reaches `delivered`. An active session row permits an attempt; it does not prove capability.
+An agent is capable only when its exactly correlated existing-route or lifecycle-notice turn reaches `delivered`. A supervision sidecar without root identity is not evidence about the episode. An active session row permits an attempt; it does not prove capability.
 
 ## Assumptions
 
 ### ASM-01
 
-`turns`, `assignments`, `assignment_reopenings`, `sessions`, `work_items`, `wakes`, `messages`, and `lifecycle_events` retain committed rows needed by the derived projection.
+`turns`, `assignments`, `assignment_reopenings`, `sessions`, `work_items`, `wakes`, `messages`, `lifecycle_events`, and `supervision_liveness_sidecar` retain committed rows needed by the derived projection or the transient assignment-scoped hold. The existing sidecar foreign key and the joined `wakeId` and `assignmentId` make the hold predicate source-assignment-local; they do not create root correlation.
 
 ### ASM-02
 
@@ -248,7 +251,7 @@ The existing terminal publication reconciler enumerates a terminal turn whose `p
 
 ### ASM-04
 
-The current Bubble root correlation is `requestRef = bubble:<rootTurnSeq>`. Supervision sidecars and slate wake ids retain their current exact correlation fields.
+The current Bubble root correlation is `requestRef = bubble:<rootTurnSeq>`. Slate wake ids retain their current exact assignment-close correlation. A supervision sidecar retains `wakeId`, `assignmentId`, `controllerOrigin`, `controllerState`, and `chargedGeneration`, but no root turn sequence or lifecycle source id. `supervision_watermarks.lastEvaluatedTerminal` is mutable and is not a durable source-to-controller identity.
 
 ### ASM-05
 
@@ -293,7 +296,7 @@ The source event's typed `subject` stores the source form that selects the TERM-
 
 ### ARC-02 — Candidate order and exclusion
 
-After correlated existing routes are settled, derive candidates in this order:
+After exactly correlated existing routes are settled and either TERM-06's assignment-scoped hold is absent or ARC-12's finite activation exception applies, derive candidates in this order:
 
 1. TERM-05's source-specific current-surface recipient, when one exists;
 2. the expecter edge; and
@@ -315,7 +318,9 @@ A terminal lifecycle-notice turn is intercepted before Bubble can treat it as a 
 
 A terminal Bubble notice whose cause is an eligible root also re-evaluates that root. Delivered resolves the existing route. Non-delivered continues Bubble or, at its terminal rung, permits the first untried lifecycle edge.
 
-An exact correlated supervision route is considered before a lifecycle candidate. If that route is pending, recognition returns without writing. Its terminal callback re-evaluates the root. If delivered, it yields `resolved_existing`; otherwise evaluation continues.
+Before a lifecycle candidate is selected during normal live or terminal-replay recognition, the evaluator reads TERM-06's assignment-scoped supervision hold in the same transaction. If the hold exists, recognition returns without a lifecycle write and MUST NOT permit the root turn's `publishedAt` acknowledgement. The existing terminal reconciler therefore re-enters recognition for that root. When no matching pending sidecar-and-wake join remains, the evaluator continues with the exact Bubble state and lifecycle candidates; a settled, canceled, or delivered supervision controller neither resolves the episode nor counts as a prior recipient attempt.
+
+This hold changes no supervision row and adds no callback. It is deliberately weaker than exact coverage. If current supervision acts on the assignment before or after the hold clears, that activity and the deterministic lifecycle escalation chain may coexist without a root relation as TERM-06's named assignment-scoped supervision duplicate.
 
 ### ARC-04 — Assignment-disposition integration
 
@@ -331,9 +336,9 @@ Notice message and turn insertion use the existing Gateway/Ledger transaction se
 
 ### ARC-06 — Existing-route resolution
 
-The evaluator reads only the exact correlations in TERM-06. It does not treat an uncorrelated wake, turn, delivered message, progress attest, matching prose, same-session activity, or predecessor `lineage_exhausted` event as resolution.
+The evaluator reads only TERM-06's exact Bubble and slate correlations for episode resolution. It does not treat a supervision sidecar, uncorrelated wake, turn, delivered message, progress attest, matching prose, same-session activity, mutable supervision watermark, or predecessor `lineage_exhausted` event as resolution.
 
-Bubble and supervision keep their own state and mutation seams. Lifecycle adds no receipt table. Their existing durable turn, wake, and sidecar rows are the receipts for this MVP.
+Bubble and supervision keep their own state and mutation seams. Lifecycle adds no receipt table. Existing Bubble turn and same-close slate rows are the exact-coverage receipts for this MVP. The joined pending supervision sidecar and pending wake supply only the transient assignment-scoped hold predicate; lifecycle writes neither row and projects neither as an attempt.
 
 ### ARC-07 — Atomic Main report
 
@@ -384,7 +389,7 @@ The existing Gateway wire verb `assignment-get` adds `lifecycleEpisodes`, ordere
 }
 ```
 
-`sourceId` uses either TERM-01 form. `state` is exactly one TERM-08 value. `relation` is exactly one of `bubble`, `supervision`, `source_route`, `expecter`, or `agent_owner`; `status` is the joined row's exact existing status. `reportMessageId` is the exact message id string only in `reported_main`; otherwise it is JSON null.
+`sourceId` uses either TERM-01 form. `state` is exactly one TERM-08 value. `relation` is exactly one of `bubble`, `source_route`, `expecter`, or `agent_owner`; `status` is the joined row's exact existing status. The assignment-scoped supervision hold creates no attempt entry. `reportMessageId` is the exact message id string only in `reported_main`; otherwise it is JSON null.
 
 The existing `work-item-trace` wire verb and `tightbeam work-item-trace <workItemId>` CLI command include the three lifecycle event kinds and the correlated attempt turns through `Tightbeam.JobTrace`. Neither projection returns source error text or report body.
 
@@ -420,11 +425,11 @@ Each refusal logs the code, source id, episode id when derivable, and principal.
 
 Assignment disposition, slate coverage, source event, notice insertion, and immediate Main fallback share the assignment transition transaction. A crash leaves all or none.
 
-For failed turns, the source event shares the guarded terminal transaction. The live lane and terminal reconciler MUST run lifecycle/Bubble recognition to a durable result before setting `publishedAt`. A durable result is one queued/running exact existing route, one deterministic lifecycle notice, one Main marker, one refusal, or a delivered resolution. The reconciler uses a no-lane-nudge delivery mode during its own pass, then its existing pending-session scan starts any queued notice; this avoids a synchronous call back into itself.
+For failed turns, the source event shares the guarded terminal transaction. The live lane and terminal reconciler MUST run lifecycle/Bubble recognition to a durable result before setting `publishedAt`. A durable result is one queued/running exact Bubble route, one deterministic lifecycle notice, one Main marker, one refusal, or a delivered exact resolution. TERM-06's assignment-scoped supervision hold is not a durable result: recognition writes nothing and leaves `publishedAt` null. The reconciler uses a no-lane-nudge delivery mode during its own pass, then its existing pending-session scan starts any queued notice; this avoids a synchronous call back into itself.
 
 A crash before that durable result leaves `publishedAt` null, so terminal replay re-enters the evaluator. A crash after the result but before acknowledgement replays idempotently. Deterministic turn and message keys make both cases converge. A committed ARC-10 refusal is a durable result and is not retried after publication acknowledgement. The evaluator checks refusal before any route predicate; once refused, it performs no further lifecycle write even if another domain later inserts or delivers a correlated route.
 
-SQLite serialization decides candidate-retirement, supervision-route, and report races. Each transaction re-reads eligibility immediately before its write. The committed pre-change or post-change state wins; no check-then-act gap is permitted.
+SQLite serialization decides candidate retirement, insertion or settlement of a matching pending supervision sidecar-and-wake join, and report races. Each evaluator transaction re-reads eligibility and the hold predicate immediately before its write. During normal live or terminal-replay recognition, a matching pending join visible to that transaction defers the write; ARC-12's finite activation pass is the sole exception. Settled supervision activity or a pending controller inserted after a lifecycle write may coexist on the assignment with that deterministic episode as the named assignment-scoped supervision duplicate, without creating a causal relation. No check-then-act gap is permitted inside either transaction.
 
 ### ARC-12 — Migration, rollback, and compatibility
 
@@ -434,9 +439,9 @@ The supported application rollback baseline `8eeccbd6dfd221fe9d105783459637fb7a1
 
 Historical v3 binary `b8e6c47e4631da8345aaf8c6ab73b0858e630bf6` is not a supported rollback target. When pointed at a v5 store, it MUST refuse at the existing shape gate before any lifecycle or application write. Neither this feature nor an operator downgrades the stamp or data to make that binary run.
 
-At each activation of this version, before it accepts new work, Boot reads the maximum existing `lifecycle_events.id`. It enumerates each `assignment_lifecycle_source_v1` event at or below that fixed boundary in `(ts, id)` order and invokes the evaluator. A source that is resolved, refused, or waiting on a pending route is an idempotent no-op. A source after the boundary uses its normal terminal hook. A crash restarts the finite pass from the same rows; deterministic identifiers make repetition safe. The pass stores no cursor or receipt.
+At each activation of this version, before it accepts new work, Boot reads the maximum existing `lifecycle_events.id`. It enumerates each `assignment_lifecycle_source_v1` event at or below that fixed boundary in `(ts, id)` order and invokes the evaluator. A source that is resolved, refused, or waiting on an exactly correlated pending route is an idempotent no-op. A source after the boundary uses its normal terminal hook. A crash restarts the finite pass from the same rows; deterministic identifiers make repetition safe. The pass stores no cursor or receipt.
 
-During this activation pass, the evaluator commits an inserted lifecycle notice as queued and returns without synchronous publication or a lane nudge. Boot does not invoke `Gateway.complete_delivery/2` or `LaneManager.ensure_lane/2` for that notice. After lane infrastructure starts, the existing pending-session scan publishes the queued notice and starts its lane.
+During this activation pass, the evaluator commits an inserted lifecycle notice as queued and returns without synchronous publication or a lane nudge. Boot does not invoke `Gateway.complete_delivery/2` or `LaneManager.ensure_lane/2` for that notice. After lane infrastructure starts, the existing pending-session scan publishes the queued notice and starts its lane. The finite activation pass does not apply TERM-06's assignment-scoped supervision hold: no durable root-to-controller relation or source-specific settlement callback exists to release such a boot hold. It proceeds with exact coverage and lifecycle candidates, accepting the named assignment-scoped supervision duplicate instead of risking permanent silent loss.
 
 This activation pass is required because the predecessor can acknowledge a lifecycle-notice terminal after writing only its own untyped rows; ordinary `publishedAt` replay then has no terminal left to revisit. Deleting the pass would restore silent loss. Treating the predecessor event as delivery violates INV-01, and adding a receipt or cursor loses to the finite idempotent scan.
 
@@ -446,7 +451,7 @@ Terminal sources committed only before first activation or while the predecessor
 
 ### ARC-13 — Observability, security, and deletion
 
-Metrics expose counts for source admitted, existing-route resolved, agent resolved, Main reported by reason, duplicate callback, and named error code. Labels MUST NOT contain a prompt, error, note, subject, model output, credential, arbitrary session key, assignment id, or work-item id.
+Metrics expose counts for source admitted, exact-existing-route resolved, agent resolved, Main reported by reason, duplicate callback, and named error code. The existing-route metric counts only exact Bubble or slate coverage; it does not classify a supervision hold or flow as episode resolution. Labels MUST NOT contain a prompt, error, note, subject, model output, credential, arbitrary session key, assignment id, or work-item id.
 
 Structured logs may carry source id, episode id, relation, recipient session key, and named code. Report bodies and notice prompts use only TERM-07 and TERM-09 content.
 
@@ -500,7 +505,7 @@ scripts/capture_assignment_lifecycle_fixtures.exs
 scripts/assignment_lifecycle_smoke.exs
 ```
 
-`lib/tightbeam/schema.ex`, Rust CLI files, identity/Kung Fu content, client code, release code, and deployment files are outside the implementation set.
+`lib/tightbeam/schema.ex`, `lib/tightbeam/supervision.ex`, Rust CLI files, identity/Kung Fu content, client code, release code, and deployment files are outside the implementation set. Lifecycle only reads TERM-06's joined sidecar-and-wake hold predicate; it adds no supervision mutation or callback.
 
 ### ARC-16 — Source and review provenance
 
@@ -516,19 +521,27 @@ Fresh independent review assignment `asg_06569baa-8488-4632-8830-50477b31718c` c
 
 Fresh independent review assignment `asg_1be7c264-605d-4338-a964-fa9b61534a13` covered frozen `art_0fe566a1` at SHA-256 `70cbb677365e48b0e7fd53db75654a143925a6066953e531693cfa0cb990e399` and filed changes-requested verdict `att_13640c6a-45be-4dc8-9889-d94c89bd19ca`. Full report `art_df6c1cbe` at SHA-256 `aabe63ab96a799e05516dc3eadf1f7ab6c0bfd9ad2d66eb9ba08549c3d7a62d2` found that the candidate claimed nonexistent report-to and disposition-resolver inputs, named nonexistent `job-trace`, and omitted a same-owner negative acceptance case. Operator decision `dr_0e7b378d-f43c-4e75-a506-1923013f7171` selected `authorize-current-surface-recon`: delete the nonexistent interfaces from this MVP, bind routing and trace to the pinned product's existing rows and verbs, and add the owner-mismatch exclusion. It does not authorize implementation, merge, release, deployment, completion, or disposition.
 
+Fresh independent review assignment `asg_00702aaf-936f-4258-b8b9-4b30fa48ce9e` covered frozen `art_e95e53a4` at SHA-256 `eef15876b44a72fd34213f86d1a2aedda02e0ccdacc0a72a6a8d2c627fe031e0` and filed changes-requested verdict `att_dd1ca4f0-8b58-4e00-a858-b122a4619982`. Full report `art_eb59029e` at SHA-256 `2bcb2950762321c19a3ce4805deaf1196b48e85fad3adda15dc5911e97193ec6` found that the current supervision sidecar has no durable root-turn identity and therefore cannot produce exact episode coverage or `resolved_existing`. Operator decision `dr_815a42b0-7c71-4d90-a052-1cbf06f41d02` selected `authorize-one-named-supervision-duplicate`: retain only the current assignment-scoped pending hold, never project supervision as exact episode coverage, and permit current supervision activity on the assignment and one deterministic lifecycle escalation chain for a source episode to coexist without inferring a causal relation. Adding a typed root-to-controller link loses because that option was not selected; treating supervision as exact coverage loses because it can silently suppress the wrong source. The prior review's current-row routing, public trace, and owner-mismatch closures remain unchanged. The ruling grants no implementation, merge, release, deployment, completion, or disposition authority.
+
+The immediately prior frozen candidate `art_e95e53a4` at SHA-256 `eef15876b44a72fd34213f86d1a2aedda02e0ccdacc0a72a6a8d2c627fe031e0` remains historical review evidence. It is not implementation authority.
+
 The prior frozen candidate `art_1fbd7a55` at SHA-256 `5caf7d2dba7f90532c339d11b230bf4ba86d6e29ac1cf0ff8002403140272ca6` remains historical review evidence. It is not implementation authority.
 
 The builder MUST recheck remote `refs/heads/main`. If it differs from `8eeccbd6dfd221fe9d105783459637fb7a17ea83`, implementation stops for an owner re-pin.
 
 ## Acceptance
 
-### AC-01 — Existing route wins
+### AC-01 — Exact coverage wins; assignment-scoped supervision only holds
 
-Given the routing-owner specimen and an eligible failed assigned turn, when Bubble or exact supervision coverage is queued, running, or delivered, then lifecycle writes no duplicate notice or report. When that coverage terminates non-delivered, lifecycle considers the next distinct agent edge once.
+Given the routing-owner specimen and an eligible failed assigned turn, when an exactly correlated Bubble notice is queued, running, or delivered, then lifecycle writes no duplicate notice or report. When that notice terminates non-delivered, lifecycle considers the next distinct agent edge once.
+
+Given normal live or terminal-replay recognition for an eligible failed assigned turn, a sidecar row for the same assignment with `controllerOrigin = 'scheduled'` and `controllerState = 'pending'`, and its referenced wake row with the same `wakeId`, the same `assignmentId`, and `state = 'pending'`, when the evaluator runs, then it writes no lifecycle attempt, resolution, or report and leaves the root turn's `publishedAt` null. When no matching pending join is visible and the existing terminal reconciler next visits that null-published root, it re-enters the same source and proceeds from its exact Bubble state. A sidecar-only row whose wake is canceled or fired does not hold recognition. A settled, canceled, or delivered supervision controller never yields `resolved_existing` and never excludes a lifecycle recipient as a prior attempt.
+
+Given that current supervision acts on the assignment and one failed-source lifecycle episode later proceeds, when both are read, then the supervision activity and one lifecycle escalation chain may coexist as the named assignment-scoped supervision duplicate without any derived root relation. Ten evaluator replays still leave at most one lifecycle notice per recipient and one lifecycle Main marker for the episode.
 
 ### AC-02 — Source route and agent edges precede Main
 
-Given distinct active source-route, expecter, and agent-owner recipients not already attempted by an exact existing route, when an eligible source is recognized, then the source-route recipient receives one deterministic notice first. If it fails, the expecter receives one; if that fails, the agent owner receives one. If TERM-05 derives no source-route recipient, the expecter is first. Main receives no model turn. If any candidate delivers, state is `resolved_agent` and no ordinary Main report exists. A recipient already attempted by Bubble, supervision, or an earlier candidate receives no second notice.
+Given distinct active source-route, expecter, and agent-owner recipients not already attempted by an exact existing route, when an eligible source is recognized, then the source-route recipient receives one deterministic notice first. If it fails, the expecter receives one; if that fails, the agent owner receives one. If TERM-05 derives no source-route recipient, the expecter is first. Main receives no model turn. If any candidate delivers, state is `resolved_agent` and no ordinary Main report exists. A recipient already attempted by Bubble or an earlier lifecycle candidate receives no second notice; an assignment-scoped supervision hold has no recipient-attempt effect.
 
 ### AC-03 — Source-specific parent routes and ownership stay unchanged
 
@@ -552,7 +565,7 @@ Given a failed-turn source commits and the process crashes before routing, when 
 
 ### AC-07 — Race closure
 
-Given candidate retirement or supervision route insertion races evaluation, when both transactions finish, then SQLite order produces exactly the pre-change or post-change valid result. No report commits while a route visible to its transaction remains pending or delivered.
+Given candidate retirement or insertion or settlement of a matching pending supervision sidecar-and-wake join races normal live or terminal-replay evaluation, when both transactions finish, then SQLite order produces exactly the valid state visible to the evaluator transaction. A matching pending join yields no lifecycle write on those paths; ARC-12 tests the finite activation exception separately. A sidecar-only row whose wake is already canceled or fired does not hold recognition. A pending controller inserted after a lifecycle write may coexist on the assignment only as TERM-06's named assignment-scoped supervision duplicate and creates no root relation. A visible exactly correlated Bubble route still prevents a report while it remains pending or delivered.
 
 Given ARC-10 refusal commits and an independently owned route is inserted or delivered later, when the episode is read and recognition is retried, then its state remains `refused` and lifecycle writes no notice or report.
 
@@ -588,9 +601,11 @@ Given the last queued lifecycle notice enters the predecessor during one rollbac
 
 Given a fixed-boundary source has one untried eligible agent candidate and lane infrastructure has not started, when Boot invokes the evaluator, then Boot completes and one deterministic lifecycle notice remains queued without publication or a lane nudge. The activation path makes zero calls to `Gateway.complete_delivery/2` and `LaneManager.ensure_lane/2` for that notice. When lane infrastructure and the existing pending-session scan start, the scan publishes that queued notice and starts exactly one lane for it.
 
+Given that fixed-boundary source also has TERM-06's pending assignment-scoped supervision sidecar-and-wake join, when Boot runs the finite activation pass, then the pass does not hold on that uncorrelated join. It commits the same one deterministic lifecycle notice or report and permits current supervision activity to coexist. Ten activation replays create no additional lifecycle notice or report.
+
 ### AC-13 — Trace, security, and deletion
 
-Given one episode in each derived state, including `refused`, when the existing Gateway wire verb `assignment-get` and the supported CLI command `tightbeam work-item-trace <workItemId>` run, then they return ARC-09's exact identifiers, states, attempts, and report id. The CLI parser still rejects `assignment-get` as outside its public surface, and no `job-trace` command exists. Neither projection returns source error text or report body. No lifecycle delete command exists, and retirement or disposition deletes no lifecycle evidence.
+Given one episode in each derived state, including `refused`, when the existing Gateway wire verb `assignment-get` and the supported CLI command `tightbeam work-item-trace <workItemId>` run, then they return ARC-09's exact identifiers, states, attempts, and report id. A pending or settled supervision sidecar creates no `supervision` relation, attempt, or `resolved_existing` state in either projection. The CLI parser still rejects `assignment-get` as outside its public surface, and no `job-trace` command exists. Neither projection returns source error text or report body. No lifecycle delete command exists, and retirement or disposition deletes no lifecycle evidence.
 
 ### AC-14 — Fixture fidelity
 
@@ -622,7 +637,7 @@ This packaged smoke is release-blocking for the exact ARC-14 rationale. It adds 
 | INV-01, INV-03, INV-04 | AC-01 through AC-04, AC-10, AC-12 | `assignment_lifecycle.ex`, `bubble.ex`, `assignments.ex` |
 | INV-02 | AC-08 through AC-11 | `assignment_lifecycle.ex`; existing Kung Fu, assignment, and wake seams unchanged |
 | INV-05, INV-06 | AC-04 through AC-07, AC-12 | `assignment_lifecycle.ex`, `gateway.ex`, `session_lane.ex`, `lane_manager.ex`, `ledger.ex`, existing unique indexes |
-| INV-07 | AC-01, AC-03, AC-04, AC-14 | `bubble.ex`, existing supervision/slate seams |
+| INV-07 | AC-01, AC-03, AC-04, AC-07, AC-12, AC-14 | `assignment_lifecycle.ex`, `boot.ex`, `bubble.ex`, existing supervision/slate seams |
 | INV-08, INV-10 | AC-05, AC-13 | `event_log.ex`, `projection.ex` unchanged, `job_trace.ex` |
 | INV-09 | AC-04, AC-12 | `assignments.ex`; no schema file change |
 | GOAL-01 | AC-01 through AC-07, AC-12 | source hooks and evaluator |
@@ -636,4 +651,4 @@ This packaged smoke is release-blocking for the exact ARC-14 rationale. It adds 
 
 Blocking: none.
 
-Non-blocking: none. NG-04 through NG-06 are explicit follow-on deferrals, not hidden decisions required to build this MVP.
+Non-blocking: none. NG-04 through NG-07 are explicit follow-on deferrals, not hidden decisions required to build this MVP.
