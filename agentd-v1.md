@@ -12,9 +12,12 @@ Authority:
 
 - Owner Spirit gate: `att_f86bed15-e1bd-490f-a45f-d1970d12059d`.
 - Orchestrator digest: `att_a7fa9792-fec8-411f-9a5c-7e1c0e65fd66`.
-- Changes-requested review: `att_aecc2141-763b-43df-a472-5454434bd484` with full
+- First changes-requested review: `att_aecc2141-763b-43df-a472-5454434bd484` with full
   report `art_2405714e` against commit
   `b14cc5f3165cbc4bb1161127397b21030911e870`.
+- Successor changes-requested review: `att_32cf709c-7667-4ca8-a472-e857b63a8583`
+  with full report `art_4ffef7c0` against commit
+  `e4a3ae96b1a324c5951df7daaf3448a2b6ef9a21`.
 - The independent spec review must clear an exact content hash before implementation starts.
 
 ## Goal
@@ -96,13 +99,17 @@ A **local harness candidate** is a harness candidate whose effective UID equals 
 daemon's effective UID.
 
 A **validated local harness candidate** is a local harness candidate whose two stat
-reads in one scan report the same positive start time. The second read must still match
-the harness rule and a non-zombie process state.
+reads in one scan report the same positive start time and the same parent process ID.
+The second read must still match the harness rule and a non-zombie process state. A
+parent process ID change leaves ancestry unresolved with cause `process_raced`.
 
-An **agent root** is a validated local harness candidate whose observed parent chain
-contains no ancestor that is also a validated local harness candidate for the same
-harness in the same completed procfs scan. The parent-chain walk passes through
-processes that are not harness candidates. This rule collapses same-user helper
+An **agent root** is a validated local harness candidate whose resolved observed parent
+chain contains no ancestor that is also a validated local harness candidate for the
+same harness in the same completed procfs scan. The parent-chain walk passes through
+processes that are not harness candidates. It resolves when it reaches parent process
+ID 0. A missing referenced parent entry or a repeated process ID leaves the chain
+unresolved with cause `process_raced`.
+The walker visits each process ID at most once. This rule collapses same-user helper
 descendants into one roster entry. A different-UID ancestor does not disqualify a local
 harness candidate. Sibling validated local harness candidates remain separate entries.
 
@@ -116,8 +123,8 @@ the command line, or the vendor.
 - `present`: the scanner read the same positive start time twice during one scan, the
   process qualified as an agent root, and the second stat read still matched the
   harness rule and a non-zombie process state.
-- `unknown`: the scanner previously proved the identity, but a non-absence read failure
-  prevented the next scan from proving or disproving it.
+- `unknown`: the scanner previously proved the identity, but a non-absence read or
+  ancestry-resolution failure prevented the next scan from proving or disproving it.
 - `absent`: a complete scan proved that procfs no longer exposed the identity as a
   qualifying local-user agent. Disappearance, start-time change, harness mismatch,
   zombie state, effective-UID mismatch, or loss of agent-root qualification proves this
@@ -224,9 +231,8 @@ I2.1. The scanner uses the command-name table in Terms to classify v1 harnesses.
 I2.2. The scanner classifies a harness candidate as local only when the effective UID in
 `/proc/<pid>/status` equals the daemon's effective UID.
 
-I2.3. The scanner walks the complete observed parent chain for each validated local
-harness candidate. Only a same-harness validated local candidate in that chain
-disqualifies the process as an agent root.
+I2.3. The scanner walks the observed parent chain for each validated local harness
+candidate. It visits each process ID at most once.
 
 I2.4. The scanner emits one record for each agent root.
 
@@ -237,11 +243,23 @@ I2.6. The scanner reads no command line or environment value for detection or ou
 I2.7. A process outside the closed command-name table, or a process whose effective UID
 differs from the daemon's effective UID, does not enter the roster.
 
+I2.8. The parent-chain walker stops when it reaches parent process ID 0, cannot find a
+referenced parent in the first-read table, or encounters a process ID that it has
+already visited.
+
+I2.9. A missing referenced parent, a repeated process ID, or a candidate parent process
+ID that differs between its two stat reads produces a `parent_chain` scan issue with
+cause `process_raced`.
+
+I2.10. When ancestry is unresolved, the scanner keeps an affected retained identity
+with `presence.state=unknown` and cause `process_raced`. It omits an affected new
+identity because the scan did not prove agent-root qualification.
+
 ### I3 — Unknown remains explicit
 
-I3.1. A non-absence stat or status failure for a retained identity changes its presence
-to `unknown` with one cause from
-`permission_denied | io_error | proc_unavailable`.
+I3.1. A non-absence stat, status, or ancestry failure for a retained identity changes
+its presence to `unknown` with one cause from
+`permission_denied | process_raced | io_error | proc_unavailable`.
 
 I3.2. A failed cwd read produces `cwd.state=unknown`, `cwd.value=null`, and one cause
 from `permission_denied | process_raced | io_error`.
@@ -300,6 +318,13 @@ I4.10. When an identity leaves the roster, the daemon discards its activity clai
 I4.11. If the same process identity later regains agent-root qualification, the daemon
 adds it with activity `unknown`.
 
+I4.12. The activity handler resolves the exact identity, verifies present status,
+samples the activity time, replaces the claim, increments the revision, and swaps the
+snapshot as one operation at the observe-then-commit seam.
+
+I4.13. If the identity is absent or has unknown presence at that operation, the handler
+returns `unknown_agent`. It leaves the roster, revision, and activity claims unchanged.
+
 ### I5 — One local Unix socket carries the contract
 
 I5.1. The daemon listens on one `AF_UNIX`, `SOCK_STREAM` socket at
@@ -324,8 +349,8 @@ I5.5. The closed request set is:
 Each request contains exactly the fields in its example. Duplicate, missing, or extra
 fields, non-integer identity values, and non-positive identity values are malformed.
 
-I5.6. The activity handler accepts `active` or `idle` only for an exact process identity
-whose current presence is `present`.
+I5.6. The activity handler accepts `active` or `idle` only when the exact process
+identity has `presence.state=present` at the activity commit operation in I4.12.
 
 I5.7. The server samples `activity.observedAtUnixMs` when it accepts the request. It
 sets `activity.source=hook`.
@@ -385,7 +410,8 @@ I6.4. `scan.state` is `complete | degraded`. It is `degraded` exactly when procf
 enumeration failed or at least one retained identity has unknown presence.
 
 I6.5. Each scan issue has the exact fields `pid`, `field`, and `cause`. `pid` is a
-positive integer or null. `field` is `proc | stat | status | cwd`. `cause` is
+positive integer or null. `field` is
+`proc | stat | status | parent_chain | cwd`. `cause` is
 `permission_denied | process_raced | io_error | proc_unavailable`.
 
 I6.6. The serializer orders scan issues by `(pid, field, cause)`, with a null PID before
@@ -436,7 +462,10 @@ degraded scan is not a command error.
 
 I7.11. `agentd watch` prints a valid degraded snapshot and keeps the subscription open.
 
-I7.12. A usage, socket, protocol, or daemon error exits 1 and writes one error line to
+I7.12. `agentd activity` exits 0 after it receives an acknowledgement for its request.
+It writes nothing to stdout or stderr.
+
+I7.13. A usage, socket, protocol, or daemon error exits 1 and writes one error line to
 stderr that names the failed operation and cause.
 
 ### I8 — The systemd user service owns runtime lifecycle
@@ -521,9 +550,11 @@ The scanner performs this sequence:
    daemon's effective UID.
 7. Re-read each local harness candidate's stat record. Drop the candidate when the
    second read disappeared, changed start time, changed harness, or became a zombie.
-8. Walk each validated local harness candidate's full observed parent chain. Retain the
-   candidate as an agent root only when no ancestor is a validated local candidate for
-   the same harness.
+   Mark its ancestry `process_raced` when the parent process ID changed.
+8. Walk each validated local harness candidate's observed parent chain with a visited
+   process-ID set. Apply I2.8-I2.10 when the walk stops. Retain the candidate as an agent
+   root only when the resolved chain contains no validated local candidate for the same
+   harness.
 9. Read each root's cwd link.
 10. Reconcile old identities under I1 and I3. Remove a retained identity when it loses
     agent-root qualification. Add an existing process identity when it gains agent-root
@@ -548,9 +579,12 @@ Previously captured values remain unchanged. When the state differs, it incremen
 revision once, swaps the full immutable snapshot, and offers that snapshot to each
 subscriber.
 
-The activity handler resolves the exact identity against the current immutable snapshot.
-It proposes one changed activity claim through the same commit seam. The handler returns
-`unknown_agent` when the identity is absent or its presence is unknown.
+The activity handler parses the request before entering the mutation seam. At the seam,
+it resolves the exact identity against the then-current immutable snapshot and performs
+the I4.12 operation without releasing the seam. A scan removal that commits first makes
+the handler return `unknown_agent`; the handler cannot restore the removed record. An
+activity commit that lands first is carried or discarded by the later scan under
+I4.3-I4.4.
 
 The broadcaster stores at most the newest not-yet-started snapshot for a subscriber. It
 can also finish the one application frame buffer whose socket write has started. The
@@ -669,6 +703,11 @@ same instance.
 before that scan commits, **then** the later scan snapshot retains the new activity
 claim.
 
+**Given** an activity request that has been parsed for identity X, **when** a complete
+scan removes X before the activity handler enters observe-then-commit, **then** the
+handler returns `unknown_agent`, commits no snapshot, and does not restore X or change
+another identity's activity claim.
+
 **Given** one scan commit that changes both roster and scan fields, **when** the daemon
 serializes it, **then** its reason is `roster_changed`. **Given** an activity-only
 commit, **then** its reason is `activity_changed` and its `observedAtUnixMs` equals the
@@ -720,6 +759,11 @@ frame plus LF.
 
 **When** the user runs `agentd watch --json` and one agent exits, **then** stdout contains
 the initial complete frame and a later complete frame without that identity.
+
+**Given** a present agent identity, **when** a user runs `agentd activity --pid <pid>
+--state active`, **then** the command exits 0, writes nothing to stdout or stderr, and a
+subsequent `agentd list --json` reports `activity.state=active` with source `hook` for
+that exact identity.
 
 ### A10 — User-service lifecycle (G5; I8)
 
@@ -781,6 +825,20 @@ checkout runs the repository's documented format, static-analysis, unit, integra
 and real-smoke commands, **then** each command exits 0 and the report records the exact
 commit, commands, exit results, socket path, daemon instance IDs, process identities,
 and teardown result.
+
+### A15 — Raced parent-chain termination (I2, I3, I6)
+
+**Given** a retained root candidate whose two stat reads keep the same identity and
+harness but report different parent process IDs, **when** the scanner commits, **then**
+the record remains with `presence.state=unknown` and cause `process_raced`. The snapshot
+contains `field=parent_chain cause=process_raced` for that PID.
+
+**Given** a first-read table in which candidate PID 100 names parent PID 200 and PID 200
+names parent PID 100, **when** the scanner resolves PID 100's ancestry, **then** it visits
+each PID at most once, commits without inventing a present agent root, and emits a
+`parent_chain` issue with cause `process_raced`. It keeps PID 100 with unknown presence
+when that identity was retained before the scan. It omits PID 100 when the identity was
+new in that scan.
 
 ## Open Questions
 
