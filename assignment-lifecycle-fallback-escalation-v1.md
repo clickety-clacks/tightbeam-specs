@@ -244,7 +244,7 @@ The current Bubble root correlation is `requestRef = bubble:<rootTurnSeq>`. Supe
 
 ### ASM-05
 
-The controlling implementation baseline is `main@2d0bbf056996ca573379bc022f7620b55f309120`, database shape `coordination-fabric-v1-phase1-v3`, CI file SHA-256 `1ccc8176ca9a8b9c2a677eaf31723e3c9602f6790ed8baccb945a5bc2d000e57`, and rollback predecessor `b8e6c47e4631da8345aaf8c6ab73b0858e630bf6`.
+The controlling implementation baseline is `main@8eeccbd6dfd221fe9d105783459637fb7a17ea83`, database shape `coordination-fabric-v1-phase1-v3`, CI file SHA-256 `1ccc8176ca9a8b9c2a677eaf31723e3c9602f6790ed8baccb945a5bc2d000e57`, and rollback predecessor `b8e6c47e4631da8345aaf8c6ab73b0858e630bf6`.
 
 ### ASM-06
 
@@ -424,6 +424,8 @@ The immediate predecessor `b8e6c47e4631da8345aaf8c6ab73b0858e630bf6` ignores the
 
 At each activation of this version, before it accepts new work, Boot reads the maximum existing `lifecycle_events.id`. It enumerates each `assignment_lifecycle_source_v1` event at or below that fixed boundary in `(ts, id)` order and invokes the evaluator. A source that is resolved, refused, or waiting on a pending route is an idempotent no-op. A source after the boundary uses its normal terminal hook. A crash restarts the finite pass from the same rows; deterministic identifiers make repetition safe. The pass stores no cursor or receipt.
 
+During this activation pass, the evaluator commits an inserted lifecycle notice as queued and returns without synchronous publication or a lane nudge. Boot does not invoke `Gateway.complete_delivery/2` or `LaneManager.ensure_lane/2` for that notice. After lane infrastructure starts, the existing pending-session scan publishes the queued notice and starts its lane.
+
 This activation pass is required because the predecessor can acknowledge a lifecycle-notice terminal after writing only its own untyped rows; ordinary `publishedAt` replay then has no terminal left to revisit. Deleting the pass would restore silent loss. Treating the predecessor event as delivery violates INV-01, and adding a receipt or cursor loses to the finite idempotent scan.
 
 On reactivation, exact source events written by this version remain eligible and idempotent. The evaluator uses the exact source and attempt rows, ignores the predecessor's unversioned `lineage_exhausted` detail, and never parses its prose. When no refusal, typed current-version report, delivered or pending route, or untried agent candidate exists, it writes TERM-09's one deterministic marker. During one supported rollback/reactivation cycle, this can leave one predecessor legacy marker and one current TERM-09 marker for the same underlying failure. Current-version replays add no second TERM-09 marker. This named duplicate is safer than treating an event written with no Main stream as delivery, and avoiding it would require forbidden prose parsing or a new receipt surface.
@@ -496,9 +498,11 @@ This MVP consumes ninth-review report `art_52f72ba6` at SHA-256 `93c916f24657d40
 
 The first MVP review covered `art_c0dd2b7e` at SHA-256 `34f38864174b6b95525f0fb1a6497b1df6087cee6bd096aadec5792b375a393e` and filed changes-requested verdict `att_08478431-132c-41d6-a9ca-902f3fedb4a4` with report `art_ac28c6c8` at SHA-256 `d11a405ca630ce829ffbb3141209e7a6d9ccdf6573627271dcb6b79f357f74c7`. Operator decision `dr_cfe612db-7289-4a1f-acd5-5bb26701fbfc` authorized the minimal F1/F2 closure: close-generation assignment identity, deletion of untyped predecessor events as coverage, and the bounded rollback duplicate in ARC-12. Owner re-pin `att_7d588233-c56b-4641-a90e-1c8af14f1cf0` adopts `main@b8e6c47e4631da8345aaf8c6ab73b0858e630bf6` and deletes typed model-exhaustion-to-Main behavior from this MVP. Owner ruling `att_a8418685-4f10-4a91-90b0-9ac9b6bceb48` advances the baseline to `main@2d0bbf056996ca573379bc022f7620b55f309120` with rollback predecessor `b8e6c47e4631da8345aaf8c6ab73b0858e630bf6` and supplies the exact blocking-fixture rationale in ARC-14, AC-14, and AC-15.
 
+Independent review assignment `asg_5df4205e-ca2f-4e97-a53f-ddb289fe895b` covered `art_71a67610` at SHA-256 `bf27ef2b7a1b190cc8175ce070c2a0c9d8ece363636b16851cbae66b7d80c8e1` and filed changes-requested verdict `att_1bcebc61` with report `art_b5a5f51e` at SHA-256 `3f8b1d9803278865b0c61aefa54e2dda769d6ce573b663812a9daf2d3b5f26dd`. Mike's direct ruling in transcript message `s_10c2b127-a7d6-42bc-b189-8453879e3d33` authorizes one current-main re-pin, the report's F1-only activation correction, its matching AC-12 case, and one fresh exact-hash independent review. The re-pin adopts `main@8eeccbd6dfd221fe9d105783459637fb7a17ea83`; the database shape, CI definition, rollback predecessor, and every other product requirement remain unchanged.
+
 The prior frozen candidate `art_1fbd7a55` at SHA-256 `5caf7d2dba7f90532c339d11b230bf4ba86d6e29ac1cf0ff8002403140272ca6` remains historical review evidence. It is not implementation authority.
 
-The builder MUST recheck remote `refs/heads/main`. If it differs from `2d0bbf056996ca573379bc022f7620b55f309120`, implementation stops for an owner re-pin.
+The builder MUST recheck remote `refs/heads/main`. If it differs from `8eeccbd6dfd221fe9d105783459637fb7a17ea83`, implementation stops for an owner re-pin.
 
 ## Acceptance
 
@@ -559,6 +563,8 @@ Given an assignment capability block and its scheduled re-check exist before or 
 Given existing terminal rows without ARC-01 events, when the new binary starts, then it reports none and changes no existing row. Given new rows, when the predecessor binary starts against the same store, then the shape check passes and it preserves them.
 
 Given the last queued lifecycle notice enters the predecessor during one rollback/reactivation cycle and the predecessor acknowledges that terminal, then the restored rows project `resolving`, not an absent state. When the current version activates, its fixed-boundary pass visits the typed source. If the predecessor wrote `lineage_exhausted` with no active Main stream, the evaluator ignores that event and writes exactly one current TERM-09 marker. If an active Main stream instead received one predecessor legacy marker, the evaluator writes exactly one current TERM-09 marker, yielding the one named duplicate. Ten pass or evaluator replays add no additional marker. No test parses predecessor event detail or marker text.
+
+Given a fixed-boundary source has one untried eligible agent candidate and lane infrastructure has not started, when Boot invokes the evaluator, then Boot completes and one deterministic lifecycle notice remains queued without publication or a lane nudge. The activation path makes zero calls to `Gateway.complete_delivery/2` and `LaneManager.ensure_lane/2` for that notice. When lane infrastructure and the existing pending-session scan start, the scan publishes that queued notice and starts exactly one lane for it.
 
 ### AC-13 — Trace, security, and deletion
 
