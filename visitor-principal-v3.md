@@ -1,16 +1,19 @@
 # Visitor principal v3 — current-main contract
 
-Status: SPEC-READY FOR ONE INDEPENDENT EXACT-REVISION REVIEW after
+Status: SPEC-READY FOR ONE INDEPENDENT EXACT-REVISION REVIEW after successor
 `changes-requested`; not implementation authority; the work item remains
-untargeted and unbound until review clears the amended exact content.
+untargeted and unbound until review clears this amended exact content.
 
 Authority and identity:
 
 - Work item: `wi_4ee303fa-12ed-4747-bce0-fc48024f4d53`.
 - Spec continuation assignment:
   `asg_3ff49b50-3856-4388-8d4e-255a7d450d95`.
-- Source baseline: Tightbeam main
-  `8eeccbd6dfd221fe9d105783459637fb7a17ea83`, independently verified green.
+- Sanctioned green source baseline: Tightbeam main
+  `8eeccbd6dfd221fe9d105783459637fb7a17ea83`.
+- Current source census tip: Tightbeam main
+  `8b4a3df191ca4505bf7e65a2876da23c9e4f4a6c`; the sanctioned baseline is its
+  ancestor.
 - Canonical path: `visitor-principal-v3.md` in `tightbeam-specs`.
 - Historical `art_d824eab5` and archived `art_765e7a53` are evidence only.
   This file supersedes their v1 and v2 designs after review clears this file.
@@ -21,6 +24,12 @@ Authority and identity:
   defining the external surface and key custody, scoping operation identity,
   naming the stamped migration, making principals append-only, deleting
   decline and frozen-page replay, and adding negative acceptance cases.
+- Successor verdict `att_f88643c7-e13e-4e53-a3fd-f98fcbe42583` and report
+  `art_415294a6` govern this second amendment. It repairs the post-accept
+  authorization join, closes nested wire projections, consumes the current
+  lifecycle attribution seam, gives malformed known-bearer attempts a bounded
+  server-owned audit namespace, defines no-replace keyring publication, and
+  makes discovery order exact.
 - Realized-cost specimen `att_1a77f64a-454a-4737-8e6c-7e3cb8346767` under
   closed `wi_aa14fcd4-f6e1-43d2-b87d-e95b4f84adb1` motivates the external-
   intermediary boundary. Closed actor-typing evidence is
@@ -184,9 +193,10 @@ inherit agent execution anatomy.
 ```
 
 The closed visitor-envelope `cause` set is `visitor-transcript-read`,
-`visitor-post`, `visitor-self-revoke`, and `visitor-authority-denied`. The last
-cause is server-generated at a privileged authentication boundary and never
-reaches a domain handler. A later adapter to a landed general
+`visitor-post`, `visitor-self-revoke`, `visitor-authority-denied`, and
+`visitor-invalid-request`. The last two causes are server-generated at an
+authentication boundary and never reach a domain handler. A later adapter to a
+landed general
 actor context shall preserve every field and shall not replace `actorId` with
 `brokerId` or `presenterId`.
 
@@ -194,11 +204,27 @@ actor context shall preserve every field and shall not replace `actorId` with
 
 `InvitationPresentationV1` is the pre-principal context for a known invitation
 credential. It contains schema, invitation id, broker user id, exact target
-session, cause, operation id, and request fingerprint. Its closed cause set is
-`invitation-read` and `invitation-accept`. It contains no
-actor id or visitor access-session id. A successful acceptance terminal can
-add the resulting visitor principal, grant, and access-session ids without
-rewriting the attempted context.
+session, cause, and operation id. For `invitation-read` and
+`invitation-accept`, it also contains the required request fingerprint. For
+`invitation-invalid-request`, it omits the fingerprint, uses the
+server-generated malformed-request audit id as `operationId`, and contains the
+required closed route and shape classes. Those three values are its complete
+cause set. It contains no actor id or visitor access-session id. A successful
+acceptance terminal can add the resulting visitor principal, grant, and
+access-session ids without rewriting the attempted context.
+
+For a schema-invalid request whose bearer resolves to a known invitation or
+visitor access session, the server creates a **malformed-request audit id**
+`vmr_` plus 32 lowercase hexadecimal characters. It uses cause
+`invitation-invalid-request` for an invitation bearer and
+`visitor-invalid-request` for a visitor bearer. This id belongs only to the
+audit pair; it is not a client operation id and creates no
+`visitor_operations` row. The audit stores one closed shape class:
+`missing-operation-id`, `invalid-operation-id`, `invalid-json`, `missing-key`,
+`unknown-key`, or `invalid-value`. It also stores the exact closed route class:
+`invitation-read`, `invitation-accept`, `transcript-read`, `post`, or
+`self-revoke`. It stores no raw body, field value, credential, or parser error
+text.
 
 A broker-authenticated `invitation-create` or `broker-revoke` is an ordinary
 user action. Its audit context preserves that user actor and any resulting or
@@ -260,11 +286,12 @@ append-only provenance and has no terminal fields or authorization state.
 
 ## 5. Invariants
 
-**I1 — Exact effective actor.** Every accepted or denied operation authenticated
-by a known visitor access session records `actorKind=visitor` and the exact
-visitor principal id. It never records the broker, access session, target
-owner, or target agent as the effective actor. Invitation presentation records
-no effective actor. Broker actions record their authenticated user actor.
+**I1 — Exact effective actor.** Every accepted or denied well-formed operation,
+and every malformed request, authenticated by a known visitor access session
+records `actorKind=visitor` and the exact visitor principal id. It never records
+the broker, access session, target owner, or target agent as the effective
+actor. Invitation presentation records no effective actor. Broker actions
+record their authenticated user actor.
 
 **I2 — Separate provenance.** Every audit record for an operation authenticated
 by a known visitor access session stores the exact visitor principal, visitor
@@ -272,13 +299,18 @@ access session, broker user, cause, target session, invitation, grant, and
 operation ids from `VisitorActorEnvelopeV1`.
 
 **I3 — Closed origin.** The origin parser, serializer, transcript projection,
-message sender projection, and audit projection accept and preserve the closed
-visitor origin. No string fallback can turn an unknown origin into a visitor.
+message sender projection, lifecycle principal projection, lifecycle
+`origin`/`authenticatedCaller` detail, and audit projection accept and preserve
+the closed visitor origin. No string fallback can turn an unknown origin into a
+visitor.
 
-**I4 — One exact target.** Authorization joins the active access session, active
-grant, active visitor principal, nonterminal invitation, and exact target
-session in one database read inside the operation transaction. It does not
-accept a client-supplied replacement target.
+**I4 — One exact target.** Authorization joins an access session whose state is
+exactly `active`, a grant whose state is exactly `active`, the immutable
+visitor-principal row referenced by both, an invitation whose state is exactly
+`accepted`, and the exact existing target session in one database read inside
+the operation transaction. It applies access-session and grant expiry in that
+transaction before authorizing. It does not require state on the append-only
+principal and does not accept a client-supplied replacement target.
 
 **I5 — Independent least privilege.** Read requires `canRead=true`. Post
 requires `canPost=true`. Either denial is indistinguishable from an unavailable
@@ -342,10 +374,13 @@ different fingerprint is an operation conflict. A different acceptance key
 after terminal acceptance returns the generic unavailable result.
 
 **I10 — Transactional post.** One accepted visitor post atomically commits one
-visitor-origin prompt echo, one turn enqueue, one consumed quota unit, and the
-attempted-plus-accepted audit pair. Any failure commits none of those effects
-except a terminal denied audit pair when the credential resolved to a known
-visitor context.
+visitor-origin prompt echo, one turn enqueue, the enqueue's accepted
+`turn_lifecycle_events` row, one consumed quota unit, and the
+attempted-plus-accepted audit pair. The lifecycle row's `principal`, detail
+`origin`, and detail `authenticatedCaller` are all exactly
+`visitor:<visitorPrincipalId>`; none can be the broker, presenter, target, or
+substrate. Any failure commits none of those effects except a terminal denied
+audit pair when the credential resolved to a known visitor context.
 
 **I11 — Read-before-return evidence.** A successful transcript read commits its
 attempted-plus-accepted audit pair before returning content. If that audit
@@ -355,15 +390,19 @@ without reading target content or adding audit rows. Repeating `afterSeq` with a
 new operation id performs an ordinary new cursor read and can observe later
 commits.
 
-**I12 — Known operations are paired.** Every known invitation, visitor
-access-session, and broker-authenticated operation records exactly one
+**I12 — Known operations are paired.** Every well-formed known invitation,
+visitor access-session, and broker-authenticated operation records exactly one
 attempted audit row and exactly one terminal `accepted` or `denied` row under a
 principal-and-cause-scoped operation key in the same transaction as its
 outcome. Retrying a mutation with the same scoped operation id and fingerprint
 returns its stored result without duplicating either row. Transcript reads use
 the single-use rule in I11. A scoped id with a different fingerprint is a
 conflict. The same operation-id bytes under a different principal or cause are
-independent operations.
+independent operations. A schema-invalid request with a known invitation or
+visitor bearer instead records exactly one attempted/denied audit pair under a
+fresh malformed-request audit id and the closed invalid-request cause in one
+transaction, creates no operation row, and invokes no domain handler. An
+unknown bearer follows I13 and creates no such pair.
 
 **I13 — Unknown bearers are bounded.** A credential that resolves to no
 invitation or access session creates no visitor principal, audit, credential
@@ -414,8 +453,10 @@ historical attribution, visitor provenance, consent, or audit.
 **I21 — One checked visitor actor source.** After bearer resolution, one closed
 visitor actor value derives origin `visitor:<principalId>`, visitor-only
 authority, principal/access-session/broker attribution, target, and cause.
-Callers cannot supply any of those projections beside it. The broker id and
-target never derive authority. This imports the coherence rule proven by
+For posts it also derives the turn lifecycle `principal`, detail `origin`, and
+detail `authenticatedCaller`. Callers cannot supply any of those projections
+beside it. The broker id and target never derive authority. This imports the
+coherence rule proven by
 closed `art_a86b44c7` without importing its unlanded type. A known visitor
 credential presented to a user, operator, agent, device, session, or websocket
 authority seam records a `visitor-authority-denied` pair identifying the
@@ -425,8 +466,11 @@ visitor principal and presenter, then refuses before policy or domain effects.
 
 ### 6.1 Current-main seams
 
-The implementation shall be checked against these source facts at
-`8eeccbd6dfd221fe9d105783459637fb7a17ea83`:
+The implementation shall preserve the source facts first inspected at green
+baseline `8eeccbd6dfd221fe9d105783459637fb7a17ea83` and shall rebase against current
+main `8b4a3df191ca4505bf7e65a2876da23c9e4f4a6c`. Citations without a second commit
+suffix are to the green baseline; rows that name `8b4a3df1` are additive landed
+current-main facts:
 
 | Fact | Source citation |
 |---|---|
@@ -442,6 +486,9 @@ The implementation shall be checked against these source facts at
 | User socket auth and transcript replay are currently user/session-shaped | `lib/tightbeam/wire/socket.ex:289-390`; `lib/tightbeam/transcript.ex:360-389` |
 | User post stamps a user origin; gateway maps `call.origin` to sender | `lib/tightbeam/wire/socket.ex:411-450`; `lib/tightbeam/gateway.ex:628-643` |
 | Append plus turn enqueue already has one transaction seam | `lib/tightbeam/gateway.ex:1028-1045,1124-1160` |
+| Current enqueue accepts `principal` separately from `origin` and persists an accepted lifecycle event in the append transaction | `lib/tightbeam/gateway.ex:1153-1169`; `lib/tightbeam/ledger.ex:133-160` at `8b4a3df1` |
+| Current durable lifecycle rows store a required `principal`; accepted-event detail admits `origin` and `authenticatedCaller` | `lib/tightbeam/turn_lifecycle.ex:19-30,33-59`; `lib/tightbeam/ledger.ex:134-159` at `8b4a3df1` |
+| Current ordinary transcript entries contain internal identity and execution fields that the visitor projection must not copy wholesale | `lib/tightbeam/transcript.ex:190-248` at `8b4a3df1` |
 | Current schema is stamped `coordination-fabric-v1-phase1-v5`, admits one predecessor, rebuilds and stamps atomically, and refuses unknown shapes | `lib/tightbeam/schema.ex:35-73,800-823,987-1011` |
 | The Rust CLI has one shared base-directory resolver and hand-parsed closed commands/identity flags | `cli/src/base_dir.rs:1-35`; `cli/src/args.rs:1-24` |
 | Model and harness mutation use closed typed validation and expected versioning | `lib/tightbeam/gateway.ex:4311-4551`; `lib/tightbeam/org.ex:554-598` |
@@ -453,8 +500,12 @@ The implementation shall be checked against these source facts at
 authorization, audit, transcript projection, and post construction. Its
 constructor accepts resolved database rows, not request identity fields. It
 derives the closed visitor authority projection from the grant booleans and
-cause. Compatibility origin, authorization facts, and audit attribution are
-outputs of that value. This is the visitor-local analogue of the one-source
+cause. Compatibility origin, authorization facts, audit attribution, enqueue
+principal, and accepted lifecycle detail are outputs of that value. A visitor
+post passes `visitor:<principalId>` as both enqueue `origin` and `principal`;
+the accepted lifecycle writer therefore stores that same value in
+`turn_lifecycle_events.principal`, detail `origin`, and detail
+`authenticatedCaller`. This is the visitor-local analogue of the one-source
 actor rule reviewed in `art_a86b44c7`; no current-main code imports that
 unlanded artifact.
 
@@ -469,7 +520,7 @@ state checks:
 | `visitor_access_sessions` | Access-session id; grant/principal/invitation FKs; derivation and digest key ids; keyed access credential digest; credential version; issue/expiry/terminal fields. It has no FK to ordinary `sessions` as its own identity. |
 | `visitor_acceptances` | Invitation FK; acceptance-key digest; request fingerprint; first operation id; consent version/digest; resulting ids; accepted time; unique `(invitationId, acceptanceKeyDigest)`. |
 | `visitor_operations` | Context kind, scope id, cause, operation id, request fingerprint, replay policy `stored` or `single-use`, terminal outcome, public status, and canonical result projection without raw credentials or transcript content. Unique `(contextKind, scopeId, cause, operationId)`. Mutation results regenerate deterministic credentials from stored ids and key ids. |
-| `visitor_audit` | Unique audit id and `(contextKind, scopeId, cause, operationId, phase)`; phase `attempted` or `terminal`; closed context kind `invitation-presentation`, `visitor-action`, or `broker-action`; terminal outcome; the fields required by that context kind; request fingerprint; event time; optional closed denied capability and resource classes plus a non-secret resource id; no secret or content bytes. Database checks reject a visitor action without every envelope field, an invitation presentation with an actor id, or a broker action without its user actor. |
+| `visitor_audit` | Unique audit id and `(contextKind, scopeId, cause, operationId, phase)`; phase `attempted` or `terminal`; closed context kind `invitation-presentation`, `visitor-action`, or `broker-action`; terminal outcome; the fields required by that context kind; optional request fingerprint; optional closed malformed route and shape classes; event time; optional closed denied capability and resource classes plus a non-secret resource id; no secret or content bytes. Database checks require a fingerprint for well-formed operations; forbid it and require both malformed classes for invalid-request causes; reject malformed classes for every other cause; reject a visitor action without every envelope field; reject an invitation presentation with an actor id; and reject a broker action without its user actor. |
 | `visitor_unknown_bearer_aggregates` | Exactly one updatable row for each closed class `invitation`, `read`, `post`, and `revoke`; current 60-second window start; saturating count; last-seen time; last closed cause. No bearer-derived key. |
 
 Operation scope is closed. Broker operations use
@@ -495,6 +546,17 @@ resolved principal, access session, broker, closed denied capability class
 resource kind/id when valid. It stores no proposed decision, prompt, arbitrary
 request parameters, or credential bytes and invokes no policy or domain
 handler.
+
+Request processing on an invitation or visitor route resolves the bearer class
+and known row before it validates the JSON shape. If the bearer is known but
+the body is invalid JSON, lacks `operationId`, has an invalid operation id, or
+otherwise fails the closed request schema, the server generates one `vmr_`
+audit id and commits one attempted/denied pair under
+`invitation-invalid-request` or `visitor-invalid-request`. The pair contains
+only the resolved provenance, route cause, closed shape class, and event times.
+It contains no request fingerprint or client operation id, creates no
+`visitor_operations` row, and invokes no policy or domain handler. Unknown and
+wrong-class bearers still follow I13/I19 and never create identity audit.
 
 All mutable state transitions use compare-and-set predicates in the same
 transaction as their effects. Database check constraints enforce closed state,
@@ -522,11 +584,56 @@ now]` under an index on `(grantId, cause, outcome, eventTime)`, applies the
 limit, and inserts the accepted row before commit. It does not maintain a
 separate eventually consistent quota counter.
 
-The invitation summary is the canonical consent projection. It contains only
-the broker display label, visitor display label, target display label,
-capability booleans, consent text and version, consent SHA-256 digest, and
-issue/expiry times. It contains no target content, session key, user id,
-organization inventory, or access credential.
+The invitation summary is the canonical consent projection. Its exact JSON
+shape is:
+
+```json
+{
+  "brokerDisplayLabel": "Broker",
+  "visitorDisplayLabel": "Visitor",
+  "targetDisplayLabel": "Target",
+  "canRead": true,
+  "canPost": false,
+  "consentText": "I accept visitor-only access to this Tightbeam session with the read and post capabilities shown. This does not grant user, agent, operator, or administrative authority.",
+  "consentVersion": "visitor-consent-v1",
+  "consentSha256": "64_lowercase_hex_characters",
+  "issuedAt": 0,
+  "invitationExpiresAt": 0
+}
+```
+
+The three labels are JSON strings. For `visitor-consent-v1`, `consentText` is
+exactly the UTF-8 string shown above, including punctuation. The capability
+fields are booleans; `consentVersion` is exactly `visitor-consent-v1`;
+`consentSha256` is 64 lowercase hexadecimal characters; and both times are
+integer milliseconds. No key is optional or nullable. The summary contains no
+target content, session key, user id, organization inventory, or access
+credential.
+
+The visitor transcript entry projection is exact and intentionally narrower
+than the ordinary internal transcript projection:
+
+```json
+{
+  "seq": 1,
+  "at": 0,
+  "role": "user",
+  "content": "exact durable message content",
+  "author": {"kind": "visitor", "visitorPrincipalId": "vis_exact"}
+}
+```
+
+`seq` is the positive durable message sequence; `at` is an integer millisecond
+timestamp; `role` is exactly `user` or `assistant`; and `content` is a JSON
+string. `author` is exactly either
+`{"kind":"visitor","visitorPrincipalId":"<exact id from the closed visitor origin>"}`
+or `{"kind":"tightbeam"}`. The visitor form is used only for a parsed closed
+visitor origin and preserves its exact principal id. Every user, agent,
+process, remedy, session, or internal origin maps to the identifier-free
+`tightbeam` form. An unknown origin refuses the complete read before content or
+an accepted audit row is returned. Attachments, sender, reply ids, turn ids,
+model, effort, context, harness, assignment id, job ref, wake class, delivery
+rule, user id, session key, and internal prompt metadata are absent.
 
 ### 6.3 Credential-key custody
 
@@ -549,9 +656,41 @@ directory has mode `0700`. Its closed JSON shape is:
 
 Each key id is globally unique in the file. Each decoded key is exactly 32
 bytes. The active ids and key bytes must be distinct and have the named
-purposes. Provisioning uses an operator-controlled atomic write before the
-visitor migration; this spec adds no remote key-management or rotation verb.
-Every invitation and access-session row stores both key ids used for it.
+purposes. Provisioning uses the following no-replace publication protocol in
+the `secrets` directory before the visitor migration:
+
+1. Open or create regular mode-`0600`
+   `.visitor-keyring-v1.init.lock` without following a symlink and take an
+   exclusive OS advisory lock. The lock is released automatically on process
+   death. A concurrent initializer that cannot take it immediately returns
+   `visitor_keyring_init_busy` and changes no file.
+2. While holding the lock, remove only stale regular mode-`0600` files owned by
+   the gateway account whose names begin `.visitor-keyring-v1.json.tmp.`. A
+   matching symlink, wrong owner, wrong mode, or nonregular entry causes
+   `visitor_keyring_init_unsafe_temp` and no removal. If the final keyring
+   exists after cleanup, return `visitor_keyring_exists` without replacing or
+   rewriting it.
+3. Create one random-suffix same-directory temporary file with
+   create-new/no-follow semantics and mode `0600`. Write the complete JSON,
+   flush it, `fsync` it, close it, reopen it without following symlinks, and
+   validate its exact bytes and mode.
+4. Publish by a same-filesystem hard-link operation from the temporary inode to
+   `visitor-keyring-v1.json`. Link creation is atomic and fails when the final
+   name exists; no precheck can authorize replacement. `fsync` the directory,
+   unlink the temporary name, and `fsync` the directory again before reporting
+   success.
+
+If the platform or filesystem cannot provide the exclusive lock,
+same-filesystem no-replace link, file `fsync`, and directory `fsync`, the
+command returns `visitor_keyring_init_unsupported`, deletes its safe temporary
+file, and publishes no target. A crash before link creation leaves no target;
+the next initializer removes the safe stale temporary file and starts with new
+keys. A crash after link creation can leave both names, but both name the same
+fully written and synced inode; the next initializer removes the safe temporary
+name and refuses the existing final target. The command prints the final path
+and key ids only after the second directory `fsync`. This spec adds no remote
+key-management or rotation verb. Every invitation and access-session row stores
+both key ids used for it.
 
 The gateway loads and locks the keyring before it attempts migration or admits
 a visitor route. Missing file, wrong ownership or mode, symlink, malformed
@@ -609,9 +748,10 @@ after the new stamp, all constraints, and the keyring validate.
 
 The external HTTP surface is rooted at `/visitor/v1`. `GET /visitor/v1`
 requires no credential. It returns HTTP `200` and exactly
-`{"authority":"visitor-only-no-user-delegation","feature":"visitor-principal-v3","operations":["invitation-read","invitation-accept","transcript-read","post","self-revoke"],"wireVersion":1}`
+`{"authority":"visitor-only-no-user-delegation","feature":"visitor-principal-v3","operations":["invitation-accept","invitation-read","post","self-revoke","transcript-read"],"wireVersion":1}`
 only while the complete feature gate is live; otherwise it returns the I19
-unavailable response. The sorted operation list advertises product capability,
+unavailable response. The operation list is ascending bytewise lexical order
+over the exact lowercase ASCII operation names and advertises product capability,
 not a particular grant; the invitation summary carries that grant's read/post
 booleans. No field is added to the existing `/version` response.
 
@@ -638,8 +778,23 @@ The JSON request and success projection are closed:
 | `POST /visitor/v1/revoke` | `tbv_` | `operationId` | `status` equal to `revoked` |
 | `POST /agent/dispatch`, verb `visitor-broker-revoke` | Existing CLI token plus checked `asUser`; owner/admin target authorization | `grantId`, `operationId` | `status` equal to `revoked` |
 
-All HTTP successes use `{"result":{...}}`. The server rejects an unknown key or
-missing key with HTTP `400` and exactly
+Every `summary` value is the exact 10-key object in 6.2. Acceptance `expiresAt`
+is the integer millisecond expiry of the created visitor access session; it is
+not `summary.invitationExpiresAt`. `authorityBoundary` is a string, grant flags
+are booleans, and every returned id is a string.
+
+For transcript read, `entries` is a JSON array of the exact entry objects in
+6.2. The server selects durable target messages with `seq > afterSeq`, orders
+them by `seq` ascending, and returns at most `limit`. `nextAfterSeq` is the
+highest returned `seq` when the array is nonempty. For an empty page it is
+exactly the request's `afterSeq`. It is always a nonnegative integer, never
+`null`, and never advances past an entry omitted from the response. `messageId`
+and `turnId` are strings. Revoke `status` is the string `revoked`. No success
+object admits an unlisted key or a `null` value.
+
+Every non-discovery operation success uses `{"result":{...}}`; discovery uses
+the exact direct object above. The server rejects an unknown key or missing key
+with HTTP `400` and exactly
 `{"error":{"code":"visitor_invalid_request"}}`. A scoped operation-id or
 acceptance-key fingerprint conflict uses HTTP `409` and exactly
 `{"error":{"code":"visitor_operation_conflict"}}`. A duplicate transcript
@@ -649,6 +804,21 @@ oversized body uses HTTP `413` and exactly
 `{"error":{"code":"visitor_body_too_large"}}`. Quota refusal uses HTTP `429`
 and exactly `{"error":{"code":"visitor_quota_exceeded"}}`. No error includes a
 credential, internal id, target fact, or `message` field.
+
+Bearer classification and known-row resolution precede request-shape
+validation on invitation and visitor routes. Therefore a known bearer with
+invalid JSON, a missing or invalid `operationId`, or any other schema error
+returns the same `visitor_invalid_request` body only after the malformed-request
+audit pair in I12 commits. If that audit commit fails, the route returns HTTP
+`503` and exactly `{"error":{"code":"visitor_audit_unavailable"}}`; it returns
+no domain result and stores no partial audit pair. An unknown or wrong-class
+bearer follows I13/I19 and creates no malformed-request audit.
+
+If an internal transcript row has an unknown origin or cannot satisfy the exact
+entry projection, transcript read returns HTTP `500` and exactly
+`{"error":{"code":"visitor_projection_invalid"}}` after committing one
+attempted/denied audit pair and before returning any entry. The error contains
+no row, origin, content, or parser detail.
 
 Every acceptance success sets `authorityBoundary` exactly to
 `visitor-only-no-user-delegation` and returns the immutable grant booleans. No
@@ -676,10 +846,11 @@ invitation or visitor credential.
 The CLI adds these exact commands: `tightbeam visitor invite`,
 `invitation-read`, `accept`, `transcript-read`, `post`, `revoke`, and
 `broker-revoke`, plus local operator command `tightbeam visitor keyring-init`.
-`keyring-init [--base-dir <path>]` uses `create_new`, writes two independently
-random 32-byte keys and distinct ids through an atomic mode-`0600` file rename,
-fsyncs the file and directory, refuses if a keyring exists, and prints only the
-path and key ids. It never sends key material to the gateway.
+`keyring-init [--base-dir <path>]` writes two independently random 32-byte keys
+and distinct ids through the exact locked, same-directory, atomic no-replace
+publication protocol in 6.3. It never uses a replacing rename. It prints only
+the path and key ids after durable publication and never sends key material to
+the gateway.
 
 Broker commands use the existing gateway discovery, CLI token, and `--as-user`
 identity seam. `invite` requires `--as-user`, `--target-session`,
@@ -704,7 +875,9 @@ invalid request. No command accepts raw secret bytes in argv or prints them to
 stderr. Success JSON is the HTTP result object; the credential-bearing invite
 and accept successes may print their credential to stdout. I19 maps to exit
 `4`; invalid request to `2`; conflict to `5`; quota to `6`; transport failure
-to `7`; success to `0`.
+or HTTP `500`/`503` visitor service failure to `7`; success to `0`. Exit `7`
+writes exactly `visitor service unavailable` for an HTTP `500`/`503` visitor
+error and never writes the server's internal validation class.
 
 ## 7. Acceptance
 
@@ -728,17 +901,21 @@ domain handler records any effect.
 
 Given user U brokers an invitation for external agent V to session S, when V
 posts through access session P, then the message origin and audit actor are
-`visitor:V`, the presenter is P, the broker is U, and no user-U action or
-permission is attributed to the post.
+`visitor:V`, the presenter is P, the broker is U, and the accepted lifecycle
+row stores `principal=visitor:V`, `detail.origin=visitor:V`, and
+`detail.authenticatedCaller=visitor:V`. No user-U, presenter-P, target, or
+substrate action or permission is attributed to the post.
 
 **A3 — One-target capability matrix (`I4`, `I5`, `I19`).**
 
 Given three grants for the same fixture session with read/post values `10`,
-`01`, and `11`, when each read and post is attempted, then only the true
-capability succeeds. Every false capability returns the same public unavailable
-shape and reads or mutates no target content. An attempted target replacement
-at invitation mutation or at the internal authorization seam refuses and leaves
-the immutable target unchanged.
+`01`, and `11`, each with an immutable principal, an `accepted` invitation, and
+an `active` grant and access session, when each read and post is attempted, then
+only the true capability succeeds. No principal state or nonterminal invitation
+predicate is consulted. Every false capability returns the same public
+unavailable shape and reads or mutates no target content. An attempted target
+replacement at invitation mutation or at the internal authorization seam
+refuses and leaves the immutable target unchanged.
 
 **A4 — Consent and lost-response retry (`I7`, `I8`, `I9`, `I12`).**
 
@@ -759,17 +936,22 @@ invitation credential, raw access credential, or raw K.
 **A5 — Atomic visitor post (`I2`, `I10`, `I12`).**
 
 Given an active post grant, when the post transaction succeeds, then exactly one
-visitor-origin prompt echo, queued turn, quota unit, attempted audit, and
-accepted audit exist under the operation id. At each injected transaction
-failure point, then none of the echo, turn, or quota effects exist and no
-partial accepted result exists.
+visitor-origin prompt echo, queued turn, accepted lifecycle event, quota unit,
+attempted audit, and accepted audit exist under the operation id. The lifecycle
+principal and its `origin` and `authenticatedCaller` detail fields are the exact
+visitor origin. At each injected transaction failure point, none of the echo,
+turn, lifecycle, or quota effects exist and no partial accepted result exists.
 
 **A6 — Audit-before-read (`I11`, `I12`).**
 
 Given an active read grant, operation R, and transcript entries after cursor 40,
 when read audit commits, then the response contains only the allowed target
-entries and a monotone next cursor. When audit commit is injected to fail, then
-the response contains no transcript content. Repeating R returns
+entries using the exact 6.2 projection, ascending sequence order, and a
+`nextAfterSeq` equal to the last returned sequence. In a separate fixture with
+no durable row after cursor 40, the response is exactly `entries=[]` and
+`nextAfterSeq=40`.
+When audit commit is injected to fail, the response contains no transcript
+content. Repeating R returns
 `visitor_read_retry_requires_new_operation`, reads no target rows, and creates
 no new audit. A fresh operation id with cursor 40 performs a new read.
 
@@ -778,9 +960,10 @@ no new audit. A fresh operation id with cursor 40 performs a new read.
 Given an active visitor and newly appended target messages, when no explicit
 transcript-read occurs, then the visitor receives no frame or notification.
 When it reads from its last durable cursor, then it receives the messages in
-sequence order and receives a monotone next cursor. After later messages append,
-repeating the same cursor under a new operation id may include those later rows;
-the cursor is not a frozen-page handle. A code and schema assertion
+sequence order through the exact safe entry projection and receives the
+specified integer next cursor. After later messages append, repeating the same
+cursor under a new operation id may include those later rows; the cursor is not
+a frozen-page handle. A code and schema assertion
 finds no visitor subscription, push claim, delivery acknowledgment, recovery
 job, or live cursor row.
 
@@ -834,9 +1017,14 @@ other wrong-class case creates visitor identity or audit rows.
 **A13 — Origin round trip (`I1`, `I3`).**
 
 Given visitor principal V, when `{:visitor, V}` serializes to an origin, passes
-through append, transcript projection, and audit projection, and parses again,
-then every projection preserves `visitor:V` and the parser returns the same
-closed value. Every unknown origin prefix refuses.
+through append, transcript projection, lifecycle accepted-event projection, and
+audit projection, and parses again, then every identity-bearing projection
+preserves `visitor:V`; lifecycle `principal`, `origin`, and
+`authenticatedCaller` all equal `visitor:V`; and the parser returns the same
+closed value. The external transcript author is the exact visitor form for V,
+while nonvisitor origins expose only `{"kind":"tightbeam"}`. Every unknown
+origin prefix returns the exact `visitor_projection_invalid` result with no
+entry content and one attempted/denied visitor audit pair.
 
 **A14 — Compatibility and feature gate (`I15`, `I16`, `I20`).**
 
@@ -866,16 +1054,27 @@ expiry, revocation, target retirement, missing target, and wrong target at the
 internal authorization seam. Each call records exactly one attempted and one
 denied audit row under its scoped operation key, reads or mutates no target
 content, and returns exactly the I19 HTTP body and CLI result. An injected
-denial-audit failure rolls back the denial and returns no target fact.
+denial-audit failure rolls back the denial and returns no target fact. For both
+a known invitation bearer and a known visitor bearer, submit invalid JSON,
+missing `operationId`, invalid `operationId`, missing required key, unknown key,
+and invalid value. Each request returns the same invalid-request body, creates
+one attempted/denied pair under a distinct `vmr_` id with the exact closed shape
+and route classes, creates no operation row, invokes no domain handler, and
+stores no raw body or field value. The same malformed requests with unknown
+bearers create no visitor audit.
 
 **A17 — Wire, discovery, and secret input (`I8`, `I16`, `I19`).**
 
 Before complete schema/keyring validation, `GET /visitor/v1` returns the I19
 response and every visitor route is absent. After validation it returns the
-exact feature object. Every listed route rejects an extra or missing JSON key.
-CLI tests prove that credential and acceptance-key bytes never occur in argv,
-stderr, logs, traces, or error JSON; a symlink, wrong-owner, or non-`0600`
-credential file refuses locally before network I/O.
+exact feature object with its five operation names in ascending bytewise lexical
+order. Every listed route rejects an extra or missing JSON key. Golden JSON
+fixtures prove the exact summary, acceptance expiry meaning, transcript entry
+union, empty and nonempty cursor result, post result, and revoke result; a
+fixture copied from the ordinary internal transcript fails because it contains
+forbidden internal keys. CLI tests prove that credential and acceptance-key
+bytes never occur in argv, stderr, logs, traces, or error JSON; a symlink,
+wrong-owner, or non-`0600` credential file refuses locally before network I/O.
 
 **A18 — Keyring restart, backup, and missing-key refusal (`I8`, `I9`, `I16`).**
 
@@ -884,7 +1083,16 @@ database/keyring pair; both credentials still authenticate and lost-response
 retries remain byte-identical. Remove either referenced key, swap its purpose,
 make the active keys equal, corrupt the file, or restore only one half; boot
 refuses `visitor_keyring_unavailable`, admits no visitor route, and emits no key
-or credential bytes.
+or credential bytes. Run two initializers concurrently: one publishes one
+fully valid inode and reports its ids; the other returns
+`visitor_keyring_init_busy` or, after retry, `visitor_keyring_exists`; neither
+replaces the target. Inject a crash before publication: no target exists, and
+the next initializer removes only the safe stale temporary file and succeeds
+with new keys. Inject a crash after link publication and before temporary-name
+cleanup: the final target is complete and synced, the next initializer removes
+the safe alias and refuses to replace the final target. On a filesystem without
+the required lock/link/fsync guarantees, initialization returns
+`visitor_keyring_init_unsupported` with no target and no key bytes in output.
 
 **A19 — Scoped operation collisions (`I9`, `I11`, `I12`).**
 
@@ -923,6 +1131,7 @@ historical prose split.
 ## 8. Open Questions
 
 None. This amended text closes review `att_5efefdde` findings F1-F7 and is ready
-to return to the same independent review rail. Any review or build-time
-clarification shall amend this canonical file first, produce a new cold digest,
-and bind the work item only after the cleared bytes are committed and pushed.
+to return to the independent review rail after also closing successor verdict
+`att_f88643c7` findings F1-F6. Any review or build-time clarification shall
+amend this canonical file first, produce a new cold digest, and bind the work
+item only after the cleared bytes are committed and pushed.
