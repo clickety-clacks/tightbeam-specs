@@ -17,6 +17,13 @@ The resulting three-file successor requires a fresh independent review before
 M1, M2, specRef binding, or implementation. Separable r3 resources remain
 unaffected.
 
+Toplines/session successor, 2026-08-25: PROPOSED. This amendment adds the
+durable `/api/toplines` `(createdAt,id)` cursor and closed `state` filter plus
+the exact sessions `displayName` lookup used by `transcript --name`. It leaves
+the canonical ExecutionMap/firehose companion, R7 items, authorization, and
+public serializers unchanged. It becomes canonical only after its own fresh
+independent exact-byte review is reviewed-clean.
+
 Status: CANONICAL r3, 2026-08-22. r3 folds the REST-side adjudicated
 findings F1/F8/F9/F13/F14/F16/F21/F22 from
 `review-gate-observability-2026-08-21.md` and aligns with firehose r6.
