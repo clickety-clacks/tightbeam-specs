@@ -67,14 +67,25 @@ Collection enumeration belongs in `Tightbeam.StateResources`, beside the named
 detail query. It normalizes rows for that same serializer; router code owns
 neither a query nor an item shape.
 
+The shared REST pattern has one name and applies to each D1 resource and every
+later REST resource: `Tightbeam.Wire.Router.rest_read/3` dispatches a matched
+GET to the resource entry; `Tightbeam.StateResources.list_<resource>/2` owns a
+collection query; `Tightbeam.RestCursor.encode/4` and `decode/4` own tuple
+cursor production and validation; and `Tightbeam.RestEnvelope.list/3` and
+`detail/2` own the outer JSON objects. Route code must not create an envelope,
+cursor, collection query, serializer, or visibility copy. For example,
+`GET /api/config` dispatches through `rest_read/3` to
+`StateResources.list_config/2`, serializes each row with `config/1`, and passes
+the items to `RestEnvelope.list/3`.
+
 | Resource and routes | Query seam | Serializer / visibility | Filters | Tuple |
 |---|---|---|---|---|
-| config: `/api/config`, `/api/config/:key` | `query_config/2` | `config/1`; `config_visible?/1` | `key` exact | `(key)` |
-| host environment: `/api/host-env` | `query_host_environment/2`, `/4` detail | `host_environment/1`; `host_environment_visible?/1` | `host`, `harness`, `name` exact | `(host,harness,name)` |
-| hosts: `/api/hosts`, `/api/hosts/:host` | `query_host/2` | `host/1`; `host_visible?/1` | `host` exact | `(host)` |
-| users: `/api/users`, `/api/users/:userId` | `query_user/2` | `user/1`; `user_visible?/1` | none | `(createdAt,userId)` |
-| identity: `/api/identity`, `/api/identity/:name` | `query_identity/2`; only `served` resolves | `identity/1`; `identity_visible?/1` | `name`, `state` exact | `(name)` |
-| kungfu: `/api/kungfu`, `/api/kungfu/:name` | `kungfu_names/1`, then `query_kungfu/2` | `kungfu/1`; `kungfu_visible?/1` | `status`, `rootArchetype` exact | `(name)` |
+| config: `/api/config`, `/api/config/:key` | `list_config/2`; `query_config/2` | `config/1`; `config_visible?/1` | `key` exact | `(key)` |
+| host environment: `/api/host-env` | `list_host_environment/2`; `query_host_environment/2`, `/4` detail | `host_environment/1`; `host_environment_visible?/1` | `host`, `harness`, `name` exact | `(host,harness,name)` |
+| hosts: `/api/hosts`, `/api/hosts/:host` | `list_hosts/2`; `query_host/2` | `host/1`; `host_visible?/1` | `host` exact | `(host)` |
+| users: `/api/users`, `/api/users/:userId` | `list_users/2`; `query_user/2` | `user/1`; `user_visible?/1` | none | `(createdAt,userId)` |
+| identity: `/api/identity`, `/api/identity/:name` | `list_identity/2`; `query_identity/2`; only `served` resolves | `identity/1`; `identity_visible?/1` | `name`, `state` exact | `(name)` |
+| kungfu: `/api/kungfu`, `/api/kungfu/:name` | `list_kungfu/2`; `query_kungfu/2` | `kungfu/1`; `kungfu_visible?/1` | `status`, `rootArchetype` exact | `(name)` |
 
 Repeated values for one listed filter are disjunctive. Different filters are
 conjunctive. Each unlisted query key returns `400 invalid_filter`. Users accept
@@ -112,10 +123,12 @@ principal returns `404 not_found`. Successful and error JSON responses include
 ### Touchpoints
 
 - `lib/tightbeam/wire/router.ex`: routes, existing bearer/`asUser` reuse,
-  envelopes, validation, and error encoding.
+  `rest_read/3`, validation, and error encoding.
 - `lib/tightbeam/state_resources.ex`: shared collection enumeration only;
   existing serializers remain the only public item encoders.
 - `lib/tightbeam/state_visibility.ex`: invoke listed predicates; no router copy.
+- `lib/tightbeam/rest_cursor.ex` and `lib/tightbeam/rest_envelope.ex`: the one
+  generic cursor and envelope implementation reused by D2 and later slices.
 - `lib/tightbeam/firehose/registry.ex` and `admin_projection.ex`: contract
   checks only; no REST registry or REST projection.
 - `test/router_test.exs`, `test/admin_projection_test.exs`, and a focused REST
