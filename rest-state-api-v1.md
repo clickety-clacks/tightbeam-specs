@@ -1,4 +1,4 @@
-# REST state API v1 — the read plane (product spec, canonical r3)
+# REST state API v1 — the read plane (product spec, canonical r4)
 
 Amendment candidate, 2026-08-25: distinguish durable Toplines from the
 mechanical ExecutionMap and add the REST-only ExecutionMap contract. The
@@ -16,6 +16,13 @@ ExecutionMap-scoped R6a. Earlier F1-F5 and SQ6-SQ8 rulings remain incorporated.
 The resulting three-file successor requires a fresh independent review before
 M1, M2, specRef binding, or implementation. Separable r3 resources remain
 unaffected.
+
+Toplines/session successor, 2026-08-25: PROPOSED. This amendment adds the
+durable `/api/toplines` `(createdAt,id)` cursor and closed `state` filter plus
+the exact sessions `displayName` lookup used by `transcript --name`. It leaves
+the canonical ExecutionMap/firehose companion, R7 items, authorization, and
+public serializers unchanged. It becomes canonical only after its own fresh
+independent exact-byte review is reviewed-clean.
 
 Status: CANONICAL r3, 2026-08-22. r3 folds the REST-side adjudicated
 findings F1/F8/F9/F13/F14/F16/F21/F22 from
@@ -58,8 +65,16 @@ Authority and inputs:
   `s_21b93fdd-5e62-4ed9-ac7e-923697463936`. This ruling supersedes only the
   contrary “no asUser query parameter” clauses in rest-vs-cli-adjudication.md
   r2 and its adopted recon baseline.
-- session-tokens-v1.md's principal-seam table defines the existing CLI
-  principal selection that AU2 transports. This spec adds no second resolver.
+- Product-owner R3 ruling `att_2d3a8333-a1d2-478f-9b0a-f8fb75b795df`, which
+  consumes D1 verdict `att_8eaa2c03` and report `art_3990b5e1`: for AU2,
+  the existing dispatch resolver verifies a matching session `ownerUserId`
+  and resolves `{:user, ownerUserId}`; a mismatch returns
+  `403 identity_not_yours`. It rules the contrary canonical AU2
+  session-principal phrase a mechanical defect.
+- session-tokens-v1.md defines the Dispatch call-map principal seam for its
+  stated consumers. R3 is the more-specific authority for AU2's REST
+  transport parity; this spec neither changes that seam nor creates a second
+  resolver.
 - rest-state-api-r3-adjudication.md: durable REST finding text, source
   message identifiers, the closure map, and the SQ2 ruling pointer.
 - rest-state-api-v1-wire-schema.md: normative JSON types, nested shapes,
@@ -414,6 +429,7 @@ R5a. Stable collection orders and cursor tuples are:
 | facts | `(id)` |
 | critical state | `(sessionKey)` |
 | execution map | `(createdAt, id)` |
+| toplines | `(createdAt, id)` |
 
 R5b. Read-marker collection identity is the composite key
 `(userId, scopeKey)`. The caller's user id remains implicit for ordinary
@@ -434,7 +450,7 @@ R6. Filters are whitelisted per resource:
 
 | Resource | V1 whitelist filters |
 |---|---|
-| sessions | state, ownerUserId for admin, spawnedBy, archetype, harness, provider, model, host, role |
+| sessions | state, ownerUserId for admin, spawnedBy, archetype, harness, provider, model, host, role, displayName exact |
 | work items | state, ownerUserId, createdBySession, createdByUser, isBug, specRefName, holderKey |
 | assignments | state, outcome, holderKey, holderRole, workItemId, reviewsAssignmentId, effectKind, derived status |
 | attests | assignmentId, workItemId, kind, verdictKind, bySession, byUser |
@@ -458,6 +474,7 @@ R6. Filters are whitelisted per resource:
 | facts | kind exact, scope exact, origin exact, tsFromInclusive, tsToExclusive |
 | critical state | sessionKey exact |
 | execution map flat, tree, subtree | origin, ownerUserId, state, quietOverMs, specRefName, specRefSha256, sessionKey |
+| toplines | state exact |
 
 Filters are conjunctive across fields and disjunctive within a repeated
 field. Unknown enum = typed 400. Unknown exact-id filter = empty collection,
@@ -503,6 +520,61 @@ prefix through the existing `Tightbeam.IdPrefix` resolver. An ambiguous
 visible prefix returns `400 ambiguous_id` with its visible candidate ids in
 ascending order. Unknown and invisible selectors follow AU4a's same-404 rule
 and never appear in the candidate list.
+
+R6b. `/api/toplines` lists the durable Topline resource in the R7 row, not
+the ExecutionMap work-telemetry view. Its only caller-selected filter is
+repeated `state` with the exact enum `open|closed`; omitting it selects both
+states. AU4 visibility first restricts the collection to the caller's own
+Toplines or to all Toplines for an admin. The filter then selects from that
+visible set. The cursor binds the complete `(createdAt, id)` tuple, resource
+name, canonical `state` filter fingerprint, and the AU7 principal binding. A
+deleted boundary row still positions the next page from that tuple.
+
+The cursor fingerprint is canonical JSON with the field `state`. An omitted
+`state` encodes that field as JSON `null`. Present repeated `state` inputs
+normalize to a deduplicated JSON array in this fixed enum order:
+`["open","closed"]`. Query order and identical duplicate values therefore
+produce one fingerprint. The four normalized values `null`, `["open"]`,
+`["closed"]`, and `["open","closed"]` are distinct. A cursor is reusable
+only when the request produces its signed `state` value; another normalized
+value returns `400 invalid_cursor` before a row lookup.
+
+`GET /api/sessions?displayName=<value>` accepts one or more nonempty
+`displayName` values. A value matches a stored display name only when its
+Unicode code points are equal; it does not trim, case-fold, substring-match,
+or interpret SQL/LIKE metacharacters. Multiple values use the existing
+same-field disjunction. AU4 visibility runs before comparison. The collection
+orders R7 session items by `(createdAt, sessionKey)`. Duplicate display names
+return each visible exact-match item in that order. No visible exact match
+returns an empty collection. An empty value, a non-string decoded value, or an
+unknown query key returns `400 invalid_filter`.
+
+The CLI commands `toplines` and `topline` retain their existing ExecutionMap
+selection, tree assembly, telemetry rendering, and response summarization.
+Their distinct REST migration is governed by the canonical ExecutionMap
+contract. During M4, `transcript --name` first calls the exact `displayName`
+sessions collection lookup. It returns zero, one, or many visible R7 session
+candidates without transcript content. The caller then chooses a `sessionKey`
+and calls `GET /api/sessions/:sessionKey/messages`. The wrapper does not issue
+an unfiltered session read, a substring lookup, SQL, or another session-name
+endpoint.
+
+R6c. The shared seams for these two resources are named and exclusive:
+
+| Resource | Visible-query seam | Public-item serializer |
+|---|---|---|
+| toplines | `Tightbeam.Toplines.query_public/2` | `Tightbeam.Toplines.public_item/1` |
+| sessions | `Tightbeam.Org.query_public_sessions/2` | `Tightbeam.Org.public_session_item/1` |
+
+Each query seam receives the resolved principal plus normalized, allowlisted
+selection input; applies the matching AU4 function before filter comparison;
+orders by R5a; and returns no serialized JSON. Each serializer emits the
+existing R7 item for its resource. REST collection/detail adapters and the
+migrated `transcript --name` wrapper call these seams. These callers do not
+embed SQL, reimplement visibility, add a candidate-only projection, or add an
+R7 field. The sessions query seam returns the complete visible ordered
+displayName collision set and does not select an arbitrary match or return a
+collision error.
 
 R7. Projection fields are closed-world and normative. Every item contains
 exactly the keys in its row below. Nullable keys remain present with `null`;
@@ -888,9 +960,10 @@ change the six shared serializer shapes adopted by `art_b1995a26` / fact 1093.
 ## Requirements — auth and visibility
 
 AU1. `Authorization: Bearer <existing gateway credential>`. A device
-token resolves to its user. A session CLI token resolves to that session
-only. The session row's `ownerUserId` is metadata, not an automatic authority
-escalation. An owner read exists only where AU4 explicitly grants it.
+token resolves to its user. Without a nonempty matching `asUser`, a session
+CLI token resolves to that session only. The session row's `ownerUserId` is
+metadata, not an automatic authority escalation. An owner read exists only
+where AU4 explicitly grants it.
 No new credential type exists. The optional `asUser` GET parameter is not a
 credential and never authenticates a request.
 
@@ -908,9 +981,10 @@ keys return `400 invalid_as_user` before principal resolution because dispatch
 has only one `asUser` field. Malformed percent encoding returns
 `400 malformed_query` before principal resolution.
 
-For a session bearer, the existing resolver still verifies `asUser` against
-the session owner and the resolved principal remains that session; a mismatch
-returns `403 identity_not_yours`. Its R4b error message is exactly
+For a session bearer, the existing resolver verifies a nonempty `asUser`
+against `session.ownerUserId`. A matching value resolves the named user
+principal, exactly as dispatch does. A mismatch returns
+`403 identity_not_yours`. Its R4b error message is exactly
 `"this session belongs to <session.owner_user_id>"`, with
 `<session.owner_user_id>` replaced by the target session row's exact stored
 non-null owner user id. For a device bearer, `asUser` cannot replace or elevate
@@ -929,8 +1003,8 @@ row. Anything the matrix does not grant is denied.
 AU4. Per-resource allow matrix. “Owner” means the named user principal, not
 any session that happens to carry that user's id. “Session owner” is an
 explicit grant to the user principal that owns the target session. Admin is
-the authenticated user principal with `isAdmin=true`; a session token does
-not borrow that bit.
+the authenticated user principal with `isAdmin=true`; a session principal
+does not borrow that bit.
 
 | Resource | Allowed principals |
 |---|---|
@@ -1107,11 +1181,14 @@ A8a. A table compares direct GET with dispatch for an org bearer plus known,
 unknown, empty, and missing `asUser`, and for a session bearer plus absent,
 matching-owner, and mismatched-owner `asUser`. Both transports produce the
 same resolved principal or refusal and the same allow, deny, omission, and
-same-404 results. Separate GET cases prove repeated parameters and device
-bearer plus `asUser` return `400 invalid_as_user`, and malformed percent
-encoding returns `400 malformed_query`, all before principal resolution. The
-test proves that the parameter adds no credential, binding, authorization, or
-tailnet-identity behavior.
+same-404 results. The matching-owner session case proves that both transports
+resolve the named user principal; the absent session case proves the existing
+credential-derived principal remains unchanged. Separate GET cases prove
+repeated parameters and device bearer plus `asUser` return `400
+invalid_as_user`, and malformed percent encoding returns `400
+malformed_query`, all before principal resolution. The test proves that the
+parameter adds no credential, binding, authorization, or tailnet-identity
+behavior.
 A9. Read-marker pagination creates two users with the same `scopeKey`;
 paging each authorized view visits
 every `(userId, scopeKey)` exactly once.
@@ -1269,7 +1346,60 @@ the five mappings never match `origin` or `principal`. A hidden source does
 not invoke the subscription matcher. A client holding an R9 view subscribes
 to its dependency classes plus any ref filters whose R8b rows define values.
 
-A30. Given one open configured-harness org fault with one impact, when its
+A30. Given Toplines with a tied `createdAt` and distinct ids, when an
+authorized caller pages `/api/toplines` across the tie, a deleted boundary,
+and an empty final page, then the union of returned ids equals the visible
+collection once in `(createdAt, id)` order. Each decoded cursor contains that
+tuple, the `toplines` resource name, the canonical `state` fingerprint, and
+the AU7 principal binding; it contains no `rowid`, offset, or storage locator.
+
+A31. Given an `open` Toplines page, when its cursor is reused with
+`state=closed` or a request whose normalized `state` value differs, then the
+service returns `400 invalid_cursor` before a row lookup. Given
+`state=open&state=closed`, the page returns the visible union once. Given an
+unknown state, empty state, or unknown filter name, the service returns
+`400 invalid_filter`.
+
+Given a Toplines cursor created with `state=closed&state=open&state=open`,
+when a caller reuses it with `state=open&state=closed`, then the service
+accepts it because both requests normalize to `["open","closed"]`. Given a
+cursor created with `state=open&state=open`, when a caller reuses it with
+`state=open`, then the service accepts it because both requests normalize to
+`["open"]`. Given a cursor created with absent `state`, when a caller reuses
+it with `state=open&state=closed`, then the service returns
+`400 invalid_cursor` before a row lookup. Given a cursor created with
+`state=open`, when a caller reuses it with absent `state`, then the service
+returns `400 invalid_cursor` before a row lookup.
+
+A32. Given two readable sessions with the same display name, a readable
+session whose name differs only by case, and an unreadable colliding session,
+when a caller uses `GET /api/sessions?displayName=<exact>`, then the response
+contains the two readable exact R7 items in R5a order and no other fixture.
+Given no exact match, it returns an empty page. Given `%`, `_`, a quote, or
+SQL-looking text, it makes one literal comparison and changes no query shape.
+Given an empty `displayName`, a decoded non-string `displayName`, an unknown
+query key, or any request that combines one of those values with a valid
+`displayName`, when the sessions collection runs, then it returns
+`400 invalid_filter` before any query runs. It never returns an unfiltered or
+partial collection, candidate, or message content.
+The transcript-name wrapper returns these candidates without message content
+and retrieves content only after an explicit `sessionKey`.
+
+A33. Given a non-owner and a colliding foreign session, when the sessions
+exact-name collection runs, then its bytes equal the same collection with that
+foreign session absent. Given a direct transcript GET for that foreign key,
+then its bytes equal an unknown-key response. Admin, target-session, and
+target-session-owner cases pass their AU4-authorized collection and detail
+checks.
+
+A34. Given the R6c resource seams, when REST collection or detail routes and
+the migrated `transcript --name` wrapper run, then each invokes its named
+query seam and serializer and emits the unchanged R7 object. The test rejects
+inline SQL, a second visibility predicate, a second item serializer, a
+caller-selected field/sort/join parameter, and a candidate-only session
+projection.
+
+A35. Given one open configured-harness org fault with one impact, when its
 owner or an admin reads `/api/org`, then the `orgFaults` element has the exact
 R7 and wire shape. When the same principal reads `/api/org-faults/:faultId`,
 then the response uses resource `org faults`, the exact detail item, and the
