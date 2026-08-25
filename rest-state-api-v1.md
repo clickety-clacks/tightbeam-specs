@@ -34,6 +34,9 @@ Authority and inputs:
   events; SQL against state.db is not a product interface; the CLI makes
   common things easy and never re-creates SQL; auth is the existing
   gateway credential, no API keys; deployment is localhost/tailscale.
+- Mike's ruling, 2026-08-25: remove the `asUser` GET prohibition. The
+  parameter only transports the CLI's existing principal selection and adds
+  no credential, binding, authorization, or tailnet-identity behavior.
 - rest-state-api-r3-adjudication.md: durable REST finding text, source
   message identifiers, the closure map, and the SQ2 ruling pointer.
 - rest-state-api-v1-wire-schema.md: normative JSON types, nested shapes,
@@ -146,6 +149,11 @@ SP5. The deployment is one operator's tailnet. This spec inherits the
 no-API-keys ruling and does not design for adversarial third parties;
 if that ever changes, scoped credentials are a later versioned addition
 (same pattern as the firehose).
+
+SP6. Moving a CLI read from dispatch to GET preserves the CLI's current
+security exactly. An `asUser` GET parameter only transports the CLI's
+existing principal selection. It adds no credential, principal binding,
+authorization grant, or tailnet-identity behavior.
 
 ## Terms
 
@@ -505,13 +513,17 @@ AU1. `Authorization: Bearer <existing gateway credential>`. A device
 token resolves to its user. A session CLI token resolves to that session
 only. The session row's `ownerUserId` is metadata, not an automatic authority
 escalation. An owner read exists only where AU4 explicitly grants it.
-No new credential type; no `asUser` query parameter ever (query strings
-are logged and are poor identity carriers).
+No new credential type exists. The optional `asUser` GET parameter is not a
+credential and never authenticates a request.
 
-AU2. The org CLI token names no principal by itself; CLI reads continue
-through /agent/dispatch until a reviewed GET identity carrier exists
-(SPIRIT QUESTION SQ1). The canonical read service takes a RESOLVED
-principal, so this migration changes only transport, never authorization.
+AU2. The org CLI token names no principal by itself. For a CLI GET,
+`asUser=<userId>` transports the same principal selection as the existing
+dispatch `asUser` field: the org bearer plus that value resolves to the same
+user principal that dispatch resolves today. Without the org bearer it grants
+nothing. With a device or session bearer it does not replace, bind, or elevate
+the credential-resolved principal. It adds no tailnet-identity behavior. The
+canonical read service takes the resulting RESOLVED principal, so this
+migration changes only transport, never authorization.
 
 AU3. Visibility: collections omit rows the principal cannot read; detail
 returns the same 404 for unknown and forbidden (transcript precedent);
@@ -585,9 +597,10 @@ not part of this conformance measure.
 
 C1. In the final v1 shape, every retained CLI shared-state read calls the
 corresponding REST GET and may only select, compose, summarize, or format
-that response. Until SQ1 supplies a reviewed GET identity carrier, the CLI
-may continue through `/agent/dispatch`; that adapter calls the same canonical
-query function and serializer with a resolved principal. No CLI read keeps a
+that response. A wrapper that currently sends dispatch `asUser` sends the
+same value as the GET `asUser` parameter. During M4 migration, the existing
+dispatch adapter may remain; both transports resolve the same principal and
+call the same canonical query function and serializer. No CLI read keeps a
 second query or serializer implementation.
 
 C2. New flexible reads are designed REST-first; the CLI gains a wrapper
@@ -600,9 +613,10 @@ M1. Freeze R7 projections, R8 mappings, R9 dependency lists, and AU4
 visibility functions. M2. Add REST routes on
 those seams. M3. Point the firehose payload builders at the same
 serializers. M4. Point CLI read handlers at the canonical read services.
-Move each wrapper from dispatch to its REST GET only when AU2 has a reviewed
-identity carrier; this transport move does not change item shapes,
-authorization, or the M1 query and serializer seams.
+Move each wrapper from dispatch to its REST GET using AU2's existing
+`asUser` principal selection where required. Remove its legacy dispatch read
+path after parity acceptance passes. This transport move does not change item
+shapes, authorization, or the M1 query and serializer seams.
 M5. Keep current routes as compatibility aliases (/api/streams,
 /api/org-options, /api/session-status, /api/work[/:id],
 /api/trackable-sessions, /harnesses). M6. Migrate Clawline (streams/status aliases →
@@ -650,6 +664,11 @@ sessions, pages transcript, fetches work state, and correlates notices
 by exact ids.
 A8. CLI wrappers return the same item shapes as REST for equivalent
 reads.
+A8a. For an org bearer and `asUser=<userId>`, direct GET and dispatch resolve
+the same principal and produce the same allow, deny, omission, and same-404
+results. `asUser` without the org bearer never changes the principal resolved
+from a device or session credential. The test proves that the parameter adds
+no credential, binding, authorization, or tailnet-identity behavior.
 A9. Read-marker pagination creates two users with the same `scopeKey`;
 paging each authorized view visits
 every `(userId, scopeKey)` exactly once.
@@ -698,10 +717,10 @@ last-version-wins convergence.
 
 ## Open questions — Spirit questions for Mike
 
-SQ1. **Open; blocks M4 transport only.** The org-token GET identity carrier
-(AU2): design a reviewed header
-scheme so the CLI can hit GETs directly, or keep CLI reads on dispatch
-indefinitely? (Interim posture is safe; this is about ergonomics.)
+SQ1. **RULED 2026-08-25 — transport existing `asUser`.** Remove the
+prohibition on an `asUser` GET parameter. It only transports the CLI's
+existing principal selection and adds no credential, binding, authorization,
+or tailnet-identity behavior. M4 direct REST CLI reads may proceed under AU2.
 
 SQ2. **RULED 2026-08-22 — expose.** REST v1 includes admin-only users,
 devices, host-environment metadata, harness processes, identity publication,
