@@ -3,8 +3,8 @@
 Status: changes-requested amendment candidate for independent re-review
 Work item: `wi_c4450c8d-cfae-4ee0-9532-df8c24be499b`
 Producer assignment: `asg_4f325d11-7e62-4ca0-845e-399e31fb3836`
-Supersedes: `art_1a9b97f6`, SHA-256 `4566156a47f0dbe726039e28d5cac9f07d5474fd8318348a918f51f5233327bd`
-Addresses: `att_a93ab60d-6b23-4df4-bd6c-20dc6ee59b08`, report `art_f88ade41`
+Supersedes: `art_eb7bf162`, SHA-256 `427379728804e2d538ba386c06d0eae1cb84e49211d1e663cb1409eab8c5aed1`
+Addresses: `att_69bed3de-3317-43fc-bbc5-57d2da25f0d2`, report `art_1b3affd8`
 
 ## Spec homing
 
@@ -181,22 +181,31 @@ authority stated in Spec homing.
 | --- | --- | --- | --- |
 | Escalation targeting: role-addressed `Escalation.ask/2` | `required` | The typed router validates the named role; `file_agent_request/2` writes `decision_requests.askedOfRole` with the request and notification in one transaction. | The authenticated asking session selects the role target. Existing ask authorization and privacy checks still apply. |
 | Escalation targeting: session- or user-addressed `Escalation.ask/2` | `none` | The typed target is a session or user; `askedOfRole` remains null and the request exposes no second role field. | The authenticated asking session selects the typed non-role target. |
+| Escalation targeting: statutory `Escalation.escalate/4` owner notification | `none` | The winning request insert stores `decision_requests.ownerUserId`; the same transaction writes one wake whose `sessionKey` is `Org.personal_session_key(ownerUserId)`, whose `targetRole` is null, and whose `targetGate` is 0. A conflict or replay writes no wake. | The authenticated call determines `ownerUserId` through existing owner derivation. The statute selects whether escalation occurs; no caller, statute, role, or hint selects another notification target. |
 | Staff-loss rerouting: a pending role-addressed wake handled by `Org.retirement_replacement_target_for_work/7` | `required` | Wake creation validates the named role and writes `wakes.targetRole` with the wake. Retirement reuses that stored name and does not choose a role. | The authenticated wake creator selects the role target; existing work-liveness guards decide whether replacement is permitted. |
 | Staff-loss rerouting: direct-session or `reresolve='lineage'` wake | `none` | A direct wake stores neither role nor lineage hint. A lineage wake stores only `reresolve`, `reresolveSeed`, and `reresolveRung`; `targetRole` must be null. | The authenticated wake creator selects the direct target or lineage seed and rung. |
 | Office continuity: `coordination-fabric-v1.md` rebind-then-revoke failover | `required` | `role-bind` atomically validates and updates `roles.boundSessionKey` before the existing separate revoke verb. This specification does not combine the two verbs. | The role principal or org actor already authorized by `roles-registry-v1.md` and the office law selects the successor session. |
 | Relief | absent | No canonical relief recovery mechanism, activation seam, schema field, or optional role hint exists in the pinned source and companion set. | No authority exists. A future relief mechanism requires a reviewed census amendment before activation. |
 
-The two ask rows, two wake rows, office row, and absent relief row are the entire census.
-No generic category or plausible future mechanism is covered implicitly. A future source
-change that adds or alters a seam fails the census check until a reviewed amendment names
-its declaration, storage, activation seam, authority, migration, and rollback.
+The two ask rows, statutory owner-notification row, two wake rows, office row, and absent
+relief row are the entire seven-row census. The pinned-source audit checked every production
+call to `Escalation.escalate/4`: dispatch and supervision enter that function, while
+`Escalation.summon/4` delegates to it. All statutory requests therefore converge on the one
+owner-notification transaction above. No generic category or plausible future mechanism is
+covered implicitly. A future source change that adds or alters a seam fails the census check
+until a reviewed amendment names its declaration, storage, activation seam, authority,
+migration, and rollback.
 
 The typed gateway refuses a missing role on a `required` row with
 `required_role_binding_missing`. It refuses an unknown or invalid role with
 `required_role_binding_invalid`. It refuses a role field on a `none` row, including a wake
-that combines `targetRole` with lineage fields, with `role_binding_not_allowed`. Each
-refusal identifies the census row and field and writes no request, wake, binding, role
-mutation, notification, cancellation, or downstream recovery effect.
+that combines `targetRole` with lineage fields, with `role_binding_not_allowed`. The
+statutory escalation schema exposes no owner-notification role field. An attempted
+`ownerNotificationRole` override returns `role_binding_not_allowed`; failure to derive the
+authenticated owner returns `unknown_owner`. Each refusal identifies the census row and
+field and writes no request, wake, binding, role mutation, notification, cancellation, or
+downstream recovery effect. A role target in the denied underlying action remains action
+context and is not an owner-notification override.
 
 The gateway does not copy `preferredOwnerRole`, the caller's role, the current assignment
 holder, title, brief, attest, artifact, session state, or the automatic stamp proposed by
@@ -205,10 +214,12 @@ is never a role binding under this census.
 
 This census adds no database column. Existing role-addressed asks and wakes retain their
 stored role names. Existing direct and lineage rows retain null `askedOfRole` or
-`targetRole`. Before activation, migration validates every pending wake against the two
-wake rows and refuses `recovery_role_census_mismatch` on a mixed or unknown shape without
-rewriting it. Existing roles and office delegation cards remain unchanged. Rollback removes
-only the census validation; every row remains readable under the predecessor schema.
+`targetRole`. Existing statutory requests retain `ownerUserId`, and their owner wakes remain
+direct session wakes with null `targetRole`. Before activation, migration validates every
+pending wake against the two wake rows and refuses `recovery_role_census_mismatch` on a mixed
+or unknown shape without rewriting it. Existing roles and office delegation cards remain
+unchanged. Rollback removes only the census validation; every row remains readable under the
+predecessor schema.
 
 ### Assignment creation
 
@@ -459,9 +470,20 @@ entitlement, prod, acknowledgment, or disposition.
     `wi_7f068d0c`, when a required census row lacks its explicit role field, then the gateway
     returns `required_role_binding_missing` and copies neither value.
 31. Given current source commit `d00e06aea578d711e608637d38a97872487df15e`, when the
-    recovery-role census check enumerates role-bearing ask, wake-retirement, office, and
-    relief seams, then it matches exactly the six rows in `recovery-role-dependencies-v1`;
-    any additional or changed seam returns `recovery_role_census_mismatch` before activation.
+    recovery-role census check enumerates agent ask, statutory owner notification,
+    wake-retirement, office, and relief seams, then it matches exactly the seven rows in
+    `recovery-role-dependencies-v1`; any additional or changed seam returns
+    `recovery_role_census_mismatch` before activation.
+32. Given `Escalation.escalate/4` wins insertion of a statutory request, when its transaction
+    commits, then the request stores the derived `ownerUserId` and exactly one wake stores
+    `sessionKey=Org.personal_session_key(ownerUserId)`, null `targetRole`, and `targetGate=0`.
+33. Given a statutory escalation input supplies `ownerNotificationRole`, when
+    `Escalation.escalate/4` validates the input, then the gateway returns
+    `role_binding_not_allowed` and writes no request, wake, notification, or downstream
+    recovery effect.
+34. Given owner derivation fails for a statutory escalation, when `Escalation.escalate/4`
+    validates the input, then the gateway returns `unknown_owner` and writes no request,
+    wake, notification, or downstream recovery effect.
 
 ## Open Questions
 
