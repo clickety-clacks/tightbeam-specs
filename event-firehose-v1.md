@@ -279,7 +279,7 @@ registry gap).
 
 R4c. Composed-view invalidation sources: `topline.created`,
 `topline_work_membership.linked`, `topline_work_membership.unlinked`, and
-`subagent_marker.appended`. R8b is their complete mapping. There is no
+`subagent_marker.appended`, and `org_fault.changed`. R8b is their complete mapping. There is no
 `execution_map.*` class.
 
 R5. Dispatch (OBSERVATIONAL-ONLY): `verb.accepted`, `verb.denied` — one
@@ -326,12 +326,15 @@ its closed R9 dependencies.
 | `topline_work_membership.linked` | `Tightbeam.Toplines.link_work/2` inserts `topline_work_memberships`, touches the parent Topline, and inserts `topline_events(kind='work_linked')` in one transaction | `toplineId`, `membershipId`, `workItemId` | `sourceVersion` is the positive sequence of that `topline_events` row; `occurredAt` is its `eventAt` | the REST AU4 Toplines owner-or-admin predicate on the parent Topline | exactly once after a new commit; a refusal or idempotency replay emits none |
 | `topline_work_membership.unlinked` | `Tightbeam.Toplines.unlink_work/2` ends `topline_work_memberships`, touches the parent Topline, and inserts `topline_events(kind='work_unlinked')` in one transaction | `toplineId`, `membershipId`, `workItemId` | `sourceVersion` is the positive sequence of that `topline_events` row; `occurredAt` is its `eventAt` | the REST AU4 Toplines owner-or-admin predicate on the parent Topline after commit | exactly once after a new commit; a refusal or idempotency replay emits none |
 | `subagent_marker.appended` | `Tightbeam.SubagentMarkers.append/3` or `append_in_txn/2` inserts one `subagent_markers` row | `markerId`, `sessionKey`; `assignmentId` and `workItemId` when the marker has a non-null assignment that resolves to a work item | `markerId` is the inserted positive row id encoded as a canonical base-10 string without leading zeros; `sourceVersion` is the same id as a positive JSON integer; `occurredAt` is marker `at` | the marker inherits its non-null parent assignment's AU4 grant and requires the resolved work item's AU4 grant; a null, unresolved, or denied assignment yields no delivery to that principal | exactly once after `Txn.changes(txn) == 1`; `INSERT OR IGNORE` returning the existing marker emits none |
+| `org_fault.changed` | `Tightbeam.OrgFaults` commits one new `org_fault_events` row for a mutation that changes the org summary or fault-detail projection | `faultId` | `sourceVersion` is the positive `org_fault_events.id`; `occurredAt` is event `createdAt` | the REST org-fault-detail owner-or-admin predicate on the committed fault | exactly once after the new event commits; a refusal or request-id replay that returns an existing event emits none |
 
 The marker mapping derives authorization only from existing assignment and
 work-item grants. It creates no principal behavior. The Topline mappings expose
-no new Topline field or serializer. These four notices carry only the refs and
+no new Topline field or serializer. The first four notices carry only the refs and
 source version needed to invalidate a composed view; the authorized REST
-composition remains the only rebuild path.
+composition remains the only rebuild path. The fifth notice,
+`org_fault.changed`, exposes only `faultId` and its event version; it carries no
+fault payload.
 
 R8b filter values are closed. `classes` matches the notice's literal class by
 S2 prefix. `sessionKey` and `workItemId` match only the equal literal ref when
@@ -344,11 +347,12 @@ Each mapping omits `origin` and `principal`; a subscription that supplies
 either filter does not match an R8b notice. Visibility still runs first, so a
 hidden source never reaches this matcher. A composed-view client subscribes
 to the R9 class prefixes and adds only ref filters for which these rules define
-a value; the matcher derives no ref or filter value from an owner, mutation
+a value. The refs object includes `faultId` only for `org_fault.changed`. The
+matcher derives no filter value from an owner, mutation
 actor, authenticated principal, or other row.
 
 R9. Composed views (toplines, execution map, coordination-share,
-digest-members, org) have no notices of their own. Each composed REST resource
+digest-members, org, org fault detail) have no notices of their own. Each composed REST resource
 DECLARES its underlying state and source-invalidation classes; a client
 refreshes the view when a matching notice arrives. The REST spec carries the
 per-view dependency lists.
@@ -522,8 +526,9 @@ match §The class registry, both directions — a test diffs the verb table
 and emitted classes against the registry.
 
 The same table covers every R8b source commit. It fails if a successful new
-Topline or marker commit emits no mapped class, emits more than the one mapped
-class, or if a refusal, idempotency replay, or ignored duplicate emits one.
+Topline, marker, or OrgFaults projection-changing commit emits no mapped class,
+emits more than the one mapped class, or if a refusal, idempotency replay, or
+ignored duplicate emits one.
 
 For `condition_fact.filed` and `critical_lease.updated`, the A1 table names
 the shared AU4 visibility function for the R8 resource and tests one allowed
@@ -580,6 +585,13 @@ the R7 item: condition facts use equal integer `id`, `refs.factId`, and
 A7. The feature-smoke drives one real external consumer (ATC or a script)
 end to end: cold build from queries, live updates via subscription,
 forced reconnect, rebuild, convergence.
+
+A8. Given an OrgFaults mutation appends a new event, when firehose fan-out runs,
+then an allowed fault owner or admin receives one `org_fault.changed` observe
+notice with only `faultId` and the positive event source version. A denied
+principal receives none. When the client holds the org or matching fault-detail
+view, the notice triggers a refetch whose dependency version changes. Given the
+same request ID replays and returns its existing event, no new notice appears.
 
 ## Open questions for Mike
 

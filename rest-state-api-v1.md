@@ -249,7 +249,8 @@ R2. Core model resources:
 
 | Route | Purpose |
 |---|---|
-| GET /api/org | small org document: archetypes, hosts, model catalog — no embedded session collection |
+| GET /api/org | small org document: archetypes, hosts, model catalog, and open org-fault summaries — no embedded session collection |
+| GET /api/org-faults/:faultId | configured-harness org-fault detail for its fixed owner or an admin |
 | GET /api/catalog/harnesses | canonical harness capability catalog using the v1 response envelope; `/harnesses` keeps its legacy raw-array envelope only during M5 migration and is removed in M8 |
 | GET /api/hosts[, /:host] | paged host registry and host detail; the underlying state resource for `host.registered` |
 | GET /api/sessions | paged sessions |
@@ -511,7 +512,8 @@ adapter may add a storage column or a caller-selected field.
 
 | Resource | Canonical item fields |
 |---|---|
-| org | `id`, `archetypes`, `hosts`, `modelCatalog`, `dependencyVersion` |
+| org | `id`, `archetypes`, `hosts`, `modelCatalog`, `orgFaults`, `dependencyVersion` |
+| org fault detail | `id`, `kind`, `provider`, `state`, `ownerUserId`, `firstObservedAt`, `lastObservedAt`, `affectedGrantScopes`, `causeCodes`, `signalConflict`, `affectedAssignmentCount`, `affectedReviewObligationCount`, `currentSignals`, `history`, `staleEvidence`, `impacts`, `deliveries`, `closedAt`, `closedCauseCode`, `closedPrincipal`, `dependencyVersion` |
 | harness catalog | `harness`, `provider`, `models`, `capabilities`, `dependencyVersion` |
 | hosts | `host`, `rowVersion` |
 | sessions | `sessionKey`, `displayName`, `kind`, `orderIndex`, `isBuiltIn`, `adopted`, `ownerUserId`, `origin`, `spawnedBy`, `handle`, `archetype`, `overrides`, `identityName`, `identityRevision`, `harness`, `provider`, `model`, `thinkingLevel`, `modelContext`, `host`, `clearedThroughSeq`, `state`, `createdAt`, `updatedAt`, `mechanicalStatus`, `rowVersion` |
@@ -535,6 +537,17 @@ adapter may add a storage column or a caller-selected field.
 | coordination share | `sessionKey`, `from`, `to`, `turns`, `wakeTurns`, `classedTurns`, `coordinationTurns`, `summons`, `algedonic`, `byClass`, `share`, `dependencyVersion` |
 | digest members | `wakeId`, `prompt`, `class`, `classElection`, `createdAt`, `dependencyVersion` |
 | work-item trace | `workItem`, `assignments`, `causalChildren`, `attribution`, `dependencyVersion` |
+
+`org.orgFaults` contains only open faults allowed by AU4. Each element uses the
+wire companion's `OrgFaultSummary`; its `state` is `open`. The org-fault detail
+item can represent an open or closed occurrence.
+
+The org-fault detail `currentSignals` array contains the greatest-source-ordinal
+observation for each present credential-file, credential-liveness, catalog, and
+spawn axis in each affected grant scope. It excludes the derived `scope` axis.
+The `history` array contains every accepted observation, including
+`scope_recovered` and `scope_removed`. `staleEvidence` remains separate from
+both arrays.
 
 R7a. The SQ2 admin resources have these additional closed-world projections.
 Nested `documents` entries contain exactly `path`, `content`, and `sha256`.
@@ -665,7 +678,7 @@ SQ2 admits every admin row above. They enter the REST/firehose A6 overlap and
 use the same admin-only visibility function. Archetypes, guidance, and rails
 are composed identity-tree resources, so R9 governs their refetch contract.
 
-R8b. The event-firehose companion defines four source invalidation mappings
+R8b. The event-firehose companion defines five source invalidation mappings
 that do not represent rebuildable resources and do not enter the A6 serializer
 overlap:
 
@@ -675,16 +688,19 @@ overlap:
 | `topline_work_membership.linked` | new `Tightbeam.Toplines.link_work/2` commit | `toplineId`, `membershipId`, `workItemId` | positive `topline_events.seq` for the appended `work_linked` event |
 | `topline_work_membership.unlinked` | new `Tightbeam.Toplines.unlink_work/2` commit | `toplineId`, `membershipId`, `workItemId` | positive `topline_events.seq` for the appended `work_unlinked` event |
 | `subagent_marker.appended` | new row from `Tightbeam.SubagentMarkers.append/3` or `append_in_txn/2` | `markerId`, `sessionKey`; `assignmentId` and `workItemId` when non-null and resolved | positive `subagent_markers.id` |
+| `org_fault.changed` | new `org_fault_events` row committed by `Tightbeam.OrgFaults` | `faultId` | positive `org_fault_events.id` |
 
 Each mapping emits exactly one `op:"observe"` notice after a new commit and
-none for a refusal, Topline idempotency replay, or ignored duplicate marker.
+none for a refusal, Topline idempotency replay, ignored duplicate marker, or
+OrgFaults request-id replay that creates no event.
 The notice omits `resource` and carries exactly
 `payload:{"sourceVersion":I}`. The companion freezes its complete wire and
 emission rules. Topline notice visibility is the parent Topline's AU4
 owner-or-admin predicate. Marker notice visibility is AU4a: the marker inherits
 its non-null parent assignment grant and also requires its resolved work-item
 grant. A null, unresolved, or denied marker assignment delivers no notice to
-that principal. Visibility runs before subscription filters. These mappings add no
+that principal. Org-fault notice visibility uses the org-fault detail
+owner-or-admin predicate. Visibility runs before subscription filters. These mappings add no
 principal rule, public source route, ExecutionMap class, or shared serializer.
 
 R9. A composed resource has no notice class of its own. It declares the exact
@@ -695,7 +711,8 @@ that prefix.
 
 | Composed resource | Refetch dependencies |
 |---|---|
-| org | `host.registered`, `config.updated`, `identity.updated`, `kungfu.updated` |
+| org | `host.registered`, `config.updated`, `identity.updated`, `kungfu.updated`, `org_fault.changed` |
+| org fault detail | `org_fault.changed` |
 | harness catalog | `host.registered`, `host_env.updated`, `config.updated` |
 | toplines | `topline.created`, `topline_work_membership.linked`, `topline_work_membership.unlinked`, `work_item.updated`, `work_item.iceboxed`, `work_item.reopened`, `work_item.closed`, `work_item.failed` |
 | execution map | `work_item.*`, `assignment.*`, `attest.filed`, `wake.*`, `prod.fired`, `turn.*`, `decision_request.*`, `session.*`, `user.added`, `user.promoted`, `subagent_marker.appended` |
@@ -718,6 +735,14 @@ upsert. The list omits `work_item.created` from Toplines because an unlinked new
 work item changes no durable Topline bytes. Any new Topline or membership
 mutation, or any new source read by either composition, requires one reviewed
 R8b/R9 amendment before implementation.
+
+The org-fault detail dependency vector contains the fault row, accepted
+observations, stale-evidence rows, impacts, deliveries, events, and assignment
+rows referenced by impacts. The org vector includes the same entries for each
+open fault visible to the principal. `org_fault.changed` fires after each
+successful commit that changes either vector, including an impacted assignment
+close or reopen. A request-id replay that creates no event changes no vector and
+emits no notice.
 
 R9b. Durable Toplines dependency extraction is closed over the visible Topline
 row, its active `topline_work_memberships`, and the joined visible work-item
@@ -894,6 +919,7 @@ not borrow that bit.
 | Resource | Allowed principals |
 |---|---|
 | org, harness catalog, hosts, roles | any authenticated user or session in the org |
+| org fault summary and detail | fault `ownerUserId` user principal; admin |
 | sessions | target session; target session owner; admin |
 | transcript messages, coordination share | target session; target session owner; admin |
 | work items, work-item trace | work-item owner; creating session; a session that holds an assignment on the item; admin |
@@ -913,6 +939,11 @@ not borrow that bit.
 | execution map | derived source-by-source under AU4a; no independent grant |
 | critical state | admin only |
 | identity, archetypes, kungfu, guidance, rails, config, host environment, harness processes, users, devices | admin only |
+
+The `/api/org` serializer applies the org-fault summary predicate to each nested
+summary. A principal that is neither the fault owner nor an admin receives an
+empty `orgFaults` array and no `org_fault.changed` notice for that fault. The
+detail route applies AU3 same-404 behavior.
 
 AU4a. ExecutionMap authorization composes existing AU4 grants and introduces
 none. A node requires the work-items grant for that principal and item. An
@@ -1212,9 +1243,21 @@ A29. Given each R8b class and subscriptions that independently set `classes`,
 `sessionKey`, `workItemId`, `origin`, and `principal`, when the source commits,
 then the firehose applies the exact R8b filter-value rules after visibility.
 An exact present ref matches, a different or absent ref does not match, and
-the four mappings never match `origin` or `principal`. A hidden source does
+the five mappings never match `origin` or `principal`. A hidden source does
 not invoke the subscription matcher. A client holding an R9 view subscribes
 to its dependency classes plus any ref filters whose R8b rows define values.
+
+A30. Given one open configured-harness org fault with one impact, when its
+owner or an admin reads `/api/org`, then the `orgFaults` element has the exact
+R7 and wire shape. When the same principal reads `/api/org-faults/:faultId`,
+then the response uses resource `org faults`, the exact detail item, and the
+current dependency version. A different non-admin principal receives an empty
+org-fault summary array and the same detail 404 as an unknown fault. Given an
+observation, impact transition, delivery transition, close, or impacted
+assignment close/reopen changes either view, when the commit appends its
+`org_fault_events` row, then exactly one visible `org_fault.changed` notice
+causes an authorized client to refetch and observe a changed dependency
+version. A request-id replay emits no notice and changes no version.
 
 ## Open questions — Spirit questions for Mike
 
