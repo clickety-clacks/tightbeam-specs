@@ -6,12 +6,14 @@ amendment changes no durable Toplines field, mutation, or route. Its companion
 firehose amendment adds source invalidation notices for existing durable
 Topline and subagent-marker commits; it adds no ExecutionMap class.
 
-Review status, 2026-08-25: AMENDED AFTER CHANGES REQUESTED against candidate
-`a9117391`. Product-owner ruling
-`att_d5b0a440-bd51-498f-8b96-e6512fedf68f` closes SQ6-SQ8. This exact
-successor and its event-firehose companion require a fresh independent review
-before M1, M2, specRef binding, or implementation. Separable r3 resources
-remain unaffected.
+Review status, 2026-08-25: AMENDED AFTER recovery review
+`att_29670784-bd48-4fb9-a847-1083b93de602` requested changes on exact
+`29e834b0a7d5e88a7b6ea611699f1de61602a666`; full report
+`art_8b5046d8` supplies findings F1-F5. Earlier changes requested against
+`a9117391` are incorporated. Product-owner ruling
+`att_d5b0a440-bd51-498f-8b96-e6512fedf68f` closes SQ6-SQ8. The resulting
+three-file successor requires a fresh independent review before M1, M2,
+specRef binding, or implementation. Separable r3 resources remain unaffected.
 
 Status: CANONICAL r3, 2026-08-22. r3 folds the REST-side adjudicated
 findings F1/F8/F9/F13/F14/F16/F21/F22 from
@@ -75,11 +77,18 @@ Authority and inputs:
 ## Spec homing
 
 The canonical spec lives only in the `tightbeam-specs` repository as
-`rest-state-api-v1.md`. The two companion documents above live beside it and
-are normative for r3. A worktree, artifact row, transcript, or review report
-is evidence, not canonical custody. Canonical r3 passed joint independent
-review at `att_45676d30` and landed on the canonical branch in merge
-`c84b1b8dc856861baeaa7b5ff781317ded568cb1`.
+`rest-state-api-v1.md`. This amendment's exact canonical set is
+`rest-state-api-v1.md`, `rest-state-api-v1-wire-schema.md`, and
+`event-firehose-v1.md`; a change to an ExecutionMap envelope, dependency
+entry, or R8b mapping lands those coupled files in one reviewed revision.
+`rest-state-api-r3-adjudication.md`, `rest-vs-cli-adjudication.md`, and
+`topline-map-v1.md` remain authority inputs, not custody companions for this
+amendment. A worktree, artifact row, transcript, adjudication ledger, or review
+report is evidence, not canonical custody. Canonical r3 passed joint
+independent review at `att_45676d30` and landed on the canonical branch in
+merge `c84b1b8dc856861baeaa7b5ff781317ded568cb1`. This amendment remains a
+candidate until one exact revision of its three-file canonical set passes
+independent review and lands in `tightbeam-specs`.
 
 ## Goal
 
@@ -317,7 +326,7 @@ Detail: `{"schemaVersion":1,"resource":"assignments","item":{}}`.
 For every notice-backed resource, the `item` shape equals the firehose
 notice `payload` shape (SR1).
 
-R4a. ExecutionMap envelopes are closed. Every route returns
+R4a. ExecutionMap success envelopes are closed. Every successful route returns
 `schemaVersion:1`, `resource:"execution map"`, `edgeBasis:"concurrent_turn"`,
 `coverage:{attributionCutoff,basis:"conservative_shared"}`, and
 `dependencyVersion`. The flat route also returns only `items` and R4 `page`.
@@ -335,6 +344,25 @@ forbidden returns the AU3 `404 not_found`. Invalid query shape or value returns
 `400 malformed_query`. Cursor errors follow AU7. Serializer or dependency
 schema failure returns the read plane's closed `500 projection_invalid` and
 emits no partial response.
+
+R4b. ExecutionMap error envelopes are closed. The encoded outer object has
+exactly `schemaVersion`, `resource`, and `error`, in that order;
+`schemaVersion` is `1` and `resource` is `"execution map"`. For
+`auth_failed`, `invalid_as_user`, `invalid_message`, `not_found`,
+`invalid_filter`, `malformed_query`, `invalid_cursor`, and
+`projection_invalid`, `error` has exactly one key, `code`, whose value is that
+literal code. For `ambiguous_id`, `error` has exactly `code` followed by
+`candidateIds`; `code` is `"ambiguous_id"` and `candidateIds` is the ascending
+array of visible full typed ids required by R6a. No error object has a
+`message`, details, selector, denied id, or partial success field.
+
+The route sets exactly these application response headers for every success
+and error: `Content-Type: application/json; charset=utf-8` and
+`Cache-Control: no-store`. It sets no ETag, `Vary`, redirect, or
+`WWW-Authenticate` header. Protocol-managed framing headers do not carry
+application data. The JSON encoder emits the R4b key order with no
+insignificant whitespace. Unknown and forbidden selectors therefore use the
+same status, literal `not_found` body bytes, and application header bytes.
 
 R5. Pagination: `before`/`after` are mutually exclusive, exclusive bounds.
 `limit` defaults to 50 and caps at 500 by clamping. No cursor means the newest
@@ -383,6 +411,14 @@ user reads, but it remains in the cursor tuple. Two users with the same
 `scopeKey` page without loss or duplication. Updates cannot move a marker or
 host-environment row because those collections order only by their immutable
 natural keys.
+
+R5c. The ExecutionMap flat route admits `limit` at most once. When present,
+it matches `[1-9][0-9]*` and parses as a positive base-10 integer. The route
+rejects an empty value, zero, leading zero, sign, decimal point, exponent,
+whitespace, non-ASCII digit, non-integer, or repeated key as
+`400 invalid_filter` before a row lookup. The R5 default remains 50, and the
+route clamps a valid value above 500 to 500. This clause changes no other
+resource's pagination contract.
 
 R6. Filters are whitelisted per resource:
 
@@ -710,10 +746,15 @@ ExecutionMap builds its dependency vector only after AU4a source visibility.
 A hidden source row cannot change `dependencyVersion`, an aggregate, order,
 nesting, filter outcome, or response bytes. For an underlying R7 resource, the
 vector uses its canonical primary key and `rowVersion`. For non-resource
-append-only evidence, a causal event uses its positive sequence and a subagent
-marker uses source-kind label `subagent markers` and its positive
-`subagent_markers.id` as both stable key and version.
-The fixed coverage epoch uses its stored epoch value. Query dependency
+append-only evidence, a disposition-transition causal event uses the exact
+triple `("causal events", seq, seq)`, where both `seq` values are the same
+positive `causal_events.seq` JSON integer. A subagent marker uses the exact
+triple `("subagent markers", id, id)`, where both `id` values are the same
+positive `subagent_markers.id` JSON integer. The fixed coverage epoch uses the
+exact triple `("causal events epoch", "causal_events_epoch", epoch)`, where
+`epoch` is the stored positive epoch-millisecond JSON integer. These literal
+source-kind labels, key types, and version types are part of the dependency
+digest input. Query dependency
 extraction and this R9a source list must match exactly.
 
 Evaluation time is not a dependency row. `sinceProgressMs` and a
@@ -1046,7 +1087,10 @@ content source; SR6 redacts or excludes each and preserves ordinary prose.
 A17. The wire-schema suite validates every R7/R7a item against its exact JSON
 types, nullability, nested keys, and enum domain. It randomizes input map and
 set order 1,000 times and requires byte-identical item serialization and
-dependency digests. Semantic sequences retain their declared order.
+dependency digests. The ExecutionMap cases include the literal causal-event,
+subagent-marker, and coverage-epoch triples from R9a and reject a changed
+source-kind label, key type, or version type. Semantic sequences retain their
+declared order.
 A18. Facts and critical-state rows have immutable cursors, complete R7 wire
 schemas, AU4 visibility tests, and exactly one R8 state mapping. The suite
 fails if either companion firehose class is absent from the adopted registry.
@@ -1070,6 +1114,10 @@ appear once in `(createdAt,id)` order. Decoding each signed cursor yields the
 complete tuple, resource, direction, schema version, filter fingerprint, and
 principal binding, with no offset, `rowid`, selector id, or live locator.
 Deleting the boundary item before the next request does not change the page.
+Given absent `limit`, valid `500`, and valid `501`, the route uses 50, 500, and
+clamped 500 respectively. Given empty, zero, leading-zero, negative, signed,
+decimal, exponent, whitespace, non-ASCII-digit, non-integer, or repeated
+`limit`, it returns `400 invalid_filter` before a row lookup.
 
 A21. Given a flat request with each valid R6a filter, when the request runs,
 then visibility removes denied rows before the conjunctive filters run and the
@@ -1125,9 +1173,11 @@ serializer bytes remain unchanged.
 A27. Given each ExecutionMap success, auth failure, invalid filter, invalid
 cursor, ambiguous visible prefix, unknown selector, forbidden selector, and
 projection failure, when the response is encoded, then it has the specified
-status and error code plus `Cache-Control: no-store`. Unknown and forbidden
-selectors have identical body and headers. An unpaged response has no `page`;
-a projection failure emits no partial JSON.
+status and the exact R4b body and application headers. The test compares exact
+encoded bytes for each closed error variant and rejects a message, extra key,
+wrong key order, or extra application header. Unknown and forbidden selectors
+have identical body and application headers. An unpaged response has no
+`page`; a projection failure emits no partial JSON.
 
 A28. Given one new Topline create, link, and unlink commit plus an idempotent
 replay of each, when the firehose and Toplines composition are exercised, then
@@ -1140,6 +1190,14 @@ work-item title update or disposition change for an active membership also
 changes the refetched Topline digest and nested bytes; `work_item.created`
 alone does neither. Older, duplicate, and newer source notices cannot be applied as a
 Topline upsert.
+
+A29. Given each R8b class and subscriptions that independently set `classes`,
+`sessionKey`, `workItemId`, `origin`, and `principal`, when the source commits,
+then the firehose applies the exact R8b filter-value rules after visibility.
+An exact present ref matches, a different or absent ref does not match, and
+the four mappings never match `origin` or `principal`. A hidden source does
+not invoke the subscription matcher. A client holding an R9 view subscribes
+to its dependency classes plus any ref filters whose R8b rows define values.
 
 ## Open questions — Spirit questions for Mike
 

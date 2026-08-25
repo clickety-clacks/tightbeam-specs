@@ -71,6 +71,19 @@ Authority and inputs:
 - Related card: wi_bdf9a537 (gateway behind tailscale serve) — transport
   posture this endpoint would inherit.
 
+## Spec homing
+
+The canonical firehose spec lives only in the `tightbeam-specs` repository as
+`event-firehose-v1.md`. This source-invalidation amendment's exact canonical
+set is `event-firehose-v1.md`, `rest-state-api-v1.md`, and
+`rest-state-api-v1-wire-schema.md`; a change to an R8b mapping, its R9
+dependency, its filter value, or its wire type lands those coupled files in
+one reviewed revision. Recon documents, adjudication ledgers, artifact rows,
+transcripts, worktrees, and review reports are authority evidence, not
+canonical custody. This amendment remains a candidate until one exact
+revision of the three-file set passes independent review and lands in
+`tightbeam-specs`.
+
 ## Assumptions
 
 AS1. The gateway already authenticates its existing credentials through the
@@ -320,6 +333,20 @@ no new Topline field or serializer. These four notices carry only the refs and
 source version needed to invalidate a composed view; the authorized REST
 composition remains the only rebuild path.
 
+R8b filter values are closed. `classes` matches the notice's literal class by
+S2 prefix. `sessionKey` and `workItemId` match only the equal literal ref when
+that ref is present in the mapping row; an absent ref is no match. Thus
+`sessionKey` has a value only for `subagent_marker.appended`, and `workItemId`
+has a value only for the two membership classes and for a marker whose
+non-null assignment resolves to a work item. The R8b refs object contains
+exactly the refs named by its mapping row and omits every absent optional ref.
+Each mapping omits `origin` and `principal`; a subscription that supplies
+either filter does not match an R8b notice. Visibility still runs first, so a
+hidden source never reaches this matcher. A composed-view client subscribes
+to the R9 class prefixes and adds only ref filters for which these rules define
+a value; the matcher derives no ref or filter value from an owner, mutation
+actor, authenticated principal, or other row.
+
 R9. Composed views (toplines, execution map, coordination-share,
 digest-members, org) have no notices of their own. Each composed REST resource
 DECLARES its underlying state and source-invalidation classes; a client
@@ -516,6 +543,12 @@ the next heartbeat exposes the gap and the client rebuilds (D1b).
 A3. A filtered subscriber receives exactly the matching notices; a change
 matching several of a connection's subscriptions arrives once per
 matching subscription, each tagged.
+
+For each R8b class, a table tests the closed filter rules: its literal class
+matches the correct prefix; each present `sessionKey` or `workItemId` ref
+matches only the equal filter; each absent ref does not match; and `origin`
+and `principal` never match. The visibility predicate runs before the matcher,
+and a denied source invokes no matcher and emits no frame.
 
 A4. M1 converges: subscribe-then-snapshot-then-apply reaches a model identical
 to a fresh query at a quiescent moment. Reapplying the same R8 notice converges

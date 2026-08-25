@@ -2,8 +2,9 @@
 
 Status: normative companion to `rest-state-api-v1.md` r3 review draft.
 
-Amendment candidate, 2026-08-24: add the ExecutionMap composed response and
-node schema. The durable Toplines schema below is unchanged.
+Amendment candidate, 2026-08-25: add the ExecutionMap composed response,
+closed error envelope, and dependency-entry schema. The durable Toplines
+schema below is unchanged.
 
 ## Encoding rules
 
@@ -100,6 +101,22 @@ ExecutionMap responses are closed top-level objects in this key order:
 in the R7 order followed by `children:A<O<ExecutionMapTreeNode>>`. No unpaged
 response contains `page`, and no flat or assignment-selected node contains
 `children`.
+
+ExecutionMap error responses are closed top-level objects in this key order:
+`{schemaVersion:I, resource:S, error:O<ExecutionMapError>}`.
+`schemaVersion` is exactly `1`; `resource` is exactly `execution map`.
+`ExecutionMapError` is one of these closed variants:
+
+- `{code:S}`, where `code` is exactly one of `auth_failed`,
+  `invalid_as_user`, `invalid_message`, `not_found`, `invalid_filter`,
+  `malformed_query`, `invalid_cursor`, or `projection_invalid`;
+- `{code:S, candidateIds:A<S>}`, where `code` is exactly `ambiguous_id` and
+  `candidateIds` contains visible full typed ids in ascending order.
+
+No error variant contains `message` or another key. The encoder emits no
+insignificant whitespace. Each ExecutionMap response sets exactly the
+application headers `Content-Type: application/json; charset=utf-8` and
+`Cache-Control: no-store`.
 
 ## Resource field types and nullability
 
@@ -204,8 +221,15 @@ the domains in the next section.
 - `byClass`, `sessionRevisions`, and every M or J object sort keys ascending.
 - The dependency vector sorts by `(resource, canonical primary-key bytes)`.
   Its digest input is canonical JSON of `[resource, primaryKey, rowVersion]`
-  entries with no whitespace.
+  entries with no whitespace. ExecutionMap's non-resource entries have these
+  exact types and values: `["causal events",I,I]` with both integers equal to
+  one positive `causal_events.seq`; `["subagent markers",I,I]` with both
+  integers equal to one positive `subagent_markers.id`; and
+  `["causal events epoch","causal_events_epoch",I]` with the final integer
+  equal to the stored positive epoch-millisecond value.
 
 Any field without a declared type, nullable rule, enum value, nested key, or
-order is a schema failure. A reviewed amendment must change this file and the
-main R7/R7a row together.
+order is a schema failure. A reviewed projection-field amendment must change
+this file and the main R7/R7a row together. An envelope or dependency-entry
+amendment must change this file and the corresponding main R4 or R9 clause
+together.
