@@ -1,5 +1,9 @@
 # REST state API v1 — the read plane (product spec, canonical r3)
 
+Amendment candidate, 2026-08-24: distinguish durable Toplines from the
+mechanical ExecutionMap and add the REST-only ExecutionMap contract. The
+amendment changes no durable Toplines field, mutation, or route.
+
 Status: CANONICAL r3, 2026-08-22. r3 folds the REST-side adjudicated
 findings F1/F8/F9/F13/F14/F16/F21/F22 from
 `review-gate-observability-2026-08-21.md` and aligns with firehose r6.
@@ -52,6 +56,13 @@ Authority and inputs:
   `5db8aab3496747d008fb8c024a4f1617f92695d144c89481bca3a1f20842550a`:
   condition facts and critical leases enter firehose R8 with the exact R8 rows
   below; it supersedes the fact-only `art_5d8bacb2`.
+- ExecutionMap authority: `topline-map-v1.md` plus product source
+  `Tightbeam.ExecutionMap` at `d00e06aea578d711e608637d38a97872487df15e`.
+  Durable `Tightbeam.Toplines` at that revision remains a separate source.
+  D2 `wi_ea98345b-51f4-4fae-b7df-3670c0d54f6b` and D3
+  `wi_113442f5-22ae-457b-a971-1b620069d490` consume this amendment; they do
+  not define its contract. The adopted six-resource seam contract remains
+  `art_b1995a26` / fact 1093 and is unchanged.
 
 ## Spec homing
 
@@ -79,6 +90,9 @@ correlate later firehose notices without reading SQLite or replaying history.
 - REST v1 does not retire compatibility aliases before their clients migrate
   or decide future tailnet identity.
 - REST v1 does not authorize implementation, deployment, or client migration.
+- REST v1 does not alias ExecutionMap telemetry through `/api/toplines`, add an
+  ExecutionMap firehose class, or change the six adopted shared serializer
+  shapes from `art_b1995a26` / fact 1093.
 
 ## Assumptions
 
@@ -117,6 +131,11 @@ explicit companion-spec exclusion. Silence is never an implicit mapping.
 I6. Versions increase across update, delete, and recreation of the same public
 key. A process restart does not reset the version floor.
 
+I7. Durable human intent and mechanical execution telemetry are distinct
+resources. `/api/toplines[/:id]` reads durable Topline rows and memberships.
+`/api/execution-map` reads a composed snapshot of execution rows. Neither name
+aliases, replaces, or widens the other.
+
 ## Architecture
 
 The read plane has four seams. A principal resolver produces one authenticated
@@ -125,6 +144,9 @@ filters. The R7 serializer emits the closed wire item defined by the wire
 schema. An outer adapter places that item in a REST envelope, compatibility
 envelope, CLI result, or firehose notice. Composed views declare their source
 classes in R9 and use a dependency digest instead of a notice class.
+
+Operating-guidance impact: none. This amendment applies the existing REST
+resource/query/serializer pattern and creates no cross-repository agent rule.
 
 ## Spirit (read this before quizzing Mike)
 
@@ -162,6 +184,13 @@ security exactly. An `asUser` GET parameter only transports the CLI's
 existing principal selection. It adds no credential, principal binding,
 authorization grant, or tailnet-identity behavior.
 
+SP7. A Topline records durable human intent: its title, owner, lifecycle,
+memberships, and concerns. ExecutionMap reports mechanical evidence the
+substrate can derive from work, assignment, turn, attest, wake, decision,
+session, user, marker, and causal-event rows. Similar historical CLI names do
+not make these concepts interchangeable. A client asks Toplines what people
+are carrying and ExecutionMap what the machinery records about execution.
+
 ## Terms
 
 T1. **Resource** — one product entity or mechanical composed view with a
@@ -175,6 +204,15 @@ and its complete immutable ordering tuple. It is an exclusive
 `before`/`after` boundary. It never contains an SQLite `rowid`, another live
 storage locator, or an offset. Deleting the boundary row does not invalidate
 the cursor.
+
+T4. **Durable Topline** — a stored human-intent aggregate owned by one user,
+with durable membership and concern state. Its REST home is
+`/api/toplines[/:id]`.
+
+T5. **ExecutionMap** — a read-only composed execution snapshot. It derives
+work-item nodes, telemetry, and causal nesting from existing source rows. It
+adds no table, mutation, or state notice. Its REST home is
+`/api/execution-map` and the three nested routes in R3a.
 
 ## Requirements — surface
 
@@ -215,8 +253,9 @@ byte-identical complete responses. The canonical route wraps items in the v1
 envelope; the compatibility alias preserves its legacy raw array until M8
 removes that alias.
 
-R3. Mechanical views: GET /api/toplines[/:id], /api/facts, and
-/api/critical-state. Admin reads are GET /api/identity[, /:name],
+R3. Durable human-intent reads are GET `/api/toplines[/:id]`. Mechanical
+reads are GET `/api/execution-map` and its R3a nested routes, `/api/facts`,
+and `/api/critical-state`. Admin reads are GET /api/identity[, /:name],
 /api/archetypes[, /:name], /api/kungfu[, /:name],
 /api/guidance[, /:name], /api/rails[, /:name], /api/config[, /:key],
 /api/host-env, /api/harness-processes, /api/users[, /:userId], and
@@ -229,11 +268,60 @@ a normal display-model bootstrap.
 expired row; it never removes a row merely because wall time passed. A client
 derives current activity as `expiresAt > now`.
 
+R3a. ExecutionMap exposes exactly these REST-only composed routes:
+
+| Route | Result |
+|---|---|
+| `GET /api/execution-map` | flat roster, paged by the signed `(createdAt,id)` tuple |
+| `GET /api/execution-map/tree` | complete caller-visible forest, unpaged |
+| `GET /api/execution-map/subtrees/:workItemId` | caller-visible anchor plus transitive caller-visible linked descendants, unpaged |
+| `GET /api/execution-map/assignments?assignmentId=<id>&assignmentId=<id>` | items selected by one or more explicit assignment ids, unpaged |
+
+Besides AU2's transport-only `asUser`, the flat, tree, and subtree routes
+accept only `origin`, `ownerUserId`, `state`, `quietOverMs`, `specRefName`,
+`specRefSha256`, and `sessionKey`, plus the flat route's `before`, `after`, and
+`limit`. Besides `asUser`, the assignments route accepts only repeated
+`assignmentId`; it rejects each roster filter and pagination parameter. At
+least one nonempty `assignmentId` is required. Duplicate exact assignment ids
+collapse before selection. R6a fixes validation and filter meaning.
+
+R3b. The shared ExecutionMap seams are exact. `Tightbeam.ExecutionMap` owns
+`list_execution_map/2`, `query_execution_map_tree/2`,
+`query_execution_map_subtree/2`, and `query_execution_map_assignments/2`.
+`Tightbeam.ExecutionMap.execution_map_node/1` is the sole public node
+serializer. `Tightbeam.StateVisibility.execution_map_node_visible?/3` composes
+the existing AU4 predicates named in AU4a. Assignment selection first calls
+`Tightbeam.StateVisibility.execution_map_assignment_visible?/3`, then the node
+predicate. Neither predicate grants authority of its own.
+`Tightbeam.Wire.Router.rest_read/3`, `Tightbeam.RestCursor`, and
+`Tightbeam.RestEnvelope` remain the one route, cursor, and outer-envelope
+adapters. Route code does not query rows, build a node, copy a visibility rule,
+or encode an envelope.
+
 R4. Envelopes. List:
 `{"schemaVersion":1,"resource":"assignments","items":[],"page":{"oldestCursor":null,"newestCursor":null,"hasMoreBefore":false,"hasMoreAfter":false}}`.
 Detail: `{"schemaVersion":1,"resource":"assignments","item":{}}`.
 For every notice-backed resource, the `item` shape equals the firehose
 notice `payload` shape (SR1).
+
+R4a. ExecutionMap envelopes are closed. Every route returns
+`schemaVersion:1`, `resource:"execution map"`, `edgeBasis:"concurrent_turn"`,
+`coverage:{attributionCutoff,basis:"conservative_shared"}`, and
+`dependencyVersion`. The flat route also returns only `items` and R4 `page`.
+The tree and subtree routes also return only `roots`. The assignments route
+also returns only `items` and `noItem`; `noItem` sorts assignment ids ascending.
+No unpaged route returns `page`. A tree node contains its R7d node keys plus
+`children`; a flat or assignment-selected node has no `children` key.
+
+Every ExecutionMap success and error response carries
+`Cache-Control: no-store`. The routes define no ETag, conditional request, or
+shared-cache behavior. A valid request returns 200. Invalid or absent bearer
+returns `401 auth_failed`. A syntactically valid selector that is unknown or
+forbidden returns the AU3 `404 not_found`. Invalid query shape or value returns
+`400 invalid_filter`; malformed query encoding returns
+`400 malformed_query`. Cursor errors follow AU7. Serializer or dependency
+schema failure returns the read plane's closed `500 projection_invalid` and
+emits no partial response.
 
 R5. Pagination: `before`/`after` are mutually exclusive, exclusive bounds.
 `limit` defaults to 50 and caps at 500 by clamping. No cursor means the newest
@@ -274,6 +362,7 @@ R5a. Stable collection orders and cursor tuples are:
 | read markers | `(userId, scopeKey)` |
 | facts | `(id)` |
 | critical state | `(sessionKey)` |
+| execution map | `(createdAt, id)` |
 
 R5b. Read-marker collection identity is the composite key
 `(userId, scopeKey)`. The caller's user id remains implicit for ordinary
@@ -309,6 +398,7 @@ R6. Filters are whitelisted per resource:
 | read markers | caller user by default; scopeKey exact or prefix |
 | facts | kind exact, scope exact, origin exact, tsFromInclusive, tsToExclusive |
 | critical state | sessionKey exact |
+| execution map flat, tree, subtree | origin, ownerUserId, state, quietOverMs, specRefName, specRefSha256, sessionKey |
 
 Filters are conjunctive across fields and disjunctive within a repeated
 field. Unknown enum = typed 400. Unknown exact-id filter = empty collection,
@@ -318,6 +408,42 @@ exist in v1. Every bounded-time filter is an epoch-millisecond integer named
 the upper comparison is `<`. Wakes admit `dueAt` and `firedAt`; turns admit
 `createdAt`, `startedAt`, and `endedAt`; facts admit `ts`. A missing bound is
 open. Any other time-filter name returns `400 invalid_filter`.
+
+R6a. ExecutionMap roster filters have these exact meanings and validation:
+
+- `origin` is one of `user`, `session`, or `all` and compares the immutable
+  creator principal kind.
+- `ownerUserId`, `specRefName`, and `sessionKey` are nonempty strings and
+  compare exact work-item fields. `sessionKey` compares `createdBySession`.
+- `state` is one of `open`, `iceboxed`, `closed`, or `failed`.
+- `quietOverMs` is a non-negative integer duration in milliseconds. A node
+  matches only when `sinceProgressMs > quietOverMs`, `active.runningTurn` is false, and
+  `active.pendingSessionWake` is false.
+- `specRefSha256` is a 64-character lowercase hexadecimal string and is valid
+  only when the same request has one nonempty `specRefName`. Both fields must
+  match the current work-item pin.
+
+Each roster filter occurs at most once. A repeated roster filter, unknown
+query key, empty string where nonempty is required, invalid enum, negative or
+non-integer `quietOverMs`, invalid SHA, or SHA without `specRefName`
+returns `400 invalid_filter` before the query runs. Different roster filters
+are conjunctive. The service first removes rows disallowed by AU4a, then
+applies these filters; a filter never participates in visibility, edge
+derivation, or causal reachability.
+
+The flat cursor fingerprint is canonical JSON of these decoded fields in the
+order `origin`, `ownerUserId`, `state`, `quietOverMs`, `specRefName`,
+`specRefSha256`, `sessionKey`, with absent values encoded as JSON null.
+Changing, adding, or removing one field returns `400 invalid_cursor` before a
+row lookup. The signed cursor also binds resource, schema version, exclusive
+direction, complete `(createdAt,id)` tuple, and AU7 principal identity. It
+contains no selector id, offset, `rowid`, or live locator.
+
+`workItemId` and each `assignmentId` accept a full typed id or a unique typed
+prefix through the existing `Tightbeam.IdPrefix` resolver. An ambiguous
+visible prefix returns `400 ambiguous_id` with its visible candidate ids in
+ascending order. Unknown and invisible selectors follow AU4a's same-404 rule
+and never appear in the candidate list.
 
 R7. Projection fields are closed-world and normative. Every item contains
 exactly the keys in its row below. Nullable keys remain present with `null`;
@@ -348,6 +474,7 @@ adapter may add a storage column or a caller-selected field.
 | facts (`/api/facts`) | `id`, `ts`, `kind`, `scope`, `origin`, `rowVersion` |
 | critical state (`/api/critical-state`) | `sessionKey`, `reason`, `startedAt`, `expiresAt`, `hardDeadline`, `updatedAt`, `rowVersion` |
 | toplines | `id`, `ownerUserId`, `title`, `state`, `createdActor`, `createdAt`, `updatedAt`, `closedAt`, `activeWorkCount`, `openConcernCount`, `workMemberships`, `concerns`, `dependencyVersion` |
+| execution map node | `id`, `title`, `specRefName`, `specRefSha256`, `state`, `failReason`, `bracket1Armed`, `origin`, `creationContext`, `parent`, `finishedAt`, `assignments`, `jobs`, `attests`, `startedAt`, `closingAttests`, `openDecisionRequests`, `turns`, `minds`, `fanOut`, `active`, `sinceProgressMs` |
 | coordination share | `sessionKey`, `from`, `to`, `turns`, `wakeTurns`, `classedTurns`, `coordinationTurns`, `summons`, `algedonic`, `byClass`, `share`, `dependencyVersion` |
 | digest members | `wakeId`, `prompt`, `class`, `classElection`, `createdAt`, `dependencyVersion` |
 | work-item trace | `workItem`, `assignments`, `causalChildren`, `attribution`, `dependencyVersion` |
@@ -379,6 +506,61 @@ response.
 R7b. `/download/:assetId` returns bytes, not a JSON projection. The asset row
 is its sole authorization metadata; no inferred artifact or work-item link
 grants access. SR2 and AU5 govern the binary adjunct.
+
+R7d. The ExecutionMap node and response metadata use the exact wire shapes in
+the companion schema. Their meanings are:
+
+- `origin` reports the work item's immutable creator as
+  `{principal,createdBy}`. It records `user` or `session`; it does not infer
+  human or agent identity.
+- `creationContext` reports `{recorded,turnSeq}` from the work-item row.
+  `parent` reports exactly `{status,item}`. `status` is `linked`, `from_turn`,
+  `no_turn_observed`, or `unrecorded`; only `linked` has a non-null `item`.
+  The server derives a candidate from the creating turn's `jobRef`, otherwise
+  its resolved assignment. It removes hidden endpoints before traversal and
+  drops the deterministic cycle-closing edge. Appearance filters do not alter
+  the candidate graph.
+- One normative assignment resolver supplies every aggregate and edge. An
+  assignment's non-null `workItemId` wins. Otherwise the resolver follows
+  `reviewsAssignmentId` transitively and cycle-safely. Otherwise the result is
+  NONE. A resolved assignment contributes to at most one item.
+- `assignments` counts open and closed resolved assignments and closed outcomes.
+  `jobs` counts distinct holders that have held a resolved assignment.
+  `attests` counts allowed attests by stored kind and verdict slug.
+  `startedAt` is the earliest allowed resolved assignment `openedAt`.
+  `closingAttests` contains completed or surrendered closes with their closing
+  attest and nullable commit refs; it excludes revoked closes.
+  `openDecisionRequests` counts open statute and effort requests attributed to
+  allowed resolved assignments. Agent questions do not enter that count.
+- `turns` is the deduplicated union of allowed turns whose `jobRef` is the item
+  or whose `assignmentId` is in the allowed resolved set. `minds` is the sorted
+  distinct nonempty `(model,context,effort,harness)` stamps in that union.
+  `fanOut` counts distinct subagent references carried by allowed resolved
+  assignments. A turn that matches both union arms contributes once.
+- `active.runningTurn` is true when the allowed turn union has a running turn.
+  `active.pendingSessionWake` is true when a current open allowed holder has a
+  pending prompt wake. `active.pendingWakeClasses` sums pending prompt-wake
+  class counts across those current holders. A closed assignment's former
+  holder does not contribute active state.
+- `finishedAt` is the time of the latest allowed disposition transition whose
+  destination equals the current terminal work-item state. It is null for an
+  open item and for a terminal item without such evidence.
+- `sinceProgressMs` is evaluation time minus the latest allowed ended turn,
+  attest, matching disposition, or coverage-floor timestamp. A scheduled wake
+  or fired prod does not reset it.
+- `coverage.attributionCutoff` is the causal-event epoch and
+  `coverage.basis` is `conservative_shared`. For a work item older than that
+  cutoff, `turns.total`, `turns.lastEndedAt`, `minds`, and `fanOut` are null;
+  durable assignment and attest values remain populated. `runningTurn` stays
+  boolean and `sinceProgressMs` cannot exceed evaluation time minus the cutoff.
+
+The assignments route resolves the complete supplied id set atomically. An
+allowed id that resolves to an allowed work item contributes that node once.
+An allowed id that resolves to NONE contributes its canonical id to `noItem`.
+One unknown or forbidden id makes the complete request the same 404. The tree
+and subtree routes nest only appearing nodes. A filter-excluded but visible
+parent is not emitted as a placeholder; an appearing child stays top-level and
+keeps its `parent:{status:"linked",item:<id>}`.
 
 R8. This table seeds firehose R8. Each listed state mutation has one class,
 resource, operation, primary-id ref, and R7 serializer. A class can name more
@@ -437,6 +619,7 @@ that prefix.
 | org | `host.registered`, `config.updated`, `identity.updated`, `kungfu.updated` |
 | harness catalog | `host.registered`, `host_env.updated`, `config.updated` |
 | toplines | `work_item.*`, `assignment.*`, `attest.filed`, `session.*`, `role.*`, `wake.*`, `turn.*`, `decision_request.*` |
+| execution map | `work_item.*`, `assignment.*`, `attest.filed`, `wake.*`, `prod.fired`, `turn.*`, `decision_request.*`, `session.*`, `user.added`, `user.promoted` |
 | coordination share | `wake.*`, `turn.*`, `prod.fired` |
 | digest members | `wake.scheduled`, `wake.canceled`, `wake.fired` |
 | work-item trace | `work_item.*`, `assignment.*`, `attest.filed`, `session.*`, `wake.*`, `turn.*` |
@@ -449,6 +632,32 @@ a composed query requires the same reviewed change to this list. Each composed
 response carries `dependencyVersion` equal to a stable digest of the ordered
 `(resource primary key, rowVersion)` dependency vector, so equal dependencies
 produce equal versions and any dependency change produces a different version.
+
+R9a. ExecutionMap's query dependency extraction is closed over these source
+rows: visible work items; assignments resolved to them; allowed attests;
+allowed turns by `jobRef` or resolved assignment; allowed pending prompt
+wakes for current holders; open statute and effort decision requests for
+allowed resolved assignments; allowed subagent markers carried by those
+assignments; allowed disposition-transition causal events; the causal-event
+coverage epoch; and the session and user rows required for source visibility.
+The R9 class row is the invalidation projection of that exact source set.
+Subagent markers invalidate through the enclosing existing `turn.*` lifecycle;
+disposition transitions invalidate through the corresponding existing
+`work_item.*` mutation. This amendment adds no firehose class.
+
+ExecutionMap builds its dependency vector only after AU4a source visibility.
+A hidden source row cannot change `dependencyVersion`, an aggregate, order,
+nesting, filter outcome, or response bytes. The vector uses each underlying
+resource's canonical primary key and `rowVersion`; append-only causal evidence
+uses its positive sequence as the version. The fixed coverage epoch uses its
+stored epoch value. Query dependency extraction and this R9a source list must
+match exactly.
+
+Evaluation time is not a dependency row. `sinceProgressMs` and a
+`quietOverMs` result can therefore change while `dependencyVersion` stays
+equal. The digest is an invalidation aid, not an entity tag or response hash;
+R4a's `no-store` rule prevents time-derived output from becoming a cache
+promise.
 
 R10. `rowVersion` has resource-key lifetime. The write seam allocates it from
 a durable monotonic sequence and stores a version floor keyed by
@@ -515,6 +724,15 @@ directory with `[redacted-secret]` or `[redacted-host-path]`. It runs on
 `pattern` and `text`. It never reads environment values to enrich output. The
 same sanitized item bytes serve REST and firehose.
 
+SR7. ExecutionMap has one composed query family and one public node serializer:
+the exact seams in R3b. Flat, tree, subtree, and assignment selection call the
+same membership resolver, source loader, telemetry builder, edge builder, and
+`execution_map_node/1`. Tree assembly adds only the schema-declared `children`
+key. The assignments adapter adds only `noItem`. A route-local node map or a
+second membership, edge, visibility, or serializer implementation is a
+contract failure. These seams are separate from durable Toplines and do not
+change the six shared serializer shapes adopted by `art_b1995a26` / fact 1093.
+
 ## Requirements — auth and visibility
 
 AU1. `Authorization: Bearer <existing gateway credential>`. A device
@@ -578,8 +796,36 @@ not borrow that bit.
 | read markers | marker's `userId` user principal; admin |
 | facts | filing session; filing session owner; admin; process-origin facts are admin-only |
 | toplines | topline owner; admin |
+| execution map | derived source-by-source under AU4a; no independent grant |
 | critical state | admin only |
 | identity, archetypes, kungfu, guidance, rails, config, host environment, harness processes, users, devices | admin only |
+
+AU4a. ExecutionMap authorization composes existing AU4 grants and introduces
+none. A node requires the work-items grant for that principal and item. An
+assignment contributes only when the principal also has the assignments grant.
+An attest requires its parent assignment grant. A wake or turn requires its
+own AU4 grant and the relevant resolved assignment or work-item grant before it
+can affect telemetry. A decision request requires its kind-specific AU4 grant
+and its resolved assignment grant. A subagent marker inherits its parent
+assignment's grant. A disposition event inherits its parent work item's grant.
+Session and user rows are consulted only by the existing principal resolver and
+the named underlying predicates; they create no ExecutionMap-only owner or
+admin borrowing.
+
+The service applies those predicates before membership, aggregation, edge
+derivation, filtering, pagination, dependency-vector construction, and
+serialization. A parent link requires both endpoint work items to be visible.
+Collections omit denied nodes and denied contributors. A subtree anchor
+requires the work-item grant. Each assignments selector first requires the
+assignment grant; an assignment resolved to an item also requires the
+work-item grant. A visible assignment resolving to NONE appears in `noItem`.
+One unknown or denied selector makes the complete selector request the same
+`404 not_found` body, headers, statement shape, and AU8 timing class.
+
+Twin-world byte identity is normative: for the same principal, request,
+evaluation time, and allowed rows, a database containing denied source rows
+produces byte-identical ExecutionMap output to a database where those rows are
+absent. This applies to flat, tree, subtree, and assignment-selection routes.
 
 AU5. Nested routes and binary downloads authorize each hop. A nested child
 is returned only when the caller may read both the parent and the child.
@@ -744,6 +990,75 @@ resource value and integer equality across item `id`, `refs.factId`, and
 principal through the shared AU4 function, then applies older, duplicate, and
 newer snapshots and notices in both orders to prove per-primary-key
 last-version-wins convergence.
+
+A19. Given one durable Topline linked to a work item and one ExecutionMap node
+for that item, when a client calls `/api/toplines/:id` and
+`/api/execution-map`, then the first response has the unchanged durable
+Toplines R7 shape and the second has the R7d execution shape. Neither response
+contains a field from the other shape, and no `/api/toplines` route invokes an
+ExecutionMap seam.
+
+A20. Given two visible work items with the same `createdAt`, when the client
+pages `/api/execution-map` forward and backward with `limit=1`, then both items
+appear once in `(createdAt,id)` order. Decoding each signed cursor yields the
+complete tuple, resource, direction, schema version, filter fingerprint, and
+principal binding, with no offset, `rowid`, selector id, or live locator.
+Deleting the boundary item before the next request does not change the page.
+
+A21. Given a flat request with each valid R6a filter, when the request runs,
+then visibility removes denied rows before the conjunctive filters run and the
+result matches the stated field or quiet predicate. Given a changed filter,
+dependent SHA without name, repeated roster filter, unknown key, malformed
+SHA, negative `quietOverMs`, or a cursor from another filter set, when the
+request runs, then it returns the specified 400 before a row lookup or node
+serialization.
+
+A22. Given visible linked descendants, a filter-excluded visible parent, an
+invisible parent, a multi-node cycle, and a self-cycle, when `/tree` and
+`/subtrees/:workItemId` run, then each route is unpaged, uses deterministic
+root and sibling order, preserves the filtered visible parent id without a
+placeholder, conflates the invisible parent with `from_turn`, and drops the
+deterministic cycle-closing edge. Unknown and forbidden subtree anchors return
+byte-identical 404 responses.
+
+A23. Given repeated `assignmentId` values containing one allowed assignment
+resolved to a visible item and one allowed assignment resolved to NONE, when
+`/api/execution-map/assignments` runs, then it returns the item once and the
+NONE id once in sorted `noItem`. Given an empty set, roster filter, or paging
+parameter, it returns `400 invalid_filter`. Given one unknown or denied id
+beside allowed ids, it returns the all-or-nothing same 404 and exposes no
+partial item or `noItem` value.
+
+A24. Given a visible item with resolved assignments, attests, turns, wakes,
+decision requests, markers, dispositions, and a candidate parent, when one
+source row is denied under its existing AU4 predicate, then that row affects
+no count, clock, active flag, mind, fan-out, parent, order, filter result, or
+dependency version. A twin database without the denied row produces
+byte-identical output on all four routes, equal statement counts, and AU8
+latency within the existing bound.
+
+A25. Given an own-pinned review assignment, a null-pin transitive review, a
+cycle, a turn with both `jobRef` and `assignmentId`, a closed former holder,
+and a current holder with a pending classed wake, when the node is serialized,
+then membership attributes each assignment to at most one item, the turn
+counts once, the former holder contributes only historical `jobs`, and only
+the current holder contributes pending wake state. Given a pre-cutoff item,
+the four coverage-dependent fields are null and `sinceProgressMs` respects the
+coverage floor.
+
+A26. Given the R3b registry and R9a dependency extractor, when contract tests
+inspect flat, tree, subtree, and assignment routes, then each calls the named
+query family, source-derived visibility composition, and sole node serializer;
+the extractor names exactly the R9a source set. The firehose registry has no
+ExecutionMap class, durable Toplines bytes are unchanged, and the six
+`art_b1995a26` serializer bytes remain unchanged.
+
+A27. Given each ExecutionMap success, auth failure, invalid filter, invalid
+cursor, ambiguous visible prefix, unknown selector, forbidden selector, and
+projection failure, when the response is encoded, then it has the specified
+status and error code plus `Cache-Control: no-store`. Unknown and forbidden
+selectors have identical body and headers. An unpaged response has no `page`;
+a projection failure emits no partial JSON.
 
 ## Open questions — Spirit questions for Mike
 

@@ -2,6 +2,9 @@
 
 Status: normative companion to `rest-state-api-v1.md` r3 review draft.
 
+Amendment candidate, 2026-08-24: add the ExecutionMap composed response and
+node schema. The durable Toplines schema below is unchanged.
+
 ## Encoding rules
 
 JSON is UTF-8. Integers are signed JSON integers and never floating-point
@@ -58,6 +61,45 @@ typed J below and still passes SR2/SR6 secret exclusion.
 - `Concern`: `{id:S, kind:S, note:S, createdAt:I}`.
 - `Attribution`: `{provenanceStatus:S, reasonKind:S|null,
   primaryWorkKind:S|null, primaryWorkId:S|null}`.
+- `ExecutionMapOrigin`: `{principal:S, createdBy:S}`.
+- `ExecutionMapCreationContext`: `{recorded:B, turnSeq:I|null}`.
+- `ExecutionMapParent`: `{status:S, item:S|null}`.
+- `ExecutionMapOutcomes`: `{completed:I, surrendered:I, revoked:I}`.
+- `ExecutionMapAssignmentCounts`:
+  `{open:I, closed:I, byOutcome:O<ExecutionMapOutcomes>}`.
+- `ExecutionMapAttestCounts`:
+  `{total:I, byKind:M<I>, byVerdictKind:M<I>}`.
+- `ExecutionMapClosingAttest`:
+  `{assignmentId:S, attestId:S, commitRefs:A<O<CommitRef>>|null}`.
+- `ExecutionMapTurns`: `{total:I|null, lastEndedAt:I|null}`.
+- `ExecutionMapMind`:
+  `{model:S|null, context:S|null, effort:S|null, harness:S|null}`; an object
+  with both `model` and `harness` null is absent from the array.
+- `ExecutionMapActive`:
+  `{runningTurn:B, pendingSessionWake:B, pendingWakeClasses:M<I>}`.
+- `ExecutionMapCoverage`:
+  `{attributionCutoff:I, basis:S}`; basis is `conservative_shared`.
+- `Page`:
+  `{oldestCursor:S|null, newestCursor:S|null, hasMoreBefore:B,
+  hasMoreAfter:B}`.
+
+ExecutionMap responses are closed top-level objects in this key order:
+
+- flat: `{schemaVersion:I, resource:S, edgeBasis:S,
+  coverage:O<ExecutionMapCoverage>, dependencyVersion:S,
+  items:A<O<execution map node>>, page:O<Page>}`;
+- tree and subtree: `{schemaVersion:I, resource:S, edgeBasis:S,
+  coverage:O<ExecutionMapCoverage>, dependencyVersion:S,
+  roots:A<O<ExecutionMapTreeNode>>}`;
+- assignments: `{schemaVersion:I, resource:S, edgeBasis:S,
+  coverage:O<ExecutionMapCoverage>, dependencyVersion:S,
+  items:A<O<execution map node>>, noItem:A<S>}`.
+
+`resource` is exactly `execution map`; `edgeBasis` is exactly
+`concurrent_turn`. `ExecutionMapTreeNode` contains the execution-map-node keys
+in the R7 order followed by `children:A<O<ExecutionMapTreeNode>>`. No unpaged
+response contains `page`, and no flat or assignment-selected node contains
+`children`.
 
 ## Resource field types and nullability
 
@@ -106,6 +148,7 @@ the domains in the next section.
 |---|---|---|---|---|---|
 | decision requests | id, kind, raiserId, raiserSessionKey, ownerUserId, assignmentId, expecterSessionKey, expecterUserId, deadlineWakeId, statuteName, question, status, decision, rationale, ruledBy, withdrawnBy, withdrawnReason, askedOfRole, answer, answeredBy | lineageRung, effortGeneration, raisedAt, deadlineAt, ruledAt, consumedAt, withdrawnAt, answeredAt, rowVersion | — | options `A<O<DecisionOption>>`, context `J` | raiserId, raiserSessionKey, ownerUserId, assignmentId, expecterSessionKey, expecterUserId, deadlineWakeId, statuteName, decision, rationale, ruledBy, ruledAt, consumedAt, withdrawnBy, withdrawnReason, withdrawnAt, askedOfRole, answer, answeredBy, answeredAt, context |
 | toplines | id, ownerUserId, title, state, dependencyVersion | createdAt, updatedAt, closedAt, activeWorkCount, openConcernCount | — | createdActor `O<Actor>`, workMemberships `A<O<ToplineMembership>>`, concerns `A<O<Concern>>` | closedAt |
+| execution map node | id, title, specRefName, specRefSha256, state, failReason | finishedAt, jobs, startedAt, openDecisionRequests, fanOut, sinceProgressMs | bracket1Armed | origin `O<ExecutionMapOrigin>`, creationContext `O<ExecutionMapCreationContext>`, parent `O<ExecutionMapParent>`, assignments `O<ExecutionMapAssignmentCounts>`, attests `O<ExecutionMapAttestCounts>`, closingAttests `A<O<ExecutionMapClosingAttest>>`, turns `O<ExecutionMapTurns>`, minds `A<O<ExecutionMapMind>>`, active `O<ExecutionMapActive>` | specRefName, specRefSha256, failReason, finishedAt, startedAt, fanOut, minds |
 | coordination share | sessionKey, dependencyVersion | from, to, turns, wakeTurns, classedTurns, coordinationTurns, summons, algedonic, share `N` | — | byClass `M<I>` | share |
 | digest members | wakeId, prompt, class, classElection, dependencyVersion | createdAt | — | — | class, classElection |
 | work-item trace | dependencyVersion | — | — | workItem `O<work items>`, assignments `A<O<assignments>>`, causalChildren `A<S>`, attribution `O<Attribution>` | none |
@@ -129,6 +172,9 @@ the domains in the next section.
 - decision kind: `statute|effort|agent`; decision status:
   `open|ruled|consumed|withdrawn|superseded|answered`.
 - topline state: `open|closed`; actor kind: `user|session`.
+- execution-map origin principal: `user|session`; parent status:
+  `linked|from_turn|no_turn_observed|unrecorded`. `parent.item` is non-null only
+  for `linked`. An execution-map node's `state` uses the work-item state enum.
 - harness-process state: `launching|running|park_requested|closed_gracefully|
   killed|kill_failed|exited`.
 - identity state: `ready|relearn_conflicted`; kungfu status:
@@ -149,6 +195,10 @@ the domains in the next section.
 - transcript attachments preserve stored attachment ordinal. Assignment files,
   decision options, and opaque J arrays preserve author order.
 - topline memberships sort by `(linkedAt, id)`; concerns by `(createdAt, id)`.
+- ExecutionMap flat items, assignment-selected items, forest roots, siblings,
+  and children sort by source `(createdAt,id)`. `closingAttests` sorts by
+  `assignmentId`. `minds` sorts by `(model-or-empty,context-or-empty,
+  effort-or-empty,harness-or-empty)`. `noItem` sorts ascending by assignment id.
 - digest members sort by `(createdAt, wakeId)`. Trace assignments use the
   assignments collection order. Work trace causal children sort by id.
 - `byClass`, `sessionRevisions`, and every M or J object sort keys ascending.
