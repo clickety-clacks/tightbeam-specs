@@ -1,6 +1,6 @@
 # Gateway terminal response — v1
 
-Status: DRAFT r1, TARGETLESS, independent spec review required.
+Status: DRAFT r2, TARGETLESS, independent spec review required.
 
 Source baseline: `clickety-clacks/tightbeam` `origin/main`
 `6796338b9a207edf75f4e245361d76c1c14f33d9`.
@@ -33,8 +33,9 @@ it closes the generic seam without changing a domain command's policy.
 
 ## Non-Goals
 
-- This contract does not change a domain handler's success result, named refusal,
-  decision-pending result, authorization decision, or domain transaction.
+- This contract does not change a domain handler's explicit success result, named
+  returned refusal, decision-pending result, authorization decision, or domain
+  transaction.
 - This contract does not change the timeout duration of `Tightbeam.DB`,
   `Tightbeam.Credentials`, a handler, or an external service.
 - This contract does not add a deadline for a handler that remains alive without
@@ -67,10 +68,10 @@ it closes the generic seam without changing a domain command's policy.
   JSON, verb, identity, and target checks passed and whose `accepted` terminal
   journal row committed. The domain handler has not started when this state is
   committed.
-- **Request id**: `req_` followed by one lowercase canonical UUID, carried in the
-  `x-tightbeam-request-id` request and response header. The Rust CLI generates a
-  fresh request id before its first connection attempt. The gateway generates
-  one when a non-CLI caller omits the header.
+- **Request id**: `req_` followed by one lowercase UUID-shaped value, carried in
+  the `x-tightbeam-request-id` request and response header. The Rust CLI generates
+  a fresh UUIDv4 request id before its first connection attempt. The gateway
+  generates one UUIDv4 value when a non-CLI caller omits the header.
 - **Request fingerprint**: lowercase SHA-256 hex over the exact HTTP method,
   exact path, exact request-body bytes, and accepted CLI-version header value,
   separated by zero bytes in that order. It excludes the authorization header
@@ -78,29 +79,30 @@ it closes the generic seam without changing a domain command's policy.
 - **Effective principal**: the canonical session or user principal produced by
   the existing version, bearer-authentication, `--as-user`, identity, role, and
   target checks. The request id does not participate in this derivation.
-- **Boot epoch**: a random UUID written by the terminal journal owner before the
-  gateway begins serving dispatch requests. One running gateway instance uses
-  one boot epoch.
+- **Boot epoch**: a random UUID committed by the terminal journal for one
+  HTTP-serving subtree generation. A replacement listener begins a new epoch even
+  when the terminal journal process stays alive.
 - **Terminal journal**: a durable metadata store with its own file, connection,
   process owner, and supervision position. Its availability does not depend on
   `Tightbeam.DB`, `Tightbeam.Credentials`, Dispatch, or a domain handler.
-- **Normal terminal response**: an existing success, domain refusal, or
+- **Normal terminal response**: an explicit success, domain refusal, or
   decision-pending response returned as data by dispatch execution.
 - **Generic terminal response**: one JSON error envelope defined by this spec for
   an execution failure, unavailable journal, in-progress duplicate, unknown
   post-crash outcome, terminal duplicate, or request-id conflict.
 - **Terminal descriptor**: journal metadata containing terminal class, HTTP
-  status, stable code, body SHA-256, completion time, and a safe cause descriptor.
-  It is not a response-body archive.
+  status, stable code, body SHA-256, completion time, and an optional safe cause
+  descriptor. It is not a response-body archive.
 - **Cause descriptor**: the exact closed-key object `{phase, component, kind}`.
-  `phase` is one of `authenticate`, `accept`, `dispatch`, `respond`, `recover`.
+  `phase` is one of `authenticate`, `accept`, `dispatch`, `recover`.
   `component` is one of `database`, `credentials`, `router`, `handler`,
   `terminal_store`, `gateway`, `unknown`. `kind` is one of `timeout`, `exit`,
   `exception`, `restart`, `unknown`.
 - **Sanitized structural envelope**: a diagnostic representation that retains
-  tuple/list shape, atom names, module/function/arity, exception class, and a
-  numeric timeout while replacing string values, binary values, map values,
-  request data, credential data, and inspected process state with `[redacted]`.
+  tuple/list shape, classifier-recognized atom names, module/function/arity,
+  exception class, and a numeric timeout while replacing unrecognized atom names,
+  string values, binary values, map values, request data, credential data, and
+  inspected process state with `[redacted]`.
 - **Recovery request**: the compatible CLI's one repeat of the exact method,
   path, body bytes, authorization, CLI version, and request id after the first
   connected attempt returns an empty body, invalid JSON, or a transport close
@@ -135,6 +137,10 @@ it closes the generic seam without changing a domain command's policy.
    outcome generically after that gap.
 8. A disconnected client cannot acknowledge receipt. The terminal journal can
    prove server state, not client receipt.
+9. The terminal journal's backing filesystem remains readable and writable while
+   one accepted request executes. Process-owner exits are in scope; persistent
+   media loss is outside the existence guarantee because no durable mechanism can
+   commit through an unavailable medium.
 
 ## Invariants
 
@@ -156,8 +162,8 @@ grants no access and reveals no other principal's row.
 boundary. Rules, Dispatch, classifiers, and handlers return data to that guard;
 they do not receive the connection and do not send bytes.
 
-**INV-05 — Failure isolation.** The guard runs the authenticated dispatch
-pipeline in a monitored execution process. The guard converts that process's
+**INV-05 — Failure isolation.** The guard runs the dispatch request pipeline in a
+monitored execution process. The guard converts that process's
 returned data, exception, exit, or observed dependency timeout into data before
 it begins the HTTP response.
 
@@ -232,9 +238,10 @@ one recovery request also lacks a decodable terminal response, the CLI prints
 `gateway_terminal_response_missing`, the request id, and `outcome unknown`. It
 does not print a bare JSON parser EOF as the command's error.
 
-**INV-16 — Existing responses retain their domain shape.** A success, domain
-refusal, or decision-pending response retains its source-baseline status and JSON
-body. The guard adds only `x-tightbeam-request-id`.
+**INV-16 — Existing explicit responses retain their domain shape.** An explicit
+success, returned domain refusal, or decision-pending response retains its
+source-baseline status and JSON body. The guard adds only
+`x-tightbeam-request-id`.
 
 **INV-17 — Unknown stays unknown.** An unmatched execution failure commits cause
 `{phase: <observed phase>, component: unknown, kind: unknown}` plus a sanitized
@@ -246,6 +253,24 @@ rows retain their source-baseline writes. The terminal journal adds transport
 and execution-lifecycle evidence; it does not replace or synthesize a domain
 event.
 
+**INV-19 — Pre-accept failure is named but not accepted.** A monitored Router
+failure or returned terminal-store unavailability before acceptance produces a
+generic cause-bearing response when the outer guard remains alive. The terminal
+journal contains no acceptance or terminal row because no effective-principal
+acceptance committed.
+
+**INV-20 — Journal-owner exit closes before send.** If the terminal journal owner
+exits after acceptance and before terminalization, the outer guard sends no
+response bytes. Supervision restarts the journal and HTTP-serving subtree. Boot
+recovery applies INV-12 before the listener accepts a recovery request.
+
+**INV-21 — Dead execution owner becomes unknown.** At acceptance, the terminal
+journal monitors the outer guard that owns the accepted execution. If that guard
+dies before terminalization while the journal stays alive, the journal commits
+`gateway_outcome_unknown`, HTTP 500, and cause
+`{phase: recover, component: gateway, kind: exit}`. A duplicate does not execute
+the handler.
+
 ## Architecture
 
 ### A. Outer guard and execution boundary
@@ -255,6 +280,11 @@ Router logic. The guard acquires or validates a request id, then runs the curren
 version/authentication/body/verb/identity/target pipeline in a monitored worker.
 The outer process retains the connection. The worker returns a tagged value. Its
 monitor exit is data to the outer process.
+
+Dispatch changes its raised-handler exception rescue to return an internal
+`handler_exception` tag to the guard. It does not place `Exception.message/1` in
+the public domain-error tuple. An explicit error tuple returned by a handler stays
+a normal terminal response under INV-16.
 
 The guard does not start a general wall-clock timer. A five-second
 `GenServer.call` timeout remains the dependency's timeout and arrives as an exit
@@ -268,6 +298,21 @@ The outer guard encodes one complete body, asks the journal to commit its termin
 descriptor, and then calls the single response-started boundary. A normal
 terminal body is not stored; its SHA-256 and classification are stored. A generic
 terminal body is deterministic from its descriptor and can be reconstructed.
+
+A Router failure before acceptance has no effective-principal journal key. The
+outer guard returns its generic response without creating a journal row. If an
+accept call returns `unavailable` while the journal owner remains alive, the
+guard returns the pre-accept 503 response in section C. If the journal owner exits
+after acceptance, its supervision position restarts the HTTP-serving subtree;
+the interrupted guard crosses no response-started boundary. Reconciliation in
+the next boot epoch converts the durable accepted row to
+`gateway_outcome_unknown` before the listener starts.
+
+At acceptance, the journal also installs a runtime monitor on the outer guard.
+A monitor `DOWN` before terminalization changes that row to
+`gateway_outcome_unknown` with the INV-21 cause. The guard owns and links its
+monitored execution worker, so guard death terminates that worker. The unknown
+classification does not claim whether a racing domain transaction committed.
 
 ### B. Request-id wire rules
 
@@ -299,14 +344,14 @@ The guard uses these exact mappings:
 | Caught execution exit, exception, or unknown failure | `gateway_execution_failed` | 500 | `gateway request failed` |
 | Terminal journal unavailable before acceptance | `gateway_terminal_store_unavailable` | 503 | `gateway terminal store unavailable` |
 | Same current-boot request still executing | `gateway_request_in_progress` | 409 | `gateway request is in progress` |
-| Older-boot accepted request lacks a terminal descriptor | `gateway_outcome_unknown` | 500 | `gateway request outcome is unknown` |
+| Older-boot accepted request or dead execution owner lacks a terminal descriptor | `gateway_outcome_unknown` | 500 | `gateway request outcome is unknown` |
 | Same request has a normal terminal descriptor and body is not replayed | `request_already_terminal` | 409 | `gateway request is already terminal` |
 | Same principal and request id have a different fingerprint | `request_id_conflict` | 409 | `request id conflicts with accepted request` |
 
 `gateway_execution_failed` carries a cause object. A terminal-store failure uses
 cause `{phase: accept, component: terminal_store, kind: exit}` or kind `timeout`
-when the caught term proves a timeout. `gateway_outcome_unknown` carries the
-restart cause in INV-12.
+when the caught term proves a timeout. Another returned unavailability uses kind
+`unknown`. `gateway_outcome_unknown` carries the restart cause in INV-12.
 
 The three state responses carry this exact object in place of `cause`:
 
@@ -384,7 +429,10 @@ The terminal journal uses a SQLite file distinct from the files owned by
 `Tightbeam.DB` and EventLog. Its supervision child starts before
 `Tightbeam.DB`, `Tightbeam.Credentials`, Router, and the HTTP listener. A restart
 of one of those later children leaves the journal owner and file available. The
-HTTP listener starts after older-epoch reconciliation completes.
+HTTP-serving subtree asks the journal to commit a fresh boot epoch on each start.
+The HTTP listener starts after rows from earlier epochs are reconciled. This rule
+also covers a listener restart caused by a `rest_for_one` restart below the
+surviving journal owner.
 
 ### F. Duplicate and recovery state machine
 
@@ -441,8 +489,14 @@ class, HTTP status, stable code, body SHA-256, failure correlation id, and cause
 descriptor. It omits fields that the terminal descriptor does not have.
 
 One structured log event named `gateway_terminal_send_failed` records a send
-failure after terminalization. It carries request id, failure correlation id, and
-the committed terminal code. It does not change the committed terminal state.
+failure after terminalization. It carries request id, one generated send-failure
+correlation id, and the committed terminal code. It does not change the committed
+terminal state.
+
+One structured log event named `gateway_preaccept_failure` records a Router or
+terminal-store failure before acceptance. It carries request id, phase,
+component, kind, HTTP status, and stable code. It carries no effective principal
+or target because acceptance did not commit.
 
 The existing EventLog continues to record domain dispatch outcomes under its
 source-baseline rules. Operators correlate the terminal journal, structured log,
@@ -514,18 +568,22 @@ then the gateway returns the source-baseline authorization response,
 and the terminal journal performs no lookup result disclosure and starts no
 handler for principal B.
 
-**AC-05 — Acceptance-store failure prevents effects (INV-02).**
+**AC-05 — Acceptance-store failure prevents effects (INV-02, INV-19).**
 
-Given the terminal journal is unavailable before acceptance,
+Given the live terminal journal owner returns `unavailable` before acceptance,
 when an otherwise valid authenticated dispatch request reaches the acceptance
 step,
 then the gateway returns HTTP 503 with code
-`gateway_terminal_store_unavailable`,
-and the domain handler invocation count remains zero.
+`gateway_terminal_store_unavailable` and cause
+`{phase: accept, component: terminal_store, kind: unknown}`,
+and the domain handler invocation count remains zero,
+and `gateway_preaccept_failure` contains the request id and contains no effective
+principal or target.
 
 **AC-06 — Same-id fingerprint conflict (INV-10).**
 
-Given principal A has an accepted row for request id R and body fingerprint F1,
+Given principal A has an accepted row for request id R and body fingerprint F1
+after one handler invocation,
 when principal A sends request id R with body fingerprint F2,
 then the gateway returns HTTP 409 with code `request_id_conflict`,
 and the domain handler invocation count for R remains one.
@@ -594,8 +652,8 @@ response emission call sites.
 
 **AC-13 — Normal-response compatibility (INV-16).**
 
-Given pinned fixtures for one success, one domain refusal, and one
-decision-pending result from the source baseline,
+Given pinned fixtures for one explicit success, one explicitly returned domain
+refusal, and one decision-pending result from the source baseline,
 when the candidate gateway handles those requests,
 then each status and JSON body is byte-identical to its pinned fixture,
 and each response adds one `x-tightbeam-request-id` header.
@@ -618,14 +676,15 @@ log output,
 and the response header, response body, terminal row, and `gateway_terminal` log
 contain the same request id.
 
-**AC-16 — Router exit (INV-05, INV-07).**
+**AC-16 — Router exit (INV-05, INV-07, INV-19).**
 
 Given the monitored Router worker exits deterministically after ingress
 correlation during the authentication phase and before handler selection,
 when the outer guard observes the monitor event,
 then it returns HTTP 500 `gateway_execution_failed` with cause
 `{phase: authenticate, component: router, kind: exit}`,
-and it emits one response-started call.
+and it emits one response-started call and creates no journal row,
+and `gateway_preaccept_failure` contains the same request id and cause.
 
 **AC-17 — Handler timeout and exit (INV-05, INV-07).**
 
@@ -640,13 +699,15 @@ when the outer guard observes the monitored execution exit,
 then it returns HTTP 500 `gateway_execution_failed` with cause
 `{phase: dispatch, component: handler, kind: exit}`.
 
-**AC-18 — Router timeout (INV-05, INV-07).**
+**AC-18 — Router timeout (INV-05, INV-07, INV-19).**
 
 Given the monitored Router worker exits with a reason that proves timeout during
 the authentication phase and before handler selection,
 when the outer guard observes the monitor event,
 then it returns HTTP 504 `gateway_execution_failed` with cause
-`{phase: authenticate, component: router, kind: timeout}`.
+`{phase: authenticate, component: router, kind: timeout}`,
+and it creates no journal row,
+and `gateway_preaccept_failure` contains the same request id and cause.
 
 **AC-19 — Handler exception (INV-05, INV-07, INV-08).**
 
@@ -656,6 +717,28 @@ when the outer guard receives the classified result,
 then it returns HTTP 500 `gateway_execution_failed` with cause
 `{phase: dispatch, component: handler, kind: exception}`,
 and the public body and structured log omit the canary string.
+
+**AC-20 — Journal-owner exit after acceptance (INV-12, INV-20).**
+
+Given one accepted row committed in boot epoch E1 and the test process terminates
+the terminal journal owner before terminalization,
+when supervision starts boot epoch E2,
+then the interrupted connection receives zero response bytes before closing,
+and reconciliation commits `gateway_outcome_unknown` before the HTTP listener
+starts,
+and the compatible CLI's same-id recovery request returns that named response
+without a second handler invocation.
+
+**AC-21 — Outer-guard exit while journal survives (INV-21).**
+
+Given one accepted request whose real handler is paused and whose terminal
+journal stays alive,
+when the test process terminates the outer guard,
+then the guard's linked execution worker terminates,
+and the journal commits HTTP 500 `gateway_outcome_unknown` with cause
+`{phase: recover, component: gateway, kind: exit}`,
+and a same-principal same-fingerprint request returns that response without a
+second handler invocation.
 
 ## Open Questions
 
