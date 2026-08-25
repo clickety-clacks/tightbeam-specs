@@ -1,12 +1,37 @@
 # Existing Work-Item Spec Binding
 
-- Status: SPEC-READY — PENDING ONE INDEPENDENT EXACT-REVISION REVIEW
+- Status: SPEC-READY — AMENDED AFTER CHANGES-REQUESTED — PENDING ONE INDEPENDENT
+  EXACT-REVISION REVIEW
 - Work item: `wi_e1c319cb-71b7-44f9-9f12-f5e800e9f56a`
 - Spec assignment: `asg_13d9ee65-7268-448e-902b-d7b7e71a6d87`
 - Inspected product revisions: 0.2.0 `origin/main` at
   `3fe0e941840ed138a6a285261c0e35687d8d27a3`; 0.1.9 `origin/0.1.9` at
   `e4c9234aa50e42bfdfa6fadd0937dff52d566c66`
 - Pattern name: **current-spec binding**
+
+## Spec homing
+
+`existing-work-item-spec-binding.md` at the repository root of
+`clickety-clacks/tightbeam-specs` is the canonical design authority for this capability.
+The exact commit and file SHA-256 in the producer artifact and review receipt identify one
+reviewable revision of this file.
+
+This revision derives its dependency authority from the following exact set at
+`clickety-clacks/tightbeam-specs` commit
+`22d4dc1ab5643218fa8cad987ad332d01b364ab7`:
+
+| Authority order | Canonical path | SHA-256 | Governing scope |
+| --- | --- | --- | --- |
+| 1 | `work-item-brackets-v1.md` | `7faa6c43753f35574a0a74225ce56ddb407edbb2fd2454191f66a3305601ce89` | owner, admin, and durable state semantics |
+| 2 | `observability-v1.md` | `d59887ccd07a88490979430c64ec91424c7e29c73f3538b5e233c1daab00d4e3` | existing metadata doorbell |
+| 3 | `specs/tightbeam/editable-work-item-body.md` | `a98802df50e6d0f7312f4a2cf67a2bd77093eb0293afc4da245e82a83a25d9c8` | future body-only CLI namespace; not an implementation prerequisite here |
+| 4 | `work-item-v1.md` | `c056e3714a74448bd96550609037ec0b8e7932fa7c56f63c795cd8a85ab7b9ce` | remaining base work-item and create-time spec-reference semantics |
+
+This file overrides each dependency only for clauses that it explicitly supersedes. The
+table order resolves a conflict between dependency clauses that cover the same behavior.
+A later dependency revision has no authority over this capability until an amendment pins
+the new revision and SHA-256 in this section and passes a new independent exact-revision
+review.
 
 ## Goal
 
@@ -29,9 +54,10 @@ G3. Shipped guidance on the 0.1.9 and 0.2.0 lines names only commands available 
 line.
 
 - Acceptance: Given each line's built CLI command catalog and served guidance tree, when
-  the release evidence compares directive-form command examples with that catalog, then
-  the spec-homing directive names `work-item-bind-spec`, and no directive names the absent
-  metadata form of `work-item-update`.
+  the release evidence runs the named incident check and compares directive-form command
+  examples with that catalog, then the spec-homing directive names
+  `work-item-bind-spec`, and no guidance fragment names the absent metadata form of
+  `work-item-update`.
 
 This feature adds a mechanism because deleting spec references loses durable governing
 authority, while accepting attest-only references leaves row readers unable to determine
@@ -48,8 +74,9 @@ that decision.
   spec path.
 - This spec does not add a clear-binding operation. A caller replaces a stale binding with
   a reviewed successor.
-- This spec does not change title, body, `isBug`, ownership, assignment, bracket, state, or
-  disposition behavior.
+- This spec does not add, change, test, or require body storage, body update, or body clear.
+  It does not change title, `isBug`, ownership, assignment, bracket, state, or disposition
+  behavior.
 - This spec does not expose spec-reference flags through the body-only
   `work-item-update` CLI command defined by `specs/tightbeam/editable-work-item-body.md`.
 - This spec does not grant authority from an assignment, role name, archetype, creator
@@ -58,8 +85,8 @@ that decision.
   retry.
 - This spec does not add a new history read verb. `work-item-trace` carries binding history.
 - This spec does not add a permanent whole-guidance regex rail. The release performs and
-  records one bounded command-catalog sweep. A global parser for prose would create false
-  positives and fails the red-tape test (wisdom 4).
+  records the bounded known-fragment check plus one command-catalog sweep. A global parser
+  for prose would create false positives and fails the red-tape test (wisdom 4).
 - This spec does not implement, review, integrate, merge, release, deploy, restart, or
   mutate 0.1.8 or T1778.
 
@@ -102,6 +129,12 @@ Declined alternatives:
 - **Directive-form command example**: A fenced, indented, or inline code fragment in served
   guidance whose first two tokens are `tightbeam <verb>`. Prose such as “tightbeam refuses”
   is not a command example.
+- **Known bare binding fragment**: The exact parenthesized code fragment
+  ``(`work-item-update --spec-ref … --spec-sha256 …`)`` in the served spec-homing skill.
+  It is an incident-specific match and is not a directive-form command example.
+- **Existing identity selector**: At most one of `--as <role>`, `--as-user <userId>`, or
+  `--as-process <name>`. When all are omitted, the CLI uses its existing session-token
+  discovery. The router resolves the selected credential before this handler runs.
 
 ## Assumptions
 
@@ -122,14 +155,16 @@ singular `tightbeam decision-request --request <id>` command. The CLI exposes
 `decision-requests` but no singular command. The inspected 0.1.9 manual does not contain
 that singular example.
 
-A5. The main-era editable-body spec reserves the `work-item-update` CLI grammar for body
-replacement and clear. It keeps raw metadata updates only as a compatibility baseline.
-This spec supersedes that baseline only for `specRefName` and `specRefSha256`; title,
-`isBug`, and body clauses remain in force.
+A5. The pinned editable-body design reserves the future `work-item-update` CLI grammar for
+body replacement and clear. Neither inspected product baseline implements that body
+capability. This spec uses the reservation only to select a distinct command name. It
+requires no body prerequisite and owns no body acceptance. For the implemented raw
+metadata handler, this spec supersedes writes to `specRefName` and `specRefSha256`; title
+and `isBug` behavior remains in force.
 
-A6. `work-item-brackets-v1.md` supplies the current owner and state semantics.
-`work-item-v1.md` supplies the caller-computed current-governing-spec meaning where later
-specs have not amended it.
+A6. The exact dependencies and authority order in Spec homing supply the owner, state,
+doorbell, command-namespace, and caller-computed current-governing-spec semantics where
+this file does not supersede them.
 
 A7. The wire router resolves credential identity before the work-item handler runs. A
 session principal can be resolved without reading repository paths or assuming a host.
@@ -163,6 +198,11 @@ A12. At inspected 0.2.0 main, accepted transactional work-item verbs publish
 `verb.accepted` and a typed state notice through `Tightbeam.Firehose.Publisher`. The
 inspected 0.1.9 line has the durable dispatch event log and the owner metadata doorbell,
 but it has no firehose publisher or `work_item.updated` class.
+
+A13. At both inspected product revisions, raw `work-item-update` recognizes title,
+`isBug`, `specRefName`, and `specRefSha256`; it recognizes no body field. If an integration
+base recognizes a body field or changes this raw metadata set, the implementer stops and
+amends this spec before changing handler code.
 
 ## Invariants
 
@@ -252,15 +292,14 @@ legacy provenance.
 I13. The dedicated command is the one mutation seam for spec bindings after activation.
 
 - Acceptance: Given a raw `work-item-update` request containing `specRefName`,
-  `specRefSha256`, or either field beside a title, `isBug`, or body field, when the handler
-  receives it, then it returns `spec_binding_command_required` before any metadata or body
-  write.
+  `specRefSha256`, or either field beside a title or `isBug`, when the handler receives it,
+  then it returns `spec_binding_command_required` before any metadata write.
 
 I14. Metadata updates that omit both spec-reference fields keep their prior behavior.
 
-- Acceptance: Given title-only, `isBug`-only, body-only, and body-clear requests, when each
-  runs after activation, then each follows its governing contract and preserves the spec
-  pair and binding history.
+- Acceptance: Given a title-only request and an `isBug`-only request, when each runs after
+  activation, then it keeps its prior result and preserves the spec pair and binding
+  history. Body requests are outside this contract.
 
 I15. The substrate records the authenticated principal, not a caller-authored origin string,
 for a changed binding.
@@ -309,12 +348,13 @@ I20. Guidance ships with the capability it teaches.
   target line, the same commit changes that line's spec-homing directive to the exact new
   syntax.
 
-I21. The release sweep corrects each confirmed absent directive in scope.
+I21. The release checks correct each confirmed absent command fragment in scope.
 
-- Acceptance: Given the inspected 0.1.9 tree, when the bounded sweep runs, then it reports
-  only the spec-homing metadata-update directive as confirmed absent and replaces it. Given
-  the inspected 0.2.0 tree, it also reports the singular `decision-request` example and
-  replaces that example with the existing plural read command.
+- Acceptance: Given either inspected tree, when the exact known-fragment check runs, then it
+  finds exactly one Known bare binding fragment at the pinned spec-homing path and records
+  `absent_cli_form`. Given the inspected 0.2.0 tree, the separate directive-form catalog
+  sweep also records the singular `decision-request` example as absent. The capability
+  commit replaces every absent fragment with the specified available command.
 
 I22. The implementation uses no host, Main-session key, repository checkout path, or role
 name as a binding authority or destination.
@@ -337,13 +377,13 @@ It supersedes these older clauses only where they conflict:
   rule.
 - `observability-v1.md`: the spec-pin metadata emission site moves from
   `work-item-update` to `work-item-bind-spec`.
-- `specs/tightbeam/editable-work-item-body.md`: Assumption A3 and the raw-metadata
-  compatibility clauses remain true for title and `isBug`, but raw spec-reference fields
-  now return `spec_binding_command_required`. Its body-only CLI grammar and body behavior
-  remain unchanged.
+- `specs/tightbeam/editable-work-item-body.md`: its future body-only CLI namespace remains
+  unchanged. It is not an implementation prerequisite. The exact inspected baselines have
+  no body acceptance. Their implemented raw title and `isBug` updates remain unchanged,
+  while raw spec-reference fields now return `spec_binding_command_required`.
 
-The current-governing-spec meaning, caller-computed digest, create-time binding, body/spec
-separation, owner/state semantics, and existing work-item projections remain in force.
+The current-governing-spec meaning, caller-computed digest, create-time binding,
+owner/state semantics, and existing work-item projections remain in force.
 
 ### 2. Durable representation
 
@@ -430,8 +470,12 @@ this order:
     metadata callback runs. Preserve each line's existing dispatch event-audit semantics.
 
 Raw `work-item-update` rejects a request containing either spec-reference field before it
-applies title, `isBug`, or body changes. No private helper, router alias, admin command, or
+applies title or `isBug` changes. No private helper, router alias, admin command, or
 legacy CLI path writes the pair after activation.
+
+This assignment owns only the raw-update boundary for the four fields in A13. A request
+that omits both spec-reference fields follows the existing title or `isBug` path. No body
+field, body sidecar, body parser, or body acceptance enters this implementation.
 
 ### 4. Wire and CLI
 
@@ -444,7 +488,7 @@ tightbeam work-item-bind-spec <workItemId> \
    --expect-spec-ref <current-name> --expect-spec-sha256 <current-64-lowercase-hex>)
 ```
 
-The command accepts at most one existing identity selector. It accepts no target, key,
+The command accepts at most one Existing identity selector. It accepts no target, key,
 clear, title, `isBug`, or body flag. The exact usage text is the one-line form:
 
 ```text
@@ -554,8 +598,8 @@ handler from bypassing the exclusive binding seam.
 
 Rollback has two states:
 
-1. Before the first history row, the release rollback is permitted to drop the empty sidecar objects and
-   restore the exact predecessor stamp in one reviewed transaction.
+1. Before the first history row, the release rollback is permitted to drop the empty
+   sidecar objects and restore the exact predecessor stamp in one reviewed transaction.
 2. After one history row exists, destructive rollback is prohibited. Keep the successor
    binary or ship a forward fix. Retaining the tables while restoring the old stamp would
    permit unaudited writes and is not a rollback.
@@ -563,7 +607,7 @@ Rollback has two states:
 The 0.1.9 and 0.2.0 migrations, binaries, guidance, and release evidence remain line-local.
 No command assumes which host runs either line.
 
-### 8. Guidance correction and bounded sweep
+### 8. Guidance correction and bounded checks
 
 On both lines, replace the spec-homing rebind sentence with this directive after the command
 exists:
@@ -578,10 +622,26 @@ On 0.2.0 main, replace the operating-manual sentence
 `Read the answer with tightbeam decision-requests or tightbeam decision-request ...` with
 `Read answers with tightbeam decision-requests.` No 0.1.9 edit is needed for that sentence.
 
-The release evidence enumerates directive-form command examples under `priv/guidance`,
-`priv/seed`, and `priv/kungfu`, then compares each verb with the exact built CLI catalog for
-that line. It records file, line, verb, and result. Prose matches are excluded by the term's
-syntax rule. The sweep is evidence for this incident closure, not a new runtime subsystem.
+The release evidence has two checks:
+
+1. The known-fragment check reads
+   `priv/kungfu/agentic-engineering/skills/spec-homing/SKILL.md`, normalizes CRLF to LF,
+   and requires exactly one exact-text Known bare binding fragment. Its pre-correction
+   row records path, line, the complete fragment, and result `absent_cli_form`. After the
+   guidance edit, the same check requires zero occurrences.
+2. The directive-form catalog sweep enumerates command examples under `priv/guidance`,
+   `priv/seed`, and `priv/kungfu`, then compares each `tightbeam <verb>` with the exact built
+   CLI catalog for that line. It records file, line, verb, and result. Prose matches are
+   excluded by the term's syntax rule.
+
+These checks are evidence for this incident closure, not a new runtime subsystem or a
+permanent whole-guidance parser.
+
+For each pinned pre-correction line, the decidable incident row is:
+
+```json
+{"path":"priv/kungfu/agentic-engineering/skills/spec-homing/SKILL.md","line":13,"fragment":"(`work-item-update --spec-ref … --spec-sha256 …`)","result":"absent_cli_form"}
+```
 
 ### 9. Traceability and verification
 
@@ -592,7 +652,7 @@ syntax rule. The sweep is evidence for this incident closure, not a new runtime 
 | I15, I17-I18 | history, dispatch audit, work-item callback; 0.2.0 publisher | dispatch and visibility tests on both lines; 0.2.0 firehose tests |
 | I3-I6 | router identity plus work-item authorization | router and CLI-integration tests |
 | I19 | existing create seam | create regression tests |
-| I20-I21 | two spec-homing copies; 0.2.0 operating manual | packaging assembly plus SHA-bound sweep report |
+| I20-I21 | two spec-homing copies; 0.2.0 operating manual | packaging assembly plus known-fragment and command-catalog reports |
 | I22 | no topology input | two-org fixtures |
 | Wire and CLI | router, gateway, `cli/src/args.rs`, `cli/src/dispatch.rs` | Rust byte fixtures and real CLI integration |
 | Migration and rollback | line-specific `Tightbeam.Schema` | exact predecessor, fresh, interrupted, malformed, old-binary, and rollback fixtures |
@@ -656,10 +716,11 @@ AC7 — Pair validation:
 AC8 — Exclusive seam:
 
 - Given a request through raw `work-item-update` with one or two spec fields, alone or mixed
-  with title, `isBug`, or body,
+  with title or `isBug`,
 - When the request runs,
-- Then it returns `spec_binding_command_required` before any work-item or body write. Metadata
-  calls without spec fields retain their prior results.
+- Then it returns `spec_binding_command_required` before any metadata write. Implemented
+  title and `isBug` calls without spec fields retain their prior results. No body behavior
+  is required or tested by this acceptance.
 
 AC9 — Upgrade and old-binary refusal:
 
@@ -687,7 +748,8 @@ AC11 — Wire, CLI, audit, and restart reality:
 AC12 — Guidance on both product lines:
 
 - Given the exact candidate for 0.1.9 and the exact candidate for 0.2.0,
-- When packaging assembles served identity and the bounded command-catalog sweep runs,
+- When packaging assembles served identity, the known-fragment check runs, and the bounded
+  command-catalog sweep runs,
 - Then both spec-homing copies teach `work-item-bind-spec`; neither teaches metadata
   `work-item-update`; the 0.2.0 manual no longer teaches singular `decision-request`; and
   each recorded directive verb exists in that candidate's CLI catalog.
