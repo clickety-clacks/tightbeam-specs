@@ -28,8 +28,8 @@ The change projects existing policy. It does not choose policy.
 - Do not make the substrate select a model, walk a candidate list, retry a turn, or
   judge capability.
 - Do not add a command, condition kind, assignment state, hold, or fallback mechanism.
-- Do not change model-release intake, catalog-diff behavior, archetype preferences,
-  credentials, provider configuration, or host placement.
+- Do not change model-release intake, catalog-diff behavior, archetype manifests or
+  preferences, credentials, provider configuration, or host placement.
 - Do not repair unrelated stale prose in `agentic-engineering-guidance-spec.md`.
 - Do not activate, deploy, release, relearn, or apply an identity revision as part of
   this specification assignment.
@@ -184,11 +184,12 @@ B with changed table bytes, when no identity apply targets that session, then th
 keeps revision A. When an explicit apply refreshes it to revision B, then its served
 guidance contains revision B's exact table bytes once.
 
-### AC-06 — Policy bytes remain unchanged
+### AC-06 — Policy and manifest bytes remain unchanged
 
 Given the implementation diff, when a reviewer compares the bundle-root activity table
-before and after, then its candidate models, order, efforts, activity labels, and floors
-are byte-identical. The diff introduces no second maintained copy of those rows.
+and the six engineering archetype manifests before and after, then those seven files are
+byte-identical. The table's candidate models, order, efforts, activity labels, and floors
+remain unchanged. The diff introduces no second maintained copy of those rows.
 
 ### AC-07 — No selection mechanism appears
 
