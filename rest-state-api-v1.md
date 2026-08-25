@@ -4,6 +4,10 @@ Amendment candidate, 2026-08-24: distinguish durable Toplines from the
 mechanical ExecutionMap and add the REST-only ExecutionMap contract. The
 amendment changes no durable Toplines field, mutation, or route.
 
+Review status, 2026-08-25: CHANGES REQUESTED against candidate `a9117391`.
+SQ6-SQ8 expose the three blocking findings. This branch is not ready for M1,
+M2, specRef binding, or implementation until the named owners rule them.
+
 Status: CANONICAL r3, 2026-08-22. r3 folds the REST-side adjudicated
 findings F1/F8/F9/F13/F14/F16/F21/F22 from
 `review-gate-observability-2026-08-21.md` and aligns with firehose r6.
@@ -618,8 +622,8 @@ that prefix.
 |---|---|
 | org | `host.registered`, `config.updated`, `identity.updated`, `kungfu.updated` |
 | harness catalog | `host.registered`, `host_env.updated`, `config.updated` |
-| toplines | `work_item.*`, `assignment.*`, `attest.filed`, `session.*`, `role.*`, `wake.*`, `turn.*`, `decision_request.*` |
-| execution map | `work_item.*`, `assignment.*`, `attest.filed`, `wake.*`, `prod.fired`, `turn.*`, `decision_request.*`, `session.*`, `user.added`, `user.promoted` |
+| toplines | **BLOCKED (SQ7):** no exact v1 refetch dependency set is frozen for durable Topline mutations |
+| execution map | **BLOCKED (SQ6):** the listed non-marker sources map to `work_item.*`, `assignment.*`, `attest.filed`, `wake.*`, `prod.fired`, `turn.*`, `decision_request.*`, `session.*`, `user.added`, and `user.promoted`; no existing class covers an independent subagent-marker append |
 | coordination share | `wake.*`, `turn.*`, `prod.fired` |
 | digest members | `wake.scheduled`, `wake.canceled`, `wake.fired` |
 | work-item trace | `work_item.*`, `assignment.*`, `attest.filed`, `session.*`, `wake.*`, `turn.*` |
@@ -632,6 +636,9 @@ a composed query requires the same reviewed change to this list. Each composed
 response carries `dependencyVersion` equal to a stable digest of the ordered
 `(resource primary key, rowVersion)` dependency vector, so equal dependencies
 produce equal versions and any dependency change produces a different version.
+The two BLOCKED rows are recorded holes, not implementable dependency lists.
+M1 and M2 cannot ship either resource until its blocking question is ruled and
+the row contains only exact live classes.
 
 R9a. ExecutionMap's query dependency extraction is closed over these source
 rows: visible work items; assignments resolved to them; allowed attests;
@@ -641,9 +648,11 @@ allowed resolved assignments; allowed subagent markers carried by those
 assignments; allowed disposition-transition causal events; the causal-event
 coverage epoch; and the session and user rows required for source visibility.
 The R9 class row is the invalidation projection of that exact source set.
-Subagent markers invalidate through the enclosing existing `turn.*` lifecycle;
-disposition transitions invalidate through the corresponding existing
-`work_item.*` mutation. This amendment adds no firehose class.
+Disposition transitions invalidate through the corresponding existing
+`work_item.*` mutation. An independent `SubagentMarkers.append/3` can commit
+without a turn mutation, so no current class invalidates marker-backed
+`fanOut`. SQ6 blocks the ExecutionMap refetch contract. This amendment adds no
+firehose class and does not silently treat `turn.*` as a marker notice.
 
 ExecutionMap builds its dependency vector only after AU4a source visibility.
 A hidden source row cannot change `dependencyVersion`, an aggregate, order,
@@ -963,7 +972,7 @@ value returns. An unlisted live config key appears with `value:null`, and its
 A13a. After M4, M6, and M7 parity passes, every M5 alias and legacy dispatch
 read path is absent. The corresponding canonical REST GET still passes its
 contract tests, and every dispatch write verb remains available.
-A14. Every R9 composed view has a test that mutates one row for each declared
+A14. Every unblocked R9 composed view has a test that mutates one row for each declared
 dependency and observes a changed dependency digest. A state class not in the
 declared list leaves the digest unchanged. Query dependency extraction and the
 R9 list must match exactly.
@@ -1046,7 +1055,8 @@ the current holder contributes pending wake state. Given a pre-cutoff item,
 the four coverage-dependent fields are null and `sinceProgressMs` respects the
 coverage floor.
 
-A26. Given the R3b registry and R9a dependency extractor, when contract tests
+A26. Given an SQ6 ruling that freezes an observable invalidation source or a
+revised projection, the R3b registry, and the R9a dependency extractor, when contract tests
 inspect flat, tree, subtree, and assignment routes, then each calls the named
 query family, source-derived visibility composition, and sole node serializer;
 the extractor names exactly the R9a source set. The firehose registry has no
@@ -1093,3 +1103,33 @@ wi_bdf9a537 (gateway behind tailscale serve) would
 add tailscale identity headers — should AU1 anticipate accepting tailnet
 identity as a principal source once that lands, or stay
 bearer-credential-only in v1?
+
+SQ6. **Open; BLOCKING ExecutionMap M1/M2 — owned by
+product-owner:rest-state-api.** Marker-backed `fanOut` is part of current
+ExecutionMap semantics, but `SubagentMarkers.append/3` can commit without a
+`turn.*` mutation. The present no-firehose-class boundary leaves no observable
+R9 invalidation source. Choose one reviewed contract: admit a marker mutation
+class through a sibling firehose amendment, remove marker-backed `fanOut` from
+the REST projection, or revise R9's freshness promise to name and test bounded
+staleness. The first choice expands this assignment's explicit non-goal; the
+second changes current semantics; the third changes the read-plane invariant.
+No implementer chooses among them.
+
+SQ7. **Open; BLOCKING durable Toplines M1/M2 — owned by
+product-owner:rest-state-api.** Durable `toplines` and
+`topline_work_memberships` mutations have no class in R8, while the old R9 row
+named only execution-telemetry classes. Choose and review the durable Toplines
+freshness contract: add exact mutation mappings and version sources, redefine
+Toplines as a no-notice REST resource with an explicit refresh boundary, or
+remove the REST resource. The last choice contradicts I7 and this assignment;
+the first may require a sibling firehose amendment. No implementer infers a
+dependency from the obsolete telemetry row.
+
+SQ8. **Open; BLOCKING independent-review closure — owned by
+product-owner:rest-state-api.** The reviewer requires an exact-candidate
+`tests-passed` receipt, but this assignment forbids product implementation and
+requires spec lint evidence. The candidate contains executable acceptance
+cases, not an implemented suite. Rule whether the existing deterministic spec
+lint is the pre-build gate or identify the already-authorized executable test
+command and receipt owner. This author does not fetch dependencies, implement
+tests, or file a passing receipt for tests that did not run.
