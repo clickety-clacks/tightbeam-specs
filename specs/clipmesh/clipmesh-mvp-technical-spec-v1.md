@@ -1,8 +1,8 @@
 # ClipMesh MVP technical specification v1
 
-Status: draft for independent adversarial review. These bytes authorize no
-implementation, deployment, enrollment, live service mutation, private
-inventory mutation, or use of a private topology.
+Status: amended draft for independent adversarial re-review. These bytes
+authorize no implementation, deployment, enrollment, live service mutation,
+private inventory mutation, or use of a private topology.
 
 Authority and evidence:
 
@@ -18,6 +18,10 @@ Authority and evidence:
   Spirit coherent and ready for the normal spec-review-build-review cycle.
 - Product-owner approval `att_d7e08368-3c00-47cf-949e-0aedb40c384c`
   approved that Spirit without authorizing deployment or enrollment.
+- Independent review `att_de988914-ebd9-4ff1-907c-602701c66c8c` requested
+  seven changes against commit
+  `955b7046c9fdbb4db7af335521beb9765da37203`. This revision addresses F1
+  through F7 and remains unapproved until review clears its exact bytes.
 - Work item `wi_0507efeb-914b-4289-9930-30cd36eb7e88` owns this product
   thread. Assignment `asg_3dfed51c-3ba4-44ef-8772-2dbebf15af88` owns this
   specification until independent review returns `reviewed-clean`.
@@ -310,6 +314,17 @@ session epoch, and replay state before it writes. Therefore a publish orders
 entirely before or entirely after a concurrent rotation, revocation, pause, or
 purge.
 
+The same mutation seam owns data-plane recipient eligibility. A committed
+rotation, revocation, or administrative pause marks each affected session
+ineligible, removes it from the subscriber set, and clears its queued
+application messages before the seam admits another publish. A publish selects
+recipients and enqueues its result before it releases that seam. A session
+writer acquires the seam and rechecks eligibility immediately before it hands
+a complete nonterminal application frame to TLS. Therefore the hub hands no
+later payload frame to TLS for an affected session after the administrator
+mutation commits. Only the mutation's terminal notice or error and close can
+follow the cutoff.
+
 ### I18 — A failure is explicit and content-free
 
 Startup, authentication, authorization, validation, rate, resume, storage, and
@@ -353,16 +368,19 @@ a general protocol pattern for another project.
    protected upgrade request. A credential never appears in a URL, query,
    WebSocket subprotocol value, log, or error.
 5. Application messages are UTF-8 JSON WebSocket text messages. Binary frames
-   are invalid. A JSON document is one object with no duplicate keys and no
-   byte-order mark.
+   produce `protocol_schema_invalid` and close the session. A text message that
+   is not valid UTF-8 produces the same result. A JSON document is one object
+   with no duplicate keys and no byte-order mark.
 6. A version-1 inbound schema is closed. An unknown field, missing field,
    duplicate key, wrong JSON type, or unknown message type produces
    `protocol_schema_invalid`. This rule makes an additive wire change a new
    reviewed protocol version.
 7. The maximum decoded WebSocket text-message size is
    `4 * ceil(max_payload_bytes / 3) + 4096` bytes. The hub rejects a larger
-   inbound message before JSON parsing. A client rejects a larger inbound
-   message before JSON parsing. The 4,096-byte envelope allowance covers each
+   inbound message before JSON parsing, sends `message_too_large` when its
+   outbound queue can accept the error, and closes the session. A client closes
+   on a larger inbound message and records `message_too_large` without parsing
+   or exposing the bytes. The 4,096-byte envelope allowance covers each
    version-1 metadata and JSON field at its maximum encoded size. Before it
    validates `server_hello`, a client uses the version-1 hard cap 1,402,200
    bytes. It then adopts the lower configured limit from a valid hello.
@@ -432,7 +450,7 @@ It cannot retrieve that value later.
 | `source_device_id` | UUID string | Must equal the authenticated device |
 | `source_seq` | decimal string | Must exceed the device high-water mark unless this is an exact retained retry |
 | `created_at_ms` | integer | At most 120,000 ms ahead of hub time |
-| `expires_at_ms` | integer | Greater than hub validation time and no later than `min(created_at_ms + retention_seconds * 1000, hub_validation_time_ms + retention_seconds * 1000)` |
+| `expires_at_ms` | integer | Greater than hub validation time and no later than `created_at_ms + retention_seconds * 1000` |
 | `content_type` | string | Exact value `text/plain` |
 | `payload_bytes` | integer | Exact decoded length in `1..max_payload_bytes` |
 | `content_sha256` | string | SHA-256 of decoded payload bytes |
@@ -490,7 +508,7 @@ appear in each object.
 | `error` | `code`, `retryable` | Session-level content-free failure |
 
 `limits` contains exactly `max_payload_bytes`, `retention_seconds`,
-`history_max_entries`, `max_clock_skew_ms`, and
+`history_max_entries`, `max_clock_skew_ms = 120000`, and
 `max_websocket_message_bytes` as JSON integers.
 
 `resume_started.status` is one of:
@@ -603,30 +621,46 @@ set and tombstones receives the ordinary `unauthorized` response.
 
 Credential rotation generates a new credential digest, increments the device
 credential generation, invalidates the prior digest, and commits those changes
-in one transaction. The hub then closes sessions authenticated under the prior
-generation with `credential_rotated`.
+in one transaction. Before it releases the administrator mutation seam, the hub
+marks sessions authenticated under the prior generation ineligible, unregisters
+them, deletes their queued application messages, and queues `credential_rotated`
+close handling.
 
 Revocation sets device state to `revoked` and invalidates its credential in one
-transaction. The hub then closes that device's sessions with `device_revoked`.
-No other device row or session changes.
+transaction. Before it releases the administrator mutation seam, the hub marks
+that device's sessions ineligible, unregisters them, deletes their queued
+application messages, and queues `device_revoked` close handling. No other device
+row or session changes.
 
 Administrative pause accepts exactly one scope:
 
 - `{"scope":"global","device_id":null,"paused":<boolean>}`;
 - `{"scope":"device","device_id":<UUID>,"paused":<boolean>}`.
 
-Setting pause is idempotent. When pause becomes true, the hub sends
-`pause_notice` and closes affected data-plane sessions. Affected upgrade
-requests receive `administratively_paused`. The administrator control plane
-remains reachable. Removing pause permits a fresh data-plane session; resume
-semantics prevent backlog clipboard writes.
+Setting pause is idempotent. When pause becomes true, the hub marks affected
+sessions ineligible, unregisters them, deletes their queued application messages,
+and queues `pause_notice` plus close before it releases the administrator
+mutation seam. Affected upgrade requests receive `administratively_paused`.
+The administrator control plane remains reachable. Removing pause permits a
+fresh data-plane session; resume semantics prevent backlog clipboard writes.
+
+For rotation, revocation, and pause, the hub stages durable changes and session
+cutoffs under one serialized mutation seam. A storage failure commits neither.
+After durable commit, the hub applies the staged cutoff before it releases the
+seam. A process failure in that interval closes the process-owned sessions. A
+publish ordered before the administrator mutation can commit, but the cutoff
+removes its queued application output from an affected session. A publish
+ordered after the mutation cannot select that session. For this boundary, the
+hub sends a payload when its session writer hands the complete frame to TLS
+while holding the seam. A frame handed to TLS before the administrator commit
+is a pre-commit send even when network transit completes later.
 
 ### 7. Authentication and authorization failure order
 
 The hub applies checks in this order:
 
 1. TLS handshake and certificate selection;
-2. method, path, content type, and request-size limit;
+2. path, method, content type, and request-size limit;
 3. credential syntax and credential digest lookup;
 4. credential class and principal state;
 5. endpoint-specific authorization;
@@ -640,6 +674,22 @@ Steps 3 through 5 return the same HTTP 401 body:
 
 The response does not reveal whether a credential, device, or administrator
 exists. Authenticated requests can receive a more specific content-free code.
+
+Step 2 has this exact mapping and performs no authentication or mutation:
+
+1. An unlisted path returns HTTP 404 with `http_path_not_found`.
+2. A listed path with another method returns HTTP 405 with
+   `http_method_not_allowed` and an `Allow` header containing the one listed
+   method.
+3. A body-bearing enrollment or administrator request with a missing or
+   different content type returns HTTP 415 with
+   `http_content_type_unsupported`.
+4. A body larger than 65,536 decoded bytes returns HTTP 413 with
+   `request_too_large`.
+
+`GET /healthz`, `GET /readyz`, and a WebSocket upgrade do not require the JSON
+content type. Each error body uses the closed HTTP error schema in Architecture
+6.
 
 At step 4, a consumed enrollment artifact has no enrollment authority. The hub
 can continue only through closed request-envelope validation and an exact
@@ -779,28 +829,54 @@ payload inspection.
 
 For one authenticated `publish`, the hub performs these steps:
 
-1. Validate the closed message schema and scalar forms.
-2. Compare `source_device_id` with the authenticated device.
-3. Validate created time, expiry, content type, decoded length, UTF-8, and
-   content hash in that order.
-4. Start the serialized storage transaction. Recheck active device state,
+1. Parse one JSON object. Invalid JSON, duplicate or unknown fields, missing
+   fields, and wrong JSON types return `protocol_schema_invalid`.
+2. Require integer `protocol_version = 1`. Another integer returns
+   `protocol_version_unsupported`; another JSON type follows step 1.
+3. Validate the canonical UUID, decimal-string, and signed timestamp forms for
+   the envelope and non-payload event fields. A malformed value returns
+   `protocol_schema_invalid`.
+4. Compare `source_device_id` with the authenticated device. A mismatch returns
+   `source_device_mismatch`.
+5. Validate event time and payload fields in this exact order:
+   1. `created_at_ms` greater than hub time plus 120,000 ms returns
+      `created_at_in_future`.
+   2. `expires_at_ms` less than or equal to hub time returns `event_expired`.
+   3. `expires_at_ms` greater than
+      `created_at_ms + retention_seconds * 1000` returns
+      `expiry_exceeds_retention`.
+   4. A `content_type` other than `text/plain` returns
+      `content_type_unsupported`.
+   5. Invalid base64url, padding, or decoded UTF-8 returns
+      `payload_encoding_invalid`.
+   6. Zero decoded bytes returns `payload_empty`.
+   7. Decoded bytes greater than `max_payload_bytes` returns
+      `payload_too_large`.
+   8. `payload_bytes` unequal to the decoded byte count returns
+      `payload_length_mismatch`.
+   9. A noncanonical `content_sha256` or a digest unequal to the decoded bytes
+      returns `payload_hash_mismatch`.
+6. Start the serialized storage and recipient-eligibility transaction. Recheck
+   active device state,
    session credential generation, administrative pause, and session history
    epoch.
-5. Look up `message_id` in retained history and the replay ledger.
-6. When retained history contains an exact retry, return its original cursor
+7. Look up `message_id` in retained history and the replay ledger.
+8. When retained history contains an exact retry, return its original cursor
    and expiry with `duplicate = true`; do not continue.
-7. When the message ID exists with different fields, return
+9. When the message ID exists with different fields, return
    `message_id_conflict`.
-8. When only a message-ID tombstone exists, return `message_id_replay`.
-9. Compare `source_seq` with the device high-water mark. Return
+10. When only a message-ID tombstone exists, return `message_id_replay`.
+11. Compare `source_seq` with the device high-water mark. Return
    `source_sequence_replay` when it is not greater.
-10. In the same SQLite transaction or memory-state write lock, allocate the next
+12. In the same SQLite transaction or memory-state write lock, allocate the next
    cursor, insert the event, advance the source-sequence high-water mark, and
    insert the message-ID tombstone.
-11. Remove expired events. Trim lowest cursors until the count limit holds.
+13. Remove expired events. Trim lowest cursors until the count limit holds.
     Update `lost_through_cursor` to the greatest removed cursor.
-12. Commit. Enqueue `publish_accepted` to the source session. Enqueue the
-    accepted event to each live or replay-buffering session in cursor order.
+14. Commit. While still holding the common mutation seam, enqueue
+    `publish_accepted` to the source session when it remains eligible. Enqueue
+    the accepted event in cursor order to each live or replay-buffering session
+    that remains eligible. Release the seam after those enqueue decisions.
 
 Hub cursor exhaustion returns `hub_cursor_exhausted`, marks hub readiness
 false, and accepts no later publish. A desktop that has allocated source
@@ -809,7 +885,7 @@ later publish under that device identity. Other devices remain active. A
 counter never wraps.
 
 Two concurrent requests with one message ID or one source sequence serialize
-at step 4. One can commit. The other observes committed state and follows the
+at step 6. One can commit. The other observes committed state and follows the
 retry or replay rules.
 
 ### 11. Resume algorithm
@@ -955,7 +1031,8 @@ For one eligible local clipboard observation, the agent:
 
 1. obtains clipboard bytes and platform metadata from the adapter;
 2. holds the agent-state serialization seam;
-3. confirms state `active_unlocked` and confirms the observation is current;
+3. confirms state `active_unlocked_live` and confirms the observation is
+   current;
 4. stops when the adapter supplied `sensitive = true`;
 5. consumes `local_only_next` and stops when that flag is armed;
 6. computes the local content hash; stops when it equals the immediately prior
@@ -968,10 +1045,23 @@ For one eligible local clipboard observation, the agent:
    sequence or retaining the new payload;
 10. allocates the next local source sequence without reuse;
 11. creates one UUIDv4 message ID, sets `created_at_ms` from UTC corrected by
-   the offset observed in `server_hello`, sets `expires_at_ms` to creation plus
-   the hello retention limit, computes the hash, and creates the outbox event;
+    the session offset, sets `expires_at_ms` to creation plus the hello
+    retention limit, computes the hash, and creates the outbox event;
 12. commits the sequence and outbox event before releasing the state seam;
 13. sends or retries that exact event after the session reaches `live`.
+
+The agent creates an outbox event only while a current version-1 session is
+`live`. It uses the payload limit, retention limit, server time, and clock-skew
+limit from that session's validated `server_hello`. It keeps those parameters
+in memory for that session and discards them on disconnect. It does not observe
+or queue a clipboard change while connecting, replaying, disconnected, locked,
+or paused. A clipboard value first observed in one of those states remains
+local and is not queued later merely because the agent reconnects.
+
+When the agent receives `server_hello`, it samples local UTC once and sets the
+session offset to `server_time_ms - sampled_local_utc_ms`. For an eligible
+observation, it adds that offset to local UTC at observation time. It uses the
+result as `created_at_ms`. The offset and hello limits expire with the session.
 
 An accepted response removes the outbox item. A retryable rejection retains
 it. A permanent validation, replay, or expiry rejection quarantines it as
@@ -981,25 +1071,28 @@ remain valid.
 The outbox holds at most 20 events and 1,048,576 decoded payload bytes. Reaching
 either bound enters `outbox_full`, stops new clipboard observation, and keeps
 existing outbox events for retry. The local clipboard value that would cross
-the bound remains local and is not queued later. The agent deletes an expired outbox payload,
-records a content-free `event_expired` result, and leaves its allocated source
-sequence unused. When accepted or expired items bring both bounds below their
-limits, the agent returns to its prior active network state.
+the bound remains local and is not queued later. The agent deletes an expired
+outbox payload, records a content-free `event_expired` result, and leaves its
+allocated source sequence unused. When accepted or expired items bring both
+bounds below their limits, the agent returns to its prior active network state.
 
 For one received `event`, the desktop agent:
 
 1. verifies protocol fields, hash, payload length, UTF-8, epoch, and expiry;
-2. records cursor and message ID;
-3. ignores the payload when `delivery = resume`;
-4. ignores the payload when source device equals the local device;
-5. ignores a duplicate processed message ID;
-6. holds the agent-state serialization seam;
-7. confirms state `active_unlocked` and `delivery = live`;
-8. reads the current clipboard hash;
-9. skips the write when current bytes already equal the event bytes;
-10. writes exact text through the platform adapter;
-11. stores one loop marker containing message ID and content hash;
-12. releases the state seam and advances the pending acknowledgement cursor.
+2. holds the agent-state serialization seam;
+3. rechecks the session epoch and cursor order;
+4. determines whether the message ID already exists in the processed-ID cache;
+5. records the cursor and inserts a previously unseen message ID;
+6. sets `apply = false` when delivery is `resume`, source device equals the
+   local device, or the message ID was already processed;
+7. when `apply = true`, sets `apply = false` unless state is
+   `active_unlocked_live` and delivery is `live`;
+8. when `apply = true`, reads the current clipboard hash;
+9. sets `apply = false` when the current bytes already equal the event bytes;
+10. when `apply = true`, writes exact text through the platform adapter;
+11. when the write occurs, stores one loop marker containing message ID and
+    content hash;
+12. advances the pending acknowledgement cursor and releases the state seam.
 
 The loop marker is consumed by the first subsequent local clipboard
 observation. A matching content hash suppresses publish. A differing hash
@@ -1012,36 +1105,54 @@ Desktop agent states are:
 | State | Clipboard watch | Publish | Remote write | Network |
 | --- | --- | --- | --- | --- |
 | `starting_unknown_lock` | off | off | off | off |
-| `active_unlocked` | on | on | live only | connected or reconnecting |
+| `active_unlocked_connecting` | off | retry existing after live | off | connecting or replaying |
+| `active_unlocked_live` | on | on | live only | connected and live |
 | `locked` | off | off | off | disconnected |
 | `locally_paused` | off | off | off | disconnected |
-| `administratively_paused` | off | off | off | authentication refused until unpaused |
+| `administratively_paused` | off | off | off | reconnecting with bounded backoff |
 | `outbox_full` | off | retry existing | off | connected or reconnecting |
 | `adapter_failed` | off | off | off | disconnected; readiness false |
 | `stopping` | off | off | off | closing |
 
 A lock, pause, or adapter-failure transition increments a state generation and
 cancels an observation that has not committed its outbox event. An unlock or
-local resume starts a new WebSocket session. Resume material cannot change the
-clipboard. The first event accepted after the new resume boundary can.
+local resume enters `active_unlocked_connecting` and starts a new WebSocket
+session. An unexpected disconnect does the same and cancels an observation
+that has not committed. A successful resume enters `active_unlocked_live`.
+Resume material cannot change the clipboard. The first event accepted after
+the new resume boundary can.
 
 The agent exposes an owner-only local control interface for:
 
 - `status`;
 - `pause`;
 - `resume`;
+- `clear-local-cache`;
 - `local-only-next`.
 
 The interface uses local IPC, not a TCP listener. Its peer credentials must
 match the desktop user. `local-only-next` arms one in-memory flag and reveals
 no clipboard content. A service restart clears that flag.
 
+`clear-local-cache` increments the agent state generation and runs through the
+agent-state serialization seam. It deletes complete unaccepted outbox events,
+processed message IDs, the pending remote-write marker, and the prior
+local-observation hash. It cancels an observation that has not committed. It
+preserves the last processed history epoch and cursor, the source-sequence
+allocator, the device credential, hub history, and the operating-system
+clipboard. A committed event or received event orders wholly before or wholly
+after the clear.
+
 Reconnect delay uses full jitter. Attempt `n`, starting at zero, selects a
 random delay in `0..min(30000, 500 * 2^n)` milliseconds. A successful live
 session lasting 30 seconds resets `n` to zero. Authentication, revocation,
-administrative pause, invalid TLS, invalid configuration, credential-storage,
+credential rotation, invalid TLS, invalid configuration, credential-storage,
 and adapter failures do not retry automatically; they remain visible until
-their external cause changes or the user requests retry.
+their external cause changes or the user requests retry. An
+`administratively_paused` response or close enters the state of that name and
+uses the same full-jitter schedule automatically. After the administrator
+removes pause, the next attempt authenticates, completes resume without a
+clipboard write, and enters `active_unlocked_live`.
 
 ### 14. Platform desktop behavior
 
@@ -1164,14 +1275,18 @@ request bodies, environment values, command lines, and local state files.
 | `local_state_unavailable` | desktop | no automatic retry | agent remains inactive; source sequence does not reset |
 | `database_schema_unsupported` | startup | no | process exits without migration |
 | `database_integrity_failed` | startup | no | process exits without serving |
+| `http_path_not_found` | HTTP | no | none |
+| `http_method_not_allowed` | HTTP | no | none |
+| `http_content_type_unsupported` | HTTP | no | none |
 | `unauthorized` | HTTP | no | none |
-| `administratively_paused` | upgrade or publish | no | none |
+| `administratively_paused` | upgrade or publish | yes after unpause | none |
 | `connection_limit_reached` | upgrade | yes | none |
 | `request_rate_limited` | HTTP | yes | none |
 | `request_too_large` | HTTP | no | none |
+| `message_too_large` | WebSocket | no | none; close session |
 | `message_rate_limited` | WebSocket | yes after reconnect | none; close session |
 | `protocol_version_unsupported` | HTTP or WebSocket | no | none |
-| `protocol_schema_invalid` | HTTP or WebSocket | no | none; close WebSocket |
+| `protocol_schema_invalid` | HTTP or WebSocket | no | none; close when WebSocket |
 | `resume_required` | WebSocket | no | none; close |
 | `resume_deadline_exceeded` | WebSocket | yes | none; close |
 | `cursor_ahead` | WebSocket | no | none; close |
@@ -1220,9 +1335,12 @@ HTTP status mapping is exact:
 | 200 or 201 | Named success response |
 | 400 | `protocol_version_unsupported`, `protocol_schema_invalid` |
 | 401 | `unauthorized` |
+| 404 | `http_path_not_found` |
+| 405 | `http_method_not_allowed` |
 | 409 | `request_id_conflict`, `secret_result_already_committed` |
 | 410 | `enrollment_artifact_invalid` |
 | 413 | `request_too_large` |
+| 415 | `http_content_type_unsupported` |
 | 423 | `administratively_paused` on a data-plane upgrade |
 | 429 | `connection_limit_reached`, `request_rate_limited` |
 | 503 | `storage_unavailable`, `hub_cursor_exhausted`, `tls_certificate_not_current`, or global `administratively_paused` on readiness |
@@ -1232,7 +1350,7 @@ these private close numbers:
 
 | Close number | Reasons |
 | --- | --- |
-| 4400 | `protocol_version_unsupported`, `protocol_schema_invalid`, `resume_required`, `cursor_ahead`, `resume_cursor_without_epoch`, `ack_invalid` |
+| 4400 | `protocol_version_unsupported`, `protocol_schema_invalid`, `message_too_large`, `resume_required`, `cursor_ahead`, `resume_cursor_without_epoch`, `ack_invalid` |
 | 4403 | `administratively_paused`, `credential_rotated`, `device_revoked` |
 | 4408 | `resume_deadline_exceeded`, `heartbeat_timeout` |
 | 4409 | `session_epoch_stale`, `history_purged` |
@@ -1327,7 +1445,7 @@ evidence when a named test did not exercise the claimed boundary.
 | ID | Traces to | Given / When / Then | Required evidence |
 | --- | --- | --- | --- |
 | A01 | I1, Architecture 2-5 | Given Rust and Swift version-1 implementations, when each decodes and re-encodes the canonical publish fixture and sanitized real-capture corpus, then the publish fixture preserves its exact field values and payload bytes, each captured message preserves its canonical field semantics, and each unsupported version is rejected before message handling. | Rust and Swift conformance logs plus captured fixtures |
-| A02 | I1, Architecture 2 and 5 | Given a valid message, when one unknown field, duplicate key, wrong type, binary frame, oversized frame, decreasing ack, future ack, or wrong-epoch ack is introduced separately, then the receiver returns the specified protocol code and writes no durable state. | Table-driven negative tests |
+| A02 | I1, Architecture 2 and 5 | Given a valid message, when one unknown field, duplicate key, wrong type, binary frame, invalid UTF-8 frame, oversized frame, decreasing ack, future ack, or wrong-epoch ack is introduced separately, then schema defects produce `protocol_schema_invalid`, oversize produces `message_too_large`, acknowledgement defects produce `ack_invalid`, the receiver closes with 4400, and no durable state changes. | Table-driven negative tests |
 | A03 | I2 | Given device A's credential and an event asserting device B, when A publishes, then the hub returns `source_device_mismatch`; history, cursor, and A's sequence high-water mark remain unchanged. | Hub integration test with database before/after snapshot |
 | A04 | I3, Architecture 6 | Given one credential of each class, when each calls each protected path, then only the exact class-path pair succeeds; invalid and wrong-class credentials return the same `unauthorized` body. | Complete credential-path matrix |
 | A05 | I4 | Given a valid client configuration, when the server chain is invalid, the name is wrong, the certificate is expired, or the endpoint is plaintext, then the client opens no WebSocket and performs no clipboard action. | Real rustls and platform client captures |
@@ -1335,7 +1453,7 @@ evidence when a named test did not exercise the claimed boundary.
 | A07 | I4, Architecture 8 | Given two configured allowed sockets and the second cannot bind, when the hub starts, then it closes the first socket and exits nonzero. | Real socket test |
 | A08 | I4, Architecture 8 | Given a symlink, wrong owner, or mode broader than the specified secret, key, database, or state-directory mode, when the component starts, then it remains inactive with one content-free code. | Unix permission tests |
 | A09 | I5 | Given 25 accepted events from concurrent devices, when clients read history and live delivery, then each observes one identical ascending cursor order with no reused cursor. | Concurrency integration log and database query |
-| A10 | Goal, normal delivery | Given normal delivery conditions, when one desktop copies 100 synthetic texts sequentially, then each target clipboard write completes within 1,000 ms of source observation. | Timestamped end-to-end test log |
+| A10 | Goal, normal delivery | Given normal delivery conditions and default rate limits, when one desktop observes 100 synthetic texts at intervals of 1,100 ms, then each target clipboard write completes within 1,000 ms of its source observation and no publish is rate-limited. | Timestamped end-to-end test log |
 | A11 | I6 | Given one accepted retained event and rate buckets configured to admit ten retries, when its source retries the exact event ten times, then each retry returns the original cursor with `duplicate = true`; history count and peer live-delivery count remain at their post-acceptance values of one. | Hub, peer, and database counters |
 | A12 | I6 | Given one accepted event, when a client reuses its message ID with a changed field, reuses its source sequence with a new ID, or reuses its tombstoned ID after purge, then the exact replay code returns and no cursor or history state changes. | Replay matrix with before/after state |
 | A13 | I6, Architecture 10 | Given two concurrent publishes with one message ID, when the hub serializes them, then one commits and the other returns exact retry or conflict according to its bytes. | Concurrency test repeated 100 times |
@@ -1353,8 +1471,8 @@ evidence when a named test did not exercise the claimed boundary.
 | A25 | I13 | Given SQLite history with retained events, when the hub restarts ordinarily, then epoch, cursor order, replay high-water state, and unexpired history remain. | Real process restart test |
 | A26 | I13 | Given memory history with retained events, when the hub restarts, then payload history is empty, the epoch changes, replay of an old source sequence is rejected, and no payload bytes exist in SQLite. | Real process restart and database scan |
 | A27 | I12 | Given retained history and pending online plus offline desktop outbox events, when an administrator purges, then the hub response reports a committed new epoch, online clients clear on notice, the offline client clears on next hello, no purged outbox payload republishes, and no client changes its system pasteboard. | Hub, mobile, desktop, and database test |
-| A28 | I3, Architecture 6 | Given two active devices, when an administrator revokes one, then its current session closes and its next upgrade returns `unauthorized`; the other device remains live and can publish. | Multi-device integration test |
-| A29 | I3, Architecture 6 | Given one active device, when an administrator rotates it, then the old credential and session stop working, the new credential opens one session, and the plaintext new credential appears only in the first response. | Rotation and secret-canary test |
+| A28 | I3, I17, Architecture 6 | Given two active devices and queued application output for one, when an administrator revokes that device, then the cutoff removes its session and queued output before the administrator mutation seam releases, no later payload frame reaches TLS for it, its next upgrade returns `unauthorized`, and the other device remains live and can publish. | Multi-device queue, TLS-write, and integration test |
+| A29 | I3, I17, Architecture 6 | Given one active device with queued application output, when an administrator rotates it, then the cutoff removes its old session and queued output before the administrator mutation seam releases, no later payload frame reaches TLS for it, the old credential stops working, the new credential opens one session, and the plaintext new credential appears only in the first response. | Rotation, queue, TLS-write, and secret-canary test |
 | A30 | I3, Architecture 6 | Given one mobile enrollment artifact, when two exchanges with distinct request IDs race before ten minutes, then one returns a credential and one returns `enrollment_artifact_invalid`; when an unconsumed artifact reaches ten minutes, then no exchange succeeds, its pending device row is deleted within 60 seconds, and its digest tombstone disappears 86,400 seconds after expiry. | Controlled-clock concurrency and storage test |
 | A31 | I15, Architecture 15 | Given 20 retained events, when the app enters foreground, then it displays descending history with source, age, and bounded preview; selecting one unexpired row writes exact text once to `UIPasteboard.general`. | Swift UI and real pasteboard test |
 | A32 | I15 | Given resume, live delivery, refresh, activation, background, and epoch-change transitions, when each occurs without row selection, then a pasteboard write spy records zero calls. | Swift state-machine test |
@@ -1369,17 +1487,25 @@ evidence when a named test did not exercise the claimed boundary.
 | A41 | Goal, Architecture 6 | Given an administrator credential held by synthetic deployment automation, when it creates a managed desktop, stores the returned device credential through the declared secret reference, and starts the agent, then the device opens a live session without an action on an existing device. | Isolated Ansible-to-agent acceptance run |
 | A42 | I4, Architecture 8 | Given a hub bound to one allowed address in an isolated network namespace, when probes target that address and a second unbound interface, then only the configured address completes TLS. | Network-namespace socket and TLS probe log |
 | A43 | Architecture 15 | Given foreground mobile history and a nonempty system pasteboard, when the user invokes local clear, then visible history empties while the session cursor, hub history, and system pasteboard remain unchanged. | Swift state, hub query, and pasteboard assertions |
-| A44 | I10, Architecture 6 | Given two active devices, when an administrator pauses one device, then that session closes and the peer remains live; when the administrator pauses globally, then both data sessions close while an authenticated administrator can remove the pause. | Administrative pause matrix |
+| A44 | I10, I17, Architecture 6 | Given two active devices with queued application output, when an administrator pauses one device, then the cutoff removes that session and its queued output before the administrator mutation seam releases, hands no later payload frame to TLS for it, and leaves the peer live; when the administrator pauses globally, then the same cutoff applies to both data sessions while an authenticated administrator can remove the pause. | Administrative pause queue, TLS-write, and session matrix |
 | A45 | I4, Architecture 8 | Given one valid configuration, when each required field is removed, each unknown field is added, and each bounded value crosses its lower or upper bound separately, then startup exits with the exact configuration code before any listener accepts. | Generated configuration mutation matrix |
-| A46 | I17, Architecture 6 and 10 | Given a publish stopped at the storage barrier and a concurrent rotation, revocation, pause, or purge, when each ordering is released separately, then the publish commits entirely before the administrator mutation or writes nothing after it; no stale credential or epoch commits later. | Deterministic transaction-race tests |
-| A47 | I18, Architecture 17 | Given one trigger for each stable failure code, when the component fails, then it emits that code and retryability, its state diff matches the table, and its response contains none of the content or secret canaries. | Failure-code matrix with state snapshots and canary scan |
-| A48 | Architecture 13 | Given a disconnected active agent, when another observation would take its outbox above 20 events or 1,048,576 bytes, then the new payload remains local without sequence allocation, observation stops with `outbox_full`, existing items remain exact, and accepting or expiring enough items resumes observation. | Persistent outbox boundary and restart test |
+| A46 | I17, Architecture 6 and 10 | Given a publish stopped at the storage barrier and a concurrent rotation, revocation, pause, or purge, when each ordering is released separately, then the publish commits entirely before the administrator mutation or writes nothing after it; no stale credential or epoch commits later, and rotation, revocation, or pause removes affected queued application output before releasing the common seam. | Deterministic transaction, queue, and recipient-race tests |
+| A47 | I18, Architecture 17 | Given one trigger for each stable failure code, when the component fails, then its wire response or local result emits that code and retryability, its state diff matches the table, and each emitted byte contains none of the content or secret canaries. | Failure-code matrix with state snapshots and canary scan |
+| A48 | Architecture 13 | Given an `active_unlocked_live` agent whose outbound sends are held before acceptance, when another observation would take its outbox above 20 events or 1,048,576 bytes, then the new payload remains local without sequence allocation, observation stops with `outbox_full`, existing items remain exact, and accepting or expiring enough items resumes observation. | Persistent outbox boundary and restart test |
 | A49 | Architecture 10 | Given a synthetic hub cursor at unsigned-64 maximum, when a device publishes, then the hub returns `hub_cursor_exhausted` and becomes not ready; given one device source sequence at maximum, when that agent observes a new copy, then only that agent stops publishing with `device_sequence_exhausted` while another device remains live. | Injected counter-boundary tests |
 | A50 | I4, Architecture 8 | Given a running hub certificate, an established readiness connection, and an established data session, when the certificate crosses expiry and the 60-second validity check runs, then readiness on the established connection returns `tls_certificate_not_current`, a new handshake cannot complete, and the existing data session closes only at its ordinary boundary. | Controlled-clock real TLS process test |
 | A51 | I6, I17, Architecture 13 | Given an enrolled desktop that has committed source sequence 41 and one unaccepted outbox event, when the process restarts with intact local state, then it retries the exact event with its original sequence and allocates 42 for the next eligible observation. | Real process restart and local-state inspection |
 | A52 | I6, I18, Architecture 8 and 13 | Given an enrolled desktop credential with missing, corrupt, read-only, or non-atomic local state, when the agent starts, then it emits `local_state_unavailable`, allocates no source sequence, opens no data-plane session, and remains inactive until the state is restored or a new device identity is enrolled. | Local-state failure matrix with network and outbox probes |
 | A53 | I7, Architecture 5 and 9 | Given a default 20-event resume followed by live events, when a client processes the replay and live stream, then it sends one highest-cursor acknowledgement after `resume_complete`, coalesces later acknowledgements to at most one per 2,000 milliseconds, and does not exhaust the application-message bucket. | Controlled-clock client and hub message trace |
 | A54 | I3, Architecture 6 and 7 | Given a consumed enrollment artifact whose exact exchange response was lost, when the client repeats the same request ID and body before tombstone expiry, then the hub returns `secret_result_already_committed` with the committed device ID and no credential; a different request ID returns `enrollment_artifact_invalid` and writes nothing. | Request-receipt and controlled-clock storage test |
+| A55 | I12, I17, Architecture 13 | Given a desktop with unaccepted outbox events, processed IDs, a loop marker, and a nonempty system clipboard, when its owner invokes `clear-local-cache`, then those events and named caches are deleted through the state seam while cursor, epoch, sequence allocator, credential, hub history, and system clipboard remain unchanged. | Local-state before/after inspection and clipboard assertion |
+| A56 | Architecture 13 | Given an unlocked desktop that loses its live session, when its clipboard changes during connecting, replaying, or disconnected state, then the agent allocates no sequence and creates no outbox item; after live resume, that existing clipboard value is not queued without a later clipboard observation. | Deterministic connection-state and clipboard-observation test |
+| A57 | I11, Architecture 4 and 10 | Given an otherwise valid publish, retention `R_ms = retention_seconds * 1000`, and hub time `T`, when `created_at_ms = T + 120000` and `expires_at_ms = created_at_ms + R_ms`, then the hub accepts the time fields; introduced separately, creation at `T + 120001` returns `created_at_in_future`, expiry at `T` returns `event_expired`, and expiry at `created_at_ms + R_ms + 1` returns `expiry_exceeds_retention`. | Controlled-clock boundary table |
+| A58 | I18, Architecture 6, 7, and 17 | Given the TLS listener, when a request uses an unknown path, a wrong method on a known path, a wrong content type on a body-bearing path, or an oversized body, then it returns respectively 404 `http_path_not_found`, 405 `http_method_not_allowed`, 415 `http_content_type_unsupported`, or 413 `request_too_large` before authentication and changes no state; a request with two adjacent defects returns the earlier step's code. | Real HTTP routing and precedence matrix with state snapshots |
+| A59 | I18, Architecture 2 and 17 | Given a WebSocket session, when either peer receives a binary message, invalid UTF-8 text, or a text message one byte above its active limit, then binary and UTF-8 failures produce `protocol_schema_invalid`, oversize produces `message_too_large`, the receiver closes with 4400, parses no oversize body, and changes no durable state. | Real WebSocket frame-boundary captures and state snapshots |
+| A60 | I18, Architecture 3, 4, 10, and 17 | Given one valid publish, when each schema, version, UUID, decimal, timestamp, source, creation, expiry, content type, base64/UTF-8, decoded-size, declared-length, and hash defect is introduced separately, then the failure returns the exact code and state effect from Architecture 10 and 17; a publish with defects at two adjacent validation steps returns the earlier step's code. | Ordered publish-validation and adjacent-precedence matrix |
+| A61 | I17, Architecture 6 and 10 | Given an affected session with a queued live payload and session writer plus publish blocked at the common mutation seam, when rotation, revocation, or pause commits before the publish or after an earlier publish, then the hub removes the session and queued payloads before releasing the seam and hands no post-commit payload frame to TLS for that session; a frame handed to TLS before commit remains classified pre-commit, and an unaffected peer preserves cursor order. | Deterministic queue, TLS-write, and transaction-barrier tests |
+| A62 | I8, Architecture 6, 9, and 13 | Given a desktop closed by administrative pause with retained outbox items and a nonempty clipboard, when the administrator removes pause, then bounded automatic retry opens a fresh session, processes resume without changing the clipboard, retries retained outbox items exactly, and applies only an event accepted after `resume_complete` as live. | Controlled-clock pause-removal and real-adapter test |
 
 ### Acceptance execution order
 
