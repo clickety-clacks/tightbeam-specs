@@ -1,13 +1,16 @@
 # REST state API v1 — the read plane (product spec, canonical r3)
 
-Amendment candidate, 2026-08-24: distinguish durable Toplines from the
+Amendment candidate, 2026-08-25: distinguish durable Toplines from the
 mechanical ExecutionMap and add the REST-only ExecutionMap contract. The
-amendment changes no durable Toplines field, mutation, or route.
+amendment changes no durable Toplines field, mutation, or route. Its companion
+firehose amendment adds source invalidation notices for existing durable
+Topline and subagent-marker commits; it adds no ExecutionMap class.
 
-Review status, 2026-08-25: CHANGES REQUESTED against candidate `a9117391`.
-SQ6-SQ8 expose the three blocking findings. This branch is not ready for M1,
-M2, specRef binding, or implementation of the affected Toplines and
-ExecutionMap routes until the named owner rules them. Separable r3 resources
+Review status, 2026-08-25: AMENDED AFTER CHANGES REQUESTED against candidate
+`a9117391`. Product-owner ruling
+`att_d5b0a440-bd51-498f-8b96-e6512fedf68f` closes SQ6-SQ8. This exact
+successor and its event-firehose companion require a fresh independent review
+before M1, M2, specRef binding, or implementation. Separable r3 resources
 remain unaffected.
 
 Status: CANONICAL r3, 2026-08-22. r3 folds the REST-side adjudicated
@@ -98,7 +101,9 @@ correlate later firehose notices without reading SQLite or replaying history.
 - REST v1 does not authorize implementation, deployment, or client migration.
 - REST v1 does not alias ExecutionMap telemetry through `/api/toplines`, add an
   ExecutionMap firehose class, or change the six adopted shared serializer
-  shapes from `art_b1995a26` / fact 1093.
+  shapes from `art_b1995a26` / fact 1093. Exact source invalidation notices for
+  existing Topline and subagent-marker commits are the ruled exception to the
+  earlier no-new-class boundary.
 
 ## Assumptions
 
@@ -614,6 +619,28 @@ SQ2 admits every admin row above. They enter the REST/firehose A6 overlap and
 use the same admin-only visibility function. Archetypes, guidance, and rails
 are composed identity-tree resources, so R9 governs their refetch contract.
 
+R8b. The event-firehose companion defines four source invalidation mappings
+that do not represent rebuildable resources and do not enter the A6 serializer
+overlap:
+
+| Firehose source class | Exact successful mutation | Observe refs | Natural source version |
+|---|---|---|---|
+| `topline.created` | new `Tightbeam.Toplines.create/2` commit | `toplineId` | positive `topline_events.seq` for the appended `topline_created` event |
+| `topline_work_membership.linked` | new `Tightbeam.Toplines.link_work/2` commit | `toplineId`, `membershipId`, `workItemId` | positive `topline_events.seq` for the appended `work_linked` event |
+| `topline_work_membership.unlinked` | new `Tightbeam.Toplines.unlink_work/2` commit | `toplineId`, `membershipId`, `workItemId` | positive `topline_events.seq` for the appended `work_unlinked` event |
+| `subagent_marker.appended` | new row from `Tightbeam.SubagentMarkers.append/3` or `append_in_txn/2` | `markerId`, `sessionKey`; `assignmentId` and `workItemId` when non-null and resolved | positive `subagent_markers.id` |
+
+Each mapping emits exactly one `op:"observe"` notice after a new commit and
+none for a refusal, Topline idempotency replay, or ignored duplicate marker.
+The notice omits `resource` and carries exactly
+`payload:{"sourceVersion":I}`. The companion freezes its complete wire and
+emission rules. Topline notice visibility is the parent Topline's AU4
+owner-or-admin predicate. Marker notice visibility is AU4a: the marker inherits
+its non-null parent assignment grant and also requires its resolved work-item
+grant. A null, unresolved, or denied marker assignment delivers no notice to
+that principal. Visibility runs before subscription filters. These mappings add no
+principal rule, public source route, ExecutionMap class, or shared serializer.
+
 R9. A composed resource has no notice class of its own. It declares the exact
 underlying class set that makes a cached instance stale. After visibility
 allows a notice and the class matches one of these dependencies, the client
@@ -624,8 +651,8 @@ that prefix.
 |---|---|
 | org | `host.registered`, `config.updated`, `identity.updated`, `kungfu.updated` |
 | harness catalog | `host.registered`, `host_env.updated`, `config.updated` |
-| toplines | **BLOCKED (SQ7):** no exact v1 refetch dependency set is frozen for durable Topline mutations |
-| execution map | **BLOCKED (SQ6):** the listed non-marker sources map to `work_item.*`, `assignment.*`, `attest.filed`, `wake.*`, `prod.fired`, `turn.*`, `decision_request.*`, `session.*`, `user.added`, and `user.promoted`; no existing class covers an independent subagent-marker append |
+| toplines | `topline.created`, `topline_work_membership.linked`, `topline_work_membership.unlinked`, `work_item.updated`, `work_item.iceboxed`, `work_item.reopened`, `work_item.closed`, `work_item.failed` |
+| execution map | `work_item.*`, `assignment.*`, `attest.filed`, `wake.*`, `prod.fired`, `turn.*`, `decision_request.*`, `session.*`, `user.added`, `user.promoted`, `subagent_marker.appended` |
 | coordination share | `wake.*`, `turn.*`, `prod.fired` |
 | digest members | `wake.scheduled`, `wake.canceled`, `wake.fired` |
 | work-item trace | `work_item.*`, `assignment.*`, `attest.filed`, `session.*`, `wake.*`, `turn.*` |
@@ -636,11 +663,30 @@ that prefix.
 An R9 dependency list is closed-world. Adding a source table or state class to
 a composed query requires the same reviewed change to this list. Each composed
 response carries `dependencyVersion` equal to a stable digest of the ordered
-`(resource primary key, rowVersion)` dependency vector, so equal dependencies
-produce equal versions and any dependency change produces a different version.
-The two BLOCKED rows are recorded holes, not implementable dependency lists.
-M1 and M2 cannot ship the affected Toplines or ExecutionMap route until its
-blocking question is ruled and the row contains only exact live classes.
+`(source kind, stable primary key, natural version)` dependency vector. The
+wire schema's `resource` position names that canonical source kind even when
+the source is non-resource evidence. Equal dependencies produce equal versions
+and any dependency change produces a different version.
+R8b source classes participate in these refetch lists but not in direct model
+upsert. The list omits `work_item.created` from Toplines because an unlinked new
+work item changes no durable Topline bytes. Any new Topline or membership
+mutation, or any new source read by either composition, requires one reviewed
+R8b/R9 amendment before implementation.
+
+R9b. Durable Toplines dependency extraction is closed over the visible Topline
+row, its active `topline_work_memberships`, and the joined visible work-item
+rows that supply `workItemTitle` and `workItemState`. The Topline row's natural
+version is the greatest positive `topline_events.seq` for its id. An active
+membership's natural version is the positive sequence of its `work_linked`
+event. A joined work item uses its canonical R7 `rowVersion`. Link and unlink
+touch the parent Topline and append the corresponding event in the same
+transaction; unlink also removes the membership from the active dependency
+vector. The ordered vector therefore changes for every current durable
+Toplines mutation and for every work-item mutation that changes nested Topline
+bytes. Extraction runs after AU4 visibility, so a hidden source row cannot
+change the digest or response. The vector's canonical source-kind labels are
+exactly `toplines`, `topline work memberships`, and `work items`; each stable
+primary key is that source row's canonical id string.
 
 R9a. ExecutionMap's query dependency extraction is closed over these source
 rows: visible work items; assignments resolved to them; allowed attests;
@@ -651,17 +697,18 @@ assignments; allowed disposition-transition causal events; the causal-event
 coverage epoch; and the session and user rows required for source visibility.
 The R9 class row is the invalidation projection of that exact source set.
 Disposition transitions invalidate through the corresponding existing
-`work_item.*` mutation. An independent `SubagentMarkers.append/3` can commit
-without a turn mutation, so no current class invalidates marker-backed
-`fanOut`. SQ6 blocks the ExecutionMap refetch contract. This amendment adds no
-firehose class and does not silently treat `turn.*` as a marker notice.
+`work_item.*` mutation. An independent successful
+`SubagentMarkers.append/3` or `append_in_txn/2` insertion invalidates through
+`subagent_marker.appended`; an ignored duplicate emits none. No `turn.*`
+notice is a proxy for a marker commit, and no ExecutionMap class exists.
 
 ExecutionMap builds its dependency vector only after AU4a source visibility.
 A hidden source row cannot change `dependencyVersion`, an aggregate, order,
 nesting, filter outcome, or response bytes. For an underlying R7 resource, the
 vector uses its canonical primary key and `rowVersion`. For non-resource
 append-only evidence, a causal event uses its positive sequence and a subagent
-marker uses its positive `subagent_markers.id` as both stable key and version.
+marker uses source-kind label `subagent markers` and its positive
+`subagent_markers.id` as both stable key and version.
 The fixed coverage epoch uses its stored epoch value. Query dependency
 extraction and this R9a source list must match exactly.
 
@@ -849,8 +896,8 @@ parent, unknown child, forbidden parent, forbidden child, and forbidden
 download all return the identical 404 body, status, headers, and timing class.
 
 AU6. Visibility filtering always runs before subscription filtering. The
-server first evaluates the R8 row through its AU4 visibility function for the
-authenticated principal. Only an allowed row may then be tested against
+server first evaluates the R8 row or R8b source through its named AU4
+visibility function for the authenticated principal. Only an allowed row may then be tested against
 `classes`, `sessionKey`, `workItemId`, `origin`, or `principal` subscription
 filters. A subscription filter never broadens visibility and never becomes an
 existence oracle. Delete uses the last pre-delete projection for this first
@@ -912,10 +959,12 @@ ruling does not change projections, authorization, or serializer identity.
 
 ## Acceptance
 
-A1. Table-driven per-mutation test: every non-observational firehose class has
-at least one R8 row, and every emitting mutation has exactly one row naming
-resource, op, primary-key refs, R7 serializer, AU4 visibility function, and
-`rowVersion` source. The test fails on a missing or extra state mutation.
+A1. Table-driven per-mutation test: every rebuildable-state firehose class has
+exactly one R8 row naming resource, op, primary-key refs, R7 serializer, AU4
+visibility function, and `rowVersion` source. Every R8b source invalidation has
+exactly one mapping naming its successful commit, observe refs, natural source
+version, and AU4 visibility predicate. The test fails on a missing or extra
+state mutation or source mapping.
 A2. For every non-observational rebuildable-state class governed by
 firehose A6, the REST detail item equals the notice payload after envelope
 removal.
@@ -1058,13 +1107,15 @@ the current holder contributes pending wake state. Given a pre-cutoff item,
 the four coverage-dependent fields are null and `sinceProgressMs` respects the
 coverage floor.
 
-A26. Given an SQ6 ruling that freezes an observable invalidation source or a
-revised projection, the R3b registry, and the R9a dependency extractor, when
-contract tests inspect flat, tree, subtree, and assignment routes, then each
-calls the named query family, source-derived visibility composition, and sole
-node serializer; the extractor names exactly the R9a source set. The firehose
-registry has no ExecutionMap class, durable Toplines bytes are unchanged, and
-the six `art_b1995a26` serializer bytes remain unchanged.
+A26. Given one new allowed marker insertion and one ignored duplicate, when
+contract tests inspect the R8b registry, R9a extractor, and flat, tree,
+subtree, and assignment routes, then the insertion emits exactly one
+`subagent_marker.appended` notice after commit and the duplicate emits none.
+Each route calls the named query family, source-derived visibility composition,
+and sole node serializer; the extractor names exactly the R9a source set and
+the refetch changes marker-backed `fanOut`. The registry has no ExecutionMap
+class, durable Toplines bytes are unchanged, and the six `art_b1995a26`
+serializer bytes remain unchanged.
 
 A27. Given each ExecutionMap success, auth failure, invalid filter, invalid
 cursor, ambiguous visible prefix, unknown selector, forbidden selector, and
@@ -1072,6 +1123,18 @@ projection failure, when the response is encoded, then it has the specified
 status and error code plus `Cache-Control: no-store`. Unknown and forbidden
 selectors have identical body and headers. An unpaged response has no `page`;
 a projection failure emits no partial JSON.
+
+A28. Given one new Topline create, link, and unlink commit plus an idempotent
+replay of each, when the firehose and Toplines composition are exercised, then
+the new commits emit exactly `topline.created`,
+`topline_work_membership.linked`, and
+`topline_work_membership.unlinked`, respectively, and the replays emit none.
+Every notice has the exact R8b observe wire, passes owner-or-admin visibility
+before filters, and triggers a refetch whose `dependencyVersion` changes. A
+work-item title update or disposition change for an active membership also
+changes the refetched Topline digest and nested bytes; `work_item.created`
+alone does neither. Older, duplicate, and newer source notices cannot be applied as a
+Topline upsert.
 
 ## Open questions — Spirit questions for Mike
 
@@ -1107,32 +1170,24 @@ add tailscale identity headers — should AU1 anticipate accepting tailnet
 identity as a principal source once that lands, or stay
 bearer-credential-only in v1?
 
-SQ6. **Open; BLOCKING ExecutionMap M1/M2 — owned by
-product-owner:rest-state-api.** Marker-backed `fanOut` is part of current
-ExecutionMap semantics, but `SubagentMarkers.append/3` can commit without a
-`turn.*` mutation. The present no-firehose-class boundary leaves no observable
-R9 invalidation source. Choose one reviewed contract: admit a marker mutation
-class through a sibling firehose amendment, remove marker-backed `fanOut` from
-the REST projection, or classify `fanOut` as snapshot-only and exclude it from
-R9 freshness and convergence. The first choice expands this assignment's
-explicit non-goal; the second changes current semantics; the third changes the
-read-plane invariant. No implementer chooses among them.
+SQ6. **RULED 2026-08-25 — preserve marker-backed `fanOut`.** Add exact
+`subagent_marker.appended` source invalidation through the event-firehose
+companion. Do not use `turn.*` as a proxy and do not add an ExecutionMap class.
+Authority: `att_d5b0a440-bd51-498f-8b96-e6512fedf68f`.
 
-SQ7. **Open; BLOCKING durable Toplines M1/M2 — owned by
-product-owner:rest-state-api.** Durable `toplines` and
-`topline_work_memberships` mutations have no class in R8, while the old R9 row
-named only execution-telemetry classes. Choose and review the durable Toplines
-freshness contract: add exact mutation mappings and version sources, redefine
-Toplines as a no-notice REST resource with an explicit companion-spec exclusion
-and refresh boundary, or remove the REST resource. The last choice contradicts
-I7 and this assignment; the first may require a sibling firehose amendment. No
-implementer infers a dependency from the obsolete telemetry row.
+SQ7. **RULED 2026-08-25 — preserve durable Toplines with notices.** Add exact
+source invalidation mappings and durable versions for Topline and
+topline-work-membership mutations. No snapshot-only or no-notice exclusion
+exists. Authority: `att_d5b0a440-bd51-498f-8b96-e6512fedf68f`.
 
-SQ8. **Open; BLOCKING independent-review closure — owned by
-product-owner:rest-state-api.** The reviewer requires an exact-candidate
-`tests-passed` receipt, but this assignment forbids product implementation and
-requires spec lint evidence. The candidate contains executable acceptance
-cases, not an implemented suite. Rule whether the existing deterministic spec
-lint is the pre-build gate or identify the already-authorized executable test
-command and receipt owner. This author does not fetch dependencies, implement
-tests, or file a passing receipt for tests that did not run.
+SQ8. **RULED 2026-08-25 — pre-build evidence boundary.** Deterministic spec
+lint and fresh independent exact-byte review are this amendment's pre-build
+gate. Acceptance clauses remain executable and decidable. Product tests and a
+`tests-passed` receipt belong to the later implementation card; this spec-only
+assignment does not implement or claim them. Authority:
+`att_d5b0a440-bd51-498f-8b96-e6512fedf68f`.
+
+Deleting `fanOut` or Toplines would remove current product meaning. Accepting
+snapshot-only or no-notice freshness would break I5 and the live display-model
+outcome. Those subtraction alternatives therefore lose to the four bounded
+source invalidation mappings above.

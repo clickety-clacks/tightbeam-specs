@@ -1,5 +1,11 @@
 # Event firehose v1 — state-change notifications over ws (product spec, r6)
 
+Amendment candidate, 2026-08-25: add source-invalidation notices for durable
+Topline mutations and independently committed subagent markers. These notices
+make the composed Toplines and ExecutionMap REST views refreshable from each
+matching committed source change.
+They add no ExecutionMap class and no rebuildable source resource.
+
 Status: DRAFT r6, 2026-08-22. r6 folds the adjudicated Sol review-gate
 findings (review-gate-observability-2026-08-21.md): row versions +
 always-upsert (F7), seq heartbeat (F6), revocation closes sockets (F12),
@@ -159,6 +165,11 @@ T5. **Read marker** — a user-scoped "seen through here" position stored as
 a substrate row (§Read markers). Not a stream concept; its changes merely
 broadcast like any other state change.
 
+T6. **Source invalidation notice** — an `op:"observe"` notice from the exact
+durable commit that makes a composed REST view stale. It is a refetch trigger,
+not a rebuildable resource or a direct model upsert. Its R8b mapping fixes its
+class, source seam, refs, natural version, visibility, and payload.
+
 ## The event vocabulary law
 
 V1. Every state-changing commit SHALL emit its notices as part of the
@@ -200,15 +211,18 @@ V4. Notice shape:
 }
 ```
 
-`resource` and `op` (`upsert` | `delete`) spare model code from parsing
-class strings. A delete carries the final public projection as its
+`resource` and `op` (`upsert` | `delete` | `observe`) spare model code from
+parsing class strings. A delete carries the final public projection as its
 tombstone payload and the client removes the key — required because some
 rows hard-delete today (roles).
 
 `refs` SHALL always include the resource's primary id (per the R8
 mapping); other reference ids appear when the change has them. One
-schemaVersion keeps one meaning; widening bumps it. Observational
-classes (R5, R6) use `op: "observe"` and omit `resource`.
+schemaVersion keeps one meaning; widening bumps it. Observational classes
+(R5, R6) and source invalidation classes (R8b) use `op: "observe"` and omit
+`resource`. An observational notice is audit. A source invalidation notice is
+a closed-world composed-view refetch trigger; it never masquerades as a row
+the query surface can rebuild.
 
 V5. Payload rows SHALL carry the same primary ids the query surface
 returns for the same rows, so a client can match a notice against fetched
@@ -237,6 +251,11 @@ R4. Records: `artifact.recorded`, `read_marker.updated` (RM3).
 R4b. Conversation: `message.created` — without it a chat client cannot be
 lively (M4 promised message classes; recon wi_9239a7f1 caught the
 registry gap).
+
+R4c. Composed-view invalidation sources: `topline.created`,
+`topline_work_membership.linked`, `topline_work_membership.unlinked`, and
+`subagent_marker.appended`. R8b is their complete mapping. There is no
+`execution_map.*` class.
 
 R5. Dispatch (OBSERVATIONAL-ONLY): `verb.accepted`, `verb.denied` — one
 per gateway verb call, with the verb name, origin, and principal in
@@ -269,10 +288,31 @@ correlation contract). A class without a row is a red build.
 | `condition_fact.filed` | `condition facts` | `upsert` | `factId` | exact shared R7 condition-fact serializer | The condition fact `id` is its append-only natural version; its `rowVersion` equals `id`. Each successful insertion into `condition_facts` emits one notice after commit. An idempotent filing that returns the existing fact emits none. | `GET /api/facts` visibility. Consumers apply last-version-wins by `factId`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 | `critical_lease.updated` | `critical state` | `upsert` | `sessionKey` | exact shared R7 critical-state serializer | The item uses R7 critical-state `rowVersion`. Each committed change to the R7 item for one `sessionKey` emits one notice after commit. A replay or idempotent request that leaves the item and `rowVersion` unchanged emits none. | `GET /api/critical-state` admin-only visibility. Consumers apply last-version-wins by `sessionKey`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 
-R9. Composed views (toplines, coordination-share, digest-members, org)
-have no notices of their own. Each composed REST resource DECLARES its
-underlying state classes; a client refreshes the view when a matching
-notice arrives. The REST spec carries the per-view dependency lists.
+R8b. Source invalidation classes are deliberately not R8 rebuildable-state
+rows. Each emits `op:"observe"`, omits `resource`, and carries exactly
+`payload:{"sourceVersion":I}`, where `I` is a positive JSON integer. A client
+never applies this payload as state; after visibility and subscription filters
+allow it, the client refetches each composed REST view that lists the class in
+its closed R9 dependencies.
+
+| Class | Exact successful source commit | Required refs | Source version and `occurredAt` | Visibility before filters | Emission |
+|---|---|---|---|---|---|
+| `topline.created` | `Tightbeam.Toplines.create/2` inserts the `toplines` row and its `topline_events(kind='topline_created')` row in one transaction | `toplineId` | `sourceVersion` is that Topline's positive `topline_events.seq`; `occurredAt` is its `eventAt` | the REST AU4 Toplines owner-or-admin predicate on the committed Topline | exactly once after a new commit; an idempotency replay emits none |
+| `topline_work_membership.linked` | `Tightbeam.Toplines.link_work/2` inserts `topline_work_memberships`, touches the parent Topline, and inserts `topline_events(kind='work_linked')` in one transaction | `toplineId`, `membershipId`, `workItemId` | `sourceVersion` is the positive sequence of that `topline_events` row; `occurredAt` is its `eventAt` | the REST AU4 Toplines owner-or-admin predicate on the parent Topline | exactly once after a new commit; a refusal or idempotency replay emits none |
+| `topline_work_membership.unlinked` | `Tightbeam.Toplines.unlink_work/2` ends `topline_work_memberships`, touches the parent Topline, and inserts `topline_events(kind='work_unlinked')` in one transaction | `toplineId`, `membershipId`, `workItemId` | `sourceVersion` is the positive sequence of that `topline_events` row; `occurredAt` is its `eventAt` | the REST AU4 Toplines owner-or-admin predicate on the parent Topline after commit | exactly once after a new commit; a refusal or idempotency replay emits none |
+| `subagent_marker.appended` | `Tightbeam.SubagentMarkers.append/3` or `append_in_txn/2` inserts one `subagent_markers` row | `markerId`, `sessionKey`; `assignmentId` and `workItemId` when the marker has a non-null assignment that resolves to a work item | `markerId` is the inserted positive row id encoded as a canonical base-10 string without leading zeros; `sourceVersion` is the same id as a positive JSON integer; `occurredAt` is marker `at` | the marker inherits its non-null parent assignment's AU4 grant and requires the resolved work item's AU4 grant; a null, unresolved, or denied assignment yields no delivery to that principal | exactly once after `Txn.changes(txn) == 1`; `INSERT OR IGNORE` returning the existing marker emits none |
+
+The marker mapping derives authorization only from existing assignment and
+work-item grants. It creates no principal behavior. The Topline mappings expose
+no new Topline field or serializer. These four notices carry only the refs and
+source version needed to invalidate a composed view; the authorized REST
+composition remains the only rebuild path.
+
+R9. Composed views (toplines, execution map, coordination-share,
+digest-members, org) have no notices of their own. Each composed REST resource
+DECLARES its underlying state and source-invalidation classes; a client
+refreshes the view when a matching notice arrives. The REST spec carries the
+per-view dependency lists.
 
 R10. Visibility-affecting classes (`role.bound`, `role.removed`,
 `user.promoted`, `device.revoked`, `session.retired`, `user.added`) are
@@ -435,6 +475,10 @@ A1. Every state-changing verb on main tip emits notices whose classes
 match §The class registry, both directions — a test diffs the verb table
 and emitted classes against the registry.
 
+The same table covers every R8b source commit. It fails if a successful new
+Topline or marker commit emits no mapped class, emits more than the one mapped
+class, or if a refusal, idempotency replay, or ignored duplicate emits one.
+
 For `condition_fact.filed` and `critical_lease.updated`, the A1 table names
 the shared AU4 visibility function for the R8 resource and tests one allowed
 and one denied principal. The REST detail and firehose fan-out invoke that
@@ -468,6 +512,11 @@ also names each class's resource, op, and primary-key mapping. And no
 public projection anywhere contains cliToken, a device token, an
 identityToken, or a secret host-env value.
 
+R8b source invalidations are outside A6 because they expose no rebuildable
+resource. A table-driven test instead requires their exact `op`, absent
+`resource`, refs, one-key payload, source version, commit cut, and visibility
+predicate. It then proves the matching R9 composed view changes after refetch.
+
 For `condition_fact.filed` and `critical_lease.updated`, the A6 test uses
 the R8 shared serializer, primary ref, and version fields to apply older,
 duplicate, and newer detail items and notices in both orders for one `factId`
@@ -488,3 +537,8 @@ retention and storage and cursor encoding (no event storage exists),
 table fold (no new table exists). The load-bearing unknown is no longer
 in this spec — whether the query surface suffices is recon wi_9fdc0c07's
 question.
+
+The source-invalidation amendment is ruled by
+`att_d5b0a440-bd51-498f-8b96-e6512fedf68f`: preserve marker-backed `fanOut`
+and durable Toplines, map their exact source commits, and add no
+ExecutionMap notice class.
