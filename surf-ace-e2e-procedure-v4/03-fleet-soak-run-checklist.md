@@ -23,7 +23,7 @@ If any invariant is `Fail` or `Unproven`, the overall result must be **Yellow or
 - [ ] CLI discovery readiness — the reviewed CLI hash and provenance are recorded, and harmless `surf-ace list` succeeds through the approved controller endpoint.
   - Status: `Pass / Fail / Unproven / Out-of-scope`
   - Evidence:
-- [ ] Per-surface admission — before any operation targets a surface, durable evidence binds its exact surface/controller fixture, fixture expiry and cleanup contract, and restart-validity boundary to an already-lockless state or to separately authorized explicit migration material with a supported CLI input location.
+- [ ] Per-surface admission — before any operation targets a surface, durable evidence passes every field and rejection rule in the already-lockless predicate in `00-v4-contract.md`, or separately authorized explicit migration material with a supported CLI input location is bound to the exact surface and operation.
   - Status: `Pass / Fail / Unproven / Out-of-scope`
   - Evidence:
 - [ ] Tool topology vs independent rendered/provider truth — recursive `surf-ace list.topology` shape, split orientation, leaf pane identities/order, pane labels, viewport/geometry, and `topologyRevision` are cross-checked against `surf-ace capture-pane` / `surf-ace read` and any product diagnostic provider truth available for the same pane tuple.
@@ -60,6 +60,7 @@ If any invariant is `Fail` or `Unproven`, the overall result must be **Yellow or
 Final invariant sign-off:
 - [ ] All invariants above are `Pass` or explicitly justified `Out-of-scope`
 - [ ] No `Fail` / `Unproven` invariant remains while overall result is Green
+- [ ] Each invariant exercised by the primary required path is `Pass`, including discovery, session, topology, CLI-only discovery readiness, primary per-surface admission, diagnostic-only boundaries, content, primary multi-pane persistence, the required bounded recovery cycle, and time-based reliability; `Out-of-scope` applies only to a named optional surface, identity check, or recovery scenario that the procedure explicitly marks optional
 - [ ] Any caveat is surfaced in the report summary, not buried in logs
 
 ---
@@ -79,7 +80,7 @@ Final invariant sign-off:
   - [ ] Other:
 - **Procedure bundle:** `surf-ace-e2e-procedure-v4`
 - **Primary admitted surface:**
-- **Primary admission basis:** `already lockless / separately authorized explicit migration material`
+- **Primary admission basis:** `already-lockless / separately authorized explicit migration material`
 - **Primary admission evidence:**
 - **Overall result:**
   - [ ] Green
@@ -225,12 +226,14 @@ Paths:
 - [ ] Input, standard output, standard error, exit status, and `surf-ace list` result saved as artifacts
 - [ ] Each returned surface is recorded as a discovered candidate, not an admitted target
 - [ ] One discovered candidate is selected as the primary surface
-- [ ] Durable evidence binds the primary surface to the exact controller fixture, covers the next target operation and stated restart/recovery boundaries, and proves the surface is already lockless; or separately authorized explicit migration material and its supported CLI input location are bound to it
+- [ ] Already-lockless evidence is immutable, issued by a separately authorized endpoint-fixture compatibility authority, and records `admissionBasis: already-lockless`, `lockless: true`, exact surface/fixture binding, covered operations, verification method/result, issuer/authority, issue time, expiry, cleanup, restart/recovery validity, and artifact identity/SHA-256; or separately authorized explicit migration material and its supported CLI input location are bound to the exact surface and operation
+- [ ] Admission verifier rejected generic discovery/topology/readback/diagnostics, remembered success, operator assertion, another surface's result, and every record with a missing, expired, authority-mismatched, fixture-mismatched, surface-mismatched, or operation-out-of-scope field
 - [ ] Branch, HEAD SHA, deployed SHA/package identity, deploy state, and admission basis recorded for the primary surface
 - [ ] Each optional additional surface has its own admission evidence before any operation targets it
+- [ ] Immediately before each target operation, the operator rechecks that the admission row is unexpired and covers the exact surface/controller fixture, current boundary, and operation; a failed check returns the surface to candidate state until a new row passes
 - [ ] Required multi-pane work is scoped inside the primary admitted surface
 - [ ] Multi-surface work is marked optional
-- [ ] `pair.request` `capability_mismatch` has a terminal stop rule before mutation; no retry or bypass is permitted
+- [ ] `pair.request` `capability_mismatch` has a terminal stop rule before mutation; no retry or bypass is permitted; a fresh fixture requires fresh discovery and a new admission row before any target operation
 - [ ] Direct HTTP/WS, logs, DNS-SD, screenshots, and local runtime/debug files are labeled diagnostic-only
 - **Result:** `Pass / Fail / Unproven`
 - **Artifacts:**
@@ -238,9 +241,9 @@ Paths:
 
 Admission log — this table is the only seam that changes a candidate to admitted:
 
-| Candidate `surfaceId` | Controller fixture / expiry / cleanup | Basis | Evidence or migration authority | Supported migration input location | Restart/recovery validity | Disposition |
-| --- | --- | --- | --- | --- | --- | --- |
-|  |  | `already lockless / explicit migration` |  |  |  | `primary / optional / excluded` |
+| Candidate `surfaceId` | Controller fixture / expiry / cleanup | Basis and explicit assertion | Issuer/authority + evidence or migration-material artifact/SHA-256 | Verification method/result + issue time | Covered target operations | Supported migration input location | Restart/recovery validity | Disposition |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|  |  | `already-lockless + lockless:true / explicit migration` |  |  |  |  |  | `primary / optional / excluded` |
 
 ---
 
@@ -451,11 +454,12 @@ Discovered but excluded targets and reasons:
 - [ ] Captured second/right pane by the same exact `surfaceId` + `paneId` used for its push
 - [ ] First pane capture pixels contain first pane marker
 - [ ] Second pane capture pixels contain second pane marker
-- [ ] Neither capture contains only the sibling pane marker
+- [ ] First pane capture contains no occurrence of the second pane marker
+- [ ] Second pane capture contains no occurrence of the first pane marker
 - [ ] Capture metadata matches intended pushed pane tuple and topology revision
 - [ ] `surf-ace capture-pane` visible text, `contentSnapshot`, provider `visibleContentId`, push `contentId`, and captured pixels agree for both panes
-- [ ] 2-minute idle repeat list/read/capture still proves each pushed marker in its intended pane
-- [ ] Restart/relaunch repeat list/read/capture still proves each pushed marker in its intended pane when restart is in scope
+- [ ] 2-minute idle repeat list/read/capture proves each pushed marker in its intended pane and zero occurrences of the sibling marker
+- [ ] Restart/relaunch repeat list/read/capture proves each pushed marker in its intended pane and zero occurrences of the sibling marker when restart is in scope
 - [ ] Any capture failure records metadata and `failureReason`; visible-truth confidence marked Yellow at best if capture cannot prove push placement
 - **Result:**
 - **Artifacts:**
@@ -554,6 +558,8 @@ Precondition for this phase:
 ## Phase 4 — Failure injection and recovery
 
 After each restart, relaunch, bounce, interruption, or handoff, re-run discovery. Reuse admission only when the exact surface/controller-fixture binding is unchanged and the admission row explicitly covers that boundary. Otherwise, re-admit the candidate before read, capture, push, topology, or another target operation.
+
+A fresh fixture is always a new admission boundary. Run fresh discovery and create a new passing admission-table row for every target surface before read, capture, push, topology, or another target operation. Do not reuse the failed fixture's row even if the `surfaceId` repeats.
 
 ### Required bounded restart/recovery cycle
 
@@ -758,12 +764,14 @@ For each failure, record:
 
 - [ ] `surf-ace list` was used only for discovery and current topology
 - [ ] Each targeted surface had independent admission evidence before targeting
-- [ ] Each admission row records exact controller-fixture identity, expiry, cleanup, and restart/recovery validity
+- [ ] Each admission row records and passes every already-lockless schema/verifier field or every explicit-migration authority/material/scope/input field, including exact controller-fixture identity, expiry, cleanup, covered operations, and restart/recovery validity
+- [ ] Each target operation has a recorded immediately-prior check that its admission row was unexpired and covered the exact surface/controller fixture, current boundary, and operation
 - [ ] Required multi-pane proof ran inside one admitted surface
 - [ ] Each additional surface was optional and independently admitted
 - [ ] No migration material was invented, derived, broadened, or reused
 - [ ] No `pair.request` `capability_mismatch` was retried or bypassed
 - [ ] Any `capability_mismatch` stopped before mutation, produced endpoint/procedure-readiness classification, cleanup, and a fresh-fixture route
+- [ ] Any resumed fresh-fixture run performed fresh discovery and created a new passing admission row for every target surface before any target operation
 - [ ] Any changed post-restart binding was re-admitted before the next target operation
 
 ### Release judgment

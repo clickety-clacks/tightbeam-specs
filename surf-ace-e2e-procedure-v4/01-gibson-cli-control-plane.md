@@ -205,12 +205,14 @@ Apply this mapping everywhere in `02-fleet-soak-phases.md` and
 
 CLI `list` discovers candidate surfaces and current topology. It does not admit a candidate and does not authorize mutation.
 
-Admit a discovered candidate only when durable evidence binds the exact `surfaceId`, controller fixture identity, fixture expiry and cleanup contract, and restart-validity boundary to one of these bases:
+Admit a discovered candidate only when durable evidence binds the exact `surfaceId`, controller fixture identity, fixture expiry and cleanup contract, restart-validity boundary, covered target-operation set, issuer/authority, and immutable artifact identity to one of these bases:
 
 1. evidence that the surface is already lockless; or
 2. separately authorized explicit migration material and its supported CLI input location for that surface and operation.
 
 Record the evidence reference and basis before the first operation that targets the surface. Discovery evidence, topology coherence, a remembered prior success, or admission of another surface cannot substitute for this evidence.
+
+For the already-lockless basis, accept only an immutable record from an authority separately authorized to attest endpoint-fixture compatibility. The record must contain `admissionBasis: already-lockless`, `lockless: true`, exact `surfaceId`, exact controller-fixture identity, covered target-operation set, verification method and result, issuer/authority reference, issue time, expiry, cleanup contract, restart/recovery validity, and artifact identity or SHA-256. The verifier must reject a missing field, expired evidence, an authority mismatch, a fixture or surface mismatch, or an operation outside the recorded set. A `list`, topology, readback, diagnostic, remembered success, operator assertion, or another surface's result never satisfies this predicate.
 
 | Surface | Gibson-driven role | Required evidence |
 | --- | --- | --- |
@@ -235,12 +237,14 @@ Run this gate after the Electron cleanup and build-identity steps, but before Ph
 6. Stop `RED — BLOCKED: CLI_CONTROL_PLANE_UNAVAILABLE` if the CLI cannot execute, reach the approved controller endpoint, establish controller identity, or return coherent topology.
 7. Record each returned surface as a discovered candidate with its pane identities, stable identity, topology revision, product build, and observability level.
 8. Select one candidate as the required primary surface. Select additional candidates only when the run needs optional multi-surface coverage.
-9. For each selected candidate, record durable evidence that binds the exact surface and controller fixture, covers the next target operation and stated restart/recovery boundaries, and proves that the surface is already lockless. Alternatively, record the separate authority, exact explicit migration material, and supported CLI input location for that surface and operation.
+9. For each selected candidate, validate already-lockless evidence against the complete predicate above: authority, immutable identity, explicit assertions, exact surface/fixture binding, operation coverage, verification result, time/expiry, cleanup, and boundary validity must all pass. Alternatively, record the separate authority, exact explicit migration material, and supported CLI input location for that surface and operation.
 10. Admit the candidate only after step 9 passes. Exclude candidates without one of those two evidence bases.
 11. Perform all required multi-pane topology work inside the primary admitted surface. Treat multi-surface execution as optional. Apply this gate independently to each additional surface.
-12. If any selected operation returns `pair.request` with `capability_mismatch`, stop before mutation. Preserve the request and response. Classify endpoint/procedure readiness. Clean the run-owned fixture and state at the terminal boundary. Route a fresh fixture. Do not retry, bypass the refusal, invent migration material, or require a source change.
+12. If any selected operation returns `pair.request` with `capability_mismatch`, stop before mutation. Preserve the request and response. Classify endpoint/procedure readiness. Clean the run-owned fixture and state at the terminal boundary. Route a fresh fixture. Treat it as a new admission boundary: repeat fixture verification, fresh `list` discovery, candidate selection, and steps 9–10 for every surface before any target operation. Do not retry, bypass the refusal, reuse an old fixture's admission row, invent migration material, or require a source change.
 
-After a restart, relaunch, gateway/provider bounce, network recovery, or ownership handoff, run discovery again. Reuse admission only when the exact surface/controller-fixture binding is unchanged and the recorded admission evidence explicitly covers that boundary. Otherwise, treat the result as a candidate and repeat steps 7–10 before the next target operation.
+After a restart, relaunch, gateway/provider bounce, network recovery, or ownership handoff, run discovery again. Reuse admission only when the exact surface/controller-fixture binding is unchanged and the recorded admission evidence explicitly covers that boundary. Otherwise, treat the result as a candidate and repeat steps 7–10 before the next target operation. Never reuse admission across a fresh-fixture route; fresh discovery and a new admission-table row are mandatory even if a `surfaceId` repeats.
+
+Immediately before each target operation, recheck the admission row's expiry, exact surface/controller-fixture binding, boundary validity, and operation coverage. If one check fails, return the surface to candidate state and repeat steps 7–10. Do not target the surface until a new row passes.
 
 Do not require a separate tool declaration. Do not call a provider plugin as a substitute.
 
@@ -253,7 +257,7 @@ Run these steps immediately after every successful or outcome-unknown `push`. Ap
 3. Run CLI `list`. Verify the exact surface, pane, topology revision, and content association.
 4. Run local CLI `read` for the exact projected scope. Verify synchronized content and acknowledgement state.
 5. Run CLI `capture-pane` for the same surface and pane.
-6. Decode and inspect the returned pixels. Compare the expected marker, layout, colors, clipping, images, and sibling-pane isolation.
+6. Decode and inspect the returned pixels. Verify that they contain the expected marker and zero occurrences of each sibling pane's marker. Compare layout, colors, clipping, and images.
 7. Compare the capture metadata, list topology, read projection, content identity, and operation receipt.
 8. Record one classification and one per-push evidence row.
 
@@ -300,6 +304,7 @@ The checklist in `03-fleet-soak-run-checklist.md` remains mandatory.
 - Refresh topology before every mutation. Never use a stale revision or remembered pane identity.
 - Treat a revision conflict as evidence of concurrent change. Re-list and re-plan; do not force the old request.
 - Treat `pair.request` `capability_mismatch` as a terminal admission/readiness refusal for that fixture. Stop before mutation and do not retry it.
+- Treat the routed fresh fixture as a new admission boundary. Run fresh discovery and per-surface admission before any target operation; do not carry an old fixture's admission row forward.
 - Preserve raw CLI standard output, standard error, exit status, input JSON, and decoded artifacts.
 - Do not treat provider logs, state files, or direct protocol probes as successful CLI-path proof.
 - Diagnose failures without changing product, packaging, installation, or procedure scope. Route a separate repair card when the failure belongs elsewhere.
@@ -338,16 +343,17 @@ In addition to the checklist final matrix, report:
 
 Do not promote, deploy, or change fleet ownership from this report. Route release and remediation decisions through the owning work item.
 
-## V4 admission repair
+## V4 admission and oracle repair
 
-V4 changes only admission and execution-scope clauses:
+V4 changes the admission and execution-scope clauses plus the sibling-pane capture-isolation assertion identified by independent review:
 
 1. It makes `list` discovery-only.
-2. It requires durable per-surface lockless evidence or separately authorized explicit migration material before targeting a surface.
+2. It requires the complete already-lockless evidence predicate or separately authorized explicit migration material before targeting a surface, and it rechecks expiry, binding, boundary validity, and operation coverage immediately before each target operation.
 3. It makes one admitted surface sufficient for required multi-pane, endurance, and bounded restart/recovery proof.
 4. It makes additional surfaces optional and independently admitted.
-5. It makes `pair.request` `capability_mismatch` a terminal pre-mutation endpoint/procedure-readiness result for the current fixture.
-6. It preserves the CLI-only path, phase order, 2/5/15/30-minute checkpoints, 60-minute churn dwell, repeated push/capture oracle, grading, and release judgment.
+5. It makes `pair.request` `capability_mismatch` a terminal pre-mutation endpoint/procedure-readiness result for the current fixture and requires fresh discovery plus new per-surface admission on the routed fresh fixture.
+6. It requires each pane capture to contain its own marker and zero occurrences of its sibling pane's marker.
+7. It preserves the CLI-only path, phase order, 2/5/15/30-minute checkpoints, 60-minute churn dwell, repeated push/capture oracle, grading, and release judgment.
 
 `04-v4-changed-clauses.md` lists each edited V3 clause.
 
