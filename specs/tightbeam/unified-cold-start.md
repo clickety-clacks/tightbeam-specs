@@ -164,11 +164,13 @@ Moving only the database set aside preserves those credentials, as proven by
 
 A7. Current-main baseline evidence is bounded as follows: the release CLI
 exists; Rust format and 248 Rust tests passed; and the product worktree
-remained clean. The authoritative Mix gate is not green: one run failed the
-timing-sensitive `EffortCheckinTest`, whose exact isolated rerun passed; a
-second run completed 9 doctests and 1,684 tests with 1 different failure in
-`CoordinationFabricTest` and 11 skips. This specification preserves that
-unrelated red/flaky baseline instead of classifying it as a cold-start defect.
+remained clean. The requested final authoritative Mix gate passed at seed
+`166732`: 9 doctests and 1,684 tests, 0 failures, 11 skips, exit 0. Earlier
+authoritative runs remain flake evidence: one failed the timing-sensitive
+`EffortCheckinTest`, whose exact isolated rerun passed; another failed a
+different assertion in `CoordinationFabricTest`. This specification preserves
+those unrelated intermittent specimens instead of classifying them as a
+cold-start defect.
 
 A8. The 2026-08-25 standing Mike rule delegates technical ambiguity and
 decision handling to this lane. The five inherited request seams are resolved
