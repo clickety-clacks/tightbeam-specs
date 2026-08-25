@@ -326,7 +326,7 @@ its closed R9 dependencies.
 | `topline_work_membership.linked` | `Tightbeam.Toplines.link_work/2` inserts `topline_work_memberships`, touches the parent Topline, and inserts `topline_events(kind='work_linked')` in one transaction | `toplineId`, `membershipId`, `workItemId` | `sourceVersion` is the positive sequence of that `topline_events` row; `occurredAt` is its `eventAt` | the REST AU4 Toplines owner-or-admin predicate on the parent Topline | exactly once after a new commit; a refusal or idempotency replay emits none |
 | `topline_work_membership.unlinked` | `Tightbeam.Toplines.unlink_work/2` ends `topline_work_memberships`, touches the parent Topline, and inserts `topline_events(kind='work_unlinked')` in one transaction | `toplineId`, `membershipId`, `workItemId` | `sourceVersion` is the positive sequence of that `topline_events` row; `occurredAt` is its `eventAt` | the REST AU4 Toplines owner-or-admin predicate on the parent Topline after commit | exactly once after a new commit; a refusal or idempotency replay emits none |
 | `subagent_marker.appended` | `Tightbeam.SubagentMarkers.append/3` or `append_in_txn/2` inserts one `subagent_markers` row | `markerId`, `sessionKey`; `assignmentId` and `workItemId` when the marker has a non-null assignment that resolves to a work item | `markerId` is the inserted positive row id encoded as a canonical base-10 string without leading zeros; `sourceVersion` is the same id as a positive JSON integer; `occurredAt` is marker `at` | the marker inherits its non-null parent assignment's AU4 grant and requires the resolved work item's AU4 grant; a null, unresolved, or denied assignment yields no delivery to that principal | exactly once after `Txn.changes(txn) == 1`; `INSERT OR IGNORE` returning the existing marker emits none |
-| `org_fault.changed` | `Tightbeam.OrgFaults` commits one new `org_fault_events` row for a mutation that changes the org summary or fault-detail projection | `faultId` | `sourceVersion` is the positive `org_fault_events.id`; `occurredAt` is event `createdAt` | the REST org-fault-detail owner-or-admin predicate on the committed fault | exactly once after the new event commits; a refusal or request-id replay that returns an existing event emits none |
+| `org_fault.changed` | `Tightbeam.OrgFaults` commits one new `org_fault_events` row for a mutation that changes the org summary, fault-detail, or assignment-impact projection | `faultId` | `sourceVersion` is the positive `org_fault_events.id`; `occurredAt` is event `createdAt` | the REST Org-fault notice predicate for authenticated org principals | exactly once after the new event commits; a refusal or request-id replay that returns an existing event emits none |
 
 The marker mapping derives authorization only from existing assignment and
 work-item grants. It creates no principal behavior. The Topline mappings expose
@@ -352,7 +352,7 @@ matcher derives no filter value from an owner, mutation
 actor, authenticated principal, or other row.
 
 R9. Composed views (toplines, execution map, coordination-share,
-digest-members, org, org fault detail) have no notices of their own. Each composed REST resource
+digest-members, org, org fault detail, assignment org-fault impacts) have no notices of their own. Each composed REST resource
 DECLARES its underlying state and source-invalidation classes; a client
 refreshes the view when a matching notice arrives. The REST spec carries the
 per-view dependency lists.
@@ -588,10 +588,13 @@ forced reconnect, rebuild, convergence.
 
 A8. Given an OrgFaults mutation appends a new event, when firehose fan-out runs,
 then an allowed fault owner or admin receives one `org_fault.changed` observe
-notice with only `faultId` and the positive event source version. A denied
-principal receives none. When the client holds the org or matching fault-detail
-view, the notice triggers a refetch whose dependency version changes. Given the
-same request ID replays and returns its existing event, no new notice appears.
+notice with only `faultId` and the positive event source version. Each other
+authenticated org principal receives the same notice and can refetch the
+compact org summary plus any assignment-impact view separately authorized for
+that principal. When a client holds the org, matching fault-detail, or
+assignment-impact view authorized for that principal, the notice triggers a
+refetch whose dependency version changes. Given the same request ID replays and
+returns its existing event, no new notice appears.
 
 ## Open questions for Mike
 

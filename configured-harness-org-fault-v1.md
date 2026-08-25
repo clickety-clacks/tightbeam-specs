@@ -82,6 +82,10 @@ first observation, and last observation.
   independent grant required by assimilation doctrine. Each observation names
   one grant scope. Grant scopes remain separate inside the shared provider
   fault even when they share a host and provider.
+- **Grant generation:** A positive, monotonically increasing lifecycle number
+  for one grant scope. Adding or re-adding a configured grant creates a new
+  generation. Removal makes the current generation inactive. A generation is a
+  transaction fence; it does not change the provider-level fault dedupe key.
 - **Credential-file health:** A structural read of the provider's local
   credential and metadata. Its values are `valid_shape`, `malformed`,
   `expired`, `missing`, and `unknown`. `valid_shape` means only that the local
@@ -104,7 +108,16 @@ first observation, and last observation.
 - **Impact request ID:** A caller-generated opaque ID that identifies one
   impact mutation attempt. A retry retains the ID. A later intentional link,
   clear, classification, or reactivation uses a new ID. It matches
-  `^req_[A-Za-z0-9]+$`.
+  `^req_[A-Za-z0-9]+$`. The ID is unique only within a fault; the mutation seam
+  detects a collision by comparing the request fingerprint.
+- **Impact request fingerprint:** The lowercase 64-hex SHA-256 digest of
+  canonical UTF-8 JSON with no insignificant whitespace and keys in this order:
+  `faultId`, `assignmentId`, `operation`, `causeCode`, `obligationKind`,
+  `expectedTransitionVersion`, `principal`. The existing canonical JSON encoder
+  supplies string escaping. `operation` is `link` or `clear`.
+  `obligationKind` is `review` or null. The remaining values use their typed
+  request values. Two requests with one request ID and different canonical
+  bytes are a collision, not a retry.
 - **Impact transition version:** A non-negative integer on one
   `{faultId, assignmentId}` impact. An absent impact has version 0. Each
   committed mutation increments the version by one.
@@ -186,10 +199,11 @@ first observation, and last observation.
    harnesses and their providers.
 4. Credential-file validation can return safe structural codes without reading
    secret values into a fault row.
-5. Each typed producer commits its result and one pending OrgFaults outbox row
-   in the same transaction. That transaction assigns one org-monotonic source
-   ordinal and stable source ID before `Tightbeam.OrgFaults` processes the
-   result.
+5. Each typed producer captures the active grant generation before provider
+   I/O. It commits its result and one pending OrgFaults outbox row in the same
+   transaction only when that generation remains active. That transaction
+   assigns one org-monotonic source ordinal and stable source ID before
+   `Tightbeam.OrgFaults` processes the result.
 6. A catalog refresh can distinguish a successful empty response from an
    unavailable or not-yet-derived inventory before the client projection loses
    that distinction.
@@ -255,10 +269,12 @@ code, then applies this ordered mapping:
 | `subscription_unsupported` | `subscription_unsupported` |
 | each other dead reason code | `unclassified_dead` |
 
-The adapter stores only the normalized code and class in the typed source row.
-A new provider ships captured fixtures for each explicit mapping. Until that
-mapping ships, each dead result for that provider maps to
-`unclassified_dead`. The default cannot select onboarding remediation.
+The adapter performs normalized-code matching in memory and stores only the
+finite CAP-dead reason class in the typed producer result and OrgFaults outbox.
+A normalized code never enters an OrgFaults row, event, log, or projection. A
+new provider ships captured fixtures for each explicit mapping. Until that
+mapping ships, each dead result for that provider maps to `unclassified_dead`.
+The default cannot select onboarding remediation.
 
 ### I5 — Contradictions become data
 
@@ -378,6 +394,12 @@ harness no longer names the provider, the reconciler marks the exact grant scope
 scope. The reconciler can close the occurrence with `scope_removed`; it cannot
 emit `recovered` for the removed scope.
 
+The configuration transaction makes the removed grant generation inactive
+before it commits the removal source ordinal. A producer transaction for that
+inactive generation returns `grant_generation_stale` before it records a
+producer result, source ordinal, or outbox row. A re-added tuple has a new
+generation and cannot admit a result captured under the removed generation.
+
 ### I12 — Secrets stay outside fault storage and presentation
 
 Product-generated fault surfaces exclude credential bytes, token fragments,
@@ -390,7 +412,8 @@ fault surfaces. The ingestion API accepts only the closed scalar columns named
 in Architecture §1. It rejects an extra field, object, array, or free-text
 detail before any source or fault transaction begins. Product-generated fault
 surfaces can contain host, provider, harness, axis outcome, safe cause code,
-source row ID, source ordinal, principal ID, assignment ID, and message ID.
+grant generation, source row ID, source ordinal, principal ID, assignment ID,
+message ID, impact request ID, and the Terms-defined request fingerprint.
 
 ### I13 — One mutation seam owns fault state
 
@@ -404,10 +427,27 @@ tables directly.
 
 The implementation adds these row families:
 
+`configured_harness_grant_generations`
+
+- `host`, `harness`, `provider`, positive `generation`, and
+  `state=active | removed`;
+- `createdAt`, nullable `removedAt`, and the configuration principal; and
+- uniqueness on `(host, harness, provider, generation)` plus at most one active
+  generation for a grant scope.
+
+The configuration seam maintains this transactional fence from
+`Placement.hosts/1`, `Harness.all/0`, and `credential_provider/0`; those
+authorities remain the configuration truth. Adding or re-adding a tuple inserts
+the next generation. Removing a tuple marks its active generation removed. If
+that scope affects an open fault or has a committed qualifying source result,
+the same transaction creates the deterministic `scope_removed` outbox source;
+otherwise it creates no OrgFaults source.
+
 `org_fault_source_outbox`
 
 - the globally unique source key
-  `(sourceKind, sourceId, host, harness, provider, axis)`;
+  `(sourceKind, sourceId, host, harness, provider, grantGeneration, axis)`, with
+  the positive `grantGeneration` captured before provider I/O;
 - the org-unique positive `sourceOrdinal`;
 - one closed typed outcome, nullable typed `capDeadReasonClass`, and applicable
   Org-fault cause code;
@@ -421,7 +461,8 @@ index on `sourceOrdinal` enforces one ordered source result per org.
 `org_fault_source_claims`
 
 - the globally unique source key
-  `(sourceKind, sourceId, host, harness, provider, axis)`;
+  `(sourceKind, sourceId, host, harness, provider, grantGeneration, axis)`, with
+  the positive `grantGeneration` from the outbox row;
 - the org-unique positive `sourceOrdinal` assigned by the durable typed-source
   transaction; and
 - `disposition=observation | stale_evidence` plus exactly one corresponding row
@@ -454,6 +495,7 @@ A partial unique index on `(kind, provider) WHERE state='open'` enforces I1.
 `org_fault_observations`
 
 - `id`, `faultId`, `host`, `harness`, and `provider`;
+- positive `grantGeneration`;
 - `axis` — `credential_file | credential_liveness | catalog | spawn | scope`;
 - `outcome` — one value from the Terms for that axis;
 - nullable typed `capDeadReasonClass`, present only for liveness `dead`;
@@ -467,6 +509,7 @@ The observation references its source claim. Replaying one source is a no-op.
 `org_fault_stale_evidence`
 
 - `id`, `terminalFaultId`, `host`, `harness`, `provider`, and `axis`;
+- positive `grantGeneration`;
 - typed `outcome`, nullable typed `capDeadReasonClass`,
   `causeCode=stale_before_terminal`, `observedAt`,
   `sourceOrdinal`, `sourceKind`, `sourceId`, and `principal`;
@@ -516,7 +559,7 @@ populate either count.
 - closed typed references for the source claim, impact, assignment, or
   delivery involved; and
 - `requestId`, nullable `priorTransitionVersion`, nullable
-  `nextTransitionVersion`, and
+  `nextTransitionVersion`, nullable lowercase SHA-256 `requestFingerprint`, and
   nullable closed `resultCode`, `resultTransitionVersion`, `resultCleared`,
   `resultObligationKind`, and `resultReviewObligationKey` for impact events.
 
@@ -526,8 +569,10 @@ impact result without reading the later current row. Non-impact events store
 null in each result column.
 
 A unique index on `(faultId, requestId)` identifies one impact mutation across
-later transitions. Source, delivery, fault lifecycle, and waiver-suppression
-events use deterministic substrate request IDs in the same index.
+later transitions. An impact event stores the Terms-defined fingerprint.
+Source, delivery, fault lifecycle, and waiver-suppression events use
+deterministic substrate request IDs in the same index and store null
+`requestFingerprint`.
 
 The seam records fault open/close, accepted observations, stale evidence,
 scope recovery or removal, impact link/classify/clear/reactivate,
@@ -539,15 +584,23 @@ transitions here. It accepts no free-text payload.
 The existing producers submit typed results:
 
 - `Credentials` submits structural and expiry results for one grant scope;
-- each CAP-018 consumer submits its authenticated liveness result and safe
-  normalized reason code for one grant scope;
+- each CAP-018 consumer submits its authenticated liveness result and finite
+  CAP-dead reason class for one grant scope;
 - `ModelCatalog` submits the pre-projection refresh result for one grant scope;
 - the spawn/first-turn boundary submits usability evidence for one grant scope.
 
-Each producer result carries its durable source ordinal. The CAP-018 adapter
-maps its normalized reason code through I4 before the producer transaction
-creates the outbox row. The producer validates the closed scalar payload before
-that transaction begins.
+Before provider I/O, each producer reads the exact active grant generation.
+After I/O, the producer transaction locks that generation row and validates the
+closed scalar payload. If the generation is still active, the transaction
+records the typed result, assigns its source ordinal, and creates the outbox
+row. If the generation is absent or removed, it returns
+`grant_generation_stale` and records none of those rows. The CAP-018 adapter
+maps its normalized reason code through I4 in memory and supplies only the
+stored liveness outcome and finite reason class to that transaction.
+Recognition trusts the generation and source ordinal of a committed outbox row;
+it does not repeat the active-generation check after a later removal. Strict
+outbox ordering therefore recognizes a pre-removal qualifying source before
+the greater `scope_removed` source.
 
 The recognizer opens the fault only for a Goal condition. Once an occurrence is
 open, it records nonqualifying axis results on an already affected grant scope
@@ -563,13 +616,15 @@ The catalog producer must preserve the distinction between:
 - cache not derived (`unknown`); and
 - a client projection that happens to render `models: []`.
 
-One post-commit consumer scans pending outbox rows in source-ordinal order.
-Gateway boot starts the same scan before it reports OrgFaults readiness. The
-consumer performs recognition, inserts or reuses the global source claim, and
-marks the outbox row `processed` with `processedClaimId` in one database
-transaction. A crash before that commit leaves the row pending. A crash after
-that commit leaves the row processed. Two consumers racing one row converge on
-the unique source claim and the processed row.
+One post-commit consumer claims only the least pending outbox source ordinal;
+it cannot claim ordinal N while a lower pending ordinal exists. Gateway boot
+starts the same scan before it reports OrgFaults readiness. The consumer
+performs recognition, inserts or reuses the global source claim, and marks the
+outbox row `processed` with `processedClaimId` in one database transaction. A
+crash before that commit leaves the row pending. A crash after that commit
+leaves the row processed. Two consumers racing for the head row converge on the
+unique source claim and processed row; the loser retries the new least pending
+ordinal.
 
 Inside that transaction, the seam first claims the global source key or returns
 its earlier disposition for a replay. Before it selects an open
@@ -651,13 +706,18 @@ The CLI form is `tightbeam org-fault impact-clear <faultId> <assignmentId>
 <dependency_resolved|linked_in_error|classification_reset>`. The rendered
 shell command is one line; this wrapping is prose layout only.
 
-Each impact mutation first looks up `(faultId, requestId)`. An existing event
-returns its stored typed result without reading or changing the current impact.
-A new request compares `expectedTransitionVersion` with the current version;
-an absent row has version 0. A mismatch returns
+Each impact mutation computes the Terms-defined request fingerprint, then looks
+up `(faultId, requestId)`. An existing event with the same fingerprint returns
+its stored typed result without reading or changing the current impact. An
+existing event with a different fingerprint returns
+`impact_request_id_conflict` and the remedy `retry the intended mutation with a
+new request ID`; it returns no stored result and writes nothing. A new request
+compares `expectedTransitionVersion` with the current version; an absent row has
+version 0. A mismatch returns
 `impact_transition_conflict` with the current version and writes nothing. A
 match commits the impact change, increments the version by one, and records the
-event and result under the request ID in the same transaction.
+event, request fingerprint, and result under the request ID in the same
+transaction.
 
 Each link, classification, clear, and reactivation also writes an append-only
 ordinary verb event with cause and principal. Reactivation changes the current
@@ -676,6 +736,10 @@ transaction. In that transaction it records the impact event under the caller's
 request ID and the suppression event under deterministic request ID
 `waiver-suppressed:<requestId>`, then returns the active fault. It does not mint
 a second intent for the owner.
+If that request ID collides with a different fingerprint, the path returns
+`impact_request_id_conflict`; it creates no impact, suppression event,
+decision-request row, or decision-request wake. The caller retries the typed
+path with a new request ID.
 The owner sees one org fault with an increasing affected-assignment count rather
 than one waiver decision per card.
 
@@ -690,10 +754,14 @@ recovery coverage boundary: all four cited proofs follow any qualifying source
 at or below that boundary.
 
 On host-registry, harness-registry, or harness-provider mapping change, the
-reconciler appends `scope_removed` for each exact affected grant scope that no
-longer exists. For each removed grant, the durable source seam creates one
-derived result with a deterministic source ID and a newly allocated source
-ordinal; that ordinal is also its terminal source ordinal. Boot runs the same
+configuration transaction marks each removed grant generation inactive and
+appends `scope_removed` for each exact affected grant scope. For each removed
+grant, the durable source seam creates one derived result with a deterministic
+source ID and a newly allocated source ordinal; that ordinal is also its
+terminal source ordinal. The generation-state update and removal source commit
+atomically. Therefore a producer transaction either commits first with a lower
+source ordinal, or observes the inactive generation and returns
+`grant_generation_stale` without a source row. Boot runs the same
 reconciliation for open faults, which closes stale pre-restart scopes without
 inventing recovery.
 
@@ -717,7 +785,8 @@ recovery row only from four proofs whose ordinals each exceed it.
 ### 7. Read surfaces
 
 The canonical field order, types, nullability, enum domains, and array ordering
-for `/api/org` summaries and `GET /api/org-faults/:faultId` live only in
+for `/api/org` summaries, `GET /api/org-faults/:faultId`, and
+`GET /api/assignments/:assignmentId/org-fault-impacts` live only in
 `rest-state-api-v1.md` R2/R7/R9/AU4 and its wire-schema companion. This spec
 does not define a second wire shape. `tightbeam list` exposes the canonical
 `orgFaults` array inside its org value; it does not recompute one.
@@ -725,17 +794,31 @@ does not define a second wire shape. `tightbeam list` exposes the canonical
 The detail route returns the four current axes per grant scope, typed source
 history, stale evidence, impacts, deliveries, and closure evidence in that
 canonical shape. The fault owner and an admin can read it. Another principal
-receives the REST contract's same 404 for unknown and forbidden detail. That
-principal can still read assignment impacts through the existing assignment
-resource when its assignment grant permits the read.
+receives the REST contract's same 404 for unknown and forbidden detail.
+
+Each authenticated user or session in the org can read the compact open-fault
+summary in `/api/org`. That summary supplies the active fault ID and provider
+needed by an authorized impact link. Summary access does not grant fault-detail
+access.
+
+The assignment-impact route returns the linked fault ID, provider, fault state,
+impact transition version, cleared state, obligation marker, and typed link or
+clear causes for the named assignment in the canonical assignment-impact
+shape. It inherits the parent assignment's read predicate. Unknown and
+forbidden assignments return the same 404. This route does not change the
+summary or detail authorization predicates.
 
 Each new `org_fault_events` commit emits the canonical
 `org_fault.changed` source-invalidation notice. REST R9 lists that class for
-both org and org-fault detail. An authorized cached client refetches the view;
+org, org-fault detail, and assignment-impact reads. Its canonical visibility
+admits each authenticated user or session in the org because each can read the
+open-fault summary. An authorized cached client refetches the views it can read;
 an idempotency replay that creates no event emits no notice.
 
-The CLI detail verb is exactly `tightbeam org-fault show <faultId>`. The list
-summary remains inside `tightbeam list`. No additional summary verb ships.
+The CLI detail verb is exactly `tightbeam org-fault show <faultId>`. The
+assignment-scoped read verb is exactly
+`tightbeam org-fault impact-list <assignmentId>`. The list summary remains
+inside `tightbeam list`. No additional summary verb ships.
 
 The boot readiness prose may link to the active fault ID, but readiness remains
 a projection. It does not open, update, or close fault rows.
@@ -791,7 +874,8 @@ code, when every supported provider adapter maps the fixtures, then each
 explicit code maps to its table class and the unmatched code maps to
 `unclassified_dead`. Given a provider has no captured mapping, when it returns
 any dead result, then the result maps to `unclassified_dead` and the renderer
-prints no onboarding command.
+prints no onboarding command. The producer result and outbox contain the finite
+class and contain no normalized reason code or provider-derived string.
 
 ### A4 — Empty projection is not an empty refresh (I3)
 
@@ -856,10 +940,11 @@ second source claim, observation, stale-evidence row, owner delivery, or fault
 row appears.
 
 Given an instrumented CAP-018 or catalog producer, when it submits a typed
-result, then its provider I/O finishes before the `Tightbeam.OrgFaults`
-transaction opens. Its durable source transaction has already assigned one
-org-unique source ordinal and source ID and inserted one pending outbox row. A
-replay retains both values.
+result for an active grant generation, then it captures that generation before
+provider I/O and finishes the I/O before the producer source transaction opens.
+The transaction locks and revalidates the generation, assigns one org-unique
+source ordinal and source ID, and inserts one pending outbox row. A replay
+retains those values.
 
 Given a qualifying catalog-empty source and pending outbox row commit, when the
 process exits before recognition begins and the gateway restarts, then the boot
@@ -917,6 +1002,26 @@ expected version 2 sends `obligationKind=none`, then the seam returns
 `impact_classification_conflict`, names the clear-then-relink remedy, and changes
 neither count nor marker.
 
+Given assignment A links to fault F with `requestId=req_collision`, when a
+table-driven test reuses `(F, req_collision)` and changes exactly one of
+`assignmentId`, `operation`, `causeCode`, `obligationKind`,
+`expectedTransitionVersion`, or `principal`, then the seam detects a different
+canonical request fingerprint and returns `impact_request_id_conflict`. It
+returns no stored result and changes no impact, count, event, or version. An
+exact replay of A's original canonical request returns A's stored result. A new
+request ID can submit the distinct mutation.
+
+Given a holder or opener can read assignment A but is neither the fault owner
+nor an admin, when that principal reads
+`/api/assignments/A/org-fault-impacts`, then the response exposes A's canonical
+impact projection and current transition version. `/api/org` exposes F's
+compact open-fault summary to that authenticated org principal, while
+`/api/org-faults/F` returns the same 404 as an unknown fault. When F or A's
+impact changes, `org_fault.changed` reaches that principal and refetch changes
+the assignment-impact dependency version. A principal denied the parent
+assignment receives the summary and notice but receives the same 404 as an
+unknown assignment from the assignment-impact route.
+
 Given an impact link or clear supplies a caller-authored sentence, URL, token,
 path, provider body, or an unrecognized cause code in place of its typed cause,
 when ingestion validates the request, then it rejects the request before a
@@ -933,6 +1038,12 @@ expectedTransitionVersion=0`, when the create path runs, then it returns
 obligation key, and creates zero decision-request rows and zero decision-request
 wakes. Repeating `req_waiver1` after an authorized clear returns its original
 stored result and does not reactivate the impact.
+
+Given another typed waiver reuses `req_waiver1` for a different assignment or
+principal, when the create path compares request fingerprints, then it returns
+`impact_request_id_conflict` and creates no impact, suppression event,
+decision-request row, or decision-request wake. Retrying with a new request ID
+records and suppresses that distinct typed waiver atomically.
 
 ### A13 — Opening owner delivery is durable and later changes stay quiet (I9)
 
@@ -990,6 +1101,20 @@ then only that exact grant receives `scope_removed`. The other grant remains
 affected, and the occurrence remains open until that grant recovers or is
 removed.
 
+Given a producer captures grant generation 7 and finishes provider I/O, when
+removal commits generation 7 as inactive with `scope_removed` at source ordinal
+100 before the producer source transaction begins, then that producer returns
+`grant_generation_stale` and writes no producer result, source ordinal, outbox,
+claim, observation, stale evidence, or fault. Re-adding the same tuple creates
+generation 8 and does not admit the generation-7 result.
+
+Given the producer source transaction for generation 7 commits ordinal 99
+before the removal transaction, when removal commits ordinal 100 and both
+outbox rows await processing, then the consumer recognizes ordinal 99 before
+ordinal 100. The qualifying result can open or join an occurrence, ordinal 100
+then removes generation 7, and no open occurrence remains because of that
+generation. A consumer cannot claim ordinal 100 while ordinal 99 is pending.
+
 ### A17 — Restart reconciliation closes a stale occurrence (I11, I13)
 
 Given the process exits after all recovery observations commit but before
@@ -1029,6 +1154,11 @@ event, log, or delivery. Given valid typed rows, when each product-generated
 fault read, event, log, owner message, delivery, projection, and OrgFaults test
 snapshot serializes, then it contains only the closed row and wire fields.
 
+Given a CAP fixture contains an unmatched normalized reason string, when the
+adapter maps it, then the producer stores only liveness `dead` and reason class
+`unclassified_dead`. The normalized string appears in no producer result,
+outbox, claim, observation, event, log, delivery, REST response, or snapshot.
+
 Given the local ceremony presents an authorization URL and accepts a carry-back
 code, when that separate ceremony runs, then it can use both values while the
 fault surfaces contain neither. Given Tightbeam 0.1.8 also emits the URL through
@@ -1049,10 +1179,11 @@ fault remains open.
 Given the implementation build, when packaging assembles shipped guidance and
 CLI help, then the operating manual contains the Architecture §8 pattern, the
 CLI lists `tightbeam org-fault show`, `tightbeam org-fault impact-link`, and
-`tightbeam org-fault impact-clear` with the Architecture §5 required flags,
-and the help text uses only parser-accepted remediation
+`tightbeam org-fault impact-clear` with the Architecture §5 required flags, and
+`tightbeam org-fault impact-list <assignmentId>` as the assignment-authorized
+read. The help text uses only parser-accepted remediation
 commands. The same build's canonical REST R2/R7/R9, wire schema, and firehose
-R4c/R8b rows contain the org summary, detail resource,
+R4c/R8b rows contain the org summary, fault detail, assignment-impact resource,
 `org_fault.changed` invalidation, visibility, and dependency-vector contracts.
 
 ## Open Questions

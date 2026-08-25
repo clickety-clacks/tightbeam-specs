@@ -91,13 +91,13 @@ typed J below and still passes SR2/SR6 secret exclusion.
   causeCodes:A<S>, signalConflict:B, affectedAssignmentCount:I,
   affectedReviewObligationCount:I}`.
 - `OrgFaultObservation`:
-  `{id:S, host:S, harness:S, provider:S, axis:S, outcome:S,
+  `{id:S, host:S, harness:S, provider:S, grantGeneration:I, axis:S, outcome:S,
   capDeadReasonClass:S|null, causeCode:S, observedAt:I, sourceOrdinal:I,
   sourceKind:S, sourceId:S, principal:S, terminalSourceOrdinal:I|null}`.
 - `OrgFaultStaleEvidence`:
-  `{id:S, terminalFaultId:S, host:S, harness:S, provider:S, axis:S,
-  outcome:S, capDeadReasonClass:S|null, causeCode:S, observedAt:I,
-  sourceOrdinal:I, sourceKind:S, sourceId:S, principal:S,
+  `{id:S, terminalFaultId:S, host:S, harness:S, provider:S,
+  grantGeneration:I, axis:S, outcome:S, capDeadReasonClass:S|null,
+  causeCode:S, observedAt:I, sourceOrdinal:I, sourceKind:S, sourceId:S, principal:S,
   terminalSourceOrdinal:I}`.
 - `OrgFaultImpact`:
   `{assignmentId:S, obligationKind:S|null, reviewObligationKey:S|null,
@@ -106,6 +106,9 @@ typed J below and still passes SR2/SR6 secret exclusion.
   clearedPrincipal:S|null}`.
 - `OrgFaultDelivery`:
   `{id:S, kind:S, state:S, deliveredAt:I|null, deliveredMessageId:S|null}`.
+- `OrgFaultAssignmentImpact`:
+  `{faultId:S, provider:S, faultState:S, transitionVersion:I, cleared:B,
+  obligationKind:S|null, linkCauseCode:S, clearedCauseCode:S|null}`.
 
 ExecutionMap responses are closed top-level objects in this key order:
 
@@ -189,12 +192,15 @@ the domains in the next section.
 ### Decisions and composed resources
 
 The REST detail envelope for `GET /api/org-faults/:faultId` uses
-`resource:"org faults"`.
+`resource:"org faults"`. The detail envelope for
+`GET /api/assignments/:assignmentId/org-fault-impacts` uses
+`resource:"assignment org-fault impacts"`.
 
 | Resource | Strings | Integers / numbers | Booleans | Arrays / objects | Nullable |
 |---|---|---|---|---|---|
 | decision requests | id, kind, raiserId, raiserSessionKey, ownerUserId, assignmentId, expecterSessionKey, expecterUserId, deadlineWakeId, statuteName, question, status, decision, rationale, ruledBy, withdrawnBy, withdrawnReason, askedOfRole, answer, answeredBy | lineageRung, effortGeneration, raisedAt, deadlineAt, ruledAt, consumedAt, withdrawnAt, answeredAt, rowVersion | — | options `A<O<DecisionOption>>`, context `J` | raiserId, raiserSessionKey, ownerUserId, assignmentId, expecterSessionKey, expecterUserId, deadlineWakeId, statuteName, decision, rationale, ruledBy, ruledAt, consumedAt, withdrawnBy, withdrawnReason, withdrawnAt, askedOfRole, answer, answeredBy, answeredAt, context |
 | org fault detail | id, kind, provider, state, ownerUserId, closedCauseCode, closedPrincipal, dependencyVersion | firstObservedAt, lastObservedAt, affectedAssignmentCount, affectedReviewObligationCount, closedAt | signalConflict | affectedGrantScopes `A<O<OrgFaultGrantScope>>`, causeCodes `A<S>`, currentSignals `A<O<OrgFaultObservation>>`, history `A<O<OrgFaultObservation>>`, staleEvidence `A<O<OrgFaultStaleEvidence>>`, impacts `A<O<OrgFaultImpact>>`, deliveries `A<O<OrgFaultDelivery>>` | closedAt, closedCauseCode, closedPrincipal |
+| assignment org-fault impacts | assignmentId, dependencyVersion | — | — | impacts `A<O<OrgFaultAssignmentImpact>>` | none |
 | toplines | id, ownerUserId, title, state, dependencyVersion | createdAt, updatedAt, closedAt, activeWorkCount, openConcernCount | — | createdActor `O<Actor>`, workMemberships `A<O<ToplineMembership>>`, concerns `A<O<Concern>>` | closedAt |
 | execution map node | id, title, specRefName, specRefSha256, state, failReason | finishedAt, jobs, startedAt, openDecisionRequests, fanOut, sinceProgressMs | bracket1Armed | origin `O<ExecutionMapOrigin>`, creationContext `O<ExecutionMapCreationContext>`, parent `O<ExecutionMapParent>`, assignments `O<ExecutionMapAssignmentCounts>`, attests `O<ExecutionMapAttestCounts>`, closingAttests `A<O<ExecutionMapClosingAttest>>`, turns `O<ExecutionMapTurns>`, minds `A<O<ExecutionMapMind>>`, active `O<ExecutionMapActive>` | specRefName, specRefSha256, failReason, finishedAt, startedAt, fanOut, minds |
 | coordination share | sessionKey, dependencyVersion | from, to, turns, wakeTurns, classedTurns, coordinationTurns, summons, algedonic, share `N` | — | byClass `M<I>` | share |
@@ -234,13 +240,14 @@ The REST detail envelope for `GET /api/org-faults/:faultId` uses
   `fault_opened|credential_file_malformed|credential_file_expired|credential_dead|catalog_empty|axis_observed|stale_before_terminal|manual_dependency|fault_waiver|dependency_resolved|linked_in_error|classification_reset|fault_waiver_suppressed|assignment_state_changed|scope_recovered|scope_removed|recovered`.
   Source kind is
   `credential_file_check|cap018_check|catalog_refresh|spawn_first_turn|scope_recovery|scope_removal`.
-  Org-fault source IDs match `^src_[A-Za-z0-9]+$`. Source ordinals,
-  transition versions, and terminal source ordinals are positive integers.
+  Org-fault source IDs match `^src_[A-Za-z0-9]+$`. Grant generations, source
+  ordinals, transition versions, and terminal source ordinals are positive integers.
   Affected counts are non-negative integers. `capDeadReasonClass` is non-null
   only for a credential-liveness observation whose outcome is `dead`; it is
   null otherwise. `terminalSourceOrdinal` is non-null in accepted history only
   for `scope_recovered` and `scope_removed`, and is always non-null in stale
-  evidence.
+  evidence. `OrgFaultAssignmentImpact.clearedCauseCode` is non-null exactly
+  when `cleared` is true.
 - execution-map origin principal: `user|session`; parent status:
   `linked|from_turn|no_turn_observed|unrecorded`. `parent.item` is non-null only
   for `linked`. An execution-map node's `state` uses the work-item state enum.
@@ -263,6 +270,7 @@ The REST detail envelope for `GET /api/org-faults/:faultId` uses
   `(host,harness,provider)`; cause codes sort ascending; current signals sort by
   `(host,harness,provider,axis)`; history and stale evidence sort by
   `(sourceOrdinal,id)`; impacts sort by `assignmentId`; deliveries sort by `id`.
+- Assignment org-fault impacts sort by `(provider,faultId)`.
 - references sort by `(name, location, access-or-empty)`; modelPreferences by
   `(model, effort, context-or-empty)`; MCP servers by name; documents by path.
 - transcript attachments preserve stored attachment ordinal. Assignment files,

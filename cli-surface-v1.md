@@ -43,11 +43,13 @@ Agent-facing (demanded by the shipped engineering-kungfu kernels/skills):
   handed the caller (transcript-verb-v1).
 - **spawn / retire / list** — session lifecycle and orientation (kungfu:
   operating manual, recon-lifecycle).
-- **org-fault (show / impact-link / impact-clear)** — read the one shared
-  configured-harness fault and link or clear affected assignments through the
-  versioned typed seam (configured-harness-org-fault-v1 Architecture §§5, 7,
-  8). `show` is a direct REST read of `/api/org-faults/:faultId`; the two
-  impact actions remain dispatch writes.
+- **org-fault (show / impact-list / impact-link / impact-clear)** — read the one
+  shared configured-harness fault and link or clear affected assignments
+  through the versioned typed seam (configured-harness-org-fault-v1
+  Architecture §§5, 7, 8). `show` is a direct REST read of
+  `/api/org-faults/:faultId`. `impact-list <assignmentId>` is a direct REST read
+  of `/api/assignments/:assignmentId/org-fault-impacts` under the parent
+  assignment grant. The two remaining impact actions are dispatch writes.
 - **skill (list / put / rm)** — org skill management (kungfu: operating manual).
 - **artifacts (record / list)** — the artifact record and its two filters,
   work-item and session exactly (artifacts-and-reconciliation §1/§4; smoke

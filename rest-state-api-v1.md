@@ -259,6 +259,7 @@ R2. Core model resources:
 | GET /api/sessions/:sessionKey/coordination-share?from=&to= | pure bounded aggregate read |
 | GET /api/work-items[, /:id, /:id/trace] | paged collection, detail, composed trace |
 | GET /api/assignments[, /:id, /:id/attests] | paged collection (with derived status, advisory files, effect), detail, nested attests |
+| GET /api/assignments/:assignmentId/org-fault-impacts | composed fault-impact read authorized through the parent assignment |
 | GET /api/attests | bulk paged attests across authorized work |
 | GET /api/wakes[, /:wakeId, /:wakeId/digest-members] | paged wakes, detail, digest audit read |
 | GET /api/turns[, /:seq] | paged turns, detail |
@@ -514,6 +515,7 @@ adapter may add a storage column or a caller-selected field.
 |---|---|
 | org | `id`, `archetypes`, `hosts`, `modelCatalog`, `orgFaults`, `dependencyVersion` |
 | org fault detail | `id`, `kind`, `provider`, `state`, `ownerUserId`, `firstObservedAt`, `lastObservedAt`, `affectedGrantScopes`, `causeCodes`, `signalConflict`, `affectedAssignmentCount`, `affectedReviewObligationCount`, `currentSignals`, `history`, `staleEvidence`, `impacts`, `deliveries`, `closedAt`, `closedCauseCode`, `closedPrincipal`, `dependencyVersion` |
+| assignment org-fault impacts | `assignmentId`, `impacts`, `dependencyVersion` |
 | harness catalog | `harness`, `provider`, `models`, `capabilities`, `dependencyVersion` |
 | hosts | `host`, `rowVersion` |
 | sessions | `sessionKey`, `displayName`, `kind`, `orderIndex`, `isBuiltIn`, `adopted`, `ownerUserId`, `origin`, `spawnedBy`, `handle`, `archetype`, `overrides`, `identityName`, `identityRevision`, `harness`, `provider`, `model`, `thinkingLevel`, `modelContext`, `host`, `clearedThroughSeq`, `state`, `createdAt`, `updatedAt`, `mechanicalStatus`, `rowVersion` |
@@ -548,6 +550,12 @@ spawn axis in each affected grant scope. It excludes the derived `scope` axis.
 The `history` array contains every accepted observation, including
 `scope_recovered` and `scope_removed`. `staleEvidence` remains separate from
 both arrays.
+
+The assignment org-fault impacts item contains each current impact projection
+for the named assignment, including cleared impacts and impacts whose fault has
+closed. It reveals only the wire companion's
+`OrgFaultAssignmentImpact` fields. It grants no fault-detail access; summary
+access remains governed by the separate org-fault-summary predicate.
 
 R7a. The SQ2 admin resources have these additional closed-world projections.
 Nested `documents` entries contain exactly `path`, `content`, and `sha256`.
@@ -699,9 +707,9 @@ emission rules. Topline notice visibility is the parent Topline's AU4
 owner-or-admin predicate. Marker notice visibility is AU4a: the marker inherits
 its non-null parent assignment grant and also requires its resolved work-item
 grant. A null, unresolved, or denied marker assignment delivers no notice to
-that principal. Org-fault notice visibility uses the org-fault detail
-owner-or-admin predicate. Visibility runs before subscription filters. These mappings add no
-principal rule, public source route, ExecutionMap class, or shared serializer.
+that principal. Org-fault notice visibility uses the Org-fault notice predicate
+defined after AU4. Visibility runs before subscription filters. These mappings
+add no public source route, ExecutionMap class, or shared serializer.
 
 R9. A composed resource has no notice class of its own. It declares the exact
 underlying class set that makes a cached instance stale. After visibility
@@ -713,6 +721,7 @@ that prefix.
 |---|---|
 | org | `host.registered`, `config.updated`, `identity.updated`, `kungfu.updated`, `org_fault.changed` |
 | org fault detail | `org_fault.changed` |
+| assignment org-fault impacts | `org_fault.changed`, `assignment.*` |
 | harness catalog | `host.registered`, `host_env.updated`, `config.updated` |
 | toplines | `topline.created`, `topline_work_membership.linked`, `topline_work_membership.unlinked`, `work_item.updated`, `work_item.iceboxed`, `work_item.reopened`, `work_item.closed`, `work_item.failed` |
 | execution map | `work_item.*`, `assignment.*`, `attest.filed`, `wake.*`, `prod.fired`, `turn.*`, `decision_request.*`, `session.*`, `user.added`, `user.promoted`, `subagent_marker.appended` |
@@ -743,6 +752,13 @@ open fault visible to the principal. `org_fault.changed` fires after each
 successful commit that changes either vector, including an impacted assignment
 close or reopen. A request-id replay that creates no event changes no vector and
 emits no notice.
+
+The assignment org-fault impacts dependency vector contains the assignment row,
+each impact row for that assignment, each referenced fault row, and the
+corresponding OrgFaults event rows. The service constructs it after the parent
+assignment authorization check. An impact transition or referenced fault-state
+change appends `org_fault_events`; an assignment mutation changes its canonical
+assignment version.
 
 R9b. Durable Toplines dependency extraction is closed over the visible Topline
 row, its active `topline_work_memberships`, and the joined visible work-item
@@ -919,11 +935,13 @@ not borrow that bit.
 | Resource | Allowed principals |
 |---|---|
 | org, harness catalog, hosts, roles | any authenticated user or session in the org |
-| org fault summary and detail | fault `ownerUserId` user principal; admin |
+| org fault summary | any authenticated user or session in the org |
+| org fault detail | fault `ownerUserId` user principal; admin |
 | sessions | target session; target session owner; admin |
 | transcript messages, coordination share | target session; target session owner; admin |
 | work items, work-item trace | work-item owner; creating session; a session that holds an assignment on the item; admin |
 | assignments | holder session; work-item owner; opener when the opener is a user or session principal; admin |
+| assignment org-fault impacts | any principal allowed to read the parent assignment |
 | attests | any principal allowed to read the parent assignment |
 | wakes | target session; creator session; target session owner; creator session owner; admin |
 | digest members | any principal allowed to read the digest-carrier wake |
@@ -940,10 +958,14 @@ not borrow that bit.
 | critical state | admin only |
 | identity, archetypes, kungfu, guidance, rails, config, host environment, harness processes, users, devices | admin only |
 
-The `/api/org` serializer applies the org-fault summary predicate to each nested
-summary. A principal that is neither the fault owner nor an admin receives an
-empty `orgFaults` array and no `org_fault.changed` notice for that fault. The
-detail route applies AU3 same-404 behavior.
+The `/api/org` serializer includes each open org-fault summary for every
+authenticated org principal. The detail route applies AU3 same-404 behavior.
+The assignment org-fault impacts route applies the parent assignment predicate
+and the same 404 for unknown or forbidden assignment IDs.
+
+The Org-fault notice predicate admits each authenticated user or session in the
+org because that principal can read the open-fault summary. The notice carries
+only `faultId` and source version; it grants no fault-detail or assignment read.
 
 AU4a. ExecutionMap authorization composes existing AU4 grants and introduces
 none. A node requires the work-items grant for that principal and item. An
@@ -1251,13 +1273,20 @@ A30. Given one open configured-harness org fault with one impact, when its
 owner or an admin reads `/api/org`, then the `orgFaults` element has the exact
 R7 and wire shape. When the same principal reads `/api/org-faults/:faultId`,
 then the response uses resource `org faults`, the exact detail item, and the
-current dependency version. A different non-admin principal receives an empty
-org-fault summary array and the same detail 404 as an unknown fault. Given an
-observation, impact transition, delivery transition, close, or impacted
-assignment close/reopen changes either view, when the commit appends its
-`org_fault_events` row, then exactly one visible `org_fault.changed` notice
-causes an authorized client to refetch and observe a changed dependency
-version. A request-id replay emits no notice and changes no version.
+current dependency version. A different non-admin principal receives the same
+compact open-fault summary as each authenticated org principal, while the
+detail route returns the same 404 as an unknown fault.
+
+Given that non-admin principal can read the impacted assignment, when it reads
+`/api/assignments/:assignmentId/org-fault-impacts`, then the response uses
+resource `assignment org-fault impacts`, the exact R7 and wire item, and the
+current dependency version. A principal denied the assignment receives the
+same 404 as an unknown assignment. Given an observation, impact transition,
+delivery transition, close, or impacted assignment close/reopen changes one of
+the three fault views, when the commit appends its `org_fault_events` row, then
+each principal admitted by the Org-fault notice predicate receives one
+`org_fault.changed` notice and refetch observes a changed dependency version.
+A request-id replay emits no notice and changes no version.
 
 ## Open questions — Spirit questions for Mike
 
