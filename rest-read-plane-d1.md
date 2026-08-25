@@ -158,4 +158,3 @@ principal returns `404 not_found`. Successful and error JSON responses include
 
 None. Adding a users status or ownership filter requires a canonical REST
 specification amendment, because the present public projection has no such field.
-
