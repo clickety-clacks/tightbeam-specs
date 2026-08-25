@@ -31,7 +31,7 @@ This procedure is meant to answer the real product questions:
 - **Ansible when admitted**
   - Real-device iPhone target
   - Treat current `surf-ace list` output as discovery evidence only
-  - Admit it only when durable evidence proves that exact surface is already lockless or the run separately authorizes explicit migration material for it
+  - Admit it only when durable evidence passes the complete already-lockless predicate in `00-v4-contract.md` or the run separately authorizes explicit migration material for it
   - Grade it independently from every other iOS surface
 - **All Cyberbrain Surf Ace windows/panes admitted to the run**
   - visionOS multi-window deploy target
@@ -83,11 +83,13 @@ If pane capture is blocked, record the returned `failureReason` and fall back to
 
 `surf-ace list` discovers surfaces and current topology. It does not admit a surface and does not authorize mutation.
 
-Select one discovered candidate as the primary surface. Before the first operation targets it, record durable evidence that binds the exact `surfaceId`, controller fixture, fixture expiry and cleanup contract, and restart-validity boundary to an already-lockless state. Alternatively, record separately authorized explicit migration material and its supported CLI input location for that exact surface and operation. Exclude the candidate when neither basis exists.
+Select one discovered candidate as the primary surface. Before the first operation targets it, validate the complete already-lockless predicate in `00-v4-contract.md`: the immutable record must come from a separately authorized endpoint-fixture compatibility authority and include the explicit assertions, exact surface/fixture binding, covered operations, verification result, issuer, issue time, expiry, cleanup, restart validity, and artifact identity. Alternatively, record separately authorized explicit migration material and its supported CLI input location for that exact surface and operation. Exclude the candidate when neither basis exists.
 
 Run the required repeated pushes, capture proof, multi-pane topology, dwell checkpoints, and one bounded restart/recovery cycle inside the primary admitted surface. Multi-surface execution is optional. Apply the same admission gate independently to each additional targeted surface.
 
-If `pair.request` returns `capability_mismatch`, stop before mutation. Preserve the request and response. Classify endpoint/procedure readiness. Clean the run-owned fixture and state at the terminal boundary. Route a fresh fixture. Do not retry, bypass the refusal, invent migration material, or require a source change.
+Immediately before each target operation, verify that the admission row is unexpired and covers the exact surface/controller fixture, current boundary, and operation. If one check fails, return the surface to candidate state and record a new passing admission row before targeting it.
+
+If `pair.request` returns `capability_mismatch`, stop before mutation. Preserve the request and response. Classify endpoint/procedure readiness. Clean the run-owned fixture and state at the terminal boundary. Route a fresh fixture. The fresh fixture starts a new admission boundary: run fresh `surf-ace list` discovery and record a new passing admission-table row for every target surface before any target operation. Do not retry, bypass the refusal, reuse the old admission row, invent migration material, or require a source change.
 
 ## Dynamic window admission
 
@@ -99,7 +101,7 @@ If the operator has separate authority to create additional windows after the ru
 
 ## Required invariants
 
-The soak pass tests these invariants continuously. The run is not Green unless every invariant is explicitly checked in `03-fleet-soak-run-checklist.md` and marked `Pass` or justified `Out-of-scope`; any `Fail` or `Unproven` invariant makes the E2E result Yellow or Red.
+The soak pass tests these invariants continuously. The run is not Green unless the checklist marks each invariant exercised by the primary required path `Pass`. The checklist may mark only a named optional surface, identity check, or recovery scenario `Out-of-scope` when this procedure explicitly marks that item optional. Any `Fail` or `Unproven` invariant makes the E2E result Yellow or Red.
 
 
 1. **Discovery stability**
@@ -197,9 +199,9 @@ Before any topology soak can be Green, prove that the reviewed CLI path is avail
 5. Require `ok: true` and a coherent discovered fleet. Treat each result as a candidate only.
 6. Stop `RED — BLOCKED: CLI_CONTROL_PLANE_UNAVAILABLE` if the command cannot execute, reach the approved endpoint, establish controller identity, or return coherent topology.
 7. Select one primary candidate. Select additional candidates only for optional multi-surface coverage.
-8. For each selected candidate, record durable evidence that binds the exact surface/controller fixture, covers the next target operation and stated restart/recovery boundaries, and proves the surface is already lockless. Alternatively, record the separate authority, exact explicit migration material, and supported CLI input location for that surface and operation.
+8. For each selected candidate, validate every already-lockless field and rejection rule in `00-v4-contract.md`. Alternatively, record the separate authority, exact explicit migration material, and supported CLI input location for that surface and operation.
 9. Admit the candidate only after step 8 passes. Record its branch, HEAD SHA, deployed SHA or package identity, deploy state, and admission basis.
-10. On `pair.request` `capability_mismatch`, stop before mutation, preserve exact evidence, classify endpoint/procedure readiness, clean the run-owned fixture and state, and route a fresh fixture without retry or bypass.
+10. On `pair.request` `capability_mismatch`, stop before mutation, preserve exact evidence, classify endpoint/procedure readiness, clean the run-owned fixture and state, and route a fresh fixture without retry or bypass. Before resuming, repeat fixture verification, fresh `list` discovery, and steps 7–9 for every target surface. Do not reuse an admission row from the failed fixture.
 
 Link the discovery artifact and each per-surface admission artifact in the run report. A list result without per-surface admission evidence is not mutation authority or product proof.
 
@@ -370,14 +372,14 @@ Run on the primary admitted surface where pane capture is expected to work. Run 
    - decoded pixels do not contain the sibling pane's marker;
    - captured pixels agree with the `contentId`/visible-content state that provider/readback reports.
 10. Run `surf-ace read` on both panes and verify visible text/content snapshot agrees with the captured pixels and the pushed content id.
-11. Leave the two-pane state idle for 2 minutes and repeat list/read/capture verification without pushing new content.
-12. Restart/relaunch the surface when in scope, reconnect, and repeat list/read/capture verification without changing content.
+11. Leave the two-pane state idle for 2 minutes and repeat the complete list/read/capture verification in steps 7–10, including zero sibling-marker occurrences, without pushing new content.
+12. Restart/relaunch the surface when in scope, reconnect, and repeat the complete list/read/capture verification in steps 7–10, including zero sibling-marker occurrences, without changing content.
 
 ### Pass criteria
 
 - a push to pane A is visually proven in capture of pane A;
 - a push to pane B is visually proven in capture of pane B;
-- no pushed marker appears only in the sibling pane capture;
+- neither pane capture contains any occurrence of the sibling pane's marker;
 - no push reports applied while the intended pane capture remains unchanged or stale;
 - provider/list/read metadata agrees with captured pixels for the exact pushed pane;
 - after idle/restart, the same pane identity still maps to the same visible pushed content or fails explicitly with a diagnostic;
@@ -473,7 +475,7 @@ Before crossing the boundary:
 
 After crossing the boundary:
 
-1. Use CLI `surf-ace list` to prove each expected admitted surface/window/pane is still discovered. If the exact surface/controller-fixture binding changed or prior admission evidence does not cover this boundary, re-admit the candidate before read, capture, or another target operation. Then use read/capture and receipt evidence to prove it is actionable.
+1. Use CLI `surf-ace list` to prove each expected admitted surface/window/pane is still discovered. If the exact surface/controller-fixture binding changed or prior admission evidence does not cover this boundary, re-admit the candidate before read, capture, or another target operation. A fresh fixture always requires fresh discovery and a new passing admission row, even if the `surfaceId` repeats. Then use read/capture and receipt evidence to prove it is actionable.
 2. If windows do not reopen naturally and the scenario permits restoration, use `surf-ace surface-intent` and record its request, receipt, and response. This is a restoration path, not manual repopulation.
 3. Use `surf-ace read` and `surf-ace capture-pane` on every expected pane to compare post-boundary state against the pre-boundary baseline.
 4. Verify pane topology, content, targets, history, and visible paint are restored without manual repopulation.
@@ -579,7 +581,7 @@ Overall protocol-change confidence should be based on the weakest important surf
 
 Do not call a protocol/runtime change ready unless all of the following are true:
 
-1. **The primary surface has independent admission evidence** that proves it is already lockless or binds separately authorized explicit migration material to that exact surface.
+1. **The primary surface has independent admission evidence** that passes the complete already-lockless predicate in `00-v4-contract.md` or binds separately authorized explicit migration material to that exact surface.
 2. **The primary surface passes** baseline, repeated pushes with per-push capture proof, topology churn, chat history semantics when in scope, the 2/5/15/30-minute checkpoints, the 60-minute churn dwell, and one bounded restart/recovery cycle.
 3. **Required multi-pane proof stays inside the primary admitted surface.** A second surface is not required.
 4. **Each optional additional surface has independent admission evidence and an independent grade.** A result from the primary surface cannot admit or grade another surface.
@@ -587,8 +589,8 @@ Do not call a protocol/runtime change ready unless all of the following are true
 6. **Chat push history semantics pass** for at least two chat/session identities and after reconnect/restart when the change touches push provenance, history, target replay, or chat-originated content.
 7. No unresolved realized-vs-visible topology mismatch remains on an included fully observed surface.
 8. Snapshot timeout mitigation holds: `snapshot.get` timeout may mark stale and retry later, but must not cause socket teardown, session churn, ownership churn, content loss, topology collapse, or reconnect storm.
-9. Capture-backed push/topology truth oracle passes on each included surface where pane capture is expected to work: each pushed marker is captured in the exact pane targeted by the push, with provider/list/read metadata matching the captured pixels.
-10. No `pair.request` `capability_mismatch` was retried or bypassed. Any such refusal stopped the fixture before mutation and produced endpoint/procedure-readiness evidence plus cleanup.
+9. Capture-backed push/topology truth oracle passes on each included surface where pane capture is expected to work: each pushed marker is captured in the exact pane targeted by the push, each capture contains zero occurrences of its sibling pane's marker, and provider/list/read metadata matches the captured pixels.
+10. No `pair.request` `capability_mismatch` was retried or bypassed. Any such refusal stopped the fixture before mutation and produced endpoint/procedure-readiness evidence plus cleanup. Any resumed run used a fresh fixture, fresh discovery, and a new passing admission row for every target surface.
 
 
 ## What to log when something fails

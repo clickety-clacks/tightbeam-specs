@@ -17,14 +17,18 @@ The operator must stop when that authority is absent.
 
 `surf-ace list` discovers candidates. A successful list result does not admit a surface and does not authorize mutation.
 
-The operator may admit a discovered surface only when durable evidence identifies that exact surface, controller fixture, fixture expiry and cleanup contract, and restart-validity boundary, and proves one of these cases:
+The operator may admit a discovered surface only when durable evidence identifies that exact surface, controller fixture, fixture expiry and cleanup contract, restart-validity boundary, covered target operations, issuer/authority, and immutable artifact identity, and proves one of these cases:
 
 1. the surface is already lockless; or
 2. the run has separately authorized explicit migration material and a supported CLI input location for that surface and operation.
 
+For case 1, the evidence must be an immutable record from a separately authorized endpoint-fixture compatibility authority. It must state `admissionBasis: already-lockless` and `lockless: true`, and record the verification method and result, issue time, expiry, and every binding field above. Discovery, topology, readback, diagnostics, remembered success, an operator assertion, and another surface's result do not satisfy this predicate.
+
+Immediately before each target operation, the operator must verify that the admission row is unexpired and covers the current fixture, boundary, and operation. A failed check returns the surface to candidate state until a new admission row passes.
+
 The operator must use topology changes inside one admitted surface for the required multi-pane proof. Additional surfaces are optional. Each additional surface needs its own admission evidence before any operation targets it.
 
-If `pair.request` returns `capability_mismatch`, the operator stops before mutation, preserves the response, classifies endpoint/procedure readiness, cleans the run-owned fixture and state, and routes a fresh fixture. The operator does not retry, bypass the refusal, invent migration material, or require a source change.
+If `pair.request` returns `capability_mismatch`, the operator stops before mutation, preserves the response, classifies endpoint/procedure readiness, cleans the run-owned fixture and state, and routes a fresh fixture. The operator does not retry, bypass the refusal, invent migration material, or require a source change. A fresh fixture begins a new admission boundary. The operator must run fresh discovery and create a new passing admission row for every surface before the fresh fixture targets it.
 
 ## Frozen source custody
 

@@ -66,6 +66,28 @@ V4 starts from reviewed V3 artifact `art_de142a5e` at SHA-256 `f5623e298abcc92d7
 
 `00-v4-contract.md` adds the canonical Goal, Non-Goals, Terms, Assumptions, Invariants, Architecture, Acceptance, and Open Questions sections. It does not change a V3 procedure clause.
 
+## Independent-review repair changes
+
+These changes close findings F-1 through F-3 in independent review artifact `art_8230d535` without changing the V3 endurance structure:
+
+1. **`00-v4-contract.md` Terms, Invariant 2, and Acceptance 2:** Defines already lockless, the complete already-lockless evidence schema, authoritative issuer, explicit assertions, verifier predicate, and rejection cases. Generic discovery, topology, readback, diagnostics, memory, operator assertion, and another surface's result cannot admit a surface.
+2. **`00-v4-contract.md` Invariant 7 and Acceptance 6:** Defines every fresh fixture as a new admission boundary that requires fresh discovery and a new per-surface admission row before a target operation.
+3. **`README.md` V4 admission boundary:** Summarizes the already-lockless evidence predicate and the mandatory fresh-fixture discovery/re-admission transition.
+4. **`01-gibson-cli-control-plane.md` Surfaces driven by Gibson and CLI gate steps 9 and 12:** Adds the exact already-lockless fields and verifier, and bars reuse of an admission row after `capability_mismatch` routing.
+5. **`01-gibson-cli-control-plane.md` boundary and failure rules:** Requires fresh discovery and per-surface admission for every fresh fixture, including when a `surfaceId` repeats.
+6. **`02-fleet-soak-phases.md` surface scope and Pre-flight 1.5:** Applies the exact already-lockless predicate and makes fresh fixture verification, discovery, candidate selection, and per-surface admission explicit before resumption.
+7. **`02-fleet-soak-phases.md` Phase 2.6 pass criteria:** Replaces the weaker sibling-only test with a zero-occurrence sibling-marker requirement for each capture.
+8. **`02-fleet-soak-phases.md` Phase 4 restoration and minimum release bar:** Requires a new admission row after every fresh-fixture route and records that proof in the release judgment.
+9. **`03-fleet-soak-run-checklist.md` CLI gate and admission table:** Adds every already-lockless schema/verifier field and the fresh-fixture transition to the sole operational admission seam.
+10. **`03-fleet-soak-run-checklist.md` Phase 2.6:** Replaces the permissive combined-marker check with two explicit zero-sibling-marker checks.
+11. **`03-fleet-soak-run-checklist.md` Phase 4 and final judgment:** Requires fresh discovery and new passing admission rows before any fresh-fixture target operation.
+12. **Ongoing admission validity:** Adds an immediately-prior admission check for expiry, exact binding, boundary validity, and operation coverage in the contract, README, control plane, phases, checklist gate, and final judgment. A failed check returns the surface to candidate state until a new row passes.
+13. **Admission-table migration scope:** Gives covered target operations and supported migration input location separate columns, preserving both required fields for explicit-migration admission.
+14. **Required Green gates:** Aligns the phase invariant rule and checklist sign-off: each invariant exercised by the primary required path must pass. Limits `Out-of-scope` to named optional surfaces, identity checks, and recovery scenarios that the procedure explicitly marks optional.
+15. **Repeated capture and release isolation:** Requires the 2-minute and restart/relaunch repeat captures to re-prove zero sibling-marker occurrences and carries the same assertion into the minimum release bar.
+16. **Control-plane capture and V4 repair summary:** Makes zero sibling-marker occurrences explicit in the mandatory per-push oracle and replaces the stale admission-only claim with the exact admission, fresh-fixture, and sibling-marker repair scope.
+17. **Phase 3 15- and 30-minute evidence seam:** Adds mandatory per-pane capture, provider-topology metadata correlation, expected-marker proof, and zero sibling-marker occurrences at both checkpoints. This closes independent review finding R2-F1 in `art_afb02015` without changing the inherited dwell durations or checkpoint order.
+
 ## Unchanged endurance structure
 
 V4 retains Pre-flight 0–3; Phases 1, 2, 2.5, 2.6, 3, 4, and 5; repeated pushes with per-push capture; two-pane and three-pane topology; ten churn cycles; the 60-minute churn dwell with 10-minute checkpoints; 2-minute checks; 5-, 15-, and 30-minute idle checkpoints; longitudinal 10-minute checks; the required bounded restart/recovery cycle; invariant grading; failure capture; and final release judgment.
