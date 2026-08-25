@@ -520,6 +520,14 @@ visible set. The cursor binds the complete `(createdAt, id)` tuple, resource
 name, canonical `state` filter fingerprint, and the AU7 principal binding. A
 deleted boundary row still positions the next page from that tuple.
 
+The `state` fingerprint is the canonical JSON array that uses this fixed enum
+order: `["open","closed"]`. The array contains each selected enum once.
+An absent `state` normalizes to `["open","closed"]`. Repeated identical
+values normalize to one enum. Reordered values normalize to the same fixed
+array. A cursor is reusable only when the request normalizes to its signed
+array; any other normalized array returns `400 invalid_cursor` before a row
+lookup.
+
 `GET /api/sessions?displayName=<value>` accepts one or more nonempty
 `displayName` values. A value matches a stored display name only when its
 Unicode code points are equal; it does not trim, case-fold, substring-match,
@@ -1279,11 +1287,19 @@ tuple, the `toplines` resource name, the canonical `state` fingerprint, and
 the AU7 principal binding; it contains no `rowid`, offset, or storage locator.
 
 A31. Given an `open` Toplines page, when its cursor is reused with
-`state=closed` or with a different repeated-state set, then the service
-returns `400 invalid_cursor` before a row lookup. Given
+`state=closed` or a request whose normalized state array differs, then the
+service returns `400 invalid_cursor` before a row lookup. Given
 `state=open&state=closed`, the page returns the visible union once. Given an
 unknown state, empty state, or unknown filter name, the service returns
 `400 invalid_filter`.
+
+Given a Toplines cursor created with no `state`, when a caller reuses it with
+`state=closed&state=open`, then the service accepts it because both requests
+normalize to `["open","closed"]`. Given a cursor created with
+`state=open&state=open`, when a caller reuses it with `state=open`, then the
+service accepts it because both requests normalize to `["open"]`. Given a
+cursor created with `state=open`, when a caller reuses it with absent
+`state`, then the service returns `400 invalid_cursor` before a row lookup.
 
 A32. Given two readable sessions with the same display name, a readable
 session whose name differs only by case, and an unreadable colliding session,
@@ -1291,6 +1307,11 @@ when a caller uses `GET /api/sessions?displayName=<exact>`, then the response
 contains the two readable exact R7 items in R5a order and no other fixture.
 Given no exact match, it returns an empty page. Given `%`, `_`, a quote, or
 SQL-looking text, it makes one literal comparison and changes no query shape.
+Given an empty `displayName`, a decoded non-string `displayName`, an unknown
+query key, or any request that combines one of those values with a valid
+`displayName`, when the sessions collection runs, then it returns
+`400 invalid_filter` before the query seam runs and emits no candidate or
+message content.
 The transcript-name wrapper returns these candidates without message content
 and retrieves content only after an explicit `sessionKey`.
 
