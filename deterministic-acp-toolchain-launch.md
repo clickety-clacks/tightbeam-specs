@@ -178,10 +178,10 @@ Acceptance: AC-5, AC-6.
 An absent manifest, invalid digest or shape, unsupported manifest version, or
 missing selected-harness fact prevents the adapter process from opening. The
 caller receives one of the named codes in A-4, the refusal names the host and
-repair command, and the launch row reaches an existing terminal state with the
-same code in `lastError`. A banked executable or adapter script that has
-disappeared is an attempted OS launch with a normal loud lifecycle failure; it
-does not cause launch-time tool discovery.
+repair command, and the launch row reaches existing terminal state `exited`
+with nonnull `resolvedAt` and the same code in `lastError`. A banked executable
+or adapter script that has disappeared is an attempted OS launch with a normal
+loud lifecycle failure; it does not cause launch-time tool discovery.
 
 Acceptance: AC-4, AC-6.
 
@@ -199,8 +199,9 @@ Acceptance: AC-5, AC-6, AC-9.
 
 The same manifest validation, path construction, launch-context write, and
 command tail apply to local and SSH-wrapped adapters. Transport adds its
-existing SSH prefix only. Remote launch does not append the remote shell's
-`$PATH`; local launch does not append the gateway's `PATH`.
+existing SSH prefix and POSIX argument encoding only. Remote launch does not
+append the remote shell's `$PATH`; local launch does not append the gateway's
+`PATH`.
 
 Acceptance: AC-2, AC-7.
 
@@ -412,8 +413,8 @@ row in one transaction before it opens a process.
 
 For a valid plan, the context row carries the four plan fields. The launch then
 uses those banked bytes. For a fact refusal, the context row carries null plan
-fields, the launch row settles through the existing unlaunched terminal path,
-and `lastError` starts with exactly one code:
+fields, the launch row settles as `exited` with nonnull `resolvedAt`, and
+`lastError` starts with exactly one code:
 
 - `host_toolchain_facts_missing`
 - `host_toolchain_facts_invalid`
@@ -468,8 +469,10 @@ Upgrade posture:
    `coordination-fabric-v1-phase1-v5` by adding the two nullable host columns,
    creating the launch-context table, and updating the stamp to v6.
 3. Existing host rows retain null facts. Existing harness-process rows retain
-   no context row. Reads label both cases `legacy`; no backfill inspects the
-   gateway environment, host filesystem, stored DDL, or prior stderr.
+   no context row. Reads expose those cases only through A-6's legacy
+   representations: host provisioning status `missing` and null launch-context
+   fields. No backfill inspects the gateway environment, host filesystem,
+   stored DDL, or prior stderr.
 4. An interrupted transaction leaves v5 and no partial feature schema. A retry
    performs the same exact upgrade.
 5. An absent stamp or any stamp other than v5/v6 refuses before mutation and
@@ -670,8 +673,9 @@ Traces: R-5, R-6, R-7, R-9; A-4.
 
 Given each fact refusal condition in A-4, when a launch is requested, then no
 adapter target process opens, the caller receives the matching code, and
-`harness-process list` shows one launch row in the existing unlaunched terminal
-state with the same code in `lastError`, null plan fields, cause, and principal.
+`harness-process list` shows one launch row with state `exited`, nonnull
+`resolvedAt`, the same code in `lastError`, null plan fields, cause, and
+principal.
 
 Given a valid banked manifest whose absolute Node or adapter-script path no
 longer exists, when launch executes, then no alternate-path or version probe
@@ -752,7 +756,8 @@ remain readable.
 A missing credential or unavailable real harness is a named incomplete smoke,
 not a pass. A mock, fixture-only run, inherited login `PATH`, temporary symlink,
 manual environment override, or edit to a service unit does not satisfy this
-case.
+case. Here, `temporary symlink` means a shim introduced for the smoke; the
+persisted package-manager Node symlink allowed by A-1 and AC-4 is valid.
 
 ### AC-12 — Repository gates and review handoff
 
