@@ -1,6 +1,6 @@
 # Unified first-user, first-device, and first-root cold start
 
-Status: SPEC-READY for independent spec review. Target: Tightbeam 0.2.0.
+Status: BLOCKED on five inherited decision requests. Target: Tightbeam 0.2.0.
 
 Authority baseline:
 
@@ -38,14 +38,15 @@ G5. Tightbeam shall reject ordinary assertions of nonexistent users before
 typed-target lookup, rails, audit events, or domain writes.
 
 G6. Tightbeam shall provide a named, recoverable response for an incomplete
-fresh database and shall document the proven database-reset ceremony without
-deleting provider credentials.
+fresh database or a lost first-pair response before activation. It shall
+document the proven database-reset ceremony without deleting provider
+credentials.
 
 G7. Existing claimed organizations and later-device pairing shall retain their
 0.2 wire behavior except where this specification names a change.
 
 The operating pattern taught by this specification is: **pair the first client
-before `add-user`, onboarding, or spawning; reset only an incomplete fresh
+before `add-user`, onboarding, or spawning; reset only an unusable fresh
 database through the documented stop-and-move ceremony.**
 
 ## Non-Goals
@@ -106,9 +107,9 @@ fields are `deviceId`, `claimedName`, and nullable `deviceInfo.platform` and
 
 T6. **Request fingerprint** denotes SHA-256 over UTF-8 canonical JSON with
 exactly these ordered keys: `deviceId` and normalized `userId`. It identifies
-the logical device-to-principal claim. Cosmetic claimed-name changes and
-device-info changes do not strand recovery when they normalize to the same
-user. The fingerprint is an idempotency key, not an authentication credential.
+the committed logical device-to-principal claim in durable provenance. The
+pair surface shall not use fingerprint equality to reopen a claim or vary the
+refusal envelope. The fingerprint is not an authentication credential.
 
 T7. **First principal** denotes the normalized `userId` derived by the existing
 `Devices.slug_user_id/1` behavior from the winning request's `claimedName`.
@@ -127,12 +128,10 @@ T10. **Activation** denotes the first successful token-authenticated socket
 handshake by the first device. Activation sets the receipt's `activatedAt`
 once. It does not create the root.
 
-T11. **Exact bootstrap replay** denotes a pre-activation claim retry whose
-fingerprint and device id match the receipt while the claim-issued device
-credential remains allowlisted and non-null. It returns the already-committed
-device token and receipt result without rotating the token or writing a second
-event. AR5 governs a matching retry after an admitted lifecycle operation
-changes that credential.
+T11. **Claim retry** denotes any pair request for the receipt device received
+after the claim transaction commits and before activation. A claim retry never
+returns or rotates a device token. Its refusal does not vary with fingerprint
+equality.
 
 T12. **Ordinary identity assertion** denotes `asUser` or an equivalent user
 principal constructed after cold start. It excludes `claimedName` on a pair
@@ -140,6 +139,11 @@ request.
 
 T13. **Database set** denotes `state.db` and any sibling `state.db-wal` and
 `state.db-shm` files that exist while the gateway is stopped.
+
+T14. **Captured v5 fixture set** denotes a complete database set produced by
+the pinned v5 gateway through the real boot, pair, auth, or local-user flow
+named in its manifest. It is not a hand-authored approximation of the v5
+schema.
 
 ## Assumptions
 
@@ -180,9 +184,16 @@ different assertion in `CoordinationFabricTest`. This specification preserves
 those unrelated intermittent specimens instead of classifying them as a
 cold-start defect.
 
-A8. The 2026-08-25 standing Mike rule delegates technical ambiguity and
-decision handling to this lane. The five inherited request seams are resolved
-in AR1; none requires money or materially unagreed scope.
+A8. The 2026-08-25 standing Mike rule delegates technical analysis and
+decision handling to this lane. It does not transition a durable operator
+decision request. The five inherited rows in AR1 remain open. This file cannot
+be spec-ready, handed to implementation, or treated as selecting an AR1 branch
+until Mike records exact rulings on those rows.
+
+A9. Product commit `d00e06aea578d711e608637d38a97872487df15e`
+contains the exact `coordination-fabric-v1-phase1-v5` predecessor used to
+capture the v5 acceptance fixtures. The fixture manifest shall bind the binary
+used for capture to that source commit by SHA-256.
 
 ## Invariants
 
@@ -218,14 +229,11 @@ I7. The cold predicate and every I1 write shall run in the same database-owner
 transaction. No CLI process, second SQLite connection, check-then-dispatch
 sequence, or in-memory lock shall participate in the authority decision.
 
-I8. Before activation, an exact bootstrap replay whose receipt device remains
-allowlisted with its non-null claim token shall return the committed result
-without a second identity mutation, token rotation, receipt, or event. A
-same-device request with a different fingerprint shall return
-`bootstrap_closed`. If an admitted admin operation revoked or denied the
-claim token before activation, the next matching pair shall follow the
-existing known-device behavior defined in AR5. After activation, the existing
-known-allowlisted-device re-pair path shall rotate the token.
+I8. Before activation, every claim retry for the receipt device shall return
+`bootstrap_closed` without a token, token rotation, identity mutation,
+receipt insertion or replacement, or event. A denied receipt device shall
+return `pair_denied`. After activation, the existing known-allowlisted-device
+re-pair path shall rotate the token.
 
 I9. A different device arriving after the winning commit shall follow the
 ordinary claimed-org path. It shall receive `pair_pending`; it shall not
@@ -265,10 +273,10 @@ it shall not infer a claim from user count alone.
 I17. The README shall teach one first-order sequence. It shall not present
 local `add-user` and client pairing as interchangeable cold-start paths.
 
-I18. The reset ceremony shall move the database set as one stopped-gateway
-unit, preserve it as a backup, leave `auth/` and other credential files in
-place, restart on a new database, and pair the first client before any
-`add-user` call.
+I18. The reset ceremony shall apply only to an unusable fresh installation. It
+shall move the database set as one stopped-gateway unit, preserve it as a
+backup, leave `auth/` and other credential files in place, restart on a new
+database, and pair the first client before any `add-user` call.
 
 I19. No accepted cold-start audit payload, doctor output, boot summary, or
 error shall disclose a device token or provider credential.
@@ -280,24 +288,54 @@ operations change them.
 
 ## Architecture
 
-### AR1. Resolved inherited seams
+### AR1. Open inherited decision branches
 
-The standing lane-authority rule resolves the five preserved request seams as
-follows. The new first-device deadlock evidence supersedes the earlier
-recommendations for the first two rows; the request records remain provenance
-for why the choices were explicit.
+The five preserved request rows remain durably open. The table records every
+available branch and the current draft candidate. A candidate is not a ruling.
+All downstream requirements describe those candidates so that the contract is
+reviewable. They become normative only if Mike rules the matching rows. A
+different ruling requires an amendment to this file before spec readiness.
+The durable rows recommend `gateway-local-bootstrap`, `zero-users`,
+`durable-receipt-replay`, `actor-boundary-only`, and
+`named-bootstrap-and-invalid-identity`, in row order. The draft differs on the
+first two because `att_7578dbc1` and `att_91c37e8f` prove the first-device
+order deadlock and partial-state residue. That evidence does not override the
+open rows.
 
-| Request | Resolution | Contract consequence |
+| Request | Durable options | Current draft candidate and consequence |
 |---|---|---|
-| `dr_38c8fdb2` | `remove-cli-bootstrap` | Delete the Rust direct database writer. First-device pairing is the only cold claim surface. Ordinary `add-user` remains. |
-| `dr_1ac42a7a` | `zero-identity-graph` | Cold means zero users, devices, sessions, and receipts. User count alone cannot classify the proven partial state. |
-| `dr_4d95f4da` | `durable-receipt-replay` | The claim transaction writes the singleton receipt; exact pre-activation retry replays it. |
-| `dr_9457c6e3` | `actor-boundary-only` | Canonical actor construction rejects nonexistent users. A broad user foreign-key migration remains outside this scope. |
-| `dr_739be284` | `named-bootstrap-and-invalid-identity` | Bootstrap mismatch returns `bootstrap_closed`; ordinary ghost users return `invalid_identity`. |
+| `dr_38c8fdb2` | `gateway-local-bootstrap`; `keep-direct-db-writer`; `remove-cli-bootstrap` | `remove-cli-bootstrap`: delete the Rust direct writer; first-device pairing is the only cold claim surface; ordinary authenticated `add-user` remains. |
+| `dr_1ac42a7a` | `zero-users`; `zero-identity-graph`; `explicit-unclaimed-marker` | `zero-identity-graph`: cold means zero users, devices, sessions, and receipts; user count alone cannot classify the proven partial state. |
+| `dr_4d95f4da` | `durable-receipt-replay`; `one-shot-named-refusal`; `event-only-best-effort` | `durable-receipt-replay`: retain the singleton as durable provenance, but apply the I8 security floor; a retry returns the named `bootstrap_closed` refusal and no receipt data or credential. |
+| `dr_9457c6e3` | `actor-boundary-only`; `boundary-plus-fk-migration`; `router-only-check` | `actor-boundary-only`: canonical actor construction rejects nonexistent users; a broad user foreign-key migration remains outside this scope. |
+| `dr_739be284` | `named-bootstrap-and-invalid-identity`; `uniform-forbidden`; `reuse-current-errors` | `named-bootstrap-and-invalid-identity`: every pre-activation retry returns `bootstrap_closed`, and an ordinary ghost user returns `invalid_identity`. |
 
-These choices do not decide visitor-principal semantics. They require only
-that any authority policy which elects a user principal must bind it to a
-canonical user row.
+The non-candidate consequences also remain explicit:
+
+- For `dr_38c8fdb2`, `gateway-local-bootstrap` retains the host-local command
+  but sends a dedicated request to a locally provisioned gateway that verifies
+  local origin and the organization credential. `keep-direct-db-writer`
+  retains the Rust SQLite mutation authority and requires revision of I7, I11,
+  AR2, and AR11.
+- For `dr_1ac42a7a`, `zero-users` makes user count the claim predicate and
+  requires a separate rule for device/session residue. `explicit-unclaimed-
+  marker` adds a second durable source of truth and requires migration and
+  reconciliation rules.
+- For `dr_4d95f4da`, `one-shot-named-refusal` removes replay behavior and
+  requires the provenance schema to be narrowed or justified separately.
+  `event-only-best-effort` removes the singleton receipt and requires T1-T4,
+  I1, I5, AR3-AR5, and migration acceptance to be rewritten.
+- For `dr_9457c6e3`, `boundary-plus-fk-migration` adds a broad historical
+  foreign-key migration. `router-only-check` leaves other actor constructors
+  unchanged and requires I12-I13 and AC10 to be narrowed.
+- For `dr_739be284`, `uniform-forbidden` returns one nondisclosing forbidden
+  envelope for both cases. `reuse-current-errors` retains the current
+  ownership/not-found errors and requires AR7, AR9, and AC9-AC10 to be
+  rewritten.
+
+No branch decides visitor-principal semantics. Every branch remains subject to
+NG1 and to I19. The request fingerprint is not a proof of possession, so no
+possible ruling may use it to disclose a bearer token.
 
 ### AR2. Ownership and module boundary
 
@@ -313,7 +351,7 @@ the claim transaction. Auth for later users shall call the same helper; the
 helper shall remain convergent when Main already exists.
 
 `Wire.Socket` shall call the cold-start coordinator for every pair request.
-The coordinator shall classify and execute cold, exact-replay, incomplete, or
+The coordinator shall classify and execute cold, claim-retry, incomplete, or
 ordinary behavior without an earlier database read.
 
 ### AR3. Claim transaction
@@ -374,18 +412,20 @@ the deleted Rust path opens SQLite without asking the gateway.
 ### AR5. Pairing, retry, and activation
 
 When receipt id `1` exists and `activatedAt` is null, the coordinator shall
-compare the request to the stored claim:
+apply these rules without treating the request fingerprint as proof:
 
-- Matching device id and fingerprint returns the existing token and tuple if
-  that device remains allowlisted with a non-null token.
-- Matching device id and fingerprint after an admitted admin revocation uses
-  the existing known-allowlisted-device path to mint one replacement token.
-  The receipt remains unactivated until that token authenticates.
-- Matching device id and fingerprint for a denied device returns the existing
-  `pair_denied` result. Neither case inserts a receipt, root, user, or
-  cold-start event.
-- Matching device id with a different fingerprint returns a failed
-  `pair_result` with reason `bootstrap_closed`.
+- Any request for the receipt device returns a failed `pair_result` with
+  reason `bootstrap_closed`, except for the existing denied-device case below.
+  The response returns no receipt data or token and performs no write. Its
+  fixed recovery text says that the organization accepted an earlier claim
+  and directs an operator who lost that response to the README stopped-
+  gateway reset ceremony for an unusable fresh installation. The envelope
+  does not vary with the request fingerprint.
+- A request for the receipt device still returns `bootstrap_closed` after an
+  admitted admin operation revokes the unactivated token. It does not mint a
+  replacement token.
+- A request for a denied receipt device returns the existing `pair_denied`
+  result without a token or write.
 - A different device proceeds through ordinary pairing and receives
   `pair_pending` when newly inserted.
 
@@ -444,18 +484,44 @@ operation. The exact v5 predecessor shall migrate as follows:
    tuple. Set both receipt times to migration time. Do not synthesize a
    historical event or request fingerprint.
 6. If no witness exists, raise `incompatible_cold_start_v1`, roll the whole
-   migration back to v5, and name the README incomplete-fresh-database reset
+   migration back to v5, and name the README unusable-fresh-database recovery
    section.
 
 Every v6 boot shall validate T2-T4 and all receipt referents. A receipt-less
 nonempty graph and a malformed claimed graph both refuse before the gateway
-serves operational requests. The diagnostic-only surface in AR9 remains
-available.
+serves operational requests.
 
 An older gateway shall refuse the v6 stamp. A supported rollback shall stop
 both binaries and restore a pre-v6 database set; no process shall downgrade
 v6 rows in place. The user insert guard supplies defense in depth against an
 older direct-writer CLI placed beside a v6 database.
+
+The migration test corpus shall contain captured v5 fixture sets for at least
+the empty and healthy-witness paths. The capture harness shall:
+
+1. Check out the exact A9 source commit and record the resulting v5 binary
+   SHA-256, build command, SQLite library version, journal mode, and schema
+   stamp.
+2. Produce the empty fixture through a real v5 gateway boot and clean stop.
+3. Produce the healthy fixture through the real v5 first-device pair and
+   authenticated handshake that creates Main, followed by a clean stop.
+4. Copy every member of the stopped database set and record each file name,
+   byte length, and SHA-256 in a checked-in manifest. The manifest shall also
+   record the exact capture commands and a deterministic table/row census.
+5. Produce user-only, admin-plus-pending-device, and allowlisted-device-
+   without-Main specimens through the real v5 `add-user`, pair, and pre-auth
+   stopping points where those flows can create the state.
+6. Produce states that no real flow can create, including a missing or
+   non-self Main parent and a corrupted v6 receipt, only through a versioned
+   derivation script. Record the base fixture digest, script digest, exact
+   invocation, foreign-key setting, and resulting database-set manifest.
+
+No migration test may substitute a hand-authored ideal schema for a captured
+v5 fixture. An interrupted-migration test shall start from a fresh copy of a
+captured database set. After each injected failure, it shall compare the
+schema stamp, schema-object inventory, canonical logical row census, and full
+database-set membership with the pre-migration manifest, then prove that the
+pinned v5 gateway can reopen the restored set.
 
 ### AR9. Failures and observability
 
@@ -463,7 +529,7 @@ The pair surface shall use these stable reasons:
 
 | Reason | Condition | Identity mutation |
 |---|---|---|
-| `bootstrap_closed` | Pre-activation same-device request does not match the winning fingerprint. | None |
+| `bootstrap_closed` | Any pre-activation request for the winning device id. | None |
 | `bootstrap_incomplete` | A live transaction observes an identity graph that is neither cold nor claimed. | None |
 | `bootstrap_failed` | The cold transaction raises or cannot commit. | Rolled back in full |
 | `pair_pending` | A different device pairs after the winning commit. | Existing pending-device mutation only |
@@ -472,18 +538,19 @@ The pair surface shall use these stable reasons:
 Boot-time structural failure uses `incompatible_cold_start_v1`, not a pair
 reason. Ordinary nonexistent user assertions use `invalid_identity`.
 
-On `incompatible_cold_start_v1`, the gateway shall enter diagnostic-only
-mode. It shall expose the existing local health/doctor seam and the boot
-summary, but it shall not open the advertised pair/auth listener or the
-ordinary router and shall not permit any mutation. This mode lets
-`tightbeam doctor --json` report the structural refusal without adding a
-second SQLite reader or writer.
+On `incompatible_cold_start_v1`, the database-owner startup operation shall
+return the stable reason, violated invariant, and README reset-section name to
+the gateway supervisor. The supervisor shall log that envelope and fail
+startup. It shall not start the advertised pair/auth listener, ordinary
+router, or a diagnostic-only gateway. This contract adds no second database
+reader or doctor transport for a gateway that did not start.
 
-The boot summary and `tightbeam doctor --json` shall report one of `open`,
-`claimed`, or `incompatible`. `open` shall say `pair the first client before
-add-user or onboarding`. `claimed` shall report receipt cause, user id, device
-id, root key, and activation state. `incompatible` shall report the violated
-invariant and the README reset-section name. None shall report tokens.
+For a running compatible gateway, the boot summary and
+`tightbeam doctor --json` shall report `open` or `claimed`. `open` shall say
+`pair the first client before add-user or onboarding`. `claimed` shall report
+receipt cause, user id, device id, root key, and activation state. The startup
+error is the only required live diagnostic for `incompatible`. None shall
+report tokens.
 
 The gateway shall emit one structured error log for each
 `bootstrap_incomplete` or `bootstrap_failed` response with the request device
@@ -508,9 +575,11 @@ The README shall state that 0.2 has no CLI-only first-user path. Running bare
 `tightbeam add-user <userId>` cannot prepare a fresh org and must not be used
 before pairing.
 
-Add a section named **Recover an incomplete fresh database**. It shall:
+Add a section named **Recover an unusable fresh database**. It shall:
 
-1. Restrict the ceremony to a fresh database the operator intends to discard.
+1. Restrict the ceremony to an incomplete identity graph or a lost first-pair
+   response before activation in a fresh installation that the operator
+   intends to discard.
 2. State that the database contains organization identity, sessions, work,
    and audit history, so a non-fresh database must be restored or investigated
    instead of reset.
@@ -527,11 +596,12 @@ Add a section named **Recover an incomplete fresh database**. It shall:
 ### AR11. Deletion assessment
 
 **Add:** add the narrow `ColdStart` coordinator, singleton receipt, user-origin
-field/guard, actor-boundary check, doctor state, and tests. A coordinator is
-necessary because no existing module owns user, device, session, receipt, and
-event writes in one transaction. Putting session defaults into `Devices`
-would couple credential storage to topology; leaving orchestration in
-`Wire.Socket` would preserve a second transaction boundary.
+field/guard, actor-boundary check, compatible-gateway doctor state, captured-
+fixture manifests, derivation harness, and tests. A coordinator is necessary
+because no existing module owns user, device, session, receipt, and event
+writes in one transaction. Putting session defaults into `Devices` would
+couple credential storage to topology; leaving orchestration in `Wire.Socket`
+would preserve a second transaction boundary.
 
 **Delete:** delete `cli/src/users.rs`, the `create_first_if_local` dispatch
 branch, local-target classification helpers used only by that branch, and the
@@ -539,6 +609,12 @@ README claim that local `add-user` is a cold-start alternative. Accepting
 those pieces preserves the split SQLite authority and recreates the proven
 order deadlock. Deleting the whole `add-user` command would remove a valid
 post-bootstrap admin operation, so only its cold exception is deleted.
+
+**Delete from the candidate contract:** delete unauthenticated bearer-token
+replay and the unsupported diagnostic-only runtime. Retain the receipt only
+for durable provenance and non-secret classification. Fail an incompatible
+boot before the gateway opens a listener. Also delete any statement that the
+five inherited decisions are resolved until their durable rows are ruled.
 
 **Refactor and accept:** retain the pair/auth frames, `tbt_` token class,
 ordinary pending/approval behavior, canonical personal-Main representation,
@@ -551,7 +627,7 @@ the new coordinator composes existing rules instead of duplicating them.
 |---|---|
 | G1-G4, I1-I11, I14, AR2-AR6 | AC1-AC8 |
 | G5, I12-I13, AR7 | AC9-AC10 |
-| G6, I10, I15-I19, AR8-AR10 | AC11-AC15 |
+| G6, I10, I15-I19, AR8-AR10 | AC11-AC15 and AC19 |
 | G7, I8-I9, I20, AR5 | AC3-AC5 and AC16 |
 | AR1 and preserved decision provenance | AC17 |
 | AR11 deletion boundary | AC18 |
@@ -577,22 +653,24 @@ both calls, then one call returns successful first pairing and the other
 returns `pair_pending`. Exactly one admin, root, receipt, and cold-start event
 exist. The pending device has no token and cannot authenticate.
 
-AC4. **Concurrent identical retry.** Given cold state and two identical claim
-requests for the same device, when both complete before activation, then both
-responses contain the same committed token and tuple. The database contains
-one device, receipt, root, user, and event. No token rotation occurs.
+AC4. **Concurrent identical claim.** Given cold state and two identical claim
+requests for the same device, when both complete before activation, then
+exactly one response succeeds with the committed token and tuple. The other
+returns `bootstrap_closed` without a token. The database contains one device,
+receipt, root, user, and event. No token rotation occurs.
 
-AC5. **Replay and activation boundary.** Given a committed claim whose first
-response is lost, when the exact request repeats before auth, then it returns
-the stored token without a write or event. When that token authenticates, the
-receipt gains `activatedAt` once. When the device pairs again after activation,
-then it receives a new token and the old token fails authentication.
-Given a separate unactivated fixture whose claim token is revoked through an
-otherwise-authorized admin call, when the exact request repeats, then the
-existing known-allowlisted-device path mints one replacement token without a
-new user, root, receipt, or cold-start event; authentication with that token
-activates the original receipt. Given the same fixture with a denied receipt
-device, the exact request returns `pair_denied` without mutation.
+AC5. **Lost response and activation boundary.** Given a committed claim whose
+successful response is lost, when the exact request repeats before auth, then
+it returns `bootstrap_closed` without a token, write, or event and names the
+README fresh-reset recovery. Moving the complete database set aside while the
+gateway is stopped and restarting returns the organization to cold state.
+Given a separate committed claim whose response token was received, when that
+token authenticates, then the receipt gains `activatedAt` once. When the
+device pairs again after activation, it receives a new token and the old token
+fails authentication. Given separate unactivated fixtures whose claim token
+is revoked or whose receipt device is denied, an exact request returns
+`bootstrap_closed` or `pair_denied`, respectively, without a token or
+mutation.
 
 AC6. **The proven bad order cannot mutate.** Given cold state, when a local
 shell runs bare `tightbeam add-user alice`, then the command returns its
@@ -625,43 +703,48 @@ the same calls reach their pre-change authorization result. This test does not
 assert new raw-org-token ownership policy.
 
 AC11. **Empty v5 migration.** Given an exact v5 database with zero users,
-devices, and sessions, when v6 boots, then migration stamps v6, adds the guarded
-schema, leaves the receipt table empty, and doctor reports `open`. A first pair
-then satisfies AC1.
+devices, and sessions from the captured empty fixture set, when v6 boots, then
+migration stamps v6, adds the guarded schema, leaves the receipt table empty,
+and doctor reports `open`. A first pair then satisfies AC1.
 
-AC12. **Healthy v5 migration.** Given an exact v5 database with a usable admin
-device and its active self-parented personal Main plus later identity rows,
-when v6 boots, then it selects the deterministic witness, marks all prior users
-`legacy`, writes one activated `v5_observed` receipt, synthesizes no event, and
-preserves every prior row and token. Known-device and later-device behavior
-then satisfy AC16.
+AC12. **Healthy v5 migration.** Given the captured healthy v5 fixture set with
+a usable admin device and its active self-parented personal Main plus later
+identity rows, when v6 boots, then it selects the deterministic witness, marks
+all prior users `legacy`, writes one activated `v5_observed` receipt,
+synthesizes no event, and preserves every prior row and token. Known-device
+and later-device behavior then satisfy AC16.
 
 AC13. **Incomplete refusal and reset recovery.** For each exact v5
 fixture—user only, admin user plus pending device, allowlisted device without
 Main, and Main with a missing or non-self parent—given no valid legacy
-witness, when v6 boots, then migration rolls back, diagnostic-only mode
-reports `incompatible_cold_start_v1`, the README reset section is named, and
-the v5 stamp, schema objects, and queryable rows remain unchanged. Given a
-separate stamped-v6 fixture whose receipt has a deliberately corrupted
-referent, when v6 boots, then diagnostic-only mode reports the same refusal
-and leaves the preexisting `integrity_check` and `foreign_key_check` outcomes
-unchanged. In both cases, pair, auth, and router requests are unavailable.
-When the stopped-gateway database set is moved aside, the gateway restarts,
-doctor reports `open`, provider credentials remain available, and pair-first
-produces the AC1 tuple.
+witness, when v6 boots, then the migration rolls back and gateway startup
+fails with `incompatible_cold_start_v1`, the violated invariant, and the
+README reset-section name. The gateway opens no listener. The v5 stamp,
+schema-object inventory, canonical row census, and complete database-set
+membership still match the fixture manifest, and the pinned v5 gateway can
+reopen the set. Given a stamped-v6 fixture whose receipt has a deliberately
+corrupted referent, v6 startup fails with the same named refusal, opens no
+listener, and leaves the preexisting `integrity_check` and
+`foreign_key_check` outcomes unchanged. When the stopped-gateway database set
+is moved aside, the gateway restarts, doctor reports `open`, provider
+credentials remain available, and pair-first produces the AC1 tuple.
 
 AC14. **Interrupted migration and rollback fence.** Given a healthy v5
 database, when migration is interrupted after each rebuild/create/copy/stamp
-step, then the whole step rolls back and a retry converges on AC12. Given the
-resulting v6 database, when a v5 gateway opens it, then it refuses the v6 shape;
-when an older direct-writer CLI attempts its old INSERT, then it receives
-`bootstrap_owned_by_gateway` and adds no row. Restoring the stopped pre-v6
-database set permits the v5 gateway to boot.
+step, then the whole operation rolls back; the schema stamp, schema-object
+inventory, canonical row census, and database-set membership match the
+pre-migration manifest; the pinned v5 gateway reopens the set; and a v6 retry
+converges on AC12. Given the resulting v6 database, when a v5 gateway opens
+it, then it refuses the v6 shape; when an older direct-writer CLI attempts its
+old INSERT, then it receives `bootstrap_owned_by_gateway` and adds no row.
+Restoring the stopped pre-v6 database set permits the v5 gateway to boot.
 
-AC15. **Observable and secret-free.** Given open, claimed, and incomplete
-fixtures, when boot summary and `doctor --json` inspect each one, then they
-report the exact AR9 state and action. Given accepted, replayed, incomplete,
-and failed claim attempts, when logs, events, and doctor output are searched,
+AC15. **Observable and secret-free.** Given open and claimed fixtures, when
+boot summary and `doctor --json` inspect each running gateway, then they report
+the exact AR9 state and action. Given an incomplete fixture, gateway startup
+fails with the exact AR9 envelope and no doctor endpoint is available. Given
+accepted, claim-retry, incomplete, and failed claim attempts, when logs,
+events, responses, startup errors, and available doctor output are searched,
 then user/device/root provenance and rollback status appear where AR3 and AR9
 require them; no `tbt_` token, org token, CLI token, authorization header,
 claimed name, or provider credential appears.
@@ -679,10 +762,13 @@ reboots, then doctor still reports `claimed` if the persistent T3
 relationships remain valid.
 
 AC17. **Decision and scope audit.** Given the five inherited decision-request
-records and the 2026-08-25 standing rule, when an independent reviewer checks
-this file, then each request has exactly one AR1 disposition, the changed
-recommendations cite the first-device evidence, visitor semantics remain in
-NG1, and `wi_20df0b1f` remains untargeted with no second spec.
+records, when an independent reviewer checks this file before Mike rules them,
+then every row is still marked open, AR1 contains every durable option, no
+candidate is called a ruling, and the status blocks implementation. After Mike
+rules them, this file shall be amended to cite each durable ruling and to
+remove every losing branch before it can become spec-ready. In both states,
+visitor semantics remain in NG1 and `wi_20df0b1f` remains untargeted with no
+second spec.
 
 AC18. **Deletion boundary.** Given the implementation diff, when a reviewer
 searches it, then the Rust direct user writer and its special dispatch helpers
@@ -691,9 +777,34 @@ transaction; Devices and Org expose shared in-transaction helpers; and no
 second SQLite mutation authority, placeholder root, nullable operational
 parent, or duplicate personal-Main constructor was added.
 
+AC19. **Captured fixture provenance.** Given a clean checkout of the A9 commit
+and the checked-in capture harness, when the fixture maintainer follows the
+manifest commands, then the empty and healthy fixtures come from the named v5
+gateway flows and every stopped database-set member has a recorded byte length
+and SHA-256. Each partial or corrupt fixture names its captured base and either
+the real v5 stopping point or the exact versioned derivation script. An
+independent verifier can check every manifest hash, reproduce each derivation,
+match its canonical table/row census, and open each intended v5 fixture with
+the pinned v5 gateway. A test that creates an idealized v5 schema directly
+fails this acceptance criterion.
+
 ## Open Questions
 
-There are no blocking or non-blocking open questions. AR1 resolves the five
-inherited technical seams under standing lane authority. Money, materially new
-scope, visitor-principal policy, and a separate invitation ceremony remain
-outside this specification rather than hidden as unanswered holes.
+The following existing decision requests are **BLOCKING**. This specification
+does not duplicate, supersede, withdraw, or answer them:
+
+- `dr_38c8fdb2`: Which authority seam should implement the documented
+  host-local first-user command?
+- `dr_1ac42a7a`: What exact state keeps the first-user bootstrap seam open?
+- `dr_4d95f4da`: What durable retry and provenance contract should first-user
+  bootstrap use?
+- `dr_9457c6e3`: Where should ordinary nonexistent-user assertions be
+  rejected?
+- `dr_739be284`: Which observable refusals should distinguish a closed
+  bootstrap seam from a nonexistent asserted user?
+
+AR1 preserves every durable option and the reviewable draft consequence. Mike
+must record exact rulings on the five existing rows. The writer shall amend
+this file first and remove every losing branch before requesting another
+spec-ready review. Money, materially new scope, visitor-principal policy, and
+a separate invitation ceremony remain outside this specification.
