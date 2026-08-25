@@ -34,9 +34,11 @@ Authority and inputs:
   events; SQL against state.db is not a product interface; the CLI makes
   common things easy and never re-creates SQL; auth is the existing
   gateway credential, no API keys; deployment is localhost/tailscale.
-- Mike's ruling, 2026-08-25: remove the `asUser` GET prohibition. The
+- Mike's rulings, 2026-08-25: remove the `asUser` GET prohibition. The
   parameter only transports the CLI's existing principal selection and adds
-  no credential, binding, authorization, or tailnet-identity behavior.
+  no credential, binding, authorization, or tailnet-identity behavior. After
+  client parity, remove legacy dispatch-read transport and compatibility
+  aliases; dispatch remains the write plane.
 - rest-state-api-r3-adjudication.md: durable REST finding text, source
   message identifiers, the closure map, and the SQ2 ruling pointer.
 - rest-state-api-v1-wire-schema.md: normative JSON types, nested shapes,
@@ -69,8 +71,8 @@ correlate later firehose notices without reading SQLite or replaying history.
   values.
 - REST v1 does not turn the firehose into an event log or make observational
   notices rebuildable state.
-- REST v1 does not retire compatibility aliases or decide future tailnet
-  identity.
+- REST v1 does not retire compatibility aliases before their clients migrate
+  or decide future tailnet identity.
 - REST v1 does not authorize implementation, deployment, or client migration.
 
 ## Assumptions
@@ -181,7 +183,7 @@ R2. Core model resources:
 | Route | Purpose |
 |---|---|
 | GET /api/org | small org document: archetypes, hosts, model catalog — no embedded session collection |
-| GET /api/catalog/harnesses | canonical harness capability catalog using the v1 response envelope; `/harnesses` remains an undeprecated compatibility alias using its legacy raw-array outer envelope |
+| GET /api/catalog/harnesses | canonical harness capability catalog using the v1 response envelope; `/harnesses` keeps its legacy raw-array envelope only during M5 migration and is removed in M8 |
 | GET /api/hosts[, /:host] | paged host registry and host detail; the underlying state resource for `host.registered` |
 | GET /api/sessions | paged sessions |
 | GET /api/sessions/:sessionKey | session detail + mechanical status |
@@ -201,11 +203,12 @@ R2. Core model resources:
 The bulk attests/wakes/turns collections are first-class on purpose:
 nested-only resources force ATC-class clients into one request per parent.
 
-The two harness-catalog routes share authorization, the canonical query,
-ordering and filtering, and one canonical serializer for each harness item.
-Only their outer wire adapters differ. They do not promise byte-identical
-complete responses. The canonical route wraps items in the v1 envelope;
-the compatibility alias preserves its legacy raw array.
+During M5 migration, the two harness-catalog routes share authorization, the
+canonical query, ordering and filtering, and one canonical serializer for
+each harness item. Only their outer wire adapters differ. They do not promise
+byte-identical complete responses. The canonical route wraps items in the v1
+envelope; the compatibility alias preserves its legacy raw array until M8
+removes that alias.
 
 R3. Mechanical views: GET /api/toplines[/:id], /api/facts, and
 /api/critical-state. Admin reads are GET /api/identity[, /:name],
@@ -613,16 +616,17 @@ M1. Freeze R7 projections, R8 mappings, R9 dependency lists, and AU4
 visibility functions. M2. Add REST routes on
 those seams. M3. Point the firehose payload builders at the same
 serializers. M4. Point CLI read handlers at the canonical read services.
-Move each wrapper from dispatch to its REST GET using AU2's existing
-`asUser` principal selection where required. Remove its legacy dispatch read
-path after parity acceptance passes. This transport move does not change item
-shapes, authorization, or the M1 query and serializer seams.
-M5. Keep current routes as compatibility aliases (/api/streams,
+Move each wrapper from dispatch to its REST GET using the existing bearer plus
+AU2's `asUser` principal selection where required. Remove its legacy dispatch
+read path after parity acceptance passes. This transport move does not change
+item shapes, authorization, or the M1 query and serializer seams.
+M5. Keep current routes only as migration aliases (/api/streams,
 /api/org-options, /api/session-status, /api/work[/:id],
-/api/trackable-sessions, /harnesses). M6. Migrate Clawline (streams/status aliases →
-sessions + transcript GETs). M7. Migrate ATC off direct SQLite. M8.
-Retire aliases only under a separate versioned decision (SQ3). No
-breaking rename lands before its client moves.
+/api/trackable-sessions, /harnesses); no new client may adopt them. M6. Migrate
+Clawline (streams/status aliases → sessions + transcript GETs). M7. Migrate
+ATC off direct SQLite. M8. After M4, M6, and M7 parity acceptance passes,
+remove the listed aliases and every legacy dispatch read path. Dispatch write
+verbs remain. No breaking removal lands before its client moves.
 
 SQ4 is ruled REST-first: M2 ships before M3. The firehose is the freshness
 plane, while REST is the rebuildable state source. A client must be able to
@@ -687,6 +691,9 @@ A13. Safe-value proof enumerates all live config keys and host environment
 names. Only `default-archetype` returns a config value; no host environment
 value returns. An unlisted live config key appears with `value:null`, and its
 `config.updated` notice carries the identical redacted item.
+A13a. After M4, M6, and M7 parity passes, every M5 alias and legacy dispatch
+read path is absent. The corresponding canonical REST GET still passes its
+contract tests, and every dispatch write verb remains available.
 A14. Every R9 composed view has a test that mutates one row for each declared
 dependency and observes a changed dependency digest. A state class not in the
 declared list leaves the digest unchanged. Query dependency extraction and the
@@ -728,8 +735,10 @@ installed kungfu, safe config values, and first-class archetype, kungfu, rail,
 and guidance content. The R7/R7a closed field lists, SR2/SR5 exclusions, and
 AU4 admin-only row are the ruling's security boundary.
 
-SQ3. **Open; non-blocking for v1.** Compatibility alias retirement: aggressive (retire when Clawline+ATC
-migrate) or indefinite tolerance?
+SQ3. **RULED 2026-08-25 — remove after migration.** Remove every M5
+compatibility alias and legacy dispatch read path after M4, M6, and M7 parity
+acceptance passes. Do not remove an alias before its client moves. Dispatch
+write verbs remain.
 
 SQ4. **RULED 2026-08-23 — REST-first.** Build the shared M1 seams, ship M2
 REST as the rebuildable state source, then ship the M3 firehose freshness
