@@ -38,7 +38,12 @@ Authority and inputs:
   parameter only transports the CLI's existing principal selection and adds
   no credential, binding, authorization, or tailnet-identity behavior. After
   client parity, remove legacy dispatch-read transport and compatibility
-  aliases; dispatch remains the write plane.
+  aliases; dispatch remains the write plane. Durable authority is message
+  `s_21b93fdd-5e62-4ed9-ac7e-923697463936`. This ruling supersedes only the
+  contrary “no asUser query parameter” clauses in rest-vs-cli-adjudication.md
+  r2 and its adopted recon baseline.
+- session-tokens-v1.md's principal-seam table defines the existing CLI
+  principal selection that AU2 transports. This spec adds no second resolver.
 - rest-state-api-r3-adjudication.md: durable REST finding text, source
   message identifiers, the closure map, and the SQ2 ruling pointer.
 - rest-state-api-v1-wire-schema.md: normative JSON types, nested shapes,
@@ -521,12 +526,26 @@ credential and never authenticates a request.
 
 AU2. The org CLI token names no principal by itself. For a CLI GET,
 `asUser=<userId>` transports the same principal selection as the existing
-dispatch `asUser` field: the org bearer plus that value resolves to the same
-user principal that dispatch resolves today. Without the org bearer it grants
-nothing. With a device or session bearer it does not replace, bind, or elevate
-the credential-resolved principal. It adds no tailnet-identity behavior. The
-canonical read service takes the resulting RESOLVED principal, so this
-migration changes only transport, never authorization.
+dispatch `asUser` field. The GET adapter passes the decoded value through the
+existing CLI principal resolver without normalization or an existence lookup.
+An org bearer plus one `asUser` value therefore resolves to the same
+self-declared, unverified user principal that dispatch resolves today. An
+unknown nonempty user id is not rejected or bound; AU4 simply evaluates that
+resolved principal. An org bearer without `asUser` returns the existing
+dispatch `400 invalid_message` identity-required error. An empty value returns
+the same result as an empty dispatch `asUser` value. Repeated `asUser` query
+keys return `400 invalid_as_user` before principal resolution because dispatch
+has only one `asUser` field. Malformed percent encoding returns
+`400 malformed_query` before principal resolution.
+
+For a session bearer, the existing resolver still verifies `asUser` against
+the session owner and the resolved principal remains that session; a mismatch
+keeps the existing dispatch refusal. For a device bearer, `asUser` cannot
+replace or elevate the credential-resolved user principal; its presence
+returns `400 invalid_as_user` before principal resolution. No case creates a
+credential, a new binding, an authorization grant, or tailnet-identity
+behavior. The canonical read service takes the resulting RESOLVED principal,
+so this migration changes only transport, never authorization.
 
 AU3. Visibility: collections omit rows the principal cannot read; detail
 returns the same 404 for unknown and forbidden (transcript precedent);
@@ -668,11 +687,15 @@ sessions, pages transcript, fetches work state, and correlates notices
 by exact ids.
 A8. CLI wrappers return the same item shapes as REST for equivalent
 reads.
-A8a. For an org bearer and `asUser=<userId>`, direct GET and dispatch resolve
-the same principal and produce the same allow, deny, omission, and same-404
-results. `asUser` without the org bearer never changes the principal resolved
-from a device or session credential. The test proves that the parameter adds
-no credential, binding, authorization, or tailnet-identity behavior.
+A8a. A table compares direct GET with dispatch for an org bearer plus known,
+unknown, empty, and missing `asUser`, and for a session bearer plus absent,
+matching-owner, and mismatched-owner `asUser`. Both transports produce the
+same resolved principal or refusal and the same allow, deny, omission, and
+same-404 results. Separate GET cases prove repeated parameters and device
+bearer plus `asUser` return `400 invalid_as_user`, and malformed percent
+encoding returns `400 malformed_query`, all before principal resolution. The
+test proves that the parameter adds no credential, binding, authorization, or
+tailnet-identity behavior.
 A9. Read-marker pagination creates two users with the same `scopeKey`;
 paging each authorized view visits
 every `(userId, scopeKey)` exactly once.
@@ -727,7 +750,10 @@ last-version-wins convergence.
 SQ1. **RULED 2026-08-25 — transport existing `asUser`.** Remove the
 prohibition on an `asUser` GET parameter. It only transports the CLI's
 existing principal selection and adds no credential, binding, authorization,
-or tailnet-identity behavior. M4 direct REST CLI reads may proceed under AU2.
+or tailnet-identity behavior. Message
+`s_21b93fdd-5e62-4ed9-ac7e-923697463936` supersedes only the contrary
+parameter prohibition in the adjudication and recon baseline. M4 direct REST
+CLI reads may proceed under AU2.
 
 SQ2. **RULED 2026-08-22 — expose.** REST v1 includes admin-only users,
 devices, host-environment metadata, harness processes, identity publication,
@@ -738,7 +764,8 @@ AU4 admin-only row are the ruling's security boundary.
 SQ3. **RULED 2026-08-25 — remove after migration.** Remove every M5
 compatibility alias and legacy dispatch read path after M4, M6, and M7 parity
 acceptance passes. Do not remove an alias before its client moves. Dispatch
-write verbs remain.
+write verbs remain. Authority is message
+`s_21b93fdd-5e62-4ed9-ac7e-923697463936`.
 
 SQ4. **RULED 2026-08-23 — REST-first.** Build the shared M1 seams, ship M2
 REST as the rebuildable state source, then ship the M3 firehose freshness
