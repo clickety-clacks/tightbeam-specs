@@ -565,14 +565,18 @@ skeletal change (§8) — lawful via the identity tree, never silent.
 | `blocker` | progress stopped | desk immediately; summon at desk's judgment, floor-bounded / principal immediately | prodder floor |
 | `algedonic` | genuine pain (constitution violation, spirit drift, data loss) | bypasses every bone and every desk: delivered to the principal AND the org's configured human channel (seed default: both; skeletal to reshape). Never batched, never digested, never triaged | none — immediate |
 
-**Insufficient-information return (Mike, 2026-08-22).** The principal who
-was asked an agent question — the exact session resolved at file time, or
-its stamped accountable owner — may return an OPEN question with a required,
-non-blank reason instead of answering it. The return changes only that
-question's typed disposition from `open` to `returned`; it records
-`returnedBy`, `returnReason`, and `returnedAt` in the same transaction and
-files a named lifecycle event. The original question, target, context,
-assignment reference, and filing provenance never change.
+**Agent response preference and insufficient-information return (Mike,
+2026-08-22; amended 2026-08-25).** The session resolved at file time is the
+preferred responder, not an authorization gate. Any authenticated agent
+session with the complete request id may answer an OPEN agent question or
+return it with a required, non-blank reason when its own judgment says it has
+enough context. This response standing is not an instruction to respond. The
+stamped expecter user keeps the existing human response boundary.
+
+The return changes only that question's typed disposition from `open` to
+`returned`; it records `returnedBy`, `returnReason`, and `returnedAt` in the
+same transaction and files a named lifecycle event. The original question,
+target, context, assignment reference, and filing provenance never change.
 
 The return removes the row from the default open queue. It does not answer,
 rule, consume, withdraw, authorize, unblock, reopen, or mutate the asker's
@@ -583,15 +587,14 @@ Revision means a NEW request row; the returned row cannot become open again.
 That preserves both attempts and makes the full sequence legible instead of
 editing history in place.
 
-Authorization is checked before request existence or kind is disclosed, on
-the same principal boundary as `answer`. A missing id, a non-agent id, and an
-agent question addressed elsewhere refuse identically. The transition is one
-`open`-scoped compare-and-swap: answer, withdraw, and return race to one
-terminal winner. An exact return retry by the same principal with the same
-reason is idempotent and emits no second event or notification; a changed
-reason or a different terminal winner refuses `not_open`. `returned` is a
-legal explicit list filter and appears in forensic/all reads with its actor,
-reason, and timestamp.
+Response standing is checked before request existence or kind is disclosed.
+A missing id, a non-agent id, and a request hidden from that caller refuse
+identically. The transition is one `open`-scoped compare-and-swap: answer,
+withdraw, and return race to one terminal winner. An exact return retry by the
+same principal with the same reason is idempotent and emits no second event or
+notification; a changed reason or a different terminal winner refuses
+`not_open`. `returned` is a legal explicit list filter and appears in
+forensic/all reads with its actor, reason, and timestamp.
 
 Class is **advisory metadata extending `attend`** — sender-elected. The
 classifier stamps only unclassified traffic (§5); a receiver may

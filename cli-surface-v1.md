@@ -30,6 +30,11 @@ Agent-facing (demanded by the shipped engineering-kungfu kernels/skills):
   effort-without-effect-checkin-v1 §5).
 - **effort-rule** — parent adjudication of an effort-without-effect request,
   limited to `continue|dismiss` (effort-without-effect-checkin-v1 §5).
+- **decision-request** — read one exact decision request by complete id. An
+  authenticated agent session may directly inspect a known agent or effort
+  request. Direct access is not list discovery and does not instruct the
+  session to respond (operating manual;
+  decision-request-expecter-preference-v1).
 - **decision-requests** — read the decision requests visible to the caller so
   an effort request can be selected for `effort-rule`
   (effort-without-effect-checkin-v1 §5).
