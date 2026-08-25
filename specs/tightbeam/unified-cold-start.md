@@ -19,6 +19,12 @@ Authority baseline:
   `fd10557526e4c456aeaf4f6e15197f69a9c40d30972d6e6b42b776b3b86b21e7`.
 - Changes-requested review: `att_ec8118f8` and results `art_40f6fa93`.
 - Controlling product disposition: `att_732021c2`.
+- F1-F4 successor reviewed: `art_8f10f6d7`, commit
+  `420208afed3491701730490bb7dd90a77af53ad8`, content SHA-256
+  `5068013e58a70fcf06c7479f8b3082437d3cbbb41002258674d86c7d899a5f74`.
+- Latest changes-requested review: `att_ab835da2` and report
+  `art_7264611d`, report SHA-256
+  `3182b592fd8445296222978be604c34de0dfefdfdba7a01dd368bf5da8e5fc6f`.
 
 This file is the only normative cold-start artifact for work item
 `wi_8edbc2c4`. Companion work item `wi_20df0b1f` remains untargeted and points
@@ -267,10 +273,12 @@ decision.
 
 I8. Before activation, an exact claim replay with a valid claim replay secret
 shall return the committed device token without token rotation, identity
-mutation, receipt replacement, or event. A request with a missing, malformed,
-or mismatched secret shall return the same `bootstrap_closed` envelope without
-a token. A denied receipt device shall return `pair_denied`. After activation,
-the existing known-allowlisted-device re-pair path shall rotate the token.
+mutation, receipt replacement, or event. A request that omits the secret or
+supplies a well-formed nonmatching secret shall return the same
+`bootstrap_closed` envelope without a token. AR4 shall reject malformed
+encoding or decoded length before a claim transaction. A denied receipt device
+shall return `pair_denied`. After activation, the existing known-allowlisted-
+device re-pair path shall rotate the token.
 
 I9. A different device arriving after a complete claim shall follow the
 ordinary claimed-org path. It shall receive `pair_pending`; it shall not
@@ -984,13 +992,16 @@ AC21. **Replay proof security and falsification.** Given an unactivated
 complete receipt with a known public device id, user id, request fingerprint,
 and token sentinel, when requests supply no secret, malformed base64url,
 31 bytes, 33 bytes, or each one-bit mutation of the valid 32-byte secret, then
-none returns the sentinel or another token. Each well-formed wrong proof
-returns the same status, reason, and response keys as an omitted proof. Given
-the exact valid secret, the response returns the sentinel without rotation or
-a write. A test spy proves the constant-time digest comparator is
-called only after device-id and fingerprint equality. A scan of database
-rows, events, logs, doctor output, boot output, and error responses finds
-neither the secret nor either claim digest.
+none returns the sentinel or another token. Malformed base64url and each value
+that decodes to 31 or 33 bytes return one WebSocket frame with exactly
+`type = 'error'` and `code = 'invalid_message'`, then close the socket without
+starting a claim transaction. An omitted secret and each well-formed wrong
+proof return the exact AR9 `bootstrap_closed` frame. Given the exact valid
+secret, the response returns the sentinel without rotation or a write. A test
+spy proves the constant-time digest comparator is called only after device-id
+and fingerprint equality. A scan of database rows, events, logs, doctor
+output, boot output, and error responses finds neither the secret nor either
+claim digest.
 
 ## Open Questions
 
