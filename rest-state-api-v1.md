@@ -855,9 +855,10 @@ change the six shared serializer shapes adopted by `art_b1995a26` / fact 1093.
 ## Requirements — auth and visibility
 
 AU1. `Authorization: Bearer <existing gateway credential>`. A device
-token resolves to its user. A session CLI token resolves to that session
-only. The session row's `ownerUserId` is metadata, not an automatic authority
-escalation. An owner read exists only where AU4 explicitly grants it.
+token resolves to its user. Without a nonempty matching `asUser`, a session
+CLI token resolves to that session only. The session row's `ownerUserId` is
+metadata, not an automatic authority escalation. An owner read exists only
+where AU4 explicitly grants it.
 No new credential type exists. The optional `asUser` GET parameter is not a
 credential and never authenticates a request.
 
@@ -875,9 +876,10 @@ keys return `400 invalid_as_user` before principal resolution because dispatch
 has only one `asUser` field. Malformed percent encoding returns
 `400 malformed_query` before principal resolution.
 
-For a session bearer, the existing resolver still verifies `asUser` against
-the session owner and the resolved principal remains that session; a mismatch
-returns `403 identity_not_yours`. Its R4b error message is exactly
+For a session bearer, the existing resolver verifies a nonempty `asUser`
+against `session.ownerUserId`. A matching value resolves the named user
+principal, exactly as dispatch does. A mismatch returns
+`403 identity_not_yours`. Its R4b error message is exactly
 `"this session belongs to <session.owner_user_id>"`, with
 `<session.owner_user_id>` replaced by the target session row's exact stored
 non-null owner user id. For a device bearer, `asUser` cannot replace or elevate
@@ -896,8 +898,8 @@ row. Anything the matrix does not grant is denied.
 AU4. Per-resource allow matrix. “Owner” means the named user principal, not
 any session that happens to carry that user's id. “Session owner” is an
 explicit grant to the user principal that owns the target session. Admin is
-the authenticated user principal with `isAdmin=true`; a session token does
-not borrow that bit.
+the authenticated user principal with `isAdmin=true`; a session principal
+ does not borrow that bit.
 
 | Resource | Allowed principals |
 |---|---|
@@ -1062,11 +1064,14 @@ A8a. A table compares direct GET with dispatch for an org bearer plus known,
 unknown, empty, and missing `asUser`, and for a session bearer plus absent,
 matching-owner, and mismatched-owner `asUser`. Both transports produce the
 same resolved principal or refusal and the same allow, deny, omission, and
-same-404 results. Separate GET cases prove repeated parameters and device
-bearer plus `asUser` return `400 invalid_as_user`, and malformed percent
-encoding returns `400 malformed_query`, all before principal resolution. The
-test proves that the parameter adds no credential, binding, authorization, or
-tailnet-identity behavior.
+same-404 results. The matching-owner session case proves that both transports
+resolve the named user principal; the absent session case proves the existing
+credential-derived principal remains unchanged. Separate GET cases prove
+repeated parameters and device bearer plus `asUser` return `400
+invalid_as_user`, and malformed percent encoding returns `400
+malformed_query`, all before principal resolution. The test proves that the
+parameter adds no credential, binding, authorization, or tailnet-identity
+behavior.
 A9. Read-marker pagination creates two users with the same `scopeKey`;
 paging each authorized view visits
 every `(userId, scopeKey)` exactly once.
