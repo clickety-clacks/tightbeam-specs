@@ -1,6 +1,6 @@
 # Configured harness org fault — v1
 
-Status: READY FOR INDEPENDENT SPEC REVIEW.
+Status: READY FOR INDEPENDENT SPEC RE-REVIEW.
 
 Authority: `wi_8c466f03-0a44-4173-bc48-191a343a3b4e` and assignment
 `asg_daf315f0-cbfc-4d94-9169-74ace5d67bda`.
@@ -8,8 +8,8 @@ Authority: `wi_8c466f03-0a44-4173-bc48-191a343a3b4e` and assignment
 Ground truth read for this draft: Tightbeam `origin/main` at `8b4a3df` and
 the spec commons at `8a496f2` on 2026-08-25.
 
-Blast-radius evidence: `art_1fadd132`, SHA-256
-`2672627462b889c4a9b34d956cbc4282ffc788f8fee00f96740c077c640d9596`.
+Blast-radius evidence: `art_6d46bd1c`, SHA-256
+`99e317a5bde1ebb2c1a4b8894305dfd73195bcf89c3548e39eeb1651ba734212`.
 Its 14 lexical card matches reduce to four current affected cards and three
 distinct review obligations.
 
@@ -32,7 +32,8 @@ The fault opens for any of these observed conditions on a configured
 
 1. the provider credential file is malformed;
 2. the provider credential metadata says the credential is expired;
-3. CAP-018 returns `{:dead, reason}`; or
+3. CAP-018 returns `{:dead, reason}` with a credential-scoped reason classified
+   as `credential_rejected` or `credential_revoked`; or
 4. an authenticated catalog refresh succeeds with an empty inventory.
 
 The org receives one active fault even when several hosts or harnesses report
@@ -81,6 +82,11 @@ first observation, and last observation.
   bytes and required metadata fields have the expected form.
 - **Authenticated liveness:** CAP-018's real provider check, with the unchanged
   result set `:live | {:dead, reason} | {:unknown, reason}`.
+- **CAP-dead reason class:** A safe classification of a CAP-018 `dead` reason.
+  `credential_rejected` and `credential_revoked` are credential-scoped and
+  qualify for this fault. `entitlement_denied` and `subscription_unsupported`
+  are provider-access conditions and do not qualify. `unclassified_dead`
+  preserves a failed liveness result without authorizing credential repair.
 - **Catalog state:** The result of a catalog refresh, not the rendered model
   array. Its values are `available_nonempty`, `available_empty`,
   `unavailable(reason)`, and `unknown`. Only `available_empty` opens this fault.
@@ -96,8 +102,10 @@ first observation, and last observation.
 - **Qualifying observation:** A durable observation of one of the four Goal
   conditions.
 - **Fault occurrence:** One open-to-closed lifecycle for one provider. A later
-  recurrence creates a new occurrence ID and retains the same logical
-  deduplication key.
+  recurrence whose source cursor follows the affected scope's last recovery or
+  removal cursor creates a new occurrence ID and retains the same logical
+  deduplication key. A delayed observation at or before that cursor remains
+  history on the closed occurrence.
 - **Fault impact:** A durable link from an assignment to an active fault. The
   link says the assignment is affected; it does not change assignment state.
   It remains active while the assignment is open and `clearedAt` is null.
@@ -116,9 +124,6 @@ first observation, and last observation.
   the occurrence, ordered by `(users.createdAt, users.userId)`. Admin authority
   already permits the local onboarding ceremony. The owner remains fixed for
   the occurrence.
-- **Material change:** A new affected host, a new cause on a host, a signal
-  conflict appearing or clearing, or fault closure. Repeated
-  evidence with the same current classification is not a material change.
 - **Fault remediation channel:** The fault's stored summary and store-and-push
   owner message. It can name the affected host and a documented local command.
   It carries neither an authorization URL nor a carry-back code.
@@ -187,6 +192,12 @@ Authenticated success maps to `live`. Explicit rejection or revocation maps to
 `unknown`. `live` passes the liveness check, `dead` fails it, and `unknown`
 leaves recovery incomplete.
 
+The CAP-018 producer also emits one safe CAP-dead reason class from the Terms.
+The liveness axis remains `dead` for each class. Only `credential_rejected` and
+`credential_revoked` create the Goal's credential-dead qualifier. An
+entitlement, unsupported-subscription, or unclassified dead result cannot
+select onboarding remediation.
+
 ### I5 — Contradictions become data
 
 Tightbeam records each contradictory signal with its source and time. It emits a
@@ -200,7 +211,9 @@ matching row. The conditions are mutually exclusive in this order:
 
 | Current evidence on a host | Permitted remediation text |
 |---|---|
-| CAP-018 `dead` | Run the supported local `tightbeam onboard <provider> --as-user <ownerUserId>` ceremony on that host, then verify again. |
+| CAP-018 `dead` with reason class `credential_rejected` or `credential_revoked` | Run the supported local `tightbeam onboard <provider> --as-user <ownerUserId>` ceremony on that host, then verify again. |
+| CAP-018 `dead` with reason class `entitlement_denied` or `subscription_unsupported` | Diagnose provider entitlement or subscription support for that org, host, and harness. Do not recommend onboarding. |
+| CAP-018 `dead` with reason class `unclassified_dead` | Classify the provider rejection before credential mutation. Do not recommend onboarding. |
 | credential file `malformed` or `expired`, with CAP-018 `live` | Reconcile the file/source discrepancy before any credential mutation. Do not recommend onboarding. |
 | catalog `available_empty`, with CAP-018 not `dead` | Diagnose the catalog refresh, harness version, and entitlement projection. If the file signal also says `malformed` or `expired`, reconcile the signal sources. Do not recommend onboarding. |
 | credential file `malformed` or `expired`, with CAP-018 `unknown` | Repair that host with the supported local `tightbeam onboard <provider> --as-user <ownerUserId>` ceremony, then verify again. |
@@ -330,6 +343,8 @@ A partial unique index on `(kind, provider) WHERE state='open'` enforces I1.
 - `axis` — `credential_file | credential_liveness | catalog | spawn | scope`;
 - `outcome` — one value from the Terms for that axis;
 - `causeCode`, `observedAt`, `sourceKind`, `sourceId`, `principal`;
+- `lateAfterClose` — true only when Architecture §6 attaches a delayed source
+  at or before the closed scope's terminal cursor;
 - `safeDetail` — an allowlisted JSON object that satisfies I12.
 
 The unique source index is
@@ -359,13 +374,17 @@ populate either count.
 The existing producers submit typed results:
 
 - `Credentials` submits structural and expiry results;
-- each CAP-018 consumer submits its authenticated liveness result;
+- each CAP-018 consumer submits its authenticated liveness result and safe
+  CAP-dead reason class;
 - `ModelCatalog` submits the pre-projection refresh result;
 - the spawn/first-turn boundary submits usability evidence.
 
-The recognizer opens or updates the fault only for the Goal conditions. A 401,
-catalog timeout, spawn failure, or `unknown` liveness can trigger a bounded
-CAP-018 check, but it cannot itself become `credential_dead`.
+The recognizer opens the fault only for a Goal condition. Once an occurrence is
+open, it records nonqualifying axis results on an already affected host scope so
+the current detail and remediation preserve contradictions. A nonqualifying
+result cannot add an affected host scope. A 401, catalog timeout, spawn failure,
+or `unknown` liveness can trigger a bounded CAP-018 check, but it cannot itself
+become `credential_dead`.
 
 The catalog producer must preserve the distinction between:
 
@@ -391,29 +410,30 @@ scopes; no precedence rule collapses them.
 
 ### 4. Loud owner routing
 
-After the opening transaction commits, a production stores and pushes one
-substrate-authored owner message. It uses deterministic delivery identity
-`org-fault:<faultId>:<ownerUserId>`. The message names the occurrence ID,
+After the opening transaction commits, a post-commit delivery worker stores and
+pushes one substrate-authored owner message. It uses deterministic delivery
+identity `org-fault:<faultId>:<ownerUserId>`. The message names the occurrence ID,
 provider, affected hosts, safe cause codes, affected-assignment count, and the
 affected-review-obligation count. It also includes the I6 remediation lines.
 
 A crash between the fault commit and delivery cannot lose or duplicate the
 message: restart recognition sees the open fault without a delivery receipt and
-retries the same identity. Repeated equal observations stay silent. A material
-change produces one update using
-`org-fault:<faultId>:<materialChangeId>:<ownerUserId>`.
+retries the same identity. Repeated equal observations stay silent. Later
+observations update the live summary and detail projections without sending
+another owner message. Closure also updates the detail projection without
+another owner message.
 
 The owner message uses store-and-push without an inference turn. Owner delivery
 does not block the fault row or any work row.
 
 ### 5. Assignment impacts and waiver suppression
 
-A failed dispatch or spawn that already carries an assignment ID links that
-assignment to the matching active fault. An authorized agent can also call the
-single explicit impact-link verb with `faultId`, `assignmentId`, a cause, and
-optional `obligationKind=review`. The verb accepts the assignment holder,
-opener, assignment owner, or admin. It returns the existing link on an
-idempotent retry.
+The only impact-creation paths are the single explicit impact-link verb and the
+typed `fault_waiver` path. A dispatch or spawn failure creates no impact by
+itself. The explicit verb accepts `faultId`, `assignmentId`, a cause, and
+optional `obligationKind=review`. It authorizes the assignment holder, the
+assignment opener, or an admin. It returns the existing link on an idempotent
+retry.
 
 When `obligationKind=review`, the impact-link transaction derives
 `reviewObligationKey` from durable assignment relations. It uses
@@ -461,8 +481,11 @@ recovery close uses `recovered` only when each scope recovered. A mixed or
 removal-only close uses `scope_removed`.
 
 A qualifying observation racing closure either lands before the closure check
-and keeps the occurrence open, or lands after closure and creates the next fault
-occurrence. It cannot attach silently to a closed occurrence.
+and keeps the occurrence open, or lands after closure and compares its
+`(observedAt, id)` cursor with that host scope's terminal `scope_recovered` or
+`scope_removed` cursor. A later cursor creates the next fault occurrence. An
+equal or earlier cursor appends to the closed occurrence as
+`lateAfterClose=true`; it changes no current projection and opens no fault.
 
 ### 7. Read surfaces
 
@@ -510,9 +533,10 @@ credential repair engine loses because the substrate must not decide or repair
 ### A1 — One fault aggregates divergent hosts (I1, I2, I3)
 
 Given Anthropic backs a configured harness on Gibson and Eezo, Gibson reports
-`valid_shape` while CAP-018 reports `dead`, and Eezo reports `malformed` with
-the missing field names `accessToken`, `refreshToken`, and `expiresAt`, when
-the observations commit concurrently, then one open Anthropic fault exists.
+`valid_shape` while CAP-018 reports `dead:credential_rejected`, and Eezo reports
+`malformed` with the missing field names `accessToken`, `refreshToken`, and
+`expiresAt`, when the observations commit concurrently, then one open Anthropic
+fault exists.
 Its detail shows two host scopes and preserves each signal without overwrite.
 
 ### A2 — Healthy file does not pass authenticated liveness (I3, I4)
@@ -527,7 +551,9 @@ Given recorded real CAP-018 transport fixtures, when the harness maps an
 authenticated success, explicit rejection, timeout, DNS failure, 5xx, and an
 unknown response, then the outcomes are respectively `live`, `dead`, `unknown`,
 `unknown`, `unknown`, and `unknown`. Only `dead` fails liveness. Each `unknown`
-leaves recovery incomplete.
+leaves recovery incomplete. The explicit credential rejection carries reason
+class `credential_rejected`; an entitlement-denial fixture remains `dead` but
+carries reason class `entitlement_denied` and does not qualify by itself.
 
 ### A4 — Empty projection is not an empty refresh (I3)
 
@@ -565,12 +591,22 @@ accepted placement. After the help correction, the renderer emits
 command, both help surfaces document it, the fault does not call `--as-user`
 invalid or unsupported, and the text contains no cross-host copy instruction.
 
+Given CAP-018 returns `dead:entitlement_denied` beside an expired file, when the
+fault renders, then liveness remains failed and the renderer diagnoses
+entitlement without printing an onboarding command. Given CAP-018 returns only
+`dead:subscription_unsupported` and no other Goal condition exists, recognition
+opens no configured-harness provider fault. Given CAP-018 returns
+`dead:unclassified_dead` beside an open catalog-empty fault, the renderer asks
+for cause classification and prints no onboarding command.
+
 ### A8 — Spawn usability remains independent (I3)
 
 Given CAP-018 is `live` and a fresh catalog is `available_nonempty`, when the
 real spawn proof returns `unusable:adapter_start_failed`, then the liveness and
 catalog axes remain passing while spawn stays unusable. The renderer names the
-spawn path and does not recommend onboarding.
+spawn path and does not recommend onboarding. Given that failed spawn carries
+an assignment ID, it creates no impact until an authorized principal calls the
+explicit impact-link verb or uses the typed `fault_waiver` path.
 
 ### A9 — Observation replay and creation races deduplicate (I1, I9, I13)
 
@@ -592,7 +628,7 @@ history without becoming current.
 
 ### A11 — Current impacts exclude lexical matches and deduplicate obligations (I8)
 
-Given the `art_1fadd132` census finds 14 lexical card matches, when typed impact
+Given the `art_6d46bd1c` census finds 14 lexical card matches, when typed impact
 evidence marks four current affected cards with `obligationKind=review` and two
 of those cards are the producer and reviewer for one durable
 `reviewsAssignmentId`, then the summary reports `affectedAssignmentCount = 4` and
@@ -624,13 +660,16 @@ obligationKind=review`, when the create path runs, then it returns
 review obligation key, and creates zero decision-request rows and zero
 decision-request wakes. Repeating the request returns the same impact.
 
-### A13 — Owner delivery is durable and quiet on repeats (I9)
+### A13 — Opening owner delivery is durable and later changes stay quiet (I9)
 
 Given the earliest-created admin owns a new fault, when the opening transaction
 commits, then the owner's main stream receives one store-and-push message with
 the safe summary. When the same current classification repeats, no second
-message appears. When Eezo adds `credential_file_malformed`, one material-change
-message appears.
+message appears. Given the gateway crashes after the fault commit and before
+the opening delivery receipt commits, when restart reconciliation runs, then it
+retries the same delivery identity and exactly one opening message exists. When
+Eezo later adds `credential_file_malformed` or the occurrence closes, the live
+detail changes and no additional owner message appears.
 
 ### A14 — Recovery needs the provider proof and three proofs per affected harness (I10)
 
@@ -644,7 +683,8 @@ unknown, or older than 500, it appends none.
 
 Given Gibson and Eezo share one fault, when Gibson satisfies A14, then the fault
 remains open with Eezo affected. When Eezo later satisfies A14, then the fault
-closes as `recovered` and one closure update reaches the owner.
+closes as `recovered`; the detail shows the closure and the opening owner
+delivery remains the only owner message for that occurrence.
 
 ### A16 — Removed scope closes honestly (I11)
 
@@ -658,14 +698,18 @@ claimed.
 Given the process exits after all recovery observations commit but before
 closure, when the gateway restarts, then reconciliation emits the same
 idempotent scope recovery and closes the existing occurrence. It creates no new
-occurrence or duplicate closure delivery.
+occurrence or additional owner message.
 
 ### A18 — Closure and new failure race safely (I1, I13)
 
-Given closure and a new qualifying observation run concurrently, when both
+Given closure at recovery cursor `(300, recovery-id)` and a qualifying
+observation at cursor `(400, failure-id)` run concurrently, when both
 transactions finish, then either the original occurrence remains open with the
-new observation or it closes and one new occurrence opens. The new observation
-does not attach to a closed row.
+new observation or it closes and one new occurrence opens. Given the occurrence
+has closed and a delayed qualifying observation at cursor `(100, late-id)`
+arrives, when recognition runs, then it appends the observation to the closed
+occurrence as `lateAfterClose=true`, changes no current projection, and opens
+no new occurrence.
 
 ### A19 — Read surfaces redact credential material (I12)
 
