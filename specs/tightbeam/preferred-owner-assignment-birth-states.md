@@ -1,9 +1,34 @@
 # Preferred-owner affinity and assignment birth states
 
-Status: canonical amendment candidate for independent review
+Status: changes-requested amendment candidate for independent re-review
 Work item: `wi_c4450c8d-cfae-4ee0-9532-df8c24be499b`
 Producer assignment: `asg_4f325d11-7e62-4ca0-845e-399e31fb3836`
-Supersedes: `art_813cfefc`, SHA-256 `46d38b3bccb8423c1d689ea2045fc709a1f879d3d6d08bc539fe6a0c51fb6179`
+Supersedes: `art_1a9b97f6`, SHA-256 `4566156a47f0dbe726039e28d5cac9f07d5474fd8318348a918f51f5233327bd`
+Addresses: `att_a93ab60d-6b23-4df4-bd6c-20dc6ee59b08`, report `art_f88ade41`
+
+## Spec homing
+
+The canonical home is
+`clickety-clacks/tightbeam-specs/specs/tightbeam/preferred-owner-assignment-birth-states.md`.
+A checkout, branch, commit, artifact, review report, or transcript is evidence rather than
+implementation authority. Implementation remains blocked until the work item binds the
+reviewed-clean canonical path and SHA-256.
+
+This specification is authoritative only for preferred-owner affinity, assignment
+supervision state, and the closed recovery-role census in this file. The following canonical
+companions retain authority for their named scope:
+
+- `roles-registry-v1.md` governs registered roles, role mutation authority, resolution,
+  fallback, and typed role references.
+- `supervision-v1.md` governs supervision policy and the role of supervising minds.
+- `assignment-lifecycle-fallback-escalation-v1.md` governs assignment lifecycle source
+  identity and the existing `completed`, `surrendered`, and `revoked` terminal bridge.
+- `coordination-fabric-v1.md` governs office creation, dissolution, and failover, including
+  its intentional non-atomic rebind-then-revoke sequence.
+
+This specification adds no terminal outcome and does not make office failover atomic. If a
+clause in this file appears to do either, the companion law above prevails and the clause is
+a defect that requires canonical amendment.
 
 ## Goal
 
@@ -19,10 +44,10 @@ event, or terminal history.
 The substrate must use recorded state and state bindings. It must not infer obligation
 or waiting from prose, titles, roles, artifacts, session health, or missing activity.
 
-Escalation targeting, staff-loss rerouting, office continuity, and relief must declare
-whether each mechanism depends on a role. A mechanism that depends on a role requires an
-explicit role binding at its activation seam. A mechanism that does not depend on a role
-has no optional role hint at that seam.
+The closed `recovery-role-dependencies-v1` census declares every current escalation-targeting,
+staff-loss-rerouting, office-continuity, and relief seam as `required`, `none`, or absent. A
+`required` row uses its named explicit role binding. A `none` or absent row has no optional
+role hint.
 
 ## Non-Goals
 
@@ -31,8 +56,10 @@ has no optional role hint at that seam.
 - Preferred-owner affinity does not satisfy a required role binding for escalation
   targeting, staff-loss rerouting, office continuity, or relief.
 - This feature does not interpret prose or define domain-specific blocker evidence.
-- This feature does not decide that a recovery mechanism depends on a role. The canonical
-  contract for that mechanism makes that decision.
+- This feature does not add a generic recovery-mechanism registry, declaration column, or
+  runtime role-dependency inference.
+- This feature does not convert an existing assignment into affinity or add a
+  `converted_to_affinity` terminal outcome.
 - This feature does not add a digest, notification, or workflow product.
 - This feature does not change model, harness, credential, deployment, or runtime policy.
 - This specification does not authorize implementation or migration of live rows.
@@ -53,7 +80,7 @@ true. A blocker may reference a pre-existing decision request, dependency, revie
 evidence row.
 
 **State generation** is a monotonically increasing integer on an assignment. Assignment
-creation sets it to 1. Each accepted transition increments it by 1.
+creation and legacy migration set it to 1. Each accepted transition increments it by 1.
 
 **In-org dependency** is a durable row that another Tightbeam actor will produce, such as
 an assignment completion, review verdict, artifact, or ruling.
@@ -68,10 +95,10 @@ operator-facing ask for that choice.
 instance because that mechanism cannot target or continue without the role. It is not a
 hint, a session choice, or preferred-owner affinity.
 
-**Role dependency declaration** is the value `required` or `none` in the canonical
-definition for escalation targeting, staff-loss rerouting, office continuity, or relief.
-The substrate validates that declared value. It does not derive the value from prose or
-runtime conditions.
+**Recovery-role census** is the closed, versioned table named
+`recovery-role-dependencies-v1` in Architecture. The table itself stores the declarations
+for this release. There is no runtime declaration field. A new or changed recovery seam
+requires a reviewed canonical amendment to that table.
 
 ## Assumptions
 
@@ -106,14 +133,15 @@ runtime conditions.
 11. An in-org dependency uses a fact subscription. An external boundary uses a timed
     probe. An operator decision uses one decision-request row. The substrate does not
     substitute one wait instrument for another.
-12. Each escalation-targeting, staff-loss-rerouting, office-continuity, and relief
-    mechanism declares its role dependency as `required` or `none`.
-13. A mechanism with `required` role dependency activates only with one explicit valid
-    role binding written in the same transaction as that mechanism instance.
+12. `recovery-role-dependencies-v1` is exhaustive for the pinned current recovery seams.
+    The substrate cannot add, remove, or reclassify a row at runtime.
+13. A `required` census row activates only with the explicit registered role stored at the
+    exact transaction seam named by that row.
 14. Preferred-owner affinity, the caller's role, the current holder, prose, and runtime
     vacancy cannot supply or replace a required role binding.
-15. A mechanism with `none` role dependency has no optional role-hint field at its
-    configuration or activation seam.
+15. A `none` or absent census row has no optional role-hint field at its configuration or
+    activation seam.
+16. The automatic stamp proposed by `wi_7f068d0c` cannot satisfy a required census row.
 
 ## Architecture
 
@@ -141,41 +169,46 @@ retirement, and assignment to a different holder preserve affinity history.
 Existing work-item routing deadlines still govern an unstaffed item. Affinity cannot hide
 an unrouted work item.
 
-### Required role bindings for recovery mechanisms
+### `recovery-role-dependencies-v1`: closed current-seam census
 
-The canonical definition for each mechanism in the following set must declare exactly one
-role dependency before the gateway can activate an instance:
+This table is the declaration storage and version for this release. It is exhaustive for
+current source commit `d00e06aea578d711e608637d38a97872487df15e`, which is census
+evidence rather than implementation authority. `roles-registry-v1.md`,
+`assignment-lifecycle-fallback-escalation-v1.md`, and `coordination-fabric-v1.md` retain the
+authority stated in Spec homing.
 
-| Mechanism | Binding point when dependency is `required` |
-| --- | --- |
-| Escalation targeting | The escalation target definition |
-| Staff-loss rerouting | The reroute destination definition |
-| Office continuity | The continuity responsibility definition |
-| Relief | The relief destination definition |
+| Category and current seam | Declaration | Exact binding storage and activation seam | Selection authority |
+| --- | --- | --- | --- |
+| Escalation targeting: role-addressed `Escalation.ask/2` | `required` | The typed router validates the named role; `file_agent_request/2` writes `decision_requests.askedOfRole` with the request and notification in one transaction. | The authenticated asking session selects the role target. Existing ask authorization and privacy checks still apply. |
+| Escalation targeting: session- or user-addressed `Escalation.ask/2` | `none` | The typed target is a session or user; `askedOfRole` remains null and the request exposes no second role field. | The authenticated asking session selects the typed non-role target. |
+| Staff-loss rerouting: a pending role-addressed wake handled by `Org.retirement_replacement_target_for_work/7` | `required` | Wake creation validates the named role and writes `wakes.targetRole` with the wake. Retirement reuses that stored name and does not choose a role. | The authenticated wake creator selects the role target; existing work-liveness guards decide whether replacement is permitted. |
+| Staff-loss rerouting: direct-session or `reresolve='lineage'` wake | `none` | A direct wake stores neither role nor lineage hint. A lineage wake stores only `reresolve`, `reresolveSeed`, and `reresolveRung`; `targetRole` must be null. | The authenticated wake creator selects the direct target or lineage seed and rung. |
+| Office continuity: `coordination-fabric-v1.md` rebind-then-revoke failover | `required` | `role-bind` atomically validates and updates `roles.boundSessionKey` before the existing separate revoke verb. This specification does not combine the two verbs. | The role principal or org actor already authorized by `roles-registry-v1.md` and the office law selects the successor session. |
+| Relief | absent | No canonical relief recovery mechanism, activation seam, schema field, or optional role hint exists in the pinned source and companion set. | No authority exists. A future relief mechanism requires a reviewed census amendment before activation. |
 
-For `required`, the activation request supplies one registered role name. The gateway
-validates the role and writes the role binding with the mechanism instance in one
-transaction. Role vacancy does not invalidate the binding; the mechanism's staffing and
-waiting law governs a vacant role.
+The two ask rows, two wake rows, office row, and absent relief row are the entire census.
+No generic category or plausible future mechanism is covered implicitly. A future source
+change that adds or alters a seam fails the census check until a reviewed amendment names
+its declaration, storage, activation seam, authority, migration, and rollback.
 
-For `none`, the mechanism schema exposes no optional role-hint field. A caller cannot add a
-role for possible future use. A later need for role-based behavior first amends that
-mechanism's canonical contract to `required` and then supplies the binding.
+The typed gateway refuses a missing role on a `required` row with
+`required_role_binding_missing`. It refuses an unknown or invalid role with
+`required_role_binding_invalid`. It refuses a role field on a `none` row, including a wake
+that combines `targetRole` with lineage fields, with `role_binding_not_allowed`. Each
+refusal identifies the census row and field and writes no request, wake, binding, role
+mutation, notification, cancellation, or downstream recovery effect.
 
-The gateway does not copy a work item's `preferredOwnerRole` into a required role binding.
-It also does not derive the binding from the caller, current assignment holder, title,
-brief, attest, artifact, or session state.
+The gateway does not copy `preferredOwnerRole`, the caller's role, the current assignment
+holder, title, brief, attest, artifact, session state, or the automatic stamp proposed by
+`wi_7f068d0c` into a required row. The automatic stamp is substrate-written metadata, but it
+is never a role binding under this census.
 
-When a `required` mechanism lacks its binding, the activation seam returns
-`required_role_binding_missing`. The refusal identifies the mechanism kind, mechanism
-instance, and missing `roleName`. It writes no mechanism instance or downstream recovery
-effect. An invalid or unregistered role returns `required_role_binding_invalid` with the
-same no-write rule.
-
-The substrate-automatic open-time stamp proposed by `wi_7f068d0c` is not an optional value
-that an agent must remember to set. That stamp remains distinct from this binding. It can
-satisfy no required role dependency unless its own reviewed canonical contract defines it
-as the exact required binding at the same mechanism seam.
+This census adds no database column. Existing role-addressed asks and wakes retain their
+stored role names. Existing direct and lineage rows retain null `askedOfRole` or
+`targetRole`. Before activation, migration validates every pending wake against the two
+wake rows and refuses `recovery_role_census_mismatch` on a mixed or unknown shape without
+rewriting it. Existing roles and office delegation cards remain unchanged. Rollback removes
+only the census validation; every row remains readable under the predecessor schema.
 
 ### Assignment creation
 
@@ -306,36 +339,35 @@ state generation, immutable state bindings, and generation-aware links for entit
 prods, and acknowledgments. It does not add a terminal-state column or duplicate closing
 disposition.
 
-The migration makes each closed assignment project `terminal` from its exact existing
-disposition. It backfills each open assignment as `staffing`, generation 1, and binds its
-existing entitlement to generation 1 while preserving whether that entitlement is armed,
-claimed, or absent. It completes this backfill before supervision resumes. It does not infer
-affinity or waiting from text, role names, attests, wakes, messages, or artifacts.
+The migration backfills every existing assignment with generation 1 before supervision
+resumes. Each closed row then projects `terminal`, generation 1, and its exact unchanged
+`completed`, `surrendered`, or `revoked` disposition. Each open row stores `staffing`,
+generation 1, and binds its existing entitlement to generation 1 while preserving whether
+that entitlement is armed, claimed, or absent. The migration does not infer affinity or
+waiting from text, role names, attests, wakes, messages, or artifacts.
 
-A reviewed manifest may convert a named passive owner card. Each entry names work-item ID,
-assignment ID, preferred role, terminal disposition, principal, and reason. One transaction
-verifies the row is still open and unchanged, writes affinity, disposes the assignment as
-`converted_to_affinity`, cancels that assignment's unclaimed effort effects, and preserves
-history.
-
-The conversion refuses live child obligations, running work, ambiguous custody, or a state
-generation newer than the manifest. No role-wide bulk rule is valid evidence.
+No migration converts an assignment to affinity. Existing passive owner cards remain
+assignments until an authorized principal uses an existing lawful terminal disposition. A
+future conversion feature requires its own reviewed terminal-law amendment.
 
 ### Operating pattern
 
-This feature changes the operating pattern for assignment creators. The same release must
-amend the operating manual and dispatching skill to require an explicit initial supervision
-choice, explain the existing-wire `staffing` compatibility mapping, and preserve the wait
-mapping in invariant 11. Guidance names the choice and commands; this specification remains
-the sole home for state mechanics.
+This feature changes the operating pattern for assignment creators. The same release adds
+`## Choose assignment supervision at birth` to
+`priv/guidance/operating-manual.md` and adds
+`## Creating assignments: choose initial supervision` to
+`priv/skills/tightbeam-dispatching/SKILL.md`. Both destinations require the explicit initial
+supervision choice, explain the existing-wire `staffing` compatibility mapping, preserve the
+wait mapping in invariant 11, and tell creators that preferred-owner affinity cannot satisfy
+the closed recovery-role census. Guidance names the choice and commands; this specification
+remains the sole home for state mechanics.
 
 ### Refusals and recovery
 
-The gateway refuses missing or conflicting birth states, undeclared role dependencies,
+The gateway refuses missing or conflicting birth states, recovery-role census mismatches,
 missing or invalid required role bindings, role fields on `none` dependencies, invalid
 affinity roles, missing supporting rows, target mismatches, wrong-owner decision requests,
-stale generations, invalid terminal dispositions, and unsafe manifest conversions without
-partial writes.
+stale generations, and invalid terminal dispositions without partial writes.
 
 A missing required binding returns `required_role_binding_missing`. An invalid binding
 returns `required_role_binding_invalid`. A supplied role field for a `none` dependency
@@ -386,41 +418,50 @@ entitlement, prod, acknowledgment, or disposition.
 15. Given an assignment has reached `terminal`, when a caller requests resume, then the
     gateway refuses and reports that new work requires a new assignment.
 16. Given an existing closed assignment and an existing open assignment, when migration
-    runs, then the closed row projects `terminal` from its unchanged disposition, the open
-    row stores `staffing` generation 1, and no prose or role-name inference creates affinity.
-17. Given a reviewed conversion manifest for one unchanged passive owner card, when the
-    transaction commits, then it writes affinity and `converted_to_affinity` terminal history
-    while preserving prior wakes, attests, artifacts, and escalations.
-18. Given a manifest entry with running work, live child obligations, ambiguous custody, or a
-    stale generation, when conversion runs, then it refuses and changes neither affinity nor
-    assignment state.
-19. Given a successful create or transition response is lost, when the caller retries the
+    runs, then both rows store generation 1, the closed row projects `terminal` from its
+    unchanged lawful disposition, the open row stores `staffing`, and no prose or role-name
+    inference creates affinity.
+17. Given a migrated closed assignment at generation 1, when a caller retries a transition
+    with generation 0, then the gateway returns `terminal`, generation 1, and writes no
+    state, binding, entitlement, prod, or disposition.
+18. Given a migrated closed assignment at generation 1, when a caller requests resume with
+    generation 1, then the gateway returns `terminal`, generation 1, and reports that new
+    work requires a new assignment.
+19. Given migration inspects existing terminal outcomes, when it completes, then the allowed
+    set remains exactly `completed`, `surrendered`, and `revoked`, and no
+    `converted_to_affinity` value or projection exists.
+20. Given a successful create or transition response is lost, when the caller retries the
     same idempotency key, then the gateway returns the original state and state-binding IDs
     and row counts do not increase.
-20. Given an existing-wire create request that omits the descriptor, when the gateway accepts
+21. Given an existing-wire create request that omits the descriptor, when the gateway accepts
     it, then the response and audit event explicitly show `staffing`, generation 1.
-21. Given a new wire version requires the descriptor, when its create request omits the
+22. Given a new wire version requires the descriptor, when its create request omits the
     descriptor, then the gateway refuses and names the missing field as the remedy.
-22. Given the release contains this feature, when its served operating manual and dispatching
-    skill are inspected, then they require the initial supervision choice and preserve the
-    three wait instruments without duplicating state mechanics.
-23. Given any escalation-targeting, staff-loss-rerouting, office-continuity, or relief
-    mechanism declares `required`, when activation omits `roleName`, then the gateway returns
-    `required_role_binding_missing`, identifies the mechanism and field, and writes no
-    mechanism instance or downstream recovery effect.
-24. Given a `required` recovery mechanism and a registered `roleName`, when activation
-    commits, then the same transaction writes the exact binding with the mechanism instance.
-25. Given a work item has `preferredOwnerRole`, when a `required` recovery mechanism omits
-    its binding, then the gateway refuses and does not copy the preferred role.
-26. Given a recovery mechanism declares `none`, when its schema and activation seam are
-    inspected, then neither exposes an optional role-hint field.
-27. Given a recovery mechanism declares `none`, when a caller supplies a role field, then
-    the gateway returns `role_binding_not_allowed` and writes no mechanism instance or
-    downstream recovery effect.
-28. Given the automatic stamp proposed by `wi_7f068d0c` exists on an opened row, when a
-    `required` recovery mechanism omits its binding, then the gateway still returns
-    `required_role_binding_missing` unless that stamp's reviewed canonical contract defines
-    it as the exact binding at that mechanism seam.
+23. Given the release contains this feature, when
+    `priv/guidance/operating-manual.md` and
+    `priv/skills/tightbeam-dispatching/SKILL.md` are inspected, then their named sections
+    require the initial supervision choice and preserve the three wait instruments without
+    duplicating state mechanics.
+24. Given a role-addressed agent ask, when activation commits, then the typed router validates
+    the selected role and the request transaction writes the same role to `askedOfRole`.
+25. Given a session- or user-addressed agent ask, when a caller also supplies a role field,
+    then the gateway returns `role_binding_not_allowed` and writes no request or notification.
+26. Given a pending role-addressed wake, when creation commits, then the wake transaction
+    writes the validated role to `targetRole` and retirement reuses that exact role name.
+27. Given a direct or lineage wake, when a caller supplies `targetRole`, then the gateway
+    returns `role_binding_not_allowed` and writes no wake or downstream recovery effect.
+28. Given an authorized office dissolver, when office failover runs, then `role-bind`
+    validates and commits the new `roles.boundSessionKey` before the separate revoke verb;
+    no combined automatic failover transaction exists.
+29. Given the pinned source and companion set, when the relief census row is inspected, then
+    no relief activation seam or optional role field exists.
+30. Given a work item has `preferredOwnerRole` or the automatic stamp proposed by
+    `wi_7f068d0c`, when a required census row lacks its explicit role field, then the gateway
+    returns `required_role_binding_missing` and copies neither value.
+31. Given current source commit `d00e06aea578d711e608637d38a97872487df15e`, when the
+    recovery-role census check enumerates role-bearing ask, wake-retirement, office, and
+    relief seams, then it matches exactly the six rows in `recovery-role-dependencies-v1`;
+    any additional or changed seam returns `recovery_role_census_mismatch` before activation.
 
 ## Open Questions
 
