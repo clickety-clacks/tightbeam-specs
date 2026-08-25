@@ -439,7 +439,7 @@ unordered races would retain duplicate or post-close actions.
 | I-13 through I-16, R-18 through R-25 | `art_2f8cc9d0`; `att_b1b239cc` F1-F2 | AC-16 through AC-20, AC-30, AC-32 |
 | I-18 | current response-horizon configuration | AC-29 |
 | P-01 through P-05 | original v2 provenance and acceptance | AC-21 through AC-24 |
-| I-05, R-01, R-16, R-26 | `att_b1b239cc` F3; pinned terminal decision writers | AC-33 |
+| I-05, R-01, R-16, R-26 | `att_b1b239cc` F3; `att_61ed3ad8` F6; pinned terminal decision writers | AC-33 |
 | I-08, I-12, I-17, R-04, R-07, R-08, R-27 | `att_b1b239cc` F4 | AC-34 through AC-39 |
 
 ## Acceptance
@@ -596,12 +596,29 @@ deadline wake has a typed `superseded` disposition. No holder membership, holder
 or replacement wake exists for that assignment. When boot replays cutover, those rows and
 wake ids are byte-for-byte unchanged.
 
-AC-33. Given two decision requests raised by one holder terminalize in serialized
-transactions with the same millisecond terminal time, when the first transaction commits
-before the second, then their terminal-effect sequences are distinct and increasing. Each
-transaction consumes the holder generation current at its commit, records
-`decisionRequestsResolved` as one, and starts one quiet generation. Neither transaction
-emits a zero-effect action.
+AC-33. Run the following four fixtures separately. In each fixture, holder `R` has an armed
+quiet generation, the request has `raiserSessionKey = R` and `raiserId = session:R`, and a
+previously committed terminal-effect row has `at = T` and sequence `S`. A distinct
+principal holder `P` also has an armed quiet generation except in the `withdrawn` fixture,
+where the lawful withdrawing principal is the raiser and `P = R`. The `ruled` fixture is an
+open `statute` request for which `P` passes the ruling writer's authority check. The
+`answered` and `returned` fixtures are open `agent` requests with
+`expecterSessionKey = P`. The `withdrawn` fixture is an open `agent` request raised by `R`.
+
+| Transition | Persisted terminal fields | Expected terminal-effect row | Affected holders |
+|---|---|---|---|
+| `ruled` | `ruledAt = T`, `ruledBy = session:P`, `decision = allow` | `transition = ruled`, `at = T`, `principal = session:P`, `cause = allow` | `R` and `P` |
+| `answered` | `answeredAt = T`, `answeredBy = session:P`, `answer = answer-secret` | `transition = answered`, `at = T`, `principal = session:P`, `cause = answer-recorded`; the row contains no copy of `answer-secret` | `R` and `P` |
+| `returned` | `returnedAt = T`, `returnedBy = session:P`, `returnReason = needs-context` | `transition = returned`, `at = T`, `principal = session:P`, `cause = needs-context` | `R` and `P` |
+| `withdrawn` | `withdrawnAt = T`, `withdrawnBy = session:R`, `withdrawnReason = no-longer-needed` | `transition = withdrawn`, `at = T`, `principal = session:R`, `cause = no-longer-needed` | `R` once |
+
+When the named terminal writer commits after the prior row, then exactly one terminal-effect
+row exists for that request. The row has that request's `requestId` and
+`raiserSessionKey = R`, and its sequence is greater than `S` despite the equal millisecond
+time. The same transaction consumes the current generation for every affected holder in
+the table, records `decisionRequestsResolved` as one in each consumed generation, and
+starts one quiet generation for each affected holder. No other holder generation changes,
+and the transaction emits no zero-effect action.
 
 AC-34. Given assignment A is old holder H1's only affected card, new holder H2 has no
 affected card or armed generation, and a quiet probe for H1 generation G is blocked before
