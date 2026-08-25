@@ -24,6 +24,23 @@ Authority:
   `wi_835a72aa-c88b-421b-a34c-41d23032c7c7` and
   `wi_3874a61f-288b-4b54-ac8a-da9234a910a2`.
 
+## Spec home
+
+The sole canonical repository home for this file is
+`rest-read-plane-d2-v1.md` in `clickety-clacks/tightbeam-specs`. Landing and
+review evidence record its containing commit and content SHA-256. A worktree,
+artifact pointer, product-repository copy, or conversation is not an amendment
+authority.
+
+The D2 review set is this file plus `rest-state-api-v1.md` and
+`rest-state-api-v1-wire-schema.md` at the Authority revision above, and the
+adopted shared-serializer contract `art_b1995a26`. The D2 code-start set also
+includes D1's final reviewed canonical spec and integration and the reviewed
+canonical landings for `wi_835a72aa-c88b-421b-a34c-41d23032c7c7` and
+`wi_3874a61f-288b-4b54-ac8a-da9234a910a2`. The code-start preflight records
+their exact paths, commits, and SHA-256 values. This file references those
+canonical landings and does not copy their draft bytes.
+
 ## Goal
 
 Deliver the remaining canonical REST v1 collection, detail, nested, composed,
@@ -62,6 +79,9 @@ legacy dispatch read.
   notice use that function.
 - **Resolved principal**: the principal returned by D1's unchanged existing
   bearer and `asUser` resolver before a resource query runs.
+- **Resolved user id**: the stable user id carried by a resolved user
+  principal. A resolved session principal has no resolved user id; its
+  `ownerUserId` metadata does not supply one.
 - **Tuple cursor**: D1's opaque signed encoding of the resource name, complete
   immutable order tuple, filter fingerprint, and stable principal binding.
 - **Composed resource**: a deterministic view with the closed R9 dependency
@@ -228,7 +248,7 @@ parameter is invalid. An unlisted query key returns `400 invalid_filter`.
 | artifacts | `workItemId`, `createdBySession`, `kind`, `state` |
 | assets | `ownerUserId` (admin only), `mimeType` exact |
 | decision requests | `status`, `kind`, `ownerUserId`, `assignmentId`, `raiserSessionKey`, `expecterSessionKey` |
-| read markers | `scopeKey` exact or `scopeKeyPrefix`; the two are mutually exclusive; non-admin reads bind `userId` to the resolved user and expose no user-id filter |
+| read markers | `scopeKey` exact or `scopeKeyPrefix`; the two are mutually exclusive; a non-admin collection binds `userId` to the resolved user; no collection exposes a `userId` filter |
 | roles | `ownerUserId`, `boundSessionKey` |
 | toplines | `state` only |
 | execution map — flat, tree, subtree | `origin`, `ownerUserId`, `state`, `quietOverMs`, `specRefName`, dependent optional `specRefSha256`, `sessionKey` |
@@ -251,6 +271,18 @@ empty-selection behavior, and validation error beyond the binding allowlists
 stated here. D2 does not copy those closure contracts. D2 adds no `fields`,
 `sort`, `include`, offset, generic join, roster, partial-name, or name-pattern
 filter.
+
+`GET /api/read-markers/:scopeKey` always resolves the singular composite key
+`(resolvedUserId,scopeKey)`. This binding applies to every resolved user
+principal, including an admin. An admin operator that needs another user's
+marker uses the existing D1 org-bearer `asUser=<targetUserId>` transport
+parameter so the principal resolver supplies that target user id before the
+query. A session principal has no `resolvedUserId` for this route. It receives
+the same 404 after `query_read_marker/2` executes the same parameterized
+composite-key statement with a SQL `NULL` user-id parameter; the statement
+cannot match a non-null marker key and performs no target-key lookup. A
+`userId` query key remains `400 invalid_filter`. Thus two allowed rows with one
+`scopeKey` never compete for one detail envelope.
 
 ### Deterministic order and tuple cursors
 
@@ -494,8 +526,10 @@ A missing numbered case fails conformance.
    tuple order, default limit is 50, `limit=501` returns 500, and the cursor
    decodes to the complete listed tuple without rowid, offset, or locator.
 10. **Read-marker composite key.** Given two users with the same `scopeKey`,
-    when each authorized view pages while each visited marker updates, then
-    each `(userId,scopeKey)` appears once and no marker crosses principals.
+    an admin, and an admin-owned marker with that scope, when each authorized
+    collection pages while each visited marker updates, then each
+    `(userId,scopeKey)` appears once, the admin collection includes all three
+    rows, and no marker crosses principals.
 11. **Cursor precedence.** Given malformed, wrong-resource,
     changed-filter, wrong-principal, and now-hidden cursor cases, when each
     request runs, then the first three return `400 invalid_cursor` before row
@@ -571,6 +605,15 @@ A missing numbered case fails conformance.
     `(userId,scopeKey)` row, set/clear write seam, or monotonic version source,
     when D2 preflight runs, then it fails before `Tightbeam.ReadMarkers` query
     code is added.
+28. **Read-marker detail identity.** Given two owners and an admin each have a
+    marker with the same `scopeKey`, when the admin user credential calls the
+    detail route directly and the org bearer then calls it once through
+    existing D1 `asUser` for each owner, then the direct call returns only
+    `(adminUserId,scopeKey)` and the two resolved-user calls return only their
+    respective composite rows. A `userId` query key returns D1's invalid-filter
+    error with HTTP 400. A session principal receives the same 404 after one
+    equal-shape, equal-count statement with a SQL `NULL` user-id parameter and
+    without a target-key lookup or row serialization.
 
 ## Open Questions
 
