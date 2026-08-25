@@ -19,10 +19,12 @@ The change projects existing policy. It does not choose policy.
 
 ## Non-Goals
 
-- Do not add, remove, reorder, rename, or re-tier a model.
+- Do not add, remove, reorder, rename, characterize, or re-tier a model, including
+  `terra`.
 - Do not change an activity's quality floor.
 - Do not decide whether an activity row or an archetype's `model_preferences` wins when
-  they disagree.
+  they disagree. Decision request `dr_07a9f9f3-34b5-4081-a508-2dc6f343a6eb`
+  tracks that enduring policy independently and does not block this amendment.
 - Do not make the substrate select a model, walk a candidate list, retry a turn, or
   judge capability.
 - Do not add a command, condition kind, assignment state, hold, or fallback mechanism.
@@ -203,32 +205,23 @@ then the engineering session's actual served prompt contains the exact activity 
 once and the neutral session's prompt does not contain it. The fixture records the
 source table hash, served-prompt hash, identity revision, archetype, and observed count.
 
-## Open Questions
+## Recorded Separate Findings
 
-### OQ-01 — NON-BLOCKING: activity row versus archetype preference
+These findings require separate authority. They add no requirement or acceptance check
+to this amendment.
 
-When a matching activity row and an archetype's `model_preferences` disagree, which
-ordered list governs the staffing decision? Current guidance names both sources but does
-not define precedence. This is enduring model policy owned by Mike. This projection can
-ship without deciding it because it changes only whether the existing activity row is
-readable.
-
-### OQ-02 — NON-BLOCKING: uncharacterized `terra`
-
-The engineering table names `terra[low]`, while the working-set capsules define no
-`terra` nickname or `gpt-5.6-terra` characterization. Adding, removing, or re-tiering
-that candidate changes enduring model policy and is outside this amendment. Mike owns
-that choice.
-
-### OQ-03 — NON-BLOCKING: model-release intake detector contract
+### FIND-01 — Catalog-diff contract mismatch
 
 The `model-release-intake` skill says uncharacterized live models make
 `mix tightbeam.catalog.diff` exit nonzero. Current source and tests report new arrivals
-as informational and return success when no characterized model vanished. Correcting
-the skill, the detector, or both requires a separate authority and does not block table
-projection.
+as informational and return success when no characterized model vanished.
 
-### OQ-04 — NON-BLOCKING: ceremony election
+### FIND-02 — Intake ceremony has no election
 
 No shipped engineering archetype elects `model-release-intake`. Selecting its detecting
-kernel and owning archetype changes guidance placement and is outside this amendment.
+kernel and owning archetype requires separate guidance-placement work.
+
+## Open Questions
+
+None. The independently tracked precedence policy and FIND-01/FIND-02 are outside this
+amendment and do not create holes in its visibility requirements.
