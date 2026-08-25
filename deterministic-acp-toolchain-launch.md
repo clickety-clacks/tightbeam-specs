@@ -507,8 +507,7 @@ row with no context returns these fields as null. The existing `state`,
 timestamps, and `lastError` are the lifecycle outcome; no synthesized summary
 field competes with them. Existing admin authorization stays unchanged.
 
-The text form prints the runtime executable beside the launch state. The
-harness-process JSON and text forms retain the existing newest-first ordering.
+The JSON rows retain the existing newest-first ordering.
 
 ### A-7 — Authority reconciliation and operating pattern
 
@@ -694,11 +693,11 @@ there is no migration.
 Traces: R-7, R-12; A-4, A-6.
 
 Given one successful launch, one fact refusal, and one historical launch, when
-an admin runs JSON and text forms of `list` and `harness-process list`, then the
-three shapes match A-6, order is deterministic, and the historical fields are
-null rather than invented. Searches over stored manifests, contexts, and CLI
-output find no credential, prompt, assistant text, tool argument, provider
-frame, or unrelated environment variable.
+an admin runs `list` and `harness-process list`, then their JSON shapes match
+A-6, order is deterministic, and the historical fields are null rather than
+invented. Searches over stored manifests, contexts, and CLI output find no
+credential, prompt, assistant text, tool argument, provider frame, or unrelated
+environment variable.
 
 ### AC-10 — Existing turn trace is unchanged
 
