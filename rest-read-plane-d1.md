@@ -2,172 +2,259 @@
 
 Status: build specification. Authority: canonical REST r3 `art_971f45b5`,
 reviewed SHA-256 `49b86ec874283c523001be7449b1e14aef47ca72932955445638ce6443aad754`;
-the adopted six-resource contract `art_b1995a26` / fact 1093; and reviewed
-firehose tip `8e4a412f25950dae1e1f33af42c390a4707bcf89`.
+the adopted six-resource contract `art_b1995a26` / fact 1093; reviewed
+firehose tip `8e4a412f25950dae1e1f33af42c390a4707bcf89`; PO rulings
+`att_2d3a8333` and `att_304a6d07`; and the reviewed canonical AU2 repair
+required by `wi_b0a6f85f-3523-45bb-8d10-1a67a2ad02bb` /
+`asg_cd74975c-70c4-479b-8e34-20f91ef44452`.
+
+## Spec homing
+
+This file is the D1 build specification for
+`wi_ed4f9020-3fb9-4ee1-9f8f-0cb2629fed96`. Its reviewed content hash, rather
+than an unreviewed branch tip or a worktree copy, is the implementation
+binding. A later D1 amendment replaces this file and receives a fresh exact
+review before the work item binding changes.
 
 ## Goal
 
-Deliver deterministic REST list and detail reads for config, host environment,
-hosts, users, served identity, and kungfu. REST calls the existing shared query,
-public serializer, and visibility seam for each resource.
+Deliver deterministic REST collection and detail reads for config, host
+environment, hosts, users, served identity, and kungfu. The REST transport
+uses the one shared query, public serializer, and visibility seam assigned to
+the resource. It adds no second data shape.
 
 ## Non-Goals
 
-- D1 adds no REST-local serializer, projection, field, credential, principal
-  binding, authorization grant, or tailnet identity behavior.
-- D1 does not change firehose classes, primary references, version sources, or
-  payload bytes.
-- D1 does not implement remaining resources, nested/download reads, composed
-  views, CLI migration, alias removal, or writes.
-- D1 is M2 only. It does not start M3–M8 work and preserves canonical M1–M8.
+- D1 does not add a REST-local serializer, projection, public item field,
+  credential, principal resolver, authorization grant, or tailnet identity
+  behavior.
+- D1 does not add a host-environment detail route, firehose class, primary
+  reference, version source, firehose payload activation, CLI migration,
+  compatibility-alias removal, write route, deployment, or release behavior.
+- D1 does not start M3 through M8. M1 owns the shared seams; D1 is M2.
 
 ## Terms
 
-- **Shared seam**: the named `StateResources` query and serializer plus the
-  named `StateVisibility` predicate, called by REST and firehose.
-- **Resolved principal**: the existing bearer-authenticated principal after
-  existing CLI `asUser` handling. `asUser` does not authenticate a request.
-- **Tuple cursor**: opaque signed exclusive page boundary with resource,
-  complete immutable sort tuple, filter fingerprint, and principal binding.
+- **M1 seam**: the canonical `Tightbeam.StateResources` query and public
+  serializer plus the canonical `Tightbeam.StateVisibility` predicate that M1
+  freezes for one resource.
+- **Transport adapter**: the existing `Tightbeam.Wire.Router` GET handling that
+  parses a request, calls an M1 seam, and emits an R4 outer object. It owns no
+  resource query, item projection, or item serializer.
+- **Resolved principal**: the result from the existing gateway principal
+  resolver after AU2 `asUser` transport handling.
+- **Tuple cursor**: an opaque signed exclusive page boundary containing the
+  resource, full immutable sort tuple, normalized filter fingerprint, and
+  resolved-principal binding.
 
 ## Assumptions
 
-1. Before D1 code starts, canonical green `main` contains the integrated result
-   for `asg_fd993fc7-43fd-401f-9433-190e07d5d7f1`.
-2. That integration preserves the six seams at reviewed tip `8e4a412f`, or a
-   reviewed equivalent. A contract test proves the current registry names them.
-3. Existing router authentication distinguishes organization CLI, session CLI,
-   and device bearer credentials before the resource read runs.
+1. Canonical green `main` contains M1's six shared query, serializer, and
+   visibility seams before a D1 product edit begins.
+2. `asg_fd993fc7-43fd-401f-9433-190e07d5d7f1` is qualifying evidence for those
+   M1 seams. It is not an M3 activation gate. If its landing combines M1 with
+   active M3 payload wiring, the implementer waits for that landing or an
+   M1-only integration split; D1 does not redefine SQ4.
+3. A reviewed canonical correction for AU2 from `wi_b0a6f85f` /
+   `asg_cd74975c` is a hard authority dependency. Before that correction is
+   reviewed and present on canonical green `main`, D1 code does not start and
+   no implementation selects session `asUser` behavior from this file.
+4. The green M1 host visibility seam implements AU4: an authenticated org user
+   or session can read hosts. The old admin-only implementation is not a D1
+   authority source.
 
 ## Invariants
 
-1. A handler gets raw data through its table query seam, serializes through its
-   table serializer, and checks its table visibility predicate. It never maps
-   raw rows itself.
-2. Visibility runs before serialization, pagination, or output. Unknown and
-   forbidden details return identical `404 not_found` responses.
-3. Each item has exactly its canonical R7a fields. REST detail item bytes equal
-   the corresponding firehose payload bytes after outer-envelope removal.
-4. Each success and error response includes `Cache-Control: no-store`.
-5. M1 owns projections, R8 mappings, and visibility. D1 consumes those seams;
-   M3 through M8 remain independently gated.
+1. A D1 GET obtains resource data through the resource's single M1 query seam,
+   evaluates that resource's shared visibility seam, and emits the result only
+   through that resource's public serializer.
+2. The router does not map a raw row, duplicate a collection query, define a
+   REST-only projection, or append an item field.
+3. Visibility precedes serialization, pagination, and response emission.
+   Unknown and forbidden details have the canonical identical `404 not_found`
+   body, headers, statement shape, and timing class.
+4. A REST detail item has exactly its R7/R7a fields. For the six notice-backed
+   resources, its serialized item bytes equal the corresponding firehose
+   payload bytes after the outer object is removed.
+5. Success and error responses carry `Cache-Control: no-store`. D1 emits no
+   ETag and implements no conditional request behavior.
+6. M1 freezes projections, R8 mappings, R9 dependencies, and AU4 visibility.
+   M2 adds REST on those seams before M3 points firehose payload builders to
+   the same serializers.
 
 ## Architecture
 
-### Code-start gate
+### Code-start gates
 
-The implementer proves canonical green `main` contains the integration result
-for `asg_fd993fc7-43fd-401f-9433-190e07d5d7f1` before any product edit. A base
-lacking it, including a private firehose branch, fails this gate. This avoids a
-second serializer; accepting a duplicate would violate the shared contract.
+The implementer proves both gates before editing product source:
 
-### Routes, seams, filters, and order
+1. Canonical green `main` contains the six M1 seams, with the M1 qualification
+   described in Assumption 2.
+2. Canonical green `main` contains the reviewed AU2 correction from
+   `wi_b0a6f85f` / `asg_cd74975c`.
 
-Collection enumeration belongs in `Tightbeam.StateResources`, beside the named
-detail query. It normalizes rows for that same serializer; router code owns
-neither a query nor an item shape.
+Failure of either gate stops D1 before a product edit. A private firehose tip,
+an unreviewed AU2 repair branch, and an M3-only integration do not satisfy a
+gate.
 
-The shared REST pattern has one name and applies to each D1 resource and every
-later REST resource: `Tightbeam.Wire.Router.rest_read/3` dispatches a matched
-GET to the resource entry; `Tightbeam.StateResources.list_<resource>/2` owns a
-collection query; `Tightbeam.RestCursor.encode/4` and `decode/4` own tuple
-cursor production and validation; and `Tightbeam.RestEnvelope.list/3` and
-`detail/2` own the outer JSON objects. Route code must not create an envelope,
-cursor, collection query, serializer, or visibility copy. For example,
-`GET /api/config` dispatches through `rest_read/3` to
-`StateResources.list_config/2`, serializes each row with `config/1`, and passes
-the items to `RestEnvelope.list/3`.
+### Routes and the one resource seam
 
-| Resource and routes | Query seam | Serializer / visibility | Filters | Tuple |
-|---|---|---|---|---|
-| config: `/api/config`, `/api/config/:key` | `list_config/2`; `query_config/2` | `config/1`; `config_visible?/1` | `key` exact | `(key)` |
-| host environment: `/api/host-env` | `list_host_environment/2`; `query_host_environment/2`, `/4` detail | `host_environment/1`; `host_environment_visible?/1` | `host`, `harness`, `name` exact | `(host,harness,name)` |
-| hosts: `/api/hosts`, `/api/hosts/:host` | `list_hosts/2`; `query_host/2` | `host/1`; `host_visible?/1` | `host` exact | `(host)` |
-| users: `/api/users`, `/api/users/:userId` | `list_users/2`; `query_user/2` | `user/1`; `user_visible?/1` | none | `(createdAt,userId)` |
-| identity: `/api/identity`, `/api/identity/:name` | `list_identity/2`; `query_identity/2`; only `served` resolves | `identity/1`; `identity_visible?/1` | `name`, `state` exact | `(name)` |
-| kungfu: `/api/kungfu`, `/api/kungfu/:name` | `list_kungfu/2`; `query_kungfu/2` | `kungfu/1`; `kungfu_visible?/1` | `status`, `rootArchetype` exact | `(name)` |
+`Tightbeam.Wire.Router` owns route matching, shared request parsing, bearer
+authentication reuse, cursor validation, the R4 outer envelope, canonical
+errors, and cache headers. It invokes the M1 seam below. It does not introduce
+`rest_read/3`, `list_<resource>/2`, a REST cursor module, a REST envelope
+module, or another resource-shaped API.
 
-Repeated values for one listed filter are disjunctive. Different filters are
-conjunctive. Each unlisted query key returns `400 invalid_filter`. Users accept
-no collection filter because its canonical projection has neither status nor
-ownership. An identity detail name other than `served` is unknown.
+M1 owns collection enumeration in the same resource query seam as detail. If
+the reviewed M1 contract needs a collection-capable function clause or input,
+M1 names and freezes it. D1 does not create a sibling `list_*` seam. The
+following existing names are the canonical D1 resource names:
 
-Each list returns R4's `schemaVersion`, `resource`, `items`, and `page`
-envelope. Each detail returns R4's `schemaVersion`, `resource`, and `item`
-envelope. Resource strings exactly match the registry: `config`, `host
-environment`, `hosts`, `users`, `identity`, and `kungfu`.
+| Resource and routes | One shared query seam | Public serializer | Shared visibility | Allowed collection filters | Immutable ascending tuple |
+|---|---|---|---|---|---|
+| config: `/api/config`, `/api/config/:key` | `StateResources.query_config/2` | `StateResources.config/1` | `StateVisibility.config_visible?/1` | `key` exact | `(key)` |
+| host environment: `/api/host-env` | `StateResources.query_host_environment/2`; `/4` remains the shared internal exact lookup, not an HTTP route | `StateResources.host_environment/1` | `StateVisibility.host_environment_visible?/1` | `host`, `harness`, `name` exact | `(host,harness,name)` |
+| hosts: `/api/hosts`, `/api/hosts/:host` | `StateResources.query_host/2` | `StateResources.host/1` | `StateVisibility.host_visible?/1` | `host` exact | `(host)` |
+| users: `/api/users`, `/api/users/:userId` | `StateResources.query_user/2` | `StateResources.user/1` | `StateVisibility.user_visible?/1` | `userId` exact | `(createdAt,userId)` |
+| identity: `/api/identity`, `/api/identity/:name` | `StateResources.query_identity/2` | `StateResources.identity/1` | `StateVisibility.identity_visible?/1` | `name`, `state` exact | `(name)` |
+| kungfu: `/api/kungfu`, `/api/kungfu/:name` | `StateResources.query_kungfu/2` | `StateResources.kungfu/1` | `StateVisibility.kungfu_visible?/1` | `status`, `rootArchetype` exact | `(name)` |
 
-`before` and `after` are mutually exclusive exclusive bounds. No cursor gives
-the newest page; items are oldest to newest. `limit` defaults to 50 and clamps
-at 500. Cursor validation checks encoding, version, resource, filter fingerprint,
-and principal binding before any row lookup. Cursors contain no offset, SQLite
-`rowid`, or live-row locator.
+The host-environment route is one collection route. The three filters select
+items from that collection; D1 exposes no `/:host/:harness/:name` detail
+route. Identity detail accepts `served`; another name is absent.
 
-### Authentication, visibility, status, and cache
+### Envelopes, filters, order, and cursors
 
-Use `Authorization: Bearer <existing gateway credential>` and AU1/AU2 unchanged.
-Invalid or absent bearer returns `401 auth_failed`. An organization CLI bearer
-needs exactly one `asUser`: missing returns `400 invalid_message`, repeated
-returns `400 invalid_as_user`, and malformed percent encoding returns `400
-malformed_query` before resolution. A device bearer plus `asUser` returns `400
-invalid_as_user` before resolution. A session bearer remains a session; owner
-mismatch returns existing `403 identity_not_yours`.
+A collection response uses R4's `schemaVersion`, `resource`, `items`, and
+`page` envelope. A detail response uses R4's `schemaVersion`, `resource`, and
+`item` envelope. The resource strings are exactly `config`, `host environment`,
+`hosts`, `users`, `identity`, and `kungfu`.
 
-Each D1 resource is admin-only. The named predicate evaluates the resolved
-principal. A non-admin list or detail returns `404 not_found`. Invalid listed
-filter values return `400 invalid_filter`. A malformed, wrong-resource, or
-changed-filter cursor returns `400 invalid_cursor`; a cursor bound to another
-principal returns `404 not_found`. Successful and error JSON responses include
-`Cache-Control: no-store`; D1 adds no ETag or conditional-request behavior.
+The filter table is closed. A key absent from its resource row returns
+`400 invalid_filter`. A valid exact filter for a missing config, host,
+host-environment, user, identity, or kungfu item returns an empty collection.
+An unknown user id in `GET /api/users?userId=...` returns an empty collection,
+not an existence error. Users accept no status or ownership filter. D1 has no
+devices route; when that later route is added, `status` is only
+`allowlisted`, `pending`, or `denied`, and `userId` is its ownership selector.
+An invalid device status returns `400 invalid_filter`.
 
-### Touchpoints
+Repeated values for one allowed filter are OR. Values for distinct allowed
+filters are AND. A malformed listed-filter value returns `400 invalid_filter`.
 
-- `lib/tightbeam/wire/router.ex`: routes, existing bearer/`asUser` reuse,
-  `rest_read/3`, validation, and error encoding.
-- `lib/tightbeam/state_resources.ex`: shared collection enumeration only;
-  existing serializers remain the only public item encoders.
-- `lib/tightbeam/state_visibility.ex`: invoke listed predicates; no router copy.
-- `lib/tightbeam/rest_cursor.ex` and `lib/tightbeam/rest_envelope.ex`: the one
-  generic cursor and envelope implementation reused by D2 and later slices.
-- `lib/tightbeam/firehose/registry.ex` and `admin_projection.ex`: contract
-  checks only; no REST registry or REST projection.
-- `test/router_test.exs`, `test/admin_projection_test.exs`, and a focused REST
-  route suite: routes, auth, visibility, filters, cursors, cache, closed-world
-  shapes, and firehose-byte parity.
+Rows sort by the full table tuple, oldest to newest. No cursor starts from the
+oldest page. `before` and `after` are mutually exclusive exclusive bounds.
+`limit` defaults to 50 and clamps at 500. Cursor validation checks encoding,
+version, signature, resource, normalized filter fingerprint, and resolved
+principal binding before a resource row lookup. The cursor carries no offset,
+SQLite `rowid`, or live-row locator. A malformed, wrong-resource, or
+changed-filter cursor returns `400 invalid_cursor`; a principal-binding
+mismatch returns the canonical `404 not_found`.
+
+### Authentication, visibility, errors, and cache
+
+The transport uses `Authorization: Bearer <existing gateway credential>`.
+Absent or invalid bearer credentials return `401 auth_failed`. An org bearer
+requires one `asUser`: missing returns `400 invalid_message`, repeated returns
+`400 invalid_as_user`, and malformed percent encoding returns
+`400 malformed_query` before principal resolution. An org bearer passes the
+decoded value to the existing resolver without normalization or existence
+lookup. That resolver selects the same principal as dispatch, including an
+unknown nonempty user id.
+
+A session bearer with a matching `asUser` validates `session.ownerUserId` and
+resolves the owner user principal. A mismatching session `asUser` returns
+`403 identity_not_yours`. A device bearer with `asUser` returns
+`400 invalid_as_user` before principal resolution. These cases require the
+reviewed AU2 correction gate; D1 adds neither a resolver nor a principal
+binding.
+
+Config, host environment, users, identity, and kungfu use their M1 admin-only
+visibility predicates. Hosts use their M1 AU4 predicate and admit any
+authenticated org user or session. A denied collection omits unreadable rows.
+A denied detail uses the canonical identical `404 not_found` result. The
+transport returns `400 invalid_filter` and `400 invalid_cursor` before a
+resource-row lookup in the cases specified above. It uses the canonical error
+envelope and `Cache-Control: no-store` for these errors.
+
+### Implementation and test touchpoints
+
+- `lib/tightbeam/wire/router.ex`: add the listed GET matches; reuse bearer and
+  AU2 dispatch-parity resolution; call M1 seams; encode R4 responses and
+  canonical errors.
+- `lib/tightbeam/state_resources.ex`: M1-owned collection capability within
+  the six named query seams; the six named serializers remain the sole public
+  item encoders.
+- `lib/tightbeam/state_visibility.ex`: M1-owned AU4 predicates; the hosts
+  predicate changes from the old admin-only behavior to authenticated-org
+  user/session visibility before D1 consumes it.
+- `lib/tightbeam/firehose/registry.ex` and
+  `lib/tightbeam/admin_projection.ex`: contract tests for the shared seams;
+  no REST registry, REST projection, or D1 firehose activation.
+- `test/router_test.exs`, `test/admin_projection_test.exs`, and focused HTTP
+  route tests: routes, envelopes, auth, parity, visibility, filters, cursors,
+  ordering, cache, closed fields, and firehose item-byte parity.
 
 ## Acceptance
 
-1. Given a canonical main without the named firehose integration, when D1's
-   code-start check runs, then it fails before a product source edit.
-2. Given integrated green main and an admin bearer, when each list and detail
-   route runs, then it returns HTTP 200, its R4 envelope, `schemaVersion:1`,
-   `Cache-Control:no-store`, and an item from the listed serializer.
-3. Given a raw row with an extra or missing canonical field, when the route
-   serializes it, then the serializer refuses and no partial item is emitted.
-4. Given each matching firehose notice and REST detail, when outer envelopes are
-   removed, then their item JSON bytes are equal.
-5. Given a non-admin organization, device, or session principal, when it calls
-   every D1 route, then it receives the same 404 as an unknown detail and no
-   item serialization occurs.
-6. Given known, unknown, empty, missing, repeated, device, and session-mismatch
-   `asUser` cases, when the GET runs, then it has the stated AU2 result and
-   exactly the existing dispatch principal semantics.
-7. Given tied timestamps, deleted cursor boundaries, and pages larger than 50,
-   when each collection pages in both directions, then every authorized item
-   appears once in table order; `limit=501` yields 500; no cursor has a rowid,
-   offset, or live lookup locator.
-8. Given allowed and unlisted filters plus malformed, wrong-resource, and
-   changed-filter cursors, when requests run, then listed filters restrict
-   output, unlisted filters return 400, and each invalid cursor returns 400
-   before row lookup.
-9. Given invalid bearer, unknown detail, forbidden detail, and valid detail,
-   when responses are compared, then they are respectively 401, identical 404,
-   identical 404, and 200, and each includes the cache header.
-10. Given the integrated registry, when the contract test reads its six rows,
-    then each names this table's query, serializer, visibility, primary refs,
-    and version source; a REST-local serializer or projection fails the test.
+1. Given canonical `main` lacks one M1 seam or lacks the reviewed AU2 repair,
+   when the D1 code-start check runs, then it fails before a product source
+   edit.
+2. Given canonical green `main` satisfies both gates and an authorized
+   principal, when the client sends a real HTTP GET to each route in the table,
+   then the server returns 200, the stated R4 envelope, `schemaVersion: 1`,
+   the resource string, an item from the listed serializer, and
+   `Cache-Control: no-store`.
+3. Given a raw resource row contains an extra field or lacks an R7/R7a field,
+   when its listed serializer runs through a real HTTP route, then serialization
+   fails and the server emits no partial item.
+4. Given a D1 detail item and its matching firehose notice, when the test
+   removes their outer objects, then the item JSON bytes are equal.
+5. Given an authenticated non-admin user and an authenticated session, when
+   either requests `/api/hosts` and a known host detail, then the shared hosts
+   predicate permits the route under AU4. Given either principal requests a
+   known admin-only D1 detail, then the server returns the same 404 as an
+   unknown detail.
+6. Given org bearer `asUser` values that are known, unknown, empty, missing,
+   repeated, or malformed; session bearer values that are absent, matching, or
+   mismatching; and a device bearer plus `asUser`, when direct HTTP GET and
+   dispatch run with equivalent inputs after the AU2 gate passes, then they
+   produce the same resolved principal or the stated 400/403 refusal. The
+   test records no new credential, binding, authorization grant, or tailnet
+   identity behavior.
+7. Given users `userId` filters that match and do not match, when HTTP
+   collection GET runs, then the named query seam restricts results and an
+   unknown well-formed id yields an empty collection. Given `status` or an
+   ownership key on users, then the server returns `400 invalid_filter`.
+8. Given a resource's allowed filters, repeated values within one field, and
+   values across two fields, when HTTP collection GET runs, then repeated
+   values apply OR and distinct fields apply AND. Given an unlisted key or a
+   malformed listed value, then the server returns `400 invalid_filter` before
+   resource-row lookup.
+9. Given tied user timestamps, deleted page-boundary rows, and more than 50
+   authorized rows, when a client pages with both bounds, then it receives an
+   item once in the stated tuple order. Given `limit=501`, then the page has
+   500 items. The cursor inspection proves it contains no rowid, offset, or
+   live-row locator.
+10. Given malformed, wrong-resource, changed-filter, wrong-principal, and
+    now-hidden cursors, when HTTP collection GET runs, then the server applies
+    AU7 precedence: the first three return `400 invalid_cursor`, the
+    wrong-principal case returns the canonical 404, and a now-hidden row is
+    absent.
+11. Given one unknown detail and one forbidden detail per D1 resource, when a
+    warmed in-process suite sends at least 10,000 randomized real HTTP
+    requests for each case, then both cases use the same handler stages,
+    database statement shape, response encoder, and `Cache-Control: no-store`.
+    The suite records equal statement counts, proves neither path opens bytes,
+    and proves both p50 and p95 differ by at most 5%.
+12. Given the integrated registry, when the contract test reads its six rows,
+    then every row names the same query, serializer, visibility, primary refs,
+    and version source used by REST. The test fails if router code adds a
+    REST-local serializer, projection, field, or parallel `list_*` query seam.
 
 ## Open Questions
 
-None. Adding a users status or ownership filter requires a canonical REST
-specification amendment, because the present public projection has no such field.
+None. A new D1 filter, host-environment detail route, public item field, or
+principal rule requires a canonical REST amendment. D1 code remains blocked
+until the reviewed AU2 correction described in Assumption 3 lands on canonical
+green `main`.
