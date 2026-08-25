@@ -19,6 +19,15 @@ independent reviewer clears this file's new exact hash. Implementation stays
 unauthorized before that verdict. The park decision remains blocked on
 `wi_6937890c-6ba6-48b7-a9d2-4eb4510fe245`.
 
+Independent verdict `att_9d9af9f6-a194-4965-a5d8-d529e6de4395` against commit
+`900af84f293825501b14c4cc90841da9778579cb`, artifact `art_84b11ee0`, and SHA-256
+`ff58ba51fb80832f0dfd71689be29fa263e6f41b02b34d92a9c7a9304ede9620` requested one
+change. Its report `art_635358a2`, SHA-256
+`8bc636b1a24ddca90fb675d85bd62cc831c1534135e03d8cbeba8cd363a5440d`, proved that
+foreign keys on the two diagnostic parent-copy columns reject the required
+missing-parent row. This successor deletes only those two constraints and awaits a new
+independent exact-SHA verdict.
+
 ## Goal
 
 When a child session files a completion attest, Tightbeam records the completion and
@@ -174,6 +183,13 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
    existing marker remains truthful without adding a domain event or deleting specified
    observability. This records the writer's smallest-contract disposition of withdrawn
    request `dr_2195043c-a970-422b-90c9-789e998755b3` under that directive.
+8. **Delete the diagnostic parent-copy foreign keys.** A missing exact `spawnedBy` row
+   is required dirt, not a valid session relation. The completion row must preserve that
+   dangling observed key while it records `parent-unavailable`. Therefore
+   `immediateParentSessionKey` and `parentSessionKey` remain nullable text copies without
+   `REFERENCES sessions(sessionKey)`. Child, cause, and report-to fields retain their
+   session foreign keys. This is the sole F1 correction from
+   `att_9d9af9f6-a194-4965-a5d8-d529e6de4395` and `art_635358a2`.
 
 ## Non-Goals
 
@@ -1120,8 +1136,8 @@ CREATE TABLE completion_escalations (
   causeBySession            TEXT NOT NULL REFERENCES sessions(sessionKey),
   ownerUserId               TEXT NOT NULL REFERENCES users(userId),
   rootMainHolder            INTEGER NOT NULL CHECK (rootMainHolder IN (0,1)),
-  immediateParentSessionKey TEXT NULL REFERENCES sessions(sessionKey),
-  parentSessionKey          TEXT NULL REFERENCES sessions(sessionKey),
+  immediateParentSessionKey TEXT NULL,
+  parentSessionKey          TEXT NULL,
   parentRouteStatus         TEXT NOT NULL CHECK (
     parentRouteStatus IN ('scheduled','unavailable','root-self')
   ),
@@ -1235,6 +1251,12 @@ the Main key format. The action seam rechecks both inputs before it writes
 `retained_root`. This keeps topology in `Org.personal_session_key/1`, its existing single
 home (`org.ex:1035-1042`). The DDL makes a root holder's parent target the child itself
 through `root-self`; it does not make Main a fallback for another child.
+
+`immediateParentSessionKey` and `parentSessionKey` deliberately have no session foreign
+key. They are diagnostic copies of the child's exact observed `spawnedBy` value, which
+can name a missing row under R5. Their checks still require the two copies to match for
+an ordinary child. `childSessionKey`, `causeBySession`, and `reportToSessionKey` retain
+their session foreign keys because each must name an existing row when stored.
 
 Each schedule operation inserts its wake row before its membership row in the same
 transaction. A notice or deadline without membership rolls back the producer call. The
@@ -1453,14 +1475,17 @@ Given a non-root child has null, missing, inactive, or foreign-owned exact paren
 completion commits, then each fixture records `parentRouteStatus='unavailable'`, writes
 the exact R5 reason, creates no parent wake, and leaves an empty-slate request open and
 queryable with its internal deadline armed and `routing.parent.receipt.state='not-created'`.
+The missing-parent fixture runs with `PRAGMA foreign_keys=ON`, copies the dangling
+`spawnedBy` key into both diagnostic parent fields, and commits successfully.
 An active ancestor and owner Main receive no inferred notice. Given the child instead
 has another open assignment, the row is `notice-only`, has no deadline, and remains
 queryable. Given a distinct report-to declaration becomes inactive before close, then
 the row records `reportToRouteStatus='unavailable'`, creates no report-to wake, and does
 not change the parent result. Given report-to instead names the exact parent and that
 row becomes inactive before close, then both routes record `unavailable`; the report-to
-route does not record `shared-parent`. Given an admitted parent or report-to retires after close
-but before delivery, R7 cancels only that channel's wake with `target_unresolvable`,
+route does not record `shared-parent`. Given an admitted parent or report-to retires
+after close but before delivery, R7 cancels only that channel's wake with
+`target_unresolvable`,
 writes the exact R15 delivery-refusal detail with the corresponding channel, and does
 not redirect it.
 
