@@ -7,6 +7,7 @@ This file remains the canonical effort-check-in spec. The 2026-08-25 amendment
 changes the measurement grain, effect channels, initial quiet window, and legacy
 cutover. It preserves v2's write detection, artifact semantics, holder-first prod,
 operational-parent escalation, and Main boundary.
+This successor resolves `att_b1b239cc-a8c1-4d84-96fd-5d28f162db3f` F1-F5.
 
 ## Goal
 
@@ -69,9 +70,15 @@ production.
   zero effect.
 - **Parent escalation** — one wake sent to the next active operational parent after one
   response generation also contains zero effect.
+- **Terminal assignment** — an assignment whose persisted `state` is `closed` and whose
+  outcome is `completed`, `surrendered`, or `revoked`
+  (`lib/tightbeam/assignments.ex:55-75`).
 - **Measurement refusal** — a persisted `measurement_unknown` outcome that states the
   workspace observer could not support an effect verdict. It is neither `effect` nor
   `zero_effect`.
+- **Terminal-decision cursor** — the greatest committed `seq` in
+  `decision_request_terminal_effects` that one holder generation has observed. The
+  sequence orders terminal decision effects independently of their wall-clock times.
 - **Typed legacy effort row** — a `decision_requests` row whose `kind` is `effort`, whose
   `raiserId` is `process:tightbeam`, and whose required effort fields satisfy the current
   schema. Question text and option text do not establish this type.
@@ -119,7 +126,9 @@ A-07. The measured specimens are durable in the product-owner transcript:
 A-08. `art_2f8cc9d0`, SHA-256
 `3a84107eb1cc43aa22e88af14cdee4bd796a3dfeb661eab85a68028c4bb7ff2e`, established
 the typed legacy-cleanup boundary: clean only `kind = effort` rows raised by
-`process:tightbeam`; preserve operator, agent, and statute rows. Its branch commit is
+`process:tightbeam`; preserve each non-effort row. At the pinned source commit, the
+non-effort kinds are `agent` and `statute`
+(`lib/tightbeam/escalation.ex:35-38`). The artifact's branch commit is
 `e27ceac6350ff6bcddae49bde5f3368885587dcd`.
 
 A-09. `att_89999558-7cfc-4c89-ae85-801a0d5ffcc5` records defect D. Effort
@@ -138,6 +147,12 @@ A-11. Runtime configuration currently maps
 `TIGHTBEAM_EFFORT_CHECKIN_HORIZON_MS` to `:effort_checkin_horizon_ms` and tests override
 that key as the 15-minute response bracket (`lib/tightbeam/application.ex:262-263`;
 `lib/tightbeam/effort_checkin.ex:1204-1205`; `test/runtime_config_test.exs:15,57`).
+
+A-12. Each current terminal decision writer stores a millisecond wall-clock time and
+appends a lifecycle row in the same transaction. `lifecycle_events` is an
+observability-only table that core mechanisms do not read to decide an outcome
+(`lib/tightbeam/escalation.ex:591-603,635-647,1025-1035,1525-1534,1674-1700,1746-1772,1793-1805,2234-2245`;
+`lib/tightbeam/event_log.ex:1-10,77-83,271-280`).
 
 ## Invariants
 
@@ -166,9 +181,10 @@ I-04. The closed holder-effect channel set is:
 I-05. A terminal decision transition in I-04 is one of the current typed transitions:
 `ruled`, `answered`, `returned`, or `withdrawn`. The matching time and principal fields are
 `ruledAt`/`ruledBy`, `answeredAt`/`answeredBy`, `returnedAt`/`returnedBy`, and
-`withdrawnAt`/`withdrawnBy`. The transition counts for the raiser when its time is newer
-than the decision watermark. It also counts for the recorded principal when that principal
-is `session:<holderKey>` and its time is newer than the watermark.
+`withdrawnAt`/`withdrawnBy`. The transition counts for the raiser when its terminal-effect
+sequence is greater than the generation's terminal-decision cursor. It also counts for the
+recorded principal when that principal is `session:<holderKey>` and the sequence is greater
+than that holder generation's cursor.
 
 I-06. Terminal turns are reported as effort and do not satisfy I-04.
 
@@ -206,17 +222,19 @@ request rows.
 I-14. The typed legacy conversion uses row type and persisted principals. It does not read
 question text, option text, the request owner, or assignment subject to select a row.
 
-I-15. The conversion changes no operator, agent, or statute decision row. It leaves already
+I-15. The conversion changes no `agent` or `statute` decision row. It leaves already
 `superseded`, `withdrawn`, and `consumed` effort rows unchanged.
 
-I-16. The migration writes a replacement holder monitor before it terminalizes an open
-legacy effort row or cancels the row's deadline wake. A rollback leaves the old row and its
-wake usable.
+I-16. For an open legacy effort row whose referenced assignment remains open, the migration
+writes a replacement holder monitor before it terminalizes the row or cancels the row's
+deadline wake. For a row whose referenced assignment is terminal, the migration
+terminalizes the row and cancels its deadline wake without a replacement monitor. A
+rollback leaves the old row and its wake usable in either case.
 
 I-17. The holder-level monitor has one mutation seam. Assignment open, transfer, terminal
 close, artifact record, attest, work-item metadata event, decision raise, decision terminal
-transition, wake creation, probe, holder-prod response, and boot cutover call that seam in
-their existing database transactions.
+transition, wake creation, probe, and boot cutover call that seam in their existing database
+transactions.
 
 I-18. `:effort_checkin_horizon_ms` and
 `TIGHTBEAM_EFFORT_CHECKIN_HORIZON_MS` remain the response-horizon setting and default to
@@ -252,9 +270,9 @@ evidence.
 
 R-01. Introduce `effort_checkin_holder_generations`. Its identity is
 `(holderKey, generation)`. Its current row stores `state`, `phase`, `armedAt`,
-`horizonMs`, terminal-turn watermark, the seven database-channel watermarks, host, root,
-workspace baseline, wake id, evidence, parent-escalation cursor, recovery resume phase,
-and recovery resume cursor.
+`horizonMs`, terminal-turn watermark, the seven database-channel watermarks including the
+terminal-decision cursor, host, root, workspace baseline, wake id, evidence,
+parent-escalation cursor, recovery resume phase, and recovery resume cursor.
 
 R-02. Enforce one current row with an exact unique partial index over `holderKey` where
 `state = 'armed'`. The implementation names this index
@@ -320,7 +338,9 @@ R-15. Each evidence object has exact top-level fields `holderKey`, `generation`,
 and `wakesSent`.
 
 R-16. Each count in R-15 derives from a cursor frozen in the generation row. The writer
-freezes the next cursor in the same transaction that consumes the current generation.
+freezes the next cursor in the same transaction that consumes the current generation. The
+`decisionRequestsResolved` cursor is the greatest committed
+`decision_request_terminal_effects.seq`, not a terminal wall-clock time.
 
 R-17. When the staged workspace observation is unavailable, the generation CAS commits
 `measurement_unknown` evidence, affected-card attributions, and one
@@ -346,15 +366,19 @@ a fresh `quiet` generation, or a `legacy_recheck` generation when that holder ha
 typed legacy effort row. An unavailable workspace creates a `measurement_retry` generation
 whose resume phase is the phase that the observable case would have created.
 
-R-20. A holder with an open typed legacy effort row starts in `legacy_recheck` phase with the
-quiet horizon. A zero-effect legacy recheck sends one parent escalation. An effect
-returns the holder to quiet phase. This re-measures the old carrier with the corrected
-channels before it reports a stall.
+R-20. A holder with an open typed legacy effort row whose referenced assignment remains
+open starts in `legacy_recheck` phase with the quiet horizon. A zero-effect legacy recheck
+sends one parent escalation. An effect returns the holder to quiet phase. This re-measures
+the old carrier with the corrected channels before it reports a stall.
 
-R-21. After the replacement holder wake exists, the cutover cancels pending old probe and
-deadline wakes with a typed `superseded` disposition, marks current per-assignment
-generations canceled, and changes open typed legacy effort rows to `superseded` with a
-status CAS.
+R-21. For an open typed legacy effort row whose referenced assignment remains open, the
+cutover waits until the replacement holder wake exists. It then cancels pending old probe
+and deadline wakes with a typed `superseded` disposition, marks current per-assignment
+generations canceled, and changes the row to `superseded` with a status CAS. For an open
+typed legacy effort row whose referenced assignment is terminal, the cutover creates no
+replacement membership, holder generation, or wake; it cancels the pending deadline wake
+with the same typed disposition and changes the row to `superseded` in the cutover
+transaction.
 
 R-22. For a ruled typed legacy effort row, the cutover changes `ruled` to `consumed` only
 when `decision` is `continue` or `dismiss`, `ruledBy` and `ruledAt` are non-null, the row's
@@ -377,17 +401,46 @@ R-25. Cutover replay with the marker present creates no wake, generation, attrib
 decision transition. A stale old probe or deadline wake that fires after cutover loses its
 state CAS and performs no action.
 
+### Terminal-decision order and transaction races
+
+R-26. Introduce `decision_request_terminal_effects` with `seq INTEGER PRIMARY KEY
+AUTOINCREMENT`, unique non-null `requestId`, non-null `transition`, non-null `at`, non-null
+`principal`, nullable `raiserSessionKey`, and non-null `cause`. `transition` admits exactly
+`ruled`, `answered`, `returned`, and `withdrawn`. After a status CAS to one of those four
+transitions succeeds, the single `Escalation` writer appends exactly one matching row in
+that transaction. `cause` stores the persisted decision for `ruled`, `answer-recorded` for
+`answered`, the persisted return reason for `returned`, or the persisted withdrawal reason
+for `withdrawn`; it does not copy answer text. The writer then calls the holder-effect
+mutation seam once for each distinct affected holder: the raiser session and a recorded
+session principal. Existing terminal rows receive no synthetic event during migration; the
+first holder generation freezes `COALESCE(MAX(seq), 0)`. Deleting this event would lose one
+required effect channel; accepting wall-clock ties would retain false zero-effect verdicts;
+and the observability-only lifecycle table cannot supply a decision cursor.
+
+R-27. The current-generation state CAS is the linearization point shared by probes,
+database-effect writers, assignment transfers, and terminal assignment closes. The first
+transaction to commit a successful CAS commits its generation transition and scheduled
+action together. A database-effect writer that follows a winning probe applies its effect
+to the probe's replacement generation. A transfer or close that follows a winning probe
+re-reads and updates the replacement generation in its assignment transaction. A probe
+whose CAS loses schedules no action. Replaying a wake for a generation that is no longer
+armed returns its persisted terminal or cancellation outcome and schedules no action.
+Assignment transfer and terminal close cannot be deleted from the lifecycle, and accepting
+unordered races would retain duplicate or post-close actions.
+
 ### Traceability
 
 | Requirement | Source | Verification |
 |---|---|---|
-| I-01 through I-03, I-12, R-01 through R-07 | duplicate specimens `dr_bbeaa409`, `dr_fb740247`, `dr_c6eea2e7`, `dr_e2564ae6` | AC-07 through AC-10, AC-31 |
+| I-01 through I-03, I-12, R-01 through R-07 | duplicate specimens `dr_bbeaa409`, `dr_fb740247`, `dr_c6eea2e7`, `dr_e2564ae6`; `att_b1b239cc` F4 | AC-07 through AC-10, AC-31, AC-34 through AC-37 |
 | I-04 through I-08, I-17, R-08 through R-16 | channel specimens `dr_6dd1ec10`, `dr_d19e098f`; cadence specimen `dr_4218ff47`; true stalls `dr_0901f05a`, `dr_6422c904` | AC-01 through AC-06, AC-11 through AC-13, AC-26, AC-27 |
 | I-09 | current database-channel readers | AC-28 |
 | I-10, I-11, R-10, R-17 | defect-D specimen `att_89999558`, SHA-256 `d6e3f35b…` | AC-14, AC-15, AC-25, AC-30 |
-| I-13 through I-16, R-18 through R-25 | `art_2f8cc9d0` | AC-16 through AC-20, AC-30 |
+| I-13 through I-16, R-18 through R-25 | `art_2f8cc9d0`; `att_b1b239cc` F1-F2 | AC-16 through AC-20, AC-30, AC-32 |
 | I-18 | current response-horizon configuration | AC-29 |
 | P-01 through P-05 | original v2 provenance and acceptance | AC-21 through AC-24 |
+| I-05, R-01, R-16, R-26 | `att_b1b239cc` F3; pinned terminal decision writers | AC-33 |
+| I-08, I-12, I-17, R-04, R-07, R-08, R-27 | `att_b1b239cc` F4 | AC-34 through AC-39 |
 
 ## Acceptance
 
@@ -470,9 +523,9 @@ one wake exist. The three old generations are canceled. The two effort rows are
 AC-17. Given the AC-16 database after commit, when application boot runs cutover again,
 then row counts and wake ids are byte-for-byte unchanged.
 
-AC-18. Given one open operator row, one open agent row, one open statute row, and one open
-typed effort row, when cutover commits, then the first three rows are byte-for-byte
-unchanged and the effort row follows R-21.
+AC-18. Given one open `agent` row, one open `statute` row, and one open typed effort row,
+when cutover commits, then the `agent` and `statute` rows are byte-for-byte unchanged and
+the effort row follows R-21.
 
 AC-19. Given a ruled typed effort row has `decision`, `ruledBy`, `ruledAt`, and a typed
 deadline cancellation but lacks a successor generation for its referenced assignment,
@@ -536,6 +589,55 @@ escalation do not exist.
 AC-31. Given one holder has assignments A and B and a quiet probe returns zero effect, when
 the probe transaction commits, then its internal probe wake has null assignment and work
 item ids, while the holder-prod prompt lists A and B in `(openedAt, id)` order.
+
+AC-32. Given an open typed legacy effort row references a terminal assignment and its
+deadline wake is pending, when cutover commits, then the effort row is `superseded` and the
+deadline wake has a typed `superseded` disposition. No holder membership, holder generation,
+or replacement wake exists for that assignment. When boot replays cutover, those rows and
+wake ids are byte-for-byte unchanged.
+
+AC-33. Given two decision requests raised by one holder terminalize in serialized
+transactions with the same millisecond terminal time, when the first transaction commits
+before the second, then their terminal-effect sequences are distinct and increasing. Each
+transaction consumes the holder generation current at its commit, records
+`decisionRequestsResolved` as one, and starts one quiet generation. Neither transaction
+emits a zero-effect action.
+
+AC-34. Given assignment A is old holder H1's only affected card, new holder H2 has no
+affected card or armed generation, and a quiet probe for H1 generation G is blocked before
+its CAS, when A's transfer to H2 commits before the probe resumes, then H1 has no membership
+or armed generation and H2 has one membership and one armed quiet generation. The probe's
+CAS on G loses and sends no prod or escalation. Replaying G's wake sends no action.
+
+AC-35. Given assignment A is old holder H1's only affected card, new holder H2 has no
+affected card or armed generation, and an observable zero-effect probe and A's transfer to
+H2 both target H1 generation G, when the probe commits before the transfer, then it sends one
+H1 holder prod and creates one H1 response generation. The transfer transaction cancels
+that response generation and its wake, removes H1's membership, and creates H2's membership
+and quiet generation. Replaying G's wake creates no additional wake.
+
+AC-36. Given assignment A is holder H's only affected card and a quiet probe for generation
+G is blocked before its CAS, when A's terminal close commits before the probe resumes, then
+H has no membership or armed generation. The probe's CAS on G loses and sends no prod or
+escalation. Replaying G's wake sends no action.
+
+AC-37. Given assignment A is holder H's only affected card and an observable zero-effect
+probe and A's terminal close both target generation G, when the probe commits before the
+close, then it sends one holder prod and creates one response generation. The close
+transaction cancels that response generation and its wake and removes H's membership.
+Replaying G's wake creates no additional wake or escalation.
+
+AC-38. Given an artifact writer and a quiet probe both target holder generation G with an
+observable workspace, and the probe is blocked before its CAS, when the artifact transaction
+commits first, then G records `effect` with `artifacts` as one and one replacement quiet
+generation exists. The probe's CAS on G loses. Replaying G's wake sends no prod or
+escalation.
+
+AC-39. Given an artifact writer and an observable zero-effect quiet probe both target holder
+generation G, when the probe commits before the artifact transaction, then it sends one
+holder prod and creates one response generation. The artifact transaction consumes that
+response generation, records `effect` with `artifacts` as one, and creates one quiet
+generation. Replaying G's wake creates no additional wake, prod, or parent escalation.
 
 ## Open Questions
 
