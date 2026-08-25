@@ -86,6 +86,7 @@ These changes close findings F-1 through F-3 in independent review artifact `art
 14. **Required Green gates:** Aligns the phase invariant rule and checklist sign-off: each invariant exercised by the primary required path must pass. Limits `Out-of-scope` to named optional surfaces, identity checks, and recovery scenarios that the procedure explicitly marks optional.
 15. **Repeated capture and release isolation:** Requires the 2-minute and restart/relaunch repeat captures to re-prove zero sibling-marker occurrences and carries the same assertion into the minimum release bar.
 16. **Control-plane capture and V4 repair summary:** Makes zero sibling-marker occurrences explicit in the mandatory per-push oracle and replaces the stale admission-only claim with the exact admission, fresh-fixture, and sibling-marker repair scope.
+17. **Phase 3 15- and 30-minute evidence seam:** Adds mandatory per-pane capture, provider-topology metadata correlation, expected-marker proof, and zero sibling-marker occurrences at both checkpoints. This closes independent review finding R2-F1 in `art_afb02015` without changing the inherited dwell durations or checkpoint order.
 
 ## Unchanged endurance structure
 

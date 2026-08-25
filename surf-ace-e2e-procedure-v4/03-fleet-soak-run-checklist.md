@@ -509,6 +509,10 @@ Precondition for this phase:
 - [ ] all eezo Surf Ace windows/panes admitted to the run healthy / noted if not included
 - [ ] Expected multi-pane layout still listed on every included surface/window
 - [ ] Expected pushed content still present in every pane on every included surface/window
+- [ ] `surf-ace capture-pane` run for each admitted pane in scope against its current explicit `surfaceId` + `paneId`
+- [ ] Each pane capture records metadata matching provider topology: `windowLabel`, `paneLabel`, `topologyRevision`, visible content id, dimensions, scale, timestamp
+- [ ] Each pane capture contains that pane's expected marker
+- [ ] Each pane capture contains zero occurrences of each sibling pane's marker
 - [ ] Each admitted and included Cyberbrain window/pane still shows known content/topology state; otherwise `Out-of-scope`
 - [ ] Each admitted and included eezo window/pane still shows known 2-pane content state; otherwise `Out-of-scope`
 - [ ] `wsOpen=true` on every included surface/window
@@ -528,6 +532,10 @@ Precondition for this phase:
 - [ ] all eezo Surf Ace windows/panes admitted to the run healthy / noted if not included
 - [ ] Expected multi-pane layout still listed on every included surface/window
 - [ ] Expected pushed content still present in every pane on every included surface/window
+- [ ] `surf-ace capture-pane` run for each admitted pane in scope against its current explicit `surfaceId` + `paneId`
+- [ ] Each pane capture records metadata matching provider topology: `windowLabel`, `paneLabel`, `topologyRevision`, visible content id, dimensions, scale, timestamp
+- [ ] Each pane capture contains that pane's expected marker
+- [ ] Each pane capture contains zero occurrences of each sibling pane's marker
 - [ ] Each admitted and included Cyberbrain window/pane still shows known content/topology state; otherwise `Out-of-scope`
 - [ ] Each admitted and included eezo window/pane still shows known 2-pane content state; otherwise `Out-of-scope`
 - [ ] `wsOpen=true` on every included surface/window
