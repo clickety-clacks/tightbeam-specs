@@ -65,8 +65,10 @@ the same adapter.
   registration by a successful assimilation. It records the target host's
   observed absolute Node path, Node version, and absolute CLI path for each
   harness selected by that assimilation.
-- **Executable fact** — one absolute executable path returned by the existing
-  non-login preflight. It is an observation, not operator-authored policy.
+- **Executable fact** — one absolute executable lookup path returned by the
+  existing non-login preflight. The stored path is the exact pathname launch
+  invokes; assimilation does not dereference a symbolic link. It is an
+  observation, not operator-authored policy.
 - **Runtime seed** — the optional target-host absolute Node path supplied to
   `tightbeam assimilate --node`. It lets the non-login preflight reach and
   verify a runtime outside its inherited `PATH`; it is not a stored `PATH` or a
@@ -283,7 +285,9 @@ Rules:
 4. `observedAt` is the CLI's epoch-ms preflight observation time.
 5. `platform` is the preflight's nonempty `uname -sm` value.
 6. `adapterRuntime.name` is `node`.
-7. `adapterRuntime.path` is the absolute path observed by `command -v node`.
+7. `adapterRuntime.path` is the exact absolute path observed by
+   `command -v node`. The CLI does not replace that path with a dereferenced
+   symbolic-link target.
 8. `adapterRuntime.version` is the trimmed first nonempty stdout line from
    executing that absolute path with `--version`; a nonzero or empty result
    fails assimilation before registration.
@@ -366,6 +370,12 @@ The planner derives these bytes from one banked host-row version:
    survive. The existing reserved-name validation continues to refuse `PATH`
    through `host-env-set`; the planner is the only writer of this environment
    key.
+
+For a remote launch, the existing POSIX shell-argument encoder quotes each
+planner-produced environment assignment, `runtimeExecutable`, and
+`adapterScript` exactly once before SSH hands the command to the remote shell.
+The context row stores the unquoted plan bytes. No executable-fact or derived
+path byte is concatenated unquoted into remote command text.
 
 The runtime directory comes first, so an executable with the same name in a
 later directory cannot replace the banked Node. Calling the absolute Node path
@@ -624,6 +634,12 @@ directory, when assimilation completes, then only the Node parent was
 prepended during provisioning and the stored manifest contains the observed
 absolute Node and harness paths rather than the inherited `PATH`.
 
+Given that the supplied absolute Node path is a symbolic link whose executable
+target returns a valid version, when `command -v node` returns the supplied
+path, then assimilation and launch retain and invoke that supplied pathname.
+Neither the manifest nor the launch context substitutes the dereferenced
+target.
+
 Given an admin attempts `host-env-set` with the name `PATH`, when existing
 reserved-name validation runs, then it refuses and the stored manifest and
 banked launch plan remain unchanged.
@@ -673,6 +689,12 @@ existing SSH prefix is followed by `exec env`, the exact deterministic `PATH`,
 the same absolute Node path, and the same absolute adapter script. No command
 argument contains `$PATH`. A captured command test breaks if the remote branch
 returns to `cliBin:$PATH`.
+
+Given valid runtime, CLI, and adapter paths containing a space and a single
+quote, when the remote command passes through a real POSIX-shell parsing
+fixture, then the parsed `PATH`, Node argv entry, and adapter-script argv entry
+are byte-identical to the banked plan. The test fails if a plan value splits
+into multiple arguments or any of its bytes execute as shell syntax.
 
 ### AC-8 — Fresh shape and exact v5 migration
 
