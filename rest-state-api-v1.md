@@ -558,8 +558,8 @@ row. Anything the matrix does not grant is denied.
 AU4. Per-resource allow matrix. “Owner” means the named user principal, not
 any session that happens to carry that user's id. “Session owner” is an
 explicit grant to the user principal that owns the target session. Admin is
-the authenticated user principal with `isAdmin=true`; a session token does
-not borrow that bit.
+the authenticated user principal with `isAdmin=true`; a session principal
+ does not borrow that bit.
 
 | Resource | Allowed principals |
 |---|---|
