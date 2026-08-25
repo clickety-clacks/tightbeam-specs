@@ -27,10 +27,9 @@ r2 folds the reviewed mechanical amendment
 inventory, interim/final CLI transport, firehose serializer scope, the
 R12-to-M5 repair, and the harness-catalog compatibility ruling. Written
 by tb02 and product-owner:rest-state-api. Untargeted (0.2.0 or
-later); when build work starts it branches from main tip. OWNED by
-product-owner:rest-state-api (staffed under
-product-owner:tightbeam-codex-sol-relief) — spirit questions route to
-Mike through that PO.
+later); when build work starts it branches from main tip. The current amendment
+is owned by successor `product-owner:rest-state-api-v2`; the legacy PO session
+is revoked. Spirit questions route through the successor.
 
 Authority and inputs:
 - rest-vs-cli-adjudication.md r2 (tb02, Mike-directed): the three-plane
@@ -136,8 +135,9 @@ never resolves through a live row or stores `rowid`.
 I4. One query and one item serializer serve REST, CLI wrappers, and every
 firehose class in the A6 overlap.
 
-I5. A stored-state mutation has one registered state notice mapping or an
-explicit companion-spec exclusion. Silence is never an implicit mapping.
+I5. A stored-state mutation has one registered rebuildable-state mapping, one
+registered source-invalidation mapping, or an explicit companion-spec
+exclusion. Silence is never an implicit mapping.
 
 I6. Versions increase across update, delete, and recreation of the same public
 key. A process restart does not reset the version floor.
@@ -222,7 +222,9 @@ with durable membership and concern state. Its REST home is
 
 T5. **ExecutionMap** — a read-only composed execution snapshot. It derives
 work-item nodes, telemetry, and causal nesting from existing source rows. It
-adds no table, mutation, or state notice. Its REST home is
+adds no table, mutation, or `execution_map.*` notice. Its underlying source
+mutations retain their R8 mappings and the marker source has the ruled R8b
+mapping. Its REST home is
 `/api/execution-map` and the three nested routes in R3a.
 
 ## Requirements — surface
@@ -411,10 +413,12 @@ R6. Filters are whitelisted per resource:
 | critical state | sessionKey exact |
 | execution map flat, tree, subtree | origin, ownerUserId, state, quietOverMs, specRefName, specRefSha256, sessionKey |
 
-Filters are conjunctive across fields and disjunctive within a repeated
-field. Unknown enum = typed 400. Unknown exact-id filter = empty collection,
-never an existence oracle. No `fields`, `sort`, `include`, or join parameters
-exist in v1. Every bounded-time filter is an epoch-millisecond integer named
+Filters are conjunctive across fields. A resource-specific clause must permit
+a repeated field; such values are disjunctive. R6a instead rejects each
+repeated ExecutionMap roster filter. Unknown enum = typed 400. Unknown exact-id
+filter = empty collection, never an existence oracle. No `fields`, `sort`,
+`include`, or join parameters exist in v1. Every bounded-time filter is an
+epoch-millisecond integer named
 `<field>FromInclusive` or `<field>ToExclusive`. The lower comparison is `>=`;
 the upper comparison is `<`. Wakes admit `dueAt` and `firedAt`; turns admit
 `createdAt`, `startedAt`, and `endedAt`; facts admit `ts`. A missing bound is
@@ -865,8 +869,9 @@ assignment contributes only when the principal also has the assignments grant.
 An attest requires its parent assignment grant. A wake or turn requires its
 own AU4 grant and the relevant resolved assignment or work-item grant before it
 can affect telemetry. A decision request requires its kind-specific AU4 grant
-and its resolved assignment grant. A subagent marker inherits its parent
-assignment's grant. A disposition event inherits its parent work item's grant.
+and its resolved assignment grant. A subagent marker requires its parent
+assignment's grant and the resolved work item's grant before it contributes to
+a node. A disposition event inherits its parent work item's grant.
 Session and user rows are consulted only by the existing principal resolver and
 the named underlying predicates; they create no ExecutionMap-only owner or
 admin borrowing.

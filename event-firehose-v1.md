@@ -71,15 +71,26 @@ Authority and inputs:
 - Related card: wi_bdf9a537 (gateway behind tailscale serve) — transport
   posture this endpoint would inherit.
 
-## Position — the state model is the entity
+## Assumptions
+
+AS1. The gateway already authenticates its existing credentials through the
+chat socket's in-band exchange. C2 reuses that exchange and adds no credential
+type.
+
+AS2. The REST companion ships each R9 snapshot read before the matching
+freshness class. Firehose A7 falsifies this assumption if a consumer cannot
+rebuild the displayed slice after reconnect.
+
+## Invariants — the state model is the entity
 
 P1. Tightbeam's truth is the state db: durable rows, queryable. A client's
 job is to hold a model of the slice it displays, built from the query
 surface (CLI verbs, HTTP reads: transcript, toplines, work-item and
 assignment reads).
 
-P2. The subscription exists only to tell the client that an aspect of that
-state changed, promptly, so the client updates its model without polling.
+P2. The subscription exists only to tell the client, through D1's post-commit
+handoff, that an aspect of state changed, so the client updates its model
+without polling.
 
 P3. Missed notices are HARMLESS by design. A subscription feeds from the
 moment of subscription; nothing earlier is available on the socket, ever.
@@ -92,20 +103,16 @@ P4. This makes the wrong architecture unrepresentable: the stream cannot
 be a client's prime model or its history source, because the socket
 simply does not carry the past.
 
-P5. HOW clients read state is under active recon (Mike-ordered in this
-review): direct SQL against the db is not a product interface; the CLI
-exists to make common things easy for agents, not to re-create SQL; bulk
-model-building reads likely belong on a formal REST surface exported
-directly to clients. The recon recommends the CLI-vs-REST split and the
-shape of that REST state API given the full internal schema; this spec
-may grow a companion REST-API section (or a sibling spec) from its
-findings.
+P5. The adopted `rest-state-api-v1.md` companion owns how clients read state.
+Direct SQL against the db is not a product interface. The CLI makes common
+agent reads concise and does not re-create SQL. Clients build bulk models from
+the companion REST surface.
 
 ## Goal
 
 G1. Tightbeam SHALL provide one WebSocket endpoint that notifies connected
-consumers, promptly after commit, that state changed — with enough in the
-notice to update a model of that state without a follow-up query in the
+consumers through D1's post-commit handoff that state changed — with enough in
+the notice to update a model of that state without a follow-up query in the
 common case.
 
 G2. Every state-changing commit SHALL produce a notice to every connected
@@ -142,11 +149,15 @@ N7. No webhooks, SSE, or polling interface in v1.
 
 N8. This spec does not authorize implementation.
 
+Operating-guidance impact: none. This amendment extends the existing
+source-class registry and creates no cross-repository agent rule.
+
 ## Terms
 
-T1. **Notice** — one frame telling a subscriber that a state change
-committed: its class, its reference ids, and the changed row's recorded
-content in full.
+T1. **Notice** — one frame telling a subscriber that a state change committed.
+An R8 rebuildable-state notice carries its class, refs, and full canonical
+public projection. An R8b source invalidation carries its class, refs, and
+natural source version only.
 
 T2. **Class** — the change's namespaced kind string from §The class
 registry. The set is OPEN; new mechanisms mint new classes and amend the
@@ -170,7 +181,7 @@ durable commit that makes a composed REST view stale. It is a refetch trigger,
 not a rebuildable resource or a direct model upsert. Its R8b mapping fixes its
 class, source seam, refs, natural version, visibility, and payload.
 
-## The event vocabulary law
+## Architecture — the event vocabulary law
 
 V1. Every state-changing commit SHALL emit its notices as part of the
 commit path (post-commit, nonblocking to the transaction): a change with
@@ -179,19 +190,20 @@ no notice class is a defect the registry test catches (A1).
 V2. Classes are namespaced `area.happening`, lowercase, dot-separated. The
 registry below is part of this spec. A class name never changes meaning.
 
-V3. **RULED (Mike), refined r5:** the notice payload is the resource's
-CANONICAL PUBLIC PROJECTION — the full recorded product fields and user
-content, unredacted after authorization, sufficient to update a displayed
+V3. **RULED (Mike), refined r5:** an R8 rebuildable-state notice payload is the
+resource's CANONICAL PUBLIC PROJECTION — the full recorded product fields and
+user content, unredacted after authorization, sufficient to update a displayed
 model without a follow-up query. "Unredacted" never means raw rows: the
 db stores credentials (session cliToken, device token, harness
 identityToken) and no projection ever carries a storage secret. One
 serializer per resource owns the projection; REST detail and notice
 payload are byte-equivalent (A6).
 
-V4a. Every payload carries the row's monotonically increasing version
-(`rowVersion`, or the resource's natural one: `updatedAt`, seq). Clients
-apply notices and snapshot rows by LAST-VERSION-WINS upsert — "dedupe"
-does not exist as a concept (M1).
+V4a. Every R8 payload carries the row's monotonically increasing version
+(`rowVersion`, or the resource's natural one: `updatedAt`, seq). Clients apply
+R8 notices and snapshot rows by LAST-VERSION-WINS upsert — "dedupe" does not
+exist as a concept (M1). An R8b payload carries only its positive
+`sourceVersion`; T6 forbids applying it as a row upsert.
 
 V4. Notice shape:
 
@@ -396,6 +408,13 @@ upsert on (id, rowVersion) (V4a): an older version over a newer one is a
 no-op, anything applied twice converges. Plain drop-by-id is FORBIDDEN
 (it silently keeps stale rows).
 
+M1b. Apply only R8 `upsert` and `delete` payloads directly to the model under
+M1. For each allowed R8b `observe` notice, refetch every currently held R9 view
+that declares the class and replace that composed snapshot. The client does
+not compare `sourceVersion` with `dependencyVersion` and does not apply the
+R8b payload as an entity. Repeating one R8b notice may repeat the refetch and
+cannot change the resulting snapshot bytes at a quiescent source state.
+
 M2. On ANY doubt — reconnect, seq skip (T4), gateway restart, or plain
 suspicion — rebuild: re-snapshot the displayed slice and keep applying
 notices. Rebuild is the single recovery path and is always correct.
@@ -498,15 +517,16 @@ A3. A filtered subscriber receives exactly the matching notices; a change
 matching several of a connection's subscriptions arrives once per
 matching subscription, each tagged.
 
-A4. M1 converges: subscribe-then-snapshot-then-apply reaches a model
-identical to a fresh query at any quiescent moment, duplicates dropped
-via V5's shared ids.
+A4. M1 converges: subscribe-then-snapshot-then-apply reaches a model identical
+to a fresh query at a quiescent moment. Reapplying the same R8 notice converges
+through V4a last-version-wins. Receiving the same R8b source version twice may
+cause two refetches and cannot mutate the model directly.
 
 A5. Kill the gateway mid-stream: clients detect the close, resubscribe,
 rebuild, and converge again (M2). Force a slow consumer into 4008: same.
 
-A6. For every state (non-observational) class, the notice payload and the
-REST detail item are BYTE-EQUIVALENT after removing envelope fields — one
+A6. For every R8 rebuildable-state class, the notice payload and the REST
+detail item are BYTE-EQUIVALENT after removing envelope fields — one
 serializer owns both (V3). Verified per class by a table-driven test that
 also names each class's resource, op, and primary-key mapping. And no
 public projection anywhere contains cliToken, a device token, an
@@ -530,13 +550,12 @@ forced reconnect, rebuild, convergence.
 
 ## Open questions for Mike
 
-None. The read-marker question (r4's MQ1) is RULED 2026-08-21: substrate
-rows, per §Read markers. Everything earlier is resolved or mooted by the
-state-model ruling: auth (existing credential), payloads (full row),
-retention and storage and cursor encoding (no event storage exists),
-table fold (no new table exists). The load-bearing unknown is no longer
-in this spec — whether the query surface suffices is recon wi_9fdc0c07's
-question.
+None. The read-marker question (r4's MQ1) is RULED 2026-08-21: substrate rows,
+per §Read markers. Everything earlier is resolved or mooted by the state-model
+ruling: auth uses the existing credential; R8 rebuildable payloads carry the
+full canonical row; R8b carries only its exact invalidation version; no event
+storage, retention, or cursor exists. The adopted REST companion owns the
+query surface.
 
 The source-invalidation amendment is ruled by
 `att_d5b0a440-bd51-498f-8b96-e6512fedf68f`: preserve marker-backed `fanOut`
