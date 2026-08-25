@@ -1,12 +1,12 @@
 # Codex session usage capture
 
 Status: digest-complete amendment after exact-revision F4 report `art_10c8b110`; targetless and unbound; independent review lane closed
-Work item: `wi_c6589a66-33e2-43f3-ab84-1b21a5b8c6cf`  
+Work item: `wi_c6589a66-33e2-43f3-ab84-1b21a5b8c6cf`
 Tightbeam source base: `3fe0e941840ed138a6a285261c0e35687d8d27a3`
-Codex source base: `ba6cf9c69277caec51a4c12c5b7401a9920930e0`  
-Clawline source base: `bbb6de019bed4ec511c0bd4b6463073831ea2107`  
-Integration target: none  
-Work-item binding: none  
+Codex source base: `ba6cf9c69277caec51a4c12c5b7401a9920930e0`
+Clawline source base: `bbb6de019bed4ec511c0bd4b6463073831ea2107`
+Integration target: none
+Work-item binding: none
 Authority: `att_fae41482-848b-40c1-a8da-b1daf68e3c75`, `art_0b820dfb`, `att_08edcb9c-33d9-4039-bd3e-41562c965ec1`, `att_771854c7-8817-4540-8d73-43136199d673`, review `att_f7e808e7-dcf3-4c25-8d2a-ff0ccad16eca`, exact-revision F4 clause table `art_10c8b110`, and closed-lane refusal `art_fd676254`
 
 ## Goal
