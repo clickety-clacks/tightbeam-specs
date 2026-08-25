@@ -1,6 +1,7 @@
 # Gateway terminal response — v1
 
-Status: DRAFT r3, TARGETLESS, independent spec review required.
+Status: DRAFT r4, TARGETLESS, BLOCKING owner sizing decision required before
+independent re-review.
 
 Source baseline: `clickety-clacks/tightbeam` `origin/main`
 `8b4a3df191ca4505bf7e65a2876da23c9e4f4a6c`.
@@ -98,9 +99,12 @@ it closes the generic seam without changing a domain command's policy.
   `generic`, HTTP status, body SHA-256, completion time, and generic code plus an
   optional safe cause descriptor for kind `generic`. It is not a response-body
   archive.
-- **Replay horizon**: 2,592,000 seconds after `terminalAt`. The journal preserves
-  duplicate suppression through this interval. After it deletes an expired row,
-  the same caller scope and request id can create a new acceptance.
+- **Replay horizon R**: the exact positive count of seconds after `terminalAt`
+  selected by the blocking sizing decision in Open Questions. The journal
+  preserves duplicate suppression through this interval. After it deletes an
+  expired row, the same caller scope and request id can create a new acceptance.
+- **Row cap M**: the exact positive maximum count of unexpired terminal rows plus
+  accepted rows selected by the blocking sizing decision in Open Questions.
 - **Cause descriptor**: the exact closed-key object `{phase, component, kind}`.
   `phase` is one of `authenticate`, `accept`, `dispatch`, `recover`.
   `component` is one of `database`, `credentials`, `router`, `handler`,
@@ -296,11 +300,11 @@ descriptor. If it cannot reserve that capacity, it returns the pre-accept
 `gateway_terminal_store_unavailable` response. An accepted row keeps its reserved
 capacity through terminalization.
 
-**INV-24 — Org-token rebinding is explicit.** An org token's HMAC defines its
-caller scope independently of its current role. Existing authorization under the
-current role runs before journal lookup. Rebinding the same token to another role
-preserves duplicate suppression for that token. Replacing the token creates a new
-caller scope.
+**INV-24 — Org-token role changes follow fingerprint conflict.** An org token's
+HMAC defines its caller scope. The request body's `as` value selects its source-
+baseline role and remains part of the exact body fingerprint. Reusing one token
+and request id with a different `as` value returns `request_id_conflict` under
+INV-10. Replacing the token creates a new caller scope.
 
 ## Architecture
 
@@ -453,7 +457,6 @@ diagnostic field. It does not copy that field into the HTTP body or CLI output.
 One journal row stores:
 
 - caller-scope kind and canonical id or HMAC;
-- authenticated role at acceptance for an org-token caller;
 - request id and request fingerprint;
 - boot epoch;
 - route, verb, target kind, and canonical target id;
@@ -470,14 +473,12 @@ It stores no caller-supplied display label or free-form origin. The process owne
 serializes acceptance and terminalization. A unique constraint on caller scope
 plus request id makes duplicate resolution deterministic.
 
-The journal stores `retentionSeconds = 2592000` and
-`maxRows = 250000` as schema-versioned constants. Before one acceptance, it
-deletes terminal rows whose `terminalAt + retentionSeconds` is not greater than
-the transaction time. It then refuses acceptance with
-`gateway_terminal_store_unavailable` when the remaining row count equals
-`maxRows`. One accepted row reserves the fixed descriptor columns that its
-terminal update uses. A schema version change may change either constant only
-through a later spec amendment.
+Before one acceptance, the journal deletes terminal rows whose
+`terminalAt + R` is not greater than the transaction time. It then refuses
+acceptance with `gateway_terminal_store_unavailable` when the remaining row count
+equals M. One accepted row reserves the fixed descriptor columns that its
+terminal update uses. Open Questions must supply the exact values and their
+source before this draft can re-enter independent review.
 
 The journal metadata table stores the randomly generated HMAC key used for
 org-token caller scopes. It uses file permissions equal to the domain database's
@@ -509,8 +510,9 @@ row + different fingerprint -> request_id_conflict
 Authentication and authorization run before this lookup. A caller using another
 scope follows that scope's independent key space and cannot inspect the first
 scope's state. The existing authorization path may reject it before the journal
-lookup. Rebinding one org token preserves its HMAC caller scope and stored
-accepted-role metadata. Replacing that token produces another HMAC caller scope.
+lookup. An org token's HMAC caller scope does not encode the body `as` value. A
+changed `as` value produces `request_id_conflict` under the exact fingerprint rule.
+Replacing the token produces another HMAC caller scope.
 
 The CLI recovery request is byte-identical at the fingerprint inputs. It may
 cause first execution only when the first attempt failed before acceptance and
@@ -657,7 +659,7 @@ when the handler returns a normal success,
 then the journal commits one `normal` descriptor before the send attempt,
 and a later request from the same caller scope with the same request id and
 fingerprint returns HTTP 409 `request_already_terminal` with the committed status,
-code, and body SHA-256 and does not invoke the handler again.
+and body SHA-256 and does not invoke the handler again.
 
 **AC-08 — Live duplicate (INV-11).**
 
@@ -815,7 +817,7 @@ then the response is HTTP 500 `gateway_outcome_unknown` with cause
 and the domain effect count is one,
 and the public message contains no claim that the domain effect failed.
 
-**AC-23 — Complete caller scopes and role rebinding (INV-03, INV-24).**
+**AC-23 — Complete caller scopes and org-token role changes (INV-03, INV-24).**
 
 Given one session call, one `--as-user` call, one process-attributed call, and one
 nil-principal org-token role call pass their source-baseline authorization,
@@ -824,11 +826,12 @@ then the four journal keys begin with `session:`, `user:`, `process:`, and
 `org_token:` respectively,
 and the journal file and logs contain no bearer-token canary.
 
-Given the same org token is rebound from role R1 to role R2 and the R2
-authorization check passes for the repeated request,
-when the caller repeats the request id and fingerprint,
-then the journal resolves the R1 acceptance through the same HMAC caller scope
-and starts no second handler.
+Given the same org token repeats one request id with body `as: R2` after it
+previously committed body `as: R1`,
+when the request reaches journal lookup,
+then the same HMAC resolves the same caller scope and the changed exact body
+produces HTTP 409 `request_id_conflict`,
+and the gateway starts no second handler.
 
 Given a replacement org token authenticates as R2,
 when it sends that request id and fingerprint,
@@ -836,13 +839,14 @@ then its different HMAC defines a different caller scope.
 
 **AC-24 — Replay retention and capacity (INV-23).**
 
-Given transaction time T and a terminal row whose `terminalAt + 2592000` equals
-T,
+Given the owner-ratified replay horizon R, transaction time T, and a terminal row
+whose `terminalAt + R` equals T,
 when the journal begins an acceptance transaction,
 then it deletes that expired row before duplicate lookup,
 and the same caller scope and request id may commit a new acceptance.
 
-Given 250000 unexpired or accepted rows remain after expiry deletion,
+Given the owner-ratified row cap M and M unexpired or accepted rows remain after
+expiry deletion,
 when another valid request reaches acceptance,
 then the gateway returns HTTP 503 `gateway_terminal_store_unavailable`,
 and the journal creates no row and the domain handler invocation count remains
@@ -868,8 +872,14 @@ and the cause contains neither `handler` nor `router`.
 
 ## Open Questions
 
-None. The document remains DRAFT until one independent spec reviewer clears its
-requirements, architecture, evidence boundaries, and acceptance traceability.
-The producer must amend this canonical file before resolving a defect found by
-that review. The work item receives a path and content-hash binding only after the
-review clears the amended text.
+**BLOCKING — Journal sizing authority.** The product owner must choose one source
+for R and M: fixed product constants with exact values, or required startup
+configuration with exact validation and missing-value behavior. This choice
+blocks independent re-review because row expiry and capacity refusal are public
+replay behavior. The producer must replace R and M plus this question in the
+canonical file before re-review.
+
+The document remains DRAFT until that decision lands and one independent spec
+reviewer clears its requirements, architecture, evidence boundaries, and
+acceptance traceability. The work item receives a path and content-hash binding
+only after the review clears the amended text.
