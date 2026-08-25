@@ -47,7 +47,8 @@ first observation, and last observation.
   interaction; the fault renderer does not conceal or cure that separate
   privacy inconsistency.
 - This spec does not move a credential between hosts. Assimilation keeps one
-  independent grant per `{org, host, provider}`.
+  independent grant per `{org, host, harness}`. Provider is the fault
+  aggregation key, not permission to share a grant across harnesses or hosts.
 - This spec does not treat a missing credential on a fresh host, an onboarding
   lease in progress, an unsupported subscription, a transient transport error,
   or a catalog refresh timeout as this fault.
@@ -70,7 +71,7 @@ first observation, and last observation.
   fault.
 - **Fault provider:** The credential provider shared by the fault, such as
   `anthropic`. Provider is the org-level deduplication axis because several
-  harnesses can consume one provider credential.
+  harnesses can depend on the same provider. Their grants remain independent.
 - **Host scope:** One `{host, provider}` pair. A catalog or spawn observation
   also names the harness that produced it. Host scopes remain separate inside
   the shared provider fault.
@@ -99,10 +100,15 @@ first observation, and last observation.
   deduplication key.
 - **Fault impact:** A durable link from an assignment to an active fault. The
   link says the assignment is affected; it does not change assignment state.
-- **Review obligation key:** The producer assignment ID that an independent
-  review must judge. A producer card uses its own ID. A review card uses its
-  `reviewsAssignmentId`. Producer and reviewer cards can therefore count as two
-  affected assignments and one review obligation.
+  It remains active while the assignment is open and `clearedAt` is null.
+- **Review obligation marker:** Typed impact input `obligationKind=review`. A
+  mind supplies this marker when the affected assignment participates in an
+  independent-review obligation. The marker records its cause and principal.
+- **Review obligation key:** The nullable producer assignment ID derived after
+  a review obligation marker. A producer card uses its own ID. A review card
+  uses its `reviewsAssignmentId`. Producer and reviewer cards can therefore
+  count as two affected assignments and one review obligation. An impact
+  without the marker has no review obligation key.
 - **Lexical card match:** An assignment whose prose mentions a harness or
   cross-harness review. A lexical match is census evidence. It creates no fault
   impact and contributes to neither active count.
@@ -231,14 +237,17 @@ and verifies recovery.
 ### I8 — Typed fault-waiver requests deduplicate into the fault
 
 The official decision-request create path represents a proposed per-card fault
-waiver as typed input: `intent=fault_waiver`, `faultId`, and `assignmentId`.
-When `faultId` names an active occurrence, the transaction records or refreshes
-the fault impact and returns `org_fault_active`. It creates no decision-request
-row and emits no decision-request wake.
+waiver as typed input: `intent=fault_waiver`, `faultId`, `assignmentId`, and
+`obligationKind=review`. When `faultId` names an active occurrence, the
+transaction records or refreshes the fault impact and returns
+`org_fault_active`. It creates no decision-request row and emits no
+decision-request wake.
 
-The impact seam derives the review obligation key from durable assignment
+The impact seam accepts `obligationKind=review` as a typed judgment marker. For
+that marker, it derives the review obligation key from durable assignment
 relations. It counts current impacted assignment IDs separately. It counts
-distinct review obligation keys separately. A lexical card match creates no
+distinct non-null review obligation keys separately. An impact without that
+marker changes only the assignment count. A lexical card match creates no
 impact and changes neither count.
 
 A generic free-text operator question remains available for a different user
@@ -281,11 +290,11 @@ chat, fault artifacts, and test snapshots exclude credential bytes, token
 fragments, authorization headers, refresh tokens, browser URLs, carry-back
 codes, provider response bodies, local credential paths, and SSH destinations.
 The local ceremony channel can display its browser URL and accept its carry-back
-code without copying either value into a fault surface. Native onboarding emissions
-remain governed by their own contract and do not become permitted fault
-surfaces. Fault surfaces can contain
-host name, provider, harness, HTTP status class, safe cause code, missing field
-names, source row ID, and a SHA-256 digest of a redacted envelope.
+code without copying either value into a fault surface. Native onboarding
+emissions remain governed by their own contract and do not become permitted
+fault surfaces. Fault surfaces can contain host name, provider, harness, HTTP
+status class, safe cause code, missing field names, source row ID, and a
+SHA-256 digest of a redacted envelope.
 
 ### I13 — One mutation seam owns fault state
 
@@ -307,8 +316,10 @@ The implementation adds these row families:
 - `provider`;
 - `state` — `open | closed`;
 - `ownerUserId`;
-- `firstObservedAt` — immutable;
-- `lastObservedAt` — monotonic maximum of accepted observation times;
+- `firstObservedAt` — the `observedAt` value from the first accepted qualifying
+  observation, immutable after opening;
+- `lastObservedAt` — the monotonic maximum `observedAt` value among accepted
+  observations;
 - `openedPrincipal`, `closedAt`, `closeReason`, and `closedPrincipal`.
 
 A partial unique index on `(kind, provider) WHERE state='open'` enforces I1.
@@ -328,15 +339,20 @@ Replaying one source is a no-op.
 
 `org_fault_impacts`
 
-- `faultId`, `assignmentId`, `reviewObligationKey`, `causeCode`, `principal`;
-- `firstObservedAt`, `lastObservedAt`, and nullable `clearedAt`.
+- `faultId`, `assignmentId`, nullable `obligationKind`, nullable
+  `reviewObligationKey`, `causeCode`, and `principal`;
+- `firstObservedAt`, `lastObservedAt`, nullable `clearedAt`, nullable
+  `clearedCauseCode`, and nullable `clearedPrincipal`.
+
+A unique index on `(faultId, assignmentId)` makes link and clear retries
+idempotent.
 
 The active affected-assignment count joins impacts to assignments and counts
 distinct assignments whose assignment state is `open` and impact `clearedAt`
 is null. Closed assignments remain in history and leave the active count.
 The active affected-review-obligation count applies the same filter and counts
-distinct `reviewObligationKey` values. Assignment prose cannot populate either
-count.
+distinct non-null `reviewObligationKey` values. Assignment prose cannot
+populate either count.
 
 ### 2. Observation and recognition
 
@@ -358,11 +374,12 @@ The catalog producer must preserve the distinction between:
 - cache not derived (`unknown`); and
 - a client projection that happens to render `models: []`.
 
-The check and write run in one database transaction. Before it creates an
-occurrence, the seam checks the global source key and returns the earlier result
-for a replay. The first new qualifying observation creates the fault and selects
-the owner. A concurrent creator that loses the partial-index race selects the
-winning open occurrence and appends to it in the same retry transaction.
+Recognition and fault writes run in one database transaction after a producer
+submits its typed result. Before it creates an occurrence, the seam checks the
+global source key and returns the earlier result for a replay. The first new
+qualifying observation creates the fault and selects the owner. A concurrent
+creator that loses the partial-index race selects the winning open occurrence
+and appends to it in the same retry transaction.
 
 ### 3. Current signal and conflict projection
 
@@ -393,13 +410,32 @@ does not block the fault row or any work row.
 
 A failed dispatch or spawn that already carries an assignment ID links that
 assignment to the matching active fault. An authorized agent can also call the
-single explicit impact-link verb with `faultId`, `assignmentId`, and a cause.
-The verb accepts the assignment holder, opener, assignment owner, or admin. It
-returns the existing link on an idempotent retry.
+single explicit impact-link verb with `faultId`, `assignmentId`, a cause, and
+optional `obligationKind=review`. The verb accepts the assignment holder,
+opener, assignment owner, or admin. It returns the existing link on an
+idempotent retry.
 
-The impact-link transaction derives `reviewObligationKey` from durable
-assignment relations. It uses `reviewsAssignmentId` for a review card and the
-assignment's own ID for a producer card. It does not read assignment prose.
+When `obligationKind=review`, the impact-link transaction derives
+`reviewObligationKey` from durable assignment relations. It uses
+`reviewsAssignmentId` for a review card and the assignment's own ID for a
+producer card. When the marker is absent, it stores a null key. The transaction
+rejects another obligation kind. It does not read assignment prose.
+
+An active relink with an omitted marker preserves the current classification.
+An active relink can add `obligationKind=review` to a null classification. It
+cannot remove that marker. The seam returns `impact_classification_conflict`
+with the remedy `clear the impact, then relink it with the intended marker` when
+an active relink requests removal or another classification.
+
+The explicit impact-clear verb accepts `faultId`, `assignmentId`, and a cause.
+It uses the link verb's authorization rule. It sets `clearedAt`,
+`clearedCauseCode`, and `clearedPrincipal` in one transaction. A retry returns
+the cleared row. A later authorized link reactivates the row and derives its
+classification from that link's typed input.
+
+Each link, classification, clear, and reactivation also writes an append-only
+ordinary verb event with cause and principal. Reactivation changes the current
+impact projection without erasing prior transition evidence.
 
 The typed `fault_waiver` create path calls the same impact-link transaction,
 then returns the active fault. It does not mint a second intent for the owner.
@@ -543,30 +579,50 @@ when both transactions run, then one open fault row exists and both unique
 observations attach to it. When either source event replays after restart, no
 second observation, owner delivery, or fault row appears.
 
+Given an instrumented CAP-018 or catalog producer, when it submits a typed
+result, then its provider I/O finishes before the `Tightbeam.OrgFaults`
+transaction opens.
+
 ### A10 — First and last observation times are stable (I13)
 
-Given observations arrive at times 200, 300, then 100, when the detail is read,
-then `firstObservedAt` remains 200 for the occurrence, `lastObservedAt` is 300,
-and the late observation at 100 remains in history without becoming current.
+Given accepted observations carry `observedAt` values 200, 300, then a late
+100, when the detail is read, then `firstObservedAt` remains 200 for the
+occurrence, `lastObservedAt` is 300, and the late observation at 100 remains in
+history without becoming current.
 
 ### A11 — Current impacts exclude lexical matches and deduplicate obligations (I8)
 
 Given the `art_1fadd132` census finds 14 lexical card matches, when typed impact
-evidence identifies four current affected cards and two of those cards are the
-producer and reviewer for one durable `reviewsAssignmentId`, then the summary
-reports `affectedAssignmentCount = 4` and
+evidence marks four current affected cards with `obligationKind=review` and two
+of those cards are the producer and reviewer for one durable
+`reviewsAssignmentId`, then the summary reports `affectedAssignmentCount = 4` and
 `affectedReviewObligationCount = 3`. The other ten lexical matches create no
 impact rows. When the review card in the shared pair closes while its producer
 remains open, the assignment count becomes 3 and the review-obligation count
 remains 3. Each closed impact remains in detail history.
 
+Given the four-card state above and one ordinary affected producer links
+without `obligationKind`, when the summary recomputes, then the assignment
+count becomes 5 and the review-obligation count remains 3. The impact stores a
+null `reviewObligationKey`. When an authorized principal clears that ordinary
+impact, the counts return to 4 and 3, and detail history retains its link and
+clear causes and principals. Repeating that clear returns the same cleared row
+and changes neither count.
+
+Given an active review-marked impact, when an idempotent relink omits
+`obligationKind`, then the existing marker and key remain. When a relink sends
+`obligationKind=none`, then the seam returns
+`impact_classification_conflict`, names the clear-then-relink remedy, and changes
+neither count nor marker.
+
 ### A12 — Typed per-card waiver asks are suppressed (I8, I9)
 
 Given an active fault and an agent submits
-`intent=fault_waiver, faultId=<id>, assignmentId=<asg>`, when the create path
-runs, then it returns `org_fault_active`, records one impact with cause and
-principal, and creates zero decision-request rows and zero decision-request
-wakes. Repeating the request returns the same impact.
+`intent=fault_waiver, faultId=<id>, assignmentId=<asg>,
+obligationKind=review`, when the create path runs, then it returns
+`org_fault_active`, records one impact with cause, principal, and the derived
+review obligation key, and creates zero decision-request rows and zero
+decision-request wakes. Repeating the request returns the same impact.
 
 ### A13 — Owner delivery is durable and quiet on repeats (I9)
 
@@ -634,8 +690,8 @@ fault remains open.
 
 Given the implementation build, when packaging assembles shipped guidance and
 CLI help, then the operating manual contains the Architecture §8 pattern, the
-CLI lists the fault summary/detail and impact-link reads, and the help text uses
-only parser-accepted remediation commands.
+CLI lists the fault summary/detail reads plus impact-link and impact-clear
+verbs, and the help text uses only parser-accepted remediation commands.
 
 ## Open Questions
 
