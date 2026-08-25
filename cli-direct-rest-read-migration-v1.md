@@ -4,6 +4,12 @@ Status: DRAFT for independent review, 2026-08-25. This specification serves
 work item `wi_113442f5-22ae-457b-a971-1b620069d490` and assignment
 `asg_29aeed02-f3bc-421a-99ca-c2bce6f80ec0`.
 
+Canonical home: `clickety-clacks/tightbeam-specs`, file
+`cli-direct-rest-read-migration-v1.md` on canonical `main`. A branch commit or
+artifact is review input, not build authority. This specification authorizes
+code start only after an independent reviewed-clean verdict names its exact
+file SHA-256 and canonical specs main contains those exact bytes.
+
 Authority:
 
 - `rest-state-api-v1.md`, canonical r3 at SHA-256
@@ -115,7 +121,7 @@ AS1. The reviewed canonical closure from
 candidate filter. The reviewed canonical closure from
 `wi_3874a61f-288b-4b54-ac8a-da9234a910a2` will freeze the separate
 ExecutionMap route family and its selections. D2 will land each canonical GET
-used in the wrapper inventory. D3 code does not start until the three
+used in the wrapper inventory. D3 code does not start until the four
 dependency gates in D3-R1 pass. A missing route, filter, or composed selection
 falsifies this assumption and returns the gap to the REST product owner; D3
 does not fill it locally. In particular, the fixed REST baseline's durable
@@ -174,10 +180,6 @@ I8. An HTTP, decoding, schema-version, or canonical error ends the CLI call
 with exit 1. The CLI does not retry through another transport or return stale
 data.
 
-I9. The existing one-retry rule for a DNS failure that proves no request
-reached the gateway remains the only automatic retry. A response status,
-response body, connection failure after connect, or timeout is not replayed.
-
 ## Architecture
 
 ### D3-R1 — code-start dependency
@@ -195,8 +197,11 @@ reviewed-clean D2 integration for
 4. the canonical specs-main commit that contains the ExecutionMap closure;
 5. the reviewed D2 build-spec path and SHA-256;
 6. the reviewed-clean D2 code commit and verdict;
-7. the canonical product-main commit that contains that code; and
-8. the baseline and post-integration full-gate counts from that product tip.
+7. the canonical product-main commit that contains that code;
+8. the baseline and post-integration full-gate counts from that product tip;
+9. the independent reviewed-clean verdict for this D3 file, its path, and its
+   exact SHA-256; and
+10. the canonical specs-main commit that contains that exact D3 file SHA-256.
 
 D1 is a transitive prerequisite of D2. If any receipt is absent, D3 product
 code remains untouched.
@@ -220,7 +225,8 @@ The direct-read seam must:
   envelope with `schemaVersion: 1` for JSON resources;
 - pass `/download/:assetId` bytes only to a command that explicitly consumes
   that binary route; no current D3 wrapper does; and
-- apply I9 without adding a read-specific retry.
+- send each direct read request at most once, as required by
+  `cli-surface-v1.md`.
 
 The existing POST seam remains the path for dispatch writes.
 
@@ -371,6 +377,13 @@ adapter. For `config`, removal deletes only action `get`; action `set` and its
 authorization remain. Removal must not delete a canonical query or serializer
 that D1, D2, or firehose uses.
 
+Before removal, the test fixture must capture the complete dispatch-write
+allowlist and every write action accepted by a mixed verb. After removal, the
+write allowlist and mixed-write action sets must be exactly equal to that
+fixture. The suite must invoke every retained write verb and every mixed write
+action through the real router and assert its existing authorization, event,
+rail, response, and error tests still pass.
+
 ### D3-R9 — M5 compatibility alias inventory
 
 The removal commit must remove these seven route declarations and their outer
@@ -415,16 +428,20 @@ seams, start the real HTTP router, and run the built Rust CLI. It must capture
 the legacy dispatch response before removal and the canonical REST response
 from the same state. Handwritten ideal responses do not satisfy parity.
 
-For each D3-R3 row, the harness must cover:
+For each D3-R3 row, the harness must cover the applicable cases from its closed
+route contract:
 
 - a successful nonempty result;
 - an empty authorized result where the route admits one;
 - each CLI filter or selection;
 - a forbidden or invisible row;
-- an unknown detail id where the route admits one;
-- pagination with a cursor returned by the preceding page; and
+- an unknown detail id where the route admits one; and
 - exact canonical item equality between the CLI result and REST after removing
   only their documented outer envelopes.
+
+For each paged route call named by D3-R3, the harness must request a second page
+with the opaque cursor returned by the first page. It must not run this case
+against a detail or explicitly unpaged route.
 
 The AU2 security table must cover the cases in canonical A8a. It must assert
 the same resolved principal or refusal and the same allow, omission, deny, and
@@ -443,9 +460,9 @@ aliases remain. Its rollback reverts the migrated wrappers as one unit and
 does not revert D1 or D2.
 
 After the removal commit lands, rollback runs in reverse dependency order:
-first restore the exact removal commit, then roll back a client migration only
-if the restored transport has passed its parity smoke. Production code never
-falls back per request. A partial restoration that reopens an alias without
+first revert the exact removal commit, then roll back a client migration only
+if the legacy parity smoke passes after that revert. Production code never
+falls back per request. A partial revert that reopens an alias without
 its authorization, query, serializer, and parity tests is forbidden.
 
 ### D3-R13 — implementation touchpoints and traceability
@@ -484,10 +501,12 @@ filename does not authorize a second seam.
 
 ## Acceptance
 
-A1. **Given** the two contract-closure work items, the D2 work item, specs main,
-and canonical Tightbeam main, **when** a coder attempts to start D3, **then**
-the eight D3-R1 receipts name exact amendment, spec, review, integration, and
-gate evidence; deleting one receipt keeps product bytes unchanged.
+A1. **Given** the two contract-closure work items, the D2 work item, this D3
+file, specs main, and canonical Tightbeam main, **when** a coder attempts to
+start D3, **then** the ten D3-R1 receipts name exact amendment, spec, review,
+integration, and gate evidence; deleting one receipt keeps product bytes
+unchanged. An unreviewed D3 branch artifact or a reviewed D3 SHA absent from
+canonical specs main also keeps product bytes unchanged.
 
 A2. **Given** the same session workdir and explicit environment/provisioned
 fallback fixtures, **when** one migrated read and one dispatch write discover
@@ -520,9 +539,9 @@ request and returns the exact local `invalid_read_identity` error.
 
 A6. **Given** malformed JSON, wrong schema versions, incomplete envelopes,
 400, 401, 403, 404, 426, timeout, DNS failure, and post-connect failure
-responses, **when** a migrated wrapper runs, **then** only the first DNS
-failure retries once; each other case exits 1, prints the canonical terminal
-error, prints no partial stdout, and sends no dispatch or alias request.
+responses, **when** a migrated wrapper runs, **then** each case sends at most
+one direct-read request, exits 1, prints the documented terminal error, prints
+no partial stdout, and sends no dispatch or alias request.
 
 A7. **Given** the CLI migration commit before removal, **when** source and
 traffic are inspected, **then** production wrappers contain no dispatch-read
@@ -537,8 +556,10 @@ the corresponding canonical GET returns its contract response.
 A9. **Given** the removal commit, **when** each D3-R9 route is requested with a
 valid bearer, **then** it returns canonical `404 not_found`; `GET /version`,
 canonical reads, download, WebSocket, upload, session-control writes, stream
-writes, and a representative request from each dispatch write family still
-passes its existing contract test.
+writes, and every entry in the captured dispatch-write allowlist still passes
+its existing contract test. The before-and-after write allowlists and all
+mixed-verb write-action sets are exactly equal, and every mixed write action
+passes its existing authorization, event, rail, response, and error tests.
 
 A10. **Given** one missing, stale, or non-reviewed M4, M6, or M7 receipt,
 **when** removal is proposed, **then** the removal test refuses before editing
