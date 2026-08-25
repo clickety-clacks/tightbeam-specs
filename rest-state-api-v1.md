@@ -518,9 +518,10 @@ same sanitized item bytes serve REST and firehose.
 ## Requirements — auth and visibility
 
 AU1. `Authorization: Bearer <existing gateway credential>`. A device
-token resolves to its user. A session CLI token resolves to that session
-only. The session row's `ownerUserId` is metadata, not an automatic authority
-escalation. An owner read exists only where AU4 explicitly grants it.
+token resolves to its user. Without a nonempty matching `asUser`, a session
+CLI token resolves to that session only. The session row's `ownerUserId` is
+metadata, not an automatic authority escalation. An owner read exists only
+where AU4 explicitly grants it.
 No new credential type exists. The optional `asUser` GET parameter is not a
 credential and never authenticates a request.
 
@@ -538,9 +539,10 @@ keys return `400 invalid_as_user` before principal resolution because dispatch
 has only one `asUser` field. Malformed percent encoding returns
 `400 malformed_query` before principal resolution.
 
-For a session bearer, the existing resolver still verifies `asUser` against
-the session owner and the resolved principal remains that session; a mismatch
-keeps the existing dispatch refusal. For a device bearer, `asUser` cannot
+For a session bearer, the existing resolver verifies a nonempty `asUser`
+against `session.ownerUserId`. A matching value resolves the named user
+principal, exactly as dispatch does. A mismatch keeps the existing dispatch
+`403 identity_not_yours` refusal. For a device bearer, `asUser` cannot
 replace or elevate the credential-resolved user principal; its presence
 returns `400 invalid_as_user` before principal resolution. No case creates a
 credential, a new binding, an authorization grant, or tailnet-identity
@@ -691,11 +693,14 @@ A8a. A table compares direct GET with dispatch for an org bearer plus known,
 unknown, empty, and missing `asUser`, and for a session bearer plus absent,
 matching-owner, and mismatched-owner `asUser`. Both transports produce the
 same resolved principal or refusal and the same allow, deny, omission, and
-same-404 results. Separate GET cases prove repeated parameters and device
-bearer plus `asUser` return `400 invalid_as_user`, and malformed percent
-encoding returns `400 malformed_query`, all before principal resolution. The
-test proves that the parameter adds no credential, binding, authorization, or
-tailnet-identity behavior.
+same-404 results. The matching-owner session case proves that both transports
+resolve the named user principal; the absent session case proves the existing
+credential-derived principal remains unchanged. Separate GET cases prove
+repeated parameters and device bearer plus `asUser` return `400
+invalid_as_user`, and malformed percent encoding returns `400
+malformed_query`, all before principal resolution. The test proves that the
+parameter adds no credential, binding, authorization, or tailnet-identity
+behavior.
 A9. Read-marker pagination creates two users with the same `scopeKey`;
 paging each authorized view visits
 every `(userId, scopeKey)` exactly once.
