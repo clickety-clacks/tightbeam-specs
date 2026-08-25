@@ -9,6 +9,14 @@ Integration target: none
 Work-item binding: none
 Authority: `att_fae41482-848b-40c1-a8da-b1daf68e3c75`, `art_0b820dfb`, `att_08edcb9c-33d9-4039-bd3e-41562c965ec1`, `att_771854c7-8817-4540-8d73-43136199d673`, review `att_f7e808e7-dcf3-4c25-8d2a-ff0ccad16eca`, exact-revision F4 clause table `art_10c8b110`, and closed-lane refusal `art_fd676254`
 
+## Spec Homing
+
+Canonical home: `github:clickety-clacks/tightbeam-specs/codex-session-usage-capture-v1.md`.
+
+Authority set: exactly this Spec Homing declaration plus the Goal, Non-Goals, Terms, Assumptions, Invariants, Architecture, Acceptance, and Open Questions sections in this canonical file. The header's authority records and source-base pins provide provenance and evidence; they are not alternate contracts. A workdir copy, artifact pointer, conversation, producer branch, or review report does not override this file.
+
+Binding authority: none. This candidate remains targetless and unbound. It becomes implementation authority only after an independent `reviewed-clean` verdict and an explicit work-item binding record the canonical path and its SHA-256. A material amendment supersedes the prior candidate bytes at this same canonical home.
+
 ## Goal
 
 Tightbeam shall expose the authenticated account mode and a sanitized, normalized projection of real Codex rate-limit responses through its existing session-status response. The projection shall preserve the optional wire shape that OpenClaw and Clawline already consume. Provider capture shall occur at the adapter boundary, and session-status reads shall remain non-blocking.
