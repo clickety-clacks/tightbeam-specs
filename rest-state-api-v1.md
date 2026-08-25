@@ -42,8 +42,16 @@ Authority and inputs:
   `s_21b93fdd-5e62-4ed9-ac7e-923697463936`. This ruling supersedes only the
   contrary “no asUser query parameter” clauses in rest-vs-cli-adjudication.md
   r2 and its adopted recon baseline.
-- session-tokens-v1.md's principal-seam table defines the existing CLI
-  principal selection that AU2 transports. This spec adds no second resolver.
+- Product-owner R3 ruling `att_2d3a8333-a1d2-478f-9b0a-f8fb75b795df`, which
+  consumes D1 verdict `att_8eaa2c03` and report `art_3990b5e1`: for AU2,
+  the existing dispatch resolver verifies a matching session `ownerUserId`
+  and resolves `{:user, ownerUserId}`; a mismatch returns
+  `403 identity_not_yours`. It rules the contrary canonical AU2
+  session-principal phrase a mechanical defect.
+- session-tokens-v1.md defines the Dispatch call-map principal seam for its
+  stated consumers. R3 is the more-specific authority for AU2's REST
+  transport parity; this spec neither changes that seam nor creates a second
+  resolver.
 - rest-state-api-r3-adjudication.md: durable REST finding text, source
   message identifiers, the closure map, and the SQ2 ruling pointer.
 - rest-state-api-v1-wire-schema.md: normative JSON types, nested shapes,
