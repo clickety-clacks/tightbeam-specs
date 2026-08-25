@@ -1,6 +1,6 @@
 # Computed supervision population v1
 
-Status: spec-ready after cold digest; awaiting independent exact-revision review
+Status: revised after independent changes-requested review; awaiting exact-revision re-review
 
 Authority:
 
@@ -10,6 +10,7 @@ Authority:
 - `supervision-v1.md`, `supervision-impl-v1.md`, `production-machine-v1.md`, `accountability-constitution-v1.md`, `coordination-fabric-v1.md` sections 5b and 8b, `prodder-provenance-v1.md`, the AVASARALA and MILLER seed guidance and archetypes, and the AVASARALA rename history at spec commit `3999439` and product commit `63e3400`.
 - Current 0.2.0 source baseline `f24b5a17caaf738c27a69cf421e1572e3397fd36` on Tightbeam `main`.
 - Current specs baseline `85ae5ecb126d54cf7759b4ce37d9459fd7bd0f0f` on `tightbeam-specs/main`.
+- Independent review verdict `att_c84e1291-86ca-464a-bd46-6386ab681c2f` and clause table `art_498c59fe`, SHA-256 `83b72e92ba12f9b9d7e8a997c7066409384db43786d8c2619da9103f759a7274`.
 
 This spec is a bounded successor amendment to the authorities above. It replaces only clauses or implementation behavior that use `supervision_entitlements`, a controller row, a watermark, or another supervision side row to decide whether an open assignment belongs to supervision. It also replaces the parent-elevation behavior that deletes an entitlement while the assignment remains open. All timing, production, escalation, provenance, judgment, and audit rules that do not conflict with this amendment remain live.
 
@@ -109,7 +110,7 @@ The materializer chooses the basis in this order:
 
 The materializer inserts that generation with `state='armed'`, the default due time, and the current positive interval. It first runs the existing receipt-cursor baseline seam, so historical source rows that supervision never accepted do not become new resets. Existing controller facts remain action gates.
 
-After this release entry, product code shall not delete a pacing row while its assignment remains open. This rule makes generation monotonic after materialization and makes a later missing row an explicit default case rather than a normal transfer representation.
+After this release entry, product code shall not delete a pacing row while its assignment remains open. This rule makes generation monotonic during one uninterrupted open lifecycle and makes a later missing row an explicit default case rather than a normal transfer representation. A lawful close followed by `reopen-assignment` starts the fresh lifecycle specified in R9.
 
 ### Stored pacing states
 
@@ -177,15 +178,19 @@ The assignment-open transaction shall continue to create the assignment and its 
 
 ### R7 — Assignment close
 
-Closing an assignment shall remove it from the watched population at the assignment-state commit. Cleanup of pacing, controller, watermark, receipt-state, or retry rows may occur in the same transaction or later. Stale side rows shall not restore membership.
+Closing an assignment shall remove it from the watched population at the assignment-state commit. Cleanup of pacing, controller, watermark, receipt-state, or retry rows may occur in the same transaction or later. Delayed cleanup shall delete or change a side row only while the same transaction still observes `assignments.state='closed'`; it shall not delete pacing that a later `reopen-assignment` created. Stale side rows shall not restore membership.
 
 ### R8 — Session retirement
 
-Retiring a session shall remove its held assignments from the watched population at the session-state commit. Existing retirement disposition and reassignment rules remain authoritative. A later assignment transfer to an active holder shall re-enter the assignment through the assignment/session relation, not through a pacing-row write.
+Retiring a session shall remove its held assignments from the watched population at the session-state commit. Existing retirement disposition rules remain authoritative. Any obligation that those rules leave open under an active holder shall enter the population only through its assignment/session relation, not through a pacing-row write.
 
-### R9 — Assignment transfer
+### R9 — Assignment reopen
 
-An open assignment transferred from one active holder to another active holder shall remain watched across the serialized transfer commit. Its next evaluation shall use the new holder. The implementation shall cancel, settle, or rebase stale controller and claim state under existing transfer rules before it can act for the old holder.
+The existing authorized `reopen-assignment` transition shall restore watched membership and fresh pacing in the same transaction that records `assignment_reopenings` and changes the assignment from closed to open. It shall retain the current holder and current authorization, reason, work-item, and active-holder checks.
+
+Reopen shall complete the existing terminal-disposition cancellation of stale controllers and clearing of the pending watermark before it writes fresh pacing. It shall preserve the receipt cursor and durable receipt, attempt, lifecycle, counter, and reopening history. It shall use one `INSERT ... ON CONFLICT(assignmentId) DO UPDATE` or equivalent single-row upsert to replace any stale pacing row from the closed lifecycle. The stored result shall be exactly one generation-1 `armed` row with `dueAt=reopenClock+sweep_ms`, the positive current interval, `basisKind='assignment_open'`, the assignment id as basis id, `cause='assignment_open'`, and the reopening principal. It shall clear `lastAttemptGeneration`, `claimClock`, and `terminusAt`. An absent row and a stale `armed`, `claimed`, or `terminus` row shall produce the same fresh row. Reopen shall neither retain nor advance the closed lifecycle's generation.
+
+The assignment-state update, reopening history, pacing replacement, existing assignment-open liveness trigger, and existing work-item bracket cancellation shall commit or roll back together. Concurrent delayed close cleanup shall serialize through the R7 closed-state predicate. A losing reopen shall return the existing named transition error and leave both assignment and pacing state unchanged.
 
 ### R10 — Parent elevation
 
@@ -213,9 +218,9 @@ Default materialization shall not increment `attemptCount`, `prodCount`, `denied
 
 Only one transaction may change one armed generation to claimed. It shall compare assignment id, generation, due time, state, and evaluation clock as the current claim CAS requires. A losing cycle shall reread or return duplicate; it shall not schedule a second wake.
 
-### R16 — Close, retire, and transfer races
+### R16 — Close and retirement races
 
-Before an action commits, the act transaction shall reread that the assignment is open and that its current holder session is active. It shall also apply the existing pending-turn, pending-wake, work-blocked, controller, and lineage gates. Closure, retirement, or transfer that wins the writer order shall make an old-holder act stale.
+Before an action commits, the act transaction shall reread that the assignment is open and that its current holder session is active. It shall also apply the existing pending-turn, pending-wake, work-blocked, controller, and lineage gates. Closure or holder retirement that wins the writer order shall make the act stale.
 
 ### R17 — Crash recovery
 
@@ -233,7 +238,9 @@ The implementation shall retain the current `supervision_entitlements`, `supervi
 
 The first new-binary recovery shall backfill all watched missing rows in its normal transaction and record their existing lifecycle basis. Correctness shall not depend on completing a separate bulk migration. No table rewrite, schema-shape stamp change, or offline data conversion is required.
 
-An old 0.2.0 binary may reopen the database because the schema remains byte-compatible. Rollback restores the old population defect for any row later missing. The rollback precheck shall run the R1 assignment/session join with a left join to `supervision_entitlements` and return each watched assignment whose pacing row is absent, ordered by `openedAt, id`. Rollback is admitted only when that result is empty. Rows created by this release require no reverse conversion.
+An old 0.2.0 binary may reopen the database because the schema remains byte-compatible. Rollback restores the old population defect for any row later missing. The implementation shall expose the read-only internal function `Tightbeam.Supervision.rollback_precheck/1` with return type `:ok | {:error, [map()]}`. In one read transaction, the function shall consume `watched_assignments_in_txn/1` and left-read `supervision_entitlements` for those exact results; it shall not restate the population join. It shall return `:ok` when no watched pacing row is absent. Otherwise, it shall return `{:error, rows}`, where each row contains `assignmentId`, `holderKey`, and `openedAt`, ordered by `openedAt, assignmentId`.
+
+Before an operator replaces the running new binary with an old 0.2.0 binary, the operator shall invoke `Tightbeam.Supervision.rollback_precheck(Tightbeam.DB)` through the installed release wrapper's existing `rpc` command, with the same base-directory, port, and node environment used to start that gateway. The operator shall admit rollback only after that invocation returns `:ok`; a connection failure or `{:error, rows}` shall refuse rollback. This seam adds no Tightbeam CLI verb, gateway wire verb, remote endpoint, or database write. Rows created by this release require no reverse conversion.
 
 ### R21 — Observability
 
@@ -250,7 +257,7 @@ The implementation shall emit one `supervision_entitlement_materialized` lifecyc
 
 ### R22 — Security and authorization
 
-This amendment shall add no command, API verb, remote endpoint, write permission, or caller-controlled population predicate. Only existing authorized assignment/session transitions can change membership. The process principal may materialize pacing only after the R1 query proves the assignment is watched. Caller-supplied role names, lineage, session liveness, due times, or topology shall not be trusted as membership evidence.
+This amendment shall add no Tightbeam CLI verb, gateway wire verb, remote endpoint, write permission, or caller-controlled population predicate. The read-only internal rollback function in R20 is callable only through the release wrapper's existing local `rpc` seam and grants no new mutation authority. Only existing authorized assignment/session transitions can change membership. The process principal may materialize pacing only after the R1 query proves the assignment is watched. Caller-supplied role names, lineage, session liveness, due times, or topology shall not be trusted as membership evidence.
 
 ### R23 — Deterministic bone boundary
 
@@ -312,13 +319,13 @@ Controller scheduling materializes pacing before the current coherence writes. A
 
 Assignment open creates generation 1. Each accepted typed liveness receipt, controller settlement, parent-retirement rearm, policy denial rearm, no-terminal rearm, or terminal rebase keeps its current generation and due-time rule.
 
-Terminus stops timer pacing but preserves the row and population membership. A qualifying reset after terminus uses the same receipt transaction that accepts the durable source. It advances once, clears the current ladder epoch under the existing receipt rule, and re-arms. A later terminal does not reset terminus. Closing the assignment is the only assignment transition that ends its obligation. Retiring its holder removes it from the live-holder population while existing disposition runs.
+Terminus stops timer pacing but preserves the row and population membership. A qualifying reset after terminus uses the same receipt transaction that accepts the durable source. It advances once, clears the current ladder epoch under the existing receipt rule, and re-arms. A later terminal does not reset terminus. Closing the assignment ends that open lifecycle. A lawful reopen starts a fresh lifecycle by replacing any stale pacing state under R9. Retiring its holder removes it from the live-holder population while existing disposition runs.
 
 ### 6. Upgrade, recovery, and rollback
 
 The release uses the current schema. On first and later starts, recovery runs current legacy normalization before it enumerates R1 and repairs missing pacing. A missing row with accepted receipt or transfer evidence uses that exact numeric generation and basis. Another missing row receives recovery-backfill defaults.
 
-Runtime recognition uses the same repair, so a row that becomes absent after startup cannot wait for another boot. Because the release does not alter table SQL, rollback needs no schema action. The rollback precheck in R20 prevents operators from knowingly restoring invisibility.
+Runtime recognition uses the same repair, so a row that becomes absent after startup cannot wait for another boot. Because the release does not alter table SQL, rollback needs no schema action. `Tightbeam.Supervision.rollback_precheck/1`, called through the installed release wrapper's existing local `rpc` command while the new gateway runs, provides the exact admission seam in R20.
 
 ### 7. Evidence and minds
 
@@ -408,13 +415,13 @@ Falsifies: an old-holder prod or population inclusion after retirement.
 
 Traces: R8, R16.
 
-### A11 — Active-holder transfer race
+### A11 — Reopen replaces stale pacing
 
-Given a due assignment transferred from active session A to active session B between recognition and act, when the act transaction runs, then the A claim is stale, the next population read contains the assignment once under B, and no wake targets A from the stale claim.
+Given an authorized closed assignment held by an active session, a stale pending controller and watermark, and, in separate cases, an absent, armed, claimed, or terminus pacing row left from its closed lifecycle, when `reopen-assignment` commits at clock `80_000` with `sweep_ms=60_000`, then the assignment is open and watched, one reopening history row exists, the stale controller is canceled, the pending watermark is clear, the receipt cursor and historical evidence are unchanged, and exactly one pacing row is armed at generation 1 with `dueAt=140_000`, assignment-open basis and cause, the reopening principal, and null attempt, claim, and terminus fields. When delayed close cleanup serializes after this commit, its closed-state predicate changes nothing.
 
-Falsifies: disappearance, duplicate membership, or old-holder dispatch.
+Falsifies: reopen refusal caused only by the stale row, retained or advanced old generation, retained claim or terminus state, missing history, pacing deletion after reopen, duplicate pacing, or a partial commit.
 
-Traces: R9, R16.
+Traces: R7, R9, R15, R25.
 
 ### A12 — Parent elevation retains pacing
 
@@ -482,7 +489,7 @@ Traces: R14, R23 and `prodder-provenance-v1.md`.
 
 ### A20 — Upgrade and rollback fixture
 
-Given a current 0.2.0 database fixture containing stored, missing, transferred, terminus, closed, and retired-holder cases, when the new binary boots, then it passes current schema-shape validation and A1–A16 without a table rewrite. When the rollback precheck runs, it fails while any watched pacing row is missing and passes after new-binary recovery materializes all such rows; the old binary then opens the same database without reverse conversion.
+Given a current 0.2.0 database fixture containing stored, missing, accepted parent-transfer, terminus, closed, reopened, and retired-holder cases, when the new binary boots, then it passes current schema-shape validation and A1–A16 without a table rewrite. While that new gateway runs, when the test invokes `Tightbeam.Supervision.rollback_precheck(Tightbeam.DB)` through the installed release wrapper's existing `rpc` command, then it returns `{:error, rows}` with exact ordered assignment, holder, and open-clock fields while any watched pacing row is missing. After new-binary recovery materializes all watched missing rows, the same invocation returns `:ok`; the old binary then opens the same database without reverse conversion. A release-wrapper connection failure refuses rollback.
 
 Falsifies: a shape change, required offline migration, unsafe rollback signal, or unreadable new rows.
 
@@ -490,7 +497,7 @@ Traces: R19, R20.
 
 ### A21 — Full regression boundary
 
-The implementation change shall pass the full current 0.2.0 test suite, including supervision, schema-shape, session retirement, assignment transfer, wake delivery, work-item trace, and provenance tests. The implementation shall add the deterministic cases above to the existing supervision and schema-query test modules rather than creating a second behavioral harness.
+The implementation change shall pass the full current 0.2.0 test suite, including supervision, schema-shape, assignment reopen, session retirement, wake delivery, work-item trace, and provenance tests. The implementation shall add the deterministic cases above to the existing supervision and schema-query test modules rather than creating a second behavioral harness.
 
 Falsifies: any existing authoritative behavior changes outside the bounded amendment.
 
@@ -498,4 +505,4 @@ Traces: R1–R25.
 
 ## Open Questions
 
-None. The owner rows resolve the population source, default, terminus, role boundary, target release, and review lane. Implementation questions shall amend this canonical spec before code changes. A materially new scope or monetary decision returns to the owner; answerable mechanics remain in the assigned lane.
+None. The owner rows and independent review resolve the population source, default, terminus, reopen lifecycle, rollback invocation, removal of the unsupported active-holder transfer case, role boundary, target release, and review lane. Implementation questions shall amend this canonical spec before code changes. A materially new scope or monetary decision returns to the owner; answerable mechanics remain in the assigned lane.
