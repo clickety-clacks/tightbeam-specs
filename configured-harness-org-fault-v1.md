@@ -8,6 +8,11 @@ Authority: `wi_8c466f03-0a44-4173-bc48-191a343a3b4e` and assignment
 Ground truth read for this draft: Tightbeam `origin/main` at `8b4a3df` and
 the spec commons at `8a496f2` on 2026-08-25.
 
+Blast-radius evidence: `art_1fadd132`, SHA-256
+`2672627462b889c4a9b34d956cbc4282ffc788f8fee00f96740c077c640d9596`.
+Its 14 lexical card matches reduce to four current affected cards and three
+distinct review obligations.
+
 This spec extends `harness-adapter-seam-v1.md` CAP-018,
 `per-host-catalogs-v1.md`, `tightbeam-credential-onboarding-v1.md`, and
 `production-machine-v1.md`. It does not supersede them.
@@ -18,7 +23,9 @@ When one credential provider used by a configured harness becomes unusable on
 one or more registered hosts, Tightbeam records one loud, durable org fault for
 that provider. The fault preserves each host's evidence separately, routes one
 repair obligation to an authorized owner, links affected assignments, and
-closes only after direct recovery evidence or removal of the affected scope.
+reports distinct review obligations without double-counting their producer and
+reviewer cards. It closes only after direct recovery evidence or removal of the
+affected scope.
 
 The fault opens for any of these observed conditions on a configured
 `{host, provider}` scope:
@@ -35,6 +42,10 @@ first observation, and last observation.
 ## Non-Goals
 
 - This spec does not repair, copy, rotate, delete, or re-onboard a credential.
+- This spec does not change or approve the onboarding ceremony's native URL
+  delivery. Tightbeam 0.1.8 can emit that URL outside the terminal/browser
+  interaction; the fault renderer does not conceal or cure that separate
+  privacy inconsistency.
 - This spec does not move a credential between hosts. Assimilation keeps one
   independent grant per `{org, host, provider}`.
 - This spec does not treat a missing credential on a fresh host, an onboarding
@@ -88,6 +99,13 @@ first observation, and last observation.
   deduplication key.
 - **Fault impact:** A durable link from an assignment to an active fault. The
   link says the assignment is affected; it does not change assignment state.
+- **Review obligation key:** The producer assignment ID that an independent
+  review must judge. A producer card uses its own ID. A review card uses its
+  `reviewsAssignmentId`. Producer and reviewer cards can therefore count as two
+  affected assignments and one review obligation.
+- **Lexical card match:** An assignment whose prose mentions a harness or
+  cross-harness review. A lexical match is census evidence. It creates no fault
+  impact and contributes to neither active count.
 - **Fault owner:** The earliest-created admin user at the transaction that opens
   the occurrence, ordered by `(users.createdAt, users.userId)`. Admin authority
   already permits the local onboarding ceremony. The owner remains fixed for
@@ -95,10 +113,15 @@ first observation, and last observation.
 - **Material change:** A new affected host, a new cause on a host, a signal
   conflict appearing or clearing, or fault closure. Repeated
   evidence with the same current classification is not a material change.
+- **Fault remediation channel:** The fault's stored summary and store-and-push
+  owner message. It can name the affected host and a documented local command.
+  It carries neither an authorization URL nor a carry-back code.
 - **Local ceremony channel:** The interactive terminal and browser session on
-  the affected host. An authorization URL or carry-back code exists only in
-  this channel. Fault storage, store-and-push delivery, chat, and artifacts do
-  not carry either value.
+  the affected host after an operator starts onboarding. This spec expects the
+  authorization URL and carry-back code to stay in that channel. Tightbeam
+  0.1.8 can also emit the URL through native wake, file, or structured-output
+  delivery. That known contradiction remains an onboarding concern; this fault
+  does not invoke the ceremony or declare its delivery conformant.
 
 ## Assumptions
 
@@ -171,26 +194,31 @@ matching row. The conditions are mutually exclusive in this order:
 
 | Current evidence on a host | Permitted remediation text |
 |---|---|
-| CAP-018 `dead` | Run the supported local `tightbeam onboard <provider>` ceremony on that host, then verify again. |
+| CAP-018 `dead` | Run the supported local `tightbeam onboard <provider> --as-user <ownerUserId>` ceremony on that host, then verify again. |
 | credential file `malformed` or `expired`, with CAP-018 `live` | Reconcile the file/source discrepancy before any credential mutation. Do not recommend onboarding. |
 | catalog `available_empty`, with CAP-018 not `dead` | Diagnose the catalog refresh, harness version, and entitlement projection. If the file signal also says `malformed` or `expired`, reconcile the signal sources. Do not recommend onboarding. |
-| credential file `malformed` or `expired`, with CAP-018 `unknown` | Repair that host with the supported local `tightbeam onboard <provider>` ceremony, then verify again. |
+| credential file `malformed` or `expired`, with CAP-018 `unknown` | Repair that host with the supported local `tightbeam onboard <provider> --as-user <ownerUserId>` ceremony, then verify again. |
 | spawn `unusable`, with CAP-018 `live` and catalog `available_nonempty` | Diagnose the adapter/spawn path. Do not recommend onboarding. |
 | CAP-018 `unknown` without another permitted repair | Re-run the bounded authenticated check or diagnose its transport. Do not claim death. |
 
-The remediation renderer emits a command only when the current CLI parser
-accepts that form and the applicable help documents each option in it. The
-installed parser accepts global `--as-user`, while the leaf onboarding help
-does not document it. That state is a help/remediation inconsistency, not parser
-rejection. The renderer omits the flag until applicable help documents it; if a
-later renderer needs an explicit identity, it can emit `--as-user <user>` only
-after the parser and applicable help agree on that form.
+`--as-user` is a supported global flag in Tightbeam 0.1.8. The parser accepts
+`tightbeam onboard anthropic --as-user mike --help`. Current command-specific
+onboarding help omits the accepted flag. That omission is a help/remediation
+inconsistency, not parser rejection.
 
-The owner message tells the operator to run the ceremony in the local ceremony
-channel on the named host. It does not embed the browser URL or carry-back code.
-It does not suggest copying a grant from another host. A cross-half contract
-test sends each rendered command through the current CLI parser and checks the
-same command against applicable help.
+The implementation makes top-level help, command-specific onboarding help, and
+rendered remediation document the same global identity placement before it
+ships the renderer. The renderer emits a command only when the current CLI
+parser accepts that form and both help surfaces document it. A cross-half
+contract test sends each rendered command through the current CLI parser and
+checks both help surfaces. The fault does not describe `--as-user` as invalid or
+unsupported.
+
+The fault remediation channel tells the operator to run the ceremony in the
+local ceremony channel on the named host. It does not embed the browser URL or
+carry-back code. It does not invoke onboarding. It does not state that current
+onboarding URL delivery satisfies the local-only expectation. It does not
+suggest copying a grant from another host.
 
 ### I7 — The fault is information, not a hold
 
@@ -207,6 +235,11 @@ waiver as typed input: `intent=fault_waiver`, `faultId`, and `assignmentId`.
 When `faultId` names an active occurrence, the transaction records or refreshes
 the fault impact and returns `org_fault_active`. It creates no decision-request
 row and emits no decision-request wake.
+
+The impact seam derives the review obligation key from durable assignment
+relations. It counts current impacted assignment IDs separately. It counts
+distinct review obligation keys separately. A lexical card match creates no
+impact and changes neither count.
 
 A generic free-text operator question remains available for a different user
 decision. Tightbeam does not inspect that prose for hidden waiver intent. This
@@ -243,12 +276,14 @@ the occurrence with `scope_removed`; it cannot emit `recovered` for that scope.
 
 ### I12 — Secrets stay outside fault storage and presentation
 
-Fault rows, observations, events, logs, notifications, API responses, chat,
-artifacts, and test snapshots exclude credential bytes, token fragments,
-authorization headers, refresh tokens, browser URLs, carry-back codes, provider
-response bodies, local credential paths, and SSH destinations. The local
-ceremony channel can display its browser URL and accept its carry-back code
-without copying either value into a fault surface. Fault surfaces can contain
+Fault rows, observations, events, logs, notifications, API responses, fault
+chat, fault artifacts, and test snapshots exclude credential bytes, token
+fragments, authorization headers, refresh tokens, browser URLs, carry-back
+codes, provider response bodies, local credential paths, and SSH destinations.
+The local ceremony channel can display its browser URL and accept its carry-back
+code without copying either value into a fault surface. Native onboarding emissions
+remain governed by their own contract and do not become permitted fault
+surfaces. Fault surfaces can contain
 host name, provider, harness, HTTP status class, safe cause code, missing field
 names, source row ID, and a SHA-256 digest of a redacted envelope.
 
@@ -293,12 +328,15 @@ Replaying one source is a no-op.
 
 `org_fault_impacts`
 
-- `faultId`, `assignmentId`, `causeCode`, `principal`;
+- `faultId`, `assignmentId`, `reviewObligationKey`, `causeCode`, `principal`;
 - `firstObservedAt`, `lastObservedAt`, and nullable `clearedAt`.
 
 The active affected-assignment count joins impacts to assignments and counts
 distinct assignments whose assignment state is `open` and impact `clearedAt`
 is null. Closed assignments remain in history and leave the active count.
+The active affected-review-obligation count applies the same filter and counts
+distinct `reviewObligationKey` values. Assignment prose cannot populate either
+count.
 
 ### 2. Observation and recognition
 
@@ -340,7 +378,7 @@ After the opening transaction commits, a production stores and pushes one
 substrate-authored owner message. It uses deterministic delivery identity
 `org-fault:<faultId>:<ownerUserId>`. The message names the occurrence ID,
 provider, affected hosts, safe cause codes, affected-assignment count, and the
-I6 remediation lines.
+affected-review-obligation count. It also includes the I6 remediation lines.
 
 A crash between the fault commit and delivery cannot lose or duplicate the
 message: restart recognition sees the open fault without a delivery receipt and
@@ -358,6 +396,10 @@ assignment to the matching active fault. An authorized agent can also call the
 single explicit impact-link verb with `faultId`, `assignmentId`, and a cause.
 The verb accepts the assignment holder, opener, assignment owner, or admin. It
 returns the existing link on an idempotent retry.
+
+The impact-link transaction derives `reviewObligationKey` from durable
+assignment relations. It uses `reviewsAssignmentId` for a review card and the
+assignment's own ID for a producer card. It does not read assignment prose.
 
 The typed `fault_waiver` create path calls the same impact-link transaction,
 then returns the active fault. It does not mint a second intent for the owner.
@@ -395,7 +437,8 @@ summary rows with:
 - first and last observation times;
 - sorted affected hosts and safe cause codes;
 - signal-conflict indicator; and
-- active affected-assignment count.
+- active affected-assignment count;
+- active affected-review-obligation count.
 
 A dedicated fault detail read returns the four current axes per host, source
 references, safe history, linked assignments visible to the caller, deliveries,
@@ -478,11 +521,13 @@ browser onboarding.
 Given one host reports `malformed` and another reports `expired`, with neither
 host holding CAP-018 `live`, when the fault renders, then the host rows keep the
 two cause codes. Each local remediation uses a command accepted by the current
-CLI parser and documented by applicable help. Given the parser accepts global
-`--as-user` while the applicable onboarding help omits it, the renderer omits
-that option and the contract test reports the help inconsistency. The fault
-does not claim that the parser rejects `--as-user`, and the text contains no
-cross-host copy instruction.
+CLI parser and documented by top-level and command-specific help. Given the
+0.1.8 parser accepts global `--as-user` while command-specific onboarding help
+omits it, the help/remediation contract test fails until that help documents the
+accepted placement. After the help correction, the renderer emits
+`tightbeam onboard <provider> --as-user <ownerUserId>`. The parser accepts the
+command, both help surfaces document it, the fault does not call `--as-user`
+invalid or unsupported, and the text contains no cross-host copy instruction.
 
 ### A8 — Spawn usability remains independent (I3)
 
@@ -504,11 +549,16 @@ Given observations arrive at times 200, 300, then 100, when the detail is read,
 then `firstObservedAt` remains 200 for the occurrence, `lastObservedAt` is 300,
 and the late observation at 100 remains in history without becoming current.
 
-### A11 — Impacts count open affected assignments (I8)
+### A11 — Current impacts exclude lexical matches and deduplicate obligations (I8)
 
-Given 14 open assignments link to one active fault, when the summary is read,
-then `affectedAssignmentCount` is 14. When one assignment closes, the active
-count becomes 13 and its impact remains in detail history.
+Given the `art_1fadd132` census finds 14 lexical card matches, when typed impact
+evidence identifies four current affected cards and two of those cards are the
+producer and reviewer for one durable `reviewsAssignmentId`, then the summary
+reports `affectedAssignmentCount = 4` and
+`affectedReviewObligationCount = 3`. The other ten lexical matches create no
+impact rows. When the review card in the shared pair closes while its producer
+remains open, the assignment count becomes 3 and the review-obligation count
+remains 3. Each closed impact remains in detail history.
 
 ### A12 — Typed per-card waiver asks are suppressed (I8, I9)
 
@@ -568,8 +618,11 @@ URLs, local paths, and provider bodies, when each fault read, event, log, owner
 message, chat payload, artifact, and API response serializes, then none of those
 fixture strings or their substrings appears. Given the local ceremony presents
 an authorization URL and accepts a carry-back code, the ceremony can use both
-values while the fault surfaces still contain neither value. Host, provider,
-harness, safe cause codes, missing field names, and source IDs remain readable.
+values while the fault surfaces still contain neither value. Given Tightbeam
+0.1.8 also emits the URL through a native onboarding wake, file, or structured
+output, the fault does not copy that emission, invoke onboarding, or report the
+native delivery as privacy-conformant. Host, provider, harness, safe cause
+codes, missing field names, and source IDs remain readable.
 
 ### A20 — CAP live plus non-empty catalog does not fake spawn proof (I3, I10)
 
