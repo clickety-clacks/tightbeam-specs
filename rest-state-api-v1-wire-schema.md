@@ -111,13 +111,17 @@ ExecutionMap error responses are closed top-level objects in this key order:
 - `{code:S}`, where `code` is exactly one of `auth_failed`,
   `invalid_as_user`, `invalid_message`, `not_found`, `invalid_filter`,
   `malformed_query`, `invalid_cursor`, or `projection_invalid`;
+- `{code:S, message:S}`, where `code` is exactly `identity_not_yours` and
+  `message` is exactly `this session belongs to <session.owner_user_id>`, with
+  `<session.owner_user_id>` replaced by the target session row's exact stored
+  non-null owner user id;
 - `{code:S, candidateIds:A<S>}`, where `code` is exactly `ambiguous_id` and
   `candidateIds` contains visible full typed ids in ascending order.
 
-No error variant contains `message` or another key. The encoder emits no
-insignificant whitespace. Each ExecutionMap response sets exactly the
-application headers `Content-Type: application/json; charset=utf-8` and
-`Cache-Control: no-store`.
+`identity_not_yours` is the sole message-bearing variant. No other error
+variant contains `message` or another key. The encoder emits no insignificant
+whitespace. Each ExecutionMap response sets exactly the application headers
+`Content-Type: application/json; charset=utf-8` and `Cache-Control: no-store`.
 
 ## Resource field types and nullability
 

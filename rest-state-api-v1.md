@@ -6,14 +6,16 @@ amendment changes no durable Toplines field, mutation, or route. Its companion
 firehose amendment adds source invalidation notices for existing durable
 Topline and subagent-marker commits; it adds no ExecutionMap class.
 
-Review status, 2026-08-25: AMENDED AFTER recovery review
-`att_29670784-bd48-4fb9-a847-1083b93de602` requested changes on exact
-`29e834b0a7d5e88a7b6ea611699f1de61602a666`; full report
-`art_8b5046d8` supplies findings F1-F5. Earlier changes requested against
-`a9117391` are incorporated. Product-owner ruling
-`att_d5b0a440-bd51-498f-8b96-e6512fedf68f` closes SQ6-SQ8. The resulting
-three-file successor requires a fresh independent review before M1, M2,
-specRef binding, or implementation. Separable r3 resources remain unaffected.
+Review status, 2026-08-25: AMENDED AFTER exact review
+`att_90efe520-f84c-4d3b-bd09-9c36f8a0ff08` requested changes on exact
+`e4a27977477a25c3037bba164db2bc1d508bcd7a`; full report `art_bffa387b`
+supplies findings F6-F7. Product-owner ruling
+`att_c0fee9c0-3489-4a57-b981-080fbcca4f66` preserves the existing
+message-bearing session-owner refusal and restores canonical R6 while keeping
+ExecutionMap-scoped R6a. Earlier F1-F5 and SQ6-SQ8 rulings remain incorporated.
+The resulting three-file successor requires a fresh independent review before
+M1, M2, specRef binding, or implementation. Separable r3 resources remain
+unaffected.
 
 Status: CANONICAL r3, 2026-08-22. r3 folds the REST-side adjudicated
 findings F1/F8/F9/F13/F14/F16/F21/F22 from
@@ -341,9 +343,10 @@ shared-cache behavior. A valid request returns 200. Invalid or absent bearer
 returns `401 auth_failed`. A syntactically valid selector that is unknown or
 forbidden returns the AU3 `404 not_found`. Invalid query shape or value returns
 `400 invalid_filter`; malformed query encoding returns
-`400 malformed_query`. Cursor errors follow AU7. Serializer or dependency
-schema failure returns the read plane's closed `500 projection_invalid` and
-emits no partial response.
+`400 malformed_query`. A session bearer whose `asUser` mismatches its owner
+returns AU2's exact `403 identity_not_yours`. Cursor errors follow AU7.
+Serializer or dependency schema failure returns the read plane's closed
+`500 projection_invalid` and emits no partial response.
 
 R4b. ExecutionMap error envelopes are closed. The encoded outer object has
 exactly `schemaVersion`, `resource`, and `error`, in that order;
@@ -351,10 +354,15 @@ exactly `schemaVersion`, `resource`, and `error`, in that order;
 `auth_failed`, `invalid_as_user`, `invalid_message`, `not_found`,
 `invalid_filter`, `malformed_query`, `invalid_cursor`, and
 `projection_invalid`, `error` has exactly one key, `code`, whose value is that
-literal code. For `ambiguous_id`, `error` has exactly `code` followed by
-`candidateIds`; `code` is `"ambiguous_id"` and `candidateIds` is the ascending
-array of visible full typed ids required by R6a. No error object has a
-`message`, details, selector, denied id, or partial success field.
+literal code. For `identity_not_yours`, `error` has exactly `code` followed by
+`message`; `code` is `"identity_not_yours"` and `message` is exactly
+`"this session belongs to <session.owner_user_id>"`, with
+`<session.owner_user_id>` replaced by the target session row's exact stored
+non-null owner user id. For `ambiguous_id`, `error` has exactly `code` followed
+by `candidateIds`; `code` is `"ambiguous_id"` and `candidateIds` is the
+ascending array of visible full typed ids required by R6a.
+`identity_not_yours` is the sole message-bearing variant. No other error object
+has a `message`, details, selector, denied id, or partial success field.
 
 The route sets exactly these application response headers for every success
 and error: `Content-Type: application/json; charset=utf-8` and
@@ -449,12 +457,10 @@ R6. Filters are whitelisted per resource:
 | critical state | sessionKey exact |
 | execution map flat, tree, subtree | origin, ownerUserId, state, quietOverMs, specRefName, specRefSha256, sessionKey |
 
-Filters are conjunctive across fields. A resource-specific clause must permit
-a repeated field; such values are disjunctive. R6a instead rejects each
-repeated ExecutionMap roster filter. Unknown enum = typed 400. Unknown exact-id
-filter = empty collection, never an existence oracle. No `fields`, `sort`,
-`include`, or join parameters exist in v1. Every bounded-time filter is an
-epoch-millisecond integer named
+Filters are conjunctive across fields and disjunctive within a repeated
+field. Unknown enum = typed 400. Unknown exact-id filter = empty collection,
+never an existence oracle. No `fields`, `sort`, `include`, or join parameters
+exist in v1. Every bounded-time filter is an epoch-millisecond integer named
 `<field>FromInclusive` or `<field>ToExclusive`. The lower comparison is `>=`;
 the upper comparison is `<`. Wakes admit `dueAt` and `firedAt`; turns admit
 `createdAt`, `startedAt`, and `endedAt`; facts admit `ts`. A missing bound is
@@ -863,9 +869,12 @@ has only one `asUser` field. Malformed percent encoding returns
 
 For a session bearer, the existing resolver still verifies `asUser` against
 the session owner and the resolved principal remains that session; a mismatch
-keeps the existing dispatch refusal. For a device bearer, `asUser` cannot
-replace or elevate the credential-resolved user principal; its presence
-returns `400 invalid_as_user` before principal resolution. No case creates a
+returns `403 identity_not_yours`. Its R4b error message is exactly
+`"this session belongs to <session.owner_user_id>"`, with
+`<session.owner_user_id>` replaced by the target session row's exact stored
+non-null owner user id. For a device bearer, `asUser` cannot replace or elevate
+the credential-resolved user principal; its presence returns
+`400 invalid_as_user` before principal resolution. No case creates a
 credential, a new binding, an authorization grant, or tailnet-identity
 behavior. The canonical read service takes the resulting RESOLVED principal,
 so this migration changes only transport, never authorization.
@@ -1171,15 +1180,19 @@ the refetch changes marker-backed `fanOut`. The registry has no ExecutionMap
 class, durable Toplines bytes are unchanged, and the six `art_b1995a26`
 serializer bytes remain unchanged.
 
-A27. Given each ExecutionMap success, auth failure, invalid `asUser`, missing
-org-principal selection, malformed query encoding, invalid filter, invalid
-cursor, ambiguous visible prefix, unknown selector, forbidden selector, and
-projection failure, when the response is encoded, then each success has status
-200 and the exact R4a and wire-schema body, each error has its specified status
-and exact R4b body, and every response has the exact application headers. The
-test compares exact encoded bytes for every success envelope and closed error
-variant and rejects a message, extra key, wrong key order, or extra application
-header. Unknown and forbidden selectors have identical body and application
+A27. Given each ExecutionMap success, auth failure, invalid `asUser`,
+mismatched session-bearer `asUser`, missing org-principal selection, malformed
+query encoding, invalid filter, invalid cursor, ambiguous visible prefix,
+unknown selector, forbidden selector, and projection failure, when the response
+is encoded, then each success has status 200 and the exact R4a and wire-schema
+body, each error has its specified status and exact R4b body, and every response
+has the exact application headers. The mismatched session-bearer case has
+status 403 and exact error bytes with `code` followed by `message`; the message
+uses the target session row's exact stored non-null owner user id. The test
+compares exact encoded bytes for every success envelope and closed error
+variant and rejects an unauthorized message, extra key, wrong key order, or
+extra application header. `identity_not_yours` is the sole message-bearing
+variant. Unknown and forbidden selectors have identical body and application
 headers. An unpaged response has no `page`; a projection failure emits no
 partial JSON.
 
