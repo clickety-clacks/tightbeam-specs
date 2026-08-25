@@ -6,7 +6,9 @@ amendment changes no durable Toplines field, mutation, or route.
 
 Review status, 2026-08-25: CHANGES REQUESTED against candidate `a9117391`.
 SQ6-SQ8 expose the three blocking findings. This branch is not ready for M1,
-M2, specRef binding, or implementation until the named owners rule them.
+M2, specRef binding, or implementation of the affected Toplines and
+ExecutionMap routes until the named owner rules them. Separable r3 resources
+remain unaffected.
 
 Status: CANONICAL r3, 2026-08-22. r3 folds the REST-side adjudicated
 findings F1/F8/F9/F13/F14/F16/F21/F22 from
@@ -637,8 +639,8 @@ response carries `dependencyVersion` equal to a stable digest of the ordered
 `(resource primary key, rowVersion)` dependency vector, so equal dependencies
 produce equal versions and any dependency change produces a different version.
 The two BLOCKED rows are recorded holes, not implementable dependency lists.
-M1 and M2 cannot ship either resource until its blocking question is ruled and
-the row contains only exact live classes.
+M1 and M2 cannot ship the affected Toplines or ExecutionMap route until its
+blocking question is ruled and the row contains only exact live classes.
 
 R9a. ExecutionMap's query dependency extraction is closed over these source
 rows: visible work items; assignments resolved to them; allowed attests;
@@ -656,11 +658,12 @@ firehose class and does not silently treat `turn.*` as a marker notice.
 
 ExecutionMap builds its dependency vector only after AU4a source visibility.
 A hidden source row cannot change `dependencyVersion`, an aggregate, order,
-nesting, filter outcome, or response bytes. The vector uses each underlying
-resource's canonical primary key and `rowVersion`; append-only causal evidence
-uses its positive sequence as the version. The fixed coverage epoch uses its
-stored epoch value. Query dependency extraction and this R9a source list must
-match exactly.
+nesting, filter outcome, or response bytes. For an underlying R7 resource, the
+vector uses its canonical primary key and `rowVersion`. For non-resource
+append-only evidence, a causal event uses its positive sequence and a subagent
+marker uses its positive `subagent_markers.id` as both stable key and version.
+The fixed coverage epoch uses its stored epoch value. Query dependency
+extraction and this R9a source list must match exactly.
 
 Evaluation time is not a dependency row. `sinceProgressMs` and a
 `quietOverMs` result can therefore change while `dependencyVersion` stays
@@ -972,10 +975,10 @@ value returns. An unlisted live config key appears with `value:null`, and its
 A13a. After M4, M6, and M7 parity passes, every M5 alias and legacy dispatch
 read path is absent. The corresponding canonical REST GET still passes its
 contract tests, and every dispatch write verb remains available.
-A14. Every unblocked R9 composed view has a test that mutates one row for each declared
-dependency and observes a changed dependency digest. A state class not in the
-declared list leaves the digest unchanged. Query dependency extraction and the
-R9 list must match exactly.
+A14. Every unblocked R9 composed view has a test that mutates one row for each
+declared dependency and observes a changed dependency digest. A state class
+not in the declared list leaves the digest unchanged. Query dependency
+extraction and the R9 list must match exactly.
 A15. A session token reads its own session-scoped rows. It cannot read another
 session, an owner-only read, an owner read marker, or an admin resource merely
 because both sessions share `ownerUserId` or that owner is admin.
@@ -1056,12 +1059,12 @@ the four coverage-dependent fields are null and `sinceProgressMs` respects the
 coverage floor.
 
 A26. Given an SQ6 ruling that freezes an observable invalidation source or a
-revised projection, the R3b registry, and the R9a dependency extractor, when contract tests
-inspect flat, tree, subtree, and assignment routes, then each calls the named
-query family, source-derived visibility composition, and sole node serializer;
-the extractor names exactly the R9a source set. The firehose registry has no
-ExecutionMap class, durable Toplines bytes are unchanged, and the six
-`art_b1995a26` serializer bytes remain unchanged.
+revised projection, the R3b registry, and the R9a dependency extractor, when
+contract tests inspect flat, tree, subtree, and assignment routes, then each
+calls the named query family, source-derived visibility composition, and sole
+node serializer; the extractor names exactly the R9a source set. The firehose
+registry has no ExecutionMap class, durable Toplines bytes are unchanged, and
+the six `art_b1995a26` serializer bytes remain unchanged.
 
 A27. Given each ExecutionMap success, auth failure, invalid filter, invalid
 cursor, ambiguous visible prefix, unknown selector, forbidden selector, and
@@ -1110,20 +1113,20 @@ ExecutionMap semantics, but `SubagentMarkers.append/3` can commit without a
 `turn.*` mutation. The present no-firehose-class boundary leaves no observable
 R9 invalidation source. Choose one reviewed contract: admit a marker mutation
 class through a sibling firehose amendment, remove marker-backed `fanOut` from
-the REST projection, or revise R9's freshness promise to name and test bounded
-staleness. The first choice expands this assignment's explicit non-goal; the
-second changes current semantics; the third changes the read-plane invariant.
-No implementer chooses among them.
+the REST projection, or classify `fanOut` as snapshot-only and exclude it from
+R9 freshness and convergence. The first choice expands this assignment's
+explicit non-goal; the second changes current semantics; the third changes the
+read-plane invariant. No implementer chooses among them.
 
 SQ7. **Open; BLOCKING durable Toplines M1/M2 — owned by
 product-owner:rest-state-api.** Durable `toplines` and
 `topline_work_memberships` mutations have no class in R8, while the old R9 row
 named only execution-telemetry classes. Choose and review the durable Toplines
 freshness contract: add exact mutation mappings and version sources, redefine
-Toplines as a no-notice REST resource with an explicit refresh boundary, or
-remove the REST resource. The last choice contradicts I7 and this assignment;
-the first may require a sibling firehose amendment. No implementer infers a
-dependency from the obsolete telemetry row.
+Toplines as a no-notice REST resource with an explicit companion-spec exclusion
+and refresh boundary, or remove the REST resource. The last choice contradicts
+I7 and this assignment; the first may require a sibling firehose amendment. No
+implementer infers a dependency from the obsolete telemetry row.
 
 SQ8. **Open; BLOCKING independent-review closure — owned by
 product-owner:rest-state-api.** The reviewer requires an exact-candidate
