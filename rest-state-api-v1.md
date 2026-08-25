@@ -520,13 +520,14 @@ visible set. The cursor binds the complete `(createdAt, id)` tuple, resource
 name, canonical `state` filter fingerprint, and the AU7 principal binding. A
 deleted boundary row still positions the next page from that tuple.
 
-The `state` fingerprint is the canonical JSON array that uses this fixed enum
-order: `["open","closed"]`. The array contains each selected enum once.
-An absent `state` normalizes to `["open","closed"]`. Repeated identical
-values normalize to one enum. Reordered values normalize to the same fixed
-array. A cursor is reusable only when the request normalizes to its signed
-array; any other normalized array returns `400 invalid_cursor` before a row
-lookup.
+The cursor fingerprint is canonical JSON with the field `state`. An omitted
+`state` encodes that field as JSON `null`. Present repeated `state` inputs
+normalize to a deduplicated JSON array in this fixed enum order:
+`["open","closed"]`. Query order and identical duplicate values therefore
+produce one fingerprint. The four normalized values `null`, `["open"]`,
+`["closed"]`, and `["open","closed"]` are distinct. A cursor is reusable
+only when the request produces its signed `state` value; another normalized
+value returns `400 invalid_cursor` before a row lookup.
 
 `GET /api/sessions?displayName=<value>` accepts one or more nonempty
 `displayName` values. A value matches a stored display name only when its
@@ -1287,19 +1288,22 @@ tuple, the `toplines` resource name, the canonical `state` fingerprint, and
 the AU7 principal binding; it contains no `rowid`, offset, or storage locator.
 
 A31. Given an `open` Toplines page, when its cursor is reused with
-`state=closed` or a request whose normalized state array differs, then the
+`state=closed` or a request whose normalized `state` value differs, then the
 service returns `400 invalid_cursor` before a row lookup. Given
 `state=open&state=closed`, the page returns the visible union once. Given an
 unknown state, empty state, or unknown filter name, the service returns
 `400 invalid_filter`.
 
-Given a Toplines cursor created with no `state`, when a caller reuses it with
-`state=closed&state=open`, then the service accepts it because both requests
-normalize to `["open","closed"]`. Given a cursor created with
-`state=open&state=open`, when a caller reuses it with `state=open`, then the
-service accepts it because both requests normalize to `["open"]`. Given a
-cursor created with `state=open`, when a caller reuses it with absent
-`state`, then the service returns `400 invalid_cursor` before a row lookup.
+Given a Toplines cursor created with `state=closed&state=open&state=open`,
+when a caller reuses it with `state=open&state=closed`, then the service
+accepts it because both requests normalize to `["open","closed"]`. Given a
+cursor created with `state=open&state=open`, when a caller reuses it with
+`state=open`, then the service accepts it because both requests normalize to
+`["open"]`. Given a cursor created with absent `state`, when a caller reuses
+it with `state=open&state=closed`, then the service returns
+`400 invalid_cursor` before a row lookup. Given a cursor created with
+`state=open`, when a caller reuses it with absent `state`, then the service
+returns `400 invalid_cursor` before a row lookup.
 
 A32. Given two readable sessions with the same display name, a readable
 session whose name differs only by case, and an unreadable colliding session,
@@ -1310,8 +1314,8 @@ SQL-looking text, it makes one literal comparison and changes no query shape.
 Given an empty `displayName`, a decoded non-string `displayName`, an unknown
 query key, or any request that combines one of those values with a valid
 `displayName`, when the sessions collection runs, then it returns
-`400 invalid_filter` before the query seam runs and emits no candidate or
-message content.
+`400 invalid_filter` before any query runs. It never returns an unfiltered or
+partial collection, candidate, or message content.
 The transcript-name wrapper returns these candidates without message content
 and retrieves content only after an explicit `sessionKey`.
 
