@@ -1174,12 +1174,14 @@ serializer bytes remain unchanged.
 A27. Given each ExecutionMap success, auth failure, invalid `asUser`, missing
 org-principal selection, malformed query encoding, invalid filter, invalid
 cursor, ambiguous visible prefix, unknown selector, forbidden selector, and
-projection failure, when the response is encoded, then it has the specified
-status and the exact R4b body and application headers. The test compares exact
-encoded bytes for every closed error variant and rejects a message, extra key,
-wrong key order, or extra application header. Unknown and forbidden selectors
-have identical body and application headers. An unpaged response has no
-`page`; a projection failure emits no partial JSON.
+projection failure, when the response is encoded, then each success has status
+200 and the exact R4a and wire-schema body, each error has its specified status
+and exact R4b body, and every response has the exact application headers. The
+test compares exact encoded bytes for every success envelope and closed error
+variant and rejects a message, extra key, wrong key order, or extra application
+header. Unknown and forbidden selectors have identical body and application
+headers. An unpaged response has no `page`; a projection failure emits no
+partial JSON.
 
 A28. Given one new Topline create, link, and unlink commit plus an idempotent
 replay of each, when the firehose and Toplines composition are exercised, then
