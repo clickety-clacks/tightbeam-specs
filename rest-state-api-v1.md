@@ -788,12 +788,13 @@ SR3. Projections carry the resource's full product fields and user
 content, unredacted after authorization (Mike's payload ruling as refined
 in firehose V3): "unredacted" governs content, never storage secrets.
 
-SR4. Ids are the correlation contract: each projection's primary id
-equals the id the firehose notice `refs` carry (firehose V5 and its
-primary-key table). Identifiers are strings except the condition-fact primary
-id: `facts.id` and `refs.factId` are JSON integers, and their numeric values
-must equal each other and `facts.rowVersion`. A decimal string is not an
-equivalent fact id. A client applies last-version-wins upsert by `(primary id,
+SR4. Ids are the correlation contract: each projection's primary id equals the
+id the firehose notice `refs` carry (firehose V5 and its primary-key table).
+Public projection fields literally named `id` are strings except
+`facts.id`; `facts.id` and `refs.factId` are JSON integers, and their numeric
+values must equal each other and `facts.rowVersion`. A decimal string is not
+an equivalent fact id. Other primary-key and ref fields use their exact wire
+types. A client applies last-version-wins upsert by `(primary id,
 rowVersion)`.
 
 SR5. Safe-value exposure is explicit and default-deny. In v1 the complete
@@ -1170,11 +1171,12 @@ the refetch changes marker-backed `fanOut`. The registry has no ExecutionMap
 class, durable Toplines bytes are unchanged, and the six `art_b1995a26`
 serializer bytes remain unchanged.
 
-A27. Given each ExecutionMap success, auth failure, invalid filter, invalid
+A27. Given each ExecutionMap success, auth failure, invalid `asUser`, missing
+org-principal selection, malformed query encoding, invalid filter, invalid
 cursor, ambiguous visible prefix, unknown selector, forbidden selector, and
 projection failure, when the response is encoded, then it has the specified
 status and the exact R4b body and application headers. The test compares exact
-encoded bytes for each closed error variant and rejects a message, extra key,
+encoded bytes for every closed error variant and rejects a message, extra key,
 wrong key order, or extra application header. Unknown and forbidden selectors
 have identical body and application headers. An unpaged response has no
 `page`; a projection failure emits no partial JSON.

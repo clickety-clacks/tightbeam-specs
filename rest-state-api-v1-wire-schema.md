@@ -9,15 +9,16 @@ schema below is unchanged.
 ## Encoding rules
 
 JSON is UTF-8. Integers are signed JSON integers and never floating-point
-encodings. Timestamps are Unix epoch milliseconds. Identifiers and digests are
-strings except for the condition-fact identifier defined below. `rowVersion`
-is a positive integer. `dependencyVersion` is a lowercase 64-character
-SHA-256 hex string.
+encodings. Timestamps are Unix epoch milliseconds. Fields typed `S` below and
+all digests are strings. ExecutionMap's non-resource dependency-vector primary
+keys use the exact types defined under “Canonical array and map order.”
+`rowVersion` is a positive integer. `dependencyVersion` is a lowercase
+64-character SHA-256 hex string.
 
 The condition-fact projection `id`, firehose notice `refs.factId`, and natural
 version are positive JSON integers with the same numeric value.
 `facts.rowVersion` equals `facts.id`. A decimal string is invalid for any of
-these three fields. This is the sole numeric primary-identifier exception in
+these three fields. `facts.id` is the sole numeric public field named `id` in
 v1.
 
 Every item contains exactly the keys listed by R7/R7a, in that listed order.
