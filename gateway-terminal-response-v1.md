@@ -1,10 +1,9 @@
 # Gateway terminal response — v1
 
-Status: DRAFT r4, TARGETLESS, BLOCKING owner sizing decision required before
-independent re-review.
+Status: DRAFT r5, TARGETLESS, awaiting independent exact-tip re-review.
 
 Source baseline: `clickety-clacks/tightbeam` `origin/main`
-`8b4a3df191ca4505bf7e65a2876da23c9e4f4a6c`.
+`f24b5a17caaf738c27a69cf421e1572e3397fd36`.
 
 Authority: `wi_f2281739-995d-4e1e-a263-b1b044986248`, assignment
 `asg_3b66f469-d788-409a-b27a-791802eb6266`.
@@ -99,12 +98,16 @@ it closes the generic seam without changing a domain command's policy.
   `generic`, HTTP status, body SHA-256, completion time, and generic code plus an
   optional safe cause descriptor for kind `generic`. It is not a response-body
   archive.
-- **Replay horizon R**: the exact positive count of seconds after `terminalAt`
-  selected by the blocking sizing decision in Open Questions. The journal
-  preserves duplicate suppression through this interval. After it deletes an
-  expired row, the same caller scope and request id can create a new acceptance.
-- **Row cap M**: the exact positive maximum count of unexpired terminal rows plus
-  accepted rows selected by the blocking sizing decision in Open Questions.
+- **Replay horizon R**: the value of the required startup configuration key
+  `terminalJournalRetentionSeconds`, validated as an integer greater than or
+  equal to 1. Each acceptance stores its current R. At terminalization, the
+  journal stores immutable expiry `terminalAt + R`. The journal preserves
+  duplicate suppression through that expiry. After it deletes an expired row,
+  the same caller scope and request id can create a new acceptance.
+- **Row cap M**: the value of the required startup configuration key
+  `terminalJournalMaxRows`, validated as an integer greater than or equal to 1.
+  M limits only a new acceptance under the configuration of the current gateway
+  start. A later reduction does not delete a preserved row.
 - **Cause descriptor**: the exact closed-key object `{phase, component, kind}`.
   `phase` is one of `authenticate`, `accept`, `dispatch`, `recover`.
   `component` is one of `database`, `credentials`, `router`, `handler`,
@@ -293,12 +296,19 @@ proven phase, component, and kind. The gateway uses
 `gateway_execution_failed` only before handler selection proves that no domain
 handler ran.
 
-**INV-23 — Replay retention is bounded and reserved.** The journal deletes a
-terminal row only after its replay horizon expires. Before acceptance, it removes
-expired rows and reserves capacity for the accepted row's maximum terminal
-descriptor. If it cannot reserve that capacity, it returns the pre-accept
-`gateway_terminal_store_unavailable` response. An accepted row keeps its reserved
-capacity through terminalization.
+**INV-23 — Replay sizing is explicit and prospective.** Gateway startup requires
+`terminalJournalRetentionSeconds` and `terminalJournalMaxRows`. Each value must be
+an integer greater than or equal to 1. If either value is absent or invalid, the
+gateway refuses startup before the HTTP listener starts. It supplies no default,
+inference, or fallback. At acceptance, the journal stores the current R on the
+row and reserves capacity for the row's maximum terminal descriptor. At
+terminalization, it stores immutable expiry `terminalAt + R` from that row. A
+restart or configuration change does not change a preserved row's R or expiry.
+Before a new acceptance, the journal deletes expired terminal rows and compares
+the remaining accepted and unexpired terminal row count with the current M. If
+the count is greater than or equal to M, it preserves every remaining row and
+returns the pre-accept `gateway_terminal_store_unavailable` response. An accepted
+row keeps its reserved capacity through terminalization.
 
 **INV-24 — Org-token role changes follow fingerprint conflict.** An org token's
 HMAC defines its caller scope. The request body's `as` value selects its source-
@@ -461,8 +471,10 @@ One journal row stores:
 - boot epoch;
 - route, verb, target kind, and canonical target id;
 - accepted timestamp;
+- replay-retention seconds stamped at acceptance;
 - state `accepted` or `terminal`;
-- terminal timestamp, terminal kind, HTTP status, and body SHA-256 when terminal;
+- terminal timestamp, immutable expiry timestamp, terminal kind, HTTP status,
+  and body SHA-256 when terminal;
 - stable code when terminal kind is `generic`;
 - cause phase, component, and kind when a cause exists;
 - one generated failure correlation id and sanitized structural envelope when an
@@ -473,12 +485,20 @@ It stores no caller-supplied display label or free-form origin. The process owne
 serializes acceptance and terminalization. A unique constraint on caller scope
 plus request id makes duplicate resolution deterministic.
 
-Before one acceptance, the journal deletes terminal rows whose
-`terminalAt + R` is not greater than the transaction time. It then refuses
-acceptance with `gateway_terminal_store_unavailable` when the remaining row count
-equals M. One accepted row reserves the fixed descriptor columns that its
-terminal update uses. Open Questions must supply the exact values and their
-source before this draft can re-enter independent review.
+Before the journal owner starts, it reads both required sizing keys and validates
+each as an integer greater than or equal to 1. Missing or invalid sizing stops the
+gateway before it starts the HTTP listener. The journal supplies no default,
+inferred value, or fallback value.
+
+Before one acceptance, the journal deletes terminal rows whose stored expiry is
+not greater than the transaction time. It then refuses acceptance with
+`gateway_terminal_store_unavailable` when the remaining row count is greater than
+or equal to the current start's M. It does not delete a preserved row to satisfy
+a reduced M. If expiry deletion later makes the remaining count less than M, a
+new request can commit acceptance. That acceptance stores the current start's R.
+One accepted row reserves the fixed descriptor columns that its terminal update
+uses. Terminalization computes and stores immutable expiry from the row's stored
+R, not from current configuration.
 
 The journal metadata table stores the randomly generated HMAC key used for
 org-token caller scopes. It uses file permissions equal to the domain database's
@@ -716,7 +736,7 @@ response emission call sites.
 **AC-13 — Normal-response compatibility (INV-16).**
 
 Given fixtures captured from real gateway responses at source commit
-`8b4a3df191ca4505bf7e65a2876da23c9e4f4a6c` for one explicit success, one
+`f24b5a17caaf738c27a69cf421e1572e3397fd36` for one explicit success, one
 explicitly returned domain refusal, and one decision-pending result, and given
 the test records that commit plus each fixture file's SHA-256,
 when the candidate gateway handles those requests,
@@ -839,18 +859,35 @@ then its different HMAC defines a different caller scope.
 
 **AC-24 — Replay retention and capacity (INV-23).**
 
-Given the owner-ratified replay horizon R, transaction time T, and a terminal row
-whose `terminalAt + R` equals T,
+Given one sizing key is valid and the other key in turn is absent, null, zero,
+negative, fractional, or a string,
+when the gateway starts,
+then startup fails before the HTTP listener starts,
+and no default, inferred value, or fallback value appears in journal metadata.
+
+Given startup configuration R1 and M1, transaction time T, and a terminal row
+whose stored expiry equals T,
 when the journal begins an acceptance transaction,
 then it deletes that expired row before duplicate lookup,
 and the same caller scope and request id may commit a new acceptance.
 
-Given the owner-ratified row cap M and M unexpired or accepted rows remain after
-expiry deletion,
-when another valid request reaches acceptance,
+Given a request commits acceptance under R1 and later terminalizes at time U,
+when the gateway restarts with a smaller valid R2,
+then the row retains R1 and expiry `U + R1`,
+and a matching duplicate before that expiry does not execute the handler.
+
+Given the gateway restarts with valid row cap M2 and M2 or more accepted and
+unexpired terminal rows remain after expiry deletion,
+when another valid request reaches the acceptance transaction,
 then the gateway returns HTTP 503 `gateway_terminal_store_unavailable`,
-and the journal creates no row and the domain handler invocation count remains
-zero.
+the journal creates no row, deletes no preserved row to meet M2, and the domain
+handler invocation count remains zero.
+
+Given enough terminal rows reach their stored expiry that expiry deletion makes
+the accepted and unexpired terminal row count less than M2,
+when another valid request reaches the acceptance transaction,
+then it commits a row stamped with the current start's R2,
+and the handler executes once.
 
 **AC-25 — Normal duplicate state is closed (INV-13).**
 
@@ -872,14 +909,9 @@ and the cause contains neither `handler` nor `router`.
 
 ## Open Questions
 
-**BLOCKING — Journal sizing authority.** The product owner must choose one source
-for R and M: fixed product constants with exact values, or required startup
-configuration with exact validation and missing-value behavior. This choice
-blocks independent re-review because row expiry and capacity refusal are public
-replay behavior. The producer must replace R and M plus this question in the
-canonical file before re-review.
+None.
 
-The document remains DRAFT until that decision lands and one independent spec
-reviewer clears its requirements, architecture, evidence boundaries, and
-acceptance traceability. The work item receives a path and content-hash binding
-only after the review clears the amended text.
+The document remains DRAFT until one independent spec reviewer clears its
+requirements, architecture, evidence boundaries, and acceptance traceability.
+The work item receives a path and content-hash binding only after the review
+clears the amended text.
