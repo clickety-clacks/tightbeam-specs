@@ -206,6 +206,25 @@ then the engineering session's actual served prompt contains the exact activity 
 once and the neutral session's prompt does not contain it. The fixture records the
 source table hash, served-prompt hash, identity revision, archetype, and observed count.
 
+### AC-09 — Receipt membership controls projection
+
+Given revision A and revision B with byte-identical activity-table and archetype-manifest
+files for baseline `coder` and test-only `receipt-probe`, and differing only in the
+installed receipt's `paths`, where revision A records `archetypes/coder.toml` but not
+`archetypes/receipt-probe.toml` and revision B records the reverse, when Tightbeam
+snapshots both archetypes at both revisions, then, of those two archetypes, only `coder`
+receives the exact table once at revision A and only `receipt-probe` receives it once at
+revision B. The other archetype receives no projection at each revision.
+
+### AC-10 — Unlearn removes current projection without rewriting history
+
+Given a disposable identity that learned agentic-engineering at revision A and whose
+engineering snapshot contains revision A's exact activity table once, when unlearn
+publishes revision B, then revision B contains neither the installed receipt nor the
+bundle-root activity table, and a newly provisioned neutral session at revision B
+contains no projection. A snapshot pinned to revision A still contains revision A's
+manifest-derived guidance and exact activity table once.
+
 ## Recorded Separate Findings
 
 These findings require separate authority. They add no requirement or acceptance check
