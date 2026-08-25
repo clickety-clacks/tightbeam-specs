@@ -92,8 +92,8 @@ is the defect this work item changes.
    an `open`-scoped compare-and-set. The agent paths commit the terminal row,
    lifecycle event, and asker notification in one transaction. The effort path
    commits the ruling, generation effect, and deadline-wake disposition in one
-   transaction. It emits no ruling lifecycle event; existing effort evidence
-   and traces read the stored `ruledBy` and `ruledAt` fields.
+   transaction. It emits no ruling lifecycle event. The stored `ruledBy` and
+   `ruledAt` fields plus the existing trace form the audit floor.
 4. The pinned `decision-request` gateway verb is an exact-id read. The Rust CLI
    does not expose it, although the operating manual and CLI help already tell
    agents to use it.
@@ -157,9 +157,9 @@ withdrawal retry semantics stay outside this change.
 **INV-08 — Actual responder is canonical and durable.** The winning transaction
 writes the canonical authenticated principal and timestamp to the response
 fields. An agent answer or return emits its existing lifecycle event with the
-same canonical actor. An effort ruling writes `ruledBy` and `ruledAt`; existing
-effort evidence and traces project that stored actor. The effort path emits no
-ruling lifecycle event.
+same canonical actor. An effort ruling writes `ruledBy` and `ruledAt`; those
+stored fields plus the existing trace form the audit floor. The effort path
+emits no ruling lifecycle event.
 A role alias, caller-supplied origin, current expecter, or request owner cannot
 substitute for the actual responder. The answer/return notice to the asker names
 that actor.
@@ -338,9 +338,8 @@ with `continue` and `dismiss` from distinct sessions, when the transactions are
 released in each deterministic ordering, then either one ruling wins and the
 deadline path no-ops against the terminal row, or rotation wins first and one
 later ruling can still win without an expecter comparison. One ruling actor,
-one terminal ruling, and one set of generation effects remain. Existing effort
-evidence and traces report the stored `ruledBy` actor. The effort ruling emits
-no lifecycle event.
+one terminal ruling, and one set of generation effects remain. The effort
+ruling emits no lifecycle event.
 
 **A-11 — Idempotent retries.** Given a committed answer, return, continue, or
 dismiss, when the stored actual responder repeats the same verb and normalized
