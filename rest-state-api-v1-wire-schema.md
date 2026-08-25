@@ -2,18 +2,23 @@
 
 Status: normative companion to `rest-state-api-v1.md` r3 review draft.
 
+Amendment candidate, 2026-08-25: add the ExecutionMap composed response,
+closed error envelope, and dependency-entry schema. The durable Toplines
+schema below is unchanged.
+
 ## Encoding rules
 
 JSON is UTF-8. Integers are signed JSON integers and never floating-point
-encodings. Timestamps are Unix epoch milliseconds. Identifiers and digests are
-strings except for the condition-fact identifier defined below. `rowVersion`
-is a positive integer. `dependencyVersion` is a lowercase 64-character
-SHA-256 hex string.
+encodings. Timestamps are Unix epoch milliseconds. Fields typed `S` below and
+all digests are strings. ExecutionMap's non-resource dependency-vector primary
+keys use the exact types defined under “Canonical array and map order.”
+`rowVersion` is a positive integer. `dependencyVersion` is a lowercase
+64-character SHA-256 hex string.
 
 The condition-fact projection `id`, firehose notice `refs.factId`, and natural
 version are positive JSON integers with the same numeric value.
 `facts.rowVersion` equals `facts.id`. A decimal string is invalid for any of
-these three fields. This is the sole numeric primary-identifier exception in
+these three fields. `facts.id` is the sole numeric public field named `id` in
 v1.
 
 Every item contains exactly the keys listed by R7/R7a, in that listed order.
@@ -58,6 +63,65 @@ typed J below and still passes SR2/SR6 secret exclusion.
 - `Concern`: `{id:S, kind:S, note:S, createdAt:I}`.
 - `Attribution`: `{provenanceStatus:S, reasonKind:S|null,
   primaryWorkKind:S|null, primaryWorkId:S|null}`.
+- `ExecutionMapOrigin`: `{principal:S, createdBy:S}`.
+- `ExecutionMapCreationContext`: `{recorded:B, turnSeq:I|null}`.
+- `ExecutionMapParent`: `{status:S, item:S|null}`.
+- `ExecutionMapOutcomes`: `{completed:I, surrendered:I, revoked:I}`.
+- `ExecutionMapAssignmentCounts`:
+  `{open:I, closed:I, byOutcome:O<ExecutionMapOutcomes>}`.
+- `ExecutionMapAttestCounts`:
+  `{total:I, byKind:M<I>, byVerdictKind:M<I>}`.
+- `ExecutionMapClosingAttest`:
+  `{assignmentId:S, attestId:S, commitRefs:A<O<CommitRef>>|null}`.
+- `ExecutionMapTurns`: `{total:I|null, lastEndedAt:I|null}`.
+- `ExecutionMapMind`:
+  `{model:S|null, context:S|null, effort:S|null, harness:S|null}`; an object
+  with both `model` and `harness` null is absent from the array.
+- `ExecutionMapActive`:
+  `{runningTurn:B, pendingSessionWake:B, pendingWakeClasses:M<I>}`.
+- `ExecutionMapCoverage`:
+  `{attributionCutoff:I, basis:S}`; basis is `conservative_shared`.
+- `Page`:
+  `{oldestCursor:S|null, newestCursor:S|null, hasMoreBefore:B,
+  hasMoreAfter:B}`.
+
+ExecutionMap responses are closed top-level objects in this key order:
+
+- flat: `{schemaVersion:I, resource:S, edgeBasis:S,
+  coverage:O<ExecutionMapCoverage>, dependencyVersion:S,
+  items:A<O<execution map node>>, page:O<Page>}`;
+- tree and subtree: `{schemaVersion:I, resource:S, edgeBasis:S,
+  coverage:O<ExecutionMapCoverage>, dependencyVersion:S,
+  roots:A<O<ExecutionMapTreeNode>>}`;
+- assignments: `{schemaVersion:I, resource:S, edgeBasis:S,
+  coverage:O<ExecutionMapCoverage>, dependencyVersion:S,
+  items:A<O<execution map node>>, noItem:A<S>}`.
+
+`resource` is exactly `execution map`; `edgeBasis` is exactly
+`concurrent_turn`. `ExecutionMapTreeNode` contains the execution-map-node keys
+in the R7 order followed by `children:A<O<ExecutionMapTreeNode>>`. No unpaged
+response contains `page`, and no flat or assignment-selected node contains
+`children`.
+
+ExecutionMap error responses are closed top-level objects in this key order:
+`{schemaVersion:I, resource:S, error:O<ExecutionMapError>}`.
+`schemaVersion` is exactly `1`; `resource` is exactly `execution map`.
+`ExecutionMapError` is one of these closed variants:
+
+- `{code:S}`, where `code` is exactly one of `auth_failed`,
+  `invalid_as_user`, `invalid_message`, `not_found`, `invalid_filter`,
+  `malformed_query`, `invalid_cursor`, or `projection_invalid`;
+- `{code:S, message:S}`, where `code` is exactly `identity_not_yours` and
+  `message` is exactly `this session belongs to <session.owner_user_id>`, with
+  `<session.owner_user_id>` replaced by the target session row's exact stored
+  non-null owner user id;
+- `{code:S, candidateIds:A<S>}`, where `code` is exactly `ambiguous_id` and
+  `candidateIds` contains visible full typed ids in ascending order.
+
+`identity_not_yours` is the sole message-bearing variant. No other error
+variant contains `message` or another key. The encoder emits no insignificant
+whitespace. Each ExecutionMap response sets exactly the application headers
+`Content-Type: application/json; charset=utf-8` and `Cache-Control: no-store`.
 
 ## Resource field types and nullability
 
@@ -106,6 +170,7 @@ the domains in the next section.
 |---|---|---|---|---|---|
 | decision requests | id, kind, raiserId, raiserSessionKey, ownerUserId, assignmentId, expecterSessionKey, expecterUserId, deadlineWakeId, statuteName, question, status, decision, rationale, ruledBy, withdrawnBy, withdrawnReason, askedOfRole, answer, answeredBy | lineageRung, effortGeneration, raisedAt, deadlineAt, ruledAt, consumedAt, withdrawnAt, answeredAt, rowVersion | — | options `A<O<DecisionOption>>`, context `J` | raiserId, raiserSessionKey, ownerUserId, assignmentId, expecterSessionKey, expecterUserId, deadlineWakeId, statuteName, decision, rationale, ruledBy, ruledAt, consumedAt, withdrawnBy, withdrawnReason, withdrawnAt, askedOfRole, answer, answeredBy, answeredAt, context |
 | toplines | id, ownerUserId, title, state, dependencyVersion | createdAt, updatedAt, closedAt, activeWorkCount, openConcernCount | — | createdActor `O<Actor>`, workMemberships `A<O<ToplineMembership>>`, concerns `A<O<Concern>>` | closedAt |
+| execution map node | id, title, specRefName, specRefSha256, state, failReason | finishedAt, jobs, startedAt, openDecisionRequests, fanOut, sinceProgressMs | bracket1Armed | origin `O<ExecutionMapOrigin>`, creationContext `O<ExecutionMapCreationContext>`, parent `O<ExecutionMapParent>`, assignments `O<ExecutionMapAssignmentCounts>`, attests `O<ExecutionMapAttestCounts>`, closingAttests `A<O<ExecutionMapClosingAttest>>`, turns `O<ExecutionMapTurns>`, minds `A<O<ExecutionMapMind>>`, active `O<ExecutionMapActive>` | specRefName, specRefSha256, failReason, finishedAt, startedAt, fanOut, minds |
 | coordination share | sessionKey, dependencyVersion | from, to, turns, wakeTurns, classedTurns, coordinationTurns, summons, algedonic, share `N` | — | byClass `M<I>` | share |
 | digest members | wakeId, prompt, class, classElection, dependencyVersion | createdAt | — | — | class, classElection |
 | work-item trace | dependencyVersion | — | — | workItem `O<work items>`, assignments `A<O<assignments>>`, causalChildren `A<S>`, attribution `O<Attribution>` | none |
@@ -129,6 +194,9 @@ the domains in the next section.
 - decision kind: `statute|effort|agent`; decision status:
   `open|ruled|consumed|withdrawn|superseded|answered`.
 - topline state: `open|closed`; actor kind: `user|session`.
+- execution-map origin principal: `user|session`; parent status:
+  `linked|from_turn|no_turn_observed|unrecorded`. `parent.item` is non-null only
+  for `linked`. An execution-map node's `state` uses the work-item state enum.
 - harness-process state: `launching|running|park_requested|closed_gracefully|
   killed|kill_failed|exited`.
 - identity state: `ready|relearn_conflicted`; kungfu status:
@@ -149,13 +217,24 @@ the domains in the next section.
 - transcript attachments preserve stored attachment ordinal. Assignment files,
   decision options, and opaque J arrays preserve author order.
 - topline memberships sort by `(linkedAt, id)`; concerns by `(createdAt, id)`.
+- ExecutionMap flat items, assignment-selected items, forest roots, siblings,
+  and children sort by source `(createdAt,id)`. `closingAttests` sorts by
+  `assignmentId`. `minds` sorts by `(model-or-empty,context-or-empty,
+  effort-or-empty,harness-or-empty)`. `noItem` sorts ascending by assignment id.
 - digest members sort by `(createdAt, wakeId)`. Trace assignments use the
   assignments collection order. Work trace causal children sort by id.
 - `byClass`, `sessionRevisions`, and every M or J object sort keys ascending.
 - The dependency vector sorts by `(resource, canonical primary-key bytes)`.
   Its digest input is canonical JSON of `[resource, primaryKey, rowVersion]`
-  entries with no whitespace.
+  entries with no whitespace. ExecutionMap's non-resource entries have these
+  exact types and values: `["causal events",I,I]` with both integers equal to
+  one positive `causal_events.seq`; `["subagent markers",I,I]` with both
+  integers equal to one positive `subagent_markers.id`; and
+  `["causal events epoch","causal_events_epoch",I]` with the final integer
+  equal to the stored positive epoch-millisecond value.
 
 Any field without a declared type, nullable rule, enum value, nested key, or
-order is a schema failure. A reviewed amendment must change this file and the
-main R7/R7a row together.
+order is a schema failure. A reviewed projection-field amendment must change
+this file and the main R7/R7a row together. An envelope or dependency-entry
+amendment must change this file and the corresponding main R4 or R9 clause
+together.

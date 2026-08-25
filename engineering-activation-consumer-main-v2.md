@@ -5,7 +5,7 @@ Recorded: 2026-08-20 23:23 PT
 Work item: `wi_ddd80184-9cf7-4612-8a0a-ac610b5b7b10`  
 Policy assignment: `asg_f511f989-90db-45e8-b1d3-434d3d9b58bc`  
 Owner authority: `art_abe67f90`, SHA-256 `3d0d5b6b82f81760e06d31780738bde39d91c7d06a3edeb3d574bac06c838bf4`  
-Main reconciliation: `art_044819f6`, SHA-256 `10af361e2addcac2c1fc17a451468a48a6063389f93a74b58064c1193d00ff8a`, verdict `att_d92acfca-ed6b-4883-9f59-208e60f58d34`  
+Main reconciliation: `art_a65f2893`, SHA-256 `7b891d340e38bec272f8df640387c29dc2605c2ea9b0ec978561d23fa38d828b`, verdict `att_a75c3bbb-de4a-49ea-8fd2-f3fa1c60d75f`<br>
 Neutral substrate authority: `art_2bc5475e`, SHA-256 `5eb530a0183d793b35be1363c2a0aaea8b021490f11ef159887377f4f42805fb`  
 Deployment-safety authority: `art_c4230451`, SHA-256 `5db00f518feb0c398e0c33a0f9a44d1c89e1af06ee177fd08a9fd6f040fb316e`  
 Supersedes the Engineering consumer policy in `art_16df51ca` and `art_44b99337`; preserves their reviewed findings and acceptance except where this complete policy states a replacement.
@@ -37,7 +37,7 @@ This policy adds the Engineering consumer adapter because deleting the supported
 
 ## Terms
 
-- **Execution-time main authority**: Git commit `2d0bbf056996ca573379bc022f7620b55f309120`, selected by the read-only reconciliation recorded at 2026-08-21 22:15 PT. Its root tree is `cc787fbcfa57618d99e481f39cd54fe967ab7d66`. The exact relevant object identities appear under Architecture. The frozen `0.1.8` and `0.1.x` history is evidence, not an integration target for this policy.
+- **Execution-time main authority**: Git commit `3fe0e941840ed138a6a285261c0e35687d8d27a3`, selected by the read-only reconciliation recorded at 2026-08-25 13:13 PT. Its root tree is `6b9c3854157f80afe376f924384ef0cff8744d58`. The exact relevant object identities appear under Architecture. The frozen `0.1.8` and `0.1.x` history is evidence, not an integration target for this policy.
 - **Neutral activation primitive**: the one `activation_events` stream and fixed `activation-*` verb family defined by `art_2bc5475e`. Tightbeam verifies identity, shape, order, replay, access, and durable notice mechanics. It does not decide Engineering readiness, authority sufficiency, result meaning, recovery, or acknowledgement policy.
 - **Deployment manager**: the root-privileged local `DeployManager` defined by `art_c4230451`. It is the sole writer of `/opt/tightbeam` deployment state and registered systemd unit files. Root privilege makes it the executor, not the authorizer.
 - **Production installation**: the action defined by `art_c4230451` that makes one exact verified update restart-loadable on a production machine by publishing immutable objects and replacing `active`.
@@ -59,7 +59,7 @@ This policy adds the Engineering consumer adapter because deleting the supported
 
 ## Assumptions
 
-1. The read-only reconciliation recorded at 2026-08-21 22:15 PT resolves execution-time `origin/main` and the remote `refs/heads/main` to `2d0bbf056996ca573379bc022f7620b55f309120`.
+1. The read-only reconciliation recorded at 2026-08-25 13:13 PT resolves execution-time `origin/main` and the remote `refs/heads/main` to `3fe0e941840ed138a6a285261c0e35687d8d27a3`.
 2. That commit contains no `activation_events`, `activation-events-v1`, `activation-attempt`, or `AcceptedActivationAttempt` match.
 3. That commit contains no `cli/src/deploy/` tree and no deploy CLI command.
 4. `README.md` at that commit still directs an operator to run `npm install -g` before service restart.
@@ -76,7 +76,7 @@ This policy adds the Engineering consumer adapter because deleting the supported
 
 **E-01 — one neutral primitive.** Engineering records declaration, authority, attempt, observation, compensation, notice, and acknowledgement through `art_2bc5475e`. The substrate contains no Engineering-specific event kind, verb, state, policy decision, or sibling fact.
 
-**E-02 — pinned main source.** An implementation card derived from this artifact targets commit `2d0bbf056996ca573379bc022f7620b55f309120`. A later main commit requires a new read-only reconciliation before implementation authority can bind it.
+**E-02 — pinned main source.** An implementation card derived from this artifact targets commit `3fe0e941840ed138a6a285261c0e35687d8d27a3`. A later main commit requires a new read-only reconciliation before implementation authority can bind it.
 
 **E-03 — authorizer and executor stay distinct.** The neutral `authorizer` and `basis` identify Mike's Ed25519 approval and exact signed envelope for production installation. The neutral `executor` identifies the root deployment manager. Root privilege alone grants no production-installation authority.
 
@@ -119,14 +119,14 @@ This policy adds the Engineering consumer adapter because deleting the supported
 
 | Object at execution-time main | Git object ID | Policy use |
 |---|---|---|
-| root tree | `cc787fbcfa57618d99e481f39cd54fe967ab7d66` | complete source identity |
+| root tree | `6b9c3854157f80afe376f924384ef0cff8744d58` | complete source identity |
 | `README.md` | `992136f271b72000888cefe6f0a90f8596b91f9b` | unsafe npm/Linux/macOS path census |
 | `docs/UPGRADE.md` | `cb9ab47cf8fbd88bff926bfdb686449b684632c5` | unsafe source-checkout path census |
-| `cli/src/args.rs` | `6e422e1c728607bd992638aff0ff22e42b64b63d` | future local command parse seam |
+| `cli/src/args.rs` | `3fe75b40e0d2b6259774221f88d0e37384a9f920` | future local command parse seam |
 | `cli/src/main.rs` | `eebb7aa4207bba1c325e8ece13bc9aadb98a1ef6` | future local command route seam |
-| `cli/src/dispatch.rs` | `6faac17045b5037077cf1dd6298b21bf8fdfe822` | neutral gateway-client seam only |
-| `lib/tightbeam/wire/router.ex` | `7bebec5c5317f77bd78ff19c41d07c4df8a7d4e5` | future neutral wire verbs and capability |
-| `lib/tightbeam/schema.ex` | `dd6415406ab273861366b6f05c0e22820e587780` | future additive neutral table |
+| `cli/src/dispatch.rs` | `4114fb0ef8c2761d013781f6d7d28c2fe68ab45e` | neutral gateway-client seam only |
+| `lib/tightbeam/wire/router.ex` | `2bbf0fd888286b0e5ab7017fff8e4d0f4be96426` | future neutral wire verbs and capability |
+| `lib/tightbeam/schema.ex` | `a4b332f623f8a7a6b203726168f21cb130cd1a58` | future additive neutral table |
 | `packaging/assemble.sh` | `0c900431ea7e9352158386a0b3899c450fa56e20` | prepared-input evidence producer |
 | `packaging/finalize-artifact.sh` | `2b18ce9cce73af7139d8859c48023e7eb368ec43` | prepared-input evidence producer |
 | `.github/workflows/release-candidate.yml` | `c033c35223734871a26b591985af4e5230932a36` | verification evidence producer, not authority |
@@ -284,18 +284,18 @@ After the Linux real runtime fixture passes, a separately authorized migration c
 
 ### Ordered implementation cards after separate owner authorization
 
-1. Implement the reviewed neutral activation primitive on main without Engineering vocabulary.
-2. Implement the reviewed Linux deployment-safety manager on main, including the sealed accepted-attempt requirements at both rename entry points.
-3. After Cards 1 and 2 expose their reviewed seams, implement `engineering_policy.rs` and `activation_client.rs`.
+1. Card 1 implements the reviewed neutral activation primitive without Engineering vocabulary, then integrates it to reviewed main.
+2. Card 2A starts from the reviewed integrated Card 1 main. It adds only non-mutating Linux deploy models, verification, authorization, status, and packaging. It adds no active-pointer, unit-file, or alternate rename entry point.
+3. Card 2B starts from the reviewed integrated Card 2A main. It atomically adds `engineering_policy.rs`, `activation_client.rs`, manager-acceptance persistence, both `AcceptedActivationAttempt`-typed rename entry points, and their compile/runtime gates. No public or alternate rename seam exists between Cards 2A and 2B.
 4. Run the Linux real-runtime proof on a disposable ext4-default systemd host with a real package, gateway, wake pipeline, manager, crash/replay matrix, callback mutants, U0, forward activation, service observation, aggregate observation, and compensation.
 5. After Card 4 passes, migrate the supported Linux paths and activate exact guards.
 6. If the product later claims production launchd coverage, first produce and independently review a macOS cutover, restart, recovery, rollback, and observation contract; then implement and prove that separate lane.
 
-Cards 1 and 2 can run independently after separate owner authorization. Card 3 depends on both. Card 4 depends on Card 3. Card 5 depends on Card 4. Card 6 remains outside Linux MVP scope.
+Cards 1, 2A, and 2B are sequential after separate owner authorization. Card 2A starts from the reviewed integrated Card 1 main. Card 2B starts from the reviewed integrated Card 2A main, which includes Card 1; neither starts from a sibling candidate on the prior base. Card 4 depends on Card 2B. Card 5 depends on Card 4. Card 6 remains outside Linux MVP scope.
 
 ## Acceptance
 
-**C-01 — source authority.** Given this artifact and a repository object database, when the reviewer resolves the pinned main commit and each object in the source map, then the commit equals `2d0bbf056996ca573379bc022f7620b55f309120` and each object ID matches. A moved `refs/heads/main` does not silently change this artifact's source authority.
+**C-01 — source authority.** Given this artifact and a repository object database, when the reviewer resolves the pinned main commit and each object in the source map, then the commit equals `3fe0e941840ed138a6a285261c0e35687d8d27a3` and each object ID matches. A moved `refs/heads/main` does not silently change this artifact's source authority.
 
 **C-02 — neutral boundary.** Given the implementation's substrate vocabulary, when the neutral self-gate runs, then it contains the one `activation_events` table and fixed neutral verb family from `art_2bc5475e`, with no Engineering or deploy-specific sibling fact, verb, event kind, derived state, or policy evaluator.
 
