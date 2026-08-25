@@ -1,8 +1,8 @@
 # Visitor principal v3 — current-main contract
 
-Status: SPEC-READY FOR ONE INDEPENDENT REVIEW; not implementation authority;
-the work item remains untargeted and unbound until that review clears this exact
-content.
+Status: SPEC-READY FOR ONE INDEPENDENT EXACT-REVISION REVIEW after
+`changes-requested`; not implementation authority; the work item remains
+untargeted and unbound until review clears the amended exact content.
 
 Authority and identity:
 
@@ -16,6 +16,19 @@ Authority and identity:
   This file supersedes their v1 and v2 designs after review clears this file.
 - Reviewed `art_a86b44c7` is evidence only. Its closed `ActorContext` design is
   absent from the source baseline and this canonical repository.
+- Review verdict `att_5efefdde-9ef9-4e57-bb42-792e73493923` and report
+  `art_b591a285` govern this amendment. This revision closes findings F1-F7 by
+  defining the external surface and key custody, scoping operation identity,
+  naming the stamped migration, making principals append-only, deleting
+  decline and frozen-page replay, and adding negative acceptance cases.
+- Realized-cost specimen `att_1a77f64a-454a-4737-8e6c-7e3cb8346767` under
+  closed `wi_aa14fcd4-f6e1-43d2-b87d-e95b4f84adb1` motivates the external-
+  intermediary boundary. Closed actor-typing evidence is
+  `art_a86b44c7` / SHA-256
+  `15dc2ccf5b16c98c9353c6b8234733cdc7bd5c5ffc05de34b0a41ac1604c1cd1`
+  with reviewed-clean verdict
+  `att_c2e85ec7-c9ed-4f46-b842-c134662c7fe4`. This spec consumes those facts
+  without reopening either work item or depending on the unlanded artifact.
 - This spec teaches no new agent operating pattern. It requires no guidance
   amendment.
 
@@ -42,7 +55,9 @@ broker, and the operation cause. Pre-accept invitation presentation and
 broker-authenticated actions shall use their own closed audit contexts and
 shall not invent a visitor actor.
 
-The implementation shall serve transcript history through durable cursor replay.
+The implementation shall serve transcript history through ordinary durable
+cursor replay. A repeated cursor with a new operation id may observe entries
+that committed after an earlier page; this MVP makes no frozen-page promise.
 A visitor post shall use the existing atomic message-append and turn-enqueue
 seam. The implementation shall add the listed database backstops for existing
 session, work-item, assignment, and assignment-reopening attribution before it
@@ -54,6 +69,17 @@ Adding push would also add subscription authority, revocation fences, delivery
 claims, recovery, and hung-writer policy. Adding rotation would add overlapping
 credential generations and a second recovery protocol. Neither is necessary to
 prove visitor identity, attribution, read, post, or revocation.
+
+Realized-cost evidence: at `2026-08-25 07:21:07`, two external intermediary
+sessions both selected `--as-user mike` and attempted opposite rulings on
+`dr_4edb91e6` and `dr_45999b0f` within seconds. Arrival order selected policy;
+the losing writes returned `not_open`. The durable rows identify only
+`user:mike`. They cannot distinguish Mike from either intermediary, identify
+which external mind attempted each ruling, represent concurrent conflicting
+authority, or preserve a delegation boundary. This contract prevents that
+class for visitor access: the external mind is a visitor principal, the human
+is broker provenance, and visitor credentials carry no user, operator, or
+decision authority.
 
 ## 2. Non-Goals
 
@@ -81,6 +107,15 @@ prove visitor identity, attribution, read, post, or revocation.
    content from any session other than the exact grant target.
 10. This spec does not target, implement, self-review, merge, or dispose the
     visitor work item.
+11. This spec does not add invitation decline. Pending invitations leave the
+    pending state only through acceptance, expiry, or target retirement.
+12. This spec does not rewrite the collision's historical decision rows or the
+    closed actor-context artifacts. It does not treat the prose-only split
+    between targeting/release work and queue-triage/lane-unsticking work as
+    policy, a grant, or a delegation record.
+13. This spec does not grant a visitor operator-decision authority. A future
+    product that does so requires a separate reviewed contract for explicit
+    scope, conflict handling, concurrency visibility, revocation, and audit.
 
 ## 3. Terms
 
@@ -96,6 +131,24 @@ broker user.
 The **broker** is the existing user who creates the invitation and sanctions the
 external participant's limited access. `brokerUserId` is durable provenance.
 Broker status does not make the broker the effective actor of a visitor action.
+
+### External intermediary
+
+An **external intermediary** is the outside human or agent represented by the
+visitor principal. It is never represented as the broker user, even when that
+user sanctioned its access. One invitation sanctions one external principal.
+The invitation and access credentials are bearer credentials for that one
+principal and must not be shared. Tightbeam attributes a presentation to the
+principal and access-session rows resolved by the bearer; it does not claim to
+detect out-of-band credential sharing.
+
+### Delegation boundary
+
+The **delegation boundary** is the closed visitor authority projection:
+`transcript-read`, `post` when granted, and `self-revoke`. It contains no user,
+operator, decision, targeting, release, queue-triage, or lane-unsticking
+authority. Prose, a display label, `brokerUserId`, and `--as-user` text cannot
+add to it.
 
 ### Visitor grant
 
@@ -131,7 +184,9 @@ inherit agent execution anatomy.
 ```
 
 The closed visitor-envelope `cause` set is `visitor-transcript-read`,
-`visitor-post`, and `visitor-self-revoke`. A later adapter to a landed general
+`visitor-post`, `visitor-self-revoke`, and `visitor-authority-denied`. The last
+cause is server-generated at a privileged authentication boundary and never
+reaches a domain handler. A later adapter to a landed general
 actor context shall preserve every field and shall not replace `actorId` with
 `brokerId` or `presenterId`.
 
@@ -140,7 +195,7 @@ actor context shall preserve every field and shall not replace `actorId` with
 `InvitationPresentationV1` is the pre-principal context for a known invitation
 credential. It contains schema, invitation id, broker user id, exact target
 session, cause, operation id, and request fingerprint. Its closed cause set is
-`invitation-read`, `invitation-accept`, and `invitation-decline`. It contains no
+`invitation-read` and `invitation-accept`. It contains no
 actor id or visitor access-session id. A successful acceptance terminal can
 add the resulting visitor principal, grant, and access-session ids without
 rewriting the attempted context.
@@ -172,9 +227,11 @@ retry.
 
 ### Terminal visitor state
 
-The closed terminal reasons are `declined`, `revoked`, `expired`, and
-`target-retired`. A terminal invitation, grant, or access session never becomes
-active again.
+An invitation starts `pending` and can become `accepted`, `expired`, or
+`target-retired`. A grant and access session start `active` and can become
+`revoked`, `expired`, or `target-retired`. Every transition is one-way and uses
+compare-and-set from its one live state. A visitor principal is immutable,
+append-only provenance and has no terminal fields or authorization state.
 
 ## 4. Assumptions
 
@@ -196,7 +253,10 @@ active again.
    per grant. A denied or duplicate post does not consume quota.
 9. Transcript ordering and cursor semantics reuse the existing durable session
    transcript sequence. The visitor surface neither invents a second sequence
-   nor reads live frames.
+   nor reads live frames. A page reads the rows committed when that request's
+   transaction takes its snapshot; the cursor is not a frozen result handle.
+10. The operator provisions the visitor keyring before the stamped migration.
+    The database and keyring are backed up and restored as one deployment unit.
 
 ## 5. Invariants
 
@@ -239,7 +299,10 @@ durable row, log, error, trace, audit payload, artifact, or response other than
 the credential-bearing creation response and deterministic acceptance success
 responses. Stored credential values are
 `HMAC-SHA-256(credentialDigestKey[keyId], credentialBytes)` with an explicit key
-id and credential version.
+id and credential version. A CLI reads a credential only from the safe input
+seams in Architecture; it never accepts a credential or acceptance key in
+argv. Derivation and digest keys are distinct, durable, and governed by the
+keyring refusal and retention law in Architecture.
 
 **I9 — Deterministic credential retries.** For the same invitation-create
 operation id and request fingerprint, every retry returns the same invitation
@@ -271,9 +334,12 @@ derives the access credential as:
 ```
 
 Each stored credential digest is computed over its exact returned bytes. An
-operation id or acceptance key with a different fingerprint refuses. A
-different acceptance key after terminal acceptance returns the generic
-unavailable result.
+operation id with a different fingerprint refuses. Reuse of one acceptance key
+with the same fingerprint and a new operation id returns the same deterministic
+accepted result, creates one audit pair for the new operation id, and creates no
+new principal, grant, access session, or acceptance. Reuse of that key with a
+different fingerprint is an operation conflict. A different acceptance key
+after terminal acceptance returns the generic unavailable result.
 
 **I10 — Transactional post.** One accepted visitor post atomically commits one
 visitor-origin prompt echo, one turn enqueue, one consumed quota unit, and the
@@ -283,14 +349,21 @@ visitor context.
 
 **I11 — Read-before-return evidence.** A successful transcript read commits its
 attempted-plus-accepted audit pair before returning content. If that audit
-commit fails, it returns no content.
+commit fails, it returns no content. A transcript-read operation id is
+single-use: repeating it returns `visitor_read_retry_requires_new_operation`
+without reading target content or adding audit rows. Repeating `afterSeq` with a
+new operation id performs an ordinary new cursor read and can observe later
+commits.
 
 **I12 — Known operations are paired.** Every known invitation, visitor
 access-session, and broker-authenticated operation records exactly one
 attempted audit row and exactly one terminal `accepted` or `denied` row under a
-unique operation id in the same transaction as its frozen outcome. Retrying the
-same operation id and fingerprint returns the frozen result without duplicating
-either row.
+principal-and-cause-scoped operation key in the same transaction as its
+outcome. Retrying a mutation with the same scoped operation id and fingerprint
+returns its stored result without duplicating either row. Transcript reads use
+the single-use rule in I11. A scoped id with a different fingerprint is a
+conflict. The same operation-id bytes under a different principal or cause are
+independent operations.
 
 **I13 — Unknown bearers are bounded.** A credential that resolves to no
 invitation or access session creates no visitor principal, audit, credential
@@ -301,6 +374,10 @@ updates one fixed aggregate row for its closed operation class.
 terminal and expiry state in its transaction. Revocation terminalizes the
 grant and all active access sessions atomically. A concurrent post either
 commits completely before revocation or refuses completely after revocation.
+Revocation does not mutate the accepted invitation or append-only principal.
+Expiry terminalizes the active grant and its active access sessions. Target
+retirement terminalizes a pending invitation or the active grant and its active
+access sessions. The principal remains unchanged in every terminal path.
 
 **I15 — Replay only.** No visitor operation registers a socket, subscription,
 push consumer, delivery cursor, claim, acknowledgment, or recovery job. The
@@ -314,7 +391,9 @@ it never performs a partial rebuild or creates a placeholder row.
 **I17 — Checked `asUser`.** Every `agent_identity/3` path carrying `asUser`
 looks up that exact user before a domain handler runs. A session-scoped
 `asUser` also proves that the session owner user exists. Missing rows return a
-typed authentication refusal and create no domain effect.
+typed authentication refusal and create no domain effect. This is an ordinary
+agent-path repair only. Visitor authentication has no `asUser` selector and
+cannot construct an authoritative user actor.
 
 **I18 — Agent anatomy does not leak.** A visitor access session cannot satisfy
 an ordinary session foreign key and cannot acquire `operationalParent`, typed
@@ -323,11 +402,24 @@ product requires a separate spec.
 
 **I19 — Indistinguishable absence.** Unknown credential, wrong target,
 unauthorized capability, revoked state, expired state, retired target, and a
-missing target produce the same public status and response shape.
+missing target produce HTTP `404` and exactly
+`{"error":{"code":"visitor_unavailable"}}`, with no `message` field. Those
+conditions produce the same CLI exit code `4` and the same stderr line
+`visitor unavailable`. No response distinguishes which join failed.
 
 **I20 — No identity deletion cascade.** New foreign keys use restrictive
 identity deletion. Deleting a user or ordinary session cannot erase or orphan
 historical attribution, visitor provenance, consent, or audit.
+
+**I21 — One checked visitor actor source.** After bearer resolution, one closed
+visitor actor value derives origin `visitor:<principalId>`, visitor-only
+authority, principal/access-session/broker attribution, target, and cause.
+Callers cannot supply any of those projections beside it. The broker id and
+target never derive authority. This imports the coherence rule proven by
+closed `art_a86b44c7` without importing its unlanded type. A known visitor
+credential presented to a user, operator, agent, device, session, or websocket
+authority seam records a `visitor-authority-denied` pair identifying the
+visitor principal and presenter, then refuses before policy or domain effects.
 
 ## 6. Architecture
 
@@ -339,6 +431,7 @@ The implementation shall be checked against these source facts at
 | Fact | Source citation |
 |---|---|
 | Agent dispatch authenticates first, then builds identity, and carries separate origin and principal | `lib/tightbeam/wire/router.ex:129-146`; `lib/tightbeam/dispatch.ex:37-53,73-81` |
+| The router has one closed agent-verb set and separate CLI/session/device bearer classifiers; no visitor class exists | `lib/tightbeam/wire/router.ex:55-57,421-458` |
 | Organization and session `asUser` construction does not prove a user row | `lib/tightbeam/wire/router.ex:466-560` |
 | Typed user target lookup already demonstrates the required existence check | `lib/tightbeam/wire/router.ex:648-651` |
 | Origin is a closed user/agent/process/remedy type with no visitor | `lib/tightbeam/origin.ex:1-35` |
@@ -349,29 +442,79 @@ The implementation shall be checked against these source facts at
 | User socket auth and transcript replay are currently user/session-shaped | `lib/tightbeam/wire/socket.ex:289-390`; `lib/tightbeam/transcript.ex:360-389` |
 | User post stamps a user origin; gateway maps `call.origin` to sender | `lib/tightbeam/wire/socket.ex:411-450`; `lib/tightbeam/gateway.ex:628-643` |
 | Append plus turn enqueue already has one transaction seam | `lib/tightbeam/gateway.ex:1028-1045,1124-1160` |
+| Current schema is stamped `coordination-fabric-v1-phase1-v5`, admits one predecessor, rebuilds and stamps atomically, and refuses unknown shapes | `lib/tightbeam/schema.ex:35-73,800-823,987-1011` |
+| The Rust CLI has one shared base-directory resolver and hand-parsed closed commands/identity flags | `cli/src/base_dir.rs:1-35`; `cli/src/args.rs:1-24` |
 | Model and harness mutation use closed typed validation and expected versioning | `lib/tightbeam/gateway.ex:4311-4551`; `lib/tightbeam/org.ex:554-598` |
 | r5 agent anatomy comes from typed archetype and guidance seed material | `priv/seed/archetypes/exec.toml:1-21`; `priv/seed/guidance/directive-vocabulary.md:15-41`; `priv/seed/guidance/delegation-card.md:1-45` |
 
 ### 6.2 Durable rows
+
+`VisitorActorEnvelopeV1` is the sole checked identity input to visitor policy,
+authorization, audit, transcript projection, and post construction. Its
+constructor accepts resolved database rows, not request identity fields. It
+derives the closed visitor authority projection from the grant booleans and
+cause. Compatibility origin, authorization facts, and audit attribution are
+outputs of that value. This is the visitor-local analogue of the one-source
+actor rule reviewed in `art_a86b44c7`; no current-main code imports that
+unlanded artifact.
 
 The implementation shall add these tables with strict foreign keys and closed
 state checks:
 
 | Table | Required identity and purpose |
 |---|---|
-| `visitor_invitations` | Invitation id; broker user FK; exact target session FK; display labels; independent grants; canonical consent version/digest; keyed invitation credential digest; issue/expiry/terminal fields; immutable target and broker. |
-| `visitor_principals` | Visitor principal id; originating invitation FK; display label; created time; terminal reason/time. |
+| `visitor_invitations` | Invitation id; broker user FK; exact target session FK; display labels; independent grants; canonical consent version/digest; derivation and digest key ids; keyed invitation credential digest; issue/expiry/state fields; immutable target and broker. State is `pending`, `accepted`, `expired`, or `target-retired`. |
+| `visitor_principals` | Visitor principal id; originating invitation FK; display label; created time. The row is immutable append-only provenance and has no terminal fields. |
 | `visitor_grants` | Grant id; principal, invitation, broker user, and exact target session FKs; `canRead`; `canPost`; active/terminal state and times. |
-| `visitor_access_sessions` | Access-session id; grant/principal/invitation FKs; keyed access credential digest; credential version; issue/expiry/terminal fields. It has no FK to ordinary `sessions` as its own identity. |
-| `visitor_acceptances` | Invitation FK; acceptance-key digest; request fingerprint; consent version/digest; resulting ids; accepted time; unique `(invitationId, acceptanceKeyDigest)`. |
-| `visitor_audit` | Unique audit id and `(operationId, phase)`; phase `attempted` or `terminal`; closed context kind `invitation-presentation`, `visitor-action`, or `broker-action`; terminal outcome; the fields required by that context kind; request fingerprint; event time; no secret or content bytes. Database checks reject a visitor action without every envelope field, an invitation presentation with an actor id, or a broker action without its user actor. |
+| `visitor_access_sessions` | Access-session id; grant/principal/invitation FKs; derivation and digest key ids; keyed access credential digest; credential version; issue/expiry/terminal fields. It has no FK to ordinary `sessions` as its own identity. |
+| `visitor_acceptances` | Invitation FK; acceptance-key digest; request fingerprint; first operation id; consent version/digest; resulting ids; accepted time; unique `(invitationId, acceptanceKeyDigest)`. |
+| `visitor_operations` | Context kind, scope id, cause, operation id, request fingerprint, replay policy `stored` or `single-use`, terminal outcome, public status, and canonical result projection without raw credentials or transcript content. Unique `(contextKind, scopeId, cause, operationId)`. Mutation results regenerate deterministic credentials from stored ids and key ids. |
+| `visitor_audit` | Unique audit id and `(contextKind, scopeId, cause, operationId, phase)`; phase `attempted` or `terminal`; closed context kind `invitation-presentation`, `visitor-action`, or `broker-action`; terminal outcome; the fields required by that context kind; request fingerprint; event time; optional closed denied capability and resource classes plus a non-secret resource id; no secret or content bytes. Database checks reject a visitor action without every envelope field, an invitation presentation with an actor id, or a broker action without its user actor. |
 | `visitor_unknown_bearer_aggregates` | Exactly one updatable row for each closed class `invitation`, `read`, `post`, and `revoke`; current 60-second window start; saturating count; last-seen time; last closed cause. No bearer-derived key. |
+
+Operation scope is closed. Broker operations use
+`(broker-action, authenticatedUserId, cause, operationId)`. Invitation
+operations use `(invitation-presentation, invitationId, cause, operationId)`.
+Visitor operations use
+`(visitor-action, visitorPrincipalId, cause, operationId)`. The access-session
+id remains required provenance but does not widen the idempotency namespace.
+`visitor-transcript-read` has replay policy `single-use`; every other listed
+operation has replay policy `stored`. An invitation-read result can be stored
+because its bounded summary is immutable and contains no credential. Stored
+credential-bearing results contain ids and key ids only and regenerate the raw
+credential at return time.
+
+A privileged-route presentation of a known `tbv_` credential creates a
+server-generated operation id `vbd_` plus 32 lowercase hexadecimal characters.
+Its fingerprint covers the versioned canonical semantic request, including the
+route class, requested verb class, and any syntactically valid non-secret
+resource kind/id, but excluding credentials and raw prose. In one transaction
+it inserts attempted and denied `visitor-authority-denied` audit rows with the
+resolved principal, access session, broker, closed denied capability class
+`user`, `operator`, `agent`, `device`, `session`, or `websocket`, and bounded
+resource kind/id when valid. It stores no proposed decision, prompt, arbitrary
+request parameters, or credential bytes and invokes no policy or domain
+handler.
 
 All mutable state transitions use compare-and-set predicates in the same
 transaction as their effects. Database check constraints enforce closed state,
 phase, outcome, cause, and operation-class values. A grant check enforces
 `canRead OR canPost`. The unknown-bearer count saturates at
 `9_223_372_036_854_775_807`.
+
+The terminal transition matrix is closed:
+
+| Event | Invitation | Principal | Grant | Active access sessions |
+|---|---|---|---|---|
+| Accept | `pending -> accepted` | insert once | insert `active` | insert one `active` |
+| Broker or self revoke | unchanged `accepted` | unchanged | `active -> revoked` | `active -> revoked` |
+| Invitation expiry | `pending -> expired` | absent | absent | absent |
+| Access expiry | unchanged `accepted` | unchanged | `active -> expired` | `active -> expired` |
+| Target retirement before accept | `pending -> target-retired` | absent | absent | absent |
+| Target retirement after accept | unchanged `accepted` | unchanged | `active -> target-retired` | `active -> target-retired` |
+
+The first compare-and-set observer records the terminal time and reason. Later
+observers return the stored terminal outcome without changing any row.
 
 Accepted `visitor-post` terminal audit rows are the durable quota source. The
 post transaction counts accepted rows for the exact grant in `(now - 60_000,
@@ -385,10 +528,54 @@ capability booleans, consent text and version, consent SHA-256 digest, and
 issue/expiry times. It contains no target content, session key, user id,
 organization inventory, or access credential.
 
-### 6.3 Migration and compatibility law
+### 6.3 Credential-key custody
 
-Before creating visitor rows or advertising visitor support, one transaction
-shall preflight and then add these existing identity backstops:
+The sole MVP key store is
+`<TIGHTBEAM_BASE_DIR>/secrets/visitor-keyring-v1.json`. It is a regular file,
+not a symlink, owned by the gateway OS account with mode `0600`; its `secrets`
+directory has mode `0700`. Its closed JSON shape is:
+
+```json
+{
+  "schema": "visitor-keyring-v1",
+  "activeDerivationKeyId": "vdk_exact",
+  "activeDigestKeyId": "vgk_exact",
+  "keys": {
+    "vdk_exact": {"purpose": "credential-derivation", "bytesBase64": "..."},
+    "vgk_exact": {"purpose": "credential-digest", "bytesBase64": "..."}
+  }
+}
+```
+
+Each key id is globally unique in the file. Each decoded key is exactly 32
+bytes. The active ids and key bytes must be distinct and have the named
+purposes. Provisioning uses an operator-controlled atomic write before the
+visitor migration; this spec adds no remote key-management or rotation verb.
+Every invitation and access-session row stores both key ids used for it.
+
+The gateway loads and locks the keyring before it attempts migration or admits
+a visitor route. Missing file, wrong ownership or mode, symlink, malformed
+JSON, duplicate id, wrong purpose, wrong key length, equal active keys, or a
+database row referencing an absent key causes boot refusal
+`visitor_keyring_unavailable`. The refusal includes only the missing key id or
+validation class, never key bytes or credential material. Once the stamped
+visitor schema contains any credential row, all referenced keys remain in the
+file for the lifetime of that database. Backup and restore must treat the
+database plus this file as one unit; a restore missing either half refuses at
+boot. Process restart reloads the same bytes and therefore preserves credential
+verification and deterministic lost-response recovery.
+
+### 6.4 Migration and compatibility law
+
+The new schema stamp is exactly `visitor-principal-v3-v1`. Its one accepted
+predecessor is exactly `coordination-fabric-v1-phase1-v5`. No unstamped or
+other stamped shape can enter this migration.
+
+Before creating visitor rows or advertising visitor support, one
+`foreign_key_rebuild` transaction shall verify the predecessor stamp, preflight
+the keyring and attribution rows, rebuild the affected existing tables, create
+the visitor tables and indexes, validate every foreign key/check, and replace
+the predecessor stamp with the new stamp. It adds these identity backstops:
 
 - `sessions.ownerUserId -> users(userId)`;
 - `work_items.ownerUserId -> users(userId)`;
@@ -405,46 +592,119 @@ The preflight produces a typed operator report with a count for every listed
 column and the exact primary keys of offending rows. The report must not include
 credentials or message content. If any count is nonzero, the migration returns
 `identity_backstop_orphans`, creates no visitor table, rebuilds no existing
-table, changes no feature advertisement, and requires a separately authorized
-repair.
+table, changes the stamp, advertises no feature, and requires a separately
+authorized repair. A keyring failure returns `visitor_keyring_unavailable`
+before the database transaction. Any DDL, validation, or stamp failure rolls
+back the complete transaction to the predecessor stamp and schema.
 
-On a clean preflight, the schema change is atomic and idempotent. Restrictive
-foreign keys remain enabled after a code downgrade. Additive visitor tables are
-preserved, not dropped, by downgrade. Old binaries ignore the tables and do not
-accept visitor credentials. Existing user, agent, device, CLI, and socket
-contracts retain their wire shape. New binaries advertise the closed feature
-`visitor-principal-v3` only after the complete schema is validated.
+A database already stamped `visitor-principal-v3-v1` is validated and never
+rebuilt again. A new binary accepts that stamp and the one predecessor only. An
+old binary at the source baseline sees `visitor-principal-v3-v1` as unknown and
+refuses at boot; downgrade never rewrites or drops visitor bytes. Existing user,
+agent, device, CLI, and socket requests retain their pre-visitor request and
+response bytes when served by the new binary. Visitor discovery appears only
+after the new stamp, all constraints, and the keyring validate.
 
-### 6.4 Operations
+### 6.5 Versioned wire, authentication, and CLI
 
-The versioned visitor surface has these operations:
+The external HTTP surface is rooted at `/visitor/v1`. `GET /visitor/v1`
+requires no credential. It returns HTTP `200` and exactly
+`{"authority":"visitor-only-no-user-delegation","feature":"visitor-principal-v3","operations":["invitation-read","invitation-accept","transcript-read","post","self-revoke"],"wireVersion":1}`
+only while the complete feature gate is live; otherwise it returns the I19
+unavailable response. The sorted operation list advertises product capability,
+not a particular grant; the invitation summary carries that grant's read/post
+booleans. No field is added to the existing `/version` response.
 
-1. `invitation-create`: owner/admin user authorization, operation id, and
-   request fingerprint; immutable one-session target and proposed grant;
-   returns the raw invitation credential once.
-2. `invitation-read`: invitation credential, operation id, and request
-   fingerprint; returns only the bounded canonical summary.
-3. `invitation-accept` or `invitation-decline`: invitation credential,
-   operation id, acceptance key, request fingerprint, and affirmative consent
-   digest for accept. Accept atomically creates/activates the principal, grant,
-   access session, acceptance, and audit rows. Decline terminalizes the
-   invitation.
-4. `visitor-transcript-read`: access credential plus durable `afterSeq` and page
-   limit; returns only target transcript entries allowed by the existing
-   transcript projection and a next cursor.
-5. `visitor-post`: access credential, operation id, request fingerprint, and
-   body; invokes the existing append-plus-turn transaction with visitor origin.
-6. `visitor-self-revoke`: access credential and operation id; terminalizes its
-   grant and all access sessions.
-7. `broker-revoke`: currently authorized broker/owner/admin user and operation
-   id; terminalizes the selected grant and all access sessions.
+Invitation and visitor routes require exactly one
+`Authorization: Bearer <credential>` header. Prefix `tbi_` is admitted only to
+invitation routes; prefix `tbv_` is admitted only to visitor routes. Org, CLI,
+device, session, invitation, and visitor credential classes are mutually
+exclusive. On `/visitor/v1`, a credential in the wrong class or route receives
+the I19 response before a domain lookup. On every pre-existing HTTP or websocket
+authority seam, any `tbi_` or `tbv_` value receives that seam's existing
+`auth_failed` response and never reaches policy or a handler. A known `tbv_`
+value additionally records the I21 boundary-denial pair before refusal; an
+unknown value and every `tbi_` value disclose and record no visitor identity.
 
-No operation accepts a client-authored actor, broker, presenter, origin, model,
-harness, or operational parent. `invitation-create` accepts one target session
-identifier from its authenticated user caller, proves the caller's authority,
-looks up the target, and freezes it. No invitation-credential or visitor-
-credential operation accepts a replacement target. The server constructs every
-audit context from authenticated joined rows.
+The JSON request and success projection are closed:
+
+| Method and path | Authentication | Exact request keys | HTTP 200 `result` keys |
+|---|---|---|---|
+| `POST /agent/dispatch`, verb `visitor-invitation-create` | Existing CLI token plus checked `asUser`; owner/admin target authorization | `targetSessionKey`, `visitorDisplayLabel`, `canRead`, `canPost`, `expiresAt`, `operationId` | `invitationId`, `invitationCredential`, `summary` |
+| `POST /visitor/v1/invitation/read` | `tbi_` | `operationId` | `invitationId`, `summary` |
+| `POST /visitor/v1/invitation/accept` | `tbi_` | `operationId`, `acceptanceKey`, `consentVersion`, `consentSha256` | `visitorPrincipalId`, `grantId`, `visitorAccessSessionId`, `visitorCredential`, `expiresAt`, `authorityBoundary`, `canRead`, `canPost` |
+| `POST /visitor/v1/transcript/read` | `tbv_` | `operationId`, `afterSeq`, `limit` | `entries`, `nextAfterSeq` |
+| `POST /visitor/v1/post` | `tbv_` | `operationId`, `body` | `messageId`, `turnId` |
+| `POST /visitor/v1/revoke` | `tbv_` | `operationId` | `status` equal to `revoked` |
+| `POST /agent/dispatch`, verb `visitor-broker-revoke` | Existing CLI token plus checked `asUser`; owner/admin target authorization | `grantId`, `operationId` | `status` equal to `revoked` |
+
+All HTTP successes use `{"result":{...}}`. The server rejects an unknown key or
+missing key with HTTP `400` and exactly
+`{"error":{"code":"visitor_invalid_request"}}`. A scoped operation-id or
+acceptance-key fingerprint conflict uses HTTP `409` and exactly
+`{"error":{"code":"visitor_operation_conflict"}}`. A duplicate transcript
+read operation id uses HTTP `409` and exactly
+`{"error":{"code":"visitor_read_retry_requires_new_operation"}}`. An
+oversized body uses HTTP `413` and exactly
+`{"error":{"code":"visitor_body_too_large"}}`. Quota refusal uses HTTP `429`
+and exactly `{"error":{"code":"visitor_quota_exceeded"}}`. No error includes a
+credential, internal id, target fact, or `message` field.
+
+Every acceptance success sets `authorityBoundary` exactly to
+`visitor-only-no-user-delegation` and returns the immutable grant booleans. No
+visitor response advertises a user, operator, decision, targeting, release,
+queue-triage, or lane-unsticking capability.
+
+The server computes the request fingerprint from the closed semantic request
+keys; clients do not send it. Every external request includes `operationId`.
+An operation id is exactly `vop_` followed by 32 lowercase hexadecimal
+characters. An acceptance key is 16 through 128 opaque bytes; file/stdin input
+removes one optional trailing LF before hashing. Labels are valid UTF-8 from 1
+through 200 bytes. `expiresAt` is an integer millisecond timestamp inside the
+invitation lifetime bounds. `consentVersion` is the exact version in the
+summary and `consentSha256` is 64 lowercase hexadecimal characters. `afterSeq`
+is a nonnegative integer and `limit` is an integer from 1 through 200. No
+external route accepts a target, actor, broker, presenter, origin, model,
+harness, or operational parent.
+
+Broker dispatch refusals use the existing dispatch error envelope. Failed
+owner/admin authorization uses code `visitor_forbidden`; the pending limit uses
+`visitor_pending_invitation_limit`; a missing `asUser` uses the existing typed
+authentication refusal before visitor dispatch. These broker errors contain no
+invitation or visitor credential.
+
+The CLI adds these exact commands: `tightbeam visitor invite`,
+`invitation-read`, `accept`, `transcript-read`, `post`, `revoke`, and
+`broker-revoke`, plus local operator command `tightbeam visitor keyring-init`.
+`keyring-init [--base-dir <path>]` uses `create_new`, writes two independently
+random 32-byte keys and distinct ids through an atomic mode-`0600` file rename,
+fsyncs the file and directory, refuses if a keyring exists, and prints only the
+path and key ids. It never sends key material to the gateway.
+
+Broker commands use the existing gateway discovery, CLI token, and `--as-user`
+identity seam. `invite` requires `--as-user`, `--target-session`,
+`--visitor-label`, at least one of `--can-read` or `--can-post`,
+`--expires-at-ms`, and `--operation-id`. `broker-revoke` requires `--as-user`,
+`--grant-id`, and `--operation-id`. External commands use
+`--gateway <absolute-http-or-https-url>`; non-loopback HTTP is refused. They
+require exactly one of `--credential-file <path>` or
+`--credential-stdin`. A credential file must be a nonsymlink regular file owned
+by the invoking user with mode `0600`. Credential stdin contains only the
+credential plus one optional trailing newline. `accept` reads its acceptance
+key from exactly one of `--acceptance-key-file <path>` or
+`--acceptance-key-stdin`; credential and acceptance key cannot both claim
+stdin. `invitation-read` and `revoke` also require `--operation-id`; `accept`
+also requires `--operation-id`, `--consent-version`, and `--consent-sha256`;
+`transcript-read` also requires `--operation-id`, `--after-seq`, and `--limit`.
+`post` also requires `--operation-id` and reads the body from
+`--body-file <path>` or `--body-stdin`; the credential cannot claim stdin when
+the body does. External visitor commands reject `--as`, `--as-user`,
+`--as-process`, `--session`, and every agent target/identity flag locally as an
+invalid request. No command accepts raw secret bytes in argv or prints them to
+stderr. Success JSON is the HTTP result object; the credential-bearing invite
+and accept successes may print their credential to stdout. I19 maps to exit
+`4`; invalid request to `2`; conflict to `5`; quota to `6`; transport failure
+to `7`; success to `0`.
 
 ## 7. Acceptance
 
@@ -454,9 +714,13 @@ Each case is deterministic and maps back to the named invariants.
 
 Given one fixture with a missing referenced user in each listed legacy column,
 when the migration runs, then it returns `identity_backstop_orphans`, reports
-each offending primary key, and leaves the schema byte-for-byte unchanged.
-Given the repaired fixture, when the migration runs twice, then both runs
-succeed, all listed foreign keys are active and restrictive, and an
+each offending primary key, leaves stamp
+`coordination-fabric-v1-phase1-v5`, and leaves the schema byte-for-byte
+unchanged. At every injected rebuild and validation failure, the same
+predecessor schema and stamp remain. Given the repaired fixture and valid
+keyring, when the migration runs twice, then both runs succeed, the stamp is
+exactly `visitor-principal-v3-v1`, all listed foreign keys are active and
+restrictive, and an
 `agent_identity/3` request naming a nonexistent `asUser` refuses before its
 domain handler records any effect.
 
@@ -478,15 +742,19 @@ the immutable target unchanged.
 
 **A4 — Consent and lost-response retry (`I7`, `I8`, `I9`, `I12`).**
 
-Given broker operation O creates an invitation but its response is lost, when O
-retries with the identical fingerprint, then it receives the byte-identical
+Given broker operation O creates an invitation but its response is lost, when
+the gateway restarts and O retries with the identical fingerprint, then it
+loads the same keyring and returns the byte-identical
 `tbi_` credential and invitation id with one invitation and one audit pair. A
 changed fingerprint refuses. Given that pending invitation and acceptance key
-K, when acceptance commits but its response is lost, then a retry with K and
-the identical fingerprint returns byte-identical `tbv_` credential and ids with
-one acceptance and one audit pair. A retry with K and a changed fingerprint
-refuses. A new key after acceptance returns unavailable. A database/log scan
-finds no raw invitation credential, raw access credential, or raw K.
+K, when acceptance commits but its response is lost and the gateway restarts,
+then a retry with K, the original operation id, and the identical fingerprint
+returns byte-identical `tbv_` credential and ids with one acceptance and one
+audit pair. The same K and fingerprint under a new operation id returns the
+same ids and credential, creates one pair for that operation, and creates no
+identity row. A retry with K and a changed fingerprint conflicts. A new key
+after acceptance returns unavailable. A database/log/argv scan finds no raw
+invitation credential, raw access credential, or raw K.
 
 **A5 — Atomic visitor post (`I2`, `I10`, `I12`).**
 
@@ -498,18 +766,21 @@ partial accepted result exists.
 
 **A6 — Audit-before-read (`I11`, `I12`).**
 
-Given an active read grant and transcript entries after cursor 40, when read
-audit commits, then the response contains only the allowed target entries and a
-monotone next cursor. When audit commit is injected to fail, then the response
-contains no transcript content.
+Given an active read grant, operation R, and transcript entries after cursor 40,
+when read audit commits, then the response contains only the allowed target
+entries and a monotone next cursor. When audit commit is injected to fail, then
+the response contains no transcript content. Repeating R returns
+`visitor_read_retry_requires_new_operation`, reads no target rows, and creates
+no new audit. A fresh operation id with cursor 40 performs a new read.
 
 **A7 — Replay-only proof (`I15`).**
 
 Given an active visitor and newly appended target messages, when no explicit
 transcript-read occurs, then the visitor receives no frame or notification.
 When it reads from its last durable cursor, then it receives the messages in
-sequence order and receives a monotone next cursor. Repeating the same read
-from the same cursor returns the same frozen page. A code and schema assertion
+sequence order and receives a monotone next cursor. After later messages append,
+repeating the same cursor under a new operation id may include those later rows;
+the cursor is not a frozen-page handle. A code and schema assertion
 finds no visitor subscription, push claim, delivery acknowledgment, recovery
 job, or live cursor row.
 
@@ -519,13 +790,17 @@ Given one active grant, when revocation and post are committed in both possible
 transaction orders, then the database contains either the complete post before
 one terminal revocation or no post after the terminal revocation. No ordering
 produces a partial post. Repeated revocation with the same operation id returns
-the frozen result and one audit pair.
+the stored result and one audit pair. Self-revoke and authorized broker-revoke
+change the grant and every active access session to `revoked`, leave the
+accepted invitation unchanged, and leave the append-only principal unchanged.
 
 **A9 — Expiry and target retirement (`I14`, `I19`).**
 
 Given access expiry T, when authorization runs at T-1 ms it can succeed and at T
-it refuses. Given a retired target, the first observer atomically records the
-single terminal reason `target-retired`; all later operations return the same
+it refuses and terminalizes the active grant and access sessions as `expired`.
+Given a retired target, the first observer atomically records
+`target-retired` on a pending invitation or on the active grant and access
+sessions; it never changes the principal. All later operations return the same
 public unavailable shape without target content.
 
 **A10 — Unknown-bearer bound (`I13`, `I19`).**
@@ -540,7 +815,7 @@ overflow and a new 60-second window resets only its fixed class row.
 
 Given an active grant with nine accepted posts in the preceding 60 seconds,
 when one new operation id posts twice concurrently, then one post commits, both
-callers receive its frozen result, and the quota count becomes ten. A different
+callers receive its stored result, and the quota count becomes ten. A different
 operation id in the same window refuses without a message, turn, or quota unit.
 
 **A12 — No agent anatomy (`I18`).**
@@ -549,7 +824,12 @@ Given a visitor access session, when every ordinary agent/session lookup,
 dispatch, tune, wake, assignment, and harness/model mutation surface receives
 its id or credential, then each refuses with no effect. The visitor row has no
 `operationalParent`, provider, model, harness, effort, context, host, role,
-archetype, seed, or delegation-card field.
+archetype, seed, or delegation-card field. Conversely, org, CLI, device,
+session, invitation, and visitor credentials are each submitted to every wrong
+authentication class; every pair refuses before a domain handler runs. Each
+known visitor-to-privileged-seam case records one
+`visitor-authority-denied` pair with its exact principal and presenter. No
+other wrong-class case creates visitor identity or audit rows.
 
 **A13 — Origin round trip (`I1`, `I3`).**
 
@@ -564,11 +844,85 @@ Given an old client and a new server after a clean migration, when ordinary user
 and agent fixtures run, then their wire bytes and effects are unchanged. Given
 an old server or incomplete migration, visitor feature discovery is absent and
 visitor credentials are rejected. A downgrade preserves all attribution and
-visitor rows and leaves the restrictive identity foreign keys active.
+visitor rows byte-for-byte because the old binary refuses the unknown
+`visitor-principal-v3-v1` stamp at boot and performs no DDL.
+
+**A15 — Broker authority and pending limit (`I6`, `I12`, `I16`).**
+
+Given a target owner, an authorized admin, an unrelated user, and a nonexistent
+`asUser`, only the owner and authorized admin can create or broker-revoke for
+the target. An authenticated unrelated user receives `visitor_forbidden`, one
+broker-action attempted/denied audit pair, and no invitation/grant mutation. A
+nonexistent `asUser` receives the typed authentication refusal before visitor
+dispatch and creates no visitor audit. Given 19 pending invitations, two
+concurrent creates by one broker produce exactly one new pending row and one
+`visitor_pending_invitation_limit` refusal; expiry at the boundary removes an
+invitation from the counted pending set in transaction order.
+
+**A16 — Known-denial audit and public absence (`I5`, `I11`, `I12`, `I19`).**
+
+For each known invitation or visitor credential, exercise wrong capability,
+expiry, revocation, target retirement, missing target, and wrong target at the
+internal authorization seam. Each call records exactly one attempted and one
+denied audit row under its scoped operation key, reads or mutates no target
+content, and returns exactly the I19 HTTP body and CLI result. An injected
+denial-audit failure rolls back the denial and returns no target fact.
+
+**A17 — Wire, discovery, and secret input (`I8`, `I16`, `I19`).**
+
+Before complete schema/keyring validation, `GET /visitor/v1` returns the I19
+response and every visitor route is absent. After validation it returns the
+exact feature object. Every listed route rejects an extra or missing JSON key.
+CLI tests prove that credential and acceptance-key bytes never occur in argv,
+stderr, logs, traces, or error JSON; a symlink, wrong-owner, or non-`0600`
+credential file refuses locally before network I/O.
+
+**A18 — Keyring restart, backup, and missing-key refusal (`I8`, `I9`, `I16`).**
+
+Create invitation and access credentials, restart the gateway, and restore a
+database/keyring pair; both credentials still authenticate and lost-response
+retries remain byte-identical. Remove either referenced key, swap its purpose,
+make the active keys equal, corrupt the file, or restore only one half; boot
+refuses `visitor_keyring_unavailable`, admits no visitor route, and emits no key
+or credential bytes.
+
+**A19 — Scoped operation collisions (`I9`, `I11`, `I12`).**
+
+Use identical operation-id bytes for two visitor principals and for two causes;
+all four scoped operations commit independently with one audit pair each. Reuse
+one scoped id with a changed fingerprint and receive one conflict with no
+domain effect. Reuse one acceptance key under a new operation id with the same
+fingerprint and receive the same deterministic result with one new audit pair
+but no new identity row. Duplicate one transcript-read operation id and receive
+the exact single-use conflict without content or new audit.
+
+**A20 — Terminal transition closure (`I7`, `I14`, `I20`).**
+
+Exercise acceptance, invitation expiry, access expiry, self-revoke,
+broker-revoke, and target retirement before and after acceptance. Every row
+matches the closed transition matrix, every compare-and-set winner records one
+terminal time/reason, no terminal row reactivates, and no path updates or
+deletes the visitor principal.
+
+**A21 — Realized intermediary collision cannot recur (`I1`, `I6`, `I17`,
+`I21`).**
+
+Reproduce specimen `att_1a77f64a` with human broker Mike and two separately
+invited external intermediaries V1/P1 and V2/P2. Submit opposite
+`operator-rule` attempts for `dr_4edb91e6` and `dr_45999b0f` through their
+visitor credentials within the same millisecond. Both attempts refuse before
+decision lookup or mutation; neither arrival can win. The two denial audit
+pairs identify V1/P1 and V2/P2 separately, retain Mike only as broker
+provenance, carry distinct request fingerprints and event times, and contain no
+`byUser=mike` attribution. Decision rows remain unchanged. The external CLI
+rejects `--as-user mike`, discovery and acceptance advertise exactly
+`visitor-only-no-user-delegation`, and a database/projection scan finds no
+stored targeting/release or queue-triage/lane-unsticking grant derived from the
+historical prose split.
 
 ## 8. Open Questions
 
-None. This exact text is ready for one independent adversarial review. Any
-review or build-time clarification shall amend this canonical file first,
-produce a new cold digest, and rebind the work item only after the cleared bytes
-are committed and pushed.
+None. This amended text closes review `att_5efefdde` findings F1-F7 and is ready
+to return to the same independent review rail. Any review or build-time
+clarification shall amend this canonical file first, produce a new cold digest,
+and bind the work item only after the cleared bytes are committed and pushed.
