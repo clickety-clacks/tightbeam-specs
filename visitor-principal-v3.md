@@ -1,8 +1,8 @@
 # Visitor principal v3 — current-main contract
 
-Status: SPEC-READY FOR ONE INDEPENDENT EXACT-REVISION REVIEW after successor
-`changes-requested`; not implementation authority; the work item remains
-untargeted and unbound until review clears this amended exact content.
+Status: SPEC-READY FOR ONE INDEPENDENT EXACT-REVISION REVIEW after final-
+recovery `changes-requested`; not implementation authority; the work item
+remains untargeted and unbound until review clears this amended exact content.
 
 Authority and identity:
 
@@ -31,6 +31,12 @@ Authority and identity:
   lifecycle attribution seam, gives malformed known-bearer attempts a bounded
   server-owned audit namespace, defines no-replace keyring publication, and
   makes discovery order exact.
+- Final-recovery verdict `att_9cefd0e7-1cd6-46e1-a9dc-a79ac50fba44` and report
+  `art_f09335b6` govern this third amendment. They confirm the predecessor F1-F6
+  closures and require a deterministic bound on durable evidence growth caused
+  by a known external credential. I12A and A22 close that sole finding with
+  fixed per-scope admission rows, minute and lifetime caps, and row-neutral
+  over-limit refusal.
 - Realized-cost specimen `att_1a77f64a-454a-4737-8e6c-7e3cb8346767` under
   closed `wi_aa14fcd4-f6e1-43d2-b87d-e95b4f84adb1` motivates the external-
   intermediary boundary. Closed actor-typing evidence is
@@ -215,8 +221,8 @@ resulting visitor principal, grant, and access-session ids without rewriting
 the attempted context.
 
 The **rejected-operation namespace** is separate from client operation
-identity. For each schema-invalid request whose bearer resolves to a known
-invitation or visitor access session, the server creates one rejection id
+identity. For each admitted schema-invalid request whose bearer resolves to a
+known invitation or visitor access session, the server creates one rejection id
 `vrej_` plus 32 lowercase hexadecimal characters and stores that id unchanged
 on the attempted and denied rows. The audit operation id is SQL `NULL`; the
 server never copies, repairs, hashes, or guesses a missing or malformed client
@@ -291,21 +297,27 @@ reason can change.
    empty in this MVP.
 8. The durable post quota is 10 accepted visitor posts per rolling 60 seconds
    per grant. A denied or duplicate post does not consume quota.
-9. Transcript ordering and cursor semantics reuse the existing durable session
+9. A known invitation bearer may pass admission at most 60 times per UTC minute
+   and 1,000 times over that invitation's lifetime. A known visitor bearer may
+   pass admission at most 60 times per UTC minute and 50,000 times over that
+   visitor principal's lifetime. One full 200-entry transcript page per minute
+   for the maximum 30-day access lifetime consumes 43,200 visitor admissions.
+10. Transcript ordering and cursor semantics reuse the existing durable session
    transcript sequence. The visitor surface neither invents a second sequence
    nor reads live frames. A page reads the rows committed when that request's
    transaction takes its snapshot; the cursor is not a frozen result handle.
-10. The operator provisions the visitor keyring before the stamped migration.
+11. The operator provisions the visitor keyring before the stamped migration.
     The database and keyring are backed up and restored as one deployment unit.
 
 ## 5. Invariants
 
 **I1 — Exact effective actor.** Every accepted or denied well-formed operation,
-and every malformed request, authenticated by a known visitor access session
-records `actorKind=visitor` and the exact visitor principal id. It never records
-the broker, access session, target owner, or target agent as the effective
-actor. Invitation presentation records no effective actor. Broker actions
-record their authenticated user actor.
+and every admitted malformed request, authenticated by a known visitor access
+session records `actorKind=visitor` and the exact visitor principal id. It never
+records the broker, access session, target owner, or target agent as the
+effective actor. An I12A refusal creates no actor record. Invitation
+presentation records no effective actor. Broker actions record their
+authenticated user actor.
 
 **I2 — Separate provenance.** Every audit record for an operation authenticated
 by a known visitor access session stores the exact visitor principal, visitor
@@ -339,10 +351,10 @@ credential remains the visitor principal.
 **I7 — Consent proof.** Acceptance requires an affirmative decision over the
 exact canonical consent bytes. The acceptance transaction stores the consent
 version and SHA-256 digest, compare-and-sets the invitation from `pending` to
-terminal `accepted`, and inserts the principal, grant, and access session as
-`active` atomically. No transaction can expose an active principal with a
-pending invitation or an accepted invitation without its active principal,
-grant, and access session.
+terminal `accepted`, and inserts the principal, principal admission row, grant,
+and access session as `active` atomically. No transaction can expose an active
+principal with a pending invitation or an accepted invitation without its
+active principal, fixed admission row, grant, and access session.
 
 **I8 — Secret handling.** Raw invitation and access credentials never enter a
 durable row, log, error, trace, audit payload, artifact, or response other than
@@ -408,22 +420,46 @@ without reading target content or adding audit rows. Repeating `afterSeq` with a
 new operation id performs an ordinary new cursor read and can observe later
 commits.
 
-**I12 — Known operations are paired.** Every well-formed known invitation,
-visitor access-session, and broker-authenticated operation records exactly one
-attempted audit row and exactly one terminal `accepted` or `denied` row under a
+**I12 — Admitted known operations are paired.** Every request that passes I12A
+and is a well-formed known invitation or visitor access-session operation, and
+every broker-authenticated operation, records exactly one attempted audit row
+and exactly one terminal `accepted` or `denied` row under a
 principal-and-cause-scoped operation key in the same transaction as its
 outcome. Retrying a mutation with the same scoped operation id and fingerprint
 returns its stored result without duplicating either row. Transcript reads use
 the single-use rule in I11. A scoped id with a different fingerprint is a
 conflict. The same operation-id bytes under a different principal or cause are
-independent operations. A schema-invalid request with a known invitation or
-visitor bearer instead records exactly one attempted/denied audit pair under a
-fresh rejection id in the stable rejected-operation namespace and the closed
+independent operations. A schema-invalid known invitation or visitor request
+that passes I12A instead records exactly one attempted/denied audit pair under
+a fresh rejection id in the stable rejected-operation namespace and the closed
 invalid-request cause in one transaction. It keeps `operationId=NULL`, creates
 no operation row, and invokes no domain handler. A visitor bearer scopes the
 pair to its authenticated visitor principal; an invitation bearer scopes it to
-the known invitation and invents no principal. An unknown bearer follows I13
-and creates no such pair.
+the known invitation and invents no principal. A request refused by I12A is not
+an operation and creates no per-request evidence. An unknown bearer follows
+I13 and creates no such pair.
+
+**I12A — Known external admission is finite.** After resolving a known
+invitation or visitor bearer and before validating request shape, assigning an
+operation or rejection id, reading target content, or invoking a domain
+handler, the server atomically admits or refuses the request against one fixed
+durable scope row. All invitation routes share the invitation row. All visitor
+routes and access sessions share the visitor-principal row, including a known
+visitor bearer presented to a privileged route. Each scope admits at most 60
+requests in the UTC minute whose start is
+`floor(serverEpochMilliseconds / 60_000) * 60_000`. An invitation scope admits
+at most 1,000 requests over its lifetime. A visitor-principal scope admits at
+most 50,000 requests over its lifetime. Malformed requests and replay attempts
+consume admission exactly like other requests. A request that would exceed
+either bound creates no operation, rejection, audit, target, domain, or other
+durable mutation. Its refusal does not update the fixed scope row. Concurrent
+admission cannot exceed a bound. Minute rollover updates the existing row; it
+never inserts a window row. On a visitor route the refusal is the exact visitor
+rate-limit result in 6.5. On a pre-existing privileged route it retains that
+route's existing `auth_failed` response. Therefore one invitation can cause at
+most 1,000 operation rows and 2,000 audit rows, and one visitor principal can
+cause at most 50,000 operation rows and 100,000 audit rows through
+bearer-authenticated requests.
 
 **I13 — Unknown bearers are bounded.** A credential that resolves to no
 invitation or access session creates no visitor principal, audit, credential
@@ -484,6 +520,8 @@ closed `art_a86b44c7` without importing its unlanded type. A known visitor
 credential presented to a user, operator, agent, device, session, or websocket
 authority seam records a `visitor-authority-denied` pair identifying the
 visitor principal and presenter, then refuses before policy or domain effects.
+This pair is required only when I12A admits the request; an admission refusal
+keeps the pre-existing seam's response and creates no pair.
 
 ## 6. Architecture
 
@@ -501,6 +539,7 @@ current-main facts:
 | The router has one closed agent-verb set and separate CLI/session/device bearer classifiers; no visitor class exists | `lib/tightbeam/wire/router.ex:55-57,421-458` |
 | Organization and session `asUser` construction does not prove a user row | `lib/tightbeam/wire/router.ex:466-560` |
 | Typed user target lookup already demonstrates the required existence check | `lib/tightbeam/wire/router.ex:648-651` |
+| Current rate limiting is in-memory and device/WebSocket-specific; no generic HTTP admission bound exists for visitor routes to inherit | `lib/tightbeam/conn_registry.ex:118-121,209-216`; `lib/tightbeam/wire/socket.ex:219-240` at `7a70a2f` |
 | Origin is a closed user/agent/process/remedy type with no visitor | `lib/tightbeam/origin.ex:1-35` |
 | Ordinary sessions require `operationalParent` but `ownerUserId` lacks its identity backstop | `lib/tightbeam/org.ex:63-91` |
 | Work-item user/session actor columns lack identity foreign keys | `lib/tightbeam/work_items.ex:34-53` |
@@ -542,6 +581,8 @@ state checks:
 | `visitor_grants` | Grant id; principal, invitation, broker user, and exact target session FKs; `canRead`; `canPost`; active/terminal state and times. |
 | `visitor_access_sessions` | Access-session id; grant/principal/invitation FKs; derivation and digest key ids; keyed access credential digest; credential version; issue/expiry/terminal fields. It has no FK to ordinary `sessions` as its own identity. |
 | `visitor_acceptances` | Invitation FK; acceptance-key digest; request fingerprint; first operation id; consent version/digest; resulting ids; accepted time; unique `(invitationId, acceptanceKeyDigest)`. |
+| `visitor_invitation_admission` | Exactly one row per invitation, created in the invitation-create transaction with its creation UTC minute and both counts zero; invitation FK and primary key; current UTC-minute start; admitted count in that minute from 0 through 60; lifetime admitted count from 0 through 1,000. No request, credential, address, or header field. |
+| `visitor_principal_admission` | Exactly one row per visitor principal, created in the acceptance transaction with its creation UTC minute and both counts zero; principal FK and primary key; current UTC-minute start; admitted count in that minute from 0 through 60; lifetime admitted count from 0 through 50,000. All access sessions for the principal share this row. No request, credential, address, or header field. |
 | `visitor_operations` | Context kind, scope id, cause, operation id, request fingerprint, replay policy `stored` or `single-use`, terminal outcome, public status, and canonical result projection without raw credentials or transcript content. Unique `(contextKind, scopeId, cause, operationId)`. Mutation results regenerate deterministic credentials from stored ids and key ids. |
 | `visitor_audit` | Unique audit id; phase `attempted` or `terminal`; closed context kind `invitation-presentation`, `visitor-action`, `broker-action`, `invitation-rejected-operation`, or `visitor-rejected-operation`; terminal outcome; the fields required by that context kind; nullable operation id; nullable rejection id; optional request fingerprint; optional closed malformed route and shape classes; event time; optional closed denied capability and resource classes plus a non-secret resource id; no secret or content bytes. Well-formed contexts are unique on `(contextKind, scopeId, cause, operationId, phase)` and require operation id/fingerprint while forbidding rejection and malformed fields. Rejected-operation contexts are unique on `(contextKind, scopeId, cause, rejectionId, phase)`, require `operationId=NULL`, no fingerprint, and both malformed classes. Database checks reject a visitor action or visitor rejection without every resolved envelope provenance field, an invitation context with an actor id, or a broker action without its user actor. |
 | `visitor_unknown_bearer_aggregates` | Exactly one updatable row for each closed class `invitation`, `read`, `post`, and `revoke`; current 60-second window start; saturating count; last-seen time; last closed cause. No bearer-derived key. |
@@ -579,17 +620,35 @@ request parameters, or credential bytes and invokes no policy or domain
 handler.
 
 Request processing on an invitation or visitor route resolves the bearer class
-and known row before it validates the JSON shape. If the bearer is known but
-the body is invalid JSON, lacks `operationId`, has an invalid operation id, or
-otherwise fails the closed request schema, the server generates one `vrej_`
-rejection id and commits one attempted/denied pair in the corresponding stable
+and known row before it validates the JSON shape. It next locks that scope's
+admission row. When the stored minute differs from the current UTC-minute
+start, admission replaces the minute, sets the minute count to one, and
+increments the lifetime count. In the same minute it increments both counts
+only when the minute count is below 60 and the lifetime count is below the
+scope's closed cap. A missing admission row, invalid counter, or failed
+admission commit is invariant corruption and returns HTTP `503` and exactly
+`{"error":{"code":"visitor_admission_unavailable"}}`. At either cap it rolls
+back without mutation and returns the route-class-specific I12A refusal. Only
+an admitted request continues to shape validation. If its body is
+invalid JSON, lacks `operationId`, has an invalid operation id, or otherwise
+fails the closed request schema, the server generates one `vrej_` rejection id
+and commits one attempted/denied pair in the corresponding stable
 rejected-operation context under `invitation-invalid-request` or
 `visitor-invalid-request`. Both rows keep `operationId=NULL`. The pair contains
 only the resolved provenance, rejection id, route class, closed shape class,
 and event times. The server does not infer an operation id from request bytes or
 reuse a syntactically invalid value. It stores no request fingerprint, creates
 no `visitor_operations` row, and invokes no policy or domain handler. Unknown
-and wrong-class bearers still follow I13/I19 and never create identity audit.
+and wrong-class bearers still follow I13/I19 and never create identity audit or
+touch an admission row.
+
+For an admitted request, the admission increment and the I12 audit pair and
+outcome share one database transaction. Any shape, audit, authorization,
+projection, target, domain, or commit failure that prevents the required
+terminal pair rolls back the admission increment with the other request
+effects. A schema-invalid admitted request commits its denial pair and
+admission together. No process crash can consume an admission without its
+terminal pair or leave a pair without its admission.
 
 All mutable state transitions use compare-and-set predicates in the same
 transaction as their effects. Database check constraints enforce closed state,
@@ -763,7 +822,10 @@ Before creating visitor rows or advertising visitor support, one
 `foreign_key_rebuild` transaction shall verify the predecessor stamp, preflight
 the keyring and attribution rows, rebuild the affected existing tables, create
 the visitor tables and indexes, validate every foreign key/check, and replace
-the predecessor stamp with the new stamp. It adds these identity backstops:
+the predecessor stamp with the new stamp. Validation requires exactly one
+invitation-admission row per invitation, exactly one principal-admission row
+per visitor principal, and counters inside the closed I12A bounds. It adds
+these identity backstops:
 
 - `sessions.ownerUserId -> users(userId)`;
 - `work_items.ownerUserId -> users(userId)`;
@@ -812,8 +874,10 @@ exclusive. On `/visitor/v1`, a credential in the wrong class or route receives
 the I19 response before a domain lookup. On every pre-existing HTTP or websocket
 authority seam, any `tbi_` or `tbv_` value receives that seam's existing
 `auth_failed` response and never reaches policy or a handler. A known `tbv_`
-value additionally records the I21 boundary-denial pair before refusal; an
-unknown value and every `tbi_` value disclose and record no visitor identity.
+value first passes I12A and, when admitted, records the I21 boundary-denial pair
+before refusal. At its admission cap it returns the same `auth_failed` bytes
+without an audit pair or other mutation. An unknown value and every `tbi_`
+value disclose and record no visitor identity.
 
 The JSON request and success projection are closed:
 
@@ -850,9 +914,16 @@ acceptance-key fingerprint conflict uses HTTP `409` and exactly
 read operation id uses HTTP `409` and exactly
 `{"error":{"code":"visitor_read_retry_requires_new_operation"}}`. An
 oversized body uses HTTP `413` and exactly
-`{"error":{"code":"visitor_body_too_large"}}`. Quota refusal uses HTTP `429`
-and exactly `{"error":{"code":"visitor_quota_exceeded"}}`. No error includes a
-credential, internal id, target fact, or `message` field.
+`{"error":{"code":"visitor_body_too_large"}}`. Post-quota refusal uses HTTP
+`429` and exactly `{"error":{"code":"visitor_quota_exceeded"}}`. I12A
+admission refusal uses HTTP `429` and exactly
+`{"error":{"code":"visitor_rate_limited"}}`. No error includes a credential,
+internal id, target fact, or `message` field.
+
+Admission-row corruption or a failed admission commit uses HTTP `503` and
+exactly `{"error":{"code":"visitor_admission_unavailable"}}`. It returns no
+domain result and creates no partial admission, operation, rejection, audit,
+target, or domain mutation.
 
 Bearer classification and known-row resolution precede request-shape
 validation on invitation and visitor routes. Therefore a known bearer with
@@ -923,8 +994,9 @@ the body does. External visitor commands reject `--as`, `--as-user`,
 invalid request. No command accepts raw secret bytes in argv or prints them to
 stderr. Success JSON is the HTTP result object; the credential-bearing invite
 and accept successes may print their credential to stdout. I19 maps to exit
-`4`; invalid request to `2`; conflict to `5`; quota to `6`; transport failure
-or HTTP `500`/`503` visitor service failure to `7`; success to `0`. Exit `7`
+`4`; invalid request to `2`; conflict to `5`; quota or admission limit to `6`;
+transport failure or HTTP `500`/`503` visitor service failure to `7`; success
+to `0`. Exit `7`
 writes exactly `visitor service unavailable` for an HTTP `500`/`503` visitor
 error and never writes the server's internal validation class.
 
@@ -983,9 +1055,10 @@ identity row. A retry with K and a changed fingerprint conflicts. A new key
 after acceptance returns unavailable. A database/log/argv scan finds no raw
 invitation credential, raw access credential, or raw K. At every injected
 acceptance-transaction failure, the invitation remains pending and no
-principal, grant, access session, or acceptance row exists. On success, the
-invitation is terminal accepted and all three post-accept lifecycle rows are
-active in the same commit.
+principal, principal admission, grant, access session, or acceptance row
+exists. On success, the invitation is terminal accepted, the fixed principal
+admission row exists, and all three post-accept lifecycle rows are active in
+the same commit.
 
 **A5 — Atomic visitor post (`I2`, `I10`, `I12`).**
 
@@ -1067,7 +1140,7 @@ its id or credential, then each refuses with no effect. The visitor row has no
 archetype, seed, or delegation-card field. Conversely, org, CLI, device,
 session, invitation, and visitor credentials are each submitted to every wrong
 authentication class; every pair refuses before a domain handler runs. Each
-known visitor-to-privileged-seam case records one
+I12A-admitted known visitor-to-privileged-seam case records one
 `visitor-authority-denied` pair with its exact principal and presenter. No
 other wrong-class case creates visitor identity or audit rows.
 
@@ -1112,9 +1185,10 @@ internal authorization seam. Each call records exactly one attempted and one
 denied audit row under its scoped operation key, reads or mutates no target
 content, and returns exactly the I19 HTTP body and CLI result. An injected
 denial-audit failure rolls back the denial and returns no target fact. For both
-a known invitation bearer and a known visitor bearer, submit invalid JSON,
-missing `operationId`, invalid `operationId`, missing required key, unknown key,
-and invalid value. Each request returns the same invalid-request body, keeps
+a known invitation bearer and a known visitor bearer with available I12A
+admission, submit invalid JSON, missing `operationId`, invalid `operationId`,
+missing required key, unknown key, and invalid value. Each request returns the
+same invalid-request body, keeps
 `operationId=NULL`, and creates one attempted/denied pair under a distinct
 `vrej_` rejection id with the exact closed shape and route classes. The visitor
 bearer pair scopes to its authenticated visitor principal; the invitation pair
@@ -1197,10 +1271,33 @@ rejects `--as-user mike`, discovery and acceptance advertise exactly
 stored targeting/release or queue-triage/lane-unsticking grant derived from the
 historical prose split.
 
+**A22 — Known-scope admission and audit-growth bound (`I12`, `I12A`).**
+
+Given one invitation scope and one visitor-principal scope at minute count 59,
+run two concurrent requests for each scope in the same UTC minute, one
+well-formed and one malformed. Exactly one request per scope advances both
+counters to 60 and reaches I12; the other receives the route's exact admission
+refusal and creates no operation, rejection, audit, target, or domain row.
+Send 10,000 more requests in that minute. The admission rows remain unchanged,
+no per-request row count grows, and no handler runs. At the next exact UTC
+minute, one request resets the minute count to one and increments the lifetime
+count once without inserting a window row. Repeat the concurrency fixture at
+lifetime count 999 for the invitation and 49,999 for the visitor principal.
+Exactly one request reaches I12 in each fixture; all later requests remain
+row-neutral across minute rollover. Two access sessions for the visitor share
+the same 50,000 counter. A known visitor credential on a privileged route also
+shares it and retains that route's `auth_failed` response when refused. A
+database assertion proves the invitation caused no more than 1,000 operation
+rows and 2,000 audit rows and the visitor principal caused no more than 50,000
+operation rows and 100,000 audit rows. An injected admission-commit failure
+returns the exact `visitor_admission_unavailable` response and creates no
+partial effect.
+
 ## 8. Open Questions
 
 None. This amended text closes review `att_5efefdde` findings F1-F7 and is ready
 to return to the independent review rail after also closing successor verdict
-`att_f88643c7` findings F1-F6. Any review or build-time clarification shall
-amend this canonical file first, produce a new cold digest, and bind the work
-item only after the cleared bytes are committed and pushed.
+`att_f88643c7` findings F1-F6 and final-recovery verdict `att_9cefd0e7` finding
+F7. Any review or build-time clarification shall amend this canonical file
+first, produce a new cold digest, and bind the work item only after the cleared
+bytes are committed and pushed.
