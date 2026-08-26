@@ -29,8 +29,11 @@ the resource. It adds no second data shape.
   credential, principal resolver, authorization grant, or tailnet identity
   behavior.
 - D1 does not add a host-environment detail route, firehose class, primary
-  reference, version source, firehose payload activation, CLI migration,
+  reference, version source, firehose payload activation, CLI wire behavior,
   compatibility-alias removal, write route, deployment, or release behavior.
+  M1 may migrate the existing identity CLI and firehose callers mechanically
+  to the staged identity query contract below; their public bytes and behavior
+  do not change.
 - D1 does not start M3 through M8. M1 owns the shared seams; D1 is M2.
 
 ## Terms
@@ -46,6 +49,19 @@ the resource. It adds no second data shape.
 - **Tuple cursor**: an opaque signed exclusive page boundary containing the
   resource, full immutable sort tuple, normalized filter fingerprint, and
   resolved-principal binding.
+- **Identity descriptor**: a request-bound, authenticated, opaque capability
+  returned by the metadata stage of `StateResources.query_identity/2`. It
+  binds one identity name and exact resolved principal to one state source and
+  observation version without containing, selecting, opening, or decoding the
+  identity item payload.
+- **Hydrated identity**: the closed internal identity row returned only by the
+  authorized hydration stage of `StateResources.query_identity/2`. It is the
+  only input that the pure `StateResources.identity/1` serializer accepts.
+- **Request binding**: an ephemeral, unguessable operation identity minted by
+  the existing REST, CLI, or firehose caller. It is not a credential,
+  principal, authorization grant, durable row, or wire field. Its lifetime is
+  exactly one synchronous logical read operation and ends before that caller
+  returns, responds, or enqueues output.
 
 ## Assumptions
 
@@ -70,12 +86,15 @@ the resource. It adds no second data shape.
    through that resource's public serializer.
 2. The router does not map a raw row, duplicate a collection query, define a
    REST-only projection, or append an item field.
-3. Visibility precedes serialization, pagination, and response emission.
+3. Visibility precedes payload access, serialization, pagination, and response
+   emission. The identity detail metadata stage precedes visibility but reads
+   metadata only. Only a permitted caller performs the identity hydration
+   stage. The public identity serializer performs no database or other I/O.
    Where one D1 detail resource mechanically has both an unknown and a
    forbidden case, those cases have the canonical identical `404 not_found`
    body, headers, statement shape, and timing class. Identity known `served`
-   and unknown names both pass through `StateResources.query_identity/2`
-   before visibility.
+   and unknown names both pass through the metadata stage of
+   `StateResources.query_identity/2` before visibility.
 4. A REST detail item has exactly its R7/R7a fields. For the six notice-backed
    resources, its serialized item bytes equal the corresponding firehose
    payload bytes after the outer object is removed.
@@ -129,6 +148,169 @@ route. Identity detail accepts `served`; another name is absent. Both known
 `StateResources.query_identity/2` seam before visibility. D1 adds no REST-local
 or dummy identity query.
 
+### Staged identity query contract
+
+Identity exact-name reads use two explicit stages of the same public function.
+The public surface is closed:
+
+1. `StateResources.query_identity(source, {:metadata, name, request_binding,
+   resolved_principal_binding})` returns `{:ok, identity_descriptor}` for every
+   syntactically valid binary `name`, whether the name is present, absent, or
+   forbidden to that resolved principal.
+2. The caller evaluates `StateVisibility.identity_visible?/1` for that exact
+   resolved principal. A denial ends the request with the canonical
+   `404 not_found` response and does not invoke hydration.
+3. Only a permitted caller invokes
+   `StateResources.query_identity(source, {:hydrate, identity_descriptor,
+   request_binding, resolved_principal_binding})`. It returns
+   `{:ok, hydrated_identity}`, `:not_found`, `:stale`, or
+   `{:error, :invalid_identity_descriptor}`.
+4. Only `{:ok, hydrated_identity}` enters
+   `StateResources.identity/1`. The serializer returns the existing closed R7
+   identity object and performs zero I/O.
+
+The map-filter collection clause remains part of
+`StateResources.query_identity/2`; M1 adds no sibling list function. Because
+identity visibility is resource-wide and admin-only, REST and CLI collection
+callers evaluate `identity_visible?/1` before invoking the payload-bearing
+collection clause. A denied collection therefore opens no identity payload.
+An allowed collection keeps the existing filters, order, item bytes, and pure
+serializer.
+
+The binary detail form that returned a row or `nil` is not a second supported
+mode after this amendment. M1 migrates exact-name callers to the tagged stages
+above. It does not add `query_identity_metadata`, `hydrate_identity`, a
+REST-local query, a dummy statement, a serializer query, or any other public
+resource seam.
+
+#### Metadata stage
+
+The metadata stage performs exactly one canonical database statement for a
+syntactically valid name. That statement:
+
+- has byte-identical SQL shape and parameter count for known, unknown, and
+  forbidden cases;
+- returns exactly one database result row in every case;
+- reads only the identity resource name, canonical primary key, publication
+  row version or an inline absence sentinel, and the minimum source-generation
+  metadata needed to bind the descriptor;
+- does not select, return, compare, hash, open, copy, or decode the `item`
+  column or any identity payload bytes; and
+- does not read Git, the served-identity tree, a file, another database, or a
+  process-local payload cache.
+
+The one-row absence result is part of the real canonical metadata statement.
+It is not a second or dummy query. The caller cannot distinguish a present
+row from the absence sentinel because the function returns the same opaque
+descriptor type and cardinality for both.
+
+The state-source identity is the canonical identity of the database handle
+used by the operation. Its source generation changes whenever that handle is
+reopened, replaced, or rebound to different backing state. It is not derived
+from the requested name or item payload.
+
+The resolved-principal binding is the canonical principal kind and stable
+principal identifier produced by the existing resolver, including the result
+of AU2 `asUser` handling. It contains no bearer credential, session secret, or
+authorization grant. The metadata stage authenticates this binding into the
+descriptor without using it to vary the canonical database statement.
+
+#### Descriptor authenticity and binding
+
+The identity descriptor is an authenticated opaque capability. Its
+representation exposes no fields through pattern matching, inspection, JSON,
+logs, traces, exceptions, or firehose payloads. The authenticated content may
+contain only:
+
+- the fixed resource tag `identity`;
+- the canonical requested name;
+- a present-or-absent metadata tag and its observed publication row version;
+- the exact state-source identity and source generation;
+- the exact resolved-principal binding;
+- the request binding and operation-issuance nonce; and
+- the issuing process generation.
+
+The descriptor contains no item bytes, decoded item field, item fingerprint,
+file content, credential, principal grant, or reusable bearer authority. A
+process-private descriptor key authenticates and conceals the content. The
+key never crosses a process boundary and never enters durable state. A process
+restart invalidates every outstanding descriptor.
+
+A descriptor is valid for exactly the `identity` resource, requested name,
+resolved principal, state source, source generation, request binding, and
+process generation that issued it. It becomes a hydration witness only after
+that same resolved principal passes `identity_visible?/1`. A descriptor cannot
+hydrate kungfu, another identity name, another principal, another database, or
+another request. Reuse within the same open bound operation by the same
+principal is idempotent while the observed row version is unchanged. The
+caller closes the operation binding before it returns, responds, or enqueues
+output. Replay under a different principal or request binding, or after that
+close, is an invalid descriptor, not a new lookup.
+
+Authentication failure, malformed content, a wrong resource, a wrong source,
+a wrong resolved principal, a wrong request binding, a closed operation, or
+cross-process replay returns `{:error, :invalid_identity_descriptor}` before
+database access. The caller records a loud internal
+`identity_descriptor_invalid` fault without the raw descriptor,
+name-presence tag, principal binding, or payload. A REST adapter emits the
+closed `500 projection_invalid` error envelope and no partial response. Every
+invalid descriptor case has that same response body and headers; descriptor
+validity never becomes a name-existence answer.
+
+#### Authorized hydration and row-version races
+
+Hydration performs database work only after the shared visibility predicate
+permits the exact resolved principal bound into the descriptor. Before any
+database access, hydration compares the current resolved-principal binding to
+that authenticated binding and rejects a mismatch as an invalid descriptor.
+It then uses the authenticated resource, name, source, and observed version
+from the descriptor. Its canonical statement returns one tagged outcome:
+
+- `{:ok, hydrated_identity}` only when the same identity row still exists at
+  the exact observed publication row version;
+- `:not_found` only when an authenticated absence descriptor still observes
+  absence; or
+- `:stale` when a row appeared, disappeared, or changed version between the
+  metadata and hydration stages.
+
+Hydration never returns payload bytes from a row version that the metadata
+stage did not observe. On `:stale`, the caller discards the descriptor and
+restarts metadata, visibility, and hydration once with the same principal and
+filters. A second `:stale` emits the canonical `404 not_found` response with
+no partial item. A forbidden caller never reaches this race path. An unknown
+authorized caller receives `:not_found`; an unknown or known forbidden caller
+receives the same pre-hydration 404.
+
+`StateResources.identity/1` accepts a hydrated identity row only. Passing an
+identity descriptor, a source handle, or an unhydrated metadata row fails
+closed. The serializer validates and orders the existing identity fields, but
+it performs no database, transaction, process, file, Git, credential, or
+network call and opens no stored JSON bytes.
+
+#### Existing caller migration
+
+M1 migrates callers without changing their public result:
+
+- REST identity detail mints a request binding, binds the exact resolved
+  principal into metadata, applies the shared visibility predicate to that
+  same principal, hydrates through the same query function with both bindings
+  when permitted, and passes only hydrated data to the pure serializer.
+- REST identity collection applies the resource-wide visibility predicate
+  before its existing map-filter query clause and pure serializer.
+- The existing CLI identity-status read uses the same metadata, visibility,
+  hydration, and serializer order. Its command, authorization, fields, and
+  bytes remain unchanged.
+- A firehose rebuild or ref-based identity read uses the same staged query and
+  pure serializer. A committed publication path that already owns the exact
+  hydrated public item may pass that item directly to the pure serializer
+  after its existing committed-publication authorization; it does not create
+  a descriptor or query inside the serializer. Firehose delivery still uses
+  `identity_visible?/1` before emission, and notice payload bytes remain equal
+  to REST item bytes.
+
+No caller may retain a descriptor in an outbox, cursor, notice, process cache,
+or durable row. No caller may expose a descriptor to an HTTP or CLI client.
+
 ### Envelopes, filters, order, and cursors
 
 A collection response uses R4's `schemaVersion`, `resource`, `items`, and
@@ -178,8 +360,10 @@ binding.
 Config, host environment, users, identity, and kungfu use their M1 admin-only
 visibility predicates. Hosts use their M1 AU4 predicate and admit any
 authenticated org user or session, so D1 has no forbidden authenticated host
-detail case. A denied collection omits unreadable rows. A denied detail uses
-the canonical identical `404 not_found` result. The transport returns
+detail case. A denied collection omits unreadable rows. The identity
+collection applies its resource-wide visibility predicate before its
+payload-bearing collection query. A denied detail uses the canonical identical
+`404 not_found` result. The transport returns
 `400 invalid_filter` and `400 invalid_cursor` before a resource-row lookup in
 the cases specified above. It uses the canonical error envelope and
 `Cache-Control: no-store` for these errors.
@@ -190,14 +374,17 @@ the cases specified above. It uses the canonical error envelope and
   AU2 dispatch-parity resolution; call M1 seams; encode R4 responses and
   canonical errors.
 - `lib/tightbeam/state_resources.ex`: M1-owned collection capability within
-  the six named query seams; the six named serializers remain the sole public
-  item encoders.
+  the six named query seams; the identity seam implements the tagged metadata
+  and hydration stages; the six named serializers remain the sole public item
+  encoders and `identity/1` performs zero I/O.
 - `lib/tightbeam/state_visibility.ex`: M1-owned AU4 predicates; the hosts
   predicate changes from the old admin-only behavior to authenticated-org
   user/session visibility before D1 consumes it.
 - `lib/tightbeam/firehose/registry.ex` and
   `lib/tightbeam/admin_projection.ex`: contract tests for the shared seams;
-  no REST registry, REST projection, or D1 firehose activation.
+  ref-based identity reads use the staged seam; already-hydrated committed
+  identity items use the same pure serializer; no REST registry, REST
+  projection, or D1 firehose activation.
 - `test/router_test.exs`, `test/admin_projection_test.exs`, and focused HTTP
   route tests: routes, envelopes, auth, parity, visibility, filters, cursors,
   ordering, cache, closed fields, and firehose item-byte parity.
@@ -248,28 +435,73 @@ the cases specified above. It uses the canonical error envelope and
     AU7 precedence: the first three return `400 invalid_cursor`, the
     wrong-principal case returns the canonical 404, and a now-hidden row is
     absent.
-11. Given one unknown detail and one forbidden detail for config, users,
-    identity, and kungfu, when a warmed in-process suite sends at least 10,000
-    randomized real HTTP requests for each case, then both cases use the same
-    handler stages, database statement shape, response encoder, and
-    `Cache-Control: no-store`. The suite records equal statement counts,
-    proves neither path opens bytes, and proves both p50 and p95 differ by at
-    most 5%.
-12. Given non-admin requests for `GET /api/identity/served` and
-    `GET /api/identity/:unknown`, when the warmed suite traces the canonical
-    seam, then both requests enter `StateResources.query_identity/2` before
-    visibility, record the same statement shape and count, emit the same
-    canonical 404 without opening payload bytes, and retain the timing bound in
-    Acceptance 11.
-13. Given the route table and AU4 visibility rules, when the contract test
+11. Given an authorized known identity name, the same known name under a
+    forbidden principal, and an unknown name, when a database spy traces the
+    metadata stage, then every call executes exactly one byte-identical SQL
+    statement with the same parameter count and returns exactly one database
+    row and one opaque descriptor. The spy records zero `item` column access,
+    payload-byte opens, JSON decodes, Git reads, file reads, and secondary
+    queries.
+12. Given an authentic descriptor and descriptors with a changed byte, wrong
+    resource, wrong name, wrong source, wrong source generation, wrong resolved
+    principal, wrong request binding, closed operation, prior process
+    generation, and cross-request replay, when hydration runs, then only the
+    authentic descriptor used by the exact principal that cleared visibility
+    may reach the database. Every invalid case returns
+    `invalid_identity_descriptor` before database access, records the safe
+    loud fault, emits no descriptor or principal-binding content, and opens no
+    payload. Repeating the authentic descriptor inside its bound operation by
+    the same principal returns the same result while the observed version
+    remains unchanged.
+13. Given a descriptor for a present row, an absent row, and each row changing,
+    appearing, or disappearing before hydration, when an authorized caller
+    hydrates, then an unchanged present row returns a hydrated item only from
+    its observed version, unchanged absence returns `:not_found`, and every
+    race returns `:stale` without payload. The caller retries the full
+    metadata-visible-hydration sequence once. A second race emits the
+    canonical 404 and no partial item.
+14. The identity timing proof uses one warmed in-process server, one database,
+    one connection configuration, and one valid closed identity item whose
+    stored encoded payload is at least 116,000 bytes. The suite records the
+    machine, runtime, database version, fixture byte count, and random seeds.
+    It performs exactly 2,000 unrecorded warm-up calls per cohort, then five
+    recorded runs. Each metadata run contains exactly 10,000 known-authorized,
+    10,000 known-forbidden, and 10,000 unknown calls in one balanced random
+    order produced from that run's recorded seed. Each real-HTTP run contains
+    exactly 10,000 forbidden-known and 10,000 unknown calls in one balanced
+    random order. Statement spies run separately from latency measurement.
+    The timer uses monotonic nanoseconds from entry into the measured stage, or
+    HTTP dispatch, through the complete returned value, or response bytes.
+    The suite uses nearest-rank p50 and p95, removes no sample or outlier, and
+    reports every run rather than an average. For each cohort pair and
+    percentile, `delta = abs(a - b) / min(a, b) * 100`; every recorded run must
+    have `delta <= 5%` at both p50 and p95.
+15. Given non-admin requests for `GET /api/identity/served` and
+    `GET /api/identity/:unknown`, when the deterministic spy proof and the
+    randomized real-HTTP proof run, then both requests enter the metadata stage
+    of `StateResources.query_identity/2` before visibility, use the exact
+    statement shape, count, and one-row cardinality from Acceptance 11, emit
+    the same canonical 404 and `Cache-Control: no-store`, never invoke
+    hydration or the serializer, open no payload bytes, and meet Acceptance
+    14's timing bound in every run.
+16. Given REST detail, REST collection, CLI identity status, firehose rebuild,
+    firehose ref-based reads, and an already-hydrated committed firehose item,
+    when caller-contract spies execute each path, then every name-based path
+    uses the tagged stages of the one public `query_identity/2` function,
+    every denied path stops before payload access, and every serialized path
+    passes hydrated data to the one public `identity/1` serializer. A serializer
+    spy records zero database, process, file, Git, credential, and network I/O.
+    Public CLI, REST item, and firehose payload bytes remain unchanged.
+17. Given the route table and AU4 visibility rules, when the contract test
     checks the structural exclusions, then it proves `/api/host-env` exposes
     no detail route and hosts admit every authenticated org user or session, so
     D1 has no unknown-versus-forbidden detail pair for host environment or
     authenticated host details.
-14. Given the integrated registry, when the contract test reads its six rows,
+18. Given the integrated registry, when the contract test reads its six rows,
     then every row names the same query, serializer, visibility, primary refs,
     and version source used by REST. The test fails if router code adds a
-    REST-local serializer, projection, field, or parallel `list_*` query seam.
+    REST-local serializer, projection, field, parallel `list_*` query seam,
+    second identity query function, or serializer database access.
 
 ## Open Questions
 
