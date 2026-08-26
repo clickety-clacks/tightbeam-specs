@@ -95,7 +95,12 @@ follows:
   1,000 ms deadline, sends no ACP request, and treats timeout, close,
   malformed or mismatched correlation, provider error, and late local reply as
   ambiguous. The durable CAS rechecks the pointer id/session, dispatch event,
-  and target generation while the generation fence remains held.
+  and target generation while the generation fence remains held. The candidate
+  additionally requires the new fence seam to monitor both lane and gateway
+  owners, release in an `after` path or on owner `DOWN`, and hand queued close
+  or replacement messages to the normal coordinator teardown/restart path
+  after release. These owner-loss rules are candidate protocol requirements;
+  they are not claimed as existing source behavior.
 
 These anchors establish the source lineage claimed in
 `stale-running-turn-settlement-v1.md`; they do not authorize implementation in

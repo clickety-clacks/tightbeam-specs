@@ -158,11 +158,15 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
   against a later pointer append.
 - **Generation-fence contract** —
   `AdapterCoordinator.with_generation_fence(coordinator, adapter_key,
-  expected_generation, fun)`. It checks out the current adapter at the
-  expected generation, runs `fun` once while replacement and generation-bump
-  paths are fenced, and returns the callback result only if the fence stayed
-  valid. An unavailable adapter or invalidated fence returns an error that the
-  lane maps to `turn_status_ambiguous`.
+  expected_generation, owner_scope)`, where `owner_scope` contains the
+  `lane_pid`, `gateway_pid`, and one callback. It checks out the current
+  adapter at the expected generation, monitors both distinct owner pids,
+  runs the callback once while replacement and generation-bump paths are
+  fenced, and releases the fence in an `after` path for every callback return,
+  exception, timeout, or refusal. A `DOWN` from either owner invalidates the
+  fence, aborts the callback before commit, releases the fence, and returns
+  `{:error, :owner_lost}`. An unavailable adapter or invalidated fence returns
+  an error that the lane maps to `turn_status_ambiguous`.
 
 ## Assumptions
 
@@ -255,7 +259,9 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    `adapterGen` as a preliminary read; missing values are ambiguous. It SHALL
    then acquire a correlation fence from
    `AdapterCoordinator.with_generation_fence/4` for the target's adapter key
-   and expected `adapterGen`. Within that callback it SHALL read exactly one
+   and expected `adapterGen`, with `lane_pid=self()`, the synchronous caller's
+   `gateway_pid`, and one callback as its owner scope. The coordinator SHALL
+   monitor both owners. Within that callback it SHALL read exactly one
    `prompt_dispatched` lifecycle event for the target, read the target's
    `adapterGen`, and read one durable current-pointer snapshot consisting of
    pointer row identity and `harnessSessionId` through
@@ -267,7 +273,15 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    `Tightbeam.Acp.Conn.probe_request/5` on that fenced connection. It SHALL
    retain the lane mailbox callback and the coordinator fence while it invokes
    the guarded settlement transaction. A task cannot claim or start between
-   that inspection and the CAS.
+   that inspection and the CAS. If either owner receives `DOWN`, the
+   coordinator SHALL invalidate the fence and the callback SHALL stop before
+   commit; the lane SHALL return `turn_status_ambiguous` when it can reply.
+   If the callback or transaction raises, times out, or returns live or
+   ambiguous, the fence SHALL be released by the `after` path before the lane
+   replies. Fence release SHALL then process queued adapter close or
+   replacement messages in FIFO order through the normal coordinator teardown
+   and restart path. A healthy adapter is not closed merely because a fence
+   was released.
 4. `probe_request/5` SHALL accept `(conn, acpRequestId, harnessSessionId,
    adapterGen, timeoutMs)` together with the coordinator-issued connection
    generation fence from item 3. It SHALL return `{:live, acpRequestId}` only
@@ -289,7 +303,10 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    the session. A pointer append that committed before the write lock makes
    the CAS ineligible; an append that follows the commit is a later
    linearized event. Adapter replacement or generation change invalidates the
-   held fence and makes the result ambiguous. The transaction SHALL combine
+   held fence and makes the result ambiguous. An owner loss observed after the
+   transaction opens but before its commit SHALL roll the transaction back;
+   an owner loss after commit SHALL leave the committed terminal truth to the
+   existing publication and reconciliation sweeps. The transaction SHALL combine
    the guarded target update, lifecycle append, `turn.ended` publication
    effect, and the `wire_idempotency` fingerprint/response write. It SHALL
    return the row's terminal result when another writer won.
@@ -447,7 +464,28 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
     admin operator then invokes the verb, the agent may consume the result and
     observe the normal terminal callback and queue drain. An agent principal's
     direct invocation remains `not_authorized` with zero mutation.
-20. **Source lineage and deterministic replay matrix.** Given the immutable
+20. **Fence owner loss and teardown.** Given a stale sample with a monitored
+    `lane_pid` and `gateway_pid`, a pending adapter close or replacement, and a
+    valid generation fence, when the lane or gateway owner dies during the
+    provider probe, then the coordinator observes `DOWN`, invalidates and
+    releases the fence automatically, the callback performs no settlement CAS,
+    and the surviving request path returns `turn_status_ambiguous` or no
+    response if its gateway died. When the gateway restarts before any CAS,
+    boot recovery applies the existing `failed_unknown` rule to the still
+    running row. When owner loss occurs after the CAS commits, the committed
+    terminal truth remains authoritative and existing reconciliation publishes
+    it exactly once. When the callback raises, the probe times out, or the
+    probe returns live or ambiguous, the `after` release occurs before the
+    response and no settlement CAS occurs for the non-winning result.
+21. **Fence release and adapter replacement.** Given a close or replacement
+    message arrives while the fence is held, when the callback returns,
+    refuses, times out, or loses an owner, then the fence is released before
+    the queued message is handled; the normal close/restart path then closes
+    the old adapter and permits the next adapter generation to be checked out
+    in FIFO order. A queued replacement cannot remain blocked on the released
+    fence. Given no queued teardown and a healthy adapter, release performs no
+    forced close or generation bump.
+22. **Source lineage and deterministic replay matrix.** Given the immutable
     source-evidence artifact, then its recorded commands prove the exact
     `eea3e9a1eb73a63ae41eafa05fb42e410f362ee7` object and its ancestry to the
     owned product clone, and its cited lane, ledger, lifecycle, publication,
