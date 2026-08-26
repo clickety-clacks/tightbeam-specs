@@ -29,8 +29,9 @@ infers a host capability and never decides whether the agent should proceed.
 - **Effective session environment**: the environment supplied to one concrete
   session generation after applying the authorized rows and the PATH rule below.
 - **Declared requirement**: a tool name already declared by the selected
-  harness registry entry or by the repository's canonical verification gate.
-  Prose cannot declare a requirement.
+  harness registry entry. The session-only doctor form has no repository
+  selector, so a repository, checkout, verification gate, working directory,
+  or prose cannot declare a requirement.
 - **Projection**: the fact-only `environment` object attached to an existing
   session row in the authenticated list/read and wire projections.
 - **Probe**: the bounded `resolve_executable` check added to the existing
@@ -45,7 +46,8 @@ These assumptions are falsifiable implementation preconditions:
 
 1. Current main can read separate harness, model, effort, and context values.
 2. Current main can read authorized host-and-harness environment and toolchain
-   rows without exposing their values.
+   rows without exposing their values, and can re-read the session's complete
+   generation, host, harness, and authorized-row revision tuple after a probe.
 3. Current main's `doctor` command and authenticated session read can be
    extended with one bounded session-requirement probe without creating a
    second configuration or authorization mechanism.
@@ -117,10 +119,11 @@ The authenticated caller must already be allowed to read the named session.
 The gateway resolves the session's current generation, registered host,
 harness, and authorized row revisions through the existing session and
 placement seams. It accepts the requirement only when the exact tool name is
-declared by that harness registry entry or the repository's canonical
-verification gate. A tool name is one basename with no slash, whitespace, shell
-operator, or control byte. Unknown or malformed names refuse and create no
-evidence row.
+declared by that harness registry entry. The command has no repository input
+and must not derive one from the caller's checkout, working directory, active
+assignment, work item, or prose. A tool name is one basename with no slash,
+whitespace, shell operator, or control byte. Unknown or malformed names refuse
+and create no evidence row.
 
 The registered host runs one closed `resolve_executable` operation with the
 effective PATH for that evidence key. The operation locates a regular,
@@ -130,11 +133,13 @@ match records `available`; a completed miss or non-executable match records
 `unavailable`; timeout, transport failure, or host refusal records
 `probe_failed` with the corresponding closed failure value.
 
-Before persistence, the gateway re-reads the session generation and authorized
-row revisions. If the evidence key changed during the probe, it discards the
-result and returns `unknown`; stale evidence is never attached to the new key.
-The command returns the same closed requirement record that list/read may later
-project. It does not emit a readiness verdict, steer a wake, or gate an action.
+Before persistence, the gateway re-resolves and compares the complete evidence
+key: session key, session generation, registered host, harness, and every
+authorized environment/toolchain row revision. A change to any component during
+the probe discards the result and returns `unknown`; stale evidence is never
+attached to the new key. The command returns the same closed requirement record
+that list/read may later project. It does not emit a readiness verdict, steer a
+wake, or gate an action.
 
 ### Projection schema
 
@@ -155,7 +160,7 @@ environment:
   overlayNames: sorted environment variable names
   requirements:
     - name: declared tool name
-      declaredBy: harness_registry | repository_gate
+      declaredBy: harness_registry
       status: available | unavailable | probe_failed | unknown
       observedAt: epoch milliseconds or null
       source: doctor_probe | none
@@ -233,11 +238,14 @@ names only. No other guidance home is amended.
 8. An authorized environment or toolchain row alone never proves a declared
    capability: before a bounded doctor observation, the requirement projects
    `status=unknown` and `source=none`.
-9. A changed session generation or authorized-row revision prevents reuse of
-   earlier probe status and projects `status=unknown` and `source=none` until a
-   new bounded doctor observation records evidence for the new evidence key.
-10. Unknown tool names and tools mentioned only in prose never enter
-   `requirements`.
+9. A change to any evidence-key component — session generation, registered
+   host, harness, or authorized-row revision — prevents reuse of earlier probe
+   status and projects `status=unknown` and `source=none` until a new bounded
+   doctor observation records evidence for the new complete key.
+10. Unknown tool names and tools mentioned only in prose, a repository,
+    checkout, working directory, verification gate, assignment, or work item
+    never enter `requirements` unless the selected harness registry also
+    declares the exact basename.
 11. Tests plant secrets in overlay values, probe arguments, stdout, stderr,
     provider bodies, and exceptions; none appear in storage, list/read output,
     wire output, logs, or failure fields.
@@ -256,8 +264,10 @@ names only. No other guidance home is amended.
 18. The host probe resolves but never invokes the declared executable. Tests
     prove that stdout, stderr, side effects, and resolved paths cannot enter the
     result, storage, logs, or wire projection.
-19. A session-generation or authorized-row revision race discards the probe
-    result and leaves the new evidence key at `status=unknown` and `source=none`.
+19. Tests race each mutable evidence-key component independently: session
+    generation, registered host, harness, environment-row revision, and
+    toolchain-row revision. Every change discards the probe result and leaves
+    the new evidence key at `status=unknown` and `source=none`.
 20. The doctor command returns only the closed requirement record and never a
     readiness verdict, refusal policy, wake instruction, or action decision.
 
