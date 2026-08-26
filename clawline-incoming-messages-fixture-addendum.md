@@ -13,10 +13,19 @@ Authority:
 - Outcome work item: `wi_3ccc7dcd-f77d-45e2-96ba-f7e58170ecc1`.
 - Spec assignment: `asg_916dce59-78aa-4836-bc47-6f5b7e90972c`.
 - Product-spirit verdict: `att_99bf8980-a284-40d6-9896-69a80e6121ef`.
-- Causal evidence: `att_ffa37cb6-25d4-4d28-a65c-a8e06760ed39`, result
-  `eezo:/Users/mike/.tightbeam/work/ae53f768d95c/clawline-s1/evidence/s1-focused-pass/ChatViewModel-T320.xcresult`,
-  and complete log beside it at `ChatViewModel-T320.log`.
-- Canonical Clawline target: `bbb6de019bed4ec511c0bd4b6463073831ea2107`.
+- S1 causal evidence: `att_ffa37cb6-25d4-4d28-a65c-a8e06760ed39`.
+- Required R1 code base: reviewed-clean S1 commit
+  `061d123009228e23672f84ac97124d3761718399`. S1 producer:
+  `asg_46e300a8-ee6e-4ac8-8f6a-2b26f08427de`. S1 independent review:
+  `asg_760aa557-1919-4389-9891-c953b53bf77d`. S1 reviewed-clean verdict:
+  `att_b38420d3-44ec-46ef-8677-3a49a8620e65`.
+- Exact R1 baseline evidence is retained in
+  `eezo:/Users/mike/.tightbeam/work/16bdf7f7e5e7/clawline-s1-baseline-spec-061d/evidence/exact-s1-baseline/`.
+  The focused files are `ChatViewModelTests.log` and
+  `ChatViewModelTests.xcresult`. The combined files are
+  `ChatViewModel-T320.log` and `ChatViewModel-T320.xcresult`.
+- Reconciled Clawline `main` comparison target:
+  `bbb6de019bed4ec511c0bd4b6463073831ea2107`.
 - Provenance commits: repair `9c8043ed4139686bca03ccd643c45d978cba375d`
   and merge `b0b853d3f05b738ff959ecfa4f7564d073615cad`.
 - Workflow: SPEC → independent SPEC REVIEW → CODE → independent CODE REVIEW.
@@ -24,127 +33,146 @@ Authority:
 
 ## Goal
 
-Close the 44-test `ChatViewModelTests` residual that remained after the S1
-connection-ownership repair proved its causal checks. Restore the deterministic
-test-fixture path from `TestChatService.incomingMessages` into the existing
-`ChatViewModel.handleIncoming` mutation seam. Start every affected fixture's
-observers before the fixture declares the view visible.
+Close the residual historically labeled the 44-failure
+`ChatViewModelTests` fixture regression. The exact reviewed-clean S1 baseline
+supersedes that historical count: it reproduces 46 focused failures and 48
+combined failures. Restore the missing owner-gated path from
+`ChatServicing.incomingMessages` to the existing
+`ChatViewModel.handleIncoming` mutation seam.
 
-The repair must keep the production single-connection-owner rule. It must keep
-the reviewed tool-pill behaviors in parent acceptance clauses A7 through A10.
-It must make the focused `ChatViewModelTests` suite and the combined S1 suite
-pass with zero failures.
+The repair must keep S1's production single-connection-owner rule. It must
+keep parent acceptance clauses A7 through A10. It must make all 164 focused
+tests and all 166 combined tests pass with zero failures.
 
 ## Non-Goals
 
-- Changing, weakening, replacing, or absorbing the S1 connection-ownership
-  repair.
+- Changing, weakening, replacing, or absorbing S1.
 - Restoring the process-wide DEBUG ownership bypass from `9c8043ed`.
-- Changing `ChatViewModel.handleIncoming`, lifecycle coordinator semantics,
-  provider decoding, replay behavior, message presentation, haptics, stream
-  rules, session controls, or test assertions.
-- Changing `ChatServicing`, `ProviderChatService`, or any production wire
-  format.
-- Editing a file outside the two files named in Architecture section 3.
-- Changing the 1,042-unit-test full-gate count or any UI-test count in the
-  parent spec.
+- Adding a fixture activation helper or changing any test fixture.
+- Changing `ChatViewModel.activate`, `ChatViewModel.onAppear`,
+  `ChatViewModel.handleIncoming`, lifecycle coordinator semantics, provider
+  decoding, replay behavior, message presentation, haptics, stream rules,
+  session controls, or test assertions.
+- Changing `ChatServicing`, `ProviderChatService`, or a production wire format.
+- Editing a file other than the one file named in Architecture section 3.
+- Adding, removing, skipping, retrying, or marking an expected failure in a
+  test.
+- Changing the 1,042-unit-test full-gate count or a UI-test count in the parent
+  spec.
 - Starting S7, S8, or S9 before this addendum's ordered gates permit it.
-- Reverting either reviewed tool-pill commit or changing the tool-pill seams.
+- Reverting a reviewed tool-pill commit or changing a tool-pill seam.
 - Merging, deploying, or releasing as part of this addendum's spec or code
   assignments.
 
 ## Terms
 
 - **Parent spec**: the exact reviewed full-green spec named in Authority.
-- **S1**: the parent spec's lifecycle-ownership repair slice. It owns test
-  connection authority and the production single-owner rule.
-- **R1**: this addendum's incoming-messages fixture residual. R1 is not S1 and
-  does not change S1's authority.
-- **Affected fixture**: a `ChatViewModelTests` test that constructs
-  `TestChatService`, depends on one of its asynchronous streams, and belongs to
-  the 44-test ledger in Architecture section 2.
-- **Fixture activation**: awaiting `ChatViewModel.activate(origin:)` before
-  awaiting `ChatViewModel.onAppear(origin:)`.
+- **S1**: the parent spec's lifecycle-ownership repair slice at exact commit
+  `061d123009228e23672f84ac97124d3761718399`.
+- **R1**: this addendum's incoming-messages observation repair. R1 is not S1.
+- **Historical 44-failure label**: the work-item label derived from the
+  pre-S1, uncommitted `d77ac425`-based result. It does not define the immutable
+  R1 baseline.
+- **Exact focused baseline**: the retained 164-test result at exact S1. It
+  reports 118 passes and 46 failures.
+- **Exact combined baseline**: the retained 166-test result at exact S1. It
+  reports 118 passes and 48 failures.
+- **Exact Chat failure union**: the 48 distinct `ChatViewModelTests`
+  identifiers in Architecture section 2. The focused result contains 46. The
+  combined result contains 47 plus one T320 failure.
 - **Incoming-messages observation seam**: one stored subscription to
-  `chatService.incomingMessages`, one observer task that forwards each message
-  to the existing `handleIncoming` method, and teardown that releases the
+  `chatService.incomingMessages`, one observer child that forwards each
+  message to existing `handleIncoming`, and teardown that releases the stored
   subscription.
-- **Owner-gated**: reachable only after the existing `isConnectionOwner` checks
-  in `activate` and `startObservingIfNeeded` succeed.
+- **Owner-gated**: reachable only after the existing `isConnectionOwner`
+  checks in `activate` and `startObservingIfNeeded` succeed.
 - **Focused run**: the `ChatViewModelTests` command in Architecture section 5.
 - **Combined run**: the `ChatViewModelTests` plus
   `T320ReplyIndicatorProofTests` command in Architecture section 5.
-- **44-test family**: the exact identifiers in Architecture section 2, as
-  reported by the cited valid result bundle.
 
 ## Assumptions
 
-1. A fresh reconciliation resolved local Clawline `HEAD` and `origin/main` to
-   `bbb6de019bed4ec511c0bd4b6463073831ea2107`. The target has zero commits of
-   drift in either direction.
-2. The current `clawline-full-green-repair.md` bytes still match the reviewed
-   parent SHA-256 even though the specs repository has later unrelated commits.
-3. The cited result bundle is valid. It reports 164 total tests, 120 passes,
-   44 failures, zero expected failures, and zero skipped tests on an iPhone 17
-   Pro simulator with iOS 26.5.
-4. Both T320 proof tests pass in that result. S1 activation, idempotence,
-   transient lifecycle, and production shared-owner checks also pass.
-5. The result summary and log contain no failure text that names connection
+1. The baseline checkout has detached `HEAD` at
+   `061d123009228e23672f84ac97124d3761718399`. Only the retained `evidence/`
+   directory is untracked. No product file differs from that commit.
+2. The current parent-spec bytes match the reviewed parent SHA-256 even though
+   the specs repository contains later unrelated commits.
+3. Xcode 26.6 build 17F113 produced both baseline bundles on iPhone 17 Pro
+   simulator `87C9E79C-76CB-45E0-B625-FBF021916789`, iOS 26.5 build 23F77.
+4. The focused bundle is valid. It reports 164 total tests, 118 passes, 46
+   failures, zero expected failures, and zero skipped tests.
+5. The combined bundle is valid. It reports 166 total tests, 118 passes, 48
+   failures, zero expected failures, and zero skipped tests. Its test tree
+   contains 47 failed `ChatViewModelTests` cases and one failed T320 case.
+6. The exact Chat failure union contains 48 identifiers. Forty-five fail in
+   both runs. `cancelledReconnectDelayDoesNotTriggerExtraReconnect()` fails
+   only in the focused run. `historyResetPreservesCursorBackedActiveStreamWithEmptyReplayWindow()`
+   and `setHarnessUsesCapabilityWhenCurrentTightbeamServerFlagIsAbsent()` fail
+   only in the combined run.
+7. Both result summaries contain no failure text that names connection
    ownership, owner displacement, a non-owner guard, or an ownership
-   assertion. The remaining failures are therefore not evidence that S1 is
-   incomplete.
-6. Current `ChatViewModel.startObservingIfNeeded` observes lifecycle transport,
-   lifecycle output, lifecycle debug, provider connection state, and service
-   event streams. It does not observe `chatService.incomingMessages`.
-7. Current `TestChatService.emit(_:)` yields only through its
-   `incomingMessages` continuation. Tests that only call `onAppear` do not
-   start the observation task because `onAppear` is visibility-only.
-8. Commit `9c8043ed` contained an `incomingMessagesSubscription`, an
-   `observeIncomingMessages` task, subscription teardown, and an
-   `activateAndAppear` test helper. Merge `b0b853d3`, whose parents are
-   `d7bc6d84891c6b1975778883a61914070311ddcb` and
-   `0c295c4cde4565a23b48894546130688bb95a7b4`, retained neither repair in its
-   result.
+   assertion.
+8. The S1 tests `testCreatedViewModelsHoldIsolatedConnectionOwnership()`,
+   `productionAuthorityPermitsOneActiveConnectionOwner()`,
+   `activateInitializesObservationOnce()`, and
+   `transientDisappearPreservesLifecycleObservation()` pass in both runs.
+9. Exact S1 gives test-created view models isolated ownership with activation
+   policy `onFirstAppearance`. Exact S1 `onAppear` awaits `activate` before it
+   marks the view visible when that policy has not activated the instance.
+10. Every identifier in the exact Chat failure union already awaits either
+    `activate` or `onAppear` before the observation-dependent action. A new
+    activation helper would duplicate exact S1 behavior.
+11. Current `ChatViewModel.startObservingIfNeeded` observes lifecycle
+    transport, lifecycle output, lifecycle debug, provider connection state,
+    and service event streams. It does not obtain or observe
+    `chatService.incomingMessages`.
+12. `TestChatService.emit(_:)` yields only through its `incomingMessages`
+    continuation. The current view model never consumes that stream.
+13. Commit `9c8043ed` contained `incomingMessagesSubscription`, an
+    `observeIncomingMessages` child, and subscription teardown. Merge
+    `b0b853d3`, whose parents are
+    `d7bc6d84891c6b1975778883a61914070311ddcb` and
+    `0c295c4cde4565a23b48894546130688bb95a7b4`, retained none of those three
+    production lines of repair.
 
 ## Invariants
 
 **I1 — S1 remains authoritative.** R1 does not change an ownership flag,
-owner claim, owner release, replacement rule, or lifecycle owner test. R1 does
-not introduce a global or per-suite ownership bypass.
+owner claim, owner release, replacement rule, activation policy, lifecycle
+owner test, or test-only initializer. R1 does not add a global or per-suite
+ownership bypass.
 
 **I2 — One owner observes.** The incoming-messages observer starts only inside
 the existing owner-gated observation startup. A non-owner view model does not
-subscribe or consume incoming messages.
+subscribe to or consume incoming messages.
 
 **I3 — One incoming subscription.** One active view model has at most one
-stored incoming-messages subscription and one incoming observer task.
-Repeated activation does not create another subscription or another delivery.
+stored incoming-messages subscription. Repeated or concurrent activation does
+not create another subscription or another delivery.
 
 **I4 — Existing message semantics.** The observer passes each message to the
 existing `handleIncoming` method exactly once. R1 does not copy, fork, or
 change message mutation logic.
 
 **I5 — Complete teardown.** Logout, replacement, and observation teardown
-cancel the observer task through the existing observation task and clear its
-stored incoming-messages subscription. A retired view model cannot consume a
-later fixture message.
+cancel the observer through the existing observation task and clear the stored
+incoming-messages subscription. A retired view model cannot consume a later
+message.
 
-**I6 — Fixture order.** Each affected fixture awaits `activate` before it
-awaits `onAppear`. The helper does not claim ownership, disable ownership, or
-perform assertions.
+**I6 — Exact S1 activation stays intact.** R1 does not add
+`activateAndAppear`, replace `onAppear`, add an extra activation call, or edit
+a test fixture.
 
 **I7 — Assertion preservation.** R1 changes no test name, test annotation,
 expected value, timeout, skip, expected-failure marker, or production outcome.
 
 **I8 — Tool-pill preservation.** Parent clauses A7, A8, A9, and A10 remain
-byte-for-byte behavioral requirements. R1 does not change
-`handleAgentProgress`, provider progress decoding, `LiveToolActivity`, or
-`TypingIndicatorCell`.
+behavioral requirements. R1 does not change `handleAgentProgress`, provider
+progress decoding, `LiveToolActivity`, or `TypingIndicatorCell`.
 
-**I9 — Count preservation.** The focused run contains the same 162
-`ChatViewModelTests` tests observed in the cited evidence. The combined run
-contains those 162 tests plus the same two T320 tests. R1 adds or removes no
-test.
+**I9 — Count preservation.** The focused run contains the same 164 tests as
+the focused baseline. The combined run contains those 164 tests plus the same
+two T320 tests. R1 adds or removes no test.
 
 **I10 — Independent gates.** An independent reviewer approves the exact R1
 spec revision before code starts. Another independent reviewer approves the
@@ -154,27 +182,26 @@ exact R1 code revision before S7, S8, or S9 can consume it.
 
 ### 1. Causal boundary
 
-The 44 failures are one fixture-startup cascade, not 44 product defects.
-Three direct observations establish the boundary:
+The exact S1 baseline closes the prior review's evidence hole:
 
-1. `incomingMessagesRoutePerStream`, `streamingMessagesUpdateInPlace`, and the
-   assistant incoming-haptic tests emit through `TestChatService.emit(_:)`.
+1. S1's four ownership and lifecycle proof tests pass in both retained runs.
+2. No retained failure text has a connection-owner signature.
+3. Every failed Chat fixture already enters observation through exact S1
+   `activate` or activation-aware `onAppear`.
+4. `incomingMessagesRoutePerStream`, `streamingMessagesUpdateInPlace`, and the
+   two assistant haptic tests emit through `TestChatService.emit(_:)`.
    Current `ChatViewModel` has no consumer for that stream.
-2. Stream, status, prompt, notification, and control tests emit through other
-   asynchronous `TestChatService` streams. Many affected fixtures call only
-   visibility-only `onAppear`, so their observer task never starts.
-3. The S1 ownership proofs pass, and none of the 44 failure texts carries an
-   owner signature. Ownership is a prerequisite supplied by S1, not the root
-   that R1 changes.
+5. The combined T320 failure calls activation-aware `onAppear` and then emits
+   through the same missing incoming-messages path.
 
-R1 therefore restores the two coupled halves of one fixture contract:
+R1 therefore owns only the missing incoming-messages observer. R1 does not own
+fixture activation. The code lane must stop and return to this spec if the
+one-file observer repair does not make the focused and combined gates green.
+The code lane must not widen the patch to chase a remaining failure.
 
-- the owner-gated `incomingMessages` consumer; and
-- the fixture helper that activates observers before marking the view visible.
+### 2. Exact Chat failure union
 
-### 2. Exact 44-test ledger
-
-The focused family contains these identifiers and no inferred additions:
+The immutable focused and combined baselines produce this 48-identifier union:
 
 1. `activatingStreamPublishesReadState()`
 2. `activeStreamIncomingAssistantPublishesReadState()`
@@ -185,86 +212,92 @@ The focused family contains these identifiers and no inferred additions:
 7. `assistantIncomingAppendFiresHapticWhenVisibleAndForeground()`
 8. `assistantIncomingHapticIsDebounced()`
 9. `canSendRequiresActiveSessionProvisioning()`
-10. `createFailureLaterSocketReconcile()`
-11. `currentPromptCancellationTargetsVisibleStreamDuringPagerSwitchDebounce()`
-12. `deleteFailureLaterSocketReconcile()`
-13. `deletingActiveStreamFallsBack()`
-14. `disconnectedMapsToDisconnectedSendButtonState()`
-15. `dismissedReplayedAssistantContentStaysDismissedUntilNewerAssistantContent()`
-16. `dismissingNotificationClearsSourceUnreadDot()`
-17. `historyResetDismissalKeepsOnlyLaterReplayNotifications()`
-18. `incomingMessagesRoutePerStream()`
-19. `incrementalStreamEvents()`
-20. `initialTrackableSessionsLoadFailureIsSurfaced()`
-21. `networkLostSendFailureLeavesSendButtonNonGreen()`
-22. `notificationReplyActionTogglesReplyMode()`
-23. `notificationReplyClosesOnlyAfterSuccessfulSend()`
-24. `overflowingNotificationClosesReplyDraft()`
-25. `pendingSendKeepsTargetSessionDuringSwitch()`
-26. `persistDebounceCancellationDoesNotFlushEarly()`
-27. `promptStageIndicatorIsScopedToSelectedStream()`
-28. `promptTurnFailedStateMarksAcceptedSendFailedImmediately()`
-29. `replayCommitAllowsSourceNoLongerCurrentAtTerminalBoundary()`
-30. `replayNavigationDuringPendingDoesNotDropTerminalEligibleNotification()`
-31. `selectedSessionOAuthUsageClearsWindowsOnAuthoritativeBindingFailure()`
-32. `sendBlocksStaleSyntheticSessionKey()`
-33. `serverEchoCanonicalSessionMovesPendingPlaceholderThroughSeam()`
-34. `sessionStatusRefreshKeepsIncomingAuthModeWhenPreservingStickyFields()`
-35. `sessionStatusStickyDisplayMetadataIsKeyedPerStream()`
-36. `snapshotRemovesChildStreamOmittedByServer()`
-37. `streamingMessagesUpdateInPlace()`
-38. `streamSnapshotReplacementFallback()`
-39. `trackAdoptsUntrackedSessionAcrossSnapshots()`
-40. `trackCandidatesLoadFromProviderEndpoint()`
-41. `typingIndicatorMorphTargetIsNewAssistantMessageAndOneShot()`
-42. `untrackRemovesLocalLinkOnly()`
-43. `untrackUndoRestoresAdoptedSession()`
-44. `userEchoWithoutDeviceIdDoesNotDuplicate()`
+10. `cancelledReconnectDelayDoesNotTriggerExtraReconnect()`
+11. `createFailureLaterSocketReconcile()`
+12. `currentPromptCancellationTargetsVisibleStreamDuringPagerSwitchDebounce()`
+13. `deleteFailureLaterSocketReconcile()`
+14. `deletingActiveStreamFallsBack()`
+15. `disconnectedMapsToDisconnectedSendButtonState()`
+16. `dismissedReplayedAssistantContentStaysDismissedUntilNewerAssistantContent()`
+17. `dismissingNotificationClearsSourceUnreadDot()`
+18. `historyResetDismissalKeepsOnlyLaterReplayNotifications()`
+19. `historyResetPreservesCursorBackedActiveStreamWithEmptyReplayWindow()`
+20. `incomingMessagesRoutePerStream()`
+21. `incrementalStreamEvents()`
+22. `initialTrackableSessionsLoadFailureIsSurfaced()`
+23. `networkLostSendFailureLeavesSendButtonNonGreen()`
+24. `notificationReplyActionTogglesReplyMode()`
+25. `notificationReplyClosesOnlyAfterSuccessfulSend()`
+26. `overflowingNotificationClosesReplyDraft()`
+27. `pendingSendKeepsTargetSessionDuringSwitch()`
+28. `persistDebounceCancellationDoesNotFlushEarly()`
+29. `promptStageIndicatorIsScopedToSelectedStream()`
+30. `promptTurnFailedStateMarksAcceptedSendFailedImmediately()`
+31. `queuedCrossChatMentionClearsComposerToPreventCurrentChatLeak()`
+32. `replayCommitAllowsSourceNoLongerCurrentAtTerminalBoundary()`
+33. `replayNavigationDuringPendingDoesNotDropTerminalEligibleNotification()`
+34. `selectedSessionOAuthUsageClearsWindowsOnAuthoritativeBindingFailure()`
+35. `sendBlocksStaleSyntheticSessionKey()`
+36. `serverEchoCanonicalSessionMovesPendingPlaceholderThroughSeam()`
+37. `sessionStatusRefreshKeepsIncomingAuthModeWhenPreservingStickyFields()`
+38. `sessionStatusStickyDisplayMetadataIsKeyedPerStream()`
+39. `setHarnessUsesCapabilityWhenCurrentTightbeamServerFlagIsAbsent()`
+40. `snapshotRemovesChildStreamOmittedByServer()`
+41. `streamSnapshotReplacementFallback()`
+42. `streamingMessagesUpdateInPlace()`
+43. `trackAdoptsUntrackedSessionAcrossSnapshots()`
+44. `trackCandidatesLoadFromProviderEndpoint()`
+45. `typingIndicatorMorphTargetIsNewAssistantMessageAndOneShot()`
+46. `untrackRemovesLocalLinkOnly()`
+47. `untrackUndoRestoresAdoptedSession()`
+48. `userEchoWithoutDeviceIdDoesNotDuplicate()`
 
-Every identifier has target `ClawlineTests/ChatViewModelTests`.
+Every identifier has target `ClawlineTests/ChatViewModelTests`. The combined
+baseline also fails
+`T320ReplyIndicatorProofTests/acceptedReplySendEchoesReplyTokenMetadataOntoOutgoingBubble()`.
 
-### 3. Exact files and ownership boundaries
+### 3. Exact file and ownership boundary
 
-R1 may edit only these files:
+R1 may edit only this file:
 
 | File | R1 owns | R1 must not change |
 | --- | --- | --- |
-| `ios/Clawline/Clawline/ViewModels/ChatViewModel.swift` | Stored `incomingMessages` subscription, subscription initialization inside existing observation startup, one observer child task, and subscription teardown | Owner authority, lifecycle coordinator, `handleIncoming`, progress reducer, provider connection observer, service-event observer, message rules, or UI behavior |
-| `ios/Clawline/ClawlineTests/ChatViewModelTests.swift` | One `activateAndAppear` helper and the affected fixtures' startup calls | Test declarations, assertions, expected values, timeouts, `TestChatService.emit`, or unrelated fixtures |
+| `ios/Clawline/Clawline/ViewModels/ChatViewModel.swift` | Stored `incomingMessages` subscription, synchronous subscription initialization inside existing observation startup, one observer child, and subscription teardown | Owner authority, activation, lifecycle coordinator, `handleIncoming`, progress reducer, provider connection observer, service-event observer, message rules, or UI behavior |
 
-The code assignment stops and returns to spec review if it needs another file,
-another production mutation seam, or an assertion change.
+The code assignment must stop and return to spec review if it needs a second
+file, a test edit, another production mutation seam, or an assertion change.
 
 ### 4. Required implementation shape
 
 The code author must implement all of these clauses:
 
-1. Store the stream returned by `chatService.incomingMessages` before the
-   observation task begins.
-2. Reuse the stored stream when activation joins or repeats. Do not create a
-   second stream subscription.
-3. Add one child to the existing observation task group. The child iterates
-   the stored stream and calls existing `handleIncoming` for each value.
-4. Clear the stored stream in `stopObservingLifecycle` with the other stored
-   subscriptions.
-5. Keep every new production-side line behind the existing owner checks. Do
-   not add a test-only ownership exception.
-6. Add one `@MainActor` test helper that awaits `activate(origin:)` and then
-   awaits `onAppear(origin:)`.
-7. Route the 44 affected fixtures through that helper where they currently
-   depend on observation without activation. Do not change their assertions.
+1. Add one optional stored `AsyncStream<Message>` subscription for
+   `chatService.incomingMessages`.
+2. Initialize the stored subscription synchronously in the existing
+   owner-gated startup task before assigning the observation task.
+3. Reuse the stored subscription when activation joins or repeats. Do not
+   obtain `chatService.incomingMessages` a second time while the stored
+   subscription exists.
+4. Add one child to the existing observation task group. The child iterates
+   the stored stream and calls existing `handleIncoming` once for each value.
+5. Clear the stored subscription in `stopObservingLifecycle` with the other
+   stored subscriptions.
+6. Keep every new line behind the existing owner checks. Do not add a
+   test-only ownership exception.
+7. Do not edit a test file. Do not add or use `activateAndAppear`.
 
 The code reviewer compares the exact diff with `9c8043ed`. The reviewer may
-accept only the incoming-messages subscription and fixture-activation pattern.
-The reviewer must reject the historical global ownership bypass and every
-unrelated historical change.
+accept only the incoming-messages subscription, observer child, and teardown
+pattern. The reviewer must reject the historical global ownership bypass,
+historical test-helper edits, and every unrelated historical change.
 
 ### 5. Verification commands
 
-Run every command from an owned clean Clawline checkout on Eezo with Xcode
-26.6, an iPhone 17 Pro simulator, and iOS 26.5. Replace only the angle-bracket
-paths and simulator identifier. Each command uses a new derived-data directory
-and a new result-bundle path.
+Run every command from an owned clean Clawline checkout based on exact S1
+`061d123009228e23672f84ac97124d3761718399` on Eezo with Xcode 26.6, an iPhone
+17 Pro simulator, and iOS 26.5. Replace only the angle-bracket paths and
+simulator identifier. Each command uses a new derived-data directory and a new
+result-bundle path.
 
 Direct causal command:
 
@@ -278,10 +311,11 @@ xcodebuild test \
   -parallel-testing-enabled YES \
   -only-testing:ClawlineTests/ChatViewModelTests/incomingMessagesRoutePerStream \
   -only-testing:ClawlineTests/ChatViewModelTests/streamingMessagesUpdateInPlace \
-  -only-testing:ClawlineTests/ChatViewModelTests/assistantIncomingAppendFiresHapticWhenVisibleAndForeground
+  -only-testing:ClawlineTests/ChatViewModelTests/assistantIncomingAppendFiresHapticWhenVisibleAndForeground \
+  -only-testing:ClawlineTests/ChatViewModelTests/assistantIncomingHapticIsDebounced
 ```
 
-Focused 44-family command:
+Focused command:
 
 ```text
 xcodebuild test \
@@ -308,7 +342,7 @@ xcodebuild test \
   -only-testing:ClawlineTests/T320ReplyIndicatorProofTests
 ```
 
-Protected A7–A10 command:
+Protected parent A7-A10 command:
 
 ```text
 xcodebuild test \
@@ -332,8 +366,8 @@ simulator identifier, counts, and exit status.
 
 The product owner applies this order:
 
-1. S1 reaches independently reviewed-clean at its exact code revision.
-2. R1 code starts from that reviewed-clean S1 revision.
+1. S1 reaches independently reviewed-clean at exact commit `061d1230`.
+2. R1 code starts from exact commit `061d1230`.
 3. R1 receives independently reviewed-clean at its exact code revision after
    the direct, focused, combined, and protected commands pass.
 4. Only then, and only after the parent spec's other unit prerequisites are
@@ -348,80 +382,97 @@ publication.
 
 ## Acceptance
 
-**A1 — Evidence identity.** Given the cited S1 result bundle, when the reviewer
-reads its summary, then it reports 164 tests, 120 passes, 44 failures, zero
-skips, and zero expected failures. Every failed identifier belongs to the
-section 2 ledger.
+**A1 — Focused baseline identity.** Given the retained focused result, when
+the reviewer reads its summary and test tree, then they report exact code
+commit `061d1230`, 164 tests, 118 passes, 46 failed test cases, zero skips, and
+zero expected failures.
 
-**A2 — No ownership signature.** Given the same result summary and complete
-log, when the reviewer searches failure text for connection ownership, owner
-displacement, non-owner guards, and ownership assertions, then no one of the
-44 failures matches. The passing S1 and T320 ownership proofs remain passing.
+**A2 — Combined baseline identity.** Given the retained combined result, when
+the reviewer reads its summary and test tree, then they report exact code
+commit `061d1230`, 166 tests, 118 passes, 48 failed test cases, zero skips, and
+zero expected failures. Forty-seven failed cases belong to
+`ChatViewModelTests`. One failed case belongs to
+`T320ReplyIndicatorProofTests`.
 
-**A3 — Provenance.** Given `9c8043ed` and merge `b0b853d3`, when the reviewer
-compares `ChatViewModel.swift` and `ChatViewModelTests.swift`, then commit
-`9c8043ed` contains the incoming subscription plus fixture-activation pattern
-and the merge result contains neither. The R1 diff restores only that bounded
-pattern and does not restore the ownership bypass.
+**A3 — No ownership signature.** Given both retained summaries and logs, when
+the reviewer searches failure text for connection ownership, owner
+displacement, non-owner guards, and ownership assertions, then the search
+returns no match. The four S1 proof tests named in Assumption 8 pass.
 
-**A4 — Direct cause.** Given the exact R1 code revision, when the coder runs
-the direct causal command, then all three named tests pass with zero failures.
+**A4 — Provenance.** Given `9c8043ed` and merge `b0b853d3`, when the reviewer
+compares `ChatViewModel.swift`, then `9c8043ed` contains the incoming
+subscription, observer child, and teardown, and the merge result contains none
+of them. The R1 diff restores only that bounded production pattern. It does
+not restore the ownership bypass or a test-helper edit.
 
-**A5 — Focused family.** Given the same revision and a clean derived-data
-path, when the coder runs the focused command, then all 162
-`ChatViewModelTests` pass. Each of the 44 section 2 identifiers is present and
-passes. The result has zero failures, skips, and expected failures.
+**A5 — Direct cause.** Given the exact R1 code revision, when the coder runs
+the direct command, then all four named tests pass with zero failures, skips,
+and expected failures.
 
-**A6 — Combined S1 boundary.** Given reviewed-clean S1 plus R1, when the coder
-runs the combined command under normal parallel testing, then all 164 tests
-pass with zero failures. Both T320 proofs pass. The result contains no owner
-displacement and no duplicate incoming-message delivery.
+**A6 — Focused family.** Given the same revision and a clean derived-data
+path, when the coder runs the focused command, then all 164 tests pass. Every
+section 2 identifier is present. The result reports zero failures, skips, and
+expected failures.
 
-**A7 — Flat progress compatibility.** Given an `agent_progress` payload whose
+**A7 — Combined S1 boundary.** Given reviewed-clean S1 plus R1, when the coder
+runs the combined command under normal parallel testing, then all 166 tests
+pass. Both T320 tests pass. The result reports zero failures, skips, and
+expected failures.
+
+**A8 — Flat progress compatibility.** Given an `agent_progress` payload whose
 only progress body is `progressText = "Read config/runtime.exs"`, when
 `ChatViewModel` consumes it, then the selected session exposes tool-activity
 stage and the same summary without a structured tool pill.
 
-**A8 — Structured tool preservation.** Given a structured tool progress item
+**A9 — Structured tool preservation.** Given a structured tool progress item
 with `name = "exec"` and `summary = "git status"`, when the provider decoder
 and progress reducer consume it, then live progress retains
 `LiveToolActivity(verb: "exec", argumentsSummary: "git status")`.
 
-**A9 — Pill presentation.** Given the live tool activity from A8, when
+**A10 — Pill presentation.** Given the live tool activity from A9, when
 `TypingIndicatorCell` renders it, then the cell shows a distinct pill, bold
 verb text, regular argument text, accessibility label `"exec, git status"`,
 and a height greater than the summary-only indicator height.
 
-**A10 — Progress cleanup.** Given live progress linked to a client message,
+**A11 — Progress cleanup.** Given live progress linked to a client message,
 when Clawline receives a matching final assistant message or terminal progress
 state, then `liveProgress` for that session becomes absent.
 
-**A11 — Protected tool-pill run.** Given the exact R1 revision, when the coder
-runs the protected A7–A10 command, then all four named tests pass with zero
-failures. The R1 diff does not touch a tool-pill seam.
+**A12 — Protected tool-pill run.** Given the exact R1 revision, when the coder
+runs the protected parent A7-A10 command, then all four named tests pass with
+zero failures. The R1 diff does not touch a tool-pill seam.
 
-**A12 — Exact file boundary.** Given the R1 code diff, when the reviewer lists
-changed paths, then it lists only the two section 3 files. Within those files,
-the diff contains no assertion, expectation, timeout, test-count, owner-rule,
-or unrelated behavior change.
+**A13 — Exact file boundary.** Given the R1 code diff, when the reviewer lists
+changed paths, then it lists only
+`ios/Clawline/Clawline/ViewModels/ChatViewModel.swift`. The diff contains no
+activation, ownership, lifecycle-coordinator, test, assertion, timeout,
+test-count, or unrelated behavior change.
 
-**A13 — Single delivery.** Given
-`streamingMessagesUpdateInPlace`, when its fixture emits the partial and final
-values for one message identifier, then the view model contains one message,
-that message contains the final content, and the observer produces no
-duplicate. Static review confirms that teardown clears the stored subscription
-with the other observation subscriptions.
+**A14 — Single delivery.** Given `streamingMessagesUpdateInPlace`, when its
+fixture emits the partial and final values for one message identifier, then
+the view model contains one message with final content. Static review confirms
+that one observer consumes the stored subscription and teardown clears it.
 
-**A14 — Ordered review.** Given the full-green repair graph, when R1 code
-starts, then S1 is already reviewed-clean. When S7 or S8 starts or resumes,
-then R1 is already independently reviewed-clean with A4 through A13 green.
+**A15 — No fixture rewrite.** Given the R1 code diff, when the reviewer
+searches changed files for `ChatViewModelTests`, `T320ReplyIndicatorProofTests`,
+`activateAndAppear`, or an added activation call, then the search returns no
+change.
 
-**A15 — S9 remains blocked.** Given a reviewed-clean R1, when the product owner
+**A16 — Stop on residual.** Given the one-file R1 patch, when the direct,
+focused, combined, or protected command reports one failure, then the code
+author files the exact evidence and returns to spec review. The author does
+not edit another file or widen R1.
+
+**A17 — Ordered review.** Given the full-green repair graph, when R1 code
+starts, then S1 is already reviewed-clean at `061d1230`. When S7 or S8 starts
+or resumes, then R1 is independently reviewed-clean with A5 through A16 green.
+
+**A18 — S9 remains blocked.** Given reviewed-clean R1, when the product owner
 evaluates integration, then R1 alone does not authorize S9. S9 still waits for
 all parent-spec repair slices, independent reviews, focused evidence, and the
 parent full-gate conditions.
 
 ## Open Questions
 
-None. The cited evidence, current-main reconciliation, and historical
-provenance close the scope, causal, and ordering questions for this addendum.
+None. Exact S1 evidence fixes the baseline identity, removes the rejected
+visibility-only assumption, and excludes fixture rewrites from R1.
