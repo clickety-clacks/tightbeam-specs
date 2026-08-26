@@ -81,9 +81,12 @@ follows:
 - `lib/tightbeam/acp/conn.ex`: the current public seam is `request/4`, and its
   pending map retains timed-out entries until the adapter resolves them. The
   pinned source has no public request-status probe. The candidate therefore
-  defines a new local read-only `probe_request/4` contract with a 1,000 ms
-  deadline; it sends no ACP request and treats timeout, close, malformed
-  correlation, provider error, and late local reply as ambiguous.
+  defines a new local read-only `probe_request/5` contract. Its correlation
+  reads the target's `adapterGen`, exactly one `prompt_dispatched` lifecycle
+  event's `acpRequestId`, the current harness-session pointer, and the current
+  connection generation. It uses a 1,000 ms deadline, sends no ACP request,
+  and treats timeout, close, malformed or mismatched correlation, provider
+  error, and late local reply as ambiguous.
 
 These anchors establish the source lineage claimed in
 `stale-running-turn-settlement-v1.md`; they do not authorize implementation in

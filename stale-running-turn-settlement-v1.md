@@ -33,8 +33,9 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    transaction. The call SHALL report one of `live`, `stale`, or `ambiguous`.
 6. The lane SHALL report `live` when that exact sequence is its current task or
    when the harness reports a live provider request correlated to that target's
-   `requestRef` or ACP request identity. The verb SHALL return `turn_live` and
-   SHALL perform no mutation. The lane SHALL report `ambiguous` when it cannot
+   exact `prompt_dispatched` lifecycle event, `adapterGen`, and current
+   harness-session identity. The verb SHALL return `turn_live` and SHALL
+   perform no mutation. The lane SHALL report `ambiguous` when it cannot
    establish the target's live status, when the lane is unavailable, when its
    in-memory sequence disagrees with the durable running row, when the provider
    probe cannot answer, or when the serialization call is lost or re-entered.
@@ -43,7 +44,7 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    provider probe returns no live request for the exact target while it still
    holds the serialization call and performs the CAS.
    The provider check SHALL use the local read-only
-   `Tightbeam.Acp.Conn.probe_request/4` seam defined in Architecture; it SHALL
+   `Tightbeam.Acp.Conn.probe_request/5` seam defined in Architecture; it SHALL
    never issue an ACP or harness request.
 7. The substrate SHALL not classify staleness from elapsed time, queue age,
    adapter generation, process age, or a heuristic. The operator supplies the
@@ -136,8 +137,10 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
   `terminal_committed` lifecycle event. It outranks a caller's stale receipt.
 - **Provider probe** — the local read-only lookup
   `Tightbeam.Acp.Conn.probe_request(conn, acp_request_id,
-  harness_session_id, timeout_ms)`. It reads the adapter connection's pending
-  request entry; it does not send JSON-RPC, ACP, or harness traffic.
+  harness_session_id, adapter_generation, timeout_ms)`. It reads the adapter
+  connection's pending request entry only when that connection's generation
+  equals `adapter_generation`; it does not send JSON-RPC, ACP, or harness
+  traffic.
 
 ## Assumptions
 
@@ -151,10 +154,12 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
 - The existing `wire_idempotency` ledger is the durable replay seam. Its
   additive fingerprint and canonical-response columns do not replace or shadow
   the `turns` terminal state.
-- The current turn row's positive `acpRequestId` and the session's current
-  harness-session identifier are the provider-probe correlation pair. A
-  running row with no positive `acpRequestId`, no harness-session identifier,
-  or a mismatched identifier is uncorrelatable and therefore ambiguous.
+- The target `turns` row's positive `adapterGen`, its exactly-one
+  `prompt_dispatched` lifecycle event with a positive `acpRequestId`, the
+  session's current `harnessSessionId`, and the current adapter connection's
+  generation form the provider-probe correlation. A missing or duplicated
+  prompt-dispatch event, missing generation, missing harness-session identity,
+  or any mismatch is uncorrelatable and therefore ambiguous.
 - The provider probe is a new local read seam because the pinned source has no
   public request-status operation. Its contract is specified here so an
   implementation cannot issue a new provider request or inspect an unbounded
@@ -215,36 +220,51 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    SHALL be released exactly once after the settlement call, with one normal
    drain.
 3. Add a `SessionLane.settle_stale/4` synchronous call carrying the reservation
-   token and operator request. Its handler SHALL inspect the exact target and
-   call `Tightbeam.Acp.Conn.probe_request/4`, refuse on `live` or `ambiguous`,
-   and retain the lane mailbox callback while it invokes the guarded settlement
+   token and operator request. Its handler SHALL read exactly one
+   `prompt_dispatched` lifecycle event for the target, read the target's
+   `adapterGen`, resolve the current harness-session pointer, and obtain the
+   current `{conn, connection_generation}` from
+   `AdapterCoordinator.adapter_for/2`. It SHALL refuse before probing unless
+   `connection_generation == adapterGen`. It SHALL then call
+   `Tightbeam.Acp.Conn.probe_request/5`, refuse on `live` or `ambiguous`, and
+   retain the lane mailbox callback while it invokes the guarded settlement
    transaction. A task cannot claim or start between that inspection and the
    CAS.
-4. In the stale branch, use the existing terminal transition seam with an
+4. `probe_request/5` SHALL accept `(conn, acpRequestId, harnessSessionId,
+   adapterGen, timeoutMs)` together with the coordinator-issued connection
+   generation check from item 3. It SHALL return `{:live, acpRequestId}` only
+   when that checked connection is generation `adapterGen`, the pending
+   entry's session id equals `harnessSessionId`, and that entry remains
+   unresolved. It SHALL return `:absent` only when the checked
+   current-generation connection has no entry for that exact request id. A
+   missing, duplicated, or mismatched
+   `prompt_dispatched` event or any generation/pointer mismatch SHALL prevent
+   the call and produce `{:unknown, :uncorrelatable}`.
+5. In the stale branch, use the existing terminal transition seam with an
    operator-authorized terminal event. The transaction SHALL combine the
    guarded target update, lifecycle append, `turn.ended` publication effect,
    and the `wire_idempotency` fingerprint/response write. It SHALL return the
    row's terminal result when another writer won.
-5. After a winning commit, use the existing terminal callback, publication,
+6. After a winning commit, use the existing terminal callback, publication,
    and lane drain. If the response is lost after commit, the existing
    unpublished-terminal and pending-session reconciliation paths SHALL make
    the same result observable after restart.
-6. Keep the current `cancel` handler and its lane-owned kill unchanged. A
+7. Keep the current `cancel` handler and its lane-owned kill unchanged. A
    live task must use `cancel`; `settle-turn` is only for the proven absence of
    that task in the lane seam.
-7. Expose the feature through the existing capability/version mechanism before
+8. Expose the feature through the existing capability/version mechanism before
    a client sends it. An older server SHALL reject the closed verb as
    `unknown_verb`; an older client SHALL continue using existing verbs and
    statuses without schema failure.
-8. Emit one accepted or denied dispatch observation per request and one
+9. Emit one accepted or denied dispatch observation per request and one
    `terminal_committed` lifecycle event only for a winning settlement. The
    observability record SHALL use a digest for the idempotency key and reason
    where the existing privacy boundary requires redaction.
-9. Rollback is additive disablement: removing the handler or capability makes
+10. Rollback is additive disablement: removing the handler or capability makes
    future requests return `unknown_verb` and leaves all already-terminal rows,
    lifecycle events, and publications intact. Rollback SHALL never reverse a
    terminal status or recreate a queued turn.
-10. The source-lineage evidence SHALL pin the owned product clone at
+11. The source-lineage evidence SHALL pin the owned product clone at
    `7a70a2f616363074514237b5bee48ba67c52e2ea`, prove that
    `eea3e9a1eb73a63ae41eafa05fb42e410f362ee7` is an ancestor, and identify the
    exact `eea3e9a` subject `Recover after proven adapter death despite cleanup
@@ -279,17 +299,28 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    `turn_status_ambiguous`, `turn_live`, or `turn_status_ambiguous`, and no
    settlement mutation occurs. A provider probe that returns no request is the
    only provider result that can support `stale`.
-6. **Provider probe contract.** Given a positive `acpRequestId` and matching
-   harness-session identifier, when `probe_request/4` reads a pending entry with
-   that id before the 1,000 ms deadline, then it returns `{:live, acpRequestId}`
-   whether or not the original ACP caller has received its own request timeout,
-   because the adapter has not resolved the pending entry. Given no pending
-   entry, it returns
-   `:absent`. Given a missing or malformed correlation, closed connection,
-   provider error, probe timeout, or late reply after the caller deadline, it
-   returns `{:unknown, reason}`; the lane releases its reservation and returns
-   `turn_status_ambiguous`. The probe sends no provider request, cancels no
-   provider request, and ignores a late local reply.
+6. **Provider probe contract.** Given a target row with `adapterGen=7`, exactly
+   one `prompt_dispatched` lifecycle event for that target with
+   `acpRequestId=42`, the current pointer `harnessSessionId=hs-1`, and
+   `AdapterCoordinator.adapter_for/2` returns the current adapter connection
+   at generation 7, when
+   `probe_request(conn, 42, "hs-1", 7, 1000)` reads a pending entry with that
+   id before the 1,000 ms deadline, then it returns `{:live, 42}` whether or
+   not the original ACP caller has received its own request timeout, because
+   the adapter has not resolved the pending entry. Given the same correlation
+   and no pending entry on generation 7, it returns `:absent`. Given a missing
+   or duplicate dispatch event, a missing or malformed event request id, a
+   missing or zero target generation, a pointer mismatch, or a target stamped
+   generation 6 while the only available connection is generation 7, it
+   returns `{:unknown, :uncorrelatable}` before probing. A target stamped
+   generation 7 with request id 42 present only on an old generation-6
+   connection has no entry on the checked generation-7 connection and therefore
+   returns `:absent`; the old entry is not evidence for this target. Given a
+   closed
+   connection, provider error, probe timeout, or late reply after the probe
+   deadline, it returns `{:unknown, reason}`; the lane releases its reservation
+   and returns `turn_status_ambiguous`. The probe sends no provider request,
+   cancels no provider request, and ignores a late local reply.
 7. **Eligibility refusal.** Given each of: absent session, retired session,
    absent turn, queued turn, delivered turn, canceled turn, failed turn, and
    failed-unknown turn, when the operator sends `settle-turn`, then the
