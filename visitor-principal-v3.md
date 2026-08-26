@@ -12,7 +12,7 @@ Authority and identity:
 - Sanctioned green source baseline: Tightbeam main
   `8eeccbd6dfd221fe9d105783459637fb7a17ea83`.
 - Current source census tip: Tightbeam main
-  `8b4a3df191ca4505bf7e65a2876da23c9e4f4a6c`; the sanctioned baseline is its
+  `7a70a2f616363074514237b5bee48ba67c52e2ea`; the sanctioned baseline is its
   ancestor.
 - Canonical path: `visitor-principal-v3.md` in `tightbeam-specs`.
 - Historical `art_d824eab5` and archived `art_765e7a53` are evidence only.
@@ -22,8 +22,9 @@ Authority and identity:
 - Review verdict `att_5efefdde-9ef9-4e57-bb42-792e73493923` and report
   `art_b591a285` govern this amendment. This revision closes findings F1-F7 by
   defining the external surface and key custody, scoping operation identity,
-  naming the stamped migration, making principals append-only, deleting
-  decline and frozen-page replay, and adding negative acceptance cases.
+  naming the stamped migration, preserving immutable principal provenance,
+  deleting decline and frozen-page replay, and adding negative acceptance
+  cases.
 - Successor verdict `att_f88643c7-e13e-4e53-a3fd-f98fcbe42583` and report
   `art_415294a6` govern this second amendment. It repairs the post-accept
   authorization join, closes nested wire projections, consumes the current
@@ -204,22 +205,31 @@ actor context shall preserve every field and shall not replace `actorId` with
 
 `InvitationPresentationV1` is the pre-principal context for a known invitation
 credential. It contains schema, invitation id, broker user id, exact target
-session, cause, and operation id. For `invitation-read` and
-`invitation-accept`, it also contains the required request fingerprint. For
-`invitation-invalid-request`, it omits the fingerprint, uses the
-server-generated malformed-request audit id as `operationId`, and contains the
-required closed route and shape classes. Those three values are its complete
-cause set. It contains no actor id or visitor access-session id. A successful
-acceptance terminal can add the resulting visitor principal, grant, and
-access-session ids without rewriting the attempted context.
+session, and cause. For `invitation-read` and `invitation-accept`, it contains
+the required operation id and request fingerprint. For
+`invitation-invalid-request`, it has no operation id or fingerprint and contains
+the server-generated rejection id plus the required closed route and shape
+classes. Those three values are its complete cause set. It contains no actor id
+or visitor access-session id. A successful acceptance terminal can add the
+resulting visitor principal, grant, and access-session ids without rewriting
+the attempted context.
 
-For a schema-invalid request whose bearer resolves to a known invitation or
-visitor access session, the server creates a **malformed-request audit id**
-`vmr_` plus 32 lowercase hexadecimal characters. It uses cause
+The **rejected-operation namespace** is separate from client operation
+identity. For each schema-invalid request whose bearer resolves to a known
+invitation or visitor access session, the server creates one rejection id
+`vrej_` plus 32 lowercase hexadecimal characters and stores that id unchanged
+on the attempted and denied rows. The audit operation id is SQL `NULL`; the
+server never copies, repairs, hashes, or guesses a missing or malformed client
+operation id. A retry is a new rejected request with a new rejection id and no
+idempotency relation to the earlier rejection. The cause is
 `invitation-invalid-request` for an invitation bearer and
-`visitor-invalid-request` for a visitor bearer. This id belongs only to the
-audit pair; it is not a client operation id and creates no
-`visitor_operations` row. The audit stores one closed shape class:
+`visitor-invalid-request` for a visitor bearer. A visitor-bearer rejection uses
+context kind `visitor-rejected-operation`, scopes to the authenticated visitor
+principal, and retains the exact access-session and broker provenance. An
+invitation-bearer rejection uses context kind
+`invitation-rejected-operation`, scopes to the known invitation, and invents no
+visitor principal. Neither context creates a `visitor_operations` row. The
+audit stores one closed shape class:
 `missing-operation-id`, `invalid-operation-id`, `invalid-json`, `missing-key`,
 `unknown-key`, or `invalid-value`. It also stores the exact closed route class:
 `invitation-read`, `invitation-accept`, `transcript-read`, `post`, or
@@ -254,10 +264,14 @@ retry.
 ### Terminal visitor state
 
 An invitation starts `pending` and can become `accepted`, `expired`, or
-`target-retired`. A grant and access session start `active` and can become
-`revoked`, `expired`, or `target-retired`. Every transition is one-way and uses
-compare-and-set from its one live state. A visitor principal is immutable,
-append-only provenance and has no terminal fields or authorization state.
+`target-retired`. Acceptance consumes the pending invitation by terminalizing it
+as `accepted`; no invitation state is live after acceptance. The same acceptance
+transaction creates the visitor principal, grant, and access session in state
+`active`. A principal, grant, and access session can each become `revoked`,
+`expired`, or `target-retired`. Every transition is one-way and uses
+compare-and-set from its one live state. Principal identity and provenance
+fields are immutable; only its lifecycle state, terminal time, and terminal
+reason can change.
 
 ## 4. Assumptions
 
@@ -306,11 +320,12 @@ visitor.
 
 **I4 — One exact target.** Authorization joins an access session whose state is
 exactly `active`, a grant whose state is exactly `active`, the immutable
-visitor-principal row referenced by both, an invitation whose state is exactly
-`accepted`, and the exact existing target session in one database read inside
-the operation transaction. It applies access-session and grant expiry in that
-transaction before authorizing. It does not require state on the append-only
-principal and does not accept a client-supplied replacement target.
+visitor-principal identity referenced by both whose lifecycle state is exactly
+`active`, the terminal invitation whose state is exactly `accepted`, and the
+exact existing target session in one database read inside the operation
+transaction. It applies principal, access-session, and grant expiry in that
+transaction before authorizing. It never requires a nonterminal invitation and
+does not accept a client-supplied replacement target.
 
 **I5 — Independent least privilege.** Read requires `canRead=true`. Post
 requires `canPost=true`. Either denial is indistinguishable from an unavailable
@@ -323,8 +338,11 @@ credential remains the visitor principal.
 
 **I7 — Consent proof.** Acceptance requires an affirmative decision over the
 exact canonical consent bytes. The acceptance transaction stores the consent
-version and SHA-256 digest before activating the principal, grant, and access
-session.
+version and SHA-256 digest, compare-and-sets the invitation from `pending` to
+terminal `accepted`, and inserts the principal, grant, and access session as
+`active` atomically. No transaction can expose an active principal with a
+pending invitation or an accepted invitation without its active principal,
+grant, and access session.
 
 **I8 — Secret handling.** Raw invitation and access credentials never enter a
 durable row, log, error, trace, audit payload, artifact, or response other than
@@ -400,9 +418,12 @@ the single-use rule in I11. A scoped id with a different fingerprint is a
 conflict. The same operation-id bytes under a different principal or cause are
 independent operations. A schema-invalid request with a known invitation or
 visitor bearer instead records exactly one attempted/denied audit pair under a
-fresh malformed-request audit id and the closed invalid-request cause in one
-transaction, creates no operation row, and invokes no domain handler. An
-unknown bearer follows I13 and creates no such pair.
+fresh rejection id in the stable rejected-operation namespace and the closed
+invalid-request cause in one transaction. It keeps `operationId=NULL`, creates
+no operation row, and invokes no domain handler. A visitor bearer scopes the
+pair to its authenticated visitor principal; an invitation bearer scopes it to
+the known invitation and invents no principal. An unknown bearer follows I13
+and creates no such pair.
 
 **I13 — Unknown bearers are bounded.** A credential that resolves to no
 invitation or access session creates no visitor principal, audit, credential
@@ -411,12 +432,14 @@ updates one fixed aggregate row for its closed operation class.
 
 **I14 — Revocation and expiry are act-time facts.** Every read and post checks
 terminal and expiry state in its transaction. Revocation terminalizes the
-grant and all active access sessions atomically. A concurrent post either
-commits completely before revocation or refuses completely after revocation.
-Revocation does not mutate the accepted invitation or append-only principal.
-Expiry terminalizes the active grant and its active access sessions. Target
-retirement terminalizes a pending invitation or the active grant and its active
-access sessions. The principal remains unchanged in every terminal path.
+active principal, grant, and all active access sessions atomically. A concurrent
+post either commits completely before revocation or refuses completely after
+revocation. Revocation does not mutate the accepted invitation or any immutable
+principal identity/provenance field. Expiry terminalizes the active principal,
+grant, and access sessions. Target retirement terminalizes a pending invitation
+before acceptance or the active principal, grant, and access sessions after
+acceptance. Every post-accept terminal path changes only lifecycle state, time,
+and reason on the principal.
 
 **I15 — Replay only.** No visitor operation registers a socket, subscription,
 push consumer, delivery cursor, claim, acknowledgment, or recovery job. The
@@ -468,8 +491,8 @@ visitor principal and presenter, then refuses before policy or domain effects.
 
 The implementation shall preserve the source facts first inspected at green
 baseline `8eeccbd6dfd221fe9d105783459637fb7a17ea83` and shall rebase against current
-main `8b4a3df191ca4505bf7e65a2876da23c9e4f4a6c`. Citations without a second commit
-suffix are to the green baseline; rows that name `8b4a3df1` are additive landed
+main `7a70a2f616363074514237b5bee48ba67c52e2ea`. Citations without a second commit
+suffix are to the green baseline; rows that name `7a70a2f` are additive landed
 current-main facts:
 
 | Fact | Source citation |
@@ -486,9 +509,9 @@ current-main facts:
 | User socket auth and transcript replay are currently user/session-shaped | `lib/tightbeam/wire/socket.ex:289-390`; `lib/tightbeam/transcript.ex:360-389` |
 | User post stamps a user origin; gateway maps `call.origin` to sender | `lib/tightbeam/wire/socket.ex:411-450`; `lib/tightbeam/gateway.ex:628-643` |
 | Append plus turn enqueue already has one transaction seam | `lib/tightbeam/gateway.ex:1028-1045,1124-1160` |
-| Current enqueue accepts `principal` separately from `origin` and persists an accepted lifecycle event in the append transaction | `lib/tightbeam/gateway.ex:1153-1169`; `lib/tightbeam/ledger.ex:133-160` at `8b4a3df1` |
-| Current durable lifecycle rows store a required `principal`; accepted-event detail admits `origin` and `authenticatedCaller` | `lib/tightbeam/turn_lifecycle.ex:19-30,33-59`; `lib/tightbeam/ledger.ex:134-159` at `8b4a3df1` |
-| Current ordinary transcript entries contain internal identity and execution fields that the visitor projection must not copy wholesale | `lib/tightbeam/transcript.ex:190-248` at `8b4a3df1` |
+| Current enqueue accepts `principal` separately from `origin` and persists an accepted lifecycle event in the append transaction | `lib/tightbeam/gateway.ex:1315-1331`; `lib/tightbeam/ledger.ex:134-160` at `7a70a2f` |
+| Current durable lifecycle rows store a required `principal`; accepted-event detail admits `origin` and `authenticatedCaller` | `lib/tightbeam/turn_lifecycle.ex:19-30,33-59`; `lib/tightbeam/ledger.ex:134-159` at `7a70a2f` |
+| Current ordinary transcript entries contain internal identity and execution fields that the visitor projection must not copy wholesale | `lib/tightbeam/transcript.ex:190-248` at `7a70a2f` |
 | Current schema is stamped `coordination-fabric-v1-phase1-v5`, admits one predecessor, rebuilds and stamps atomically, and refuses unknown shapes | `lib/tightbeam/schema.ex:35-73,800-823,987-1011` |
 | The Rust CLI has one shared base-directory resolver and hand-parsed closed commands/identity flags | `cli/src/base_dir.rs:1-35`; `cli/src/args.rs:1-24` |
 | Model and harness mutation use closed typed validation and expected versioning | `lib/tightbeam/gateway.ex:4311-4551`; `lib/tightbeam/org.ex:554-598` |
@@ -515,12 +538,12 @@ state checks:
 | Table | Required identity and purpose |
 |---|---|
 | `visitor_invitations` | Invitation id; broker user FK; exact target session FK; display labels; independent grants; canonical consent version/digest; derivation and digest key ids; keyed invitation credential digest; issue/expiry/state fields; immutable target and broker. State is `pending`, `accepted`, `expired`, or `target-retired`. |
-| `visitor_principals` | Visitor principal id; originating invitation FK; display label; created time. The row is immutable append-only provenance and has no terminal fields. |
+| `visitor_principals` | Visitor principal id; originating invitation FK; display label; created time; lifecycle state `active`, `revoked`, `expired`, or `target-retired`; optional terminal time/reason. Identity and provenance fields are immutable. Acceptance inserts the row as `active`; only the closed lifecycle fields can later change. |
 | `visitor_grants` | Grant id; principal, invitation, broker user, and exact target session FKs; `canRead`; `canPost`; active/terminal state and times. |
 | `visitor_access_sessions` | Access-session id; grant/principal/invitation FKs; derivation and digest key ids; keyed access credential digest; credential version; issue/expiry/terminal fields. It has no FK to ordinary `sessions` as its own identity. |
 | `visitor_acceptances` | Invitation FK; acceptance-key digest; request fingerprint; first operation id; consent version/digest; resulting ids; accepted time; unique `(invitationId, acceptanceKeyDigest)`. |
 | `visitor_operations` | Context kind, scope id, cause, operation id, request fingerprint, replay policy `stored` or `single-use`, terminal outcome, public status, and canonical result projection without raw credentials or transcript content. Unique `(contextKind, scopeId, cause, operationId)`. Mutation results regenerate deterministic credentials from stored ids and key ids. |
-| `visitor_audit` | Unique audit id and `(contextKind, scopeId, cause, operationId, phase)`; phase `attempted` or `terminal`; closed context kind `invitation-presentation`, `visitor-action`, or `broker-action`; terminal outcome; the fields required by that context kind; optional request fingerprint; optional closed malformed route and shape classes; event time; optional closed denied capability and resource classes plus a non-secret resource id; no secret or content bytes. Database checks require a fingerprint for well-formed operations; forbid it and require both malformed classes for invalid-request causes; reject malformed classes for every other cause; reject a visitor action without every envelope field; reject an invitation presentation with an actor id; and reject a broker action without its user actor. |
+| `visitor_audit` | Unique audit id; phase `attempted` or `terminal`; closed context kind `invitation-presentation`, `visitor-action`, `broker-action`, `invitation-rejected-operation`, or `visitor-rejected-operation`; terminal outcome; the fields required by that context kind; nullable operation id; nullable rejection id; optional request fingerprint; optional closed malformed route and shape classes; event time; optional closed denied capability and resource classes plus a non-secret resource id; no secret or content bytes. Well-formed contexts are unique on `(contextKind, scopeId, cause, operationId, phase)` and require operation id/fingerprint while forbidding rejection and malformed fields. Rejected-operation contexts are unique on `(contextKind, scopeId, cause, rejectionId, phase)`, require `operationId=NULL`, no fingerprint, and both malformed classes. Database checks reject a visitor action or visitor rejection without every resolved envelope provenance field, an invitation context with an actor id, or a broker action without its user actor. |
 | `visitor_unknown_bearer_aggregates` | Exactly one updatable row for each closed class `invitation`, `read`, `post`, and `revoke`; current 60-second window start; saturating count; last-seen time; last closed cause. No bearer-derived key. |
 
 Operation scope is closed. Broker operations use
@@ -534,6 +557,14 @@ operation has replay policy `stored`. An invitation-read result can be stored
 because its bounded summary is immutable and contains no credential. Stored
 credential-bearing results contain ids and key ids only and regenerate the raw
 credential at return time.
+
+`visitor_audit` has one partial unique index on
+`(contextKind, scopeId, cause, operationId, phase)` where `operationId IS NOT
+NULL AND rejectionId IS NULL`, and a second partial unique index on
+`(contextKind, scopeId, cause, rejectionId, phase)` where `rejectionId IS NOT
+NULL AND operationId IS NULL`. Rejection-id generation retries a uniqueness
+collision inside the request transaction before inserting either audit phase;
+it never turns that collision into a client operation identity.
 
 A privileged-route presentation of a known `tbv_` credential creates a
 server-generated operation id `vbd_` plus 32 lowercase hexadecimal characters.
@@ -550,13 +581,15 @@ handler.
 Request processing on an invitation or visitor route resolves the bearer class
 and known row before it validates the JSON shape. If the bearer is known but
 the body is invalid JSON, lacks `operationId`, has an invalid operation id, or
-otherwise fails the closed request schema, the server generates one `vmr_`
-audit id and commits one attempted/denied pair under
-`invitation-invalid-request` or `visitor-invalid-request`. The pair contains
-only the resolved provenance, route cause, closed shape class, and event times.
-It contains no request fingerprint or client operation id, creates no
-`visitor_operations` row, and invokes no policy or domain handler. Unknown and
-wrong-class bearers still follow I13/I19 and never create identity audit.
+otherwise fails the closed request schema, the server generates one `vrej_`
+rejection id and commits one attempted/denied pair in the corresponding stable
+rejected-operation context under `invitation-invalid-request` or
+`visitor-invalid-request`. Both rows keep `operationId=NULL`. The pair contains
+only the resolved provenance, rejection id, route class, closed shape class,
+and event times. The server does not infer an operation id from request bytes or
+reuse a syntactically invalid value. It stores no request fingerprint, creates
+no `visitor_operations` row, and invokes no policy or domain handler. Unknown
+and wrong-class bearers still follow I13/I19 and never create identity audit.
 
 All mutable state transitions use compare-and-set predicates in the same
 transaction as their effects. Database check constraints enforce closed state,
@@ -568,12 +601,12 @@ The terminal transition matrix is closed:
 
 | Event | Invitation | Principal | Grant | Active access sessions |
 |---|---|---|---|---|
-| Accept | `pending -> accepted` | insert once | insert `active` | insert one `active` |
-| Broker or self revoke | unchanged `accepted` | unchanged | `active -> revoked` | `active -> revoked` |
+| Accept | `pending -> accepted` | insert `active` | insert `active` | insert one `active` |
+| Broker or self revoke | unchanged `accepted` | `active -> revoked` | `active -> revoked` | `active -> revoked` |
 | Invitation expiry | `pending -> expired` | absent | absent | absent |
-| Access expiry | unchanged `accepted` | unchanged | `active -> expired` | `active -> expired` |
+| Access expiry | unchanged `accepted` | `active -> expired` | `active -> expired` | `active -> expired` |
 | Target retirement before accept | `pending -> target-retired` | absent | absent | absent |
-| Target retirement after accept | unchanged `accepted` | unchanged | `active -> target-retired` | `active -> target-retired` |
+| Target retirement after accept | unchanged `accepted` | `active -> target-retired` | `active -> target-retired` | `active -> target-retired` |
 
 The first compare-and-set observer records the terminal time and reason. Later
 observers return the stored terminal outcome without changing any row.
@@ -676,9 +709,21 @@ the `secrets` directory before the visitor migration:
    validate its exact bytes and mode.
 4. Publish by a same-filesystem hard-link operation from the temporary inode to
    `visitor-keyring-v1.json`. Link creation is atomic and fails when the final
-   name exists; no precheck can authorize replacement. `fsync` the directory,
-   unlink the temporary name, and `fsync` the directory again before reporting
-   success.
+   name exists; no precheck can authorize replacement. On link success, open
+   the final name without following symlinks and verify that its device/inode,
+   length, SHA-256, owner, mode, schema, and key ids equal the validated
+   temporary file. Then `fsync` the directory, unlink the temporary name, and
+   `fsync` the directory again before reporting success. A verification failure
+   returns `visitor_keyring_publish_verification_failed`, reports no ids, never
+   overwrites or unlinks the final name, and removes only the caller's safe
+   temporary name.
+5. If link creation loses with final-name-exists, open the race winner without
+   following symlinks and validate its regular-file type, owner, mode, complete
+   JSON schema, distinct key purposes, lengths, and ids. Remove the caller's
+   safe temporary name and `fsync` the directory in both the valid and invalid
+   winner cases. A valid winner returns `visitor_keyring_exists`; an invalid
+   winner returns `visitor_keyring_race_winner_invalid`. The loser never prints
+   either its own ids or the winner's ids and never modifies the winner.
 
 If the platform or filesystem cannot provide the exclusive lock,
 same-filesystem no-replace link, file `fsync`, and directory `fsync`, the
@@ -687,8 +732,12 @@ file, and publishes no target. A crash before link creation leaves no target;
 the next initializer removes the safe stale temporary file and starts with new
 keys. A crash after link creation can leave both names, but both name the same
 fully written and synced inode; the next initializer removes the safe temporary
-name and refuses the existing final target. The command prints the final path
-and key ids only after the second directory `fsync`. This spec adds no remote
+name, validates the final target as the race winner, and refuses to replace it.
+Cleanup identifies an orphan only by the fixed temporary prefix plus
+regular-file/no-follow, gateway owner, and mode `0600`, and only while the
+initializer holds the exclusive lock; it never removes a final keyring or an
+unsafe matching entry. The command prints the final path and key ids only after
+successful winner verification and the second directory `fsync`. This spec adds no remote
 key-management or rotation verb. Every invitation and access-session row stores
 both key ids used for it.
 
@@ -909,13 +958,14 @@ substrate action or permission is attributed to the post.
 **A3 — One-target capability matrix (`I4`, `I5`, `I19`).**
 
 Given three grants for the same fixture session with read/post values `10`,
-`01`, and `11`, each with an immutable principal, an `accepted` invitation, and
-an `active` grant and access session, when each read and post is attempted, then
-only the true capability succeeds. No principal state or nonterminal invitation
-predicate is consulted. Every false capability returns the same public
-unavailable shape and reads or mutates no target content. An attempted target
-replacement at invitation mutation or at the internal authorization seam
-refuses and leaves the immutable target unchanged.
+`01`, and `11`, each with an active principal, a terminal `accepted` invitation,
+and an active grant and access session, when each read and post is attempted,
+then only the true capability succeeds. Authorization requires the active
+principal and accepted terminal invitation; it never requires a nonterminal
+invitation. Every false capability returns the same public unavailable shape
+and reads or mutates no target content. An attempted target replacement at
+invitation mutation or at the internal authorization seam refuses and leaves
+the immutable target unchanged.
 
 **A4 — Consent and lost-response retry (`I7`, `I8`, `I9`, `I12`).**
 
@@ -931,7 +981,11 @@ audit pair. The same K and fingerprint under a new operation id returns the
 same ids and credential, creates one pair for that operation, and creates no
 identity row. A retry with K and a changed fingerprint conflicts. A new key
 after acceptance returns unavailable. A database/log/argv scan finds no raw
-invitation credential, raw access credential, or raw K.
+invitation credential, raw access credential, or raw K. At every injected
+acceptance-transaction failure, the invitation remains pending and no
+principal, grant, access session, or acceptance row exists. On success, the
+invitation is terminal accepted and all three post-accept lifecycle rows are
+active in the same commit.
 
 **A5 — Atomic visitor post (`I2`, `I10`, `I12`).**
 
@@ -974,17 +1028,20 @@ transaction orders, then the database contains either the complete post before
 one terminal revocation or no post after the terminal revocation. No ordering
 produces a partial post. Repeated revocation with the same operation id returns
 the stored result and one audit pair. Self-revoke and authorized broker-revoke
-change the grant and every active access session to `revoked`, leave the
-accepted invitation unchanged, and leave the append-only principal unchanged.
+change the active principal, grant, and every active access session to
+`revoked`, leave the accepted invitation unchanged, and do not change immutable
+principal identity or provenance.
 
 **A9 — Expiry and target retirement (`I14`, `I19`).**
 
 Given access expiry T, when authorization runs at T-1 ms it can succeed and at T
-it refuses and terminalizes the active grant and access sessions as `expired`.
+it refuses and terminalizes the active principal, grant, and access sessions as
+`expired`.
 Given a retired target, the first observer atomically records
-`target-retired` on a pending invitation or on the active grant and access
-sessions; it never changes the principal. All later operations return the same
-public unavailable shape without target content.
+`target-retired` on a pending invitation before acceptance or on the active
+principal, grant, and access sessions after acceptance. Access expiry also
+uses that same principal terminal transition. All later operations return the
+same public unavailable shape without target content.
 
 **A10 — Unknown-bearer bound (`I13`, `I19`).**
 
@@ -1057,11 +1114,15 @@ content, and returns exactly the I19 HTTP body and CLI result. An injected
 denial-audit failure rolls back the denial and returns no target fact. For both
 a known invitation bearer and a known visitor bearer, submit invalid JSON,
 missing `operationId`, invalid `operationId`, missing required key, unknown key,
-and invalid value. Each request returns the same invalid-request body, creates
-one attempted/denied pair under a distinct `vmr_` id with the exact closed shape
-and route classes, creates no operation row, invokes no domain handler, and
-stores no raw body or field value. The same malformed requests with unknown
-bearers create no visitor audit.
+and invalid value. Each request returns the same invalid-request body, keeps
+`operationId=NULL`, and creates one attempted/denied pair under a distinct
+`vrej_` rejection id with the exact closed shape and route classes. The visitor
+bearer pair scopes to its authenticated visitor principal; the invitation pair
+scopes to its invitation and invents no principal. Each creates no operation
+row, invokes no domain handler, and stores no raw body, malformed operation-id
+value, or field value. Repeating the same malformed bytes creates a new
+rejection id and no guessed idempotency relation. The same malformed requests
+with unknown bearers create no visitor audit.
 
 **A17 — Wire, discovery, and secret input (`I8`, `I16`, `I19`).**
 
@@ -1086,13 +1147,19 @@ refuses `visitor_keyring_unavailable`, admits no visitor route, and emits no key
 or credential bytes. Run two initializers concurrently: one publishes one
 fully valid inode and reports its ids; the other returns
 `visitor_keyring_init_busy` or, after retry, `visitor_keyring_exists`; neither
-replaces the target. Inject a crash before publication: no target exists, and
-the next initializer removes only the safe stale temporary file and succeeds
-with new keys. Inject a crash after link publication and before temporary-name
-cleanup: the final target is complete and synced, the next initializer removes
-the safe alias and refuses to replace the final target. On a filesystem without
-the required lock/link/fsync guarantees, initialization returns
-`visitor_keyring_init_unsupported` with no target and no key bytes in output.
+replaces the target. The winner verifies final and temporary inode, length,
+digest, owner, mode, schema, and ids before reporting success. A link loser
+validates the winner, removes and syncs only its own temporary name, and prints
+no ids. An invalid winner yields `visitor_keyring_race_winner_invalid` without
+modifying it. Inject a crash before publication: no target exists, and the next
+initializer removes only the safe stale temporary file and succeeds with new
+keys. Inject a crash after link publication and before temporary-name cleanup:
+the final target is complete and synced, the next initializer verifies it,
+removes the safe alias, syncs the directory, and refuses to replace the final
+target. An unsafe orphan-shaped symlink or wrong-owner/mode file is never
+removed. On a filesystem without the required lock/link/fsync guarantees,
+initialization returns `visitor_keyring_init_unsupported` with no target and no
+key bytes in output.
 
 **A19 — Scoped operation collisions (`I9`, `I11`, `I12`).**
 
@@ -1109,8 +1176,10 @@ the exact single-use conflict without content or new audit.
 Exercise acceptance, invitation expiry, access expiry, self-revoke,
 broker-revoke, and target retirement before and after acceptance. Every row
 matches the closed transition matrix, every compare-and-set winner records one
-terminal time/reason, no terminal row reactivates, and no path updates or
-deletes the visitor principal.
+terminal time/reason, no terminal row reactivates, and no path changes or
+deletes a principal identity/provenance field. Acceptance exposes no state in
+which the invitation is accepted but the principal is absent/inactive, or the
+principal is active while the invitation remains pending.
 
 **A21 — Realized intermediary collision cannot recur (`I1`, `I6`, `I17`,
 `I21`).**
