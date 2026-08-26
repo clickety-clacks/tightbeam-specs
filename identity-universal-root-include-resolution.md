@@ -60,14 +60,20 @@ Its settled rulings are `resolve-both-shared-semantics`,
   guidance UTF-8 bytes.
 - **Candidate tree**: the identity working tree or exact Git commit proposed by
   one identity mutation seam before `tightbeam/live` moves.
+- **Candidate tree fingerprint**: the lowercase SHA-256 of the candidate tree's
+  entries in ascending UTF-8 path order, with each entry encoded as its path,
+  one NUL byte, and its raw file bytes. It is calculated without creating a
+  candidate commit.
 - **Canonical specification set**: this one-file set,
   `identity-universal-root-include-resolution.md`, in the `tightbeam-specs`
   repository. No companion specification is authoritative for this feature.
 - **Validation-publication marker**: one durable record at the existing
   `AdminProjection` publication-stamp seam. Its key is the operation invocation
-  ID, candidate commit OID, and expected prior `tightbeam/live` OID. Its fields
-  include principal, validation result, typed cause when denied, and terminal
-  state `accepted` or `denied`; it never contains guidance bytes.
+  ID and expected prior `tightbeam/live` OID (or `none` for fresh init). It
+  records the candidate commit OID after one exists; before a commit it records
+  the candidate tree fingerprint produced by the validator. Its fields include
+  principal, validation result, typed cause when denied, and terminal state
+  `accepted` or `denied`; it never contains guidance bytes.
 - **Include provenance**: the root origin plus every traversed
   `fragment-name`, source path, and one-based line number in include order.
 
@@ -189,13 +195,16 @@ published revision and every session's current context unchanged. This uses the
 existing identity mutation seam; no parallel validator or publisher is added.
 
 For a valid publish candidate, the gateway creates or reads the
-validation-publication marker keyed by the invocation, candidate OID, and
-expected prior live OID. It records `pending` only after validation succeeds,
+validation-publication marker keyed by the invocation and expected prior live
+OID. Pre-commit validation records its candidate tree fingerprint; the publish
+gate adds the exact candidate OID to that same marker. It records `pending` only after validation succeeds,
 then calls the existing `Identity.publish_live!` live-ref move with that expected
 prior OID, and finally marks the same record `accepted` through the existing
 `AdminProjection.stamp_publication` path. Repeating the invocation reads the
-same marker: an `accepted` marker is a no-op, and a `pending` marker reconciles
-the live ref before doing anything else. If the ref still equals the expected
+same marker: an `accepted` marker is a no-op; a `denied` marker is immutable and
+returns its recorded typed denial without validation, Git mutation, a new marker,
+or a terminal-state transition; and a `pending` marker reconciles the live ref
+before doing anything else. If the ref still equals the expected
 prior OID, replay validates the same candidate, advances that ref, and finalizes
 the marker. If the ref already equals the candidate OID, replay finalizes the
 marker without moving Git again. Any other ref value finalizes the marker
@@ -258,9 +267,11 @@ sole live pointer mutation remains publication of `tightbeam/live`.
    when the snapshot is rendered, then that root's rendered content occurs once
    and the automatic append omits it. Given a normal fragment included twice,
    when rendered, then its content occurs twice at the two directive positions.
-   Given guidance with two explicit occurrences of the same universal root,
-   when validation runs, then it rejects with `identity_include_invalid`, names
-   both directive provenance paths and lines, and returns no partial guidance.
+   Given each of a fixture with two direct occurrences of the same universal
+   root and a fixture whose direct occurrence and ordinary-fragment path both
+   reach that same root, when validation runs, then each rejects with
+   `identity_include_invalid`, names both directive provenance paths and lines,
+   and returns no partial guidance.
 
 4. Given nested valid includes, when rendered, then the output preserves
    ordinary-line order. Given each of a malformed include-like line, a missing
@@ -276,8 +287,9 @@ sole live pointer mutation remains publication of `tightbeam/live`.
    the canonical path first becomes visible with its complete required refs.
    Given an invalid candidate introduced through each other identity mutation
    class, when the operation reaches its commit boundary, then it reports denial,
-   records one denied validation-publication marker, restores or aborts its stated reversible state, and
-   preserves the prior `main` and `tightbeam/live` revisions. Given an invalid
+   records one denied validation-publication marker containing the candidate tree
+   fingerprint and no candidate commit OID, restores or aborts its stated reversible
+   state, and preserves the prior `main` and `tightbeam/live` revisions. Given an invalid
    exact candidate at the publication gate, when publication is attempted, then
    `tightbeam/live` remains unchanged. Given a valid publication that crashes
    after its pending marker and before the live-ref move, when the same
@@ -287,7 +299,9 @@ sole live pointer mutation remains publication of `tightbeam/live`.
    does not move Git again and leaves that same marker accepted. Given a replay
    whose ref differs from both expected prior and candidate OIDs, when it
    reconciles, then it leaves the ref unchanged and records one denied marker
-   with the typed conflict cause.
+   with the typed conflict cause. Given that same denied marker, when the same
+   invocation replays, then it returns the recorded typed denial without
+   validation, Git mutation, a new marker, or a terminal-state transition.
 
 6. Given an identity revision that is valid and published, when a session is
    provisioned, then its recorded revision, contract `universal-root-render-v1`,
