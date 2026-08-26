@@ -1,11 +1,28 @@
 # Reviewed spec binding for existing work items — v1
 
-- Status: PROPOSAL; target unset; pending one owner-opened independent exact-revision review
+- Status: AMENDED PROPOSAL; target unset; changes-requested review `att_a297a844-753d-4c55-881c-a12b37506997` addressed; pending one owner-opened independent exact-revision re-review
 - Work item: `wi_2cf1ce04-9fc9-4ffe-81a9-856ff5b00613`
 - Spec assignment: `asg_32f1d662-7f64-4e41-a5f2-4855d1eab286`
+- Review evidence: `art_fcba2f27`, SHA-256
+  `108ae4b95fb807836fb38e0269640004c0e57b3bd3aa70e0c72dc17e5164c9bd`
 - Current-main evidence pins: Tightbeam `7a70a2f616363074514237b5bee48ba67c52e2ea`;
-  tightbeam-specs `20d854ee66d18e051b12f6572ea5b251298e6784`
-- Pattern name: **reviewed spec binding**
+  tightbeam-specs `f738a424032dfba1e43145e4fd6291f5b1b00c23`
+
+## Spec Homing
+
+Canonical home: `github:clickety-clacks/tightbeam-specs/reviewed-spec-binding-v1.md`.
+
+Authority set: exactly this Spec Homing declaration plus the Goal, Non-Goals, Terms,
+Assumptions, Invariants, Architecture, Acceptance, and Open Questions sections in this
+canonical file. Header evidence, work-item rows, assignment rows, artifact pointers,
+attests, review reports, commit summaries, workdir copies, and conversations provide
+provenance or evidence. They do not supplement or override this file.
+
+Binding authority: none. This proposal remains targetless and unbound. It becomes product
+implementation authority only after an independent `reviewed-clean` verdict on its exact
+revision and separate owner authority. This proposal cannot self-bind through the missing
+seam and authorizes no live mutation. A material amendment supersedes the prior candidate
+bytes at this same canonical home.
 
 ## Goal
 
@@ -33,6 +50,10 @@ This feature must add a mechanism. Deleting the spec-reference surface would rem
 authority pin used by builders. Accepting the gap would leave an existing reviewed spec with
 no agent-reachable binding path.
 
+This spec teaches the **reviewed spec binding** operating pattern: an authorized owner
+selects structured spec and review evidence, and Tightbeam stores one immutable association
+without interpreting the evidence prose.
+
 ## Non-Goals
 
 - This spec does not bind `wi_c6589a66-33e2-43f3-ab84-1b21a5b8c6cf` or any other live item.
@@ -49,6 +70,8 @@ no agent-reachable binding path.
   behavior for an item that has no reviewed binding row.
 - This spec does not copy artifact paths, artifact descriptions, review notes, assignment
   subjects, or spec bytes into a binding response or event.
+- This spec does not add a durable outbox or retry mechanism for the existing metadata
+  doorbell callback.
 - This spec does not add guidance before the command ships. It teaches no new operating
   pattern beyond the existing spec-handoff rule to bind a reviewed hash before build work.
 - This proposal does not authorize product implementation. Implementation requires a clean
@@ -100,6 +123,10 @@ Decisions considered and declined:
 - **Exact evidence id**: The complete stored `artifactId` or attest `id`. Evidence fields
   use exact primary-key lookup and do not expand prefixes. The work-item argument retains
   its existing exact-or-unambiguous-prefix behavior.
+- **Transaction-owned accepted effect**: The generic handler result
+  `{:accepted_effect_in_txn, event_id, response}`. It proves that the handler's database
+  transaction committed its state and privacy-safe accepted audit before Dispatch returns
+  `response`. The handler transaction also owns the accepted firehose handoff.
 - **Row-verified**: Tightbeam checks the stored row values and relationships. It does not
   claim that the artifact digest was computed by Tightbeam or that review prose is correct.
 - **Bind**: Insert a binding row and set a null spec-reference pair to the exact requested
@@ -250,12 +277,12 @@ R11. Missing and caller-invisible work items have the same result.
   `work item not found`, before evidence lookup. An exact-id lookup must perform the same
   owner-or-admin check as a prefix lookup.
 
-R12. Binding or adoption commits the spec-reference pair, provenance, principal, time, and
-audit handoff in one transaction.
+R12. Binding or adoption commits the spec-reference pair, provenance, principal, time,
+accepted audit row, and accepted firehose handoff in one transaction.
 
 - Acceptance: Given an injected failure after any write or before the audit handoff, when
-  the transaction exits, then neither the sidecar row nor a new spec-reference value is
-  visible and no binding state event is published.
+  the transaction exits, then neither the sidecar row, a new spec-reference value, nor the
+  accepted audit row is visible, and no accepted or binding state event is published.
 
 R13. A null pair becomes the requested pair. An equal legacy pair is adopted. A different
 legacy pair is an immutable conflict.
@@ -315,24 +342,32 @@ R18. `work-item-get` returns a nullable top-level `specBinding` sibling of `work
   returns the exact stored name, digest, three evidence ids, two derived assignment ids,
   bound principal, and bind time.
 
-R19. A successful first bind or adoption emits one metadata doorbell, one committed
-`work_item.spec_bound` state event, and the existing accepted-verb audit.
+R19. A successful first bind or adoption has durable readback, one committed
+`work_item.spec_bound` state event, and one accepted-verb audit. After commit, Tightbeam
+makes at most one best-effort live metadata-doorbell attempt.
 
 - Acceptance: Given one successful first bind, when event rows and the live firehose are
-  inspected, then the doorbell names only the item and `metadata`; the state event uses the
-  work-item projection and `workItemId` primary reference; and the accepted audit result
-  carries the binding descriptor. The binding row and accepted audit name the selected
-  evidence cause. The binding row, state event refs, and accepted audit name the
-  authenticated principal. The existing metadata doorbell retains its
-  item-plus-`metadata` shape.
+  inspected, then the state event uses the work-item projection and `workItemId` primary
+  reference, and the accepted audit result carries the binding descriptor. The binding row
+  and accepted audit name the selected evidence cause. The binding row, state event refs,
+  and accepted audit name the authenticated principal. `work-item-get` supplies the
+  durable binding regardless of callback outcome. Given a working callback, one doorbell
+  attempt names only the item and `metadata`. Given an injected callback failure, no
+  doorbell is delivered, the command still returns the committed binding, and Tightbeam
+  schedules no callback retry.
 
-R20. Binding responses and events contain no spec or report content.
+R20. The new spec-reference fields, bind response, bind audit payload, and bind-specific
+firehose and CLI errors contain no spec or report content.
 
 - Acceptance: Given unique sentinels in the artifact path, artifact description, review
-  note, assignment subject, spec bytes, and report bytes, when bind succeeds, replays, and
-  refuses, then no sentinel outside the caller-supplied name, digest, or public ids appears
-  in the binding response, error, event, or audit payload. The response may contain the
-  requested name, digest, public ids, principal, time, and `changed` flag.
+  note, assignment subject, spec bytes, and report bytes, when bind succeeds, replays,
+  refuses, or raises after provenance load, then no non-request sentinel appears in
+  `workItem.specRefName`, `workItem.specRefSha256`, the `specBinding` object, bind response,
+  bind accepted or raised audit payload, or bind-specific firehose or CLI error.
+  `work-item-get.assignments` retains its baseline subjects under R22. The privacy test does
+  not scan preserved assignment subjects or the whole `work-item-get` response. The scoped
+  surfaces may contain the requested name, digest, public ids, principal, time, and
+  `changed` flag.
 
 R21. The binding survives gateway restart and replay without reconstruction.
 
@@ -451,11 +486,33 @@ The handler applies this order inside one serialized transaction:
    caller-selected artifact or report that is not that deterministic snapshot row.
 8. Set a null pair to the requested pair; leave an equal pair byte-identical.
 9. Insert the sidecar row with the derived assignment ids and authenticated principal.
-10. Append the accepted-verb audit row and queue its `verb.accepted` plus
-   `work_item.spec_bound` firehose handoffs on the transaction. A replay appends its
-   accepted audit row but suppresses the state handoff because `changed` is false.
-11. After commit, invoke the existing work-item metadata-doorbell callback once. Callback
-    failure does not roll back or retry the committed binding.
+10. Build the complete response. Append that response as the accepted-verb audit payload
+    with `EventLog.append_event_in_txn/8`, kind `verb`, `call.verb`, `call.origin`,
+    `call.session_key`, `call.principal`, and the transaction timestamp. Queue
+    `Publisher.accepted_in_txn/3` with the same response on that transaction. A replay
+    appends its accepted audit row but the publisher suppresses the state notice because
+    `changed` is false.
+11. After commit, make at most one best-effort invocation of the existing work-item
+    metadata-doorbell callback. Callback failure does not roll back or retry the committed
+    binding. Only a `changed: true` first bind or adoption enters this step. An exact replay
+    skips the callback.
+
+The handler returns this generic transaction-owned accepted effect after commit:
+
+```text
+{:accepted_effect_in_txn, event_id, response}
+```
+
+`event_id` is the positive id returned by `EventLog.append_event_in_txn/8`. `response` is
+the public binding response from section 4. Add the generic
+`Dispatch.accepted_effect_in_txn` return type and include it in the handler return type. Add
+one `dispatch_to_handler` branch before the existing assignment-specific
+`accepted_in_txn` branches and the ordinary-result branch. It requires a positive event id
+and a map response with no top-level `code`. It returns `{:ok, response}` without appending
+an event or publishing a notice. The handler transaction owns the sole accepted audit row
+and accepted firehose handoff. Dispatch owns neither for this effect. Existing
+assignment-specific tuples and other handler results retain their current behavior. This
+spec adds no second generic transaction-effect shape.
 
 The exact-replay comparison includes the name, digest, and three caller-selected evidence
 ids. The derived assignment ids, principal, and time come from the stored first bind and
@@ -503,6 +560,12 @@ the binding descriptor above. Its `verb.accepted` firehose observation retains t
 sanitized verb metadata shape. Denials use the existing denied-event path with a sanitized
 error descriptor.
 
+Add one raised-result branch for `work-item-bind-spec` before Dispatch's generic raised
+branch. It returns and audits exactly
+`{"code":"server_error","message":"work-item bind failed"}`. It does not call
+`Exception.message/1` for the response or event payload. It queues the existing denied
+firehose notice with that fixed descriptor. Other verbs retain the current raised behavior.
+
 ### 5. Error contract
 
 | Condition | Result | HTTP |
@@ -515,7 +578,7 @@ error descriptor.
 | First bind or adoption on non-open item | `work_item_not_open` | 400 |
 | Existing different pair or binding | `spec_binding_conflict` | 409 |
 | Missing, foreign, mismatched, stale, non-clean, or non-independent provenance | `spec_provenance_unverified` | 400 |
-| Unexpected exception | existing `server_error` envelope | 500 |
+| Unexpected exception | `server_error`, fixed message `work-item bind failed` | 500 |
 
 `spec_binding_conflict` names the remedy: read the existing binding and open a separate
 owner decision if a new governing spec is required. This MVP supplies no rewrite verb.
@@ -529,8 +592,9 @@ caller to supply same-item structured evidence.
 | R1-R2, R4-R17, R21-R22 | new binding domain module plus bounded work-item metadata guard | domain and schema tests |
 | R3-R4, R23 | router and Rust CLI parser/request builder/help | router, Rust unit, and CLI integration tests |
 | R18 | work-item detail query | domain, route, and CLI integration tests |
-| R19-R20 | gateway callback and firehose registry/publisher | event-log, firehose, and redaction tests |
-| R12, R15-R17 | one transaction and replay branch | injected-failure and barrier-controlled concurrency tests |
+| R12, R15, R19 | generic transaction-owned accepted effect, event log, and publisher | exact-once audit and firehose tests |
+| R19-R20 | gateway callback, Dispatch raised branch, and firehose registry/publisher | callback, event-log, firehose, and redaction tests |
+| R12, R15-R17 | one domain transaction and replay branch | injected-failure and barrier-controlled concurrency tests |
 | R21 | file-backed gateway and built release CLI | executable restart/replay smoke |
 
 The executable smoke uses a fresh file-backed gateway and the built release CLI. Through
@@ -541,6 +605,24 @@ with outcome `completed`, in that order. The owner binds, reads the result, rest
 gateway on the same database, reads again, repeats the exact command, and attempts one
 conflicting command. The smoke asserts one binding row, one state event, stable principal
 and timestamp, no sentinel leakage, and cleanup of the fresh run directory.
+
+The audit-ownership test runs one first bind and one replay through Dispatch's generic
+transaction-owned accepted-effect branch. It asserts one accepted audit row per call, one
+`verb.accepted` notice per call, one total `work_item.spec_bound` notice, and no post-handler
+audit append. It also proves that the existing assignment-specific accepted tuples retain
+their baseline results. An injected failure after the sidecar insert but before
+`EventLog.append_event_in_txn/8` proves that the binding, projection, audit, and notices
+roll back together.
+
+The callback test injects one successful callback and one raising callback on separate
+first-bind fixtures. It asserts one attempt and one delivered doorbell in the first case.
+It asserts one attempt, zero delivered doorbells, no retry, and an otherwise committed
+binding, audit, and state event in the second case. An exact replay on each fixture makes
+zero additional callback attempts.
+
+The raised-path test injects an exception after a provenance row containing unique path,
+description, note, and subject sentinels has loaded. It asserts the fixed caller error,
+fixed durable audit payload, sanitized denied notice, no sentinel, and no binding write.
 
 The concurrency test releases two calls at one barrier and exercises both equal and
 different five-field identities, then releases a binder and raw metadata update at one
@@ -612,17 +694,20 @@ AC5 — Replay, conflict, and concurrency:
 
 AC6 — Atomicity and no history rewrite:
 
-- Given injected failures at each transaction seam and raw attempts to clear or replace a
-  reviewed pair,
+- Given injected failures at each transaction seam, the generic transaction-owned accepted
+  effect, and raw attempts to clear or replace a reviewed pair,
 - When the calls finish,
-- Then no partial binding exists and no committed reviewed binding changes.
+- Then no partial binding exists, no successful call lacks its accepted audit row, Dispatch
+  appends no duplicate audit row, and no committed reviewed binding changes.
 
 AC7 — Readback, audit, and redaction:
 
 - Given a successful bind with unique content and prose sentinels,
-- When get, event, audit, replay, and denial paths run,
-- Then get returns the exact descriptor after restart; the event counts and causes match
-  R19; and no non-request sentinel appears outside the original artifact and report bytes.
+- When get, callback success, callback failure, event, audit, replay, denial, and injected
+  raised paths run,
+- Then get returns the exact descriptor after restart; `get.assignments` remains the
+  baseline projection; the audit, state-event, and callback counts match R19; the raised
+  path returns the fixed error; and no new surface contains a non-request sentinel.
 
 AC8 — Compatibility:
 
