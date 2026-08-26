@@ -21,13 +21,27 @@ filter.)
 
 Agent-facing (demanded by the shipped engineering-kungfu kernels/skills):
 - **wake / cancel-wake** — comms-clock correspondence (kungfu: 24+ references).
-- **attest / attests** — progress, completion, surrender, verdicts; reading an
-  assignment's attest history (kungfu: 26 references; the flagship rail's
-  vocabulary).
+- **attest / attests** — progress, completion, surrender, verdicts, sourced
+  notes, and evidence-backed findings; reading an assignment's authorized
+  attest history (kungfu: 26 references; the flagship rail's vocabulary;
+  named consumer: operating manual `Track work` → `Successor intake`; landing
+  contract: durable-operational-knowledge-successor-inheritance).
 - **assign / assignments / dispatch / revoke-assignment** — commissioning,
   reading, and revoking work when the existing assignment handler authorizes
-  the caller (kungfu: 14 references; feature-cycle skill;
-  effort-without-effect-checkin-v1 §5).
+  the caller, plus using a named one-use successor cleanup grant (kungfu: 14
+  references; feature-cycle skill; effort-without-effect-checkin-v1 §5;
+  named consumer: operating manual `Track work` → `Successor intake`; landing
+  contract: durable-operational-knowledge-successor-inheritance).
+- **successor-inherit / successor-inheritance-get** — create and read an
+  explicit reference edge from predecessor history to a successor assignment
+  without transferring custody or authority (named consumer: operating manual
+  `Track work` → `Successor intake`; landing contract:
+  durable-operational-knowledge-successor-inheritance).
+- **successor-action-grant** — an already-authorized grantor names one
+  successor session that can revoke one predecessor assignment through
+  `revoke-assignment --successor-grant` (named consumer: operating manual
+  `Track work` → `Successor intake`; landing contract:
+  durable-operational-knowledge-successor-inheritance).
 - **effort-rule** — parent adjudication of an effort-without-effect request,
   limited to `continue|dismiss` (effort-without-effect-checkin-v1 §5).
 - **decision-requests** — read the decision requests visible to the caller so

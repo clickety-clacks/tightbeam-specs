@@ -1,10 +1,12 @@
 # Durable operational knowledge and successor inheritance
 
-Status: FROZEN FOR INDEPENDENT EXACT-ARTIFACT REVIEW
+Status: FROZEN FOR INDEPENDENT EXACT-ARTIFACT RE-REVIEW
 
 Work item: `wi_c4f5112b-a8c4-43a2-b630-e35e933b1bf1`
 
 Writer assignment: `asg_a9a35dc7-7d49-4c52-95a0-da9088b5ecc4`
+
+Review finding: `att_4bec5fe0-c6fb-4f9f-aac8-3194ca07deee`
 
 Controlling product ruling: `art_ee8fb9f6`, SHA-256
 `ecb727ef853eccb74597a11ff61eab0c6312b42936625651b33b1a4f16df7b2b`
@@ -86,8 +88,19 @@ generic delegated-capability engine does not exist in this MVP.
   is not inherited custody.
 - **Cleanup grant:** An append-only authorization row for the sole action
   `revoke-predecessor-assignment`.
+- **Grantor:** The typed principal that creates a cleanup grant after the
+  existing revocation check accepts it for both named assignments.
+- **Grant user:** The successor holder session named by a cleanup grant. It is
+  the only session that can use that grant.
 - **Grant use:** The append-only row written in the same transaction that uses
   a cleanup grant to revoke its target assignment.
+- **Causal source:** The typed durable row that directly explains a mutation.
+  Each top-level row stores it as non-null `causalSourceKind` and
+  `causalSourceId` fields.
+- **Typed principal:** A stored kind-and-ID pair. Creator and grantor kinds are
+  `user` or `session`; an administrator retains its actual user or session kind
+  instead of becoming an `administrator` kind. A knowledge writer and grant
+  user are sessions and use the existing session-key fields.
 - **Readable:** An authorized caller can query the original row and its
   provenance.
 - **Citable:** The original stable ID can appear in an assignment, attest,
@@ -159,13 +172,33 @@ generic delegated-capability engine does not exist in this MVP.
     closes. The inheritance edge is not the eligibility source.
 17. The schema stores no heuristic, confidence score, priority, truth score,
     expiry, or age threshold for knowledge.
-18. Each top-level mutation row written by this spec records its cause and
-    typed principal. A child reference or selection row derives both fields
+18. Each top-level mutation row written by this spec stores non-null
+    `causalSourceKind` and `causalSourceId` fields and its typed principal. A
+    child reference or selection row derives those fields and that principal
     through its immutable parent foreign key.
 
 ## Architecture
 
-### 1. Existing authority and additive scope
+### 1. Spec home, companion authority, and additive scope
+
+The canonical repository is
+`https://github.com/clickety-clacks/tightbeam-specs`. The canonical
+repo-relative primary path is
+`durable-operational-knowledge-successor-inheritance.md`.
+The exact primary-file SHA-256 recorded by Tightbeam identifies each review
+round. The canonical companion set for this feature is:
+
+- `attest-v1.md`, which owns the existing attest wire and persistence contract;
+- `work-item-v1.md`, which owns work-item authorization and trace behavior;
+- `cli-surface-v1.md`, which owns the lawful CLI families and their named
+  consumers.
+
+This primary file controls the additive behavior named here. Each companion
+continues to control behavior outside that additive scope. The frozen Git
+commit recorded with the artifact must contain this primary file and the
+required `cli-surface-v1.md` amendment. Implementation must amend the attest
+and work-item companions to conform before builder handoff; it cannot replace
+this reviewed primary contract with those derived amendments.
 
 This spec extends `attest-v1.md` and `work-item-v1.md`. It preserves the
 current review-verdict resolver and the current assignment lifecycle. It adds
@@ -178,14 +211,31 @@ an exact-row selection. `SuccessorInheritance.grant_cleanup` owns a cleanup
 grant. `Assignments.revoke` owns the atomic grant use and target revocation.
 No second mutation seam writes those rows.
 
+Each top-level mutation uses the same causal-source column names and this
+closed value set:
+
+| Top-level row | `causalSourceKind` | `causalSourceId` |
+|---|---|---|
+| knowledge attest | `assignment` | its `assignmentId` |
+| successor inheritance | `predecessor_assignment` | its `predecessorAssignmentId` |
+| cleanup grant | `successor_inheritance` | its `inheritanceId` |
+| cleanup use | `successor_action_grant` | its `grantId` |
+
+The database CHECK for each table enforces its row in this table. Public
+mutation responses and `work-item-trace` use these exact field names and
+values.
+
 This spec establishes the pattern **reference inheritance** for operational
 knowledge on one work item. It applies to `note`, `finding`, and citable
 holder-filed `verdict` rows. It does not apply to credentials, role bindings,
 assignment custody, policy, guidance, condition facts, or arbitrary artifacts.
 
-This spec teaches no new agent guidance pattern. CLI help will describe the
-mechanics. A later guidance change requires the existing reviewed guidance
-path.
+This spec teaches one operating pattern: an opener that dispatches successor
+work can attach an explicit inheritance edge; the successor reads and cites
+the referenced history before deciding its own work; a cleanup action uses an
+explicit grant. The implementation must land this pattern in the shipped
+operating manual through the reviewed guidance path before or in the same
+change that exposes the commands. Section 9 names the exact consumer text.
 
 ### 2. Knowledge attest contract
 
@@ -230,8 +280,10 @@ Check A2: Given a finding carries either field, when the holder files it, then
 Tightbeam returns `invalid_knowledge_field` and writes nothing.
 
 R5. The response for a knowledge attest adds `workItemId`, `evidenceRefs`,
-`currency`, `replacedByAttestId`, and `currentAttestId` to the existing attest
-shape. Existing attest kinds retain their current response fields.
+`currency`, `replacedByAttestId`, `currentAttestId`, `causalSourceKind`, and
+`causalSourceId` to the existing attest shape. `causalSourceKind` equals
+`assignment`, and `causalSourceId` equals the knowledge attest's
+`assignmentId`. Existing attest kinds retain their current response fields.
 
 Check A1: Given a current note, when an authorized caller reads it, then
 `currency=current`, `replacedByAttestId=null`, and `currentAttestId` equals the
@@ -247,7 +299,11 @@ progress | completion | surrender | verdict | note | finding
 
 The `attests` table keeps the original immutable row. For `note` and
 `finding`, `bySession` is required, `byUser` is null, `verdictKind` is null,
-`commitRefs` is null, and `note` is required.
+`commitRefs` is null, and `note` is required. Add nullable
+`causalSourceKind` and `causalSourceId` columns to `attests`. A `note` or
+`finding` row requires `causalSourceKind=assignment` and
+`causalSourceId=assignmentId`. A pre-existing attest kind requires both
+columns to be null.
 
 Add `knowledge_evidence_refs`:
 
@@ -310,9 +366,10 @@ Tightbeam returns `conflicting_currency_relation` and writes nothing.
 
 ### 4. Work-item visibility and reads
 
-R10. A knowledge read uses the existing `work-item-trace` owner/admin
+R10. The `work-item-trace` knowledge arrays and
+`successor-inheritance-get` use the existing `work-item-trace` owner/admin
 authorization. An unauthorized caller receives the existing indistinguishable
-`not_found` response.
+`not_found` response before either surface queries knowledge content.
 
 Check A4: Given two users own separate work items, when one user queries the
 other item's knowledge through each new read surface, then each query returns
@@ -321,12 +378,14 @@ other item's knowledge through each new read surface, then each query returns
 R11. `work-item-trace` adds two deterministic arrays:
 `knowledgeAttests` ordered by `ts,id`, and `successorInheritances` ordered by
 `createdAt,id`. Its timeline adds creation rows for knowledge currency,
-inheritance, cleanup grant, and cleanup use.
+inheritance, cleanup grant, and cleanup use. Each top-level creation row
+returns `causalSourceKind`, `causalSourceId`, the stored typed principal, and
+the human `reason` when that mutation accepts one.
 
-Check A4: Given one row of each new type, when the owner reads the trace, then
-the arrays and timeline identify the original IDs, typed principal, cause, and
-creation time. A child evidence, currency, or selection row derives principal
-and cause from its immutable parent.
+Check A18: Given one row of each new top-level type, when the owner reads the
+trace, then the arrays and timeline identify the original IDs, typed
+principal, exact causal-source pair, and creation time. A child evidence,
+currency, or selection row derives those fields from its immutable parent.
 
 R12. The existing `attests <assignment>` read returns `note` and `finding`
 rows only when the caller passes the linked work item's knowledge-read
@@ -398,11 +457,12 @@ successor row and identifies the current leaf.
 R18. The inheritance row records `id`, `workItemId`,
 `predecessorAssignmentId`, `predecessorSessionKey`,
 `successorAssignmentId`, `successorSessionKey`, `selectionKind`, `reason`,
-typed creator, `createdAt`, idempotency key, and request fingerprint. `reason`
-contains 1 through 2,000 Unicode code points. `idempotencyKey` contains 1
-through 200 characters. The request fingerprint is the lowercase SHA-256 of
-the canonical JSON mutation parameters after excluding `idempotencyKey` and
-the identity envelope.
+`creatorKind`, `creatorId`, `causalSourceKind=predecessor_assignment`,
+`causalSourceId=predecessorAssignmentId`, `createdAt`, idempotency key, and
+request fingerprint. `reason` contains 1 through 2,000 Unicode code points.
+`idempotencyKey` contains 1 through 200 characters. The request fingerprint is
+the lowercase SHA-256 of the canonical JSON mutation parameters after
+excluding `idempotencyKey` and the identity envelope.
 
 Check A5: Given the create succeeds, when the owner reads the edge, then each
 field equals the committed source row or request and neither session row has
@@ -421,9 +481,12 @@ successor reads the edge, then the original rows and retired source session key
 remain readable.
 
 Add `successor_inheritances` and `successor_inheritance_rows`. The edge ID uses
-the `inh_` prefix. Database constraints preserve typed creator columns and the
-selection-kind shape. `successor_inheritance_rows` stores only edge ID and
-attest ID.
+the `inh_` prefix. The edge table requires `creatorKind`, `creatorId`,
+`causalSourceKind`, and `causalSourceId`; its CHECK fixes the causal-source
+pair to `predecessor_assignment` and the row's predecessor assignment ID.
+Database constraints preserve the typed creator and selection-kind shape.
+`successor_inheritance_rows` stores only edge ID and attest ID and derives
+creator and causal source through its edge foreign key.
 
 An idempotent replay with the same typed principal, operation, key, and request
 fingerprint returns the canonical edge. Reuse with a different fingerprint returns
@@ -448,26 +511,31 @@ optional `successorGrantId` parameter.
 
 R20. The sole MVP action kind is `revoke-predecessor-assignment`. Its target
 must equal the inheritance edge's predecessor assignment. The predecessor and
-successor assignments must both be open at grant creation. Its actor must
-equal the holder of the edge's successor assignment.
+successor assignments must both be open at grant creation. Grant creation
+derives `authorizedSessionKey` from the successor assignment's holder. That
+session is the grant user. The request principal is the grantor and need not
+equal the grant user.
 
-Check A7: Given a grant names another assignment or another session attempts
-to use it, when the request runs, then Tightbeam returns `grant_scope_mismatch`
-and leaves the assignments and grant-use table unchanged.
+Check A7: Given a grant names another assignment or a session other than its
+stored grant user attempts to use it, when the request runs, then Tightbeam
+returns `grant_scope_mismatch` and leaves the assignments and grant-use table
+unchanged.
 
 R21. Grant creation calls the existing `revoke-assignment` authorization for
-the target predecessor assignment and for the successor assignment. A
-principal rejected by either check cannot create the grant. This lets the
-grantor invalidate an unused grant through an existing lawful revocation path.
+the target predecessor assignment and for the successor assignment against
+the typed grantor. A grantor rejected by either check cannot create the grant.
+This lets the grantor invalidate an unused grant through an existing lawful
+revocation path.
 
 Check A7: Given the target was opened by session `P`, when unrelated session
 `Q` tries to grant cleanup, then Tightbeam returns `not_authorized` and writes
 nothing. Given the grantor can revoke the predecessor but not the successor,
 grant creation returns the same refusal.
 
-R22. A valid grant is usable only while the predecessor target and successor
-assignment remain open. Closing either assignment makes the grant ineffective
-without deleting its row.
+R22. The stored grant user can use a valid grant only while the predecessor
+target and successor assignment remain open and while that session remains
+the successor assignment's holder. Closing either assignment makes the grant
+ineffective without deleting its row.
 
 Check A7: Given the successor assignment surrenders before grant use, when its
 former holder supplies the grant, then Tightbeam returns
@@ -475,7 +543,10 @@ former holder supplies the grant, then Tightbeam returns
 
 R23. A successful grant use inserts one `successor_action_uses` row and revokes
 the predecessor assignment in one transaction. The use records the grant,
-action, target, successor assignment, acting session, cause, and time.
+action, target, successor assignment, `actingSessionKey`,
+`causalSourceKind=successor_action_grant`, `causalSourceId=grantId`, and time.
+The existing revoke response adds `successorGrantId` and those causal-source
+fields when a grant performs the revocation.
 
 Check A8: Given fault injection after the use insert and before predecessor
 closure, when the transaction aborts, then neither the use nor revocation is
@@ -491,8 +562,12 @@ one returns the revoked assignment and the other returns
 
 Add `successor_action_grants` and `successor_action_uses`. Grant IDs use the
 `sag_` prefix. A grant row records the inheritance, action, target assignment,
-successor assignment, typed grantor, reason, creation time, idempotency key,
-and fingerprint. A use row has `grantId` as its primary key.
+successor assignment, `authorizedSessionKey`, `grantorKind`, `grantorId`,
+reason, `causalSourceKind=successor_inheritance`,
+`causalSourceId=inheritanceId`, creation time, idempotency key, and
+fingerprint. A use row has `grantId` as its primary key and derives the grantor
+through that foreign key. `successor-action-grant` returns the stored grantor,
+grant user, and causal-source fields.
 
 A grant create replay uses the same typed-principal, operation, key, and
 fingerprint contract as inheritance creation. Its reason, key, and fingerprint
@@ -587,9 +662,27 @@ Check A13: Given each CLI form, when the CLI integration harness captures its
 dispatch body, then the verb and camelCase parameters match this contract and
 stdout contains the gateway's canonical JSON response.
 
-The implementation must amend `cli-surface-v1.md` with the named consumers:
-the durable-knowledge operating-history reader and explicit successor cleanup.
-It must not amend agent guidance in the implementation lane.
+This spec's frozen commit amends `cli-surface-v1.md` with the lawful command
+families. Their named shipped consumer is `priv/guidance/operating-manual.md`,
+section `Track work: work-items, assignments, facts`. Before or in the same
+change that exposes the commands, implementation must add a `Successor intake`
+paragraph there with these exact actions:
+
+1. A holder files a `note` for a sourced observation or a `finding` for an
+   evidence-backed judgment with `attest --evidence-refs`; it does not use
+   either kind as a progress or verdict substitute.
+2. After dispatching a successor assignment, an authorized opener creates an
+   inheritance edge only when it intends to preserve named predecessor history.
+3. A successor whose assignment or wake names an `inh_` ID calls
+   `successor-inheritance-get` before deciding whether to repeat prior work. It
+   cites original attest IDs and treats their text as advice, not authority.
+4. A successor calls `revoke-assignment --successor-grant` only with a named
+   `sag_` grant. The grant changes no other verb authority.
+
+The same implementation change must add command examples to CLI help. The
+manual amendment uses the existing reviewed guidance path. The CLI surface,
+manual consumer, and executable commands must land together; omitting one
+keeps the command family outside the lawful shipped surface.
 
 ### 10. Traceability
 
@@ -607,6 +700,7 @@ It must not amend agent guidance in the implementation lane.
 | Surrendered-card authorization continuity | R13-R19 | A15 |
 | Reviewed-clean consumption after closure | R25-R26 | A16 |
 | Findings prevent investigation restart | R1-R19, R27 | A17 |
+| Typed principal and causal source | R5, R11, R18, R20-R23 | A18 |
 
 ## Acceptance
 
@@ -668,21 +762,24 @@ does not remove those rows. The read stores no successor-owned copy.
 ### A7 — A cleanup grant has exact authority
 
 Given opener session `O` can revoke open predecessor assignment `P`, successor
-assignment `S` is open, `O` can also revoke `S`, and inheritance `I` connects `P` to `S`, when `O`
-creates grant `G` for `revoke-predecessor-assignment`, then `G` names `I`,
-`P`, `S`, `S`'s holder, `O`, cause, and creation time. Another target, another
-actor, a closed `S`, and a principal that cannot revoke either `P` or `S` each
-produce the specified refusal and no grant row. Replaying the exact request
-with the same typed principal and key returns `G`. Changing `reason` while
-reusing that tuple returns `idempotency_conflict` and writes no row.
+assignment `S` is open and held by session `H`, `O` can also revoke `S`, and
+inheritance `I` connects `P` to `S`, when grantor `O` creates grant `G` for
+`revoke-predecessor-assignment`, then `G` names `I`, `P`, `S`, grant user `H`,
+grantor `O`, `successor_inheritance/I`, and creation time. `O` does not become
+the grant user. Another target, use by another session, a closed `S`, and a
+grantor that cannot revoke either `P` or `S` each produce the specified refusal
+and no grant or use row. Replaying the exact request with the same typed
+grantor and key returns `G`. Changing `reason` while reusing that tuple returns
+`idempotency_conflict` and writes no row.
 
 ### A8 — Cleanup use is one atomic action
 
 Given A7 and the holder of `S` calls `revoke-assignment P --successor-grant G`,
 when the transaction commits, then `P` is closed with outcome `revoked` and one
-use row names `G`, `P`, `S`, and the acting session. Replaying `G` returns
-`assignment_closed`. Fault injection and a race with ordinary revocation leave
-no orphan use row and no double close.
+use row names `G`, `P`, `S`, the acting session, and
+`successor_action_grant/G`. Replaying `G` returns `assignment_closed`. Fault
+injection and a race with ordinary revocation leave no orphan use row and no
+double close.
 
 ### A9 — Knowledge and inheritance cannot execute
 
@@ -722,6 +819,10 @@ Given valid and invalid invocations of the new CLI forms, when the CLI harness
 captures requests, then valid calls use the exact verbs and camelCase fields in
 this spec. Invalid local syntax sends no request. Gateway refusals use stderr,
 exit 1, and canonical JSON error details under the existing CLI convention.
+Given a build exposes either successor command family, when the CLI surface
+and shipped guidance are inspected, then `cli-surface-v1.md` names that family
+and `priv/guidance/operating-manual.md` contains the four `Successor intake`
+actions from R31. A build missing either landing fails surface conformance.
 
 ### A14 — Observed failure 1: predecessor cleanup revocation authority
 
@@ -731,9 +832,10 @@ to revoke both assignments nor an administrator, when that holder calls
 ordinary `revoke-assignment P`, then the existing `not_authorized` refusal
 remains. When a shared authorized opener or an administrator creates exact
 grant `G` after passing the existing revocation check for both `P` and `S`, and
-the holder retries with `G`, then A8 closes `P` and records the grant use. No
-principal authorized for both assignments and no explicit grant means no
-revocation.
+the stored grant user retries with `G`, then A8 closes `P` and records the
+grant use. The opener or administrator is the grantor; the holder of `S` is the
+grant user. No principal authorized for both assignments and no explicit grant
+means no revocation.
 
 ### A15 — Observed failure 2: authorization across a surrendered card
 
@@ -750,9 +852,11 @@ still requires A7.
 ### A16 — Observed failure 3: reviewed-clean after review closure
 
 Given review assignment `R` links to producer assignment `P`, `R`'s holder
-files verdict `V=reviewed-clean`, and `R` later completes, when the successor
-inherits exact row `V`, then an authorized read returns `V` from `R` with its
-author and review link. When `P`'s existing gate calls
+files verdict `V=reviewed-clean`, `R` later completes, and open successor
+assignment `S` belongs to the same work item, when an authorized principal
+creates an exact-row inheritance edge from predecessor `R` to successor `S`
+that selects `V`, then an authorized read returns `V` from `R` with its author
+and review link. When `P`'s existing gate calls
 `qualifying_review_verdict_kinds`, it returns `reviewed-clean` from `V` without
 checking `R.state`. When an unrelated assignment inherits `V`, that edge does
 not make `V` qualify for the unrelated assignment.
@@ -766,6 +870,18 @@ evidence, `F1=revalidated`, and `F2=current`. Tightbeam records the read only
 through existing query audit behavior. It neither tells `SS` to accept the
 finding nor starts an investigation. `SS` can cite `F2` in its own assignment
 or filing and decide whether new evidence warrants more investigation.
+
+### A18 — Each mutation exposes typed cause and principal
+
+Given holder `H` files knowledge attest `N` on assignment `A`, owner session
+`O` creates inheritance `I` from predecessor `P`, `O` creates cleanup grant
+`G` from `I`, and grant user `H` uses `G`, when the work-item owner reads each
+mutation response and the work-item trace, then `N` reports `assignment/A` and
+creator `session/H`; `I` reports `predecessor_assignment/P` and creator
+`session/O`; `G` reports `successor_inheritance/I`, grantor `session/O`, and
+grant user `H`; and the use reports `successor_action_grant/G` and acting
+session `H`. Each evidence, currency, and exact-selection child resolves the
+same causal-source and principal fields through its parent foreign key.
 
 ## Open Questions
 
