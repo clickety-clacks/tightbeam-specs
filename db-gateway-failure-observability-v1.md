@@ -17,6 +17,26 @@ doorbells. `job-trace-observability-v1.md` remains the authority for work-item
 trace. This spec owns only DB-call, HTTP-request, CLI-transport, and listener
 failure evidence.
 
+## Spec homing
+
+The canonical set for this feature contains exactly this file,
+`db-gateway-failure-observability-v1.md`, in the
+`clickety-clacks/tightbeam-specs` repository. `observability-v1.md` and
+`job-trace-observability-v1.md` remain authority inputs, not custody companions.
+Recon artifacts, review reports, artifact rows, transcripts, branches, and
+worktree copies are evidence, not canonical custody.
+
+Independent review `att_4ca2e514-6fc9-4d15-8c8d-705c007240a8` against commit
+`bdda4058904500cc11273edd8031e06e033452bb` requested the canonical-home
+declaration and the closed edge-operation registries. The full report is
+`art_9e7aff68`, SHA-256
+`5cbd95c0fdf2bad06b1913da9410cc4abf1208d2e84e11dca5040f7843b39a15`.
+This amendment adds only those two closures. It remains a proposal until an
+independent review clears its exact file SHA-256. After that verdict, the work
+item binds this path and hash. A material amendment edits this file, receives a
+new content hash, and passes a fresh exact-revision review before the binding
+changes.
+
 ## Goal
 
 Give an operator enough privacy-safe evidence to distinguish these outcomes
@@ -63,8 +83,9 @@ observe.
 
 ## Terms
 
-- **Transport attempt**: one CLI attempt to send one HTTP request. A DNS-only
-  retry is a second transport attempt with a new request ID.
+- **Transport attempt**: one CLI attempt to send one Tightbeam-gateway HTTP
+  request. A DNS-only retry is a second transport attempt with a new request
+  ID.
 - **Request ID**: a privacy-safe correlation value for one transport attempt.
   It is not an idempotency key and never authorizes an action.
 - **DB call ID**: a privacy-safe correlation value for one message sent to
@@ -73,11 +94,12 @@ observe.
   names the product action, such as `transcript.page`; it is never derived from
   SQL text.
 - **Transport operation**: a stable name from the closed CLI-operation
-  registry. It names the invoked command or dispatch verb without arguments or
-  payload values.
+  registry in R1. It names the invoked CLI command without arguments or payload
+  values. Provider API calls and SSH subprocesses are outside this registry.
 - **HTTP operation**: a stable name from the closed route-operation registry.
-  A DB timeout uses the matching DB operation. Another terminal response uses
-  its route action without path parameters or request values.
+  It identifies one method and route template without path parameters or
+  request values. A DB-timeout error body separately carries the matching DB
+  operation.
 - **Operation name**: any DB, transport, or HTTP operation above. Each is an
   ASCII registry value of at most 96 bytes and matches
   `[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+`.
@@ -232,12 +254,118 @@ succeeds. Before that point, `principal_kind` is `unknown` and `principal_ref`
 is null. Resolved references use only the exact principal-reference forms in
 Terms. No diagnostic record copies an authentication token to fill this gap.
 
+The closed transport-operation registry is the following exact mapping. Each
+listed method/path is a Tightbeam-gateway request that the command can issue.
+
+| Current CLI command | Operation | Gateway method/path |
+|---|---|---|
+| `Help` | `cli.help` | cache-miss `GET /harnesses` |
+| `CommandHelp` | `cli.command_help` | cache-miss `GET /harnesses` |
+| `Doctor` | `cli.doctor` | `GET /harnesses` |
+| `Wake` | `cli.wake` | `POST /agent/dispatch` |
+| `Condition` | `cli.condition` | `POST /agent/dispatch` |
+| `ArtifactRecord` | `cli.artifact_record` | `POST /agent/dispatch` |
+| `Artifacts` | `cli.artifacts` | `POST /agent/dispatch` |
+| `ToolCallObserved` | `cli.tool_call_observed` | `POST /agent/tool-call-observed` |
+| `Spawn` | `cli.spawn` | optional cache-miss `GET /harnesses`; `POST /agent/dispatch` |
+| `Tune` | `cli.tune` | optional cache-miss `GET /harnesses`; `POST /agent/dispatch` |
+| `List` | `cli.list` | `POST /agent/dispatch` |
+| `Retire` | `cli.retire` | `POST /agent/dispatch` |
+| `Assign` | `cli.assign` | `POST /agent/dispatch` |
+| `Dispatch` | `cli.dispatch` | `POST /agent/dispatch` |
+| `EffortRule` | `cli.effort_rule` | `POST /agent/dispatch` |
+| `DecisionRequests` | `cli.decision_requests` | `POST /agent/dispatch` |
+| `Ask` | `cli.ask` | `POST /agent/dispatch` |
+| `Answer` | `cli.answer` | `POST /agent/dispatch` |
+| `ReturnRequest` | `cli.return_request` | `POST /agent/dispatch` |
+| `RevokeAssignment` | `cli.revoke_assignment` | `POST /agent/dispatch` |
+| `ReopenAssignment` | `cli.reopen_assignment` | `POST /agent/dispatch` |
+| `WorkItemCreate` | `cli.work_item_create` | `POST /agent/dispatch` |
+| `WorkItemGet` | `cli.work_item_get` | `POST /agent/dispatch` |
+| `WorkItemTrace` | `cli.work_item_trace` | `POST /agent/dispatch` |
+| `Attend` | `cli.attend` | `POST /agent/dispatch` |
+| `Transcript` | `cli.transcript` | `POST /agent/dispatch` |
+| `TurnTrace` | `cli.turn_trace` | `POST /agent/dispatch` |
+| `Toplines` | `cli.toplines` | `POST /agent/dispatch` |
+| `Topline` | `cli.topline` | `POST /agent/dispatch` |
+| `WorkItemIcebox` | `cli.work_item_icebox` | `POST /agent/dispatch` |
+| `WorkItemReopen` | `cli.work_item_reopen` | `POST /agent/dispatch` |
+| `WorkItemClose` | `cli.work_item_close` | `POST /agent/dispatch` |
+| `WorkItemFail` | `cli.work_item_fail` | `POST /agent/dispatch` |
+| `Attest` | `cli.attest` | `POST /agent/dispatch` |
+| `Attests` | `cli.attests` | `POST /agent/dispatch` |
+| `CoordinationShare` | `cli.coordination_share` | `POST /agent/dispatch` |
+| `DigestMembers` | `cli.digest_members` | `POST /agent/dispatch` |
+| `Assignments` | `cli.assignments` | `POST /agent/dispatch` |
+| `CancelWake` | `cli.cancel_wake` | `POST /agent/dispatch` |
+| `IdentityEdit` | `cli.identity_edit` | `POST /agent/dispatch` |
+| `IdentityStatus` | `cli.identity_status` | `POST /agent/dispatch` |
+| `IdentityRelearn` | `cli.identity_relearn` | `POST /agent/dispatch` |
+| `IdentityRepoint` | `cli.identity_repoint` | `POST /agent/dispatch` |
+| `IdentityApply` | `cli.identity_apply` | `POST /agent/dispatch` |
+| `Learn` | `cli.learn` | `POST /agent/dispatch` |
+| `Unlearn` | `cli.unlearn` | `POST /agent/dispatch` |
+| `KungfuList` | `cli.kungfu_list` | `POST /agent/dispatch` |
+| `Onboard` | `cli.onboard` | gateway phases and operator wake: `POST /agent/dispatch`; optional cache-miss `GET /harnesses` |
+| `AddUser` | `cli.add_user` | remote dispatch only: `POST /agent/dispatch` |
+| `ConfigGet` | `cli.config_get` | `POST /agent/dispatch` |
+| `ConfigSet` | `cli.config_set` | `POST /agent/dispatch` |
+| `HostEnvSet` | `cli.host_env_set` | `POST /agent/dispatch` |
+| `HostEnvList` | `cli.host_env_list` | `POST /agent/dispatch` |
+| `HostEnvUnset` | `cli.host_env_unset` | `POST /agent/dispatch` |
+| `HarnessProcesses` | `cli.harness_processes` | `POST /agent/dispatch` |
+| `UpdateClients` | `cli.update_clients` | `POST /agent/dispatch` |
+| `Assimilate` | `cli.assimilate` | cache-miss `GET /harnesses`; non-dry-run register-host `POST /agent/dispatch` |
+
+A local first-user `AddUser` creates no gateway HTTP request and therefore
+creates no transport operation or receipt. A dry-run `Assimilate` omits its
+register-host dispatch. Cache hits omit the listed catalog request. Provider
+API requests and SSH subprocesses create no record under this contract. No
+target, argument, dispatch verb, provider value, or payload value enters the
+transport-operation field.
+
+The closed HTTP route-operation registry is:
+
+| Method and route template | Operation |
+|---|---|
+| `GET /` | `http.root` |
+| `GET /ws` | `http.ws` |
+| `GET /ws/changes` | `http.ws_changes` |
+| `GET /version` | `http.version` |
+| `GET /harnesses` | `http.harnesses` |
+| `POST /agent/dispatch` | `http.agent_dispatch` |
+| `POST /agent/tool-call-observed` | `http.agent_tool_call_observed` |
+| `GET /api/streams` | `http.api_streams.list` |
+| `GET /api/org-options` | `http.api_org_options.get` |
+| `GET /api/trackable-sessions` | `http.api_trackable_sessions.list` |
+| `POST /api/streams` | `http.api_streams.create` |
+| `PATCH /api/streams/:key` | `http.api_streams.update` |
+| `DELETE /api/streams/:key` | `http.api_streams.delete` |
+| `GET /api/session-status` | `http.api_session_status.get` |
+| `GET /api/work` | `http.api_work.list` |
+| `GET /api/work/:id` | `http.api_work.get` |
+| `GET /api/work-items` | `http.api_work_items.list` |
+| `GET /api/work-items/:id` | `http.api_work_items.get` |
+| `POST /api/session-control` | `http.api_session_control` |
+| `POST /upload` | `http.upload` |
+| `GET /download/:asset_id` | `http.download_asset` |
+| any unmatched method and path | `http.not_found` |
+
+The implementation keeps both registries next to request or route construction
+and adds a source check. A new production CLI gateway method/path,
+command-to-path call site, or router method/template fails that check until
+this spec and the matching registry are amended together.
+
 Acceptance A1: Given one CLI read and one internal wake scan, when each makes
 two DB calls, then the read has one `req_` ID, the scan has one `int_` ID, each
 DB call has a distinct `dbc_` ID, and no ID changes authorization or
 idempotency behavior. Given a missing, malformed, and repeated request-ID
 header, the router respectively generates an ID, returns `invalid_request_id`,
-and returns `invalid_request_id` without running authentication.
+and returns `invalid_request_id` without running authentication. Given the
+baseline CLI and router source, when the operation-registry check runs, then
+each production CLI gateway method/path and each router method/route template
+maps to exactly one row above; adding an unmapped gateway call site, route, or
+command mapping fails the check.
 
 ### R2 — Make the DB call envelope typed
 
@@ -596,7 +724,8 @@ For each terminal transition that the router observes, it submits exactly one
 nullable cause. An error response that finishes is `complete` with its status
 and cause. A post-start transport loss is `started` with a null status and its
 observed cause. A process or VM death can prevent this record; a later listener
-record does not fabricate it.
+record does not fabricate it. `operation` is the exact method/template value
+from R1's HTTP route-operation registry, including `http.not_found`.
 
 A DB caller timeout and a DB owner completion are independent observations.
 They can both exist for one DB call ID. The records never convert that pair
@@ -664,7 +793,8 @@ ID, response state, or listener generation, then the corresponding test fails.
 
 | Requirements | Expected implementation seam | Required proof home |
 |---|---|---|
-| R1–R5 | `lib/tightbeam/db.ex` plus one operation registry and one diagnostic record module | focused DB observability tests |
+| R1 | CLI gateway request construction, `lib/tightbeam/wire/router.ex`, and the closed transport/route registries | registry-census source checks and focused correlation tests |
+| R2–R5 | `lib/tightbeam/db.ex` plus the DB-operation registry and one diagnostic record module | focused DB observability tests |
 | R6 | one gateway bounded-ingress wrap-log writer and one Rust CLI wrap-log writer | rotation, concurrency, permission, drop, and sink-failure tests |
 | R7, R9–R10 | `lib/tightbeam/dispatch.ex`, `lib/tightbeam/wire/router.ex`, `cli/src/dispatch.rs` | router tests, CLI tests, captured envelopes |
 | R8 | gateway recorder and listener-lifecycle children before Wakes/Bandit in `lib/tightbeam/gateway.ex` | listener-generation restart test |
