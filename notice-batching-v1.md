@@ -1,6 +1,6 @@
 # Urgency-aware notice batching — v1
 
-Status: DRAFT — changes requested by independent review `att_03e59aea`
+Status: FROZEN FOR PARENT-OPENED INDEPENDENT REVIEW
 
 Work item: `wi_1100e078-2479-4d1b-8549-d65f7a82fd3d`
 
@@ -57,9 +57,10 @@ decision to release a batch.
   resolution rule; this mechanism does not substitute a session.
 - **Visibility scope** — the recipient principal and authorization scope that
   authorize access to a source notice's payload.
-- **Recipient lane** — a `fyi` delivery lane with one due time. Two notices
-  share a lane only when they have the same recipient address and visibility
-  scope. V1 has no lane for `input-needed`, `blocker`, or `algedonic` traffic.
+- **Recipient lane** — a `fyi` delivery lane. Two notices share a lane only
+  when they have the same recipient address and visibility scope. An open batch
+  in the lane has one due time: the earliest policy deadline of its members. V1
+  has no lane for `input-needed`, `blocker`, or `algedonic` traffic.
 - **Batch** — a durable delivery envelope for one recipient lane. It contains an
   ordered, immutable list of member references after sealing. It is not a
   source notice and it does not replace any source row.
@@ -99,7 +100,8 @@ decision to release a batch.
 2. **Urgency preservation.** V1 admits only `fyi`. It sends
    `input-needed`, `blocker`, and `algedonic` notices through their existing
    class paths without a batch row. Batching cannot move an eligible notice to
-   another recipient or create its delivery later than the `fyi` ceiling.
+   another recipient or create its delivery wake later than the earliest policy
+   deadline of its members.
 3. **One mutable seam.** `NoticeBatcher.enqueue_or_recover` is the sole mutation
    seam for batch, member, schedule, retry, cancellation, and recovery state.
    It performs each change in one database transaction.
@@ -158,7 +160,10 @@ In one transaction, the seam assigns the next monotonically increasing
 publication sequence for the recipient lane, inserts or reuses the unique member,
 and attaches that member to the one open batch for the lane. When it creates the
 first member, it stores both release triggers: the next observable recipient turn
-boundary and the class-policy ceiling.
+boundary and that member's policy deadline. For every later member, it compares
+the member's policy deadline with the stored due time and atomically shortens
+the due time and its schedule when the member's deadline is earlier. It never
+extends a due time.
 
 The scheduler seals the batch when either trigger wins. The check for a terminal
 turn event and the seal transition occur in the same transaction. The scheduler
@@ -369,6 +374,11 @@ database and the ordinary wake/turn delivery test seam.
     new admission, then pre-migration notices gain no batch rows, the sealed
     batch reaches one terminal outcome through its stored wake, and no source
     replays through legacy delivery.
+22. **Member deadline.** Given an open batch and a later eligible member whose
+    policy deadline is earlier than the batch's stored due time, when the seam
+    admits that member, then it stores the earlier due time, updates the release
+    schedule in the same transaction, and never creates the batch wake after
+    that member's policy deadline.
 
 ## Open Questions
 
