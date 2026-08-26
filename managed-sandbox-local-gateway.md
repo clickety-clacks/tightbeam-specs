@@ -1,6 +1,6 @@
 # Managed-sandbox local Tightbeam gateway
 
-Status: SPEC-READY PROPOSAL AMENDED AFTER THE SOLE INDEPENDENT REVIEW
+Status: AMENDED PROPOSAL PENDING CLEAN INDEPENDENT REVIEW
 
 Authority: work item `wi_7c53cfb2-1ad4-477c-b3df-bffc0d3714fa`;
 recon verdict `att_5b82a9c3-dfcc-4da5-bafc-d011bf537ada`;
@@ -11,8 +11,9 @@ First independent review `att_da816395-6895-4e9c-be2a-89c645066765`
 requested five blocking changes against commit
 `39200fe74bfb9bbd8be8c2fe9204f544302e7556`.
 That sole review closed through completion `att_9facab30` and full report
-artifact `art_405ed9cf`. This amendment addresses its five findings; no second
-review is requested.
+artifact `art_405ed9cf`. This amendment addresses its five findings. Continuation
+assignment `asg_7fa0cf19-956d-4c1b-807a-ae5c9391908e` requests clean review of
+the amended bytes before policy completion.
 
 Source basis: Tightbeam `7a70a2f616363074514237b5bee48ba67c52e2ea` and
 tightbeam-specs `2327bc66a45c7cedf6e726bf8e13b40153531e0b`, both current
