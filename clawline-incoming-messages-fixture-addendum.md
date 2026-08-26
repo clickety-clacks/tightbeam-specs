@@ -12,6 +12,19 @@ Authority:
   `att_ba6d341f-ec73-4fc6-9533-d657fd5925aa`.
 - Outcome work item: `wi_3ccc7dcd-f77d-45e2-96ba-f7e58170ecc1`.
 - Spec assignment: `asg_916dce59-78aa-4836-bc47-6f5b7e90972c`.
+- Reviewed selector correction: artifact `art_d919c8e3` at commit
+  `4ef5fb5fa4e3d2db9e4414add9cd81c9e81fcb04`, SHA-256
+  `f197818a9f14b945a19f4403a78ef7c33a8710bb63590ea3939784a6d5e291e6`;
+  completion `att_07bd2303-f0d4-4d87-a29c-68b074721a66`; reviewed-clean
+  verdict `att_d55c5cfe-4c28-4282-abeb-95ebd124270a`; report
+  `art_4d05337e`.
+- Residual-disposition work item: `wi_df3923ee-9927-46ec-b74a-d8421cd9104e`.
+  Spec assignment: `asg_e0b2dd4d-e4d2-444a-a8fc-f4eab4e82f81`.
+  Spirit verdict: `att_6b8a8705-c3a0-48b0-bc0d-eda5b7d7852b`. Reconciliation:
+  `att_def5abfb-9dbf-4a10-be11-d5b457486849`.
+- R1 code evidence: A16 stop `att_783930ea-955b-42bb-bfca-37f19d119ff0`;
+  direct-green log `art_7ff30ca3` and result `art_fd741d91`; focused-red
+  log `art_b5e4726b` and result `art_068b78e4`.
 - Product-spirit verdict: `att_99bf8980-a284-40d6-9896-69a80e6121ef`.
 - S1 causal evidence: `att_ffa37cb6-25d4-4d28-a65c-a8e06760ed39`.
 - Required R1 code base: reviewed-clean S1 commit
@@ -41,8 +54,10 @@ combined failures. Restore the missing owner-gated path from
 `ChatViewModel.handleIncoming` mutation seam.
 
 The repair must keep S1's production single-connection-owner rule. It must
-keep parent acceptance clauses A7 through A10. It must make all 164 focused
-tests and all 166 combined tests pass with zero failures.
+keep parent acceptance clauses A7 through A10. R1 must make its four direct
+tests pass with zero failures and must preserve its one-file boundary. The
+parent plan retains ownership of full focused, combined, and integration
+closure outside the R1 seam.
 
 ## Non-Goals
 
@@ -89,6 +104,14 @@ tests and all 166 combined tests pass with zero failures.
 - **Focused run**: the `ChatViewModelTests` command in Architecture section 5.
 - **Combined run**: the `ChatViewModelTests` plus
   `T320ReplyIndicatorProofTests` command in Architecture section 5.
+- **R1 direct gate**: the four-test command in Architecture section 5. It is
+  the executable behavioral proof for the incoming-messages observation seam.
+- **Focused diagnostic**: the 164-test focused run used to detect scope drift.
+  A residual that the section 2 ledger classifies outside R1 does not authorize
+  R1 scope expansion.
+- **Wrong gate boundary**: a failure that a command observes only after R1
+  restores message delivery, but whose correction requires a seam that R1
+  explicitly does not own.
 
 ## Assumptions
 
@@ -134,6 +157,21 @@ tests and all 166 combined tests pass with zero failures.
     `d7bc6d84891c6b1975778883a61914070311ddcb` and
     `0c295c4cde4565a23b48894546130688bb95a7b4`, retained none of those three
     production lines of repair.
+14. The corrected R1 direct result is valid. It reports 4 total tests, 4
+    passes, zero failures, zero skips, and zero expected failures.
+15. The R1 focused result is valid. It reports 164 total tests, 131 passes, 33
+    failures, zero skips, and zero expected failures.
+16. Thirty focused failures repeat an exact-S1 focused identifier and failure
+    signature. Sixteen exact-S1 focused failures are absent after R1.
+17. `historyResetPreservesCursorBackedActiveStreamWithEmptyReplayWindow()`
+    failed in the exact-S1 combined run, passed in the exact-S1 focused run,
+    and failed in the R1 focused run with the same assertion. Its result varies
+    with the pre-R1 suite schedule.
+18. Two R1 focused failures are outside the exact-S1 48-identifier union.
+    Both fixtures emit an incoming message after a stream snapshot removes the
+    message's session. R1 forwards that message once to unchanged
+    `handleIncoming`, as I4 requires. Fixing the resulting stream or
+    notification behavior would change a seam that R1 does not own.
 
 ## Invariants
 
@@ -175,8 +213,9 @@ the focused baseline. The combined run contains those 164 tests plus the same
 two T320 tests. R1 adds or removes no test.
 
 **I10 — Independent gates.** An independent reviewer approves the exact R1
-spec revision before code starts. Another independent reviewer approves the
-exact R1 code revision before S7, S8, or S9 can consume it.
+spec revision before code starts or resumes after an A16 stop. Another
+independent reviewer approves the exact R1 code revision before S7, S8, or S9
+can consume it.
 
 ## Architecture
 
@@ -195,9 +234,10 @@ The exact S1 baseline closes the prior review's evidence hole:
    through the same missing incoming-messages path.
 
 R1 therefore owns only the missing incoming-messages observer. R1 does not own
-fixture activation. The code lane must stop and return to this spec if the
-one-file observer repair does not make the focused and combined gates green.
-The code lane must not widen the patch to chase a remaining failure.
+fixture activation. The A16 stop correctly returned the 33 focused residuals
+to this spec before a scope change. The section 2 ledger proves that none of
+those residuals belongs to R1 I1 through I5 or to an existing S2 through S8
+slice. The code lane must not widen R1 to chase them.
 
 ### 2. Exact Chat failure union
 
@@ -256,6 +296,59 @@ Every identifier has target `ClawlineTests/ChatViewModelTests`. The combined
 baseline also fails
 `T320ReplyIndicatorProofTests/acceptedReplySendEchoesReplyTokenMetadataOntoOutgoingBubble()`.
 
+### 2.1. Exact 33-residual disposition ledger
+
+This ledger classifies every failure in `art_068b78e4` by identifier and
+observed assertion. “Historical” means that exact-S1 focused evidence contains
+the same identifier and assertion. Timestamp values may differ while the
+assertion and observed state stay the same.
+
+| # | Failed identifier | Observed assertion signature | Classification | Owner and disposition |
+| --- | --- | --- | --- | --- |
+| 1 | `adoptedGatewaySessionSendBypassesStreamOnlySessionInfo()` | `trackSession(adoptedKey)` is false | Historical | Historical tracking root; outside R1; no S2-S8 match |
+| 2 | `adoptedSessionRestoresAsLastSavedChat()` | first view model cannot track adopted session | Historical | Historical tracking root; outside R1; no S2-S8 match |
+| 3 | `adoptedSessionsCanBeRenamedWithoutDelete()` | `trackSession(adoptedKey)` is false | Historical | Historical tracking root; outside R1; no S2-S8 match |
+| 4 | `assistantNotificationsDismissWhenSourceDisappearsFromStreamSnapshot()` | late message recreates a removed-source notification | Wrong gate boundary | Parent-plan disposition; R1 keeps `handleIncoming` unchanged; separate reviewed root required |
+| 5 | `canSendRequiresActiveSessionProvisioning()` | `canSend` is true before provisioning | Historical | Historical send-state root; outside R1; S2 direct test is distinct |
+| 6 | `createFailureLaterSocketReconcile()` | created stream stays absent after service event | Historical | Historical stream-control root; outside R1; no S2-S8 match |
+| 7 | `currentPromptCancellationTargetsVisibleStreamDuringPagerSwitchDebounce()` | cancellation targets personal instead of research | Historical | Historical pager-state root; outside R1; no S2-S8 match |
+| 8 | `deleteFailureLaterSocketReconcile()` | deleted stream remains after service event | Historical | Historical stream-control root; outside R1; no S2-S8 match |
+| 9 | `deletingActiveStreamFallsBack()` | deleted active stream remains | Historical | Historical stream-control root; outside R1; no S2-S8 match |
+| 10 | `disconnectedMapsToDisconnectedSendButtonState()` | send-button state remains connected | Historical | Historical send-state root; outside R1; no S2-S8 match |
+| 11 | `dismissedReplayedAssistantContentStaysDismissedUntilNewerAssistantContent()` | replayed source dot is unread instead of inactive | Historical | Historical replay/read-state root; outside R1; no S2-S8 match |
+| 12 | `dismissingNotificationClearsSourceUnreadDot()` | source dot is inactive before expected unread state | Historical | Historical notification/read-state root; outside R1; no S2-S8 match |
+| 13 | `historyResetDismissalKeepsOnlyLaterReplayNotifications()` | committed message remains after history reset | Historical | Historical replay-reset root; outside R1; no S2-S8 match |
+| 14 | `historyResetPreservesCursorBackedActiveStreamWithEmptyReplayWindow()` | stale message remains beside replay message | Environment/harness | Pre-R1 focused/combined schedule variance; separate isolation root required before code |
+| 15 | `incrementalStreamEvents()` | created stream key never enters ordered sessions | Historical | Historical stream-event root; outside R1; no S2-S8 match |
+| 16 | `initialTrackableSessionsLoadFailureIsSurfaced()` | expected debug message is absent | Historical | Historical tracking/error root; outside R1; no S2-S8 match |
+| 17 | `networkLostSendFailureLeavesSendButtonNonGreen()` | localized network-loss text differs | Historical | Historical error-presentation root; outside R1; no S2-S8 match |
+| 18 | `notificationReplyClosesOnlyAfterSuccessfulSend()` | source session status is not fetched | Historical | Historical notification-reply root; outside R1; no S2-S8 match |
+| 19 | `promptStageIndicatorIsScopedToSelectedStream()` | indicator appears for the other session | Historical | Historical progress-state root; parent A7-A10 remain protected |
+| 20 | `promptTurnFailedStateMarksAcceptedSendFailedImmediately()` | accepted send lacks immediate failure state | Historical | Historical prompt-state root; outside R1; no S2-S8 match |
+| 21 | `queuedCrossChatMentionClearsComposerToPreventCurrentChatLeak()` | queued content is sent instead of held | Historical | Historical notification/composer root; S2 direct test is distinct |
+| 22 | `replayCommitAllowsSourceNoLongerCurrentAtTerminalBoundary()` | eligible notification entry is absent | Historical | Historical replay-notification root; outside R1; no S2-S8 match |
+| 23 | `replayDoesNotResurrectPrunedStream()` | late replay recreates the pruned stream | Wrong gate boundary | Parent-plan disposition; R1 keeps `handleIncoming` unchanged; separate reviewed root required |
+| 24 | `replayNavigationDuringPendingDoesNotDropTerminalEligibleNotification()` | terminal notification entry is absent | Historical | Historical replay-notification root; outside R1; no S2-S8 match |
+| 25 | `selectedSessionOAuthUsageClearsWindowsOnAuthoritativeBindingFailure()` | usage freshness stays fresh | Historical | Historical session-status root; outside R1; no S2-S8 match |
+| 26 | `sessionStatusRefreshKeepsIncomingAuthModeWhenPreservingStickyFields()` | incoming auth mode is absent | Historical | Historical session-status root; outside R1; no S2-S8 match |
+| 27 | `sessionStatusStickyDisplayMetadataIsKeyedPerStream()` | research model metadata is absent | Historical | Historical session-status root; outside R1; no S2-S8 match |
+| 28 | `snapshotRemovesChildStreamOmittedByServer()` | omitted child stream remains | Historical | Historical stream-snapshot root; outside R1; no S2-S8 match |
+| 29 | `streamSnapshotReplacementFallback()` | stale built-in session remains ordered | Historical | Historical stream-snapshot root; outside R1; no S2-S8 match |
+| 30 | `trackAdoptsUntrackedSessionAcrossSnapshots()` | track candidate list is empty | Historical | Historical tracking root; outside R1; no S2-S8 match |
+| 31 | `trackCandidatesLoadFromProviderEndpoint()` | provider candidate is absent | Historical | Historical tracking root; outside R1; no S2-S8 match |
+| 32 | `untrackRemovesLocalLinkOnly()` | `trackSession(adoptedKey)` is false | Historical | Historical tracking root; outside R1; no S2-S8 match |
+| 33 | `untrackUndoRestoresAdoptedSession()` | `trackSession(adoptedKey)` is false | Historical | Historical tracking root; outside R1; no S2-S8 match |
+
+The classification totals are 0 R1 I1-I5, 0 existing S2-S8, 30 historical,
+1 environment/harness, and 2 wrong gate boundary. Existing S2-S8 assignments
+retain only the parent rows that `clawline-full-green-repair.md` assigns to
+them. This disposition creates no replacement or duplicate code card. The
+product owner must attach a separately reviewed root classification before a
+future code assignment changes tracking, stream control, replay, message
+policy, session status, send state, notification, or progress behavior.
+`product-owner:clawline` remains the parent-plan disposition owner. This
+ledger does not assign a code owner.
+
 ### 3. Exact file and ownership boundary
 
 R1 may edit only this file:
@@ -293,7 +386,8 @@ historical test-helper edits, and every unrelated historical change.
 
 ### 5. Verification commands
 
-Run every command from an owned clean Clawline checkout based on exact S1
+Run each command when its gate owner schedules it. Use an owned clean Clawline
+checkout based on exact S1
 `061d123009228e23672f84ac97124d3761718399` on Eezo with Xcode 26.6, an iPhone
 17 Pro simulator, and iOS 26.5. Replace only the angle-bracket paths and
 simulator identifier. Each command uses a new derived-data directory and a new
@@ -358,9 +452,18 @@ xcodebuild test \
   -only-testing:ClawlineTests/ClawlineTests/toolActivityRendersDistinctVerbAndArgumentsPill
 ```
 
-The coder retains the complete log and valid `.xcresult` from every command.
+The runner retains the complete log and valid `.xcresult` from each command.
 The evidence records the tested commit, command, Xcode version, runtime,
 simulator identifier, counts, and exit status.
+
+The direct and protected commands are zero-failure R1 completion gates. The
+focused command is a non-vacuous scope diagnostic: it must report 164 total
+tests, zero skips, and zero expected failures. At the preserved R1 revision it
+must report 131 passes and the exact 33 failures in section 2.1. A new
+identifier, a changed assertion signature, or an I1-I5 failure returns to spec
+review. The combined command belongs to parent closure after the separately
+classified residual roots are reviewed; its zero-failure result is not a standalone
+R1 code-review precondition.
 
 ### 6. Ordering and integration
 
@@ -369,11 +472,15 @@ The product owner applies this order:
 1. S1 reaches independently reviewed-clean at exact commit `061d1230`.
 2. R1 code starts from exact commit `061d1230`.
 3. R1 receives independently reviewed-clean at its exact code revision after
-   the direct, focused, combined, and protected commands pass.
-4. Only then, and only after the parent spec's other unit prerequisites are
+   the direct and protected commands pass, static review satisfies I1 through
+   I5, and the focused diagnostic matches section 2.1 without a new residual.
+4. The product owner keeps the 33 residuals outside R1 and outside existing
+   S2-S8 cards. A later behavior change requires its own reviewed root
+   classification and assignment.
+5. Only then, and only after the parent spec's other unit prerequisites are
    reviewed-clean, may the parent plan start or resume S7 and S8. R1 clears
    only the added R1 block.
-5. S9 remains blocked until R1, S7, S8, and every other parent prerequisite
+6. S9 remains blocked until R1, S7, S8, and every other parent prerequisite
    are reviewed-clean and green.
 
 R1 does not authorize integration. The parent spec remains authoritative for
@@ -409,15 +516,18 @@ not restore the ownership bypass or a test-helper edit.
 the direct command, then the result reports total=4, passed=4, failed=0,
 skipped=0, and zero expected failures.
 
-**A6 — Focused family.** Given the same revision and a clean derived-data
-path, when the coder runs the focused command, then all 164 tests pass. Every
-section 2 identifier is present. The result reports zero failures, skips, and
-expected failures.
+**A6 — Focused diagnostic.** Given the preserved R1 revision and a clean
+derived-data path, when the coder runs the focused command, then the result
+reports total=164, passed=131, failed=33, skipped=0, and zero expected
+failures. Each failure identifier and assertion matches section 2.1. The four
+direct tests and the four S1 proof tests named in Assumption 8 pass.
 
-**A7 — Combined S1 boundary.** Given reviewed-clean S1 plus R1, when the coder
-runs the combined command under normal parallel testing, then all 166 tests
-pass. Both T320 tests pass. The result reports zero failures, skips, and
-expected failures.
+**A7 — Combined parent boundary.** Given reviewed-clean R1, when the product
+owner schedules combined closure, then the owner first binds each remaining
+failure to a separately reviewed root. Each resulting code revision receives
+independent review. The combined command
+reports zero failures only after those owners close. R1 alone does not claim
+that result.
 
 **A8 — Flat progress compatibility.** Given an `agent_progress` payload whose
 only progress body is `progressText = "Read config/runtime.exs"`, when
@@ -458,14 +568,17 @@ searches changed files for `ChatViewModelTests`, `T320ReplyIndicatorProofTests`,
 `activateAndAppear`, or an added activation call, then the search returns no
 change.
 
-**A16 — Stop on residual.** Given the one-file R1 patch, when the direct,
-focused, combined, or protected command reports one failure, then the code
-author files the exact evidence and returns to spec review. The author does
-not edit another file or widen R1.
+**A16 — Stop on R1 or unclassified residual.** Given the one-file R1 patch,
+when the direct or protected command reports one failure, then the code author
+files the exact evidence and returns to spec review. The author does the same
+when the focused diagnostic contains an I1-I5 failure, a new identifier, or a
+changed assertion signature. A section 2.1 match does not authorize another
+R1 file or mutation seam.
 
 **A17 — Ordered review.** Given the full-green repair graph, when R1 code
 starts, then S1 is already reviewed-clean at `061d1230`. When S7 or S8 starts
-or resumes, then R1 is independently reviewed-clean with A5 through A16 green.
+or resumes, then R1 is independently reviewed-clean under A5, A6, and A8
+through A16. Separately classified residual roots remain parent prerequisites.
 
 **A18 — S9 remains blocked.** Given reviewed-clean R1, when the product owner
 evaluates integration, then R1 alone does not authorize S9. S9 still waits for
@@ -474,5 +587,6 @@ parent full-gate conditions.
 
 ## Open Questions
 
-None. Exact S1 evidence fixes the baseline identity, removes the rejected
-visibility-only assumption, and excludes fixture rewrites from R1.
+None. Exact S1 and R1 evidence fixes the residual ledger, preserves the
+one-file observer seam, and returns broader zero-green closure to the parent
+plan without assigning another code owner.
