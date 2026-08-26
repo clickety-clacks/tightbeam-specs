@@ -553,6 +553,12 @@ fact whose session key differs from the resolved session and a fact whose `factK
 differs from the precondition under test. Each case continues through the existing wake
 path unless another exact fact matches.
 
+The same fixture must include one otherwise-identical mismatch case for each opaque
+member that R2 carries inside a token or cause-specific key: `adapterToken.harnessId`,
+`credentialToken.credentialSlotId`, `quotaWindowId`, `holdId`, and `circuitId`. Each case
+changes only that member in the stored fact and then verifies that the old fact does not
+refuse the request.
+
 ### A2. Unknown or expired evidence does not refuse
 
 Given no current authoritative inability fact, when the sender sends a wake, then the
