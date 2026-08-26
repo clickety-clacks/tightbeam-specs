@@ -1,240 +1,307 @@
 # ClipMesh — Product Spirit v1
 
-Status: product-owner derived after Mike's 2026-08-25 rulings. This document
-authorizes technical specification and delivery orchestration. It does not by
-itself authorize implementation, deployment, enrollment, or live mutation.
+Status: product-policy amendment candidate for independent review. These bytes
+authorize no implementation, integration, deployment, publication, release,
+listener activation, enrollment, or live or private-state mutation.
 
-## Authority and provenance
+Authority and provenance:
 
 - Canonical seed: ClipMesh `docs/initial-spirit.md` at commit
-  `89c6579dc1ddc180ce22e954ecc39cc410eee887`, recorded as
+  `89c6579dc1ddc180ce22e954ecc39cc410eee887`, artifact
   `art_3d431942`, SHA-256
   `60e59c7b7e200a6ce70114ebad34e420cf291e4d6c4e3493f1d3b297f3e85b9a`.
-- Mike ruling `dr_735a0a42-f318-444d-8804-96dd8ccab1f7`: the MVP uses a
-  trusted, hub-readable plaintext model because ClipMesh serves a private
-  tailnet, with the documented application-layer safeguards.
-- Mike ruling `dr_99071b43-5acc-4f2c-8c77-0a6b355b93b6`: the repository uses
-  the MIT license.
-- Mike's 2026-08-25 operator boundary: ask Mike only about money or scope that
-  he has not agreed. The product owner derives product and MVP design from the
-  agreed Spirit instead of escalating each enduring choice.
+- Prior canonical Spirit: tightbeam-specs commit
+  `472cfd261728bc88e9e655a9a9bf73ed94e9064e`, artifact
+  `art_be61a318`.
+- Mike's authoritative MVP update:
+  `att_91cda21f-c8c0-4b5a-9ef0-5ac2473e46c1`.
+- Product-owner policy derived from that update:
+  `att_29c3a660-ee1a-4eb1-9f4c-7b5f177b6523`.
+- Product-owner Spirit digest:
+  `att_b4f90db5-0211-4c92-92a8-85bf14567af9`.
+- Cold digest verdict:
+  `att_c17096fc-7f34-4ef1-80dc-f5ceabee007a`.
+- Mike's earlier rulings remain settled: the MVP trusts a hub that can read
+  plaintext, and the public repository uses the MIT license.
 
-If this document conflicts with the canonical seed, the two Mike rulings and
-the operator boundary above control. All other seed outcomes and constraints
-remain in force.
+The Mike update and product-owner policy above supersede prior Spirit clauses
+about application credentials, device administration, enrollment, separate
+TLS identity, memory history, four-hour or 20-entry defaults,
+administrator-only purge, and mobile live-write suppression.
 
-## Spirit
+## Goal
 
-### Problem
+Give one person one text clipboard across devices admitted to the same
+Tailnet. A copied text value moves through one trusted self-hosted hub, appears
+in persistent shared history, and becomes the current clipboard on online
+clients when it is a new live remote clip.
 
-A person with several computers needs short-lived text to move between them as
-easily as one clipboard. Existing choices add a cloud account, repeated
-pairwise setup, a heavy desktop application, or misleading promises about iOS
-background behavior.
+The first release contains a Rust hub, Rust Wayland Linux and macOS agents, a
+foreground SwiftUI iOS and iPadOS client, and generic deployment assets. It
+keeps the product small enough to inspect, test, self-host, and release under
+the MIT license.
 
-ClipMesh serves a small personal fleet that already communicates over a secure
-private overlay such as Tailscale. It keeps enrollment automatable and gives
-each device its own revocable identity.
-
-### Outcomes
-
-1. A managed Linux or macOS desktop joins through private deployment automation
-   without asking every existing device for approval.
-2. Text copied on one online, unlocked desktop reaches the other online,
-   unlocked desktops within one second under normal conditions.
-3. An iPhone or iPad user opens the app, sees recent entries, selects one, and
-   copies it into the system pasteboard.
-4. Disconnects, reconnects, and repeated delivery do not create clipboard
-   loops or duplicate history.
-5. An administrator revokes one device without disturbing the remaining fleet.
-6. Operators can understand health, connection state, suppression, and failure
-   without logs, metrics, crash reports, or errors revealing clipboard text or
-   credentials.
-7. The public repository remains usable by any private deployment and reveals
-   nothing about Mike's topology.
-
-### Non-goals for the first usable release
+## Non-Goals
 
 - End-to-end or zero-knowledge payload encryption.
-- Images, files, HTML, RTF, or arbitrary MIME replication.
-- Public-internet discovery or operation without a private network.
-- Accounts, billing, social sharing, or multi-tenant hosting.
-- Reliable passive background clipboard monitoring on iOS or iPadOS.
-- The iOS or iPadOS Share extension.
-- Mutual TLS.
+- An application account, pool key, bearer credential, device registry,
+  administrator role, enrollment flow, pairing flow, credential rotation,
+  credential expiry, or recurring re-onboarding.
+- A separate application TLS certificate identity, mutual TLS identity, or
+  certificate handoff ceremony.
+- Images, files, HTML, RTF, or another clipboard MIME type.
+- Public-Internet discovery or a public listener.
+- Multi-tenant hosting, billing, social sharing, or fleet administration.
+- Passive background clipboard monitoring on iOS or iPadOS.
+- An iOS or iPadOS Share extension.
+- A memory-only hub-history mode.
 - Automatic hub election, failover, or direct device-to-device delivery.
 - A full desktop clipboard-manager interface.
-- Pairwise GUI enrollment between every machine.
-- New cryptographic primitives.
-- Erasure guarantees for an offline device or text already copied into an
-  operating-system pasteboard.
+- Content-based secret detection.
+- Erasure guarantees for an offline client, a system clipboard, a storage
+  snapshot, or storage hardware.
+- A private hostname, Tailnet name, address, username, filesystem layout,
+  inventory boundary, or deployment target in the public repository.
 
-### Quality stance
+## Terms
 
-- **Correctness matters most.** Delivery order, deduplication, replay checks,
-  expiry, and loop suppression must be deterministic.
-- **Security and privacy matter most.** The private overlay is one layer, not
-  the authorization model. ClipMesh minimizes collection, retention, exposure,
-  and logging.
-- **Interaction stays honest.** Desktops synchronize automatically while
-  online and unlocked. Mobile actions remain explicit. Reconnect and unlock do
-  not surprise the user with stale clipboard writes.
-- **Normal delivery is fast.** Online desktop-to-desktop text reaches peers in
-  roughly one second. ClipMesh does not trade security checks for lower
-  latency.
-- **Reliability is bounded.** The MVP supports one hub and a small fleet. It
-  reconnects with bounded backoff and fails visibly, but it does not promise
-  high availability.
-- **Compatibility is deliberate.** The first desktop surfaces are Wayland
-  Linux and macOS. The mobile surface is a foreground SwiftUI app for iOS and
-  iPadOS.
-- **Maintainability favors small native parts.** Rust owns the hub, protocol,
-  and desktop agents where practical. Narrow native bridges are acceptable
-  when safer than fragile foreign-function code.
-- **Deployment stays flexible.** All topology belongs to private inventory or
-  runtime configuration. Public defaults remain generic and fail closed.
-- **Observability is content-free.** Health and ordinary logs expose state and
-  reason codes, never payloads, credential material, or payload-derived text.
+- **Tailnet:** The deployment's Tailscale network. WireGuard within Tailscale
+  encrypts traffic between Tailnet peers.
+- **ACL-admitted member:** A Tailnet peer whose connection the deployment's
+  Tailnet policy admits to the ClipMesh hub service.
+- **Local Tailscale boundary:** The trusted Tailscale component on the hub host
+  that accepts a Tailnet connection and asserts the authenticated peer
+  identity to the hub through a local, non-network handoff.
+- **Tailnet peer identity:** The immutable identity asserted by the local
+  Tailscale boundary for one accepted connection. It is not a field supplied
+  by a ClipMesh client.
+- **Trusted plaintext hub:** The self-hosted ClipMesh service that can read
+  clipboard text while it validates, orders, stores, and distributes it.
+- **ClipMesh history:** The hub's retained SQLite clip rows and the product
+  history projected from those rows. A system clipboard is not history.
+- **Resume material:** Retained clips sent during catch-up through the
+  session's captured resume boundary.
+- **Live remote clip:** A clip from another Tailnet peer that the hub accepts
+  after the receiving session's resume boundary.
+- **Clear generation:** The durable, increasing hub value that distinguishes
+  clips and queued publishes created before and after a shared clear.
+- **Shared clear:** An equal-member request that atomically removes retained
+  clips and advances the clear generation.
+- **Explicit confidential or transient hint:** A signal supplied by the
+  operating system or source application that directly marks one clipboard
+  entry confidential or transient.
+- **Canonical clip-content serialization seam:** The single implementation
+  boundary that turns text into the stored and transmitted representation and
+  turns that representation back into text.
 
-## Resolved product policy
+## Assumptions
 
-### Trust and transport
+1. The deployment provides one stable hub reachable only through its Tailnet.
+2. The local Tailscale boundary can assert authenticated peer identity for
+   each connection it hands to the hub.
+3. Tailnet policy controls which peers can reach the hub. ClipMesh does not
+   create a second membership system.
+4. The deployment owner accepts a trusted hub that can read clipboard text.
+5. Tailnet WireGuard protects network transit. FileVault, LUKS, or the mobile
+   platform's protected storage protects endpoint history at rest.
+6. Linux MVP hosts provide a supported Wayland clipboard and lock-state
+   surface. macOS provides native pasteboard and lock-state surfaces.
+7. iOS and iPadOS permit a foreground network session and pasteboard writes.
+8. The release process can run Rust, Swift, SQLite, platform-adapter, network
+   confinement, and repository-boundary checks on their real targets.
 
-The first release trusts the self-hosted hub to read plaintext payloads. Every
-connection still uses TLS over the private overlay. The hub binds only to
-configured private interfaces and has no public listener by default.
+## Invariants
 
-Each device receives one unique, high-entropy bearer credential. The hub binds
-that credential to the device identity and supports individual rotation and
-revocation. Mutual TLS remains outside the MVP because certificate issuance,
-renewal, storage, and mobile enrollment add work without changing the agreed
-hub trust boundary.
+### S1 — The hub trust decision is explicit
 
-The wire protocol stays versioned and keeps payload representation explicit so
-a later reviewed encryption design can replace plaintext. The MVP does not add
-key distribution, recipient encryption, or speculative zero-knowledge
-machinery.
+The hub reads plaintext clip content. ClipMesh makes no end-to-end encryption
+claim. Tailnet WireGuard protects transit between Tailnet peers.
 
-### Device authority and enrollment
+### S2 — Tailnet admission is the membership boundary
 
-A private deployment administrator owns enrollment, revocation, rotation, and
-global history purge. Ordinary device credentials carry data-plane authority
-only. For the MVP, enrolled devices are equal data peers: they may read recent
-history and publish plain text, but they may not enroll, revoke, rotate, or
-administer another device.
+The hub accepts a session only when the trusted local Tailscale boundary
+asserts its peer identity. The hub ignores and rejects client-supplied identity
+claims. Each ACL-admitted member has the same publish, history, and shared-clear
+authority.
 
-Managed desktops receive credentials through Ansible or an equivalent private
-secret-delivery mechanism. Mobile enrollment uses a short-lived, single-use
-artifact issued by the administrator. No fleet-wide secret exists.
+### S3 — The service fails closed to Tailnet-only reachability
 
-### History and retention
+The hub has no listener default. It binds only through an explicit generic
+Tailnet-only configuration whose validation fails before service when the
+local Tailscale boundary or confinement cannot be proved. The public product
+contains no public listener or private topology value.
 
-The hub uses bounded SQLite history by default because recent mobile history is
-a core outcome and must survive an ordinary hub restart. A memory-only mode
-remains an explicit privacy option.
+### S4 — History is persistent and bounded
 
-The default limits are:
+The hub uses SQLite. The default retained window is seven days or 500 clips,
+with oldest clips removed first when either limit applies. Deployments can
+configure both limits through generic bounded settings.
 
-- four hours of retention;
-- 20 history entries; and
-- 256 KiB per entry.
+### S5 — Shared clear is one generation change
 
-Expiry, count, and item-size limits all apply. The first reached limit wins.
-Deployments may reduce or increase the values through generic runtime
-configuration, but no default permits indefinite retention.
+An ACL-admitted member can request shared clear. The hub deletes retained
+clips and advances the clear generation in one transaction. A client or hub
+rejects queued or replayed content from an earlier generation. Shared clear
+does not change a system clipboard.
 
-### Sensitive content
+### S6 — Resume and live behavior are distinct
 
-When a platform exposes a recognized password-manager or sensitive-clipboard
-hint, ClipMesh does not publish that entry. Diagnostics may record a
-content-free suppression reason. ClipMesh does not claim to identify secrets
-when a platform provides no reliable hint.
+Resume material updates ClipMesh history and cursor state. It does not write a
+desktop or mobile system clipboard. After catch-up completes, each new live
+remote clip directly overwrites the current system clipboard on an eligible
+desktop and on a foreground mobile client.
 
-### Clear behavior
+### S7 — Sensitive-content suppression requires an explicit source hint
 
-Every client may clear its local ClipMesh view or cache. Only administrator
-authority may purge hub history and request cache clearing from online clients.
-The operation does not claim to erase an offline client or text that a user
-already copied into an operating-system pasteboard.
+ClipMesh classifies and suppresses an entry as sensitive only when the
+operating system or source application explicitly marks it confidential or
+transient. ClipMesh uses no payload, pattern, source-name, or timing heuristic
+to classify content. Lock, local pause, local-only control, validation, and
+loop suppression remain separate observable state rules.
 
-### Reconnect and unlock behavior
+### S8 — One serialization seam owns clip content
 
-Reconnect and unlock never apply missed history automatically to the current
-desktop clipboard. The agent uses cursors and message identifiers for resume,
-deduplication, and ordering, then applies only new live events after the resume
-boundary. A surface with an explicit history interface may still show retained
-entries for user selection.
+Ingress, SQLite storage, and egress use the canonical clip-content
+serialization seam. Protocol, storage, logging, and platform code do not create
+another content encoding path.
 
-### Mobile scope
+### S9 — Ordering, replay resistance, and loop suppression are deterministic
 
-The MVP includes foreground history refresh, clear local history, safe preview,
-and explicit pasteboard copy. The Share extension moves to the next milestone.
-This is the smallest mobile surface that proves the core cross-device outcome.
+The hub assigns one total cursor order. Exact retry is idempotent. Conflicting
+or tombstoned message-ID reuse changes no state. Clients suppress self-delivery
+and remote-write echoes from observable identifiers and state, not
+elapsed-time guesses.
 
-### Hub placement and public topology neutrality
+### S10 — Diagnostics are content-free
 
-Private deployment inventory or runtime configuration designates one stable
-hub. The public product does not elect or name it.
+Logs, metrics, health, errors, and crash fixtures cannot represent clip bytes,
+previews, content hashes, client-supplied identity claims, Tailnet identity
+material, or payload-derived strings.
 
-Source, defaults, examples, fixtures, tests, and documentation must not contain
-real hostnames, usernames, tailnet names, IP addresses, filesystem layouts,
-secrets, or private deployment boundaries. Generic placeholders must not
-resemble actual private values. Private inventory and secret material stay
-outside the public repository.
+### S11 — Mobile history remains explicit
 
-### License
+The foreground mobile client shows retained history and lets the user select
+an older row to copy. That explicit history action coexists with S6's direct
+write for a new live remote clip.
 
-The public repository uses the MIT license.
+### S12 — Public bytes stay topology-neutral
 
-## MVP product shape
+Source, defaults, examples, fixtures, tests, documentation, and deployment
+templates contain only reserved examples or placeholders. Private inventory
+and Tailnet policy remain outside the public repository.
 
-1. `clipmesh-hub`: a small Rust service with authenticated TLS connections,
-   bounded SQLite or optional memory-only history, per-device revocation,
-   content-free health endpoints, validation, replay rejection, and broadcast.
-2. `clipmesh-agent`: a Rust Linux and macOS daemon that watches plain text,
-   sends local changes, applies new live remote changes, suppresses loops,
-   pauses while locked, and reconnects with bounded backoff.
-3. `ClipMesh`: a foreground SwiftUI iOS and iPadOS app that displays bounded
-   recent history and copies one selected entry into `UIPasteboard.general`.
-4. Deployment assets: generic systemd and launchd templates plus
-   Ansible-friendly variables for binaries, hub URL, device identity,
-   credential material, retention, and startup behavior.
+### S13 — The MVP remains text-only and MIT licensed
 
-The product starts as hub-and-spoke. Direct delivery is a possible later
-product, not an MVP abstraction requirement.
+Version 1 carries nonempty UTF-8 `text/plain` only. The repository root
+carries the MIT license.
 
-## Acceptance floor
+### S14 — Held actions remain held
 
-The first release is acceptable only when all of these are true:
+This Spirit does not elect an integration or release target. It does not
+authorize implementation, product-code edits, deployment, publication,
+listener activation, enrollment, or live or private-state mutation.
 
-1. A newly provisioned managed desktop joins without interactive approval from
-   every existing desktop.
-2. Two online, unlocked desktops exchange ordinary text within one second under
-   normal conditions.
-3. An iPhone or iPad can fetch recent entries, copy one explicitly, and paste it
-   into another app.
-4. Reconnect, retry, and duplicate delivery create no echo loop or duplicate
-   history.
-5. Unlock or reconnect does not replace the local clipboard with a missed
-   entry.
-6. Revoking one device blocks its next authenticated connection and leaves
-   other devices working.
-7. Known sensitive-hint entries do not leave their source device.
-8. Expiry, count, and item-size limits work together and remove data without
-   payload disclosure in logs.
-9. The hub is unreachable outside its configured private interface and exposes
-   no public listener by default.
-10. Repository scanning finds no private topology identifier, credential,
-    payload-bearing diagnostic, or real deployment boundary in source,
-    defaults, examples, fixtures, tests, or documentation.
-11. The repository carries the MIT license.
+## Architecture
 
-## Delivery gate
+### Product shape
 
-This Spirit is the product authority that travels with every delivery handoff.
-The technical specification must turn these outcomes and policies into exact,
-testable behavior without inventing topology or expanding the MVP.
+1. `clipmesh-hub` is a Rust service behind a trusted local Tailscale
+   connection boundary. It validates asserted Tailnet peer identity, stores
+   bounded SQLite history, orders clips, rejects replay, performs shared clear,
+   and broadcasts clips.
+2. `clipmesh-agent` is a Rust Wayland Linux and macOS daemon. It observes
+   eligible local text, publishes while live, applies live remote text,
+   suppresses loops, pauses while locked, and resumes without a clipboard
+   write.
+3. `ClipMesh` is a foreground SwiftUI iOS and iPadOS client. It catches up
+   history without a pasteboard write, applies a new live remote clip while
+   foreground, and lets the user select a retained row explicitly.
+4. Deployment assets expose generic variables for the hub endpoint,
+   Tailnet-only confinement, state storage, retention, limits, and startup
+   behavior. They contain no application credential or device-enrollment
+   surface.
 
-Implementation may begin only after the product owner completes the required
-cold digest, confirms that this slice remains coherent, and dispatches it
-through the ordinary spec-review-build-review cycle.
+### Trust and authority
+
+The trusted hub and local `tailscaled` daemon are separate components. For
+each accepted socket, the hub performs the stable LocalAPI WhoIs operation
+documented by `local.Client.WhoIs` with the socket's observed remote
+address and uses only the returned node stable ID. A ClipMesh request cannot
+choose, override, or supplement its peer identity.
+
+Tailnet policy owns reachability. ClipMesh has no application administrator or
+device-control plane. Operational control of the hub process, host, Tailnet
+policy, configuration, and backups remains local deployment administration,
+outside the ClipMesh wire protocol.
+
+### History, clear, and live delivery
+
+SQLite is the only hub history mode. The hub keeps the newest clips within
+both configured retention age and count. A shared clear creates one durable
+generation boundary. Each publish binds to the generation observed by its
+session, so content queued before clear cannot reappear after clear.
+
+Catch-up fills product history only. The hub marks the boundary before it sends
+resume material, then marks later clips live. An eligible client writes only a
+new live remote clip after catch-up. Desktop eligibility requires an unlocked,
+active agent. Mobile eligibility requires the app to be foreground.
+
+### Content boundary and privacy
+
+One canonical seam encodes and decodes clip content for network ingress,
+SQLite storage, network egress, and platform delivery. This seam exists
+because deleting it would leave multiple encodings that a later reviewed
+content-protection change could not replace locally. Accepting multiple
+encodings would make byte fidelity and canary coverage undecidable.
+
+Shared clear needs a durable generation because deleting that mechanism would
+allow an offline or queued pre-clear clip to restore cleared history.
+Accepting that failure would contradict the user-visible meaning of clear.
+
+### Topology and delivery hold
+
+The public product names no Tailnet, host, address, user, path, or deployment
+boundary. Private deployment configuration selects the hub and Tailnet
+confinement. The hub-and-spoke shape does not assume where the hub runs.
+
+Implementation can start only after an independent reviewer clears the exact
+Spirit and technical-spec commit and the product owner accepts that reviewed
+candidate. Integration, deployment, publication, listener activation, and
+release require their own later authority.
+
+## Acceptance
+
+| ID | Given / When / Then |
+| --- | --- |
+| S-A01 | Given a connection admitted by Tailnet policy and handed over by the local Tailscale boundary, when the hub opens a ClipMesh session, then it uses only the boundary-asserted peer identity. |
+| S-A02 | Given a request that asserts a different peer identity in application data, when the hub validates it, then the hub rejects the request and changes no state. |
+| S-A03 | Given default configuration or a configuration that cannot prove Tailnet-only confinement, when the hub starts, then it accepts no connection and exits with a content-free failure. |
+| S-A04 | Given two ACL-admitted members, when either publishes, reads history, or requests shared clear, then the hub applies the same authority rules to both. |
+| S-A05 | Given default retention and 501 unexpired clips, when clip 501 commits, then SQLite retains the newest 500 clips. |
+| S-A06 | Given default retention and a clip that reaches seven days of age, when history is queried, then the query omits that clip and oldest-first cleanup removes its row. |
+| S-A07 | Given retained clips and a current clear generation, when one admitted member requests shared clear, then one transaction deletes retained clips and advances the generation. |
+| S-A08 | Given an offline or queued publish from before shared clear, when it reaches the hub after clear, then the hub rejects it and it does not enter history or a system clipboard. |
+| S-A09 | Given a nonempty desktop or mobile clipboard and retained resume material, when catch-up runs, then product history fills and the system clipboard remains unchanged. |
+| S-A10 | Given catch-up is complete, when another member publishes a new live remote clip, then an unlocked active desktop and a foreground mobile client each write the exact text once. |
+| S-A11 | Given a clipboard entry with no explicit confidential or transient hint, when the client observes supported text, then it does not suppress the entry because of its bytes, pattern, source name, or timing. |
+| S-A12 | Given an explicit confidential or transient hint, when the client observes the entry, then no clip content enters its outbox, the wire, history, or diagnostics. |
+| S-A13 | Given one clip crossing ingress, SQLite, and egress, when seam instrumentation runs, then each content transformation uses the canonical serialization seam and the delivered UTF-8 bytes equal the source bytes. |
+| S-A14 | Given a remote-write echo, duplicate delivery, exact retry, replay attempt, or concurrent publish, when the state machines process it, then cursor order stays total, exact retry creates no duplicate, replay changes no state, and no clipboard loop forms. |
+| S-A15 | Given repository and diagnostic canaries, when boundary scans run, then they find no clip content, content hash, private topology value, application credential surface, or non-MIT project license. |
+
+## Open Questions
+
+No blocking product question remains for this MVP.
+
+The following questions are **NON-BLOCKING**:
+
+1. Which captured Wayland and macOS signals qualify as explicit confidential
+   or transient hints? Until a signal has a real capture and test, the adapter
+   treats it as an ordinary supported text entry.
+2. Which supported Linux lock-state API supplies the real lock event? Unknown
+   or unavailable lock state remains locked.
+3. Future E2EE, a Share extension, new clipboard types, direct delivery, or
+   another protocol version each requires a new reviewed product decision.
+
+Operating pattern taught to agents: none. This Spirit defines ClipMesh product
+behavior and does not amend Tightbeam operating guidance.

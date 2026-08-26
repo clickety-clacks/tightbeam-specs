@@ -1,413 +1,397 @@
 # ClipMesh MVP technical specification v1
 
-Status: amended draft for independent adversarial re-review. These bytes
-authorize no implementation, deployment, enrollment, live service mutation,
-private inventory mutation, or use of a private topology.
+Status: policy amendment candidate for independent adversarial review. These
+bytes authorize no implementation, product-code edit, integration, deployment,
+publication, release, listener activation, enrollment, or live or
+private-state mutation.
 
 Authority and evidence:
 
-- The canonical seed is ClipMesh `docs/initial-spirit.md` at commit
-  `89c6579dc1ddc180ce22e954ecc39cc410eee887`, artifact `art_3d431942`,
-  SHA-256
+- Canonical seed: ClipMesh `docs/initial-spirit.md` at
+  `89c6579dc1ddc180ce22e954ecc39cc410eee887`, artifact
+  `art_3d431942`, SHA-256
   `60e59c7b7e200a6ce70114ebad34e420cf291e4d6c4e3493f1d3b297f3e85b9a`.
-- The approved product authority is `clipmesh-spirit-v1.md` at tightbeam-specs
-  commit `472cfd261728bc88e9e655a9a9bf73ed94e9064e`, artifact
-  `art_be61a318`, SHA-256
-  `e1839054f8059bf591388123714c6801a974a3a3936ef912adcacd9832934adf`.
-- Product-owner digest `att_a558caac-d662-412e-85f7-750379a3bc88` found the
-  Spirit coherent and ready for the normal spec-review-build-review cycle.
-- Product-owner approval `att_d7e08368-3c00-47cf-949e-0aedb40c384c`
-  approved that Spirit without authorizing deployment or enrollment.
-- Independent review `att_de988914-ebd9-4ff1-907c-602701c66c8c` requested
-  seven changes against commit
-  `955b7046c9fdbb4db7af335521beb9765da37203`. This revision addresses F1
-  through F7 and remains unapproved until review clears its exact bytes.
-- Work item `wi_0507efeb-914b-4289-9930-30cd36eb7e88` owns this product
-  thread. Assignment `asg_3dfed51c-3ba4-44ef-8772-2dbebf15af88` owns this
-  specification until independent review returns `reviewed-clean`.
+- Prior canonical technical specification: tightbeam-specs commit
+  `b59444fcd0d5321b73dd800146adcb67b8754177`, artifact
+  `art_6b0b9064`, SHA-256
+  `0f51ae73fdfa5ae479794daaddbcb59c09e20e53c59f817fe57edbf5eed31c8d`.
+- Mike's authoritative MVP update:
+  `att_91cda21f-c8c0-4b5a-9ef0-5ac2473e46c1`.
+- Product-owner policy:
+  `att_29c3a660-ee1a-4eb1-9f4c-7b5f177b6523`.
+- Product-owner Spirit digest:
+  `att_b4f90db5-0211-4c92-92a8-85bf14567af9`.
+- Cold digest verdict:
+  `att_c17096fc-7f34-4ef1-80dc-f5ceabee007a`.
+- Bounded delivery plan:
+  `att_4e2ae985-61ba-4539-8c7b-1115aa4526e7`.
+- Mechanism verification: Tailscale's identity documentation states that a
+  destination application can use LocalAPI to identify the node that made a
+  request; the official `tailscale.com/client/local` package documents
+  `Client.WhoIs` as a stable API. Verified 2026-08-26 against
+  <https://tailscale.com/docs/concepts/tailscale-identity> and
+  <https://pkg.go.dev/tailscale.com/client/local#Client.WhoIs>.
+- Work item `wi_0507efeb-914b-4289-9930-30cd36eb7e88` owns the
+  product thread. Assignment
+  `asg_3c97d196-571f-4a54-8d41-c4b48b03a727` owns this amendment
+  until one independent exact-commit review returns.
 
-When this specification conflicts with the approved Spirit, the Spirit
-controls. A material correction amends this file before a builder acts on it.
+The canonical `clipmesh-spirit-v1.md` at the same candidate commit controls
+product intent. This technical specification controls the build contract. A
+material clarification amends both canonical files before affected work
+resumes.
 
 ## Goal
 
-Define one buildable first release of ClipMesh for a small personal fleet on a
-private overlay network. The release consists of a Rust hub, Rust Wayland Linux
-and macOS desktop agents, a foreground SwiftUI iOS and iPadOS client, and
-generic deployment assets.
+Define one buildable text-only ClipMesh MVP for a small personal Tailnet. The
+MVP contains a Rust hub, Rust Wayland Linux and macOS agents, a foreground
+SwiftUI iOS and iPadOS client, and generic deployment assets.
 
-Define the shared protocol and security boundary before product code splits.
-The specification makes authentication, authorization, wire compatibility,
-ordering, replay handling, resume, loop suppression, retention, purge,
-platform behavior, diagnostics, and repository neutrality decidable from test
-evidence.
+The hub is trusted to read plaintext clip content. Tailscale WireGuard protects
+transit. The local `tailscaled` LocalAPI authenticates each inbound peer.
+ClipMesh creates no application identity, credential, device, enrollment, or
+administrator system.
 
-The MVP uses a trusted hub that reads plaintext. TLS, unique device
-credentials, explicit administrator authority, private binding, short
-retention, and content-free diagnostics bound that trust decision.
+The specification makes the following behaviors decidable from evidence:
+Tailnet-only binding, peer identity, equal-member authority, protocol
+compatibility, content serialization, cursor ordering, retry and replay,
+resume, live clipboard overwrite, loop suppression, persistent retention,
+shared clear, platform behavior, diagnostics, migrations, and repository
+neutrality.
 
-This design adds one shared protocol and authority boundary because deleting
-either would delete the cross-device outcome, while accepting divergent client
-behavior would make replay, purge, and credential isolation undecidable.
+The design adds three application mechanisms because deleting any one would
+break a core outcome: one ordered SQLite state writer, one durable clear
+generation, and one canonical clip-content serialization seam. Accepting
+unordered state, pre-clear replay, or divergent content encodings would make
+the clipboard contract false or undecidable.
 
 ## Non-Goals
 
-- The MVP does not provide end-to-end or zero-knowledge payload encryption.
-- The MVP does not provide mutual TLS.
-- The MVP does not copy images, files, HTML, RTF, or another MIME type.
-- The MVP does not discover or operate a service on the public Internet.
-- The MVP does not provide accounts, billing, social sharing, or multi-tenant
-  hosting.
-- The MVP does not provide an iOS or iPadOS Share extension.
-- The MVP does not claim passive background clipboard monitoring on iOS or
-  iPadOS.
-- The MVP does not elect a hub, fail over between hubs, or deliver directly
-  between devices.
-- The MVP does not provide a desktop clipboard-manager interface.
-- The MVP does not require pairwise approval between devices.
-- The MVP does not invent cryptographic primitives.
-- The MVP does not promise erasure from an offline client, an operating-system
-  pasteboard, storage snapshots, or storage hardware.
-- This specification does not choose a private hub, address, hostname,
-  username, filesystem layout, credential, inventory, or deployment boundary.
-- This specification does not implement, deploy, enroll, issue a usable
-  credential, or mutate a live or private system.
+- End-to-end or zero-knowledge payload encryption.
+- Application accounts, pool keys, bearer credentials, device records,
+  administrator endpoints, enrollment, pairing, rotation, credential expiry,
+  or recurring onboarding.
+- Application TLS, mutual TLS, a TLS certificate identity, or a certificate
+  handoff.
+- Images, files, HTML, RTF, or another clipboard MIME type.
+- Public-Internet discovery or a public listener.
+- Multi-tenant hosting, billing, social sharing, or application fleet
+  administration.
+- Passive iOS or iPadOS background clipboard monitoring.
+- An iOS or iPadOS Share extension.
+- Memory-only hub history.
+- Hub election, failover, or direct peer-to-peer clip delivery.
+- A desktop clipboard-manager interface.
+- Payload heuristics for secret or sensitive-content detection.
+- Erasure from an offline client, a current system clipboard, a storage
+  snapshot, or storage hardware.
+- A private Tailnet, host, address, username, filesystem layout, inventory
+  boundary, or deployment target in public bytes.
+- Implementation, target integration, deployment, publication, release,
+  listener activation, or mutation of a live or private system.
 
 ## Terms
 
-- **Administrator:** A principal authenticated with an administrator bearer
-  credential. The administrator controls device creation, enrollment-artifact
-  issuance, credential rotation, revocation, hub pause state, and global
-  history purge. Administrator authority does not grant data-plane access.
-- **Device:** One enrolled Linux, macOS, iOS, or iPadOS client identified by an
-  opaque UUIDv4 `device_id` and one current device bearer credential.
-- **Device credential:** A 256-bit random bearer secret bound to one device.
-  It authorizes a data-plane session for that device and no administrator
-  operation.
-- **Administrator credential:** A 256-bit random bearer secret supplied to the
-  hub through an external secret file. It authorizes administrator endpoints
-  and no data-plane session.
-- **Enrollment artifact:** A 256-bit random bearer secret that can activate one
-  pending mobile device once before its fixed expiry.
-- **Data plane:** The authenticated WebSocket session that carries resume,
-  publish, delivery, acknowledgement, and control messages.
-- **Control plane:** The authenticated HTTPS administrator and enrollment
-  endpoints. Health and readiness endpoints form a separate unauthenticated,
-  content-free surface on the same confined TLS listener.
-- **Clipboard event:** The immutable client-authored metadata and UTF-8 text
-  for one publish attempt. The hub binds the asserted source to the
-  authenticated device.
-- **Message ID:** A client-generated UUIDv4 that identifies one clipboard
-  event across retries.
-- **Source sequence:** A positive unsigned 64-bit integer allocated
-  monotonically by one device. Gaps are valid. Reuse is invalid unless the
-  request is an exact retry of an event that remains in history.
+- **Tailnet:** The deployment's Tailscale network. Tailscale WireGuard
+  authenticates nodes and encrypts their traffic.
+- **LocalAPI:** Tailscale's local client interface to the `tailscaled`
+  daemon on the same host. Version 1 relies on the specifically stable WhoIs
+  operation and confines other LocalAPI compatibility inside one adapter.
+- **WhoIs:** The stable LocalAPI operation documented by
+  `local.Client.WhoIs(context, remoteAddr)`. The Rust
+  `tailscale_identity` adapter performs that operation through the system
+  local daemon connection and resolves an accepted socket's observed remote
+  address to a Tailscale node.
+- **Stable peer ID:** The nonempty `WhoIsResponse.Node.StableID` returned by
+  LocalAPI. It is the ClipMesh session's source identity.
+- **ACL-admitted member:** A Tailnet peer that can reach the configured hub
+  socket under Tailnet policy and for which WhoIs returns a stable peer ID.
+- **Client identity claim:** A header, query value, URL value, WebSocket
+  subprotocol value, or application-message field that asks ClipMesh to treat
+  the client as a named peer. Version 1 accepts no such claim.
+- **Clip content:** Nonempty UTF-8 text represented in memory by
+  `ClipContentV1`.
+- **Canonical clip-content serialization seam:** The
+  `ClipContentV1` module and type boundary. It alone validates decoded text,
+  encodes or decodes wire base64url, calculates or checks content length and
+  SHA-256, supplies or consumes a persistent content BLOB, compares content
+  bytes, and produces a bounded UI preview.
+- **Message ID:** A client-generated canonical UUIDv4 that identifies one
+  publish across retries.
+- **Clear request ID:** A client-generated canonical UUIDv4 that identifies
+  one shared-clear request across retries. Message IDs and clear request IDs
+  are global version-1 identifiers, not member-scoped identifiers.
 - **Cursor:** A positive unsigned 64-bit integer allocated monotonically by
-  the hub when it accepts an event. Cursor order is the delivery and history
-  order.
-- **History epoch:** A hub-generated UUIDv4 that names one continuity interval
-  of retained history. Global purge and memory-history restart replace it.
-- **Resume boundary:** Cursor `B`, captured while the hub atomically registers
-  a resuming session. Events at cursors less than or equal to `B` are resume
-  material. Events accepted after `B` are live material.
-- **Resume gap:** Evidence that at least one accepted cursor after the client's
-  cursor is no longer available because of expiry or count trimming.
-- **Live event:** An event accepted after a session's resume boundary. Desktop
-  agents can write only live remote events to the operating-system clipboard.
-- **Resume event:** A retained event at or before a session's resume boundary.
-  A desktop agent records its cursor but does not write it to the
-  operating-system clipboard.
-- **Exact retry:** A repeated `publish` whose authenticated source,
-  `message_id`, `source_seq`, timestamps, content type, payload length, content
-  hash, and payload bytes equal a retained accepted event.
-- **Replay ledger:** Content-free durable metadata containing each device's
-  highest accepted source sequence and message-ID tombstones. Expiry and purge
-  remove payload-bearing history but preserve replay resistance.
-- **Local pause:** A desktop-agent state that stops clipboard observation,
-  publishing, delivery application, and its data-plane connection.
-- **Administrative pause:** A durable hub state for one device or the data
-  plane as a whole. It refuses affected data-plane authentication and closes
-  affected sessions.
+  the hub when it accepts a clip. Cursor order is history and delivery order.
+- **History epoch:** A hub-generated UUIDv4 that names one supported SQLite
+  continuity line. An ordinary restart preserves it.
+- **Clear generation:** A positive unsigned 64-bit integer stored by the hub.
+  It starts at 1 and advances by one in the same transaction as shared clear.
+- **Resume boundary:** Cursor `B`, captured in the same serialized action
+  that registers a resuming subscriber. Cursors at or below `B` are resume
+  material. Clips accepted afterward are live material.
+- **Live remote clip:** A clip accepted after the receiving session's resume
+  boundary whose stable source peer ID differs from the receiving session's
+  stable peer ID.
+- **Exact retry:** A repeated publish whose stable source peer ID, message ID,
+  clear generation, client creation timestamp, and clip content bytes equal
+  one retained accepted clip.
+- **Replay ledger:** Durable content-free message-ID tombstones. The ledger is
+  not a member registry and grants no authority.
+- **Shared clear:** An admitted member's request that atomically deletes
+  retained clip rows and increments clear generation.
+- **Explicit confidential or transient hint:** A real platform signal that the
+  operating system or source application directly attaches to one clipboard
+  entry and that a captured adapter mapping classifies as `confidential` or
+  `transient`.
+- **Local pause:** A desktop state that stops clipboard observation,
+  publishing, remote writes, and the data session.
 - **Local-only next copy:** A one-shot desktop control that suppresses the next
-  eligible local clipboard observation without sending its payload to the hub.
-- **Recognized sensitive hint:** A platform clipboard signal that the platform
-  adapter has mapped to the protocol-domain value `sensitive = true` from a
-  captured real platform response. The adapter does not infer sensitivity from
-  clipboard text.
+  eligible local observation before it creates `ClipContentV1`.
 - **Content-free diagnostic:** A log, metric, health response, error, or crash
-  report that contains no payload bytes, preview, base64 payload, payload hash,
-  credential, authorization header, device display name, or payload-derived
-  string.
-- **Generic fixture:** Test material that uses reserved example names,
-  synthetic clipboard text, synthetic UUIDs, and structurally redacted
-  credentials. It contains no value copied from a private deployment.
-- **Normal delivery conditions:** Two authenticated desktop agents connected
-  to one test hub; network round-trip time at most 100 ms; packet loss zero;
-  payload at most 4 KiB; no configured pause; both desktops unlocked; hub and
-  agents below 70 percent CPU utilization.
+  fixture that cannot represent clip content, a preview, content length,
+  content hash, raw platform metadata, stable peer ID, Tailnet user data, or a
+  payload-derived string.
+- **Generic fixture:** Synthetic test material made from reserved example
+  values and containing no private deployment value.
+- **Normal delivery conditions:** Two admitted desktop clients connected to
+  one test hub; network round-trip time at most 100 ms; packet loss zero; clip
+  size at most 4 KiB; no pause; both desktops unlocked; hub and clients below
+  70 percent CPU utilization.
 
 ## Assumptions
 
-1. The deployment provides a private overlay route between enrolled devices
-   and one stable hub.
-2. The deployment provides a valid TLS server certificate whose name matches
-   the configured hub URL and whose issuer the clients trust.
-3. The deployment supplies administrator and device secrets outside the public
-   repository.
-4. Linux MVP hosts run a Wayland session with working `wl-paste` and `wl-copy`
-   commands.
-5. macOS exposes pasteboard change counts, declared pasteboard types, and a
-   session-lock signal through native APIs.
-6. iOS and iPadOS permit foreground URLSession WebSocket use and explicit
-   writes to `UIPasteboard.general`.
-7. A device clock can remain within two minutes of the hub clock. A client
-   outside that bound receives an explicit timestamp rejection instead of a
-   weakened replay rule.
-8. The deployment owner accepts hub-readable plaintext under the safeguards in
-   this specification.
-9. The repository can run Rust tests, Swift tests, a real SQLite process, and
-   platform-specific adapter tests on their respective operating systems.
-10. The MIT license text can land at the public repository root before release.
+1. The hub host runs a supported Tailscale client with a reachable LocalAPI.
+2. LocalAPI `WhoIs` returns a nonempty node stable ID for a connection that
+   Tailnet policy admits to the hub.
+3. The configured hub bind address is one of the current self Tailnet
+   addresses reported by the same local Tailscale client.
+4. Tailnet policy owns reachability. ClipMesh does not inspect or reproduce
+   Tailnet policy.
+5. The deployment owner accepts a hub that reads plaintext clips.
+6. Tailscale WireGuard protects traffic in transit. FileVault, LUKS, or mobile
+   protected storage protects retained endpoint history at rest.
+7. Linux MVP hosts run a supported Wayland session with real clipboard and
+   lock-state surfaces.
+8. macOS exposes native pasteboard change counts, declared types, and a
+   lock-state signal.
+9. iOS and iPadOS permit foreground WebSocket use and writes to
+   `UIPasteboard.general`.
+10. A client clock stays within two minutes of the hub clock. The hub rejects
+    a clip outside that bound.
+11. The build can test Rust, Swift, SQLite, LocalAPI, socket confinement, and
+    real platform adapters on their respective targets.
+12. The repository root can carry the MIT license before release.
 
 ## Invariants
 
-These invariants control the architecture and acceptance matrix. A later
-implementation choice cannot weaken them without a reviewed amendment to this
-file.
+These clause identities replace the same-numbered clauses in the prior
+technical specification. A decomposition that cites one of them must re-read
+this candidate before it resumes.
 
 ### I1 — One explicit protocol version
 
-Rust owns the canonical version-1 domain and wire schemas. Swift maps those
-schemas without a second interpretation. Each application message carries
-`protocol_version = 1`. A receiver rejects another version before it processes
-message-specific fields.
+Rust owns the canonical version-1 domain and wire schema. Swift maps that
+schema without a second interpretation. Each application message carries
+`protocol_version = 1`. A receiver rejects another version before
+message-specific handling.
 
-### I2 — Authentication determines device identity
+### I2 — Local Tailscale identity determines the session peer
 
-The hub derives the session device from the presented credential. A published
-`source_device_id` must equal that authenticated device. The hub rejects a
-mismatch and writes no event, cursor, sequence, or history row.
+For each accepted TCP socket, the hub calls LocalAPI WhoIs with the socket's
+observed remote address before it parses an HTTP request. The hub binds the
+returned stable peer ID to the connection lifetime. It closes the socket when
+WhoIs fails or returns no stable ID. No client value can select or modify the
+session peer.
 
-### I3 — Device and administrator authority are disjoint
+### I3 — ACL-admitted members have equal application authority
 
-A device credential can open only the data-plane endpoint. An administrator
-credential can call only administrator endpoints. An enrollment artifact can
-call only the enrollment exchange endpoint. The hub returns the same
-`unauthorized` shape for an invalid credential and a credential of the wrong
-class.
+Each established member can resume history, publish text, acknowledge
+delivery, and request shared clear. The protocol has no privileged member,
+administrator operation, device-control operation, or application membership
+mutation.
 
-### I4 — The transport and listener fail closed
+### I4 — Tailnet-only application transport fails closed
 
-The hub serves TLS 1.3 on explicit non-global unicast addresses. It has no
-listener default. It rejects wildcard, globally routable, multicast,
-link-local, and broadcast bind addresses. It starts serving only after it has
-bound each configured socket and validated its complete configuration.
+The hub has no listener default. Before binding, it obtains the host's current
+Tailnet self addresses through LocalAPI and requires each configured bind IP to
+equal one of them. It rejects wildcard, loopback, LAN, public, documentation,
+multicast, and link-local addresses. A LocalAPI, identity, configuration, or
+bind failure starts no accept loop.
 
-Each client accepts `https` and `wss` transport only. Each client verifies the
-server certificate chain, validity interval, and configured DNS name. The MVP
-has no certificate-verification bypass.
+Application traffic is plaintext HTTP and WebSocket over Tailnet WireGuard.
+Version 1 has no application TLS or plaintext fallback to a second interface.
 
-### I5 — Accepted events have one total order
+### I5 — Accepted clips have one total order
 
-The hub allocates one cursor in the same transaction that accepts an event.
-Cursor values increase without reuse. History queries, resume delivery, and
-live delivery use ascending cursor order.
+The hub allocates one cursor in the same SQLite transaction that accepts a
+clip. Cursor values increase without reuse. History queries, resume material,
+and live delivery use ascending cursor order.
 
-### I6 — Publish retry is idempotent; replay changes no state
+### I6 — Retry is idempotent and replay changes no state
 
-An exact retry of a retained event that reaches replay validation returns its
-original cursor with `duplicate = true`. It creates no history row and no
-second live delivery. Transport, session, connection, and rate admission can
-reject a publish before replay validation. A reused message ID with different
-event fields, a tombstoned message ID, or a source sequence at or below the
-device's accepted high-water mark is a replay rejection. A rejection advances
-no cursor or source-sequence high-water mark.
+An exact retry of a retained clip returns its original cursor with
+`duplicate = true`. It creates no row and no second live delivery. A reused
+message ID with changed input or a tombstoned message ID is rejected without
+cursor, history, replay, or clear-generation change.
 
 ### I7 — Resume and live transition form one boundary
 
 The hub registers the subscriber and captures resume cursor `B` in one
-serialized action. It buffers events accepted after `B` until it has sent
-`resume_complete(B)`. It then sends buffered events in cursor order as live
-events. The check and transition are indivisible with respect to publish
-acceptance.
+serialized action. It buffers clips accepted after `B` until it sends
+`resume_complete(B)`. It then sends those clips in ascending cursor order as
+live material. The transition is indivisible with respect to publish and
+shared clear.
 
-### I8 — Reconnect, unlock, and unpause do not apply backlog
+### I8 — Catch-up never writes a system clipboard
 
-A desktop writes an event to the operating-system clipboard only when the
-event is tagged `live`, the event source is another device, and the desktop is
-unlocked and locally active at the write boundary. Resume events update cursor
-and dedupe state without changing the operating-system clipboard.
+A desktop or mobile client processes resume material into ClipMesh history and
+cursor state without a platform clipboard write. After
+`resume_complete`, each new live remote clip invokes one exact platform
+write when the desktop is active and unlocked or the mobile app is foreground.
+Self-source, duplicate, expired, pre-clear, and already-processed clips invoke
+no write.
 
 ### I9 — Clipboard loops terminate without a timer
 
-An agent suppresses its own message IDs, previously processed message IDs, and
-the first local observation that matches bytes the agent just wrote remotely.
-It clears the write marker on the first later clipboard observation, whether
-that observation matches or differs. It also suppresses consecutive local
-observations with one content hash within one agent process generation. No
-elapsed-time threshold decides loop identity.
+A client suppresses its own message IDs, processed message IDs, and the first
+local observation caused by its most recent remote write. It decides from
+identifiers, platform revisions, and byte equality. No elapsed-time threshold
+decides loop identity.
 
-### I10 — Lock, pause, and sensitive state fail closed
+### I10 — Lock, pause, and source hints fail closed
 
-A desktop whose lock state is unknown acts as locked. Lock and local-pause
-transitions cancel queued, uncommitted local observations. A recognized
-sensitive hint prevents outbox creation. The state check and outbox commit or
-clipboard-write invocation share one serialized agent-state boundary.
+A desktop with unknown lock state acts locked. Lock and local-pause
+transitions cancel an uncommitted local observation. An explicit confidential
+or transient hint prevents `ClipContentV1` creation. The client uses no
+content, pattern, source-name, or timing heuristic. State check and outbox
+commit or clipboard-write invocation share one serialized client boundary.
 
-### I11 — Retention limits compose
+### I11 — Retention age, count, and payload limits compose
 
-An event must satisfy the configured payload-size limit before acceptance.
-After acceptance, the hub removes expired events and trims the lowest cursors
-until the configured count holds. The default limits are 262,144 payload
-bytes, 20 retained entries, and 14,400 seconds from client creation time. The
-first reached limit removes or rejects the event.
+The hub accepts a clip only within the configured payload bound. It assigns
+expiry from hub acceptance time. Queries omit expired rows. The serialized
+writer deletes expired rows and then the lowest cursors until the configured
+count holds.
 
-### I12 — Purge removes payload state but not replay protection
+Defaults are 262,144 bytes per clip, 604,800 seconds of retention, and 500
+retained clips. Generic bounded configuration can change each value. No value
+permits unbounded retention.
 
-Global purge deletes retained payloads, content hashes, source labels cached
-with events, local client history, and pending desktop outbox payloads. It
-replaces the history epoch. It preserves device records, credential digests,
-cursor high-water state, source-sequence high-water state, and content-free
-message-ID tombstones.
+### I12 — Shared clear is an atomic generation boundary
 
-### I13 — History mode changes payload durability only
+The hub processes shared clear through the same SQLite writer as publish. One
+transaction deletes retained clip rows, advances clear generation, updates the
+lost-through cursor, and stores a content-free request receipt. Before the
+seam releases, the hub drops queued old-generation event frames and prevents a
+session writer from handing another one to WebSocket output. It preserves the
+cursor high-water mark and message-ID tombstones. A publish bound to an
+earlier generation is rejected. Clients delete product history and pre-clear
+outbox content but do not change their system clipboard.
 
-SQLite history mode persists accepted events across an ordinary hub restart.
-Memory history mode stores payload-bearing events only in process memory. Both
-modes persist device administration and content-free replay metadata. A
-memory-history restart replaces the history epoch before it accepts a session.
+### I13 — SQLite is the only hub history mode
 
-### I14 — Diagnostics cannot represent clipboard content or secrets
+The hub persists epoch, clear generation, cursors, replay metadata, clear
+receipts, and retained clips in one SQLite database. An ordinary clean or
+crash restart preserves unexpired history and ordering. Version 1 exposes no
+memory mode.
 
-Protocol types wrap payloads and credentials in types whose `Debug` and
-`Display` render fixed redaction markers. Only the wire encoder and clipboard
-adapter can expose payload bytes. Logging, metrics, health, errors, and panic
-paths accept metadata types that contain no payload, payload hash, credential,
-authorization header, or display name.
+### I14 — Diagnostics cannot represent content or Tailnet identity
 
-### I15 — Mobile clipboard writes require a foreground user action
+`ClipContentV1` has fixed-redaction `Debug` and `Display`.
+Diagnostic types contain no clip bytes, preview, content length, content hash,
+stable peer ID, Tailnet address, Tailnet user profile, raw LocalAPI response,
+or payload-derived string.
 
-The mobile client writes one selected event to `UIPasteboard.general` only
-after an explicit selection action while the app is active. Resume, live
-delivery, refresh, activation, and background transitions perform no pasteboard
-write.
+### I15 — Foreground mobile combines live overwrite with explicit history
+
+The foreground mobile client catches up into a descending history view without
+a pasteboard write. After catch-up, a new live remote clip writes once to
+`UIPasteboard.general`. The user can also select one retained row to write
+its exact text. Background, resume, refresh, activation, clear, and epoch or
+generation change write nothing.
 
 ### I16 — The public repository is topology-neutral
 
-Source, defaults, examples, fixtures, tests, documentation, and deployment
-templates contain no value copied from a private deployment. Runtime topology
-enters through external configuration or inventory. Repository checks combine
-generic secret and topology-pattern scanning with an optional external exact
-denylist whose contents remain outside the repository.
+Source, defaults, examples, fixtures, tests, documentation, and templates
+contain no value copied from a private deployment. Runtime topology enters
+only through external configuration or inventory. An optional external exact
+denylist stays outside the repository.
 
-### I17 — One mutation seam owns each state
+### I17 — One ordered mutation seam owns shared state
 
-The hub event transaction alone mutates cursor, history, and replay state. The
-administrator service alone mutates device, credential, pause, enrollment, and
-purge state. The agent state machine alone commits outbox and clipboard-write
-decisions. The mobile view model alone mutates visible history and pasteboard
-requests.
+The hub SQLite writer alone mutates cursors, history, replay metadata, clear
+generation, and clear receipts. Publish, resume-boundary capture, retention,
+and shared clear serialize at that seam. Each client state machine alone
+commits outbox, history projection, clear, and platform-write decisions.
 
-Event and administrator mutations share one serialized storage writer. A
-publish transaction rechecks device state, credential generation, pause state,
-session epoch, and replay state before it writes. Therefore a publish orders
-entirely before or entirely after a concurrent rotation, revocation, pause, or
-purge.
+### I18 — Each failure is explicit and content-free
 
-The same mutation seam owns data-plane recipient eligibility. A committed
-rotation, revocation, or administrative pause marks each affected session
-ineligible, removes it from the subscriber set, and clears its queued
-application messages before the seam admits another publish. A publish selects
-recipients and enqueues its result before it releases that seam. A session
-writer acquires the seam and rechecks eligibility immediately before it hands
-a complete nonterminal application frame to TLS. Therefore the hub hands no
-later payload frame to TLS for an affected session after the administrator
-mutation commits. Only the mutation's terminal notice or error and close can
-follow the cutoff.
+Startup, LocalAPI, peer identity, admission, validation, rate, resume, clear,
+storage, and platform failures produce one stable reason code. A failure
+changes no state unless its response names an already committed idempotent
+publish or clear.
 
-### I18 — A failure is explicit and content-free
+### I19 — One seam serializes clip content across ingress, storage, and egress
 
-Startup, authentication, authorization, validation, rate, resume, storage, and
-platform failures produce one stable reason code. The failure changes no state
-unless its response explicitly reports a committed idempotent result or a
-committed purge. No error body includes request bodies, payload metadata that
-can fingerprint content, or credential material.
+Only `ClipContentV1` converts wire content to validated UTF-8 bytes, provides
+the SQLite BLOB, reconstructs content from that BLOB, compares content, or
+produces wire, platform, and preview output. Hub and client protocol handlers,
+repositories, diagnostics, platform state machines, and UI code cannot create
+or interpret a second content representation.
 
 ## Architecture
 
-### 1. Component and repository boundary
-
-The public product repository contains these ownership seams:
+### 1. Components and ownership
 
 | Surface | Owner | Required contents |
 | --- | --- | --- |
-| `clipmesh-protocol` Rust crate | Shared protocol | Domain types, wire schemas, validation, redacted wrappers, JSON fixtures, protocol conformance tests |
-| `clipmesh-hub` Rust binary | Hub | TLS listener, device data plane, administrator control plane, persistence, retention, health, limits |
-| `clipmesh-agent` Rust binary | Desktop | Shared protocol client, outbox, reconnect, state machine, platform adapter interface, local control |
-| Linux adapter | Desktop | Wayland `wl-paste --watch`, `wl-copy`, lock-state integration, sensitive-hint mapping |
-| macOS adapter | Desktop | Native pasteboard reads and writes, change-count loop marker, lock-state integration, Keychain credential storage |
-| `ClipMesh` SwiftUI target | Mobile | Version-1 Swift mapping, foreground session, history view, explicit pasteboard copy, Keychain storage |
-| Deployment assets | Packaging | Generic systemd user unit, launchd agent template, Ansible role variables, configuration reference |
-| Repository checks | CI | Protocol cross-language checks, secret scan, topology-neutral scan, content-canary scan, license check |
+| `clipmesh-protocol` Rust crate | Shared protocol | Closed version-1 schemas, scalar validation, `ClipContentV1`, redacted wrappers, fixtures, Rust and Swift conformance corpus |
+| `clipmesh-hub` Rust binary | Hub | LocalAPI client, Tailnet-only listener, WhoIs admission, WebSocket protocol, SQLite state writer, retention, shared clear, health and readiness |
+| `clipmesh-agent` Rust binary | Desktop | Session client, persistent outbox, cursor and generation state, reconnect, loop suppression, local controls, platform adapter interface |
+| Wayland adapter | Desktop | Real clipboard observation and writes, platform revision, lock state, explicit confidential/transient mapping |
+| macOS adapter | Desktop | Native pasteboard observation and writes, change-count loop marker, lock state, explicit confidential/transient mapping |
+| `ClipMesh` SwiftUI target | Mobile | Version-1 mapping, foreground session, explicit history, live remote pasteboard write |
+| Deployment assets | Packaging | Generic systemd and launchd templates, Ansible-friendly configuration variables, SQLite state setup |
+| Repository checks | CI | Cross-language protocol checks, topology scan, content-canary scan, obsolete-surface scan, MIT license check |
 
-The repository root carries the MIT license. Deployment assets contain
-placeholders or reserved example domains. They contain no private inventory.
+The repository root carries the MIT license. This document establishes the
+`ClipMesh protocol v1` and `ClipContentV1` patterns only for ClipMesh.
 
-This specification establishes the `ClipMesh protocol v1` pattern. It applies
-only to ClipMesh hub, desktop, and mobile communication. It does not establish
-a general protocol pattern for another project.
+### 2. Tailnet transport and encoding
 
-### 2. Transport and encoding
-
-1. The hub exposes one or more configured TLS listeners.
-2. The listener supports TLS 1.3 through rustls. It does not enable plaintext
-   HTTP, opportunistic TLS, or a redirect from plaintext HTTP.
-3. The data-plane path is `/v1/stream` and requires a WebSocket upgrade with
-   subprotocol `clipmesh.v1`.
-4. The client supplies `Authorization: Bearer <DEVICE_CREDENTIAL>` in the TLS
-   protected upgrade request. A credential never appears in a URL, query,
-   WebSocket subprotocol value, log, or error.
-5. Application messages are UTF-8 JSON WebSocket text messages. Binary frames
-   produce `protocol_schema_invalid` and close the session. A text message that
-   is not valid UTF-8 produces the same result. A JSON document is one object
-   with no duplicate keys and no byte-order mark.
-6. A version-1 inbound schema is closed. An unknown field, missing field,
-   duplicate key, wrong JSON type, or unknown message type produces
-   `protocol_schema_invalid`. This rule makes an additive wire change a new
-   reviewed protocol version.
-7. The maximum decoded WebSocket text-message size is
-   `4 * ceil(max_payload_bytes / 3) + 4096` bytes. The hub rejects a larger
-   inbound message before JSON parsing, sends `message_too_large` when its
-   outbound queue can accept the error, and closes the session. A client closes
-   on a larger inbound message and records `message_too_large` without parsing
-   or exposing the bytes. The 4,096-byte envelope allowance covers each
-   version-1 metadata and JSON field at its maximum encoded size. Before it
-   validates `server_hello`, a client uses the version-1 hard cap 1,402,200
-   bytes. It then adopts the lower configured limit from a valid hello.
-8. WebSocket compression is disabled in version 1. This removes
-   secret-and-payload compression side channels and makes frame limits exact.
+1. The hub exposes one configured TCP listener whose IP passes Architecture 8.
+2. The listener accepts HTTP/1.1 and WebSocket on plaintext application bytes.
+   Tailnet WireGuard owns transport authentication and encryption.
+3. The data path is `GET /v1/stream` with WebSocket subprotocol
+   `clipmesh.v1`.
+4. The client sends no `Authorization`, identity, forwarding, proxy, or
+   device header. The hub rejects `Authorization`,
+   `X-Forwarded-For`, `Forwarded`, and `X-ClipMesh-*` on the stream
+   request with `client_identity_claim_forbidden`.
+5. The request URL contains no user information, query, or fragment.
+6. Each application message is one UTF-8 JSON object in a WebSocket text
+   message. Binary, invalid UTF-8, duplicate-key, unknown-field, missing-field,
+   wrong-type, and unknown-message input is invalid.
+7. WebSocket compression is disabled.
+8. The maximum decoded WebSocket text message is
+   `4 * ceil(max_payload_bytes / 3) + 4096` bytes. A receiver rejects a
+   larger frame before JSON parsing.
 9. The hub sends a WebSocket ping after 30 seconds without outbound traffic.
-   It closes the session with `heartbeat_timeout` when no matching pong arrives
-   within 10 seconds.
-10. The hub uses HTTP JSON for control-plane requests. A request and response
-    carry `Content-Type: application/clipmesh+json;version=1`. The maximum
-    decoded request body is 65,536 bytes.
+   It closes after 10 more seconds without the matching pong.
+10. Version 1 has no alternate HTTP listener, redirect listener, TLS listener,
+    or proxy-trusted identity-header mode.
 
-### 2.1. Version compatibility and migration
+### 2.1. Version compatibility
 
-A version-1 client offers only WebSocket subprotocol `clipmesh.v1`. A
-version-1 hub selects that exact subprotocol or refuses the upgrade with
-`protocol_version_unsupported`. Neither side falls back to an unversioned
-protocol after a refusal.
+A version-1 client offers only `clipmesh.v1`. A version-1 hub selects that
+exact subprotocol or refuses the upgrade. Neither side falls back to an
+unversioned protocol.
 
-Version 1 permits implementation fixes that leave each scalar, field, enum,
-validation rule, state transition, and observable response unchanged. Adding,
-removing, renaming, or reinterpreting one field or enum value creates a later
-protocol version. A later hub can serve two reviewed subprotocols during a
-migration window, but one session uses one version from hello through close.
-The hub maps each supported wire version into one internal event model before
-it writes history. A future version specification must define cross-version
-history projection and downgrade behavior. Version 1 does not guess either.
+An implementation fix can remain version 1 only when every field, scalar,
+enum, validation rule, state transition, and observable response remains
+unchanged. Adding, removing, renaming, or reinterpreting one wire value
+requires a later reviewed protocol version.
 
 ### 3. Canonical scalar forms
 
@@ -415,52 +399,55 @@ history projection and downgrade behavior. Version 1 does not guess either.
 | --- | --- | --- |
 | `protocol_version` | JSON integer | Exact value `1` |
 | UUID field | JSON string | Lowercase canonical UUIDv4 with hyphens |
-| `source_seq`, `cursor` | JSON string | Decimal `1` through `18446744073709551615`, no sign, no leading zero |
+| `cursor`, `clear_generation` | JSON string | Decimal `1` through `18446744073709551615`; no sign or leading zero |
 | Timestamp | JSON integer | Signed 64-bit Unix epoch milliseconds in UTC |
 | `content_type` | JSON string | Exact value `text/plain` |
 | `payload_b64` | JSON string | RFC 4648 base64url without padding |
-| `content_sha256` | JSON string | 64 lowercase hexadecimal characters over decoded payload bytes |
-| Device display name | JSON string | 1 through 64 Unicode scalar values; excludes U+0000..U+001F, U+007F, U+202A..U+202E, and U+2066..U+2069 |
-| Platform | JSON string | One of `linux_wayland`, `macos`, `ios`, `ipados` |
-| Reason code | JSON string | One stable lowercase snake-case value from this specification |
+| `content_sha256` | JSON string | 64 lowercase hexadecimal characters |
+| Stable peer ID | internal string | Nonempty LocalAPI `Node.StableID`; never accepted in client input |
+| Reason code | JSON string | One lowercase snake-case value from Architecture 17 |
 
-The protocol preserves payload bytes exactly. It performs no Unicode
-normalization and no newline conversion. Decoded payload bytes must form
-non-empty UTF-8 text. `payload_bytes` is the decoded byte count.
+The protocol preserves UTF-8 bytes exactly. It performs no Unicode
+normalization or newline conversion.
 
-Credential wire forms are:
+### 4. Clip content and publish schema
 
-- device: `cm_dev_v1_` followed by the 43-character unpadded base64url encoding
-  of 32 random bytes;
-- administrator: `cm_admin_v1_` followed by the same encoding;
-- enrollment: `cm_enroll_v1_` followed by the same encoding.
+`ClipContentV1` is an opaque domain type. Its module exposes only these
+operations:
 
-The generator reads an operating-system cryptographic random source. The hub
-stores SHA-256 credential digests and credential class, not plaintext
-credentials. It returns a newly issued plaintext credential in one response.
-It cannot retrieve that value later.
+| Operation | Input | Output and rule |
+| --- | --- | --- |
+| `from_wire` | `payload_b64`, `payload_bytes`, `content_sha256` | Decode base64url; require nonempty valid UTF-8; enforce size; require exact length and hash; return `ClipContentV1` |
+| `from_platform` | UTF-8 bytes | Require nonempty bytes within the active size limit; return `ClipContentV1` |
+| `as_storage_blob` | `ClipContentV1` | Borrow exact UTF-8 bytes for one hub or desktop SQLite content-BLOB bind |
+| `from_storage_blob` | persistent BLOB | Revalidate nonempty UTF-8 and the version-1 hard maximum of 1,048,576 bytes; return `ClipContentV1` or fail storage integrity. A lower current ingress limit does not invalidate an older retained row. |
+| `to_wire` | `ClipContentV1` | Produce base64url, byte count, and SHA-256 |
+| `to_platform` | `ClipContentV1` | Borrow exact UTF-8 bytes for one platform write |
+| `same_content` | two `ClipContentV1` values | Return exact byte equality for loop suppression |
+| `to_preview` | `ClipContentV1`, scalar limit | Decode text; replace C0 controls except tab, carriage return, and line feed with U+FFFD; collapse each whitespace run to one space; return no more than the requested Unicode scalar count |
 
-### 4. Clipboard event schema
+No other module can construct the type, validate or transform content, or
+extract stored bytes except through these operations. Storage and wire
+metadata are outputs of this seam, not parallel sources of truth.
 
-`ClipboardEventV1` has exactly these fields:
+A client-authored publish has exactly:
 
 | Field | Type | Rule |
 | --- | --- | --- |
 | `message_id` | UUID string | Client-generated UUIDv4 |
-| `source_device_id` | UUID string | Must equal the authenticated device |
-| `source_seq` | decimal string | Must exceed the device high-water mark unless this is an exact retained retry |
-| `created_at_ms` | integer | At most 120,000 ms ahead of hub time |
-| `expires_at_ms` | integer | Greater than hub validation time and no later than `created_at_ms + retention_seconds * 1000` |
-| `content_type` | string | Exact value `text/plain` |
+| `clear_generation` | decimal string | Must equal the session generation |
+| `created_at_ms` | integer | At most 120,000 ms ahead of hub time and no more than one retention window behind hub time |
+| `content_type` | string | Exact `text/plain` |
 | `payload_bytes` | integer | Exact decoded length in `1..max_payload_bytes` |
-| `content_sha256` | string | SHA-256 of decoded payload bytes |
-| `payload_b64` | string | Unpadded base64url of valid UTF-8 payload bytes |
+| `content_sha256` | string | SHA-256 of decoded bytes |
+| `payload_b64` | string | Unpadded base64url of valid UTF-8 bytes |
 
-The hub records `accepted_at_ms` and `cursor` as server metadata. Those fields
-are absent from client-authored `ClipboardEventV1`.
+The publish contains no source identity. The hub adds stable source peer ID,
+`accepted_at_ms`, `expires_at_ms`, cursor, and history epoch as server
+metadata. Expiry equals
+`accepted_at_ms + retention_seconds * 1000`.
 
-This is the canonical version-1 publish example. Its fixture clock is
-`1700000000000` ms. The UUIDs and text are synthetic:
+This is the canonical synthetic fixture:
 
 ```json
 {
@@ -468,10 +455,8 @@ This is the canonical version-1 publish example. Its fixture clock is
   "type": "publish",
   "event": {
     "message_id": "00000000-0000-4000-8000-000000000001",
-    "source_device_id": "00000000-0000-4000-8000-000000000002",
-    "source_seq": "1",
+    "clear_generation": "1",
     "created_at_ms": 1700000000000,
-    "expires_at_ms": 1700014400000,
     "content_type": "text/plain",
     "payload_bytes": 12,
     "content_sha256": "5cb72f90e968922d30557d0af8f719d21f61792becaa87eb32477767d739dc0b",
@@ -480,825 +465,599 @@ This is the canonical version-1 publish example. Its fixture clock is
 }
 ```
 
-### 5. Data-plane message schemas
+### 5. WebSocket message schemas
 
-Each message has exact fields. The common fields `protocol_version` and `type`
-appear in each object.
+Each object contains exactly `protocol_version`, `type`, and the fields
+listed below.
 
-#### Client to hub
+Client to hub:
 
-| Type | Additional fields | State where valid |
+| Type | Additional fields | Valid state |
 | --- | --- | --- |
-| `resume` | `known_history_epoch` UUID or null; `after_cursor` decimal string or null | `await_resume` only |
-| `publish` | `event: ClipboardEventV1` | `live` only |
-| `ack` | `history_epoch` UUID; `cursor` decimal string | `replaying` or `live` |
+| `resume` | `known_history_epoch` UUID or null; `known_clear_generation` decimal or null; `after_cursor` decimal or null | `await_resume` |
+| `publish` | `event` from Architecture 4 | `live` |
+| `ack` | `history_epoch`, `clear_generation`, `cursor` | `replaying` or `live` |
+| `clear_history` | `request_id` UUID; `expected_clear_generation` decimal | `live` |
 
-#### Hub to client
+Hub to client:
 
 | Type | Additional fields | Meaning |
 | --- | --- | --- |
-| `server_hello` | `session_id`, `device_id`, `device_display_name`, `server_time_ms`, `history_epoch`, `newest_cursor` or null, `limits` | Authentication succeeded; resume is required |
-| `resume_started` | `history_epoch`, `status`, `requested_after_cursor` or null, `boundary_cursor` or null, `lost_through_cursor` or null | Names the resume snapshot and any gap |
-| `event` | `history_epoch`, `cursor`, `delivery`, `accepted_at_ms`, `source_display_name`, `event` | Delivers one retained or live event |
-| `resume_complete` | `history_epoch`, `boundary_cursor` or null | Ends replay; later event messages are live |
-| `publish_accepted` | `message_id`, `cursor`, `expires_at_ms`, `duplicate` | The publish committed or was an exact retained retry |
-| `publish_rejected` | `message_id` or null, `code`, `retryable` | The publish wrote no event state |
-| `pause_notice` | `scope`, `reason_code` | Administrative pause committed; the hub closes afterward |
-| `purge_notice` | `purge_id`, `history_epoch`, `purged_through_cursor` or null | Global purge committed; client clears ClipMesh history |
-| `error` | `code`, `retryable` | Session-level content-free failure |
+| `server_hello` | `session_id`, `self_peer_id`, `history_epoch`, `clear_generation`, `newest_cursor` or null, `server_time_ms`, `limits` | WhoIs succeeded; resume is required |
+| `resume_started` | `history_epoch`, `clear_generation`, `status`, `requested_after_cursor` or null, `boundary_cursor` or null, `lost_through_cursor` or null | Names catch-up snapshot |
+| `event` | `history_epoch`, `clear_generation`, `cursor`, `delivery`, `accepted_at_ms`, `expires_at_ms`, `source_peer_id`, `event` | One resume or live clip |
+| `resume_complete` | `history_epoch`, `clear_generation`, `boundary_cursor` or null | Ends catch-up |
+| `publish_accepted` | `message_id`, `cursor`, `expires_at_ms`, `duplicate` | Publish committed or exact retry |
+| `publish_rejected` | `message_id` or null, `code`, `retryable` | Publish changed no state |
+| `clear_accepted` | `request_id`, `clear_generation`, `cleared_through_cursor` or null, `duplicate` | Shared clear committed or exact request retry |
+| `clear_rejected` | `request_id` or null, `code`, `retryable` | Clear changed no state |
+| `clear_notice` | `request_id`, `clear_generation`, `cleared_through_cursor` or null | Client clears product history and older outbox content |
+| `error` | `code`, `retryable` | Session failure |
 
 `limits` contains exactly `max_payload_bytes`, `retention_seconds`,
 `history_max_entries`, `max_clock_skew_ms = 120000`, and
-`max_websocket_message_bytes` as JSON integers.
+`max_websocket_message_bytes`.
 
-`resume_started.status` is one of:
+`resume_started.status` is `fresh`, `complete`, `gap`,
+`epoch_changed`, or `generation_changed`. Generation mismatch takes
+precedence over epoch, fresh, gap, and complete because it requires deletion
+of pre-clear client state.
 
-- `fresh`: the client supplied no cursor;
-- `complete`: the requested cursor has no known missing successor;
-- `gap`: `lost_through_cursor` exceeds the requested cursor;
-- `epoch_changed`: the supplied history epoch differs from the current epoch.
+`event.delivery` is `resume` at or below the captured boundary and
+`live` afterward. The hub sends events to the source session so each client
+maintains a contiguous cursor view. The client compares `source_peer_id`
+with server-asserted `self_peer_id`; client input never supplies either
+value.
 
-`event.delivery` is `resume` for a cursor at or before the boundary and `live`
-for a cursor accepted after the boundary. The hub delivers accepted events to
-the source session too. The source client uses source identity to suppress a
-clipboard write while preserving a contiguous cursor view.
+Acknowledgements are nondecreasing and cannot exceed the highest cursor sent
+on that session. During catch-up, a client coalesces its cursor and sends one
+acknowledgement after `resume_complete`. During live delivery it sends at
+most one acknowledgement per 2,000 ms.
 
-The hub sends `publish_accepted` before it sends the matching `event` on the
-publishing session. Event messages remain ordered by cursor on each session.
+### 6. Local Tailscale peer-identity seam
 
-An `ack` states the highest cursor that the client processed for the named
-epoch. Its cursor cannot exceed the highest cursor that the hub sent on that
-session. Its epoch must equal the session epoch. Acknowledgements are
-nondecreasing; repeating the current value is idempotent. A lower cursor,
-future cursor, or wrong epoch produces `ack_invalid` and closes the session.
-During replay, a client advances one pending acknowledgement cursor without
-sending an acknowledgement for each event. After `resume_complete`, it sends
-one acknowledgement for the highest replay cursor that it processed. During
-live delivery, it replaces the pending cursor with each higher processed
-cursor and sends at most one acknowledgement per 2,000 milliseconds. A client
-can send the pending acknowledgement before a deliberate close when the
-session message bucket has a token. This coalescing rule applies to desktop and
-mobile clients.
+The hub uses Tailscale's stable LocalAPI client, not a shell command or HTTP
+header:
 
-The hub keeps valid acknowledgements in memory for health and slow-consumer
-diagnosis. An acknowledgement does not delete history and does not create a
-delivery guarantee.
+1. At startup, the hub opens the operating system's standard local
+   `tailscaled` connection with read permission only.
+2. It reads LocalAPI status and extracts the current self Tailnet addresses.
+3. It validates the configured bind IP against that exact set before it binds.
+4. For each accepted socket, it captures `remoteAddr` from the socket.
+5. Before HTTP parsing, it calls the `tailscale_identity` adapter's WhoIs
+   operation for `remoteAddr` through the same local daemon.
+6. It accepts the connection only when the call succeeds and
+   `WhoIsResponse.Node.StableID` is nonempty.
+7. It stores that stable peer ID only in the connection context and retained
+   clip provenance required for server event metadata. It does not accept an
+   identity from a request.
 
-A nonnull `after_cursor` with null `known_history_epoch` produces
-`resume_cursor_without_epoch` and closes the session. When the known epoch
-differs, the hub ignores `after_cursor` and returns the current retained window.
+The hub ignores `UserProfile`, node name, Tailnet address, tags, and
+capabilities for application authority. Each admitted result is an equal
+member. Raw LocalAPI responses never enter logs, metrics, errors, or public
+fixtures.
 
-### 6. HTTP surfaces and authority
+The adapter does not spawn `tailscale`, accept proxy headers, or use a
+network-reachable identity service. The build pins its Tailscale compatibility
+version. The adapter rejects an unrecognized status or WhoIs shape. Its
+supported request and response shapes come from the real captures in
+Architecture 19.
 
-The listener exposes these paths:
+A LocalAPI timeout is 2,000 ms. Timeout, permission failure, daemon
+unavailability, peer-not-found, malformed response, or empty stable ID closes
+the socket before the hub reads an HTTP byte. The hub records only the stable
+content-free code `tailnet_peer_unverified`.
 
-| Method and path | Credential class | Effect |
-| --- | --- | --- |
-| `GET /healthz` | none | Process liveness only |
-| `GET /readyz` | none | Content-free readiness and one reason code |
-| `GET /v1/stream` upgrade | device | Open one data-plane session |
-| `POST /v1/enroll` | enrollment | Consume one pending mobile artifact and return one device credential |
-| `POST /v1/admin/devices` | administrator | Create one active managed device and return its first credential |
-| `POST /v1/admin/enrollment-artifacts` | administrator | Create one pending mobile device and return one ten-minute artifact |
-| `POST /v1/admin/devices/{device_id}/rotate` | administrator | Replace the device credential and close existing sessions |
-| `POST /v1/admin/devices/{device_id}/revoke` | administrator | Mark the device revoked and close existing sessions |
-| `POST /v1/admin/pause-state` | administrator | Set global or per-device administrative pause state |
-| `POST /v1/admin/purge` | administrator | Purge retained hub history and notify online clients |
+### 7. Admission and validation order
 
-Each mutating HTTP request carries `protocol_version = 1`, a UUIDv4
-`request_id`, and only operation fields. The hub stores a content-free receipt
-by authenticated principal class and digest, method, path, request ID,
-request-body SHA-256, and result code.
+The hub applies these steps:
 
-For a repeated request ID with the same method, path, and body:
+1. configured socket acceptance;
+2. LocalAPI WhoIs for the observed remote address;
+3. request size, path, method, and WebSocket upgrade;
+4. forbidden identity-header and URL checks;
+5. exact `clipmesh.v1` subprotocol;
+6. connection and message-rate admission;
+7. closed message-schema validation;
+8. state-machine and transaction validation.
 
-- revoke, pause, and purge return the recorded nonsecret result;
-- device creation, enrollment-artifact creation, credential rotation, and
-  enrollment exchange return `secret_result_already_committed` plus the
-  resource ID and no secret.
+An unknown path returns HTTP 404 `http_path_not_found`. A wrong method on a
+known path returns HTTP 405 `http_method_not_allowed`. A request header
+section above 16,384 bytes returns HTTP 431 `request_headers_too_large`.
+These responses occur only after WhoIs succeeds.
 
-A repeated request ID with different input returns `request_id_conflict` and
-writes nothing. Loss of a one-time secret response requires a new
-administrator action. The hub never stores plaintext merely to make a retry
-convenient.
+Each HTTP error body is exactly
+`{"protocol_version":1,"error":{"code":<CODE>,"retryable":<BOOLEAN>}}`.
 
-`POST /v1/admin/devices` accepts `display_name` and platform
-`linux_wayland` or `macos`. The hub generates the device ID and device
-credential in one transaction. The response returns each once.
+WhoIs failure returns no application response because the hub has not admitted
+the connection. Validation at a later step does not disclose the stable peer
+ID or raw request value.
 
-Control-plane JSON success schemas are closed and exact:
+### 8. Configuration, binding, startup, and migrations
 
-| Operation | Request fields after `protocol_version`, `request_id` | Status | Success type and fields after `protocol_version`, `request_id`, `type` |
-| --- | --- | --- | --- |
-| Create managed device | `display_name`, `platform` | 201 | `device_created`: `device_id`, `credential`, `credential_generation = 1`, `device_state = active`, `created_at_ms` |
-| Issue mobile artifact | `display_name`, `platform` | 201 | `enrollment_artifact_created`: `device_id`, `enrollment_artifact`, `expires_at_ms`, `device_state = pending` |
-| Exchange mobile artifact | none | 201 | `device_enrolled`: `device_id`, `credential`, `credential_generation = 1`, `device_state = active`, `enrolled_at_ms` |
-| Rotate credential | none | 200 | `credential_rotated`: `device_id`, `credential`, `credential_generation`, `rotated_at_ms` |
-| Revoke device | none | 200 | `device_revoked`: `device_id`, `device_state = revoked`, `revoked_at_ms` |
-| Set pause state | `scope`, `device_id`, `paused` | 200 | `pause_state_set`: `scope`, `device_id`, `paused`, `changed_at_ms` |
-| Purge history | none | 200 | `history_purged`: `purge_id`, `history_epoch`, `purged_through_cursor` or null, `purged_at_ms` |
+The hub reads one closed version-1 TOML file:
 
-`type` values and fixed state strings in this table are JSON strings. A
-secret-returning success uses `Cache-Control: no-store` and `Pragma: no-cache`.
-An error response has exactly `protocol_version` and `error`; `error` has
-exactly `code` and `retryable`, plus `resource_id` only for
-`secret_result_already_committed`.
-
-`POST /v1/admin/enrollment-artifacts` accepts `display_name` and platform
-`ios` or `ipados`. The hub creates a pending device and an enrollment artifact
-whose expiry is `issued_at_ms + 600000`. One successful `/v1/enroll`
-transaction consumes the artifact, activates the device, and returns its first
-device credential. Concurrent exchanges have one winner. An expired artifact
-returns `enrollment_artifact_invalid`. A consumed artifact returns
-`secret_result_already_committed` only for the exact request that consumed it;
-another request returns `enrollment_artifact_invalid`. Before an exchange,
-before new artifact issuance, and once per 60 seconds, the hub marks expired
-artifacts and deletes their still-pending device rows. It retains a
-content-free consumed or expired artifact-digest tombstone for 86,400 seconds
-after consumption or expiry, then deletes that tombstone. It preserves the
-content-free request receipt. A credential absent from both the active-artifact
-set and tombstones receives the ordinary `unauthorized` response.
-
-Credential rotation generates a new credential digest, increments the device
-credential generation, invalidates the prior digest, and commits those changes
-in one transaction. Before it releases the administrator mutation seam, the hub
-marks sessions authenticated under the prior generation ineligible, unregisters
-them, deletes their queued application messages, and queues `credential_rotated`
-close handling.
-
-Revocation sets device state to `revoked` and invalidates its credential in one
-transaction. Before it releases the administrator mutation seam, the hub marks
-that device's sessions ineligible, unregisters them, deletes their queued
-application messages, and queues `device_revoked` close handling. No other device
-row or session changes.
-
-Administrative pause accepts exactly one scope:
-
-- `{"scope":"global","device_id":null,"paused":<boolean>}`;
-- `{"scope":"device","device_id":<UUID>,"paused":<boolean>}`.
-
-Setting pause is idempotent. When pause becomes true, the hub marks affected
-sessions ineligible, unregisters them, deletes their queued application messages,
-and queues `pause_notice` plus close before it releases the administrator
-mutation seam. Affected upgrade requests receive `administratively_paused`.
-The administrator control plane remains reachable. Removing pause permits a
-fresh data-plane session; resume semantics prevent backlog clipboard writes.
-
-For rotation, revocation, and pause, the hub stages durable changes and session
-cutoffs under one serialized mutation seam. A storage failure commits neither.
-After durable commit, the hub applies the staged cutoff before it releases the
-seam. A process failure in that interval closes the process-owned sessions. A
-publish ordered before the administrator mutation can commit, but the cutoff
-removes its queued application output from an affected session. A publish
-ordered after the mutation cannot select that session. For this boundary, the
-hub sends a payload when its session writer hands the complete frame to TLS
-while holding the seam. A frame handed to TLS before the administrator commit
-is a pre-commit send even when network transit completes later.
-
-### 7. Authentication and authorization failure order
-
-The hub applies checks in this order:
-
-1. TLS handshake and certificate selection;
-2. path, method, content type, and request-size limit;
-3. credential syntax and credential digest lookup;
-4. credential class and principal state;
-5. endpoint-specific authorization;
-6. administrative pause and connection limits;
-7. schema and operation validation;
-8. transaction conflict and storage result.
-
-Steps 3 through 5 return the same HTTP 401 body:
-
-`{"protocol_version":1,"error":{"code":"unauthorized","retryable":false}}`
-
-The response does not reveal whether a credential, device, or administrator
-exists. Authenticated requests can receive a more specific content-free code.
-
-Step 2 has this exact mapping and performs no authentication or mutation:
-
-1. An unlisted path returns HTTP 404 with `http_path_not_found`.
-2. A listed path with another method returns HTTP 405 with
-   `http_method_not_allowed` and an `Allow` header containing the one listed
-   method.
-3. A body-bearing enrollment or administrator request with a missing or
-   different content type returns HTTP 415 with
-   `http_content_type_unsupported`.
-4. A body larger than 65,536 decoded bytes returns HTTP 413 with
-   `request_too_large`.
-
-`GET /healthz`, `GET /readyz`, and a WebSocket upgrade do not require the JSON
-content type. Each error body uses the closed HTTP error schema in Architecture
-6.
-
-At step 4, a consumed enrollment artifact has no enrollment authority. The hub
-can continue only through closed request-envelope validation and an exact
-receipt lookup under that artifact digest. The same request ID, method, path,
-and body hash returns `secret_result_already_committed` with the committed
-device ID and no credential. Another request returns
-`enrollment_artifact_invalid` and writes nothing. This exception grants no
-mutation and expires when the artifact-digest tombstone expires.
-
-### 8. Configuration and startup
-
-The hub reads one versioned TOML configuration and separate secret files. The
-configuration has these fields:
-
-| Field | Required | Default or valid range |
+| Field | Required | Default or range |
 | --- | --- | --- |
 | `config_version` | yes | Exact integer `1` |
-| `listen_addresses` | yes | Non-empty array of explicit socket addresses |
-| `tls_certificate_file` | yes | Existing regular file |
-| `tls_private_key_file` | yes | Existing regular file owned by the service user; mode no broader than `0600` |
-| `administrator_credential_file` | yes | Existing regular file owned by the service user; mode no broader than `0600` |
-| `state_directory` | yes | Existing or creatable directory owned by the service user; mode no broader than `0700` |
-| `history_mode` | no | `sqlite`; alternate `memory` |
-| `retention_seconds` | no | `14400`; valid `60..604800` |
-| `history_max_entries` | no | `20`; valid `1..1000` |
-| `max_payload_bytes` | no | `262144`; valid `1..1048576` |
-| `max_connections` | no | `64`; valid `1..1024` |
-| `max_connections_per_device` | no | `2`; valid `1..8` and no greater than `max_connections` |
-| `publish_tokens_per_minute` | no | `60`; valid `1..600` |
-| `publish_burst` | no | `10`; valid `1..100` |
-| `outbound_queue_messages` | no | `64`; valid `1..256` |
-| `outbound_queue_bytes` | no | `2097152`; valid from computed `max_websocket_message_bytes` through `16777216` |
+| `listen_address` | yes | One explicit IP socket address; no hostname |
+| `tailscale_localapi` | no | Exact value `system` |
+| `state_directory` | yes | Existing or creatable owner-only directory |
+| `retention_seconds` | no | `604800`; `60..31536000` |
+| `history_max_entries` | no | `500`; `1..10000` |
+| `max_payload_bytes` | no | `262144`; `1..1048576` |
+| `max_connections` | no | `64`; `1..1024` |
+| `publish_tokens_per_minute` | no | `60`; `1..600` |
+| `publish_burst` | no | `10`; `1..100` |
+| `outbound_queue_messages` | no | `128`; `1..1024` |
+| `outbound_queue_bytes` | no | `8388608`; computed message cap through `33554432` |
 
-The parser rejects unknown fields, duplicate TOML keys, missing required
-fields, values outside these ranges, a queue-byte limit below the computed
-message limit, and trailing non-TOML bytes.
+The parser rejects an unknown or duplicate field, a missing required field, a
+value outside its range, trailing non-TOML bytes, a hostname bind, and a queue
+byte bound below one maximum message.
 
-The administrator credential file contains one credential followed by zero or
-one LF byte. The Linux device credential file uses the same rule for a device
-credential. Leading whitespace, trailing whitespace other than that LF,
-multiple lines, and a second token are invalid.
+The hub permits no bind before LocalAPI status succeeds. The configured IP
+must exactly equal a current self Tailnet IPv4 or IPv6 address. The hub does
+not accept prefix membership as proof. A port value of zero is invalid. Bind
+failure, LocalAPI loss before bind, database failure, or migration failure
+closes opened resources and exits before an accept loop.
 
-An allowed bind IP is one of:
+The state directory is owner-only and no broader than `0700`. The database,
+WAL, and shared-memory sidecar are regular non-symlink files no broader than
+`0600`. The hub refuses a wrong owner, symlink, unsupported schema, failed
+integrity check, or inconsistent counter.
 
-- IPv4 loopback `127.0.0.0/8`;
-- IPv4 private-use `10.0.0.0/8`, `172.16.0.0/12`, or `192.168.0.0/16`;
-- IPv4 shared-address space `100.64.0.0/10`;
-- IPv6 loopback `::1`;
-- IPv6 unique-local `fc00::/7`.
+SQLite `PRAGMA user_version` is the migration authority:
 
-The hub rejects an unspecified, global, multicast, broadcast, documentation,
-or link-local address. It does not resolve a bind hostname. It binds each
-configured socket before it starts an accept loop. Failure to validate or bind
-one address closes sockets already opened and exits nonzero.
+- a new empty database initializes schema version 1 in one transaction;
+- a version-1 database receives no migration;
+- any other nonempty or versioned schema returns
+  `database_schema_unsupported` without modifying the file.
 
-At startup the hub validates that:
+The prior quarantine schemas were never release or live-state authority. This
+MVP defines no in-place migration from their application identity,
+administration, enrollment, or memory-history tables. A later need for
+custodial data migration requires a separate reviewed spec and explicit
+private-state authority.
 
-- the TLS certificate parses and is valid at the current time;
-- the private key parses and matches the certificate;
-- the administrator credential has exact administrator syntax;
-- secret and key files are regular, non-symlink files with restrictive
-  ownership and mode;
-- the state directory and existing database satisfy ownership and mode rules;
-- the database schema is supported and migrations can commit;
-- history and replay metadata are internally consistent;
-- memory history mode rotates the history epoch after a prior process instance.
+The desktop client requires `config_version = 1`, an explicit
+`ws://` hub URL whose host is one numeric Tailscale IPv4 or IPv6 address,
+with no user information, query, or fragment, plus a platform and owner-only
+local-state location. The URL is runtime topology and has no public default.
+The client rejects a hostname, `wss`, `http`, `https`, an address
+outside Tailscale's node-address ranges. It sends no application credential
+and uses no client-side LocalAPI identity assertion. An unavailable valid
+endpoint follows the reconnect state machine.
 
-The hub begins serving only after these checks succeed. A failure emits one
-content-free startup code and exits nonzero.
+The mobile build receives the same numeric Tailnet `ws://` URL through
+deployment configuration and applies the same URL-shape rejection. It
+persists no application identity or secret. It keeps payload history only
+while the app process is active.
 
-While running, the hub rechecks certificate validity once per 60 seconds. At
-the first check at or after certificate expiry, it marks readiness false and
-completes no new TLS handshake. A readiness request on a TLS connection
-established before expiry returns `tls_certificate_not_current`. Existing TLS
-sessions continue until their ordinary close boundary. Replacing the
-configured certificate requires a process restart in version 1.
-
-The desktop agent requires a versioned configuration with an `https` hub base
-URL, opaque device ID, platform, credential storage reference, TLS trust
-configuration, and local-state location. It rejects URL user information,
-query parameters, fragments, `http`, `ws`, and an insecure credential file.
-The agent remains inactive when it cannot prove the lock state or initialize
-the clipboard adapter.
-
-An enrolled desktop that cannot open, validate, and atomically update its
-local state returns `local_state_unavailable` and remains inactive. It does not
-reset its source-sequence allocator. Recovery restores the same local state or
-enrolls a new device identity.
-
-The mobile client stores the device credential in Keychain with
-`kSecAttrAccessibleWhenUnlockedThisDeviceOnly`. It stores no credential in
-preferences, logs, a URL, a pasteboard, app state restoration, or a crash
-report. Enrollment succeeds in the UI only after Keychain storage succeeds.
-If the one-time exchange succeeded but Keychain storage failed, the UI reports
-`credential_storage_failed` and instructs the administrator to rotate or
-re-enroll; it does not display the credential again.
-
-### 9. Hub session state machine
+### 9. Hub session state machine and limits
 
 | State | Entry | Accepted input | Exit |
 | --- | --- | --- | --- |
-| `tls_handshake` | TCP accepted | TLS records | Failure closes; success enters `authenticate` |
-| `authenticate` | TLS complete | HTTP upgrade | Valid active device enters `await_resume`; failure returns HTTP and closes |
-| `await_resume` | WebSocket accepted; `server_hello` sent | One `resume` within 5 seconds | Valid input enters `replaying`; other app input closes with `resume_required` |
-| `replaying` | Boundary captured; subscriber registered | `ack`, pong | After resume messages and `resume_complete`, enter `live` |
-| `live` | Resume complete | `publish`, `ack`, pong | Pause, revocation, rotation, slow consumer, heartbeat failure, client close, or protocol error enters `closing` |
-| `closing` | Close reason selected | No application input | Send close frame when possible, unregister subscriber, release limits |
+| `tailnet_identity` | TCP accepted | No application input | WhoIs success enters `http_upgrade`; failure closes |
+| `http_upgrade` | Peer context fixed | One HTTP request | Valid stream upgrade enters `await_resume`; failure responds and closes |
+| `await_resume` | WebSocket accepted; `server_hello` sent | One `resume` within 5 seconds | Valid resume enters `replaying`; other input closes with `resume_required` |
+| `replaying` | Boundary captured; subscriber registered | `ack`, pong | After `resume_complete`, enter `live` |
+| `live` | Catch-up complete | `publish`, `ack`, `clear_history`, pong | Clear, slow consumer, heartbeat, LocalAPI loss, client close, or protocol error enters `closing` |
+| `closing` | Close reason selected | No application input | Send close when possible; unregister and release limits |
 
-A client can send `resume` once per session. A client publishes only in
-`live`. The client queues a local outbox item until `live` instead of sending
-it during replay.
+The listener permits at most `max_connections` admitted WebSocket sessions.
+It permits at most four sessions per stable peer ID. Reaching a bound returns
+`connection_limit_reached`.
 
-The hub enforces both an outbound message count and byte count per session.
-Reaching either limit closes that session with `slow_consumer`. The hub does
-not drop an event silently. The client reconnects and resumes from its last
-processed cursor.
+One admitted peer receives a connection-attempt bucket of 30 per minute with a
+burst of 10, an application-message bucket of 120 per minute with a burst of
+20, and the configured publish bucket. These counters are metadata-only.
 
-The listener permits at most 64 active non-WebSocket HTTP requests. Before
-authentication, one source address receives a token bucket of 30 requests per
-minute with a burst of 10. One authenticated administrator receives 60 control
-requests per minute with a burst of 20. Health and readiness share a bucket of
-120 requests per minute with a burst of 20 per source address. Exceeding a
-bucket returns HTTP 429 with `request_rate_limited` and no state change.
+Each session has configured outbound message and byte bounds. Crossing either
+closes that session with `slow_consumer`; the hub drops no cursor silently.
+The client reconnects from its last processed cursor.
 
-One WebSocket session receives an application-message token bucket of 120
-messages per minute with a burst of 20. `resume`, `ack`, and `publish` each
-consume one token. WebSocket pong frames do not. An empty bucket sends
-`message_rate_limited` and closes the session.
-
-The default per-device publish token bucket adds 60 tokens per minute up to a
-10-token burst. One publish attempt consumes one token before payload
-validation. An empty bucket returns `publish_rate_limited` and writes no event
-state. Connection and control-message limits use fixed metadata counters, not
-payload inspection.
+Once per 60 seconds the hub probes LocalAPI status. Loss marks readiness false
+and stops new accepts. Existing sessions close with
+`tailscale_localapi_unavailable` at their next application-message,
+heartbeat, or 60-second probe boundary. The hub does not invent a grace
+period that decides peer identity.
 
 ### 10. Publish transaction and validation precedence
 
-For one authenticated `publish`, the hub performs these steps:
+For one admitted `publish`, the hub performs:
 
-1. Parse one JSON object. Invalid JSON, duplicate or unknown fields, missing
-   fields, and wrong JSON types return `protocol_schema_invalid`.
-2. Require integer `protocol_version = 1`. Another integer returns
-   `protocol_version_unsupported`; another JSON type follows step 1.
-3. Validate the canonical UUID, decimal-string, and signed timestamp forms for
-   the envelope and non-payload event fields. A malformed value returns
+1. Parse one closed JSON object. Schema failure returns
    `protocol_schema_invalid`.
-4. Compare `source_device_id` with the authenticated device. A mismatch returns
-   `source_device_mismatch`.
-5. Validate event time and payload fields in this exact order:
-   1. `created_at_ms` greater than hub time plus 120,000 ms returns
-      `created_at_in_future`.
-   2. `expires_at_ms` less than or equal to hub time returns `event_expired`.
-   3. `expires_at_ms` greater than
-      `created_at_ms + retention_seconds * 1000` returns
-      `expiry_exceeds_retention`.
-   4. A `content_type` other than `text/plain` returns
-      `content_type_unsupported`.
-   5. Invalid base64url, padding, or decoded UTF-8 returns
-      `payload_encoding_invalid`.
-   6. Zero decoded bytes returns `payload_empty`.
-   7. Decoded bytes greater than `max_payload_bytes` returns
-      `payload_too_large`.
-   8. `payload_bytes` unequal to the decoded byte count returns
-      `payload_length_mismatch`.
-   9. A noncanonical `content_sha256` or a digest unequal to the decoded bytes
-      returns `payload_hash_mismatch`.
-6. Start the serialized storage and recipient-eligibility transaction. Recheck
-   active device state,
-   session credential generation, administrative pause, and session history
-   epoch.
-7. Look up `message_id` in retained history and the replay ledger.
-8. When retained history contains an exact retry, return its original cursor
-   and expiry with `duplicate = true`; do not continue.
-9. When the message ID exists with different fields, return
-   `message_id_conflict`.
-10. When only a message-ID tombstone exists, return `message_id_replay`.
-11. Compare `source_seq` with the device high-water mark. Return
-   `source_sequence_replay` when it is not greater.
-12. In the same SQLite transaction or memory-state write lock, allocate the next
-   cursor, insert the event, advance the source-sequence high-water mark, and
-   insert the message-ID tombstone.
-13. Remove expired events. Trim lowest cursors until the count limit holds.
-    Update `lost_through_cursor` to the greatest removed cursor.
-14. Commit. While still holding the common mutation seam, enqueue
-    `publish_accepted` to the source session when it remains eligible. Enqueue
-    the accepted event in cursor order to each live or replay-buffering session
-    that remains eligible. Release the seam after those enqueue decisions.
+2. Require integer `protocol_version = 1`; another integer returns
+   `protocol_version_unsupported`.
+3. Validate canonical UUID, decimal, timestamp, content-type, base64url,
+   length, and hash syntax.
+4. Require `created_at_ms <= hub_time + 120000`; otherwise return
+   `created_at_in_future`.
+5. Require
+   `created_at_ms >= hub_time - retention_seconds * 1000`; otherwise
+   return `event_too_old`.
+6. Call `ClipContentV1::from_wire`. Its ordered failures are
+   `content_type_unsupported`, `payload_encoding_invalid`,
+   `payload_empty`, `payload_too_large`,
+   `payload_length_mismatch`, and `payload_hash_mismatch`.
+7. Enter the one SQLite writer transaction.
+8. Require the event clear generation to equal current state. A lower
+   generation returns `clear_generation_stale`; a higher generation returns
+   `clear_generation_ahead`.
+9. Recheck that the session remains live and its peer context remains valid.
+10. Look up message ID in retained clips and the replay ledger.
+11. Return the original cursor and `duplicate = true` for an exact retained
+    retry.
+12. Return `message_id_conflict` for retained changed input or
+    `message_id_replay` for a tombstone.
+13. Allocate the next cursor, compute accepted time and expiry, insert one clip
+    using `ClipContentV1::as_storage_blob`, and insert a content-free
+    tombstone.
+14. Delete expired clip rows. Trim lowest cursors until the count limit holds.
+    Advance `lost_through_cursor` to the greatest removed cursor.
+15. Commit.
+16. Before releasing the serialized hub mutation seam, enqueue
+    `publish_accepted` for the source session and the accepted event in
+    cursor order for each live or replay-buffering session.
 
-Hub cursor exhaustion returns `hub_cursor_exhausted`, marks hub readiness
-false, and accepts no later publish. A desktop that has allocated source
-sequence `18446744073709551615` enters `device_sequence_exhausted` and sends no
-later publish under that device identity. Other devices remain active. A
-counter never wraps.
+Two concurrent requests with one message ID serialize at step 7. One can
+commit. The other observes committed state.
 
-Two concurrent requests with one message ID or one source sequence serialize
-at step 6. One can commit. The other observes committed state and follows the
-retry or replay rules.
+Cursor exhaustion returns `hub_cursor_exhausted`, marks readiness false,
+and accepts no later publish.
 
 ### 11. Resume algorithm
 
-When the hub accepts `resume`, it holds the event-state serialization seam long
-enough to:
+Before it enters the serialized hub seam, the hub validates the three client
+context fields as one closed shape. A fresh client sends all three as null. A
+continuing client sends nonnull history epoch and clear generation; its cursor
+can be null or nonnull. A nonnull cursor without both context values returns
+`resume_cursor_without_context`. Any other partial-null combination returns
+`resume_context_incomplete`. Both failures register no subscriber and change
+no state.
 
-1. register the session as a buffering subscriber;
-2. capture current cursor `B` or null when no event has been accepted;
-3. capture the current history epoch and `lost_through_cursor`;
-4. create a retained-event snapshot with cursors greater than the effective
-   requested cursor and less than or equal to `B`. The effective cursor is null
-   when the known epoch differs.
+When the hub accepts a valid `resume`, the serialized hub seam:
 
-The hub then releases event-state serialization and sends:
+1. compares known clear generation with the current value;
+2. compares known history epoch with the current value;
+3. registers the session as a buffering subscriber;
+4. captures current cursor `B` or null;
+5. captures `lost_through_cursor`;
+6. snapshots unexpired clips after the effective cursor through `B`.
 
-1. `resume_started` with `fresh`, `complete`, `gap`, or `epoch_changed`;
-2. each unexpired snapshot event in ascending cursor order with
-   `delivery = resume`;
-3. `resume_complete` with boundary `B`;
-4. each event buffered after `B` in ascending cursor order with
-   `delivery = live`;
-5. later accepted events directly with `delivery = live`.
+The effective cursor is null after generation or epoch mismatch. The hub then
+releases the seam and sends:
 
-If `after_cursor` exceeds `B`, the hub sends `cursor_ahead` and closes. For this
-comparison, null `B` is below each positive cursor, so any nonnull
-`after_cursor` is ahead when `B` is null. If the known epoch differs, the
-client clears its ClipMesh cache before it processes resume events. A `gap`
-remains visible in client status. It does not cause a desktop clipboard write
-or a guessed repair.
+1. `resume_started`;
+2. snapshot clips in ascending cursor order with `delivery = resume`;
+3. `resume_complete`;
+4. buffered clips in ascending cursor order with `delivery = live`;
+5. later accepted clips directly with `delivery = live`.
 
-Resume status precedence is `epoch_changed`, then `fresh`, then `gap`, then
-`complete`. The hub tests epoch mismatch first. With a matching epoch it tests
-for null `after_cursor`, then a cursor ahead of `B`, then a cursor behind
-`lost_through_cursor`.
+Status selection is exact. A nonnull generation that differs from current is
+`generation_changed`. Otherwise, a nonnull epoch that differs from current is
+`epoch_changed`. All-null context is `fresh`. Matching context with a
+nonnull cursor below `lost_through_cursor` is `gap`. Every other valid shape
+is `complete`. This order is the precedence order. A generation change makes
+the client delete visible history, processed IDs, remote-write markers, and
+outbox entries from
+an older generation before it consumes resume content. It preserves its system
+clipboard.
 
-The snapshot excludes events expired when the snapshot transaction runs. It
-still sends a snapshot event that expires while replay is in progress. A client
-discards an event whose expiry is at or before its current UTC time and
-advances the pending acknowledgement cursor without applying or displaying the
-payload. This keeps the cursor sequence and the earlier gap status truthful.
+An `after_cursor` above `B` returns `cursor_ahead`. A `gap` remains visible
+in product status. It does not guess missing content or write a system
+clipboard.
 
-### 12. Persistence, expiry, restart, and purge
+The snapshot omits rows expired when its transaction runs. If a snapshot row
+expires during transmission, the client advances its cursor but omits the row
+from product history and performs no platform write.
 
-SQLite history mode uses one database under the configured state directory
-with file mode `0600`, parent mode no broader than `0700`,
-`PRAGMA secure_delete = ON`, `journal_mode = DELETE`, and
-`synchronous = FULL`.
+### 12. SQLite state, retention, shared clear, and restart
 
-The durable model separates:
+The hub uses one database with file mode `0600`, parent mode no broader than
+`0700`, `PRAGMA foreign_keys = ON`, `secure_delete = ON`,
+`journal_mode = WAL`, and `synchronous = FULL`.
 
-- device and credential records;
-- mutating HTTP request receipts;
-- administrative pause state;
-- current history epoch, cursor high-water mark, and lost-through cursor;
-- per-device source-sequence high-water marks;
-- content-free message-ID tombstones;
-- payload-bearing retained events.
+Schema version 1 owns these tables:
 
-Mutating HTTP request receipts persist for the lifetime of hub state. Device
-and credential records persist through revocation. Expired pending-enrollment
-cleanup is the only version-1 device-row deletion. Version 1 has no deletion
-operation for an active or revoked device.
+| Table | Required state |
+| --- | --- |
+| `hub_meta` | one row: history epoch, clear generation, cursor high-water, lost-through cursor |
+| `message_tombstones` | message ID primary key; accepted cursor, clear generation |
+| `clips` | cursor primary key; message ID unique; source peer ID; clear generation; created, accepted, expiry timestamps; exact content BLOB |
+| `clear_receipts` | request ID primary key; expected generation, committed generation, cleared-through cursor |
 
-A retained event stores its source ID, source display-name snapshot, source
-sequence, timestamps, content type, payload length, content hash, and payload.
-Expiry deletes the complete retained event row. A tombstone stores only message
-ID, source device ID, source sequence, and accepted cursor. It stores no payload
-length, hash, preview, or label. A tombstone persists for the lifetime of its
-device row. Version 1 has no device-delete operation, so revocation and purge
-do not delete tombstones.
+`clips.content` is the only payload-bearing hub column. It receives and
+returns bytes only through `ClipContentV1`. A tombstone and clear receipt
+store no content length, hash, preview, or source label.
 
-The hub runs expiry and count trimming:
+The retained clip source peer ID is event provenance, not a member record. It
+leaves SQLite on retention or shared clear. The durable tombstone and clear
+receipt tables contain no peer identity. WhoIs admission never requires a
+preexisting row. Version 1 exposes no peer-list, peer-create, peer-update,
+peer-delete, or membership query. Message-ID tombstones persist for the
+lifetime of hub state so an expired payload cannot become an accepted replay.
 
-- inside each accepted-publish transaction;
-- before it creates a resume snapshot;
+The hub runs expiry and oldest-first count trimming:
+
+- inside each accepted publish transaction;
+- before each resume snapshot;
 - once per 60 seconds while ready.
 
-An event is expired when hub time is greater than or equal to
-`expires_at_ms`. Queries filter expired rows even before the periodic delete
-commits.
+A row expires when hub time is at or after its `expires_at_ms`. Queries omit
+it even before periodic deletion.
 
-SQLite history survives an ordinary clean or crash restart. Before readiness,
-the hub deletes expired rows and verifies count bounds. It preserves the epoch
-when retained history continuity remains available.
+For `clear_history`, the hub:
 
-Memory history mode keeps the payload-bearing event map in memory. It writes
-the cursor, replay metadata, and device administration to SQLite without
-payload fields. Startup after a prior process instance clears the in-memory
-map, replaces the epoch, and sets `lost_through_cursor` to the prior cursor
-high-water mark.
+1. validates request ID and expected generation;
+2. enters the common SQLite writer;
+3. looks up the receipt by global request ID;
+4. returns its result with `duplicate = true` when method input is exact;
+5. returns `request_id_conflict` when that ID names different input;
+6. requires expected generation to equal current generation;
+7. fails with `clear_generation_exhausted` when current generation is the
+   unsigned-64 maximum;
+8. captures the greatest retained cursor;
+9. deletes each retained clip;
+10. increments clear generation;
+11. sets lost-through cursor to cursor high-water;
+12. inserts the content-free receipt;
+13. commits;
+14. removes queued resume and live event frames whose generation is older;
+15. requires each session writer to recheck generation while holding the seam
+    immediately before it hands a complete event frame to WebSocket output;
+16. enqueues `clear_accepted` for the requester and `clear_notice` for
+    each admitted session, marks those sessions closing with
+    `history_cleared`, and releases the seam.
 
-Global purge runs through one administrator mutation seam:
+A publish ordered before clear commits and is then deleted. A publish ordered
+after clear must carry the new generation. A pre-clear publish already decoded
+but waiting for the writer fails generation recheck and writes nothing.
+A complete old-generation frame handed to WebSocket output before clear commit
+is pre-clear delivery and precedes `clear_notice` on that ordered stream. No
+old-generation frame is handed to WebSocket output after clear commits.
 
-1. start one storage transaction;
-2. capture the greatest retained cursor;
-3. delete each retained event row;
-4. replace the history epoch with a new UUIDv4;
-5. set `lost_through_cursor` to the cursor high-water mark;
-6. insert the nonsecret purge receipt;
-7. commit the transaction;
-8. send `purge_notice` to online sessions;
-9. close each data-plane session with `history_purged`;
-10. return the committed purge response.
+On `clear_notice`, a client atomically deletes its ClipMesh history,
+processed IDs, remote-write marker, and outbox content whose generation is
+lower. It installs the new generation. It preserves the current system
+clipboard, local pause, configuration, and newer outbox content.
 
-Purge uses the same serialized writer as publish. A publish ordered before
-purge is deleted by that purge. A publish attempt from an old-epoch session
-ordered after purge returns `session_epoch_stale` and closes. A new-epoch
-session can publish after it completes resume. Per-session output ordering
-sends `purge_notice` before the close and prevents an old-epoch event after the
-notice.
+An ordinary restart preserves each table. Before readiness the hub runs
+`quick_check`, validates foreign keys and high-water relationships, deletes
+expired rows, applies count trimming, and reconstructs no content outside
+`ClipContentV1::from_storage_blob`.
 
-With SQLite `secure_delete`, the delete overwrites freed database content. The
-specification makes no claim about copies outside the database file, storage
-snapshots, controller remapping, or hardware recovery.
+### 13. Desktop outbox, state machine, and local controls
 
-An online client clears its ClipMesh history on `purge_notice`. An offline
-client detects the new epoch at its next session and clears before it sends
-`resume`. A desktop clear deletes pending outbox payloads, its last processed
-cursor, processed message IDs, the pending remote-write marker, and the prior
-local-observation hash. It installs the new epoch and a null processed cursor
-before it can open the new-epoch session. A mobile clear deletes visible
-history and its current-session cursor before it processes new-epoch resume
-events. A client does not clear its operating-system pasteboard, device
-credential, or source-sequence allocator.
+The desktop persists in one owner-only SQLite state store:
 
-### 13. Desktop outbox and state machine
+- unaccepted outbox events with their clear generation;
+- last processed hub cursor, history epoch, and clear generation;
+- the 1,024 most recent processed message IDs in cursor order;
+- one pending remote-write suppression marker with exact content.
 
-The desktop agent persists these local values in an owner-only state store
-with secure-delete behavior:
+Each outbox and remote-write-marker content column is a BLOB written by
+`ClipContentV1::as_storage_blob` and read by
+`ClipContentV1::from_storage_blob`. The local store exposes no alternate
+content column or serializer.
 
-- unaccepted outbox events;
-- the highest allocated source sequence;
-- the last processed hub cursor and history epoch;
-- the 1,024 most recent processed message IDs ordered by hub cursor;
-- one pending remote-write suppression marker.
+The desktop store uses SQLite `user_version = 1`, WAL mode, and atomic
+transactions. Its parent directory is owner-only and no broader than `0700`.
+Its database, WAL, and shared-memory files are regular non-symlink files no
+broader than `0600`. An absent database initializes version 1 with null
+resume context and an empty outbox; it creates no identity or onboarding
+state. An unsupported, corrupt, insecure, read-only, or non-atomic store
+returns `local_state_unavailable`, opens no session, and remains byte-identical
+until external repair.
 
-It persists credentials separately through Keychain on macOS or an owner-only,
-non-symlink secret file on Linux. It never accepts a credential on a command
-line.
+For one local observation the client:
 
-For one eligible local clipboard observation, the agent:
+1. obtains bytes, platform revision, and explicit hint classification;
+2. enters the client state seam;
+3. requires `active_unlocked_live` and the observation still current;
+4. stops for `confidential` or `transient`;
+5. stops when it consumes `local_only_next`;
+6. calls `ClipContentV1::from_platform`;
+7. applies the remote-write loop marker by platform revision or
+   `ClipContentV1::same_content` and stops on a match;
+8. deletes expired or stale-generation outbox rows;
+9. enforces 128-event and 8,388,608-byte outbox bounds;
+10. creates one message ID and publish bound to the current clear generation;
+11. commits the exact outbox event before releasing the seam;
+12. sends or retries that exact event only while the session is live.
 
-1. obtains clipboard bytes and platform metadata from the adapter;
-2. holds the agent-state serialization seam;
-3. confirms state `active_unlocked_live` and confirms the observation is
-   current;
-4. stops when the adapter supplied `sensitive = true`;
-5. consumes `local_only_next` and stops when that flag is armed;
-6. computes the local content hash; stops when it equals the immediately prior
-   observed local content hash in this process generation; otherwise stores it
-   as the in-memory prior hash;
-7. applies the one-shot remote-write loop marker;
-8. validates non-empty UTF-8 and the current server payload limit;
-9. deletes expired outbox items, then checks whether this event would cross an
-   outbox bound; on overflow it enters `outbox_full` without allocating a
-   sequence or retaining the new payload;
-10. allocates the next local source sequence without reuse;
-11. creates one UUIDv4 message ID, sets `created_at_ms` from UTC corrected by
-    the session offset, sets `expires_at_ms` to creation plus the hello
-    retention limit, computes the hash, and creates the outbox event;
-12. commits the sequence and outbox event before releasing the state seam;
-13. sends or retries that exact event after the session reaches `live`.
+The client observes no new clipboard value while connecting, replaying,
+disconnected, locked, paused, or outbox-full. A value seen in those states is
+not queued merely because state later becomes live.
 
-The agent creates an outbox event only while a current version-1 session is
-`live`. It uses the payload limit, retention limit, server time, and clock-skew
-limit from that session's validated `server_hello`. It keeps those parameters
-in memory for that session and discards them on disconnect. It does not observe
-or queue a clipboard change while connecting, replaying, disconnected, locked,
-or paused. A clipboard value first observed in one of those states remains
-local and is not queued later merely because the agent reconnects.
+A `publish_accepted` response deletes the matching outbox BLOB. A retryable
+rejection retains the exact row. A permanent validation, replay, or stale
+generation rejection records content-free failure metadata and deletes the
+outbox BLOB. Message-ID reuse is not attempted.
 
-When the agent receives `server_hello`, it samples local UTC once and sets the
-session offset to `server_time_ms - sampled_local_utc_ms`. For an eligible
-observation, it adds that offset to local UTC at observation time. It uses the
-result as `created_at_ms`. The offset and hello limits expire with the session.
+For one received event the desktop:
 
-An accepted response removes the outbox item. A retryable rejection retains
-it. A permanent validation, replay, or expiry rejection quarantines it as
-content-free failure metadata and deletes the payload. Source-sequence gaps
-remain valid.
+1. validates schema, cursor, epoch, generation, expiry, and content through
+   `ClipContentV1::from_wire`;
+2. enters the client state seam;
+3. rechecks cursor order, generation, and processed message ID;
+4. records a previously unseen event in product history;
+5. sets `apply = true` only for a new live remote clip in
+   `active_unlocked_live`;
+6. calls the platform write exactly once when `apply = true`, even when the
+   current clipboard bytes are equal;
+7. stores the message ID, exact content BLOB, and resulting platform revision
+   as the remote-write loop marker;
+8. advances the acknowledgement cursor.
 
-The outbox holds at most 20 events and 1,048,576 decoded payload bytes. Reaching
-either bound enters `outbox_full`, stops new clipboard observation, and keeps
-existing outbox events for retry. The local clipboard value that would cross
-the bound remains local and is not queued later. The agent deletes an expired
-outbox payload, records a content-free `event_expired` result, and leaves its
-allocated source sequence unused. When accepted or expired items bring both
-bounds below their limits, the agent returns to its prior active network state.
+The first later local observation consumes the loop marker. A matching
+platform revision or matching bytes suppresses publish. A different
+observation clears the marker and proceeds. No timer participates.
 
-For one received `event`, the desktop agent:
+Desktop states:
 
-1. verifies protocol fields, hash, payload length, UTF-8, epoch, and expiry;
-2. holds the agent-state serialization seam;
-3. rechecks the session epoch and cursor order;
-4. determines whether the message ID already exists in the processed-ID cache;
-5. records the cursor and inserts a previously unseen message ID;
-6. sets `apply = false` when delivery is `resume`, source device equals the
-   local device, or the message ID was already processed;
-7. when `apply = true`, sets `apply = false` unless state is
-   `active_unlocked_live` and delivery is `live`;
-8. when `apply = true`, reads the current clipboard hash;
-9. sets `apply = false` when the current bytes already equal the event bytes;
-10. when `apply = true`, writes exact text through the platform adapter;
-11. when the write occurs, stores one loop marker containing message ID and
-    content hash;
-12. advances the pending acknowledgement cursor and releases the state seam.
-
-The loop marker is consumed by the first subsequent local clipboard
-observation. A matching content hash suppresses publish. A differing hash
-clears the marker and proceeds as a new local observation. This rule contains
-no time window. The consecutive-content rule suppresses an additional watcher
-notification for the same bytes after marker consumption.
-
-Desktop agent states are:
-
-| State | Clipboard watch | Publish | Remote write | Network |
+| State | Observe | Publish | Remote write | Network |
 | --- | --- | --- | --- | --- |
 | `starting_unknown_lock` | off | off | off | off |
-| `active_unlocked_connecting` | off | retry existing after live | off | connecting or replaying |
-| `active_unlocked_live` | on | on | live only | connected and live |
+| `active_unlocked_connecting` | off | retry after live | off | connecting or replaying |
+| `active_unlocked_live` | on | on | live remote only | connected |
 | `locked` | off | off | off | disconnected |
 | `locally_paused` | off | off | off | disconnected |
-| `administratively_paused` | off | off | off | reconnecting with bounded backoff |
 | `outbox_full` | off | retry existing | off | connected or reconnecting |
-| `adapter_failed` | off | off | off | disconnected; readiness false |
+| `adapter_failed` | off | off | off | disconnected |
 | `stopping` | off | off | off | closing |
 
-A lock, pause, or adapter-failure transition increments a state generation and
-cancels an observation that has not committed its outbox event. An unlock or
-local resume enters `active_unlocked_connecting` and starts a new WebSocket
-session. An unexpected disconnect does the same and cancels an observation
-that has not committed. A successful resume enters `active_unlocked_live`.
-Resume material cannot change the clipboard. The first event accepted after
-the new resume boundary can.
+Unlock, local resume, and reconnect enter
+`active_unlocked_connecting`. Successful catch-up enters
+`active_unlocked_live`. Resume material never changes the clipboard. The
+first later live remote clip does.
 
-The agent exposes an owner-only local control interface for:
+The owner-only local non-TCP control interface exposes `status`, `pause`,
+`resume`, `clear-local-history`, and `local-only-next`.
+`clear-local-history` deletes local ClipMesh history and processed-ID cache
+but preserves outbox, cursor, epoch, generation, hub history, and system
+clipboard. Only shared clear deletes pre-clear outbox content.
 
-- `status`;
-- `pause`;
-- `resume`;
-- `clear-local-cache`;
-- `local-only-next`.
+Reconnect uses full jitter:
+`0..min(30000, 500 * 2^n)` ms for attempt `n`. A live session lasting 30
+seconds resets `n`. Invalid configuration, local-state failure, unknown lock
+state, and adapter failure require an external repair before retry.
 
-The interface uses local IPC, not a TCP listener. Its peer credentials must
-match the desktop user. `local-only-next` arms one in-memory flag and reveals
-no clipboard content. A service restart clears that flag.
+### 14. Platform hint and desktop adapter behavior
 
-`clear-local-cache` increments the agent state generation and runs through the
-agent-state serialization seam. It deletes complete unaccepted outbox events,
-processed message IDs, the pending remote-write marker, and the prior
-local-observation hash. It cancels an observation that has not committed. It
-preserves the last processed history epoch and cursor, the source-sequence
-allocator, the device credential, hub history, and the operating-system
-clipboard. A committed event or received event orders wholly before or wholly
-after the clear.
+The Wayland adapter uses a captured real watch interface to observe clipboard
+changes and a captured real write interface to write exact UTF-8 text. The
+macOS adapter uses native pasteboard APIs and records the change count from its
+own write.
 
-Reconnect delay uses full jitter. Attempt `n`, starting at zero, selects a
-random delay in `0..min(30000, 500 * 2^n)` milliseconds. A successful live
-session lasting 30 seconds resets `n` to zero. Authentication, revocation,
-credential rotation, invalid TLS, invalid configuration, credential-storage,
-and adapter failures do not retry automatically; they remain visible until
-their external cause changes or the user requests retry. An
-`administratively_paused` response or close enters the state of that name and
-uses the same full-jitter schedule automatically. After the administrator
-removes pause, the next attempt authenticates, completes resume without a
-clipboard write, and enters `active_unlocked_live`.
+Each adapter emits exactly:
 
-### 14. Platform desktop behavior
+- text bytes;
+- one observed platform revision;
+- `hint = ordinary | confidential | transient`.
 
-The Wayland adapter uses `wl-paste --watch` to observe clipboard changes and
-`wl-copy` to write exact UTF-8 text. It captures the real advertised MIME list
-before it maps a recognized sensitive hint. It ignores a clipboard that does
-not offer plain UTF-8 text. Command stderr is converted to a reason code and is
-not copied verbatim into ordinary diagnostics.
+The adapter can emit `confidential` or `transient` only for a signal
+listed in a checked-in registry entry whose evidence names a real platform
+capture. Unknown, absent, ambiguous, source-name-only, and content-derived
+signals map to `ordinary`.
 
-The macOS adapter uses native pasteboard APIs. It records the change count
-created by its own write and uses that observed count as the primary loop
-marker. It maps recognized sensitive pasteboard types from captured real API
-responses. It stores the bearer credential in Keychain.
+Shared code never receives a raw MIME list, pasteboard type list, source
+application identity, or platform error text. Command or API failures become
+stable reason codes.
 
-Each adapter emits one domain observation containing bytes, observed platform
-revision, and `sensitive` boolean. Shared agent code never receives the raw
-platform type list. This seam prevents diagnostics and protocol code from
-serializing platform metadata that can reveal content origin.
+### 15. Mobile state machine and explicit history
 
-### 15. Mobile state machine and presentation
+The mobile client keeps clip history, processed IDs, cursor, epoch, and clear
+generation in memory while the app process is active. It stores only generic
+hub configuration and content-free connection state in protected
+preferences. It stores no application identity, credential, payload, preview,
+content hash, or stable peer ID after process exit.
 
-The mobile client keeps fetched payload history and its current-session cursor
-in memory only. It persists the device credential in Keychain. It persists the
-history epoch and content-free connection status in protected app preferences.
-It does not persist payloads, previews, content hashes, or device display
-names.
-
-Mobile states are:
-
-| State | Network | Visible history | Pasteboard write |
+| State | Network | Visible history | Automatic pasteboard write |
 | --- | --- | --- | --- |
-| `unenrolled` | enrollment only | empty | none |
-| `inactive` | closed | obscured; in-memory history retained | none |
-| `foreground_connecting` | TLS and resume | prior in-memory entries marked stale | explicit selection only |
-| `foreground_live` | connected | resume and live entries | explicit selection only |
-| `foreground_error` | closed or retryable | current unexpired in-memory entries | explicit selection only |
+| `inactive` | closed | obscured; in-memory rows can remain | none |
+| `foreground_connecting` | connecting or replaying | prior rows marked stale | none |
+| `foreground_live` | connected | resume and live rows | each new live remote clip once |
+| `foreground_error` | closed or retryable | unexpired in-memory rows | none |
 
-On foreground activation, the client opens a session with its known history
-epoch and `after_cursor = null`. The hub therefore returns the complete current
-retained window instead of only successors to the prior foreground session.
-The client replaces the visible list with that returned history and tracks a
-cursor in memory until it leaves foreground. Manual refresh closes the current
-session and performs the same flow. Background transition closes the WebSocket
-and covers payload UI before the operating system captures an app-switcher
-snapshot.
+Foreground activation opens a session and resumes. Manual refresh repeats the
+same catch-up. Background closes the WebSocket and covers clip UI before an
+app-switcher snapshot.
 
-The history view orders entries by descending hub cursor. Each row shows the
-source display name, age `max(0, current_utc_ms - created_at_ms)`, and at most
-160 Unicode scalar values of text. It replaces C0 controls other than tab,
-carriage return, and line feed with U+FFFD for display. It collapses each
-whitespace run in the preview to one space. These transformations affect
-preview only. The view removes an entry at its expiry before the next render or
-selection action.
+The history view orders rows by descending cursor. Each row shows age and the
+result of `ClipContentV1::to_preview(content, 160)`. UI code receives only
+that bounded preview. Preview production never changes `ClipContentV1`.
 
-Selecting one unexpired row while active writes the exact decoded event text
-to `UIPasteboard.general`. The client performs no pasteboard read. It shows a
-content-free success state. A local-clear action empties visible history
-without changing the current session cursor, calling administrator purge, or
-changing the system pasteboard.
+Resume rows update visible history without a pasteboard write. In
+`foreground_live`, each new live remote event calls
+`UIPasteboard.general` once with exact `ClipContentV1::to_platform`
+bytes. Selecting one unexpired history row also writes its exact bytes once.
+The client performs no pasteboard read.
 
-`purge_notice` or an epoch change clears visible history before the client
-renders new resume events. A live event updates the foreground list but does
-not write to the pasteboard.
+Local clear empties only visible local history. Shared `clear_notice`
+empties history, processed IDs, and stale-generation state. Neither operation
+changes the system pasteboard.
 
-### 16. Observability
+### 16. Observability and health
 
-The Rust protocol crate provides `ClipboardPayload`, `ContentHash`,
-`DeviceCredential`, `AdministratorCredential`, and `EnrollmentArtifact`
-wrappers with fixed redacted `Debug` and `Display` implementations. Only
-explicit wire and adapter methods can access their inner bytes.
+The shared Rust crate provides fixed-redaction `Debug` and `Display` for
+`ClipContentV1`, `ContentHash`, and LocalAPI response wrappers.
+Application errors accept metadata-only types.
 
-Ordinary structured logs can contain:
+Ordinary logs can contain:
 
 - UTC timestamp;
 - component and stable event code;
 - severity;
-- request ID, session ID, device ID, message ID, cursor, or purge ID;
+- request ID, session ID, message ID, cursor, or clear generation;
 - protocol version;
-- state transition names;
-- bounded counts and durations;
-- a reason code.
+- state transition;
+- bounded count or duration;
+- stable reason code.
 
-They cannot contain payload bytes, payload base64, previews, content hashes,
-exact payload lengths, credentials, authorization headers, request bodies,
-response bodies that contain a secret, raw platform clipboard types, or device
-display names.
+They cannot contain clip bytes, base64, preview, exact content length, content
+hash, stable peer ID, Tailnet address, Tailnet node or user name, raw LocalAPI
+response, request body, platform clipboard metadata, or payload-derived text.
 
-Metrics use fixed names and labels from protocol version, component, state,
-and reason code. They do not use device, session, message, source label,
-payload, hash, or credential values as labels.
+Metrics use fixed labels from component, protocol version, state, and reason
+code. They do not label by peer, session, message, cursor, Tailnet value, clip
+metadata, or platform source.
 
-`GET /healthz` returns HTTP 200 and exactly
-`{"status":"ok"}` after the process starts its health surface.
+After WhoIs admission, `GET /healthz` returns HTTP 200 and exactly
+`{"status":"ok"}`. `GET /readyz` returns HTTP 200 and exactly
+`{"status":"ready","protocol_version":1}` only when LocalAPI, binding,
+SQLite, counters, and migrations permit service. Otherwise it returns HTTP
+503 and exactly
+`{"status":"not_ready","reason_code":<CODE>}`. Neither endpoint exposes a
+public listener or accepts an unverified peer.
 
-`GET /readyz` returns HTTP 200 and
-`{"status":"ready","protocol_version":1}` only when configuration, TLS,
-storage, counters, and administrator state permit data-plane service. It
-returns HTTP 503 and
-`{"status":"not_ready","reason_code":<CODE>}` otherwise. It contains no
-fleet counts or identifiers.
-
-Crash reporting is disabled by default. If a deployment enables it, the crash
-path uses the same metadata-only event type and excludes process memory,
-request bodies, environment values, command lines, and local state files.
+Crash reporting is off by default. If a deployment enables it, the crash path
+excludes process memory, request bodies, environment values, command lines,
+LocalAPI responses, and local state files.
 
 ### 17. Stable failure codes
 
 | Code | Surface | Retryable | State effect |
 | --- | --- | --- | --- |
-| `config_parse_failed` | startup | no | process exits before serving |
-| `config_unknown_field` | startup | no | process exits before serving |
-| `config_missing_required` | startup | no | process exits before serving |
-| `config_value_invalid` | startup | no | process exits before serving |
-| `bind_address_disallowed` | startup | no | process exits before serving |
-| `bind_failed` | startup | yes after external repair | opened sockets close; process exits |
-| `tls_material_invalid` | startup | no | process exits before serving |
-| `tls_certificate_not_current` | startup or readiness | yes after certificate replacement and restart | process exits or readiness becomes false |
-| `secret_file_insecure` | startup or desktop | no | component remains inactive |
-| `state_path_insecure` | startup or desktop | no | component remains inactive |
-| `local_state_unavailable` | desktop | no automatic retry | agent remains inactive; source sequence does not reset |
-| `database_schema_unsupported` | startup | no | process exits without migration |
-| `database_integrity_failed` | startup | no | process exits without serving |
+| `config_parse_failed` | startup | no | exit before bind |
+| `config_unknown_field` | startup | no | exit before bind |
+| `config_missing_required` | startup | no | exit before bind |
+| `config_value_invalid` | startup | no | exit before bind |
+| `tailscale_localapi_unavailable` | startup, readiness, session | after daemon repair | no new accepts; existing session closes at defined boundary |
+| `tailnet_bind_unverified` | startup | no | exit before bind |
+| `tailnet_peer_unverified` | admission | yes on a new connection | close before HTTP parsing |
+| `bind_failed` | startup | after external repair | close resources and exit |
+| `state_path_insecure` | startup or desktop | no | component inactive |
+| `local_state_unavailable` | desktop | after repair | no session or outbox mutation |
+| `database_schema_unsupported` | startup | no | no file mutation; exit |
+| `database_integrity_failed` | startup or runtime | after custodial repair | readiness false; no partial commit |
+| `storage_unavailable` | hub | after repair | readiness false; transaction rolls back |
 | `http_path_not_found` | HTTP | no | none |
 | `http_method_not_allowed` | HTTP | no | none |
-| `http_content_type_unsupported` | HTTP | no | none |
-| `unauthorized` | HTTP | no | none |
-| `administratively_paused` | upgrade or publish | yes after unpause | none |
+| `request_headers_too_large` | HTTP | no | none |
+| `client_identity_claim_forbidden` | HTTP | no | none |
 | `connection_limit_reached` | upgrade | yes | none |
 | `request_rate_limited` | HTTP | yes | none |
-| `request_too_large` | HTTP | no | none |
-| `message_too_large` | WebSocket | no | none; close session |
-| `message_rate_limited` | WebSocket | yes after reconnect | none; close session |
+| `message_too_large` | WebSocket | no | close; no parse or durable change |
+| `message_rate_limited` | WebSocket | after reconnect | close; no durable change |
 | `protocol_version_unsupported` | HTTP or WebSocket | no | none |
-| `protocol_schema_invalid` | HTTP or WebSocket | no | none; close when WebSocket |
-| `resume_required` | WebSocket | no | none; close |
-| `resume_deadline_exceeded` | WebSocket | yes | none; close |
-| `cursor_ahead` | WebSocket | no | none; close |
-| `resume_cursor_without_epoch` | WebSocket | no | none; close |
-| `session_epoch_stale` | publish | yes after reconnect | none; close |
-| `source_device_mismatch` | publish | no | none |
+| `protocol_schema_invalid` | WebSocket | no | close; no durable change |
+| `resume_required` | WebSocket | no | close |
+| `resume_deadline_exceeded` | WebSocket | yes | close |
+| `resume_context_incomplete` | resume | no | close |
+| `resume_cursor_without_context` | resume | no | close |
+| `cursor_ahead` | resume | no | close |
+| `session_context_stale` | publish or clear | after reconnect | close; no durable change |
+| `clear_generation_stale` | publish or clear | no for old content | none; client deletes old content |
+| `clear_generation_ahead` | publish or clear | after reconnect | none |
+| `clear_generation_exhausted` | clear or readiness | no | readiness false; no clear |
+| `request_id_conflict` | clear | no | none |
 | `message_id_conflict` | publish | no | none |
 | `message_id_replay` | publish | no | none |
-| `source_sequence_replay` | publish | no | none |
-| `created_at_in_future` | publish | yes after clock repair | none |
-| `event_expired` | publish | no | none |
-| `expiry_exceeds_retention` | publish | no | none |
+| `created_at_in_future` | publish | after clock repair | none |
+| `event_too_old` | publish | no | none |
 | `content_type_unsupported` | publish | no | none |
 | `payload_empty` | publish | no | none |
 | `payload_too_large` | publish | no | none |
@@ -1306,247 +1065,236 @@ request bodies, environment values, command lines, and local state files.
 | `payload_length_mismatch` | publish | no | none |
 | `payload_hash_mismatch` | publish | no | none |
 | `publish_rate_limited` | publish | yes | none |
-| `hub_cursor_exhausted` | publish or readiness | no | hub readiness false |
-| `device_sequence_exhausted` | desktop | no | affected device publishing stops |
-| `ack_invalid` | WebSocket | no | none; close session |
-| `slow_consumer` | WebSocket | yes | close session |
-| `heartbeat_timeout` | WebSocket | yes | close session |
-| `credential_rotated` | WebSocket | no | close affected sessions after committed rotation |
-| `device_revoked` | WebSocket | no | close affected sessions after committed revocation |
-| `history_purged` | WebSocket | yes after reconnect | close affected sessions after committed purge |
-| `enrollment_artifact_invalid` | enrollment | no | none |
-| `secret_result_already_committed` | control plane | no | returns committed resource ID only |
-| `request_id_conflict` | control plane | no | none |
-| `credential_storage_failed` | client | no automatic retry | server operation can already be committed |
-| `storage_unavailable` | hub | yes after repair | readiness false; no partial event commit |
-| `adapter_unavailable` | desktop | no automatic retry | agent inactive |
-| `lock_state_unknown` | desktop | no automatic retry | agent acts locked |
-| `outbox_full` | desktop | yes after drain or expiry | observation stops; existing retry continues |
-| `tls_validation_failed` | client | no automatic retry | no WebSocket or clipboard action |
+| `hub_cursor_exhausted` | publish or readiness | no | readiness false |
+| `history_cleared` | WebSocket | after reconnect | old-generation queue removed; close after notice |
+| `ack_invalid` | WebSocket | no | close |
+| `slow_consumer` | WebSocket | after reconnect | close |
+| `heartbeat_timeout` | WebSocket | after reconnect | close |
+| `adapter_unavailable` | desktop | after repair | agent inactive |
+| `lock_state_unknown` | desktop | after repair | agent acts locked |
+| `outbox_full` | desktop | after drain or clear | observation off; existing retry continues |
 
-The wire and readiness code set is closed for protocol v1. An implementation
-can add a private internal log code only when it cannot cross a wire or health
-surface and a test proves it content-free.
+The version-1 wire and readiness code set is closed. An internal code can be
+added only when a test proves it cannot cross a wire or health surface and
+contains no forbidden diagnostic value.
 
 HTTP status mapping is exact:
 
-| Status | Codes |
+| Status | Code |
 | --- | --- |
-| 200 or 201 | Named success response |
-| 400 | `protocol_version_unsupported`, `protocol_schema_invalid` |
-| 401 | `unauthorized` |
+| 400 | `protocol_version_unsupported` |
+| 403 | `client_identity_claim_forbidden` |
 | 404 | `http_path_not_found` |
 | 405 | `http_method_not_allowed` |
-| 409 | `request_id_conflict`, `secret_result_already_committed` |
-| 410 | `enrollment_artifact_invalid` |
-| 413 | `request_too_large` |
-| 415 | `http_content_type_unsupported` |
-| 423 | `administratively_paused` on a data-plane upgrade |
 | 429 | `connection_limit_reached`, `request_rate_limited` |
-| 503 | `storage_unavailable`, `hub_cursor_exhausted`, `tls_certificate_not_current`, or global `administratively_paused` on readiness |
+| 431 | `request_headers_too_large` |
+| 503 | `tailscale_localapi_unavailable`, `storage_unavailable`, `hub_cursor_exhausted`, `clear_generation_exhausted` |
 
-A WebSocket close frame uses the stable code as its UTF-8 reason and one of
-these private close numbers:
+WebSocket close mapping:
 
-| Close number | Reasons |
+| Close | Reasons |
 | --- | --- |
-| 4400 | `protocol_version_unsupported`, `protocol_schema_invalid`, `message_too_large`, `resume_required`, `cursor_ahead`, `resume_cursor_without_epoch`, `ack_invalid` |
-| 4403 | `administratively_paused`, `credential_rotated`, `device_revoked` |
-| 4408 | `resume_deadline_exceeded`, `heartbeat_timeout` |
-| 4409 | `session_epoch_stale`, `history_purged` |
-| 4429 | `slow_consumer`, `message_rate_limited` |
-| 4500 | `storage_unavailable`, `hub_cursor_exhausted` |
-
-The hub sends the corresponding `error`, `pause_notice`, or `purge_notice`
-application message before the close when the WebSocket can still accept an
-outbound message. A client treats a close without that message by its close
-number and reason. It does not display raw transport text to the user.
+| 4400 | schema, version, message-size, resume-context, cursor, or ack failure |
+| 4403 | `client_identity_claim_forbidden` |
+| 4408 | resume deadline or heartbeat |
+| 4409 | stale session, clear generation, or `history_cleared` |
+| 4429 | slow consumer or message rate |
+| 4500 | LocalAPI, storage, cursor, or clear-generation terminal failure |
 
 ### 18. Topology-neutral repository checks
 
-CI runs one repository-boundary command over the tracked tree, staged diff,
-and reachable Git history. The command performs these checks:
+CI scans the tracked tree, staged diff, and reachable Git history:
 
-1. a secret scanner finds no known token, private key, authorization header,
-   high-entropy assignment, or credential-shaped value;
-2. a ClipMesh token regex rejects
-   `cm_(dev|admin|enroll)_v1_[A-Za-z0-9_-]{43}` in tracked bytes;
-3. configuration examples contain no active listener, hub URL, credential,
-   user home, private inventory, or service-specific address;
-4. example network names use only the reserved domain `example.invalid` or an
-   explicit angle-bracket placeholder;
-5. fixture UUIDs come from a documented synthetic fixture namespace;
-6. deployment templates reference variables instead of private inventory;
-7. logs, snapshots, and error fixtures contain none of the content and secret
-   canaries used by the observability tests;
-8. the repository root carries the exact MIT license text;
-9. when `CLIPMESH_PRIVATE_DENYLIST_FILE` names an external owner-only file, the
-   scanner matches each nonblank literal against tracked bytes, staged diff,
-   and reachable Git history and fails on one match. The command prints only
-   the denylist line number and repository path or commit, not the private
-   literal.
+1. generic secret scanning rejects private keys, authorization headers, and
+   credential-shaped assignments;
+2. a source census rejects application-authentication middleware, application
+   credential types, device-registry persistence, administrator routes,
+   enrollment routes, pairing, credential lifecycle jobs, app TLS listeners,
+   and a selectable memory-history mode;
+3. examples contain no active listener, hub URL, Tailnet value, user home,
+   inventory, or service-specific address;
+4. network examples use only reserved documentation values or explicit
+   placeholders;
+5. fixtures use a documented synthetic UUID and stable-peer namespace;
+6. deployment templates reference generic variables;
+7. logs, snapshots, and error fixtures contain none of the content, identity,
+   or topology canaries;
+8. the root contains the MIT license and no contradictory project license;
+9. when `CLIPMESH_PRIVATE_DENYLIST_FILE` names an external owner-only file,
+   each nonblank literal is checked against tracked bytes, staged diff, and
+   history. Failure prints the denylist line number and public path or commit,
+   not the literal.
 
-CI fixtures use loopback, reserved example domains, synthetic device names,
-and synthetic UUIDs. Bind-classification unit tests construct address classes
-from numeric octets and prefixes; an address in such a test is evidence of an
-RFC class, not a deployment default.
-
-The external denylist remains optional for public CI because the public
-repository does not own private topology. A deployment release gate supplies
-it. Passing generic CI alone is not evidence about values CI was never given.
+The check permits this specification to name removed concepts in authority and
+non-goal prose. It rejects executable, schema, configuration, route, and
+deployment surfaces that implement them.
 
 ### 19. Real-response fixture capture plan
 
-Handwritten ideal responses cannot establish an external seam. Before a
-platform or transport adapter merges, its builder captures responses from the
-real library, process, database, simulator, or operating system named below.
+Handwritten ideal responses do not prove an external seam.
 
 Capture rules:
 
-1. Run an isolated test hub and clients with synthetic clipboard text, reserved
-   example names, synthetic UUIDs, and credentials created only for that run.
-2. Keep raw captures outside the public repository in an owner-only directory.
-3. Record the command, tool version, operating-system version, test scenario,
-   UTC time, and exit status in the build assignment log. Record the raw-capture
-   SHA-256 only in an owner-only manifest beside the raw capture.
-4. Run a structural sanitizer that parses the response and replaces credential
-   values with typed markers. The sanitizer fails on an unknown credential-like
-   string. It does not invent or reorder fields.
-5. Commit the sanitized response plus its SHA-256 and capture metadata that
-   contains no private path, hostname, username, address, credential, or raw
-   hash of a secret-bearing response. The build assignment log names the
-   sanitized fixture SHA-256 and states whether the owner-only raw manifest was
-   recorded.
-6. Replay the sanitized fixture through the production parser. Separately run
-   the same conformance assertion against a fresh unsanitized response in an
-   isolated test.
+1. Use an isolated synthetic Tailnet test environment, synthetic clip text,
+   reserved names, and synthetic IDs.
+2. Keep raw captures outside the public repository in an owner-only path.
+3. Record command, tool and OS version, scenario, PT time, exit status, and raw
+   SHA-256 in an owner-only manifest.
+4. Parse and structurally sanitize the response. Replace stable peer IDs,
+   Tailnet addresses, node names, and user data with typed markers. Fail on an
+   unknown identity-shaped or content-bearing field.
+5. Commit the sanitized fixture, its SHA-256, and generic provenance with no
+   private path, host, user, address, or raw identity-bearing hash.
+6. Replay the fixture through the production parser. Also run the same
+   assertion against a fresh unsanitized response in isolation.
 
-Required real captures are:
+Required captures:
 
-| Seam | Capture |
+| Seam | Real capture |
 | --- | --- |
-| rustls hub | Successful TLS 1.3 handshake; invalid chain; wrong name; expired certificate; non-TLS request |
-| WebSocket | Upgrade, hello, resume with history, live publish, exact retry, replay rejection, gap, slow consumer, rotation close, purge notice |
-| Administrator HTTPS | Device creation, artifact issuance, artifact exchange, rotation, revocation, pause, purge, repeated request ID |
-| SQLite | Accept and restart; expiry delete; count trim; global purge; secure-delete database inspection |
-| Wayland | Real `wl-paste --watch` observation, MIME discovery, `wl-copy` echo, lock transition, command failure |
-| macOS | Real pasteboard bytes, type list, change count after local and remote writes, lock transition, Keychain success and refusal |
-| iOS/iPadOS | URLSession WebSocket frames, foreground/background transitions, Keychain storage, explicit `UIPasteboard.general` write, app-switcher privacy cover |
+| Tailscale LocalAPI | status with self addresses; WhoIs success; peer not found; daemon unavailable; permission refusal; malformed response |
+| Tailnet socket | allowed exact self bind; wildcard, loopback, LAN, public, and stale self-address refusal; non-Tailnet probe |
+| WebSocket | upgrade, hello, resume, live publish, exact retry, replay rejection, clear, generation rejection, slow consumer |
+| SQLite | initialize, publish, restart, expiry, count trim, shared clear, crash rollback, integrity refusal, unsupported-schema refusal |
+| Wayland | real observation, explicit hint, remote write echo, lock transition, adapter failure |
+| macOS | real bytes, declared types, change counts for local and remote writes, lock transition |
+| iOS/iPadOS | foreground resume, live pasteboard overwrite, explicit row selection, background transition, shared clear |
 
-The sensitive-hint registry can add one platform signal only after a capture
-shows that signal on a real platform response and a test proves that the
-adapter emits `sensitive = true` without passing payload bytes to the outbox.
+The explicit-hint registry can add a signal only after its real capture proves
+the operating system or source application marked that entry confidential or
+transient. A source name, MIME name without documented semantics, payload
+pattern, or timing observation cannot qualify.
+
+### 20. Clause continuity for existing decomposition
+
+The amendment preserves invariant and acceptance identifiers so prior work can
+be reconciled without an unmarked renumbering. The meaning at this candidate
+commit controls.
+
+| Prior area | Current authority |
+| --- | --- |
+| I1, I5-I10, I14, I16-I18 | Identifier retained and tightened |
+| I2 | LocalAPI WhoIs identity; no client source claim |
+| I3 | Equal ACL-admitted member authority; no application authority classes |
+| I4 | Tailnet-only plaintext application transport; no application TLS |
+| I11 | Seven days or 500 clips by default |
+| I12 | Equal-member shared clear with clear generation |
+| I13 | SQLite only |
+| I15 | Foreground live overwrite plus explicit mobile history |
+| I19 | New canonical clip-content serialization seam |
+| Architecture 2-8 | Replaced TLS, credential, control-plane, enrollment, and certificate surfaces with Tailnet transport and WhoIs |
+| Architecture 12 | Replaced memory mode and administrator purge with persistent SQLite and shared clear |
+| Architecture 15 | Removed contrary mobile live-write suppression |
+| A01-A62 | Identifiers retained below; each Given/When/Then at this commit supersedes its prior text |
+
+No decomposition can rely on a removed application identity, credential,
+device, administration, enrollment, pairing, rotation, certificate,
+memory-history, old retention, or administrator-only purge clause.
 
 ## Acceptance
 
-The evidence column names the minimum proof. A reviewer can request more
-evidence when a named test did not exercise the claimed boundary.
+The evidence column names the minimum proof. Each fixture that represents an
+external response follows Architecture 19.
 
 | ID | Traces to | Given / When / Then | Required evidence |
 | --- | --- | --- | --- |
-| A01 | I1, Architecture 2-5 | Given Rust and Swift version-1 implementations, when each decodes and re-encodes the canonical publish fixture and sanitized real-capture corpus, then the publish fixture preserves its exact field values and payload bytes, each captured message preserves its canonical field semantics, and each unsupported version is rejected before message handling. | Rust and Swift conformance logs plus captured fixtures |
-| A02 | I1, Architecture 2 and 5 | Given a valid message, when one unknown field, duplicate key, wrong type, binary frame, invalid UTF-8 frame, oversized frame, decreasing ack, future ack, or wrong-epoch ack is introduced separately, then schema defects produce `protocol_schema_invalid`, oversize produces `message_too_large`, acknowledgement defects produce `ack_invalid`, the receiver closes with 4400, and no durable state changes. | Table-driven negative tests |
-| A03 | I2 | Given device A's credential and an event asserting device B, when A publishes, then the hub returns `source_device_mismatch`; history, cursor, and A's sequence high-water mark remain unchanged. | Hub integration test with database before/after snapshot |
-| A04 | I3, Architecture 6 | Given one credential of each class, when each calls each protected path, then only the exact class-path pair succeeds; invalid and wrong-class credentials return the same `unauthorized` body. | Complete credential-path matrix |
-| A05 | I4 | Given a valid client configuration, when the server chain is invalid, the name is wrong, the certificate is expired, or the endpoint is plaintext, then the client opens no WebSocket and performs no clipboard action. | Real rustls and platform client captures |
-| A06 | I4, Architecture 8 | Given hub configurations with an empty listener list, wildcard, global, multicast, link-local, documentation, or unresolvable bind value, when the hub starts, then it exits nonzero before any accept loop. | Startup tests and socket probe |
-| A07 | I4, Architecture 8 | Given two configured allowed sockets and the second cannot bind, when the hub starts, then it closes the first socket and exits nonzero. | Real socket test |
-| A08 | I4, Architecture 8 | Given a symlink, wrong owner, or mode broader than the specified secret, key, database, or state-directory mode, when the component starts, then it remains inactive with one content-free code. | Unix permission tests |
-| A09 | I5 | Given 25 accepted events from concurrent devices, when clients read history and live delivery, then each observes one identical ascending cursor order with no reused cursor. | Concurrency integration log and database query |
-| A10 | Goal, normal delivery | Given normal delivery conditions and default rate limits, when one desktop observes 100 synthetic texts at intervals of 1,100 ms, then each target clipboard write completes within 1,000 ms of its source observation and no publish is rate-limited. | Timestamped end-to-end test log |
-| A11 | I6 | Given one accepted retained event and rate buckets configured to admit ten retries, when its source retries the exact event ten times, then each retry returns the original cursor with `duplicate = true`; history count and peer live-delivery count remain at their post-acceptance values of one. | Hub, peer, and database counters |
-| A12 | I6 | Given one accepted event, when a client reuses its message ID with a changed field, reuses its source sequence with a new ID, or reuses its tombstoned ID after purge, then the exact replay code returns and no cursor or history state changes. | Replay matrix with before/after state |
-| A13 | I6, Architecture 10 | Given two concurrent publishes with one message ID, when the hub serializes them, then one commits and the other returns exact retry or conflict according to its bytes. | Concurrency test repeated 100 times |
-| A14 | I7 | Given events accepted during a deliberately blocked resume send, when the resume completes, then events at or below boundary B arrive as `resume` before `resume_complete`; later cursors arrive as `live` in order with no gap. | Deterministic barrier integration test |
-| A15 | I7 | Given a client cursor behind `lost_through_cursor`, when it resumes, then `resume_started.status = gap`, retained successors arrive in order, and no guessed event appears. | Expiry and count-gap tests |
-| A16 | I8 | Given a desktop clipboard value and missed retained events, when the agent reconnects, unlocks, or leaves local pause, then it processes resume cursors without changing that clipboard value. | Linux and macOS real adapter tests |
-| A17 | I8 | Given a completed resume and an unlocked active target, when another device publishes a new live event, then the target writes exact UTF-8 bytes once. | Linux and macOS real adapter tests |
-| A18 | I9 | Given a remote live write that triggers duplicate local watcher notifications, when those observations match, then the agent sends no publish; when a later different observation occurs, then it publishes once without waiting for a timer. | Adapter event-sequence tests |
-| A19 | I10 | Given a local observation paused at the agent state barrier, when lock or pause wins the barrier, then no outbox row or publish exists; when outbox commit wins first, then the event follows normal retry rules and the transition performs no later clipboard action. | Deterministic state-race tests |
-| A20 | I10, Architecture 14 | Given each recognized sensitive hint captured from a real platform, when the clipboard changes, then no payload enters outbox, wire, log, metric, or error; one content-free suppression counter increases. | Real platform capture and canary scan |
-| A21 | I10, Architecture 13 | Given `local-only-next`, when two eligible local changes occur, then the first remains local and the second publishes; no payload crosses the local control interface. | Local-control integration test |
-| A22 | I11 | Given default config and one 262,144-byte UTF-8 payload, when it publishes, then it is accepted; a 262,145-byte payload returns `payload_too_large` without state change. | Boundary tests |
-| A23 | I11 | Given default config and 21 unexpired accepted events, when event 21 commits, then history contains cursors 2 through 21 and `lost_through_cursor` is at least cursor 1. | Database and resume test |
-| A24 | I11 | Given one event whose expiry is reached, when history is queried before and after the periodic delete, then neither query delivers it and the row is deleted within 60 seconds. | Controlled-clock storage test |
-| A25 | I13 | Given SQLite history with retained events, when the hub restarts ordinarily, then epoch, cursor order, replay high-water state, and unexpired history remain. | Real process restart test |
-| A26 | I13 | Given memory history with retained events, when the hub restarts, then payload history is empty, the epoch changes, replay of an old source sequence is rejected, and no payload bytes exist in SQLite. | Real process restart and database scan |
-| A27 | I12 | Given retained history and pending online plus offline desktop outbox events, when an administrator purges, then the hub response reports a committed new epoch, online clients clear on notice, the offline client clears on next hello, no purged outbox payload republishes, and no client changes its system pasteboard. | Hub, mobile, desktop, and database test |
-| A28 | I3, I17, Architecture 6 | Given two active devices and queued application output for one, when an administrator revokes that device, then the cutoff removes its session and queued output before the administrator mutation seam releases, no later payload frame reaches TLS for it, its next upgrade returns `unauthorized`, and the other device remains live and can publish. | Multi-device queue, TLS-write, and integration test |
-| A29 | I3, I17, Architecture 6 | Given one active device with queued application output, when an administrator rotates it, then the cutoff removes its old session and queued output before the administrator mutation seam releases, no later payload frame reaches TLS for it, the old credential stops working, the new credential opens one session, and the plaintext new credential appears only in the first response. | Rotation, queue, TLS-write, and secret-canary test |
-| A30 | I3, Architecture 6 | Given one mobile enrollment artifact, when two exchanges with distinct request IDs race before ten minutes, then one returns a credential and one returns `enrollment_artifact_invalid`; when an unconsumed artifact reaches ten minutes, then no exchange succeeds, its pending device row is deleted within 60 seconds, and its digest tombstone disappears 86,400 seconds after expiry. | Controlled-clock concurrency and storage test |
-| A31 | I15, Architecture 15 | Given 20 retained events, when the app enters foreground, then it displays descending history with source, age, and bounded preview; selecting one unexpired row writes exact text once to `UIPasteboard.general`. | Swift UI and real pasteboard test |
-| A32 | I15 | Given resume, live delivery, refresh, activation, background, and epoch-change transitions, when each occurs without row selection, then a pasteboard write spy records zero calls. | Swift state-machine test |
-| A33 | I14, Architecture 16 | Given unique payload, base64, payload hash, device label, device credential, admin credential, and enrollment canaries, when success and each failure class run, then logs, metrics, health, errors, and crash fixtures contain none of those canaries. | Byte-for-byte canary scan |
-| A34 | I14, Architecture 16 | Given ready and not-ready hub states, when health and readiness are requested, then their status, body, and reason-code shapes match this specification and contain no identifiers or counts. | Real HTTP captures |
-| A35 | Architecture 9 | Given configured connection, per-device, publish, and outbound queue limits, when each boundary is exceeded separately, then the named refusal or close occurs; accepted peer sessions preserve cursor order. | Limit matrix |
-| A36 | I16, Architecture 18 | Given the tracked repository, when generic boundary checks and a synthetic external denylist run, then clean bytes pass; one seeded token, hostname, private literal, active listener default, or content canary fails with path and no secret echo. | CI log and seeded-failure tests |
-| A37 | Goal, Architecture 1 | Given generic systemd, launchd, and Ansible assets, when rendered with reserved synthetic values, then each passes its native syntax check and exposes variables for binary, hub URL, device ID, credential reference, retention, and startup behavior. | Native syntax checks and rendered fixture |
-| A38 | Non-Goals, Architecture 1 | Given the repository root, when the license check runs, then it finds the canonical MIT license and no contradictory project license. | License scan |
-| A39 | Architecture 19 | Given each external seam in the capture table, when its tests merge, then the assignment evidence names a real capture, sanitizer, sanitized fixture, fresh-response conformance run, and topology/secret scan. | Capture log, fixture provenance, and test log |
-| A40 | Goal, Non-Goals | Given the built MVP dependency graph and wire schema, when reviewed, then it contains no Share extension, E2EE key distribution, mTLS, hub election, direct-delivery, image/file MIME path, public listener, private inventory, or deployment mutation. | Dependency and repository census |
-| A41 | Goal, Architecture 6 | Given an administrator credential held by synthetic deployment automation, when it creates a managed desktop, stores the returned device credential through the declared secret reference, and starts the agent, then the device opens a live session without an action on an existing device. | Isolated Ansible-to-agent acceptance run |
-| A42 | I4, Architecture 8 | Given a hub bound to one allowed address in an isolated network namespace, when probes target that address and a second unbound interface, then only the configured address completes TLS. | Network-namespace socket and TLS probe log |
-| A43 | Architecture 15 | Given foreground mobile history and a nonempty system pasteboard, when the user invokes local clear, then visible history empties while the session cursor, hub history, and system pasteboard remain unchanged. | Swift state, hub query, and pasteboard assertions |
-| A44 | I10, I17, Architecture 6 | Given two active devices with queued application output, when an administrator pauses one device, then the cutoff removes that session and its queued output before the administrator mutation seam releases, hands no later payload frame to TLS for it, and leaves the peer live; when the administrator pauses globally, then the same cutoff applies to both data sessions while an authenticated administrator can remove the pause. | Administrative pause queue, TLS-write, and session matrix |
-| A45 | I4, Architecture 8 | Given one valid configuration, when each required field is removed, each unknown field is added, and each bounded value crosses its lower or upper bound separately, then startup exits with the exact configuration code before any listener accepts. | Generated configuration mutation matrix |
-| A46 | I17, Architecture 6 and 10 | Given a publish stopped at the storage barrier and a concurrent rotation, revocation, pause, or purge, when each ordering is released separately, then the publish commits entirely before the administrator mutation or writes nothing after it; no stale credential or epoch commits later, and rotation, revocation, or pause removes affected queued application output before releasing the common seam. | Deterministic transaction, queue, and recipient-race tests |
-| A47 | I18, Architecture 17 | Given one trigger for each stable failure code, when the component fails, then its wire response or local result emits that code and retryability, its state diff matches the table, and each emitted byte contains none of the content or secret canaries. | Failure-code matrix with state snapshots and canary scan |
-| A48 | Architecture 13 | Given an `active_unlocked_live` agent whose outbound sends are held before acceptance, when another observation would take its outbox above 20 events or 1,048,576 bytes, then the new payload remains local without sequence allocation, observation stops with `outbox_full`, existing items remain exact, and accepting or expiring enough items resumes observation. | Persistent outbox boundary and restart test |
-| A49 | Architecture 10 | Given a synthetic hub cursor at unsigned-64 maximum, when a device publishes, then the hub returns `hub_cursor_exhausted` and becomes not ready; given one device source sequence at maximum, when that agent observes a new copy, then only that agent stops publishing with `device_sequence_exhausted` while another device remains live. | Injected counter-boundary tests |
-| A50 | I4, Architecture 8 | Given a running hub certificate, an established readiness connection, and an established data session, when the certificate crosses expiry and the 60-second validity check runs, then readiness on the established connection returns `tls_certificate_not_current`, a new handshake cannot complete, and the existing data session closes only at its ordinary boundary. | Controlled-clock real TLS process test |
-| A51 | I6, I17, Architecture 13 | Given an enrolled desktop that has committed source sequence 41 and one unaccepted outbox event, when the process restarts with intact local state, then it retries the exact event with its original sequence and allocates 42 for the next eligible observation. | Real process restart and local-state inspection |
-| A52 | I6, I18, Architecture 8 and 13 | Given an enrolled desktop credential with missing, corrupt, read-only, or non-atomic local state, when the agent starts, then it emits `local_state_unavailable`, allocates no source sequence, opens no data-plane session, and remains inactive until the state is restored or a new device identity is enrolled. | Local-state failure matrix with network and outbox probes |
-| A53 | I7, Architecture 5 and 9 | Given a default 20-event resume followed by live events, when a client processes the replay and live stream, then it sends one highest-cursor acknowledgement after `resume_complete`, coalesces later acknowledgements to at most one per 2,000 milliseconds, and does not exhaust the application-message bucket. | Controlled-clock client and hub message trace |
-| A54 | I3, Architecture 6 and 7 | Given a consumed enrollment artifact whose exact exchange response was lost, when the client repeats the same request ID and body before tombstone expiry, then the hub returns `secret_result_already_committed` with the committed device ID and no credential; a different request ID returns `enrollment_artifact_invalid` and writes nothing. | Request-receipt and controlled-clock storage test |
-| A55 | I12, I17, Architecture 13 | Given a desktop with unaccepted outbox events, processed IDs, a loop marker, and a nonempty system clipboard, when its owner invokes `clear-local-cache`, then those events and named caches are deleted through the state seam while cursor, epoch, sequence allocator, credential, hub history, and system clipboard remain unchanged. | Local-state before/after inspection and clipboard assertion |
-| A56 | Architecture 13 | Given an unlocked desktop that loses its live session, when its clipboard changes during connecting, replaying, or disconnected state, then the agent allocates no sequence and creates no outbox item; after live resume, that existing clipboard value is not queued without a later clipboard observation. | Deterministic connection-state and clipboard-observation test |
-| A57 | I11, Architecture 4 and 10 | Given an otherwise valid publish, retention `R_ms = retention_seconds * 1000`, and hub time `T`, when `created_at_ms = T + 120000` and `expires_at_ms = created_at_ms + R_ms`, then the hub accepts the time fields; introduced separately, creation at `T + 120001` returns `created_at_in_future`, expiry at `T` returns `event_expired`, and expiry at `created_at_ms + R_ms + 1` returns `expiry_exceeds_retention`. | Controlled-clock boundary table |
-| A58 | I18, Architecture 6, 7, and 17 | Given the TLS listener, when a request uses an unknown path, a wrong method on a known path, a wrong content type on a body-bearing path, or an oversized body, then it returns respectively 404 `http_path_not_found`, 405 `http_method_not_allowed`, 415 `http_content_type_unsupported`, or 413 `request_too_large` before authentication and changes no state; a request with two adjacent defects returns the earlier step's code. | Real HTTP routing and precedence matrix with state snapshots |
-| A59 | I18, Architecture 2 and 17 | Given a WebSocket session, when either peer receives a binary message, invalid UTF-8 text, or a text message one byte above its active limit, then binary and UTF-8 failures produce `protocol_schema_invalid`, oversize produces `message_too_large`, the receiver closes with 4400, parses no oversize body, and changes no durable state. | Real WebSocket frame-boundary captures and state snapshots |
-| A60 | I18, Architecture 3, 4, 10, and 17 | Given one valid publish, when each schema, version, UUID, decimal, timestamp, source, creation, expiry, content type, base64/UTF-8, decoded-size, declared-length, and hash defect is introduced separately, then the failure returns the exact code and state effect from Architecture 10 and 17; a publish with defects at two adjacent validation steps returns the earlier step's code. | Ordered publish-validation and adjacent-precedence matrix |
-| A61 | I17, Architecture 6 and 10 | Given an affected session with a queued live payload and session writer plus publish blocked at the common mutation seam, when rotation, revocation, or pause commits before the publish or after an earlier publish, then the hub removes the session and queued payloads before releasing the seam and hands no post-commit payload frame to TLS for that session; a frame handed to TLS before commit remains classified pre-commit, and an unaffected peer preserves cursor order. | Deterministic queue, TLS-write, and transaction-barrier tests |
-| A62 | I8, Architecture 6, 9, and 13 | Given a desktop closed by administrative pause with retained outbox items and a nonempty clipboard, when the administrator removes pause, then bounded automatic retry opens a fresh session, processes resume without changing the clipboard, retries retained outbox items exactly, and applies only an event accepted after `resume_complete` as live. | Controlled-clock pause-removal and real-adapter test |
+| A01 | I1, Architecture 2-5 | Given Rust and Swift version-1 implementations, when each decodes and re-encodes the canonical publish and sanitized capture corpus, then each field and exact UTF-8 content byte is preserved. | Cross-language conformance logs and fixtures |
+| A02 | I1, I18 | Given one valid message, when one unknown field, duplicate key, wrong type, unsupported version, binary frame, invalid UTF-8 frame, or oversized frame is introduced separately, then the exact code and close apply and no durable state changes. | Table-driven negative matrix |
+| A03 | I2, Architecture 6 | Given an admitted socket, when WhoIs returns stable peer ID P, then the session and accepted clip source use P without reading an application identity field. | LocalAPI capture, connection context assertion, database row |
+| A04 | I3 | Given two distinct admitted stable peer IDs, when each resumes, publishes, acknowledges, and requests clear, then the same validation and mutation rules apply. | Complete equal-member operation matrix |
+| A05 | I4, Architecture 2 | Given two Tailnet peers and the plaintext ClipMesh protocol, when one clip crosses the connection, then a hub application capture can recover the test text while a capture outside the WireGuard endpoints cannot. | Isolated Tailnet packet and application captures |
+| A06 | I4, Architecture 8 | Given no bind value, a wildcard, loopback, LAN, public, documentation, link-local, multicast, hostname, or stale self address, when the hub starts, then it exits before an accept loop with the exact content-free code. | Startup matrix and socket probes |
+| A07 | I4, Architecture 8 | Given one validated Tailnet self address whose port cannot bind, when startup runs, then it closes LocalAPI and SQLite resources and accepts no connection. | Real occupied-socket process test |
+| A08 | I13, Architecture 8 and 12 | Given a symlink, wrong owner, or mode broader than the state-directory or database bound, when the hub starts, then it leaves the file unchanged and exits before bind. | Unix permission and before/after hash tests |
+| A09 | I5 | Given 25 concurrent publishes from admitted peers, when clients read history and live delivery, then each observes one identical ascending cursor order with no reused cursor. | Concurrency log and SQLite query |
+| A10 | Goal, normal delivery | Given normal delivery conditions, when one desktop observes 100 synthetic texts at 1,100 ms intervals, then each target write completes within 1,000 ms of source observation and no publish is rate-limited. | Timestamped real-adapter run |
+| A11 | I6 | Given one retained accepted clip and rate buckets that admit ten retries, when its source retries exact input ten times, then each returns the original cursor with `duplicate = true`, history remains one row, and peers receive no second live event. | Hub, peer, and SQLite counters |
+| A12 | I6, I12 | Given one accepted clip, when its source reuses the message ID with changed input, retries its tombstoned ID after expiry, or retries after clear, then the specified conflict, replay, or generation code returns and no hub state changes. | Replay matrix with database snapshots |
+| A13 | I6, I17 | Given two concurrent publishes with one message ID, when the writer serializes them, then one commits and the other returns exact retry only when the full retry tuple matches or conflict otherwise. | Barrier test repeated 100 times |
+| A14 | I7 | Given publishes accepted while resume output is blocked, when catch-up completes, then cursors through boundary B arrive as resume before `resume_complete`, and later cursors arrive live in order. | Deterministic subscriber barrier test |
+| A15 | I7, I11 | Given a cursor behind `lost_through_cursor`, when the client resumes, then status is `gap`, retained successors arrive in order, and no guessed clip appears. | Age- and count-gap tests |
+| A16 | I8 | Given a nonempty desktop clipboard and retained resume rows, when reconnect, unlock, or local resume catches up, then history and cursor change while the clipboard-write spy records zero calls. | Linux and macOS real-adapter tests |
+| A17 | I8 | Given completed catch-up and an unlocked active desktop, when another peer publishes one live clip, then the platform write receives exact text once even if current clipboard bytes match. | Linux and macOS write-spy captures |
+| A18 | I9 | Given a remote live write that produces duplicate watcher notifications, when the matching observation arrives, then no publish occurs; a later distinct observation publishes once without a timer. | Adapter event-sequence tests |
+| A19 | I10, I17 | Given a local observation stopped at the state barrier, when lock or pause wins, then no content or outbox row exists; when outbox commit wins, the exact row follows normal retry and the transition adds no later write. | Deterministic client race test |
+| A20 | I10, Architecture 14 | Given each captured registered confidential or transient signal and each unregistered, absent, ambiguous, source-name-only, or content-derived signal, when the adapter observes them separately, then only the registered signals suppress `ClipContentV1`; every other supported text entry maps to ordinary and follows normal state rules. | Real captures, ordinary-path assertions, and canary scan |
+| A21 | I10, Architecture 13 | Given `local-only-next`, when two eligible local observations occur, then the first creates no content or outbox row and the second publishes once. | Local-control integration test |
+| A22 | I11, I19 | Given default config and 262,144 UTF-8 bytes, when published, then the hub accepts them; 262,145 bytes returns `payload_too_large` without state change. | Boundary tests through the canonical seam |
+| A23 | I11 | Given default config and 501 unexpired clips, when clip 501 commits, then SQLite contains cursors 2 through 501 and `lost_through_cursor` reaches at least cursor 1. | SQLite and resume test |
+| A24 | I11 | Given a clip accepted at T, when hub time reaches T plus 604,800 seconds, then history omits it and oldest-first cleanup deletes its row within 60 seconds. | Controlled-clock SQLite test |
+| A25 | I13 | Given retained SQLite clips, when the hub stops cleanly or crashes and restarts, then epoch, generation, cursor order, replay state, and unexpired content remain. | Real process restart and crash tests |
+| A26 | I13, Architecture 8 | Given a new database, version 1 database, unsupported version, and nonempty zero-version database, when startup runs, then only the new database initializes, version 1 opens unchanged, and unsupported inputs remain byte-identical with `database_schema_unsupported`. | Migration matrix with file hashes |
+| A27 | I12 | Given retained clips, queued old-generation frames, and generation G, when one admitted member clears, then one transaction deletes clips, commits G+1, updates lost-through, stores one receipt, drops queued old-generation event frames before release, and leaves each system clipboard unchanged. | SQLite, queue-writer, desktop, and mobile assertions |
+| A28 | I2, Architecture 6 | Given WhoIs success, peer-not-found, timeout, permission refusal, malformed response, and empty stable ID, when sockets arrive, then only success reaches HTTP parsing and each failure closes with no application response. | Real LocalAPI admission matrix |
+| A29 | I2, Architecture 2 and 7 | Given an admitted peer, when it supplies Authorization, forwarding, ClipMesh identity headers, URL user info, query, or fragment, then the hub returns `client_identity_claim_forbidden` and changes no state. | HTTP request matrix |
+| A30 | I12, I17 | Given two distinct clear requests expecting generation G, when they race, then one commits G+1 and the other returns `clear_generation_stale`; no clip survives from G. | SQLite barrier test |
+| A31 | I15 | Given 500 retained clips, when the mobile app enters foreground, then it catches up a descending age-and-preview history and performs no pasteboard write before `resume_complete`. | Swift state and pasteboard-spy test |
+| A32 | I15 | Given a foreground mobile session after catch-up, when a new live remote clip arrives, then the app writes exact text once even when current pasteboard bytes match; resume, refresh, activation, background, and generation change each produce zero writes. | Swift transition matrix with real pasteboard |
+| A33 | I14, Architecture 16 | Given unique clip, base64, hash, stable-peer, Tailnet-address, node-name, user-name, and platform-metadata canaries, when success and each failure class run, then logs, metrics, health, errors, and crash fixtures contain none. | Byte-for-byte output scan |
+| A34 | I14, Architecture 16 | Given ready and not-ready admitted sessions, when health and readiness are queried, then status, body, and reason shape are exact and expose no count or identity. | Real HTTP captures |
+| A35 | Architecture 8 and 9 | Given each configured connection, per-peer, rate, and outbound-queue boundary, when exceeded separately, then the named refusal or close occurs and admitted peers preserve cursor order. | Limit matrix |
+| A36 | I16, Architecture 18 | Given clean tracked bytes and synthetic external denylist, when repository checks run, then clean bytes pass; one seeded secret, topology value, active listener, obsolete app-authority surface, or content canary fails without echoing the sensitive literal. | CI log and seeded-failure matrix |
+| A37 | Goal, Architecture 1 and 8 | Given generic systemd, launchd, and Ansible assets, when rendered with reserved values, then native syntax checks pass and variables cover hub URL, Tailnet-only bind, state, retention, limits, and startup without an application identity secret. | Native syntax and rendered-fixture checks |
+| A38 | Non-Goals, Architecture 1 | Given the repository root, when license checks run, then the canonical MIT license exists and no contradictory project license exists. | License scan |
+| A39 | Architecture 19 | Given each external seam, when its tests merge, then evidence names a real capture, owner-only manifest, sanitizer, sanitized fixture, fresh-response run, and boundary scan. | Capture ledger and test logs |
+| A40 | Goal, Non-Goals | Given the built dependency graph, routes, schemas, and config, when censused, then it contains no E2EE, app identity, credential, device registry, control plane, enrollment, pairing, rotation, application TLS, memory history, Share extension, direct delivery, non-text content, or public listener. | Dependency, route, schema, and config census |
+| A41 | I2-I4 | Given a desktop already admitted by Tailnet policy, when generic deployment starts its agent with hub URL and a new local-state path only, then the hub's WhoIs result admits it and the client reaches live without an application account, credential, or onboarding state. | Isolated deployment-to-live run |
+| A42 | I4, Architecture 8 | Given a hub bound to one validated Tailnet self address in an isolated network, when Tailnet, second-interface, loopback, and public-side probes run, then only the admitted Tailnet probe reaches HTTP. | Network-namespace and Tailnet probe log |
+| A43 | Architecture 13 and 15 | Given nonempty product history and system clipboard, when desktop or mobile local clear runs, then only that client's visible history and processed cache clear; hub rows, generation, outbox, and system clipboard remain unchanged. | Client, hub, and platform before/after state |
+| A44 | I3, I12 | Given two admitted peers, when either requests shared clear, then each can commit the same operation and neither can invoke an app-admin, device, or membership operation. | Operation and route matrix |
+| A45 | I4, Architecture 8 | Given one valid hub or desktop config, when each required field is removed, unknown field added, URL scheme changed, and bound crossed separately, then startup fails before network activity with the exact code. | Generated config mutation matrix |
+| A46 | I12, I17 | Given a publish and clear stopped at the common writer, when each ordering is released, then publish-before-clear is committed then deleted, and clear-before-publish causes the old-generation publish to write nothing. | Deterministic transaction test |
+| A47 | I18, Architecture 17 | Given one trigger per stable code, when it fires, then surface, retryability, state diff, and emitted bytes match the table and contain no diagnostic canary. | Failure-code matrix |
+| A48 | Architecture 13 | Given an active desktop with held outbound sends, when a new observation would exceed 128 events or 8,388,608 bytes, then it allocates no message ID, stores no new content, enters `outbox_full`, and preserves existing rows. | Persistent outbox boundary test |
+| A49 | Architecture 10 and 12 | Given cursor or clear generation at unsigned-64 maximum, when the next corresponding mutation is attempted, then the counter does not wrap and the exact terminal code and readiness effect occur. | Injected counter-boundary tests |
+| A50 | I2, I4, Architecture 9 | Given a ready hub and established sessions, when LocalAPI becomes unavailable, then readiness becomes false, no new socket reaches HTTP, and existing sessions close at the specified observable boundary without accepting a later mutation. | Real daemon-loss process test |
+| A51 | I6, Architecture 13 | Given one unaccepted outbox row, when the desktop restarts with intact state, then it retries the exact message ID, generation, timestamp, and content; the next eligible observation receives a different message ID. | Restart and local-state inspection |
+| A52 | I18, Architecture 8 and 13 | Given an absent desktop database, when the agent starts, then it initializes version 1 and can resume with null context; given an unsupported, corrupt, insecure, read-only, or non-atomic store, it emits `local_state_unavailable`, changes no store bytes, opens no session, and remains inactive until repaired. | Local-state initialization and failure matrix |
+| A53 | I7, Architecture 5 and 9 | Given a 500-row resume followed by live clips, when a client processes the stream, then it sends one highest-cursor ack after `resume_complete`, later acks occur at most once per 2,000 ms, and the message bucket is not exhausted. | Controlled-clock trace |
+| A54 | I12, Architecture 12 | Given one committed clear whose response was lost, when an admitted peer retries the same global request ID and generation, then it receives the committed generation with `duplicate = true`; changed input returns `request_id_conflict`. | Clear-receipt restart test |
+| A55 | I12, I17 | Given a client with history, processed IDs, remote marker, pre-clear outbox rows, and nonempty clipboard, when it consumes `clear_notice`, then it deletes the named old-generation state and leaves its clipboard unchanged. | Desktop and mobile state snapshots |
+| A56 | Architecture 13 | Given an unlocked desktop that is connecting, replaying, or disconnected, when its clipboard changes, then it allocates no message ID and creates no outbox row; reaching live does not queue that value without a later observation. | Deterministic connection-state test |
+| A57 | I11, Architecture 10 | Given hub time T and retention R, when `created_at_ms` equals T+120000 or T-R, then the hub admits timestamp validation; T+120001 returns `created_at_in_future` and T-R-1 returns `event_too_old`. | Controlled-clock boundary table |
+| A58 | I18, Architecture 7 and 17 | Given an admitted connection, when path, method, header size, identity header, and rate defects occur separately, then the exact HTTP status and code return in precedence order and no state changes. | Real HTTP precedence matrix |
+| A59 | I18, Architecture 2 and 17 | Given a WebSocket session, when binary, invalid UTF-8, unknown schema, or oversize input arrives, then the exact error and close occur before durable mutation. | Real frame-boundary captures |
+| A60 | I18, Architecture 3, 4, and 10 | Given one valid publish, when each version, UUID, decimal, timestamp, generation, content type, base64, UTF-8, size, length, and hash defect is introduced separately, then the exact precedence code returns and state remains byte-identical. | Ordered validation matrix |
+| A61 | I19, Architecture 4 and 12 | Given one instrumented clip moving through platform ingress, wire ingress, SQLite, wire egress, preview egress, and platform output, when the run completes, then each content access crosses `ClipContentV1` and the final platform bytes equal the initial bytes. | Compile-time visibility test, seam trace, SQLite and platform captures |
+| A62 | I8, I12, I15 | Given a foreground mobile client offline during clear with a nonempty pasteboard, when it reconnects, then generation catch-up clears product history without a pasteboard write; the first later live remote clip overwrites the pasteboard once. | Controlled-clock Swift and real pasteboard test |
 
 ### Acceptance execution order
 
-1. Run schema, scalar, and authority tests before platform tests.
-2. Capture real external responses before accepting their fixtures.
-3. Run hub persistence and state-machine tests against a real hub process and
-   real SQLite file.
-4. Run Linux, macOS, and mobile adapter tests on their named platforms.
-5. Run the content-canary and repository-boundary scans over test output and
-   tracked bytes.
-6. Run the cross-platform normal-delivery test last because it depends on each
-   earlier seam.
+1. Run schema, scalar, LocalAPI identity, and configuration tests.
+2. Capture real external responses before accepting fixtures.
+3. Run SQLite, publish, clear, resume, and concurrency tests against a real
+   process and database.
+4. Run Wayland, macOS, and mobile adapter tests on their named platforms.
+5. Run content, identity, obsolete-surface, and topology scans over test output
+   and tracked bytes.
+6. Run the cross-platform normal-delivery test last.
 
-A release claim records test command, platform, tool versions, commit, fixture
-provenance, pass count, failure count, and elapsed time. Passing compile-only or
-mock-only tests does not satisfy a real-response row.
+A release claim records command, platform, tool versions, exact commit,
+fixture provenance, pass and failure counts, and elapsed time. Compile-only or
+mock-only evidence does not satisfy a real-response row.
 
 ## Open Questions
 
-No blocking product question remains for this MVP. The following questions are
-explicitly **NON-BLOCKING**:
+No blocking product question remains for the MVP.
 
-1. **NON-BLOCKING — initial sensitive-hint registry entries.** Which exact
-   Wayland MIME identifiers and macOS pasteboard types do the first real
-   captures support? Architecture 14 and acceptance A20 let protocol, hub,
-   desktop state, and fixture work proceed. A capture can support zero or more
-   registry entries. The adapter suppresses each captured recognized entry and
-   makes no claim about an unrecognized signal.
-2. **NON-BLOCKING — Linux lock-state provider selection.** Which available
-   session-lock API supplies the real lock event on the supported Wayland test
-   distribution? The agent domain seam treats unavailable or unknown state as
-   locked, so the choice does not alter protocol or security semantics.
-3. **NON-BLOCKING — local IPC implementation.** Should the platform adapter use
-   an owner-only Unix-domain socket or a native per-user service IPC for agent
-   control? Architecture 13 fixes commands, peer authorization, and effects.
-   The transport choice cannot introduce a TCP listener or payload transfer.
-4. **NON-BLOCKING — future protocol work.** A later product decision can study
-   a Share extension, end-to-end encryption, additional clipboard types,
-   direct delivery, or native Wayland capture. None is a version-1 extension;
-   each requires a new reviewed specification and, when the wire changes, a
-   new protocol version.
+The following questions are **NON-BLOCKING**:
+
+1. **Explicit-hint registry entries.** Which Wayland and macOS signals have
+   real evidence that the operating system or source application marks the
+   entry confidential or transient? Architecture 14 defaults each
+   unverified signal to ordinary.
+2. **Linux lock-state provider.** Which supported session-lock API supplies
+   the real event on the target Wayland test distribution? Unknown state acts
+   locked.
+3. **Local IPC implementation.** Should desktop control use an owner-only Unix
+   socket or native per-user service IPC? Architecture 13 fixes commands,
+   caller ownership, and effects. The choice cannot add a TCP listener.
+4. **Future protocol work.** E2EE, a Share extension, additional clipboard
+   types, direct delivery, another Tailnet authority policy, or another wire
+   version requires a new reviewed specification.
 
 Operating pattern taught to agents: none. This specification defines ClipMesh
-product behavior and does not amend Tightbeam operating guidance.
+behavior and does not amend Tightbeam operating guidance.
