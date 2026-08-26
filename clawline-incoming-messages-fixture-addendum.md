@@ -306,13 +306,13 @@ xcodebuild test \
   -project ios/Clawline/Clawline.xcodeproj \
   -scheme Clawline \
   -destination 'platform=iOS Simulator,id=<IOS_26_5_IPHONE_17_PRO_UDID>' \
-  -derivedDataPath <OWNED_DIRECT_DERIVED_DATA> \
-  -resultBundlePath <OWNED_DIRECT_RESULT_BUNDLE> \
+  -derivedDataPath <FRESH_OWNED_DIRECT_DERIVED_DATA> \
+  -resultBundlePath <FRESH_OWNED_DIRECT_RESULT_BUNDLE> \
   -parallel-testing-enabled YES \
-  -only-testing:ClawlineTests/ChatViewModelTests/incomingMessagesRoutePerStream \
-  -only-testing:ClawlineTests/ChatViewModelTests/streamingMessagesUpdateInPlace \
-  -only-testing:ClawlineTests/ChatViewModelTests/assistantIncomingAppendFiresHapticWhenVisibleAndForeground \
-  -only-testing:ClawlineTests/ChatViewModelTests/assistantIncomingHapticIsDebounced
+  '-only-testing:ClawlineTests/ChatViewModelTests/incomingMessagesRoutePerStream()' \
+  '-only-testing:ClawlineTests/ChatViewModelTests/streamingMessagesUpdateInPlace()' \
+  '-only-testing:ClawlineTests/ChatViewModelTests/assistantIncomingAppendFiresHapticWhenVisibleAndForeground()' \
+  '-only-testing:ClawlineTests/ChatViewModelTests/assistantIncomingHapticIsDebounced()'
 ```
 
 Focused command:
@@ -406,8 +406,8 @@ of them. The R1 diff restores only that bounded production pattern. It does
 not restore the ownership bypass or a test-helper edit.
 
 **A5 — Direct cause.** Given the exact R1 code revision, when the coder runs
-the direct command, then all four named tests pass with zero failures, skips,
-and expected failures.
+the direct command, then the result reports total=4, passed=4, failed=0,
+skipped=0, and zero expected failures.
 
 **A6 — Focused family.** Given the same revision and a clean derived-data
 path, when the coder runs the focused command, then all 164 tests pass. Every
