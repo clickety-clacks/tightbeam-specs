@@ -1,6 +1,6 @@
 # Managed-sandbox local Tightbeam gateway
 
-Status: F4-LIFECYCLE-CORRECTED PROPOSAL PENDING CLEAN INDEPENDENT REVIEW
+Status: STOPPING-RECOVERY-CORRECTED PROPOSAL PENDING CLEAN INDEPENDENT REVIEW
 
 Authority: work item `wi_7c53cfb2-1ad4-477c-b3df-bffc0d3714fa`;
 recon verdict `att_5b82a9c3-dfcc-4da5-bafc-d011bf537ada`;
@@ -21,6 +21,10 @@ F4-only review `att_5c37ae5c-1688-4a8b-adba-595653c798d0` and report
 `art_89b5dd64` confirmed that commit
 `682c7167b86e8550085c0108bd0491d4bfe0dd73` closes the original unlink race
 and requested a complete activator failure and descriptor-lifecycle contract.
+Lifecycle review `att_985e1811-0949-425c-b513-6b55eb352b67` and report
+`art_f6b2303b` confirmed that commit
+`b5af7768abd971737014bedee95a1dc25eb054a0` closes those findings except for
+identity-safe, bounded recovery from the durable `stopping` phase.
 
 Source basis: Tightbeam `7a70a2f616363074514237b5bee48ba67c52e2ea` and
 tightbeam-specs `2327bc66a45c7cedf6e726bf8e13b40153531e0b`, both current
@@ -86,7 +90,8 @@ outside the sandbox.
   generation. It binds the schema version, phase, configured path, staging
   path, prior and current filesystem identities, gateway user, activation
   generation, activator process id and start identity, child process id and
-  start identity when launched, activator version, kernel release, runtime
+  start identity when launched, where each start identity is the kernel boot id
+  plus the process start time, activator version, kernel release, runtime
   filesystem type, primitive-probe digest, cause, and host principal.
 - **Activation receipt**: the immutable sealed snapshot of the staged activation
   record that the activator passes to its direct gateway child. It contains no
@@ -148,9 +153,11 @@ outside the sandbox.
    direct gateway child during process creation. The release gate must prove
    descriptor adoption against the pinned Bandit and Thousand Island versions.
 9. The supported Linux kernel and runtime filesystem enforce `memfd` seals,
-   `SO_PEERCRED`, `RENAME_NOREPLACE`, file and directory `fsync(2)`, and the
-   activator-owned ancestor permissions used by R-1 through R-3. The release
-   gate must exercise each primitive on the target host.
+   `SO_PEERCRED`, `RENAME_NOREPLACE`, `pidfd_open(2)`,
+   `pidfd_send_signal(2)`, readable process start time and boot id, pidfd exit
+   polling, file and directory `fsync(2)`, and the activator-owned ancestor
+   permissions used by R-1 through R-3. The release gate must exercise each
+   primitive on the target host.
 
 If assumption 2, 3, 4, 8, or 9 fails on a supported release candidate, the
 release is blocked. An implementer does not substitute a TCP exception, a
@@ -335,12 +342,35 @@ Recovery applies this closed table:
   resumes child launch.
 - `staged` plus the recorded current inode at the configured path, or
   `published` or `adopted` after an activator restart, first relies on control
-  channel closure to stop the child, verifies the recorded process id and start
-  identity before any signal or wait, then durably advances to `stopping`.
-- `stopping` waits for child exit. It then removes the configured or staging
-  entry only when its identity equals the recorded current identity,
-  synchronizes the socket directory, and records `stopped`. If both paths are
-  already absent, it records `stopped` without pathname mutation.
+  channel closure to request child stop, then durably advances to `stopping`.
+- Every entry to `stopping`, including direct recovery from an already durable
+  `stopping` record, classifies the recorded child before any signal, wait,
+  exit conclusion, or pathname mutation. The running activator uses its retained
+  pidfd; a restarted activator calls `pidfd_open(2)` for the recorded process
+  id. `pidfd_open(2)` returning `ESRCH` classifies the child as already gone.
+  Otherwise the activator re-reads the kernel boot id and
+  `/proc/<recorded-pid>/stat` start time, then polls that pidfd without blocking.
+  Exit readiness overrides the path read and classifies the captured process as
+  gone. A non-ready pidfd with the recorded start identity classifies the child
+  as matching and live. A non-ready pidfd with another start identity classifies
+  the recorded child as gone and its process id as reused; the activator never
+  signals or waits for the reused process. A pidfd or identity read that cannot
+  distinguish these cases returns
+  `local_agent_child_identity_unavailable`, leaves the phase `stopping`, and
+  performs no pathname mutation.
+- For a matching live child, the activator sends `SIGTERM` through that pidfd
+  and polls it for at most 30 seconds. If it remains live, the activator sends
+  `SIGKILL` through the same pidfd and polls it for at most five more seconds.
+  The deadlines are packaged constants and accept no configuration or caller
+  override. If the pidfd is still not exit-ready, activation returns
+  `local_agent_child_termination_timeout`, leaves the phase `stopping`, and
+  performs no pathname mutation. A signal or poll error other than `ESRCH`
+  returns `local_agent_child_control_unavailable` with the same fail-closed
+  result. `ESRCH`, exit readiness, or another already-gone result permits
+  removal of the configured or staging entry only when its identity equals the
+  recorded current identity, followed by socket-directory sync and a durable
+  `stopped` record. If both paths are already absent, the activator records
+  `stopped` without pathname mutation.
 - `stopped` plus absent configured and staging paths permits the next increasing
   generation. Another `stopped` state is a conflict.
 
@@ -375,7 +405,10 @@ each returns `local_agent_activation_record_invalid` and removes nothing. Given
 each missing Assumption 9 primitive, then activation returns
 `local_agent_activation_unsupported` before configured-path mutation. Given a
 maximum generation, then activation returns
-`local_agent_activation_generation_exhausted` and removes nothing.
+`local_agent_activation_generation_exhausted` and removes nothing. Given direct
+recovery from a durable `stopping` record, then the activator classifies the
+recorded child through the process-id and start-identity procedure before any
+signal, wait, exit conclusion, or pathname mutation.
 
 ### R-2 — The gateway never removes a socket pathname
 
@@ -388,7 +421,7 @@ only in that direct child launch. The forked child waits behind an exec barrier
 while the activator records and synchronizes its process id and start identity.
 The activator then releases exec. It closes its socket duplicate after
 successful child exec. The gateway becomes the sole socket-descriptor owner.
-The activator retains the process handle and control endpoint, not a socket
+The activator retains the pidfd process handle and control endpoint, not a socket
 duplicate.
 
 The gateway validates the socket with `fstat(2)`, `getsockname(2)`, `SO_TYPE`,
@@ -413,10 +446,16 @@ its socket descriptor. If the child exits before publication, the kernel closes
 the child's descriptor and the activator durably records `stopping` before
 pathname cleanup. A final stop, disable, uninstall, gateway crash, or activator
 control-channel loss follows the same order: record `stopping`, stop or observe
-the child, wait for descriptor closure, remove only the exact recorded inode,
-synchronize the directory, then record `stopped`. Uninstall removes the record
-and runtime directory only after both socket paths are absent and the directory
-is empty. An identity or record mismatch invokes R-1's remove-nothing refusal.
+the child through R-1's identity-checked pidfd sequence, prove descriptor
+closure by pidfd exit readiness or the already-gone result, remove only the
+exact recorded inode, synchronize the directory, then record `stopped`.
+`local_agent_child_identity_unavailable`,
+`local_agent_child_control_unavailable`, and
+`local_agent_child_termination_timeout` keep the durable phase `stopping`, keep
+the pathname, and block replacement, restart, disable completion, and uninstall
+completion. Uninstall removes the record and runtime directory only after both
+socket paths are absent and the directory is empty. An identity or record
+mismatch invokes R-1's remove-nothing refusal.
 
 Acceptance example (AC-10): Given two concurrent gateway starts, when both ask
 the activator for the configured socket, then the activator starts one gateway
@@ -431,7 +470,22 @@ disable, and uninstall, then the gateway issues no pathname-mutation syscall
 and the activator follows the exact teardown above. Given a crash after each
 durable record transition and each unlink, bind, publish, child-exec, and
 child-exit boundary, then restart selects exactly one recovery-table row or a
-remove-nothing refusal.
+remove-nothing refusal. Given a crash immediately after the durable `stopping`
+transition followed by reuse of the recorded process id, then restart observes
+the different start identity, sends no signal to the reused process, and treats
+the recorded child as already gone. Given the recorded child exited before
+restart, then `ESRCH` or an exit-ready pidfd selects the same
+already-gone result. Given a matching child that retains the listener and does
+not exit after `SIGTERM`, then the activator sends `SIGKILL` after 30 seconds;
+if the pidfd remains not exit-ready five seconds later, it returns
+`local_agent_child_termination_timeout`, remains `stopping`, removes no path,
+and reports disable or uninstall incomplete. The tests use an injected
+monotonic clock and signal recorder; they do not wait for wall-clock deadlines.
+Given an unreadable live child identity, then recovery returns
+`local_agent_child_identity_unavailable`. Given an unexpected pidfd signal or
+poll error, then recovery returns `local_agent_child_control_unavailable`.
+Each error keeps `stopping`, sends no signal to an unverified process, and
+performs no pathname mutation.
 
 ### R-3 — Listener order exposes only a complete gateway
 
@@ -675,7 +729,11 @@ process issues no pathname-mutation syscall. Given a failure after atomic
 publication and after the CLI writes one request byte, then the CLI reports
 `local_gateway_outcome_unknown`. Given final stop, disable, and uninstall, then
 the descriptors close, the configured and staging paths are absent, and the
-activator records `stopped` before optional empty-directory removal.
+activator records `stopped` before optional empty-directory removal. Given a
+reused process id, an already-gone child, and a child that remains live through
+both packaged termination deadlines, then AC-10 proves the exact signal target,
+bounded result, durable phase, pathname result, and disable or uninstall result
+before this final-teardown assertion can pass.
 
 ### R-11 — Upgrade order preserves old sessions
 
@@ -772,7 +830,10 @@ and the pinned Codex binary:
    invocation is pending again without changing the host profile.
 7. In the disposable activator, inject each record I/O failure and crash
    boundary from AC-9 through AC-11. Verify the named recovery row or
-   remove-nothing refusal and verify that no listening descriptor survives a
+   remove-nothing refusal. Inject a reused process id, an already-gone child,
+   and a nonresponsive child while advancing the monotonic test clock through
+   both termination deadlines. Verify the pidfd signal target, bounded error,
+   durable phase, pathname result, and that no listening descriptor survives a
    failed launch.
 8. Restart the gateway between two CLI reads and verify AC-18 against the real
    socket inode. Stop it finally and verify both socket paths are absent and the
