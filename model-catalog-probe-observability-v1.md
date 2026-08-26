@@ -1,6 +1,6 @@
 # Model Catalog Probe Observability v1
 
-Status: **PROPOSAL — independent review pending**
+Status: **PROPOSAL — review changes addressed; revised commit pending verdict**
 
 Work item: `wi_54d54f16-8e8e-4895-8191-6bb64384bcb8`
 
@@ -25,6 +25,13 @@ Owner correction `att_28931ab5-93ef-4e5c-9cfd-d9f34f06537a` establishes that the
 Anthropic credential is live. An expired-credential or onboarding premise is not
 authority for this proposal.
 
+Independent review verdict `att_5794e22f-bb10-457c-bd28-51ccca16d3c4` requested
+six changes against commit `b3b1f40edc21e78895ec2735fb8c6526291788a0`.
+This revision resolves them by separating the public and internal command names,
+narrowing valid-empty semantics by harness, preserving existing credential renewal,
+typing actor and origin independently, deleting an unused cause code, and deferring
+agent guidance until the public command exists.
+
 ## Goal
 
 Make the difference between cached model inventory and an active provider probe
@@ -36,7 +43,7 @@ rejection. The agent must also be able to force a fresh probe for one
 `{host, provider}` without repeating credential setup.
 
 The MVP adds typed probe state and wall-clock timestamps to `tightbeam list`, and
-adds one agent-facing forced-probe command. Existing model routing continues to use
+adds one agent-facing forced-refresh command. Existing model routing continues to use
 the cached inventory and runtime harness validation defined by the source specs.
 
 ## Non-Goals
@@ -56,8 +63,12 @@ the cached inventory and runtime harness validation defined by the source specs.
   read-expiry, and credential-present triggers.
 - It does not add catalog state to `org-options`, `session-status`, REST resources,
   the firehose, or the ATC UI.
+- It does not rename, remove, or expose the pre-parser internal helper
+  `tightbeam catalog-probe <provider> <kind> <credential-path> <url>`.
 - It does not classify a client-side `bwrap --unshare-net` connect `EPERM` or an SSH
   public-key failure as a provider credential rejection.
+- It does not publish agent operating guidance before the public refresh command
+  ships.
 - It does not retain the reviewed generic org-fault specification as implementation
   authority for this defect.
 
@@ -78,7 +89,8 @@ an earlier non-empty inventory with an empty inventory.
 
 **Probe attempt** — one capability derivation for one catalog key: obtain the current
 credential, and, when a credential is available, perform one provider read. A probe
-attempt has a start time, a trigger, a principal, and one terminal result.
+attempt has a start time, a trigger, an actor, an optional origin, and one terminal
+result.
 
 **Active probe** — the probe attempt currently performing credential lookup or
 provider I/O for a catalog key. At most one probe is active for a catalog key.
@@ -86,10 +98,18 @@ provider I/O for a catalog key. At most one probe is active for a catalog key.
 **Probe trigger** — the event that requested an attempt. Its closed values are
 `boot`, `ttl_read`, `credential_present`, and `forced`.
 
-**Probe principal** — the Tightbeam principal that caused the trigger. Automatic
-boot and expiry probes use the substrate principal. Credential-present probes use
-the principal recorded on that fact. Forced probes use the authenticated caller. A
-projection uses the principal's public identity handle, never a session credential.
+**Probe actor** — the typed, durable Tightbeam identity accountable for the trigger.
+Its shape is `{kind, id}`, where `kind` is `session`, `user`, or `process`. Forced
+probes use the authenticated Gateway call principal. Boot, expiry, and
+credential-present probes use `{kind: process, id: tightbeam}` because the substrate
+starts those attempts.
+
+**Probe origin** — the optional public attribution string carried separately from
+the actor, such as `agent:<role>`, `user:<id>`, or `process:<name>`. Forced probes
+copy the Gateway call origin. A trigger without a distinct public attribution uses
+null. A credential-present probe copies the condition fact's durable origin so the
+triggering author remains visible. Origin never replaces the actor used for
+authorization and accountability.
 
 **Last probe result** — the latest completed result for a catalog key, or
 `never_probed` when no attempt has completed since the current ModelCatalog process
@@ -97,7 +117,8 @@ started. Its closed values are:
 
 - `never_probed` — no attempt has completed in the current process lifetime;
 - `available_nonempty` — the provider returned a valid, non-empty model set;
-- `available_empty` — the provider returned a valid, empty model set;
+- `available_empty` — the harness contract accepted the provider response as a valid,
+  empty model set;
 - `probe_failed` — transport, remote-host access, timeout, protocol, or response
   parsing prevented a valid provider result;
 - `credential_rejected` — the provider explicitly rejected the supplied provider
@@ -110,7 +131,7 @@ codes are:
 
 | Result | Cause codes |
 | --- | --- |
-| `probe_failed` | `provider_forbidden`, `transport_failed`, `transport_timeout`, `attempt_timeout`, `remote_host_auth_failed`, `probe_network_forbidden`, `malformed_response`, `unclassified_failure` |
+| `probe_failed` | `provider_forbidden`, `transport_timeout`, `attempt_timeout`, `remote_host_auth_failed`, `probe_network_forbidden`, `client_version_filtered_empty`, `malformed_response`, `unclassified_failure` |
 | `credential_rejected` | `provider_unauthorized` |
 | `credential_unavailable` | `credential_missing`, `credential_in_progress`, `credential_store_unreadable`, `credential_kind_unknown` |
 
@@ -118,6 +139,11 @@ Successful results and `never_probed` have no cause code. HTTP 401, or an equiva
 structured provider-authentication rejection, maps to `provider_unauthorized`. HTTP
 403 alone maps to `provider_forbidden`; it does not prove that the credential is
 invalid.
+
+`available_empty` is harness-specific. The Anthropic catalog contract can accept a
+valid empty model array. The Codex catalog contract cannot: when client-version
+filtering removes every returned entry, the result is `probe_failed` with
+`causeCode=client_version_filtered_empty`, as required by `per-host-catalogs-v1.md`.
 
 **Inventory timestamp** — `derivedAt`, the epoch-millisecond wall-clock time of the
 successful probe that produced the cached inventory. It is null when no successful
@@ -135,6 +161,13 @@ observation.
 The request expands from `{host, provider}` to every configured catalog key on that
 host whose harness uses that provider.
 
+**Observe-then-refresh workflow** — after the public command ships, an agent reads
+`modelCatalogs` before it infers why `models` is empty. For a never-probed, failed,
+rejected, unavailable, or stale catalog, it runs the scoped public refresh command
+and reads the resulting typed evidence. This workflow does not apply to credential
+setup, runtime harness authentication, model execution, or generic connectivity
+diagnosis.
+
 ## Assumptions
 
 - `ModelCatalog` remains the single in-process owner of cached inventory and probe
@@ -145,7 +178,8 @@ host whose harness uses that provider.
   bounded transport timeout.
 - The current `models[host][harness]` projection is consumed by existing agents and
   remains backward compatible.
-- A provider can validly return an empty model array.
+- A harness contract can accept an empty provider model array. The Anthropic contract
+  accepts it; the Codex client-version filter does not.
 - The Anthropic credential implicated by the reported defect is currently live:
   `ready=true`, `working=true`, and no credential error. This specification does not
   rely on an expired-credential premise.
@@ -163,14 +197,14 @@ host whose harness uses that provider.
    failed. The projection never represents cached inventory as proof that the latest
    probe succeeded.
 
-3. **Empty has a typed origin.** When `models[host][harness]` is empty, the sibling
+3. **Empty has a typed cause.** When `models[host][harness]` is empty, the sibling
    catalog-state projection states whether the current process has never completed a
    probe, completed a valid empty response, failed its last probe, observed an
    explicit credential rejection, or could not obtain a credential.
 
 4. **A successful empty response is not a credential judgment.**
    `available_empty` does not trigger or recommend onboarding, credential repair, or
-   credential mutation.
+   a new credential mutation seam.
 
 5. **Only explicit provider authentication rejection proves rejection.** A local
    connection error, timeout, malformed body, HTTP 403, SSH public-key failure, or
@@ -178,16 +212,16 @@ host whose harness uses that provider.
 
 6. **One mutation seam owns state.** Capability-task completions send typed results
    to `ModelCatalog`. Only `ModelCatalog` changes inventory, active-probe state, last
-   result, timestamps, trigger, principal, or staleness.
+   result, timestamps, trigger, actor, origin, or staleness.
 
 7. **One attempt runs per catalog key.** A catalog key never has overlapping
    capability derivations or provider reads. A completion can mutate state only when
    its generation matches the active generation for that key; a late completion from
    an older generation is discarded.
 
-8. **Forced means post-admission evidence.** A successful forced-probe response is
-   based on an attempt that started after the request was admitted. An already-active
-   attempt cannot satisfy that request.
+8. **Forced means post-admission evidence.** A successful
+   `model-catalog-refresh` response is based on an attempt that started after the
+   request was admitted. An already-active attempt cannot satisfy that request.
 
 9. **Concurrent forced requests coalesce safely.** Requests admitted before the
    required follow-up attempt starts may share that attempt. A request admitted after
@@ -200,12 +234,15 @@ host whose harness uses that provider.
 11. **Forced probing does not perform a credential ceremony.** It uses the same
     credential lookup and provider-read path as automatic catalog derivation. The
     command does not invoke onboarding or credential capture and does not file a
-    `credential-present` fact.
+    `credential-present` fact. Existing Anthropic renewal, atomic credential-file
+    write, and rotation-harvest behavior remains in force; this specification adds no
+    second renewal or credential-write seam.
 
-12. **The projection is privacy-closed.** Catalog state and forced-probe output never
-    include credential values, authorization headers, response bodies, request URLs,
-    local credential paths, SSH destinations, or raw stdout/stderr. They include only
-    the fields and closed result and cause values defined here.
+12. **The projection is privacy-closed.** Catalog state and
+    `model-catalog-refresh` output never include credential values, authorization
+    headers, response bodies, request URLs,
+    prompts, local credential paths, SSH destinations, or raw stdout/stderr. They
+    include only the fields and closed result and cause values defined here.
 
 13. **Existing model consumers remain compatible.** The shape and meaning of
     `models[host][harness]` do not change. New state appears in a sibling
@@ -224,10 +261,10 @@ For every configured catalog key, `ModelCatalog` owns this logical state:
 ```text
 inventory: {entries, derivedAtWall, derivedAtMonotonic} | null
 
-activeProbe: {generation, startedAt, trigger, principal} | null
+activeProbe: {generation, startedAt, trigger, actor, origin} | null
 
 lastProbe: {
-  result, startedAt, completedAt, trigger, principal, causeCode
+  result, startedAt, completedAt, trigger, actor, origin, causeCode
 }
 ```
 
@@ -236,11 +273,14 @@ Before the first completion in a process lifetime, `lastProbe.result` is
 `activeProbe`; it does not erase `lastProbe`. Completing the matching generation
 atomically clears `activeProbe` and replaces `lastProbe`.
 
-`available_nonempty` replaces the cached inventory with the returned models.
-`available_empty` replaces it with an empty inventory. Both successful results set
-`derivedAt` to their completion time. `probe_failed`, `credential_rejected`, and
-`credential_unavailable` retain any earlier successful inventory. This preserves the
-existing degraded-cache behavior while exposing the newest evidence separately.
+`available_nonempty` replaces the cached inventory with the returned models. When the
+harness contract accepts an empty result, `available_empty` replaces the inventory
+with an empty set. Both successful results set `derivedAt` to their completion time.
+A Codex client-version-filtered empty result is a failure, so it retains any earlier
+successful inventory. All other `probe_failed`, `credential_rejected`, and
+`credential_unavailable` results also retain an earlier successful inventory. This
+preserves the existing degraded-cache behavior while exposing the newest evidence
+separately.
 
 The existing boot, read-expiry, and credential-present triggers use the same state
 transition seam as forced probes. A list read that starts an expiry probe returns a
@@ -264,14 +304,19 @@ snapshot that already shows that probe under `activeProbe`.
         "activeProbe": {
           "startedAt": 1787702100000,
           "trigger": "forced",
-          "principal": "agent:spec-writer:catalog"
+          "actor": {
+            "kind": "session",
+            "id": "agent:main:clawline:mike:main s_example"
+          },
+          "origin": "agent:spec-writer:catalog"
         },
         "lastProbe": {
           "result": "available_nonempty",
           "startedAt": 1787701198000,
           "completedAt": 1787701200000,
           "trigger": "ttl_read",
-          "principal": "substrate:model-catalog",
+          "actor": {"kind": "process", "id": "tightbeam"},
+          "origin": null,
           "causeCode": null
         }
       }
@@ -289,13 +334,17 @@ When no cached inventory exists, `inventory` is:
 When no probe is running, `activeProbe` is null. Every configured catalog key appears
 in `modelCatalogs`, including before its first probe completes.
 
-### Forced-probe command
+### Forced-refresh command
 
 The agent-facing command is:
 
 ```text
-tightbeam catalog-probe --host <host> --provider <provider>
+tightbeam model-catalog-refresh --host <host> --provider <provider>
 ```
+
+This public Gateway verb is distinct from the existing pre-parser internal helper
+`tightbeam catalog-probe <provider> <kind> <credential-path> <url>`. The internal
+helper remains non-agent-facing and unchanged.
 
 The gateway admits the command only for an authenticated active Tightbeam agent or
 user. The pair must resolve to a registered host and at least one configured harness
@@ -308,9 +357,9 @@ not add or remove keys from the admitted request. `ModelCatalog` schedules one f
 generation for every admitted key. Matching keys execute independently. The command
 waits until the post-admission generation required for every admitted key completes,
 then returns the keys in ascending harness-name order. Each item contains `host`,
-`harness`, `provider`, `result`, `startedAt`, `completedAt`, and `causeCode`. It
-contains no model identifiers or raw provider output; callers obtain inventory from
-`tightbeam list`.
+`harness`, `provider`, `result`, `startedAt`, `completedAt`, `actor`, `origin`, and
+`causeCode`. It contains no model identifiers or raw provider output; callers obtain
+inventory from `tightbeam list`.
 
 Each HTTP provider read retains its existing 30-second bound. `ModelCatalog` owns a
 40-second overall deadline for each attempt, including credential lookup and remote
@@ -322,7 +371,7 @@ The gateway waits at most 85 seconds for the admitted key set. This covers the
 remainder of one already-active 40-second attempt plus the forced request's required
 40-second follow-up attempt. If the gateway wait expires
 before `ModelCatalog` returns every required result, the gateway returns the top-level
-error `catalog_probe_wait_timeout`. The gateway does not fabricate a probe result or
+error `model_catalog_refresh_wait_timeout`. The gateway does not fabricate a probe result or
 mutate catalog state. The caller may retry.
 
 The command is safe to retry. It does not promise exactly-once provider I/O.
@@ -342,23 +391,17 @@ before a typed result enters `ModelCatalog`.
 - SSH host authentication failure becomes `probe_failed` /
   `remote_host_auth_failed`.
 - A transport deadline becomes `probe_failed` / `transport_timeout`.
+- A Codex response whose entries are all removed by the client-version filter becomes
+  `probe_failed` / `client_version_filtered_empty`.
 - A successful transport with an invalid catalog envelope becomes `probe_failed` /
   `malformed_response`.
 - Any unmatched failure becomes `probe_failed` / `unclassified_failure`.
 
 Classifier tests use captured, redacted provider and transport envelopes from real
 probe responses. Hand-written ideal envelopes do not establish classifier fidelity.
-The catalog path stores and logs only the typed result, cause code, scope, principal,
-and timestamps. It does not store or log raw response bodies or raw process output.
-
-### Pattern
-
-This specification establishes the **observe, then force** pattern for model
-catalogs: read `modelCatalogs` before inferring why `models` is empty; when the state
-is never-probed, failed, rejected, unavailable, or stale, use the scoped forced-probe
-command to obtain fresh evidence. The pattern applies only to provider model-catalog
-reads. It does not apply to credential setup, runtime harness authentication, model
-execution, or generic connectivity diagnosis.
+The catalog path stores and logs only the typed result, cause code, scope, actor,
+origin, and timestamps. It does not store or log raw response bodies or raw process
+output.
 
 ## Acceptance
 
@@ -386,12 +429,16 @@ execution, or generic connectivity diagnosis.
 
 4. **A successful empty response remains distinct.**
 
-   Given a catalog key with earlier cached inventory,
-   when a captured valid provider response contains an empty model array,
+   Given an Anthropic catalog key with earlier cached inventory,
+   when a captured valid Anthropic response contains an empty model array,
    then `models` and the cached inventory become empty,
    `lastProbe.result=available_empty`, `inventory.derivedAt` equals
    `lastProbe.completedAt`, `causeCode` is null, and no onboarding or credential
-   mutation entry point runs.
+   repair entry point runs; and given a captured Codex response whose entries are all
+   removed by client-version filtering,
+   when the same classifier processes it,
+   then prior inventory remains and the last result is `probe_failed` /
+   `client_version_filtered_empty`.
 
 5. **A probe failure retains cache and exposes safe evidence.**
 
@@ -413,10 +460,15 @@ execution, or generic connectivity diagnosis.
    Given two Anthropic harnesses and one Codex harness on `gibson`, plus an Anthropic
    harness on another host,
    when an authenticated agent runs
-   `tightbeam catalog-probe --host gibson --provider anthropic`,
+   `tightbeam model-catalog-refresh --host gibson --provider anthropic`,
    then post-admission probes run for the two matching Gibson keys only, the response
-   is ordered by harness name, and no onboarding, credential capture, credential
-   mutation, or `credential-present` fact occurs.
+   is ordered by harness name, no onboarding, credential capture, or
+   `credential-present` fact occurs, and any Anthropic token renewal and atomic
+   credential-file write uses the existing internal probe and rotation-harvest seams;
+   and when `tightbeam list` projects the forced attempt,
+   then `actor` is the authenticated call principal and `origin` is the Gateway call
+   origin, while an automatic boot attempt has actor
+   `{kind: process, id: tightbeam}` and null origin.
 
 8. **A concurrent active probe cannot satisfy a forced request.**
 
@@ -465,8 +517,8 @@ execution, or generic connectivity diagnosis.
 
     Given probe failures whose raw bodies and stderr contain a sentinel token, URL,
     local path, and SSH destination,
-    when an agent reads `tightbeam list` and forced-probe output and the test captures
-    catalog logs,
+    when an agent reads `tightbeam list` and `model-catalog-refresh` output and the
+    test captures catalog logs,
     then none of those sentinel values appear in the projections or logs and only the
     closed result and cause fields identify the failure.
 
@@ -502,19 +554,31 @@ execution, or generic connectivity diagnosis.
     then `ModelCatalog` terminates the task and atomically records `probe_failed` /
     `attempt_timeout`; and given a ModelCatalog test double that does not answer,
     when the gateway wait reaches 85 seconds,
-    then the gateway returns `catalog_probe_wait_timeout` without fabricating a
+    then the gateway returns `model_catalog_refresh_wait_timeout` without fabricating a
     result or mutating catalog state.
 
 18. **A real provider smoke proves the external path.**
 
     Given a configured test host and a credential that the credential subsystem
     reports as ready and working,
-    when an operator records `tightbeam list`, runs the forced-probe command, and
+    when an operator records `tightbeam list`, runs
+    `tightbeam model-catalog-refresh --host <host> --provider <provider>`, and
     records `tightbeam list` again,
     then the command returns `available_nonempty` or `available_empty`, the affected
     keys' completed timestamps advance, the second list agrees with the command, and
     no credential onboarding occurs. The verification record includes the redacted
     real response fixture used by the deterministic catalog-parser tests.
+
+19. **Agent guidance activates with the shipped command.**
+
+    Given an implementation candidate in an elected product line where
+    `model-catalog-refresh` exists and passes its command acceptance,
+    when that candidate enables the public command,
+    then the same candidate amends the always-on operating manual with one grounded
+    directive: read `modelCatalogs` before inferring why `models` is empty; for a
+    never-probed, failed, rejected, unavailable, or stale catalog, run
+    `model-catalog-refresh` for that host and provider, then read the new typed
+    evidence. No operating-manual amendment lands before the command exists.
 
 ## Open Questions
 
@@ -523,6 +587,6 @@ execution, or generic connectivity diagnosis.
    may infer 0.1.8, active 0.1 maintenance, or main/0.2.0 from branch existence,
    source-code provenance, or this proposal.
 
-This proposal is ready for independent review. It is not implementation authority
+This revised proposal is ready for reviewer verification. It is not implementation authority
 until that review records a passing verdict, the approved content hash is bound to
 the work item, and Mike has elected an implementation target.

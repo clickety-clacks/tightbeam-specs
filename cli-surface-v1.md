@@ -41,7 +41,7 @@ Agent-facing (demanded by the shipped engineering-kungfu kernels/skills):
   <displayName>` (lookup returning candidates to choose from, never content),
   with tail-by-default and `--before`/`--after` cursors the previous response
   handed the caller (transcript-verb-v1).
-- **catalog-probe --host <host> --provider <provider>** — force fresh model
+- **model-catalog-refresh --host <host> --provider <provider>** — force fresh model
   catalog reads for the configured harnesses that use one provider on one host;
   consumers: agents obtaining post-admission evidence after `list` reports a
   never-probed, failed, rejected, unavailable, or stale catalog
