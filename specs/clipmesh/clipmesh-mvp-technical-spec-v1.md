@@ -29,8 +29,17 @@ Authority and evidence:
   received a changes-requested verdict in
   `att_80f55013-33df-493a-a657-6259082c8961`, with report
   `art_40d4337a` at SHA-256
-  `4891fe31b669ad3baa83eda895da98e4caec5b6460db4922f05c9d1fa03fb5fe`;
-  this revision resolves only that verdict's six exact findings.
+  `4891fe31b669ad3baa83eda895da98e4caec5b6460db4922f05c9d1fa03fb5fe`.
+- Supplemental independent adjudication
+  `att_abbcae70-8af7-4ea1-aa29-1e74a81674a4` added F7-F11 to the same
+  open review. Replacement candidate
+  `605026eaf8c1a270a340fe2b3f52a8628a42446d` then received a
+  changes-requested verdict in
+  `att_a532f8db-5bb9-4d77-bde3-2faf5cb13294`, with report
+  `art_f813646f` at SHA-256
+  `3f4eb8dfd8d245843f56cda4552ce7ef0dfe74e2478e01361da1ffeecc736c5e`.
+  That verdict closed F1-F6 and retained F7-F11. This revision resolves the
+  five remaining findings.
 - Mechanism verification: Tailscale's identity documentation states that a
   destination application can use LocalAPI to identify the node that made a
   request; the official `tailscale.com/client/local` package documents
@@ -241,6 +250,12 @@ An exact retry of a retained clip returns its original cursor with
 message ID with changed input or a tombstoned message ID is rejected without
 cursor, history, replay, or clear-generation change.
 
+After schema, scalar, session, and clear-generation validation, the hub looks
+up a reused message ID before it applies the current creation-time window. It
+applies that time window only to a previously unseen message ID. Therefore, a
+retained exact retry cannot age into `event_too_old`, and a tombstoned retry
+cannot bypass `message_id_replay` because its original timestamp aged.
+
 ### I7 — Resume and live transition form one boundary
 
 The hub registers the subscriber and captures resume cursor `B` in one
@@ -391,9 +406,15 @@ The repository root carries the MIT license. This document establishes the
 
 ### 2.1. Version compatibility
 
-A version-1 client offers only `clipmesh.v1`. A version-1 hub selects that
-exact subprotocol or refuses the upgrade. Neither side falls back to an
-unversioned protocol.
+A version-1 client sends one `Sec-WebSocket-Protocol` header whose value is
+the single token `clipmesh.v1`. A version-1 hub selects that token only when
+the offer has exactly that shape. A missing header, duplicate header,
+additional token, or different token returns HTTP 400
+`protocol_version_unsupported` with `retryable = false`. The hub sends the
+exact body
+`{"protocol_version":1,"error":{"code":"protocol_version_unsupported","retryable":false}}`,
+performs no WebSocket upgrade, and sends no WebSocket close frame. Neither
+side falls back to an unversioned protocol.
 
 An implementation fix can remain version 1 only when every field, scalar,
 enum, validation rule, state transition, and observable response remains
@@ -582,7 +603,8 @@ The hub applies these steps:
 An unknown path returns HTTP 404 `http_path_not_found`. A wrong method on a
 known path returns HTTP 405 `http_method_not_allowed`. A request header
 section above 16,384 bytes returns HTTP 431 `request_headers_too_large`.
-These responses occur only after WhoIs succeeds.
+An invalid subprotocol offer returns the exact HTTP 400 response from
+Architecture 2.1. These responses occur only after WhoIs succeeds.
 
 Each HTTP error body is exactly
 `{"protocol_version":1,"error":{"code":<CODE>,"retryable":<BOOLEAN>}}`.
@@ -695,26 +717,28 @@ For one admitted `publish`, the hub performs:
    validation has already required `content_type`, `payload_b64`, and
    `content_sha256` to be JSON strings and `payload_bytes` to be a JSON
    integer; no caller interprets those four values.
-4. Require `created_at_ms <= hub_time + 120000`; otherwise return
-   `created_at_in_future`.
-5. Require
-   `created_at_ms >= hub_time - retention_seconds * 1000`; otherwise
-   return `event_too_old`.
-6. Pass `content_type`, `payload_b64`, `payload_bytes`, and
-   `content_sha256` to `ClipContentV1::from_wire`. Its ordered failures are
-   `content_type_unsupported`, `payload_encoding_invalid`,
-   `payload_empty`, `payload_too_large`,
-   `payload_length_mismatch`, and `payload_hash_mismatch`.
-7. Enter the one SQLite writer transaction.
-8. Require the event clear generation to equal current state. A lower
+4. Enter the one SQLite writer transaction.
+5. Require the event clear generation to equal current state. A lower
    generation returns `clear_generation_stale`; a higher generation returns
    `clear_generation_ahead`.
-9. Recheck that the session remains live and its peer context remains valid.
-10. Look up message ID in retained clips and the replay ledger.
-11. Return the original cursor and `duplicate = true` for an exact retained
-    retry.
-12. Return `message_id_conflict` for retained changed input or
-    `message_id_replay` for a tombstone.
+6. Recheck that the session remains live and its peer context remains valid.
+7. Look up message ID in unexpired retained clips and the replay ledger. A
+   clip whose expiry time has arrived is tombstone-only for this lookup even
+   when periodic deletion has not removed its row.
+8. For a retained row, call `ClipContentV1::from_wire`, then compare stable
+   source peer ID, clear generation, `created_at_ms`, and exact content bytes.
+   An exact tuple returns the original cursor with `duplicate = true`. A
+   successfully decoded changed tuple returns `message_id_conflict`. Neither
+   result reapplies the current creation-time window.
+9. Return `message_id_replay` for a tombstone. This branch does not decode
+   content or reapply the current creation-time window.
+10. For a previously unseen message ID, require
+    `created_at_ms <= hub_time + 120000`; otherwise return
+    `created_at_in_future`.
+11. For that previously unseen ID, require
+    `created_at_ms >= hub_time - retention_seconds * 1000`; otherwise return
+    `event_too_old`.
+12. For that previously unseen ID, call `ClipContentV1::from_wire`.
 13. Allocate the next cursor, compute accepted time and expiry, insert one clip
     using `ClipContentV1::as_storage_blob`, and insert a content-free
     tombstone.
@@ -725,7 +749,13 @@ For one admitted `publish`, the hub performs:
     `publish_accepted` for the source session and the accepted event in
     cursor order for each live or replay-buffering session.
 
-Two concurrent requests with one message ID serialize at step 7. One can
+Each `ClipContentV1::from_wire` call in steps 8 and 12 receives
+`content_type`, `payload_b64`, `payload_bytes`, and `content_sha256`. Its
+ordered failures are `content_type_unsupported`,
+`payload_encoding_invalid`, `payload_empty`, `payload_too_large`,
+`payload_length_mismatch`, and `payload_hash_mismatch`.
+
+Two concurrent requests with one message ID serialize at step 4. One can
 commit. The other observes committed state.
 
 Cursor exhaustion returns `hub_cursor_exhausted`, marks readiness false,
@@ -872,9 +902,11 @@ transactions. Its parent directory is owner-only and no broader than `0700`.
 Its database, WAL, and shared-memory files are regular non-symlink files no
 broader than `0600`. An absent database initializes version 1 with null
 resume context and an empty outbox; it creates no identity or onboarding
-state. An unsupported, corrupt, insecure, read-only, or non-atomic store
-returns `local_state_unavailable`, opens no session, and remains byte-identical
-until external repair.
+state. A symlink, wrong owner, or mode broader than the stated bound returns
+`state_path_insecure`. An unsupported schema, corruption, read-only store, or
+inability to commit atomically returns
+`local_state_unavailable`. Either failure opens no session and leaves the
+store byte-identical until external repair.
 
 After it validates or initializes the store and before it opens the platform
 adapter or a network session, each desktop process deletes any persisted
@@ -1077,60 +1109,65 @@ LocalAPI responses, and local state files.
 
 ### 17. Stable failure codes
 
-| Code | Surface | Retryable | State effect |
-| --- | --- | --- | --- |
-| `config_parse_failed` | startup | no | exit before bind |
-| `config_unknown_field` | startup | no | exit before bind |
-| `config_missing_required` | startup | no | exit before bind |
-| `config_value_invalid` | startup | no | exit before bind |
-| `tailscale_localapi_unavailable` | startup, readiness, session | after daemon repair | no new accepts; existing session closes at defined boundary |
-| `tailnet_bind_unverified` | startup | no | exit before bind |
-| `tailnet_peer_unverified` | admission | yes on a new connection | close before HTTP parsing |
-| `bind_failed` | startup | after external repair | close resources and exit |
-| `state_path_insecure` | startup or desktop | no | component inactive |
-| `local_state_unavailable` | desktop | after repair | no session or outbox mutation |
-| `database_schema_unsupported` | startup | no | no file mutation; exit |
-| `database_integrity_failed` | startup or runtime | after custodial repair | readiness false; no partial commit |
-| `storage_unavailable` | hub | after repair | readiness false; transaction rolls back |
-| `http_path_not_found` | HTTP | no | none |
-| `http_method_not_allowed` | HTTP | no | none |
-| `request_headers_too_large` | HTTP | no | none |
-| `client_identity_claim_forbidden` | HTTP | no | none |
-| `connection_limit_reached` | upgrade | yes | none |
-| `request_rate_limited` | HTTP | yes | none |
-| `message_too_large` | WebSocket | no | close; no parse or durable change |
-| `message_rate_limited` | WebSocket | after reconnect | close; no durable change |
-| `protocol_version_unsupported` | HTTP or WebSocket | no | none |
-| `protocol_schema_invalid` | WebSocket | no | close; no durable change |
-| `resume_required` | WebSocket | no | close |
-| `resume_deadline_exceeded` | WebSocket | yes | close |
-| `resume_context_incomplete` | resume | no | close |
-| `resume_cursor_without_context` | resume | no | close |
-| `cursor_ahead` | resume | no | close |
-| `session_context_stale` | publish or clear | after reconnect | close; no durable change |
-| `clear_generation_stale` | publish or clear | no for old content | none; client deletes old content |
-| `clear_generation_ahead` | publish or clear | after reconnect | none |
-| `clear_generation_exhausted` | clear or readiness | no | readiness false; no clear |
-| `request_id_conflict` | clear | no | none |
-| `message_id_conflict` | publish | no | none |
-| `message_id_replay` | publish | no | none |
-| `created_at_in_future` | publish | after clock repair | none |
-| `event_too_old` | publish | no | none |
-| `content_type_unsupported` | publish | no | none |
-| `payload_empty` | publish | no | none |
-| `payload_too_large` | publish | no | none |
-| `payload_encoding_invalid` | publish | no | none |
-| `payload_length_mismatch` | publish | no | none |
-| `payload_hash_mismatch` | publish | no | none |
-| `publish_rate_limited` | publish | yes | none |
-| `hub_cursor_exhausted` | publish or readiness | no | readiness false |
-| `history_cleared` | WebSocket | after reconnect | old-generation queue removed; close after notice |
-| `ack_invalid` | WebSocket | no | close |
-| `slow_consumer` | WebSocket | after reconnect | close |
-| `heartbeat_timeout` | WebSocket | after reconnect | close |
-| `adapter_unavailable` | desktop | after repair | agent inactive |
-| `lock_state_unknown` | desktop | after repair | agent acts locked |
-| `outbox_full` | desktop | after drain or clear | observation off; existing retry continues |
+For each HTTP or WebSocket message that carries `retryable`, the table's
+`retryable` cell is the exact JSON Boolean. The same Boolean classifies a
+non-wire failure. A client retries a `true` failure only after its named gate.
+A `false` failure has no version-1 retry gate.
+
+| Code | Surface | `retryable` | Retry gate | State effect |
+| --- | --- | --- | --- | --- |
+| `config_parse_failed` | startup | `false` | none | exit before bind |
+| `config_unknown_field` | startup | `false` | none | exit before bind |
+| `config_missing_required` | startup | `false` | none | exit before bind |
+| `config_value_invalid` | startup | `false` | none | exit before bind |
+| `tailscale_localapi_unavailable` | startup, readiness, session | `true` | daemon repair | no new accepts; existing session closes at defined boundary |
+| `tailnet_bind_unverified` | startup | `false` | none | exit before bind |
+| `tailnet_peer_unverified` | admission | `true` | new connection | close before HTTP parsing |
+| `bind_failed` | startup | `true` | external repair | close resources and exit |
+| `state_path_insecure` | startup or desktop | `false` | none | component inactive |
+| `local_state_unavailable` | desktop | `true` | external repair | no session or outbox mutation |
+| `database_schema_unsupported` | startup | `false` | none | no file mutation; exit |
+| `database_integrity_failed` | startup or runtime | `true` | custodial repair | readiness false; no partial commit |
+| `storage_unavailable` | hub | `true` | external repair | readiness false; transaction rolls back |
+| `http_path_not_found` | HTTP | `false` | none | none |
+| `http_method_not_allowed` | HTTP | `false` | none | none |
+| `request_headers_too_large` | HTTP | `false` | none | none |
+| `client_identity_claim_forbidden` | HTTP | `false` | none | none |
+| `connection_limit_reached` | upgrade | `true` | capacity release | none |
+| `request_rate_limited` | HTTP | `true` | rate-bucket refill | none |
+| `message_too_large` | WebSocket | `false` | none | close; no parse or durable change |
+| `message_rate_limited` | WebSocket | `true` | reconnect | close; no durable change |
+| `protocol_version_unsupported` | HTTP or WebSocket | `false` | none | none |
+| `protocol_schema_invalid` | WebSocket | `false` | none | close; no durable change |
+| `resume_required` | WebSocket | `false` | none | close |
+| `resume_deadline_exceeded` | WebSocket | `true` | reconnect | close |
+| `resume_context_incomplete` | resume | `false` | none | close |
+| `resume_cursor_without_context` | resume | `false` | none | close |
+| `cursor_ahead` | resume | `false` | none | close |
+| `session_context_stale` | publish or clear | `true` | reconnect | close; no durable change |
+| `clear_generation_stale` | publish or clear | `false` | none | none; client deletes old content |
+| `clear_generation_ahead` | publish or clear | `true` | reconnect | none |
+| `clear_generation_exhausted` | clear or readiness | `false` | none | readiness false; no clear |
+| `request_id_conflict` | clear | `false` | none | none |
+| `message_id_conflict` | publish | `false` | none | none |
+| `message_id_replay` | publish | `false` | none | none |
+| `created_at_in_future` | publish | `true` | clock repair | none |
+| `event_too_old` | publish | `false` | none | none |
+| `content_type_unsupported` | publish | `false` | none | none |
+| `payload_empty` | publish | `false` | none | none |
+| `payload_too_large` | publish | `false` | none | none |
+| `payload_encoding_invalid` | publish | `false` | none | none |
+| `payload_length_mismatch` | publish | `false` | none | none |
+| `payload_hash_mismatch` | publish | `false` | none | none |
+| `publish_rate_limited` | publish | `true` | rate-bucket refill | none |
+| `hub_cursor_exhausted` | publish or readiness | `false` | none | readiness false |
+| `history_cleared` | WebSocket | `true` | reconnect | old-generation queue removed; close after notice |
+| `ack_invalid` | WebSocket | `false` | none | close |
+| `slow_consumer` | WebSocket | `true` | reconnect | close |
+| `heartbeat_timeout` | WebSocket | `true` | reconnect | close |
+| `adapter_unavailable` | desktop | `true` | external repair | agent inactive |
+| `lock_state_unknown` | desktop | `true` | external repair | agent acts locked |
+| `outbox_full` | desktop | `true` | outbox drain or shared clear | observation off; existing retry continues |
 
 The version-1 wire and readiness code set is closed. An internal code can be
 added only when a test proves it cannot cross a wire or health surface and
@@ -1160,14 +1197,17 @@ WebSocket close mapping:
 
 ### 18. Topology-neutral repository checks
 
-CI scans the tracked tree, staged diff, and reachable Git history:
+CI defines two exact scopes. The **current scope** is the tracked tree at the
+candidate plus its staged diff. The **historical scope** is the current scope
+plus reachable Git history. Items 1 and 9 use the historical scope. Items 2
+through 8 use only the current scope.
 
 1. generic secret scanning rejects private keys, authorization headers, and
    credential-shaped assignments;
-2. a source census rejects application-authentication middleware, application
-   credential types, device-registry persistence, administrator routes,
-   enrollment routes, pairing, credential lifecycle jobs, app TLS listeners,
-   and a selectable memory-history mode;
+2. a current-source census rejects application-authentication middleware,
+   application credential types, device-registry persistence, administrator
+   routes, enrollment routes, pairing, credential lifecycle jobs, app TLS
+   listeners, and a selectable memory-history mode;
 3. examples contain no active listener, hub URL, Tailnet value, user home,
    inventory, or service-specific address;
 4. network examples use only reserved documentation values or explicit
@@ -1178,11 +1218,11 @@ CI scans the tracked tree, staged diff, and reachable Git history:
    or topology canaries;
 8. the root contains the MIT license and no contradictory project license;
 9. when `CLIPMESH_PRIVATE_DENYLIST_FILE` names an external owner-only file,
-   each nonblank literal is checked against tracked bytes, staged diff, and
-   history. Failure prints the denylist line number and public path or commit,
-   not the literal.
+   each nonblank literal is checked against the historical scope. Failure
+   prints the denylist line number and public path or commit, not the literal.
 
-The check permits this specification to name removed concepts in authority and
+The current-source census does not inspect prior commits. Within the current
+scope, it permits this specification to name removed concepts in authority and
 non-goal prose. It rejects executable, schema, configuration, route, and
 deployment surfaces that implement them.
 
@@ -1265,8 +1305,8 @@ external response follows Architecture 19.
 | A08 | I13, Architecture 8 and 12 | Given a symlink, wrong owner, or mode broader than the state-directory or database bound, when the hub starts, then it leaves the file unchanged and exits before bind. | Unix permission and before/after hash tests |
 | A09 | I5 | Given 25 concurrent publishes from admitted peers, when clients read history and live delivery, then each observes one identical ascending cursor order with no reused cursor. | Concurrency log and SQLite query |
 | A10 | Goal, normal delivery | Given normal delivery conditions, when one desktop observes 100 synthetic texts at 1,100 ms intervals, then each target write completes within 1,000 ms of source observation and no publish is rate-limited. | Timestamped real-adapter run |
-| A11 | I6 | Given one retained accepted clip and rate buckets that admit ten retries, when its source retries exact input ten times, then each returns the original cursor with `duplicate = true`, history remains one row, and peers receive no second live event. | Hub, peer, and SQLite counters |
-| A12 | I6, I12 | Given one accepted clip, when its source reuses the message ID with changed input, retries its tombstoned ID after expiry, or retries after clear, then the specified conflict, replay, or generation code returns and no hub state changes. | Replay matrix with database snapshots |
+| A11 | I6, Architecture 10 | Given retention window R milliseconds, rate buckets that admit ten attempts, and one clip accepted at hub time T with `created_at_ms = T-R`, when its source submits ten exact retries beginning at T+1 ms while the row remains retained, then each returns the original cursor with `duplicate = true`, history remains one row, and peers receive no second live event. | Controlled-clock hub, peer, and SQLite counters |
+| A12 | I6, I12, Architecture 10 | Given a valid changed reuse of a retained message ID, a current-generation tombstone whose original `created_at_ms` is now older than the ingress window, and an old-generation tombstone after clear, when each is retried separately, then the hub returns `message_id_conflict`, `message_id_replay`, and `clear_generation_stale` respectively and changes no state. | Controlled-clock replay matrix with database snapshots |
 | A13 | I6, I17 | Given two concurrent publishes with one message ID, when the writer serializes them, then one commits and the other returns exact retry only when the full retry tuple matches or conflict otherwise. | Barrier test repeated 100 times |
 | A14 | I7 | Given publishes accepted while resume output is blocked, when catch-up completes, then cursors through boundary B arrive as resume before `resume_complete`, and later cursors arrive live in order. | Deterministic subscriber barrier test |
 | A15 | I7, I11 | Given a cursor behind `lost_through_cursor`, when the client resumes, then status is `gap`, retained successors arrive in order, and no guessed clip appears. | Age- and count-gap tests |
@@ -1290,7 +1330,7 @@ external response follows Architecture 19.
 | A33 | I14, Architecture 16 | Given unique clip, base64, hash, stable-peer, Tailnet-address, node-name, user-name, and platform-metadata canaries, when success and each failure class run, then logs, metrics, health, errors, and crash fixtures contain none. | Byte-for-byte output scan |
 | A34 | I14, Architecture 16 | Given ready and not-ready admitted sessions, when health and readiness are queried, then status, body, and reason shape are exact and expose no count or identity. | Real HTTP captures |
 | A35 | Architecture 8 and 9 | Given each configured connection, per-peer, rate, and outbound-queue boundary, when exceeded separately, then the named refusal or close occurs and admitted peers preserve cursor order. | Limit matrix |
-| A36 | I16, Architecture 18 | Given clean tracked bytes and synthetic external denylist, when repository checks run, then clean bytes pass; one seeded secret, topology value, active listener, obsolete app-authority surface, or content canary fails without echoing the sensitive literal. | CI log and seeded-failure matrix |
+| A36 | I16, Architecture 18 | Given a clean current scope, reachable history that contains superseded app-authority code, and a synthetic external denylist, when repository checks run, then the current-source census passes without inspecting that old code; a seeded secret or denylist topology value in the historical scope fails, and an active listener, obsolete app-authority surface, or content canary in the current scope fails without echoing a sensitive literal. | Scoped CI log and seeded-failure matrix |
 | A37 | Goal, Architecture 1 and 8 | Given generic systemd, launchd, and Ansible assets, when rendered with reserved values, then native syntax checks pass and variables cover hub URL, Tailnet-only bind, state, retention, limits, and startup without an application identity secret. | Native syntax and rendered-fixture checks |
 | A38 | Non-Goals, Architecture 1 | Given the repository root, when license checks run, then the canonical MIT license exists and no contradictory project license exists. | License scan |
 | A39 | Architecture 19 | Given each external seam, when its tests merge, then evidence names a real capture, owner-only manifest, sanitizer, sanitized fixture, fresh-response run, and boundary scan. | Capture ledger and test logs |
@@ -1301,20 +1341,20 @@ external response follows Architecture 19.
 | A44 | I3, I12 | Given two admitted peers, when either requests shared clear, then each can commit the same operation and neither can invoke an app-admin, device, or membership operation. | Operation and route matrix |
 | A45 | I4, Architecture 8 | Given one valid hub or desktop config, when each required field is removed, unknown field added, URL scheme changed, and bound crossed separately, then startup fails before network activity with the exact code. | Generated config mutation matrix |
 | A46 | I12, I17 | Given a publish and clear stopped at the common writer, when each ordering is released, then publish-before-clear is committed then deleted, and clear-before-publish causes the old-generation publish to write nothing. | Deterministic transaction test |
-| A47 | I18, Architecture 17 | Given one trigger per stable code, when it fires, then surface, retryability, state diff, and emitted bytes match the table and contain no diagnostic canary. | Failure-code matrix |
+| A47 | I18, Architecture 17 | Given one trigger per stable code, when it fires, then its surface, literal `retryable` Boolean, retry gate, state diff, and emitted bytes match the table and contain no diagnostic canary. | Failure-code matrix |
 | A48 | Architecture 13 | Given an active desktop with held outbound sends, when a new observation would exceed 20 events or 1,048,576 bytes, then it allocates no message ID, stores no new content, enters `outbox_full`, and preserves existing rows. | Persistent outbox boundary test |
 | A49 | Architecture 10 and 12 | Given cursor or clear generation at unsigned-64 maximum, when the next corresponding mutation is attempted, then the counter does not wrap and the exact terminal code and readiness effect occur. | Injected counter-boundary tests |
 | A50 | I2, I4, Architecture 9 | Given a ready hub and established sessions, when LocalAPI becomes unavailable, then readiness becomes false, no new socket reaches HTTP, and existing sessions close at the specified observable boundary without accepting a later mutation. | Real daemon-loss process test |
 | A51 | I6, Architecture 13 | Given one unaccepted outbox row, when the desktop restarts with intact state, then it retries the exact message ID, generation, timestamp, and content; the next eligible observation receives a different message ID. | Restart and local-state inspection |
-| A52 | I18, Architecture 8 and 13 | Given an absent desktop database, when the agent starts, then it initializes version 1 and can resume with null context; given an unsupported, corrupt, insecure, read-only, or non-atomic store, it emits `local_state_unavailable`, changes no store bytes, opens no session, and remains inactive until repaired. | Local-state initialization and failure matrix |
+| A52 | I18, Architecture 8 and 13 | Given an absent desktop database, when the agent starts, then it initializes version 1 and can resume with null context; given a symlink, wrong owner, or broad mode, it emits `state_path_insecure`; given an unsupported schema, corruption, read-only store, or failed atomic commit, it emits `local_state_unavailable`; each failure leaves store bytes unchanged, opens no session, and keeps the agent inactive. | Local-state initialization and failure matrix |
 | A53 | I7, Architecture 5 and 9 | Given a 500-row resume followed by live clips, when a client processes the stream, then it sends one highest-cursor ack after `resume_complete`, later acks occur at most once per 2,000 ms, and the message bucket is not exhausted. | Controlled-clock trace |
 | A54 | I12, Architecture 12 | Given one committed clear whose response was lost, when an admitted peer retries the same global request ID and generation, then it receives the committed generation with `duplicate = true`; changed input returns `request_id_conflict`. | Clear-receipt restart test |
 | A55 | I12, I17 | Given a client with history, processed IDs, remote marker, pre-clear outbox rows, and nonempty clipboard, when it consumes `clear_notice`, then it deletes the named old-generation state and leaves its clipboard unchanged. | Desktop and mobile state snapshots |
 | A56 | Architecture 13 | Given an unlocked desktop that is connecting, replaying, or disconnected, when its clipboard changes, then it allocates no message ID and creates no outbox row; reaching live does not queue that value without a later observation. | Deterministic connection-state test |
-| A57 | I11, Architecture 10 | Given hub time T and retention R, when `created_at_ms` equals T+120000 or T-R, then the hub admits timestamp validation; T+120001 returns `created_at_in_future` and T-R-1 returns `event_too_old`. | Controlled-clock boundary table |
-| A58 | I18, Architecture 7 and 17 | Given an admitted connection, when path, method, header size, identity header, and rate defects occur separately, then the exact HTTP status and code return in precedence order and no state changes. | Real HTTP precedence matrix |
+| A57 | I11, Architecture 10 | Given a previously unseen message ID, hub time T, and retention window R milliseconds, when `created_at_ms` equals T+120000 or T-R, then the hub admits timestamp validation; T+120001 returns `created_at_in_future` and T-R-1 returns `event_too_old`. | Controlled-clock boundary table |
+| A58 | I18, Architecture 2.1, 7, and 17 | Given an admitted connection, when path, method, header size, identity header, missing subprotocol, duplicate subprotocol header, additional subprotocol token, wrong subprotocol token, and rate defects occur separately, then each exact HTTP status, code, and `retryable` Boolean returns in precedence order and no state changes; each subprotocol defect returns HTTP 400 `protocol_version_unsupported` with `false` and performs no upgrade. | Real HTTP precedence matrix |
 | A59 | I18, Architecture 2 and 17 | Given a WebSocket session, when binary, invalid UTF-8, unknown schema, or oversize input arrives, then the exact error and close occur before durable mutation. | Real frame-boundary captures |
-| A60 | I18, Architecture 3, 4, and 10 | Given one valid publish, when each version, UUID, decimal, timestamp, generation, content type, base64, UTF-8, size, length, and hash defect is introduced separately, then the exact precedence code returns and state remains byte-identical. | Ordered validation matrix |
+| A60 | I18, Architecture 3, 4, and 10 | Given one valid publish with a previously unseen message ID, when each version, UUID, decimal, timestamp, generation, content type, base64, UTF-8, size, length, and hash defect is introduced separately, then the exact precedence code returns and state remains byte-identical. | Ordered validation matrix |
 | A61 | I19, Architecture 4 and 12 | Given one instrumented clip moving through platform ingress, wire ingress, SQLite, wire egress, preview egress, and platform output, when the run completes, then each content access crosses `ClipContentV1` and the final platform bytes equal the initial bytes. | Compile-time visibility test, seam trace, SQLite and platform captures |
 | A62 | I8, I12, I15 | Given a foreground mobile client offline during clear with a nonempty pasteboard, when it reconnects, then generation catch-up clears product history without a pasteboard write; the first later live remote clip overwrites the pasteboard once. | Controlled-clock Swift and real pasteboard test |
 

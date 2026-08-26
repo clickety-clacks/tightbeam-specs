@@ -25,8 +25,17 @@ Authority and provenance:
   received a changes-requested verdict in
   `att_80f55013-33df-493a-a657-6259082c8961`, with report
   `art_40d4337a` at SHA-256
-  `4891fe31b669ad3baa83eda895da98e4caec5b6460db4922f05c9d1fa03fb5fe`;
-  this revision resolves only that verdict's six exact findings.
+  `4891fe31b669ad3baa83eda895da98e4caec5b6460db4922f05c9d1fa03fb5fe`.
+- Supplemental independent adjudication
+  `att_abbcae70-8af7-4ea1-aa29-1e74a81674a4` added F7-F11 to the same
+  open review. Replacement candidate
+  `605026eaf8c1a270a340fe2b3f52a8628a42446d` then received a
+  changes-requested verdict in
+  `att_a532f8db-5bb9-4d77-bde3-2faf5cb13294`, with report
+  `art_f813646f` at SHA-256
+  `3f4eb8dfd8d245843f56cda4552ce7ef0dfe74e2478e01361da1ffeecc736c5e`.
+  That verdict closed F1-F6 and retained F7-F11. This revision resolves the
+  five remaining findings.
 - Mike's earlier rulings remain settled: the MVP trusts a hub that can read
   plaintext, and the public repository uses the MIT license.
 
