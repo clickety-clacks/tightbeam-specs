@@ -50,6 +50,13 @@ evidence had no closed privacy contract. This revision makes one durable owning-
 authority record precede all attempt I/O, requires replacement runners to recover it
 fail closed, and defines bounded lifecycle evidence fields, retention, and redaction.
 
+Exact-tip review verdict `att_93dca3da-7d9e-4a14-afe5-0cc3627ab509` found that the
+proposal could pass while Claude still had zero usable models, that malformed
+authority state could hold a key forever, and that lifecycle identity non-reuse was
+only asserted. This revision requires repair of the established Claude adapter-filter
+starvation, bounded namespace recovery from corrupt authority, and a boot-scoped
+monotonic identity allocator with deliberate reuse tests.
+
 ## Goal
 
 Make the difference between cached model inventory and an active provider probe
@@ -64,6 +71,12 @@ The MVP adds typed probe state and wall-clock timestamps to `tightbeam list`, an
 adds one agent-facing forced-refresh command. Existing model routing continues to use
 the cached inventory and runtime harness validation defined by the source specs.
 
+The MVP also repairs the reported Claude catalog. Current main actively reads the
+provider, then can filter a non-empty provider response to zero against an incomplete
+adapter-selectable set. The repaired derivation obtains the owning host's current
+adapter-offered capabilities and must turn the captured incident response into a
+non-empty inventory of identities that the same adapter accepts.
+
 ## Non-Goals
 
 - This specification does not create an organization-wide fault, incident,
@@ -76,8 +89,9 @@ the cached inventory and runtime harness validation defined by the source specs.
 - It does not change the catalog refresh interval, routing readiness, picker
   eligibility, CAP, spawn admission, or runtime validation.
 - It does not persist catalog inventory, result history, timestamps, or active-probe
-  state across a ModelCatalog process restart. The owning-host authority record is
-  lifecycle safety state, not catalog state or probe history.
+  state across a ModelCatalog process restart. The owning-host authority and
+  generation high-water records are lifecycle safety state, not catalog state or
+  probe history.
 - It does not add automatic remediation or retry policy beyond the existing boot,
   read-expiry, and credential-present triggers.
 - It does not add catalog state to `org-options`, `session-status`, REST resources,
@@ -107,26 +121,27 @@ does not erase an earlier successful inventory. A successful empty response repl
 an earlier non-empty inventory with an empty inventory.
 
 **Probe attempt** — one capability derivation for one catalog key: obtain the current
-credential, and, when a credential is available, perform one provider read. A probe
+credential, perform one provider read when a credential is available, and perform the
+owning-host harness-capability read required to derive usable inventory. A probe
 attempt has a start time, a trigger, an actor, an optional origin, and one terminal
 result.
 
 **Active probe** — the probe attempt currently performing credential lookup or
-provider I/O or bounded cleanup for a catalog key. At most one probe is active in
-`ModelCatalog` for a catalog key.
+harness-capability I/O, provider I/O, or bounded cleanup for a catalog key. At most
+one probe is active in `ModelCatalog` for a catalog key.
 
 **Attempt lease** — the internal per-catalog-key execution lease enforced by the host
-that performs credential lookup and provider I/O. The owning host atomically creates
-the lease's authority record before it starts credential lookup, renewal, a
-credential-file write, or provider I/O. It releases the lease only after it locally
-observes the capability task and every process in its lifecycle unit exit. A lease
-can remain held after `ModelCatalog` records `attempt_cleanup_unconfirmed`. While
-held, a later request may retry bounded cleanup but cannot start credential or
-provider I/O. The lease is owning-host process-lifecycle state, not catalog inventory
-or probe history.
+that performs credential lookup, harness-capability I/O, and provider I/O. The owning
+host atomically creates the lease's authority record before it starts credential
+lookup, renewal, a credential-file write, harness-capability I/O, or provider I/O. It
+releases the lease only after it locally observes the capability task and every
+process in its lifecycle unit exit. A lease can remain held after `ModelCatalog`
+records `attempt_cleanup_unconfirmed`. While held, a later request may retry bounded cleanup
+but cannot start credential, harness-capability, or provider I/O. The lease is
+owning-host process-lifecycle state, not catalog inventory or probe history.
 
-**Lease authority record** — the sole durable no-overlap authority for one catalog
-key on its owning host. Its closed fields are `schemaVersion`, `host`, `harness`,
+**Lease authority record** — the durable active-lease authority for one catalog key
+on its owning host. Its closed fields are `schemaVersion`, `host`, `harness`,
 `leaseGeneration`, `hostBootId`, `lifecycleUnitId`, and `phase`, where `phase` is
 `reserved`, `running`, or `cleaning`. `hostBootId` and `lifecycleUnitId` identify one
 operating-system lifecycle unit without storing a command, path, environment value,
@@ -136,11 +151,29 @@ unit absent. The record survives an attempt-runner exit or restart. A host reboo
 changes `hostBootId`; that mismatch proves that processes from the prior boot cannot
 remain and permits deletion of the old record.
 
+**Lifecycle identity** — the tuple `{hostBootId, host, harness, leaseGeneration}`.
+The owning host allocates `leaseGeneration` with one atomic, monotonically increasing
+arbitrary-precision high-water counter per catalog key. That counter is outside runner
+memory, survives runner replacement, and is retained until `hostBootId` changes. The
+allocator never accepts a caller-supplied value, decrements the counter, or issues a
+prior value during the same boot. Deleting an authority record does not delete or
+lower the counter. Therefore a lifecycle identity cannot be reused while a process
+from its boot could remain.
+
+**Generation high-water record** — the allocator's closed per-catalog-key state:
+`{schemaVersion, host, harness, hostBootId, issuedThrough}`. The authenticated
+owning-host lifecycle namespace updates it with atomic compare-and-swap before it
+returns a generation. A supported write exposes either the prior complete record or
+the next complete record; it cannot expose torn or partial bytes. The namespace
+retains the record after authority deletion and runner restart and replaces it only
+when the host boot changes.
+
 **Lifecycle evidence record** — the privacy-closed terminal summary retained for
 verification. Its only fields are `schemaVersion`, `host`, `harness`,
-`leaseGeneration`, `transportKind`, `recoveredByReplacement`, `cleanupStartedAt`,
+`leaseGeneration`, `transportKind`, `recoveryKind`, `cleanupStartedAt`,
 `termSentAt`, `killSentAt`, `observedEmptyAt`, `unitState`, and `outcome`.
-`transportKind` is `local` or `ssh`; `recoveredByReplacement` is boolean;
+`transportKind` is `local` or `ssh`; `recoveryKind` is `none`,
+`runner_replacement`, `authority_corrupt`, or `prior_boot`;
 `unitState` is `absent`, `present`, or `unknown`; `outcome` is `reaped` or
 `cleanup_unconfirmed`; the four timestamps are epoch milliseconds or null. `reaped`
 requires `unitState=absent` and a non-null `observedEmptyAt`.
@@ -185,7 +218,7 @@ codes are:
 
 | Result | Cause codes |
 | --- | --- |
-| `probe_failed` | `provider_forbidden`, `transport_timeout`, `attempt_timeout`, `attempt_cleanup_unconfirmed`, `remote_host_auth_failed`, `probe_network_forbidden`, `client_version_filtered_empty`, `malformed_response`, `unclassified_failure` |
+| `probe_failed` | `provider_forbidden`, `transport_timeout`, `attempt_timeout`, `attempt_cleanup_unconfirmed`, `remote_host_auth_failed`, `probe_network_forbidden`, `adapter_filtered_empty`, `client_version_filtered_empty`, `malformed_response`, `unclassified_failure` |
 | `credential_rejected` | `provider_unauthorized` |
 | `credential_unavailable` | `credential_missing`, `credential_in_progress`, `credential_store_unreadable`, `credential_kind_unknown` |
 
@@ -200,9 +233,12 @@ the lifecycle unit absent. After an SSH acknowledgement loss, the remote authori
 record and locally observed lifecycle-unit state remain authoritative.
 
 `available_empty` is harness-specific. The Anthropic catalog contract can accept a
-valid empty model array. The Codex catalog contract cannot: when client-version
-filtering removes every returned entry, the result is `probe_failed` with
-`causeCode=client_version_filtered_empty`, as required by `per-host-catalogs-v1.md`.
+valid provider envelope whose model array is empty. A non-empty provider response
+that an adapter filter reduces to zero is `probe_failed` /
+`adapter_filtered_empty`, never `available_empty`. The Codex catalog contract cannot
+accept client-version-filtered empty: when that filter removes every returned entry,
+the result is `probe_failed` with `causeCode=client_version_filtered_empty`, as
+required by `per-host-catalogs-v1.md`.
 
 **Inventory timestamp** — `derivedAt`, the epoch-millisecond wall-clock time of the
 successful probe that produced the cached inventory. It is null when no successful
@@ -279,9 +315,11 @@ diagnosis.
    credential-file writes, including across a ModelCatalog restart. The owning-host
    authority record is created before any such I/O. A runner never grants a new
    attempt lease until it reconciles and releases the prior authority record. Runner
-   death, replacement, or lost volatile state cannot authorize replacement I/O. A
-   completion can mutate state only when its generation matches the active generation
-   for that key; a late completion from an older generation is discarded.
+   death, replacement, or lost volatile state cannot authorize replacement I/O. The
+   boot-scoped allocator never reissues a lifecycle identity after authority-record
+   deletion or runner restart. A completion can mutate state only when its generation
+   matches the active generation for that key; a late completion from an older
+   generation is discarded.
 
 8. **Forced means post-admission evidence.** A successful
    `model-catalog-refresh` response is based on an attempt that started after the
@@ -291,17 +329,24 @@ diagnosis.
    required follow-up attempt starts may share that attempt. A request admitted after
    it starts requires a later attempt. Coalescing never changes the result or scope.
 
-10. **Restart is explicit.** A ModelCatalog or attempt-runner restart discards its
-    volatile state, but it does not discard an owning-host authority record. A
-    replacement may request a boot attempt immediately. The replacement runner first
-    reads and reconciles any prior record, then applies the five-second
-    termination-and-reaping protocol to the named lifecycle unit. It starts new
-    credential or provider I/O only after it observes the unit absent and atomically
-    deletes the old record. If recovery or cleanup is unconfirmed at five seconds,
+10. **Restart and corrupt authority are explicit.** A ModelCatalog or attempt-runner
+    restart discards its volatile state, but it does not discard an owning-host
+    authority record. A replacement may request a boot attempt immediately. The
+    replacement runner first reads and reconciles any prior record, then applies the
+    five-second termination-and-reaping protocol to the named lifecycle unit. It starts new
+    credential, harness-capability, or provider I/O only after it observes the unit
+    absent and atomically deletes the old record. If recovery or cleanup is
+    unconfirmed at five seconds,
     the attempt completes as `probe_failed` / `attempt_cleanup_unconfirmed`; the old
     record remains and no new I/O starts. A later automatic or forced request repeats
     this bounded recovery, which supplies an agent-reachable exit once the owning
-    host observes the unit absent. Before any post-ModelCatalog-restart attempt
+    host observes the unit absent. If the authority record is unreadable, malformed,
+    or unsupported, the replacement runner uses the authenticated lifecycle namespace
+    to enumerate every current-boot unit for the catalog key without trusting that
+    record. It applies the same bounded cleanup to all matching units, deletes the bad
+    record only after it observes none, and may then start a new attempt. Failed
+    enumeration returns the typed unconfirmed result and a later forced request
+    retries the same bounded recovery. Before any post-ModelCatalog-restart attempt
     completes, each catalog reports `lastProbe.result=never_probed`; boot probes may
     be active at the same time.
 
@@ -313,13 +358,13 @@ diagnosis.
     second renewal or credential-write seam.
 
 12. **Observation is privacy-closed.** Catalog state, `model-catalog-refresh`
-    output, authority records, lifecycle evidence records, runner logs, and
-    verification artifacts never retain or log credential values, authorization
-    headers, provider frames or response bodies, request URLs, prompts, local or
-    remote paths, SSH destinations, command lines or argument vectors, environment
-    names or values, process-table rows, or raw stdout/stderr. Catalog surfaces use
-    only their defined fields and closed result and cause values. Internal authority
-    and evidence records use only their closed schemas defined here.
+    output, generation high-water records, authority records, lifecycle evidence
+    records, runner logs, and verification artifacts never retain or log credential
+    values, authorization headers, provider frames or response bodies, request URLs,
+    prompts, local or remote paths, SSH destinations, command lines or argument
+    vectors, environment names or values, process-table rows, or raw stdout/stderr.
+    Catalog surfaces use only their defined fields and closed result and cause values.
+    Internal lifecycle records use only their closed schemas defined here.
 
 13. **Existing model consumers remain compatible.** The shape and meaning of
     `models[host][harness]` do not change. New state appears in a sibling
@@ -328,6 +373,16 @@ diagnosis.
 14. **Pre-gateway failures cannot mutate catalog state.** If a caller cannot connect
     to Tightbeam, including a client-side `bwrap --unshare-net` connect `EPERM`, no
     forced request is admitted and no catalog attempt or result is recorded.
+
+15. **Claude repair produces usable inventory.** A non-empty Claude provider
+    response cannot become a successful empty catalog. Claude derivation reads the
+    installed adapter's offered model values on the same owning host, including over
+    the registered SSH path, and projects only identities proven selectable by that
+    adapter. The captured response that reproduced the live-account zero-model defect
+    must produce at least one exact usable identity. A successful capability read
+    whose intersection remains empty is typed `probe_failed` /
+    `adapter_filtered_empty`; it cannot satisfy the repair acceptance. Capability
+    transport and protocol failures retain their existing failure classifications.
 
 ## Architecture
 
@@ -363,19 +418,52 @@ The existing boot, read-expiry, and credential-present triggers use the same sta
 transition seam as forced probes. A list read that starts an expiry probe returns a
 snapshot that already shows that probe under `activeProbe`.
 
+### Claude catalog repair
+
+At reconciled product commit `7a70a2f616363074514237b5bee48ba67c52e2ea`,
+Claude catalog derivation actively reads `/v1/models`; the reported zero inventory is
+not evidence of a cache-only path. The defect occurs afterward: `keep_selectable`
+intersects provider entries with a static plus projected-home adapter set, the static
+set can rot, and the SSH path does not read the remote projected home's offered set.
+That incomplete intersection reduced the live account's non-empty provider response
+to zero.
+
+The repaired Claude attempt derives both inputs on the owning host. It reads the
+provider catalog through the existing credential path and reads the installed
+adapter's current `model` configuration options through the existing harness process
+boundary. On an SSH catalog key, both reads execute on the remote owning host; local
+projected-home state cannot stand in for remote capability evidence. The derivation
+normalizes exact adapter values and provider identities, retains exact matches, and
+may project an adapter alias only when captured adapter metadata plus a real
+`session/set_config_option` and next-turn `modelUsage` check prove that exact alias is
+usable on the same adapter version, projected home, and credential grant. It never
+silently rewrites an alias to a different model identity.
+
+The incident regression fixture contains the redacted non-empty provider envelope,
+the adapter's offered values from the same owning-host home, and the exact expected
+usable identities established by that live adapter check. Repaired derivation of that
+fixture must be `available_nonempty` and must replace the cached inventory with those
+expected identities. A genuinely empty provider array may remain `available_empty`.
+A non-empty provider array whose successful capability response has no matching usable
+identity is `probe_failed` / `adapter_filtered_empty` and does not erase prior
+inventory. Capability transport and protocol failures retain their existing causes.
+
 ### Owning-host attempt runner
 
 Every catalog attempt runs through one internal attempt runner on the host that owns
 the catalog key. The runner first obtains the owning host's exclusive kernel lock for
 that key. The lock serializes reserve, recovery, cleanup, and release, and the kernel
-releases it if the runner dies. Before any attempt I/O, the lock holder atomically
-reserves a per-catalog-key authority record with a new lease generation and a
-lifecycle-unit identity that cannot be reused during the named host boot. It then
-starts the capability task and all descendants inside that dedicated operating-system
-lifecycle unit and changes the record from `reserved` to `running`. The lifecycle
-unit is the process-ownership boundary; a bare process identifier or local transport
-process is not sufficient authority. The runner holds the kernel lock until it
-deletes the authority record or exits.
+releases it if the runner dies. Before any attempt I/O, the lock holder asks the
+boot-scoped high-water allocator for the next lease generation, then atomically
+reserves a per-catalog-key authority record with that generation and its lifecycle
+identity. It creates the lifecycle unit in the authenticated namespace with labels for
+the exact catalog key and lifecycle identity. Those labels are queryable without
+reading the authority record. The catalog-key label is version-invariant across
+authority-record schema versions. It then starts the capability task and all
+descendants inside that unit and changes the record from `reserved` to `running`.
+The lifecycle unit is the process-ownership boundary; a bare process identifier or
+local transport process is not sufficient authority. The runner holds the kernel
+lock until it deletes the authority record or exits.
 
 For an SSH host, the remote authority record and lifecycle unit own the lease;
 observing the local SSH client exit is not proof of remote cleanup. The remote runner
@@ -383,22 +471,32 @@ may outlive the SSH channel that requested the attempt. Only the authenticated
 internal ModelCatalog host-transport path can reserve, recover, stop, or query a
 lease. The public Gateway cannot address this seam directly.
 
-A runner starts no credential lookup, renewal, credential-file write, or provider I/O
-until it holds the kernel lock and has read back the `running` authority record for
-the lifecycle unit. If the runner exits at any point, a replacement must obtain that
-lock and read the authority record before it handles a new lease request. If the lock
-cannot be obtained inside the five-second caller deadline, the request returns
-`cleanup_unconfirmed` and starts no I/O. A `reserved`, `running`, or `cleaning`
+A runner starts no credential lookup, renewal, credential-file write,
+harness-capability I/O, or provider I/O until it holds the kernel lock and has read
+back the `running` authority record for the lifecycle unit. If the runner exits at
+any point, a replacement must obtain that lock and read the authority record before
+it handles a new lease request. If the lock cannot be obtained inside the five-second
+caller deadline, the request returns `cleanup_unconfirmed` and starts no I/O. A
+`reserved`, `running`, or `cleaning`
 record on the current host boot is fail-closed: the replacement queries the named
 lifecycle unit, performs bounded cleanup when it exists, and grants no new lease
 while absence is unconfirmed. An absent named unit permits atomic record deletion
 while the lock is held. The dead runner cannot resume after the kernel has released
 its lock. A prior-boot record also permits deletion because no process from that boot
 can survive the reboot; the replacement emits `reaped` evidence with
-`recoveredByReplacement=true` and `unitState=absent`. An unreadable, malformed, or
-unsupported authority record returns `cleanup_unconfirmed`, remains in place, and
-authorizes no I/O; a later automatic or forced request retries the bounded read and
-recovery path.
+`recoveryKind=prior_boot` and `unitState=absent`.
+
+If the authority record is unreadable, malformed, or uses an unsupported schema, the
+lock holder does not trust any field from it. It asks the authenticated owning-host
+lifecycle namespace for every live current-boot unit labeled with the catalog key.
+At cleanup start it records `recoveryKind=authority_corrupt`, sends termination to all
+matching units in parallel, sends forced termination at two seconds to every survivor,
+and at five seconds reports `reaped` only if the namespace reports no matching unit.
+It may then delete the bad record and reserve a new generation. If enumeration or
+absence is unconfirmed, it retains the record, returns `cleanup_unconfirmed`, ends the
+runner to release the kernel lock, and authorizes no I/O. A later automatic or forced
+request retries this same bounded path, so a readable lifecycle namespace supplies an
+agent-reachable terminal recovery without trusting or manually editing the record.
 
 ModelCatalog assigns the attempt's 40-second execution budget, and the runner enforces
 that budget independently of ModelCatalog and the initiating SSH channel. Channel
@@ -431,7 +529,8 @@ later automatic or forced attempt asks the current runner to acquire the lease. 
 prior authority record remains, that runner repeats bounded recovery and cleanup. It
 grants the new lease only after it locally observes the old unit absent and deletes
 the record. If cleanup remains unconfirmed, the new request returns the same typed
-failure within five seconds and starts no credential or provider I/O.
+failure within five seconds and starts no credential, harness-capability, or provider
+I/O.
 
 For SSH execution, the remote runner returns a structured reaping acknowledgement.
 A missing acknowledgement, including an SSH disconnect, is
@@ -440,15 +539,21 @@ from its own observed lifecycle-unit state; a later caller must recover the remo
 authority record before it starts I/O. Generation matching still rejects any stale
 completion message that arrives after cleanup.
 
-The runner persists only the authority record while a lease exists and the newest
-terminal lifecycle evidence record after an outcome. It may log only the lifecycle
-evidence record's closed fields. A lifecycle-unit query reduces process state in
-memory to `present`, `absent`, or `unknown`; the runner does not retain or log
-process-table rows, process identifiers, commands, paths, arguments, environment
+A terminal record for an attempt that needed no recovery uses `recoveryKind=none`.
+A replacement runner that recovers a valid authority record uses
+`recoveryKind=runner_replacement`. Corrupt-record and prior-boot paths use their
+corresponding closed values.
+
+The lifecycle namespace persists the generation high-water record for the current
+boot. The runner persists only the authority record while a lease exists and the
+newest terminal lifecycle evidence record after an outcome. It may log only the
+lifecycle evidence record's closed fields. A lifecycle-unit query reduces process
+state in memory to `present`, `absent`, or `unknown`; the runner does not retain or
+log process-table rows, process identifiers, commands, paths, arguments, environment
 material, stdout, or stderr. Test and verification artifacts apply the same reduction
-and redaction. The authority record is deleted on observed absence. The terminal
-evidence record is replaced by the next terminal outcome for that key or cleared by
-host restart.
+and redaction. The authority record is deleted on observed absence without changing
+the high-water record. The terminal evidence record is replaced by the next terminal
+outcome for that key or cleared by host restart.
 
 ### List projection
 
@@ -526,9 +631,10 @@ then returns the keys in ascending harness-name order. Each item contains `host`
 inventory from `tightbeam list`.
 
 Each HTTP provider read retains its existing 30-second bound. `ModelCatalog` assigns a
-40-second execution deadline for each attempt, including credential lookup and remote
-host transport, and the owning-host runner enforces the remaining budget locally.
-When that deadline expires, the runner applies the five-second cleanup protocol. A
+40-second execution deadline for each attempt, including credential lookup,
+harness-capability I/O, provider I/O, and remote-host transport, and the owning-host
+runner enforces the remaining budget locally. When that deadline expires, the runner
+applies the five-second cleanup protocol. A
 `reaped` acknowledgement completes the generation as `probe_failed` /
 `attempt_timeout`. `cleanup_unconfirmed` completes it as
 `probe_failed` / `attempt_cleanup_unconfirmed`; the caller treats the lease as
@@ -563,6 +669,8 @@ before a typed result enters `ModelCatalog`.
   five-second deadline, including SSH authentication or transport loss, becomes
   `probe_failed` / `attempt_cleanup_unconfirmed`.
 - A transport deadline becomes `probe_failed` / `transport_timeout`.
+- A non-empty provider catalog whose successful harness-capability response yields no
+  usable identity becomes `probe_failed` / `adapter_filtered_empty`.
 - A Codex response whose entries are all removed by the client-version filter becomes
   `probe_failed` / `client_version_filtered_empty`.
 - A successful transport with an invalid catalog envelope becomes `probe_failed` /
@@ -595,7 +703,8 @@ tables, command material, environment material, or raw process output.
 3. **A non-empty success updates both axes atomically.**
 
    Given a catalog key with no cached inventory and an active probe,
-   when a captured valid provider response contains two models,
+   when captured valid provider and harness-capability responses contain two usable
+   models,
    then one state snapshot has no active probe, has
    `lastProbe.result=available_nonempty`, has `inventory.modelCount=2`, and has
    matching non-null completion and derivation timestamps.
@@ -607,7 +716,10 @@ tables, command material, environment material, or raw process output.
    then `models` and the cached inventory become empty,
    `lastProbe.result=available_empty`, `inventory.derivedAt` equals
    `lastProbe.completedAt`, `causeCode` is null, and no onboarding or credential
-   repair entry point runs; and given a captured Codex response whose entries are all
+   repair entry point runs; given a non-empty provider response whose adapter
+   capability evidence yields no usable identity, when the classifier processes it,
+   then prior inventory remains and the last result is `probe_failed` /
+   `adapter_filtered_empty`; and given a captured Codex response whose entries are all
    removed by client-version filtering,
    when the same classifier processes it,
    then prior inventory remains and the last result is `probe_failed` /
@@ -676,19 +788,31 @@ tables, command material, environment material, or raw process output.
     when ModelCatalog restarts and its boot attempt requests that lease,
     then the injected clock and runner log termination at zero seconds, forced
     termination at two seconds, and one of these outcomes at five seconds: `reaped`
-    before any new credential lookup or provider I/O starts, or
+    before any new credential lookup, harness-capability I/O, or provider I/O starts,
+    or
     `probe_failed` / `attempt_cleanup_unconfirmed` with the lease retained and no new
     I/O. Given the unconfirmed outcome, when a forced request retries while cleanup
     remains unconfirmed, then it returns the same typed failure within five seconds
-    and starts no credential or provider I/O; and when a later forced request observes
-    the old unit absent, then the runner releases the lease, starts the new attempt,
+    and starts no credential, harness-capability, or provider I/O; and when a later
+    forced request observes the old unit absent, then the runner releases the lease,
+    starts the new attempt,
     and does not repeat credential setup. Given the runner is killed after its
     authority record becomes `reserved`, `running`, or `cleaning`, when an injected
     replacement runner handles the next automatic or forced request, then it obtains
     the released kernel lock, recovers that exact record, and either proves the named
     unit absent before new I/O or returns `attempt_cleanup_unconfirmed` by five
     seconds. The scheduler proves no old and replacement credential lookup, renewal,
-    credential-file write, or provider I/O overlap in each kill phase.
+    credential-file write, harness-capability I/O, or provider I/O overlap in each
+    kill phase. Given a
+    truncated or unsupported authority record and one matching old lifecycle unit,
+    when a forced request obtains the key lock, then it ignores the bad fields,
+    enumerates by authenticated catalog-key label, applies termination at zero seconds
+    and forced termination at two seconds, and by five seconds either records
+    `recoveryKind=authority_corrupt` / `reaped`, deletes the bad record, and continues
+    the admitted attempt with a new generation, or returns
+    `attempt_cleanup_unconfirmed` without I/O. Given that unconfirmed outcome, when a
+    later forced request observes the namespace empty, then it completes the recovery
+    without credential setup or manual record editing.
 
 12. **Network and authentication failures stay separate.**
 
@@ -706,13 +830,14 @@ tables, command material, environment material, or raw process output.
     local and remote paths, SSH destination, command arguments, environment, raw
     provider frame, stdout, and stderr each contain a distinct sentinel,
     when an agent reads `tightbeam list` and `model-catalog-refresh` output and the
-    test captures catalog logs, runner logs, authority records, lifecycle evidence
-    records, and retained verification artifacts,
+    test captures catalog logs, runner logs, generation high-water records, authority
+    records, lifecycle evidence records, and retained verification artifacts,
     then no sentinel appears in any captured or retained surface. The authority and
     lifecycle evidence records contain exactly their closed fields. A process-state
-    query retains only `unitState`, never a process-table row.
-    Each key retains at most one authority record while its lease exists and one
-    newest terminal evidence record until replacement or host restart.
+    query retains only `unitState`, never a process-table row. Each key retains one
+    generation high-water record for the current boot, at most one authority record
+    while its lease exists, and one newest terminal evidence record until replacement
+    or host restart.
 
 14. **Authentication and scope refusals are side-effect free.**
 
@@ -737,9 +862,12 @@ tables, command material, environment material, or raw process output.
     when catalog tests exercise boot, expiry, forced coalescing, late completion,
     ModelCatalog timeout, reaped and cleanup-unconfirmed outcomes, retained-lease
     retry, runner death in `reserved`, `running`, and `cleaning` phases, replacement
-    recovery, host-boot mismatch, gateway wait timeout, and restart,
-    then no test depends on wall-clock sleep or a live provider and repeated runs
-    produce the same state and response order.
+    recovery, corrupt-authority recovery, host-boot mismatch, gateway wait timeout,
+    and restart; and when a test deletes an authority record, restarts the runner, and
+    tries to reuse its issued lifecycle identity or lower the boot high-water counter,
+    then both reuse attempts are refused, the next allocation has a greater
+    generation, no test depends on wall-clock sleep or a live provider, and repeated
+    runs produce the same state and response order.
 
 17. **Attempt and gateway timeouts preserve ownership.**
 
@@ -755,17 +883,20 @@ tables, command material, environment material, or raw process output.
     then the gateway returns `model_catalog_refresh_wait_timeout` without fabricating
     a result or mutating catalog state.
 
-18. **A real provider smoke proves the external path.**
+18. **A real provider smoke proves repair of the affected Claude path.**
 
-    Given a configured test host and a credential that the credential subsystem
-    reports as ready and working,
+    Given the affected live Anthropic account on a local test host and a registered SSH
+    test host, with the credential subsystem reporting ready and working,
     when an operator records `tightbeam list`, runs
-    `tightbeam model-catalog-refresh --host <host> --provider <provider>`, and
-    records `tightbeam list` again,
-    then the command returns `available_nonempty` or `available_empty`, the affected
-    keys' completed timestamps advance, the second list agrees with the command, and
-    no credential onboarding occurs. The verification record includes the redacted
-    real response fixture used by the deterministic catalog-parser tests.
+    `tightbeam model-catalog-refresh --host <host> --provider anthropic` on each host,
+    and records `tightbeam list` again,
+    then each command returns `available_nonempty`, each Claude inventory has a
+    positive model count, the completed timestamps advance, and each second list
+    agrees with the command. At least one exact identity on each host passes a real
+    adapter `session/set_config_option` and next-turn `modelUsage` check for that same
+    home and grant. `available_empty` does not pass this case. No credential onboarding
+    occurs. The verification record includes the redacted real response and adapter
+    capability fixtures used by deterministic tests.
 
 19. **Agent guidance activates with the shipped command.**
 
@@ -794,21 +925,40 @@ tables, command material, environment material, or raw process output.
     when a production replacement runner handles the next request,
     then it obtains the released kernel lock, recovers the retained authority record,
     reaps the old lifecycle unit before granting a new lease, and emits a terminal
-    evidence record with `recoveredByReplacement=true`. Given an SSH connection that
+    evidence record with `recoveryKind=runner_replacement`. Given an SSH connection that
     drops before the acknowledgement,
     when the caller reaches its cleanup deadline,
     then its result is `probe_failed` / `attempt_cleanup_unconfirmed`; and when a
     replacement attempt later reaches the remote runner, then the runner grants its
     lease only after its lifecycle-unit query reports the old unit absent. Verification
-    proves that no replacement credential lookup, renewal, credential-file write, or
-    provider process overlaps the old unit, that runner death and the initiating
-    SSH-channel exit do not erase authority, and that the five-second caller deadline
-    includes SSH setup and delivery. Verification exercises the production kernel
-    lock, authority record, and lifecycle-unit query but retains only the closed
+    proves that no replacement credential lookup, renewal, credential-file write,
+    harness-capability process, or provider process overlaps the old unit, that runner
+    death and the initiating SSH-channel exit do not erase authority, and that the
+    five-second caller deadline includes SSH setup and delivery. Verification
+    exercises the production kernel lock, authority record, and lifecycle-unit query
+    but retains only the closed
     evidence record with `unitState=absent`. No fixture sentinel appears in runner
     logs, authority records, lifecycle evidence records, or verification artifacts. A
     local SSH-client exit, raw process-table capture, or an injected scheduler log
-    alone does not pass this case.
+    alone does not pass this case. On both hosts, verification also writes a truncated
+    authority record while a labeled fixture unit survives, proves namespace recovery
+    reaps that unit before replacement I/O, deletes the bad record only after absence,
+    and reaches a new attempt through a forced request. It then deletes a completed
+    authority record and asks the production allocator to reissue its lifecycle
+    identity; the allocator refuses and issues a greater generation.
+
+21. **The captured zero-model incident is repaired deterministically.**
+
+    Given the redacted provider envelope and same-home adapter capability fixture that
+    reproduced a non-empty Claude provider response followed by an empty
+    `keep_selectable` result at product commit
+    `7a70a2f616363074514237b5bee48ba67c52e2ea`,
+    when the repaired derivation runs through injected local and registered-SSH owning
+    host transports,
+    then both results are `available_nonempty`, both inventories equal the fixture's
+    exact adapter-verified usable identities, and neither path reads the other host's
+    projected home. Repeated runs produce the same ordered inventory, and no
+    onboarding, credential capture, or `credential-present` fact occurs.
 
 ## Open Questions
 
@@ -818,6 +968,6 @@ tables, command material, environment material, or raw process output.
    source-code provenance, or this proposal.
 
 This revised proposal is ready for owner-linked reviewer verification. It is not
-implementation authority until that review records a passing verdict, the approved
-content hash is bound to the work item, and Mike has elected an implementation
-target.
+implementation authority until an owner-linked review records a passing verdict, the
+approved content hash is bound to the work item, and Mike has elected an
+implementation target.
