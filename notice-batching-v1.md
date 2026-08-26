@@ -1,6 +1,6 @@
 # Urgency-aware notice batching — v1
 
-Status: DRAFT
+Status: FROZEN FOR PARENT-OPENED INDEPENDENT REVIEW
 
 Work item: `wi_1100e078-2479-4d1b-8549-d65f7a82fd3d`
 
@@ -65,9 +65,10 @@ decision to release a batch.
 - **Member** — the durable link from one source notice to one batch. It records
   the source row id, immutable per-recipient publication sequence, policy
   revision, cause, sender principal, and inclusion state.
-- **Turn boundary** — the observable transition at which the recipient has no
-  running turn. This mechanism observes that transition and seals an open batch
-  without guessing from elapsed time.
+- **Turn boundary** — a recipient terminal-turn event after a batch opens. This
+  mechanism observes that event and seals an open batch without guessing from
+  elapsed time. An idle recipient at insertion is not a boundary; the delivery
+  ceiling releases that batch.
 - **Delivery ceiling** — the latest time at which the current class policy
   requires a delivery wake to be created. The fabric currently gives `fyi` a
   four-hour ceiling and `input-needed` or `blocker` the prodder floor. This spec
@@ -106,9 +107,9 @@ decision to release a batch.
    `(source_notice_id, recipient_address, visibility_scope)` permits one member
    for one source delivery. A retry returns that member and its batch; it adds
    no duplicate member.
-5. **One admitted turn per batch.** A sealed batch has one delivery token. The
-   scheduler may retry that token after a crash or failure, but it may commit
-   only one envelope message and one recipient turn for that token.
+5. **At most one admitted turn per batch.** A sealed batch has one delivery
+   token. The scheduler may retry that token after a crash or failure, but it
+   may commit at most one envelope message and one recipient turn for that token.
 6. **Immutable sealing.** Sealing assigns members their ascending publication
    sequence and freezes the member list and rendered member records. A source
    notice that arrives after sealing joins a later batch.
@@ -160,8 +161,8 @@ boundary and the class-policy ceiling.
 
 The scheduler seals the batch when either trigger wins. The check for a terminal
 turn event and the seal transition occur in the same transaction. The scheduler
-creates a due delivery wake in that transaction when the ceiling wins. It never
-uses a duration as a proxy for a turn boundary.
+subscribes only to a terminal-turn event after the batch opens; existing idleness
+does not release it. It never uses a duration as a proxy for a turn boundary.
 
 Members appear in the envelope by publication sequence, not timestamp. This
 makes ties and clock skew deterministic. A batch contains at most 50 members or
@@ -198,9 +199,14 @@ The batch states are `open`, `sealed`, `delivery_pending`, `delivered`,
 `delivered`, `delivery_failed`, and `canceled` are terminal. The terminal row
 names its cause and principal.
 
-After sealing, the seam writes the delivery wake and token before it marks the
-batch `delivery_pending`. A transaction failure rolls back both changes. A
-delivery attempt that fails before the wake/turn path commits leaves the batch
+Sealing is one transaction that freezes the envelope and changes `open` to
+`sealed`. Arming is the next transaction: it writes the delivery wake and token,
+then changes `sealed` to `delivery_pending`. A failure in the arming transaction
+rolls back both the wake and that state change, leaving the immutable `sealed`
+batch visible for recovery. The scheduler performs arming immediately after a
+successful seal; it cannot defer a normal ceiling release for a later decision.
+
+A delivery attempt that fails before the wake/turn path commits leaves the batch
 `delivery_pending`, leaves the wake pending under ordinary wake law, and records
 the typed attempt failure. Recovery retries the same token; it does not rebuild
 or duplicate the envelope.
@@ -302,10 +308,11 @@ database and the ordinary wake/turn delivery test seam.
 5. **Policy no-delivery.** Given a `status-query` that current policy resolves
    without a principal delivery, when its source row is published, then the
    batch tables contain no member or batch row for that source.
-6. **Ceiling release.** Given an open routine batch whose recipient has no turn
-   boundary before the stored ceiling, when the ceiling becomes due, then one
-   transaction seals the batch and arms its delivery wake. The fixture asserts
-   that no decision row or desk state participates in that transition.
+6. **Ceiling release.** Given an open routine batch whose recipient has no
+   terminal-turn event after opening before the stored ceiling, when the ceiling
+   becomes due, then the seal transaction creates the immutable envelope and the
+   following arming transaction creates its delivery wake. The fixture asserts
+   that no decision row or desk state participates in either transition.
 7. **Boundary release.** Given an open batch and a recipient terminal-turn
    event before its ceiling, when the scheduler processes that event, then it
    seals the batch once and creates the ordinary delivery carrier before the
