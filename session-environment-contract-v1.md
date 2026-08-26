@@ -33,9 +33,9 @@ infers a host capability and never decides whether the agent should proceed.
   Prose cannot declare a requirement.
 - **Projection**: the fact-only `environment` object attached to an existing
   session row in the authenticated list/read and wire projections.
-- **Probe**: the existing bounded doctor check for one declared requirement in
-  one effective host-and-harness environment. Listing a session never runs a
-  probe.
+- **Probe**: the bounded `resolve_executable` check added to the existing
+  `doctor` command for one declared requirement in one named session's
+  effective environment. Listing a session never runs a probe.
 - **Evidence key**: the tuple of session key, session generation, host, harness,
   and authorized environment/toolchain row revisions used for one observation.
 
@@ -46,14 +46,16 @@ These assumptions are falsifiable implementation preconditions:
 1. Current main can read separate harness, model, effort, and context values.
 2. Current main can read authorized host-and-harness environment and toolchain
    rows without exposing their values.
-3. Current main has a bounded doctor path that can test whether a declared
-   executable resolves in the effective environment.
+3. Current main's `doctor` command and authenticated session read can be
+   extended with one bounded session-requirement probe without creating a
+   second configuration or authorization mechanism.
 4. Existing authenticated session list/read and wire projections already decide
    which principals may see a session.
 
 If any assumption is false, the implementer stops and records the missing seam.
-The implementer does not invent a second configuration, probe, or authorization
-mechanism.
+The implementer does not invent a second configuration or authorization
+mechanism. Ruling `dr_ed5dab0a-2fcf-41db-9032-a57aadfe6e05` authorizes only the
+narrow doctor extension specified below.
 
 ## Invariants
 
@@ -96,8 +98,43 @@ doctor evidence for the current evidence key. It attaches the object to the
 existing authenticated session list/read response and corresponding wire row.
 
 Session reads are non-mutating. They do not execute a command, refresh a probe,
-or inspect a login shell. The existing bounded doctor path is the sole active
-probe actor. A doctor run records only the closed result described below.
+or inspect a login shell. The extended `doctor` path is the sole active probe
+actor. A doctor run records only the closed result described below.
+
+### Narrow doctor probe
+
+Extend the existing command with this one form:
+
+```text
+tightbeam doctor --session <session-key> --requirement <declared-tool> [--json]
+```
+
+`--session` and `--requirement` are required together. This form is mutually
+exclusive with `--base-dir`. With neither option, existing doctor behavior is
+unchanged. Any partial or conflicting form refuses before a probe.
+
+The authenticated caller must already be allowed to read the named session.
+The gateway resolves the session's current generation, registered host,
+harness, and authorized row revisions through the existing session and
+placement seams. It accepts the requirement only when the exact tool name is
+declared by that harness registry entry or the repository's canonical
+verification gate. A tool name is one basename with no slash, whitespace, shell
+operator, or control byte. Unknown or malformed names refuse and create no
+evidence row.
+
+The registered host runs one closed `resolve_executable` operation with the
+effective PATH for that evidence key. The operation locates a regular,
+executable file; it never invokes the declared executable and never evaluates a
+shell command. The resolved path and all host output are discarded. A completed
+match records `available`; a completed miss or non-executable match records
+`unavailable`; timeout, transport failure, or host refusal records
+`probe_failed` with the corresponding closed failure value.
+
+Before persistence, the gateway re-reads the session generation and authorized
+row revisions. If the evidence key changed during the probe, it discards the
+result and returns `unknown`; stale evidence is never attached to the new key.
+The command returns the same closed requirement record that list/read may later
+project. It does not emit a readiness verdict, steer a wake, or gate an action.
 
 ### Projection schema
 
@@ -175,8 +212,9 @@ or projection that users cannot run.
 The implementation candidate that first ships the projection must amend the
 single canonical operating home, `docs/ONBOARDING.md`, in the same reviewed
 candidate. That amendment tells agents to inspect the existing session list/read
-projection and to use the existing doctor path for a bounded refresh. It must use
-the shipped field and command names only. No other guidance home is amended.
+projection and to use `tightbeam doctor --session <session-key> --requirement
+<declared-tool>` for a bounded refresh. It must use the shipped field and command
+names only. No other guidance home is amended.
 
 ## Acceptance
 
@@ -209,12 +247,26 @@ the shipped field and command names only. No other guidance home is amended.
 14. Canonical gate tests name only the four scrubbed variable classes above.
 15. The shipping candidate amends only `docs/ONBOARDING.md` and uses only the
     actual shipped list/read and doctor field names.
+16. Existing doctor behavior is byte-for-byte compatible when neither
+    `--session` nor `--requirement` is supplied; partial forms and combinations
+    with `--base-dir` refuse before host work.
+17. A caller who cannot read the named session cannot probe it. Unknown,
+    malformed, path-like, or shell-bearing requirement names refuse without a
+    host operation or evidence row.
+18. The host probe resolves but never invokes the declared executable. Tests
+    prove that stdout, stderr, side effects, and resolved paths cannot enter the
+    result, storage, logs, or wire projection.
+19. A session-generation or authorized-row revision race discards the probe
+    result and leaves the new evidence key at `status=unknown` and `source=none`.
+20. The doctor command returns only the closed requirement record and never a
+    readiness verdict, refusal policy, wake instruction, or action decision.
 
 ## Open questions
 
-No product-policy question blocks this specification. Implementation may reveal
-a missing existing seam from the assumptions section; that is a named technical
-blocker and requires a new product-owner disposition before scope expands.
+No product-policy question blocks this specification. The sole missing seam was
+ruled by `dr_ed5dab0a-2fcf-41db-9032-a57aadfe6e05` as the narrow doctor probe
+above. Any additional missing seam is a named technical blocker and requires a
+new product-owner disposition before scope expands.
 
 ## Review and implementation gate
 
