@@ -1,6 +1,6 @@
 # First-user bootstrap and nonexistent-user backstop
 
-Status: SPEC-READY for one independent exact-revision review. Work item
+Status: SPEC-READY for one independent exact-revision re-review. Work item
 `wi_20df0b1f-322b-4781-bff9-c5daef1be0f8` remains open, untargeted, and
 unbound.
 
@@ -27,6 +27,10 @@ Authority and evidence:
   Rust, Node, and fixture-harness PATH: Elixir format; 9 doctests and 1,751
   tests, zero failures and 11 skips; Rust format; 246 unit tests and 4
   integration tests, zero failures; and the release CLI build.
+- Independent review `att_f3bb6094-0484-4fff-89c3-3280562a3fcc` requested
+  changes against predecessor artifact `art_e7fd24d8`. Its full findings are
+  `art_3a3ce31b`, SHA-256
+  `a070c885203631ba4c9d043a0815c744af57c1f4ae3d2ddee76a0a858b4c081e`.
 
 This file is the only canonical specification for this work item. It replaces
 the handbacks' unruled recommendations with Mike's five final rulings. It does
@@ -110,14 +114,19 @@ the gateway shall not fall back to bootstrap authority.
 
 T6. **Bootstrap authority context** means the gateway-created call context
 with origin `bootstrap:first-user`, principal `bootstrap:first-user`, and no
-session. It authorizes only one `add-user` transaction while T2 is true.
+session. It may enter only one `add-user` transaction. It authorizes accepted
+user creation only when that transaction observes T2. When the transaction
+observes T3, it supplies provenance for I17's denial and authorizes no domain
+write.
 
 T7. **Ordinary path** means the existing credential, identity, target,
 dispatch, rule, and admin path for `add-user`, regardless of bootstrap state.
 
 T8. **First-user commit** means one database transaction that rechecks T2,
 inserts the forced-admin user, appends the accepted `add-user` event, and
-queues the ordinary `user.added` notice.
+stages the ordinary `user.added` notice for delivery after the SQLite commit.
+The user and event are durable transaction records. The staged notice is a
+best-effort process handoff, not a durable transaction record.
 
 T9. **Failed attempt** means an attempt whose first-user transaction does not
 commit. A lost response after a commit is not a failed attempt.
@@ -145,8 +154,10 @@ A5. Existing protocol-version and JSON-shape checks run before request
 classification. They do not require a bearer credential for a bootstrap
 candidate.
 
-A6. The accepted `add-user` event and `user.added` notice are the ordinary
-user-creation records. They are sufficient provenance for this contract.
+A6. The accepted `add-user` event is the durable provenance record for this
+contract. The ordinary `user.added` notice is a best-effort projection
+notification. A gateway death after the SQLite commit and before handoff
+delivery may lose the notice while preserving the user and accepted event.
 
 A7. A future supported operation that can delete the last user must obtain a
 separate product ruling before it lands. This contract does not add a
@@ -166,7 +177,8 @@ I1. The gateway shall construct T6 only for a T4 bootstrap candidate. No wire
 field shall let a caller request, name, or replay T6.
 
 I2. T6 shall be unusable for every verb other than `add-user`. After the
-first-user transaction observes T3, T6 shall authorize no mutation.
+first-user transaction observes T3, T6 shall authorize no accepted domain
+mutation. The handler may append I17's denied audit event.
 
 I3. An absent, malformed, or unrecognized bearer header shall not block a T4
 request while T2 is true. The same request shall receive `approval_required`
@@ -183,8 +195,12 @@ grant authority.
 I6. The first-user commit shall force `isAdmin = 1`, regardless of an omitted,
 true, or false `params.isAdmin` value.
 
-I7. The user row, accepted `events` row, and `user.added` notice handoff shall
-commit together. A failure in any required write shall roll back all three.
+I7. The user row and accepted `events` row shall commit in one SQLite
+transaction. The transaction shall stage the `user.added` notice and shall
+deliver it only after a successful SQLite commit. A failure before SQLite
+commit shall roll back both rows and discard the staged notice. A gateway
+death after SQLite commit and before handoff delivery may lose the notice; it
+shall not roll back or duplicate the user or accepted event.
 
 I8. Exactly one of two concurrent bootstrap candidates shall commit. The
 loser shall return `approval_required` without a user write or accepted
@@ -224,7 +240,8 @@ bootstrap principal.
 I17. The gateway shall record a closed bootstrap attempt as a denied
 `add-user` event with T6 attribution and `approval_required`. Actor-boundary
 `invalid_identity` shall remain before dispatch and shall not create a verb
-event.
+event. After the denied event commits, the gateway shall stage the ordinary
+`verb.denied` notice for best-effort delivery.
 
 I18. The response and all records shall exclude authorization headers,
 gateway tokens, session tokens, device tokens, provider credentials, and
@@ -292,13 +309,23 @@ receives T6, it shall perform this ordered transaction:
 
 1. Acquire the database write serialization boundary.
 2. Read `SELECT COUNT(*) FROM users`.
-3. Return `approval_required` if the result is not zero.
+3. If the result is not zero, append I17's denied event, stage the ordinary
+   `verb.denied` notice for post-commit delivery, commit the denial record,
+   and return `approval_required`.
 4. Validate `params.userId` with the ordinary `add-user` rules.
 5. Insert the user with `isAdmin = 1` and the ordinary creation timestamp.
 6. Append the accepted `events` row with kind `verb`, verb `add-user`, origin
    `bootstrap:first-user`, principal `bootstrap:first-user`, and no session.
-7. Queue the ordinary `user.added` notice from the committed user projection.
+7. Stage the ordinary `user.added` notice from the committed user projection
+   for best-effort handoff after SQLite commit.
 8. Re-read the user and return the ordinary `add-user` result.
+
+The SQLite commit shall make the user and accepted event durable together.
+The existing `Tightbeam.DB.Txn.handoff/3` mechanism may deliver the staged
+notice after that commit. The contract adds no durable outbox. If the gateway
+dies after SQLite commit and before notice delivery, restart shall retain the
+user and accepted event. The missing notice is an allowed result. The next
+selector-free attempt shall observe T3 and return `approval_required`.
 
 The response shall use HTTP 200 and the existing envelope:
 
@@ -334,7 +361,9 @@ shall say `create the first user through add-user`.
 Malformed JSON, malformed params, invalid protocol versions, invalid
 credentials, selector ownership failures, and ordinary non-admin calls shall
 keep their existing error codes. A transaction exception shall return the
-existing `server_error` response and shall satisfy I7.
+existing `server_error` response. A failure before SQLite commit shall satisfy
+I7's rollback rule. A gateway death after commit shall satisfy I7's durable
+row and best-effort notice rule.
 
 ### AR5. Actor construction
 
@@ -376,8 +405,9 @@ add `cold-start`, `bootstrap-user`, or receipt events.
 
 A closed selector-free attempt shall append one denied event with verb
 `add-user`, origin and principal `bootstrap:first-user`, and payload code
-`approval_required`. It shall emit the ordinary `verb.denied` notice after
-commit of the denial record.
+`approval_required`. It shall stage the ordinary `verb.denied` notice for
+best-effort handoff after commit of the denial record. The denied event is the
+durable refusal record; a post-commit gateway death may lose only the notice.
 
 The database-owner transaction shall serialize REST candidates with every
 other user insertion path. No code shall translate a lost race into a UNIQUE
@@ -405,7 +435,9 @@ shall teach this order:
 5. Pair and approve devices through the separately documented device flow.
 
 The README shall warn that any reachable peer can win step 2 while the org is
-empty. It shall state that the CLI never opens `state.db`.
+empty. It shall state that the CLI never opens `state.db`. It shall state that
+an older binary remains data-compatible but can restore the superseded local
+SQLite writer or pair-first policy.
 
 The implementation deletion assessment shall name these removals:
 
@@ -442,15 +474,19 @@ when each request commits, then every created user has `isAdmin = 1`.
 
 AC5. Given two concurrent valid bootstrap candidates for different user ids,
 when both complete, then exactly one returns HTTP 200. The other returns the
-exact `approval_required` envelope. The database contains only the winner.
+exact `approval_required` envelope. The `users` table contains only the
+winner. The events table contains one accepted winner event and one denied
+loser event.
 
 AC6. Given a failure injected after the user insert but before the accepted
-event or notice handoff, when the transaction exits, then no user, accepted
-event, or notice remains. A retry can win.
+event commit, or after notice staging but before SQLite commit, when the
+transaction exits, then no user or accepted event remains and no notice is
+delivered. A retry can win.
 
 AC7. Given a committed first user whose HTTP response was lost, when the same
 request retries without identity, then it returns `approval_required`. It
-does not return the prior result, add a row, or create a receipt.
+does not return the prior result, add another user, append another accepted
+event, or create a receipt. It appends I17's ordinary denied event.
 
 AC8. Given T2 and an `asUser` selector naming the requested new user, when the
 request has no valid bearer credential, then it returns `auth_failed` and
@@ -511,6 +547,44 @@ the org as T3.
 AC21. Given the repository's full verification commands, when the coder runs
 them on the implementation revision after a recorded green baseline, then
 all applicable Elixir and Rust format, test, and release gates pass.
+
+AC22. Given four fresh T2 databases and otherwise identical T4 requests with
+an absent bearer header, malformed bearer header, unrecognized bearer token,
+or valid bearer token, when each request runs, then each returns HTTP 200 and
+creates one admin user. The four authority contexts and durable records
+contain no bearer value.
+
+AC23. Given three fresh T2 databases and otherwise valid `add-user` requests
+that each contain one nonempty `as`, `asUser`, or `asProcess` selector without
+a valid bearer credential, when each request runs, then each follows T7 and
+returns the ordinary `auth_failed` response. No request constructs T6 or
+creates a user or event.
+
+AC24. Given two concurrent valid bootstrap candidates for the same user id,
+when both complete, then exactly one returns HTTP 200. The other returns the
+exact `approval_required` envelope. The database contains one user and one
+accepted `add-user` event plus one denied loser event. Neither response
+exposes a uniqueness error.
+
+AC25. Given accepted bootstrap, closed bootstrap, and rejected nonexistent-
+identity requests whose inputs contain distinct sentinel authorization
+headers, tokens, and unvalidated identity claims, when a test reads each HTTP
+response, event payload, and delivered notice, then none contains a sentinel
+value. The actor-boundary rejection creates no event or notice.
+
+AC26. Given fault injection that terminates the gateway after SQLite commits
+the first user and accepted event but before `user.added` handoff delivery,
+when the gateway restarts, then the user and one accepted event remain. A
+`user.added` notice is not required, and a selector-free retry returns the
+exact `approval_required` envelope without a second user, accepted event, or
+receipt.
+
+AC27. Given a database with a first-user commit from the new binary, when an
+operator stops the gateway and selects the pinned older binary, then no
+rollback migration runs and the existing user and event rows remain
+unchanged. On boot the older binary observes a nonempty `users` table. The
+README states that the older binary can restore the superseded local SQLite
+writer or pair-first policy.
 
 ## Open Questions
 
