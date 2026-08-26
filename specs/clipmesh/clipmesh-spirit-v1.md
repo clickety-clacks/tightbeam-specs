@@ -21,6 +21,12 @@ Authority and provenance:
   `att_b4f90db5-0211-4c92-92a8-85bf14567af9`.
 - Cold digest verdict:
   `att_c17096fc-7f34-4ef1-80dc-f5ceabee007a`.
+- First amendment candidate `1ed56a8f699ee3332ca4e66d7ad5e97059ed2005`
+  received a changes-requested verdict in
+  `att_80f55013-33df-493a-a657-6259082c8961`, with report
+  `art_40d4337a` at SHA-256
+  `4891fe31b669ad3baa83eda895da98e4caec5b6460db4922f05c9d1fa03fb5fe`;
+  this revision resolves only that verdict's six exact findings.
 - Mike's earlier rulings remain settled: the MVP trusts a hub that can read
   plaintext, and the public repository uses the MIT license.
 
@@ -286,7 +292,7 @@ release require their own later authority.
 | S-A11 | Given a clipboard entry with no explicit confidential or transient hint, when the client observes supported text, then it does not suppress the entry because of its bytes, pattern, source name, or timing. |
 | S-A12 | Given an explicit confidential or transient hint, when the client observes the entry, then no clip content enters its outbox, the wire, history, or diagnostics. |
 | S-A13 | Given one clip crossing ingress, SQLite, and egress, when seam instrumentation runs, then each content transformation uses the canonical serialization seam and the delivered UTF-8 bytes equal the source bytes. |
-| S-A14 | Given a remote-write echo, duplicate delivery, exact retry, replay attempt, or concurrent publish, when the state machines process it, then cursor order stays total, exact retry creates no duplicate, replay changes no state, and no clipboard loop forms. |
+| S-A14 | Given overlapping remote writes, duplicate watcher notifications, duplicate delivery, exact retry, replay attempt, or concurrent publish, when the state machines process them, then cursor order stays total, each remote-write echo stays suppressed, a later eligible local write of the same bytes publishes, exact retry creates no duplicate, replay changes no state, and no clipboard loop forms. |
 | S-A15 | Given repository and diagnostic canaries, when boundary scans run, then they find no clip content, content hash, private topology value, application credential surface, or non-MIT project license. |
 
 ## Open Questions

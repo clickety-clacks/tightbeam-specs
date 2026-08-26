@@ -25,6 +25,12 @@ Authority and evidence:
   `att_c17096fc-7f34-4ef1-80dc-f5ceabee007a`.
 - Bounded delivery plan:
   `att_4e2ae985-61ba-4539-8c7b-1115aa4526e7`.
+- First amendment candidate `1ed56a8f699ee3332ca4e66d7ad5e97059ed2005`
+  received a changes-requested verdict in
+  `att_80f55013-33df-493a-a657-6259082c8961`, with report
+  `art_40d4337a` at SHA-256
+  `4891fe31b669ad3baa83eda895da98e4caec5b6460db4922f05c9d1fa03fb5fe`;
+  this revision resolves only that verdict's six exact findings.
 - Mechanism verification: Tailscale's identity documentation states that a
   destination application can use LocalAPI to identify the node that made a
   request; the official `tailscale.com/client/local` package documents
@@ -254,10 +260,11 @@ no write.
 
 ### I9 — Clipboard loops terminate without a timer
 
-A client suppresses its own message IDs, processed message IDs, and the first
-local observation caused by its most recent remote write. It decides from
-identifiers, platform revisions, and byte equality. No elapsed-time threshold
-decides loop identity.
+A client suppresses its own message IDs, processed message IDs, and every
+watcher notification caused by its current remote-write marker. A newer
+remote write replaces that marker. It decides from identifiers, platform
+revisions, and byte equality. No elapsed-time threshold decides loop
+identity.
 
 ### I10 — Lock, pause, and source hints fail closed
 
@@ -369,7 +376,7 @@ The repository root carries the MIT license. This document establishes the
    device header. The hub rejects `Authorization`,
    `X-Forwarded-For`, `Forwarded`, and `X-ClipMesh-*` on the stream
    request with `client_identity_claim_forbidden`.
-5. The request URL contains no user information, query, or fragment.
+5. The HTTP request target contains no user information or query.
 6. Each application message is one UTF-8 JSON object in a WebSocket text
    message. Binary, invalid UTF-8, duplicate-key, unknown-field, missing-field,
    wrong-type, and unknown-message input is invalid.
@@ -404,7 +411,7 @@ requires a later reviewed protocol version.
 | `content_type` | JSON string | Exact value `text/plain` |
 | `payload_b64` | JSON string | RFC 4648 base64url without padding |
 | `content_sha256` | JSON string | 64 lowercase hexadecimal characters |
-| Stable peer ID | internal string | Nonempty LocalAPI `Node.StableID`; never accepted in client input |
+| Stable peer ID | JSON string in hub output | Nonempty LocalAPI `Node.StableID`; never accepted in client input |
 | Reason code | JSON string | One lowercase snake-case value from Architecture 17 |
 
 The protocol preserves UTF-8 bytes exactly. It performs no Unicode
@@ -417,7 +424,7 @@ operations:
 
 | Operation | Input | Output and rule |
 | --- | --- | --- |
-| `from_wire` | `payload_b64`, `payload_bytes`, `content_sha256` | Decode base64url; require nonempty valid UTF-8; enforce size; require exact length and hash; return `ClipContentV1` |
+| `from_wire` | `content_type`, `payload_b64`, `payload_bytes`, `content_sha256` | Require exact `text/plain`; decode base64url; require nonempty valid UTF-8; enforce size; require exact length and hash; return `ClipContentV1` |
 | `from_platform` | UTF-8 bytes | Require nonempty bytes within the active size limit; return `ClipContentV1` |
 | `as_storage_blob` | `ClipContentV1` | Borrow exact UTF-8 bytes for one hub or desktop SQLite content-BLOB bind |
 | `from_storage_blob` | persistent BLOB | Revalidate nonempty UTF-8 and the version-1 hard maximum of 1,048,576 bytes; return `ClipContentV1` or fail storage integrity. A lower current ingress limit does not invalidate an older retained row. |
@@ -430,7 +437,7 @@ No other module can construct the type, validate or transform content, or
 extract stored bytes except through these operations. Storage and wire
 metadata are outputs of this seam, not parallel sources of truth.
 
-A client-authored publish has exactly:
+A client-authored `PublishEventV1` object has exactly:
 
 | Field | Type | Rule |
 | --- | --- | --- |
@@ -467,36 +474,47 @@ This is the canonical synthetic fixture:
 
 ### 5. WebSocket message schemas
 
-Each object contains exactly `protocol_version`, `type`, and the fields
-listed below.
+Each top-level message is a closed JSON object. It contains
+`protocol_version` as a JSON integer, `type` as the exact JSON string in the
+applicable row, and only the additional fields in that row. Version 1 requires
+the integer value `1`; another integer follows Architecture 10's
+`protocol_version_unsupported` path. Each nested object is also closed. A
+missing, unknown, or duplicate field at either level is
+`protocol_schema_invalid`.
 
 Client to hub:
 
 | Type | Additional fields | Valid state |
 | --- | --- | --- |
-| `resume` | `known_history_epoch` UUID or null; `known_clear_generation` decimal or null; `after_cursor` decimal or null | `await_resume` |
-| `publish` | `event` from Architecture 4 | `live` |
-| `ack` | `history_epoch`, `clear_generation`, `cursor` | `replaying` or `live` |
-| `clear_history` | `request_id` UUID; `expected_clear_generation` decimal | `live` |
+| `resume` | `known_history_epoch`: UUID string or JSON null; `known_clear_generation`: decimal string or JSON null; `after_cursor`: decimal string or JSON null | `await_resume` |
+| `publish` | `event`: closed `PublishEventV1` object from Architecture 4 | `live` |
+| `ack` | `history_epoch`: UUID string; `clear_generation`: decimal string; `cursor`: decimal string | `replaying` or `live` |
+| `clear_history` | `request_id`: UUID string; `expected_clear_generation`: decimal string | `live` |
 
 Hub to client:
 
 | Type | Additional fields | Meaning |
 | --- | --- | --- |
-| `server_hello` | `session_id`, `self_peer_id`, `history_epoch`, `clear_generation`, `newest_cursor` or null, `server_time_ms`, `limits` | WhoIs succeeded; resume is required |
-| `resume_started` | `history_epoch`, `clear_generation`, `status`, `requested_after_cursor` or null, `boundary_cursor` or null, `lost_through_cursor` or null | Names catch-up snapshot |
-| `event` | `history_epoch`, `clear_generation`, `cursor`, `delivery`, `accepted_at_ms`, `expires_at_ms`, `source_peer_id`, `event` | One resume or live clip |
-| `resume_complete` | `history_epoch`, `clear_generation`, `boundary_cursor` or null | Ends catch-up |
-| `publish_accepted` | `message_id`, `cursor`, `expires_at_ms`, `duplicate` | Publish committed or exact retry |
-| `publish_rejected` | `message_id` or null, `code`, `retryable` | Publish changed no state |
-| `clear_accepted` | `request_id`, `clear_generation`, `cleared_through_cursor` or null, `duplicate` | Shared clear committed or exact request retry |
-| `clear_rejected` | `request_id` or null, `code`, `retryable` | Clear changed no state |
-| `clear_notice` | `request_id`, `clear_generation`, `cleared_through_cursor` or null | Client clears product history and older outbox content |
-| `error` | `code`, `retryable` | Session failure |
+| `server_hello` | `session_id`: UUID string; `self_peer_id`: stable-peer-ID string; `history_epoch`: UUID string; `clear_generation`: decimal string; `newest_cursor`: decimal string or JSON null; `server_time_ms`: timestamp integer; `limits`: closed `LimitsV1` object | WhoIs succeeded; resume is required |
+| `resume_started` | `history_epoch`: UUID string; `clear_generation`: decimal string; `status`: enum string; `requested_after_cursor`: decimal string or JSON null; `boundary_cursor`: decimal string or JSON null; `lost_through_cursor`: decimal string or JSON null | Names catch-up snapshot |
+| `event` | `history_epoch`: UUID string; `clear_generation`: decimal string; `cursor`: decimal string; `delivery`: enum string; `accepted_at_ms`: timestamp integer; `expires_at_ms`: timestamp integer; `source_peer_id`: stable-peer-ID string; `event`: closed `PublishEventV1` object | One resume or live clip |
+| `resume_complete` | `history_epoch`: UUID string; `clear_generation`: decimal string; `boundary_cursor`: decimal string or JSON null | Ends catch-up |
+| `publish_accepted` | `message_id`: UUID string; `cursor`: decimal string; `expires_at_ms`: timestamp integer; `duplicate`: JSON boolean | Publish committed or exact retry |
+| `publish_rejected` | `message_id`: UUID string or JSON null; `code`: reason-code string; `retryable`: JSON boolean | Publish changed no state |
+| `clear_accepted` | `request_id`: UUID string; `clear_generation`: decimal string; `cleared_through_cursor`: decimal string or JSON null; `duplicate`: JSON boolean | Shared clear committed or exact request retry |
+| `clear_rejected` | `request_id`: UUID string or JSON null; `code`: reason-code string; `retryable`: JSON boolean | Clear changed no state |
+| `clear_notice` | `request_id`: UUID string; `clear_generation`: decimal string; `cleared_through_cursor`: decimal string or JSON null | Client clears product history and older outbox content |
+| `error` | `code`: reason-code string; `retryable`: JSON boolean | Session failure |
 
-`limits` contains exactly `max_payload_bytes`, `retention_seconds`,
-`history_max_entries`, `max_clock_skew_ms = 120000`, and
-`max_websocket_message_bytes`.
+A `LimitsV1` object contains exactly these JSON-integer fields:
+
+| Field | Value |
+| --- | --- |
+| `max_payload_bytes` | Configured value in `1..1048576` |
+| `retention_seconds` | Configured value in `60..31536000` |
+| `history_max_entries` | Configured value in `1..10000` |
+| `max_clock_skew_ms` | Exact value `120000` |
+| `max_websocket_message_bytes` | `4 * ceil(max_payload_bytes / 3) + 4096` |
 
 `resume_started.status` is `fresh`, `complete`, `gap`,
 `epoch_changed`, or `generation_changed`. Generation mismatch takes
@@ -587,14 +605,16 @@ The hub reads one closed version-1 TOML file:
 | `history_max_entries` | no | `500`; `1..10000` |
 | `max_payload_bytes` | no | `262144`; `1..1048576` |
 | `max_connections` | no | `64`; `1..1024` |
+| `max_connections_per_peer` | no | `2`; `1..8`, and no greater than `max_connections` |
 | `publish_tokens_per_minute` | no | `60`; `1..600` |
 | `publish_burst` | no | `10`; `1..100` |
-| `outbound_queue_messages` | no | `128`; `1..1024` |
-| `outbound_queue_bytes` | no | `8388608`; computed message cap through `33554432` |
+| `outbound_queue_messages` | no | `64`; `1..256` |
+| `outbound_queue_bytes` | no | `2097152`; computed message cap through `16777216` |
 
 The parser rejects an unknown or duplicate field, a missing required field, a
-value outside its range, trailing non-TOML bytes, a hostname bind, and a queue
-byte bound below one maximum message.
+value outside its range, a per-peer bound above `max_connections`, trailing
+non-TOML bytes, a hostname bind, and a queue byte bound below one maximum
+message.
 
 The hub permits no bind before LocalAPI status succeeds. The configured IP
 must exactly equal a current self Tailnet IPv4 or IPv6 address. The hub does
@@ -646,8 +666,8 @@ while the app process is active.
 | `closing` | Close reason selected | No application input | Send close when possible; unregister and release limits |
 
 The listener permits at most `max_connections` admitted WebSocket sessions.
-It permits at most four sessions per stable peer ID. Reaching a bound returns
-`connection_limit_reached`.
+It permits at most `max_connections_per_peer` sessions per stable peer ID.
+Reaching either bound returns `connection_limit_reached`.
 
 One admitted peer receives a connection-attempt bucket of 30 per minute with a
 burst of 10, an application-message bucket of 120 per minute with a burst of
@@ -671,14 +691,17 @@ For one admitted `publish`, the hub performs:
    `protocol_schema_invalid`.
 2. Require integer `protocol_version = 1`; another integer returns
    `protocol_version_unsupported`.
-3. Validate canonical UUID, decimal, timestamp, content-type, base64url,
-   length, and hash syntax.
+3. Validate canonical UUID, decimal, and timestamp forms. Closed-schema
+   validation has already required `content_type`, `payload_b64`, and
+   `content_sha256` to be JSON strings and `payload_bytes` to be a JSON
+   integer; no caller interprets those four values.
 4. Require `created_at_ms <= hub_time + 120000`; otherwise return
    `created_at_in_future`.
 5. Require
    `created_at_ms >= hub_time - retention_seconds * 1000`; otherwise
    return `event_too_old`.
-6. Call `ClipContentV1::from_wire`. Its ordered failures are
+6. Pass `content_type`, `payload_b64`, `payload_bytes`, and
+   `content_sha256` to `ClipContentV1::from_wire`. Its ordered failures are
    `content_type_unsupported`, `payload_encoding_invalid`,
    `payload_empty`, `payload_too_large`,
    `payload_length_mismatch`, and `payload_hash_mismatch`.
@@ -836,7 +859,8 @@ The desktop persists in one owner-only SQLite state store:
 - unaccepted outbox events with their clear generation;
 - last processed hub cursor, history epoch, and clear generation;
 - the 1,024 most recent processed message IDs in cursor order;
-- one pending remote-write suppression marker with exact content.
+- one pending remote-write suppression marker with exact content and the
+  resulting platform revision.
 
 Each outbox and remote-write-marker content column is a BLOB written by
 `ClipContentV1::as_storage_blob` and read by
@@ -852,6 +876,12 @@ state. An unsupported, corrupt, insecure, read-only, or non-atomic store
 returns `local_state_unavailable`, opens no session, and remains byte-identical
 until external repair.
 
+After it validates or initializes the store and before it opens the platform
+adapter or a network session, each desktop process deletes any persisted
+remote-write marker in one transaction. Observation remains off during this
+startup action, so the current clipboard creates no outbox row. A platform
+revision from an earlier adapter instance is never compared in a later one.
+
 For one local observation the client:
 
 1. obtains bytes, platform revision, and explicit hint classification;
@@ -860,10 +890,10 @@ For one local observation the client:
 4. stops for `confidential` or `transient`;
 5. stops when it consumes `local_only_next`;
 6. calls `ClipContentV1::from_platform`;
-7. applies the remote-write loop marker by platform revision or
-   `ClipContentV1::same_content` and stops on a match;
+7. applies the remote-write marker lifecycle below and stops or fails when
+   that lifecycle requires it;
 8. deletes expired or stale-generation outbox rows;
-9. enforces 128-event and 8,388,608-byte outbox bounds;
+9. enforces 20-event and 1,048,576-byte outbox bounds;
 10. creates one message ID and publish bound to the current clear generation;
 11. commits the exact outbox event before releasing the seam;
 12. sends or retries that exact event only while the session is live.
@@ -889,12 +919,31 @@ For one received event the desktop:
 6. calls the platform write exactly once when `apply = true`, even when the
    current clipboard bytes are equal;
 7. stores the message ID, exact content BLOB, and resulting platform revision
-   as the remote-write loop marker;
+   as the remote-write loop marker, replacing any prior marker;
 8. advances the acknowledgement cursor.
 
-The first later local observation consumes the loop marker. A matching
-platform revision or matching bytes suppresses publish. A different
-observation clears the marker and proceeds. No timer participates.
+Local-observation step 3 calls the adapter's
+`is_current(observed_revision)` under the client state seam. A false result
+identifies a stale notification; the client stops without changing the marker
+or outbox. For a current observation, local-observation step 7 applies these
+rules in order:
+
+1. With no marker, continue to ordinary outbox processing.
+2. When the observed revision equals the marker revision and
+   `ClipContentV1::same_content` is true, stop and retain the marker. Every
+   duplicate watcher notification for that revision follows this rule.
+3. When the revisions are equal but the content differs, create no outbox
+   row, retain the marker, enter `adapter_failed`, and emit only
+   `adapter_unavailable`.
+4. When the current observed revision differs from the marker revision,
+   delete the marker and continue to ordinary outbox processing. The client
+   publishes this local observation even when its bytes equal the marker
+   bytes.
+
+A second remote write replaces the marker before it releases the same client
+state seam. A watcher notification from the replaced write then fails the
+current-revision check, so it cannot consume the newer marker. No timer or
+content-only match participates.
 
 Desktop states:
 
@@ -937,6 +986,15 @@ Each adapter emits exactly:
 - text bytes;
 - one observed platform revision;
 - `hint = ordinary | confidential | transient`.
+
+A platform revision is an opaque process-lifetime token for one clipboard
+state. The adapter does not reuse a token for a different state. Repeated
+watcher notifications for an unchanged state carry the same token. A
+successful platform write returns the token for the resulting state. While
+the caller holds the client state seam, `is_current(token)` returns true
+exactly when that token still names the current clipboard state. Failure to
+meet this contract returns `adapter_unavailable`; the client publishes no
+observation from that failure.
 
 The adapter can emit `confidential` or `transient` only for a signal
 listed in a checked-in registry entry whose evidence names a real platform
@@ -1095,7 +1153,6 @@ WebSocket close mapping:
 | Close | Reasons |
 | --- | --- |
 | 4400 | schema, version, message-size, resume-context, cursor, or ack failure |
-| 4403 | `client_identity_claim_forbidden` |
 | 4408 | resume deadline or heartbeat |
 | 4409 | stale session, clear generation, or `history_cleared` |
 | 4429 | slow consumer or message rate |
@@ -1215,7 +1272,7 @@ external response follows Architecture 19.
 | A15 | I7, I11 | Given a cursor behind `lost_through_cursor`, when the client resumes, then status is `gap`, retained successors arrive in order, and no guessed clip appears. | Age- and count-gap tests |
 | A16 | I8 | Given a nonempty desktop clipboard and retained resume rows, when reconnect, unlock, or local resume catches up, then history and cursor change while the clipboard-write spy records zero calls. | Linux and macOS real-adapter tests |
 | A17 | I8 | Given completed catch-up and an unlocked active desktop, when another peer publishes one live clip, then the platform write receives exact text once even if current clipboard bytes match. | Linux and macOS write-spy captures |
-| A18 | I9 | Given a remote live write that produces duplicate watcher notifications, when the matching observation arrives, then no publish occurs; a later distinct observation publishes once without a timer. | Adapter event-sequence tests |
+| A18 | I9, Architecture 13 and 14 | Given remote writes R1 then R2 complete before R1's watcher notification and R2 produces duplicate notifications, when the stale R1 notification and every R2 notification arrive, then none publishes and the R2 marker remains; when a later eligible local write creates a new revision with R2's exact bytes, it clears the marker and publishes once without a timer. | Adapter event-sequence tests |
 | A19 | I10, I17 | Given a local observation stopped at the state barrier, when lock or pause wins, then no content or outbox row exists; when outbox commit wins, the exact row follows normal retry and the transition adds no later write. | Deterministic client race test |
 | A20 | I10, Architecture 14 | Given each captured registered confidential or transient signal and each unregistered, absent, ambiguous, source-name-only, or content-derived signal, when the adapter observes them separately, then only the registered signals suppress `ClipContentV1`; every other supported text entry maps to ordinary and follows normal state rules. | Real captures, ordinary-path assertions, and canary scan |
 | A21 | I10, Architecture 13 | Given `local-only-next`, when two eligible local observations occur, then the first creates no content or outbox row and the second publishes once. | Local-control integration test |
@@ -1226,7 +1283,7 @@ external response follows Architecture 19.
 | A26 | I13, Architecture 8 | Given a new database, version 1 database, unsupported version, and nonempty zero-version database, when startup runs, then only the new database initializes, version 1 opens unchanged, and unsupported inputs remain byte-identical with `database_schema_unsupported`. | Migration matrix with file hashes |
 | A27 | I12 | Given retained clips, queued old-generation frames, and generation G, when one admitted member clears, then one transaction deletes clips, commits G+1, updates lost-through, stores one receipt, drops queued old-generation event frames before release, and leaves each system clipboard unchanged. | SQLite, queue-writer, desktop, and mobile assertions |
 | A28 | I2, Architecture 6 | Given WhoIs success, peer-not-found, timeout, permission refusal, malformed response, and empty stable ID, when sockets arrive, then only success reaches HTTP parsing and each failure closes with no application response. | Real LocalAPI admission matrix |
-| A29 | I2, Architecture 2 and 7 | Given an admitted peer, when it supplies Authorization, forwarding, ClipMesh identity headers, URL user info, query, or fragment, then the hub returns `client_identity_claim_forbidden` and changes no state. | HTTP request matrix |
+| A29 | I2, Architecture 2 and 7 | Given an admitted peer, when it supplies Authorization, forwarding, ClipMesh identity headers, URL user info, or a query, then the hub returns `client_identity_claim_forbidden` and changes no state. | HTTP request matrix |
 | A30 | I12, I17 | Given two distinct clear requests expecting generation G, when they race, then one commits G+1 and the other returns `clear_generation_stale`; no clip survives from G. | SQLite barrier test |
 | A31 | I15 | Given 500 retained clips, when the mobile app enters foreground, then it catches up a descending age-and-preview history and performs no pasteboard write before `resume_complete`. | Swift state and pasteboard-spy test |
 | A32 | I15 | Given a foreground mobile session after catch-up, when a new live remote clip arrives, then the app writes exact text once even when current pasteboard bytes match; resume, refresh, activation, background, and generation change each produce zero writes. | Swift transition matrix with real pasteboard |
@@ -1240,12 +1297,12 @@ external response follows Architecture 19.
 | A40 | Goal, Non-Goals | Given the built dependency graph, routes, schemas, and config, when censused, then it contains no E2EE, app identity, credential, device registry, control plane, enrollment, pairing, rotation, application TLS, memory history, Share extension, direct delivery, non-text content, or public listener. | Dependency, route, schema, and config census |
 | A41 | I2-I4 | Given a desktop already admitted by Tailnet policy, when generic deployment starts its agent with hub URL and a new local-state path only, then the hub's WhoIs result admits it and the client reaches live without an application account, credential, or onboarding state. | Isolated deployment-to-live run |
 | A42 | I4, Architecture 8 | Given a hub bound to one validated Tailnet self address in an isolated network, when Tailnet, second-interface, loopback, and public-side probes run, then only the admitted Tailnet probe reaches HTTP. | Network-namespace and Tailnet probe log |
-| A43 | Architecture 13 and 15 | Given nonempty product history and system clipboard, when desktop or mobile local clear runs, then only that client's visible history and processed cache clear; hub rows, generation, outbox, and system clipboard remain unchanged. | Client, hub, and platform before/after state |
+| A43 | Architecture 13 and 15 | Given nonempty product history and system clipboard, when desktop local clear runs, then its visible history and processed-ID cache clear; when mobile local clear runs, then only its visible history clears; both operations leave hub rows, generation, outbox, and system clipboard unchanged. | Client, hub, and platform before/after state |
 | A44 | I3, I12 | Given two admitted peers, when either requests shared clear, then each can commit the same operation and neither can invoke an app-admin, device, or membership operation. | Operation and route matrix |
 | A45 | I4, Architecture 8 | Given one valid hub or desktop config, when each required field is removed, unknown field added, URL scheme changed, and bound crossed separately, then startup fails before network activity with the exact code. | Generated config mutation matrix |
 | A46 | I12, I17 | Given a publish and clear stopped at the common writer, when each ordering is released, then publish-before-clear is committed then deleted, and clear-before-publish causes the old-generation publish to write nothing. | Deterministic transaction test |
 | A47 | I18, Architecture 17 | Given one trigger per stable code, when it fires, then surface, retryability, state diff, and emitted bytes match the table and contain no diagnostic canary. | Failure-code matrix |
-| A48 | Architecture 13 | Given an active desktop with held outbound sends, when a new observation would exceed 128 events or 8,388,608 bytes, then it allocates no message ID, stores no new content, enters `outbox_full`, and preserves existing rows. | Persistent outbox boundary test |
+| A48 | Architecture 13 | Given an active desktop with held outbound sends, when a new observation would exceed 20 events or 1,048,576 bytes, then it allocates no message ID, stores no new content, enters `outbox_full`, and preserves existing rows. | Persistent outbox boundary test |
 | A49 | Architecture 10 and 12 | Given cursor or clear generation at unsigned-64 maximum, when the next corresponding mutation is attempted, then the counter does not wrap and the exact terminal code and readiness effect occur. | Injected counter-boundary tests |
 | A50 | I2, I4, Architecture 9 | Given a ready hub and established sessions, when LocalAPI becomes unavailable, then readiness becomes false, no new socket reaches HTTP, and existing sessions close at the specified observable boundary without accepting a later mutation. | Real daemon-loss process test |
 | A51 | I6, Architecture 13 | Given one unaccepted outbox row, when the desktop restarts with intact state, then it retries the exact message ID, generation, timestamp, and content; the next eligible observation receives a different message ID. | Restart and local-state inspection |
