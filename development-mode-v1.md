@@ -1,6 +1,6 @@
 # Organization development mode v1
 
-Status: proposed revision 2
+Status: proposed revision 3
 
 Work item: `wi_cc890c75-4463-4a19-9c4a-166ac64a7558`
 
@@ -38,8 +38,8 @@ context.
   harness readiness, or the identity Git revision.
 - Do not interrupt a running turn.
 - Do not post a GitHub issue without explicit user permission for that exact issue.
-- Do not preserve the old hand-written debugging fragment after this fragment becomes the
-  canonical home.
+- Do not preserve the legacy debugging-regime blocks defined below after the shipped
+  development-mode fragment becomes their canonical replacement.
 
 ## Terms
 
@@ -54,7 +54,18 @@ context.
 - **Stale session**: a materialized active session whose setting stamp differs from the
   current setting revision.
 - **Operational lineage**: the durable spawned-by session chain exposed by Tightbeam.
+- **Active ancestor**: the nearest exposed session in that lineage that is active and can
+  receive a Tightbeam message. An inactive or retired parent is not an active ancestor.
 - **Top of lineage**: a session whose operational parent is itself or is not exposed.
+- **Legacy debugging-regime block**: the section that starts with the exact heading
+  `## Debugging regime (mike's standing directive, 2026-08-06, until revoked)` and ends at
+  the next same-level heading or end of file. At rollout it exists in the live identity
+  files `guidance/default.md`, `guidance/coder.md`, `guidance/reviewer.md`, and
+  `guidance/orchestrator.md`; its block includes the `Probe boundary (debugging regime)`
+  paragraph.
+- **Canonical development-mode fragment**: the product-shipped file
+  `priv/guidance/development-mode.md`. It is the sole source of bytes appended by
+  development-mode composition; the live organization identity does not copy it.
 - **Secret-safe specimen**: a report that contains the failing action, refusal or error,
   identifiers, timestamps, and state-change result, but no credential or secret value.
 
@@ -64,7 +75,7 @@ context.
    transaction as a semantic setting change. SQLite serializes concurrent writers.
 2. The existing identity-apply path can enter each resident session lane at a turn boundary
    and can leave a busy or failed session unchanged without claiming it is current.
-3. `artifact-record` is available to a top-lineage session without an assignment and can
+3. `artifact-record` is available to an active session without an assignment and can
    preserve a report from that session's owned workdir.
 4. Served-identity composition can read the setting value and config `rowVersion` together
    before it builds one session snapshot.
@@ -137,15 +148,17 @@ identity mechanism has failed:
 - Do not hide the failure with an ad hoc command, direct database or identity-file edit,
   duplicate work lane, or substitute mechanism.
 - Record one secret-safe specimen. If you hold an assignment, file it on that assignment.
-  If you hold no assignment and have an active parent, send the specimen to that parent for
-  durable filing. If you are at the top of the operational lineage, write the specimen in
-  your owned workdir and record it with `tightbeam artifact-record --kind report --title
-  <title> --path <path>`. Add `--work-item <id>` when a work item exists.
+  If you hold no assignment and have an active ancestor, send the specimen to the nearest
+  active ancestor for durable filing. If you hold no assignment and have no active
+  ancestor, including when you are at the top of the operational lineage, write the
+  specimen in your owned workdir and record it with `tightbeam artifact-record --kind
+  report --title <title> --path <path>`. Add `--work-item <id>` when a work item exists.
 - Include the exact command or action, the refusal or error, relevant identifiers and
   timestamps, and whether durable or live state changed. Do not include secrets.
 - Continue work that is separable from the failed seam.
-- Report the specimen to the session that spawned you or the nearest active parent. Do not
-  create a second specimen merely to report it.
+- When an active ancestor exists, report the specimen or its durable pointer to the nearest
+  active ancestor. When none exists, the recorded artifact is the terminal internal route;
+  do not address an inactive parent and do not create a second specimen merely to report it.
 - If you are at the top of the operational lineage, prepare one proposed issue for the
   `clickety-clacks/tightbeam` GitHub repository. Ask the user for explicit permission for
   that issue. State the proposed title and secret-safe body. Do not post the issue until the
@@ -156,10 +169,19 @@ This fragment teaches existing assignment attests, parent messages, `artifact-re
 lineage, and user permission. It creates no automatic report, escalation, or GitHub action.
 
 Before an organization first sets development mode to `on`, its rollout owner must remove
-the old hand-written debugging-regime fragment from the current served identity through
-the existing identity edit and relearn process. This is a reviewed rollout prerequisite,
-not a content detector or automatic migration. The new fragment is the only canonical
-home after enablement.
+every legacy debugging-regime block from the four named live guidance files through the
+existing identity edit and relearn process. The pre-enable check searches every
+`guidance/*.md` blob reachable from the current `tightbeam/live` revision for both the exact
+legacy heading and the distinctive sentence `A silent workaround destroys the evidence
+this org exists to produce.` It refuses enablement while either marker remains anywhere in
+that search scope. It also verifies that each installed archetype's fully expanded live
+guidance contains neither marker, including content reached through `#include`.
+
+This is a reviewed rollout prerequisite, not an automatic content migration. After
+enablement, `priv/guidance/development-mode.md` is the sole byte source for the canonical
+fragment. No file under the organization identity tree contains a copied canonical
+fragment or a legacy block. The product's conditional composition appends the shipped file
+at most once to each served snapshot.
 
 ### Present and future served identities
 
@@ -247,13 +269,19 @@ The implementation must prove:
    mixed truthful stamps, and list/readiness reports the exact stale remainder.
 8. List and readiness expose on, off, stale-materialized, and unmaterialized states in
    deterministic sorted order without changing runnable readiness.
-9. An assigned agent can attest a secret-safe specimen. An unassigned child can send one
-   to its active parent. A top-lineage unassigned agent can preserve one through the real
-   `artifact-record` command even when the user denies or has not answered issue permission.
+9. An assigned agent can attest a secret-safe specimen. An unassigned session with an
+   active ancestor sends one to the nearest active ancestor. An unassigned session with no
+   active ancestor, whether top-lineage or stranded below an inactive parent, preserves one
+   through the real `artifact-record` command. The artifact remains durable when the user
+   denies or has not answered issue permission. Reporting is required only when an active
+   ancestor exists.
 10. The fragment requires explicit user permission for each proposed top-lineage GitHub
     issue. No code path posts externally.
-11. The rollout test removes the old hand-written fragment before enablement and proves
-    the directive exists in exactly one canonical home afterward.
+11. The rollout test begins with the legacy block in each of the four named live guidance
+    files. Enablement refuses until identity edit and relearn remove every block. It searches
+    all `guidance/*.md` blobs and fully expanded installed-archetype guidance for both legacy
+    markers. After removal, it proves `priv/guidance/development-mode.md` is the sole source,
+    no organization-identity copy exists, and each mode-on snapshot contains its bytes once.
 12. Existing identity status/apply behavior and identity Git revision truth remain intact.
 
 Run focused config, identity, list, readiness, same-millisecond collision, set/set,
