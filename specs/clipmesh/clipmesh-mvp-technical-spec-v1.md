@@ -464,7 +464,7 @@ A client-authored `PublishEventV1` object has exactly:
 | --- | --- | --- |
 | `message_id` | UUID string | Client-generated UUIDv4 |
 | `clear_generation` | decimal string | Must equal the session generation |
-| `created_at_ms` | integer | At most 120,000 ms ahead of hub time and no more than one retention window behind hub time |
+| `created_at_ms` | integer | For a previously unseen message ID after Architecture 10 steps 7-9, at most 120,000 ms ahead of hub time and no more than one retention window behind hub time. A retained or tombstoned ID follows those lookup results without reapplying this window. |
 | `content_type` | string | Exact `text/plain` |
 | `payload_bytes` | integer | Exact decoded length in `1..max_payload_bytes` |
 | `content_sha256` | string | SHA-256 of decoded bytes |
