@@ -38,6 +38,12 @@ This revision makes `credential_present` origin null because its reserved fact d
 not carry an initiating author, and it requires observed termination of an old
 attempt and its descendant transport before replacement boot I/O starts.
 
+Exact-tip review verdict `att_e0717449-a3d5-4c6b-929d-10b5b9bc81f9` found that the
+first restart closure could wait forever for descendant exit. This revision replaces
+that unbounded drain with one bounded owning-host attempt-runner lease, a typed
+cleanup-unconfirmed result, and production lifecycle evidence for local and SSH
+process trees.
+
 ## Goal
 
 Make the difference between cached model inventory and an active provider probe
@@ -99,9 +105,17 @@ attempt has a start time, a trigger, an actor, an optional origin, and one termi
 result.
 
 **Active probe** — the probe attempt currently performing credential lookup or
-provider I/O for a catalog key. An attempt remains active until its capability task
-and every descendant provider transport have exited. At most one probe is active for
-a catalog key.
+provider I/O or bounded cleanup for a catalog key. At most one probe is active in
+`ModelCatalog` for a catalog key.
+
+**Attempt lease** — the internal per-catalog-key execution lease owned by the attempt
+runner on the host that performs credential lookup and provider I/O. The runner
+acquires the lease before credential lookup and releases it only after it locally
+observes the capability task and every process in its provider process group exit. A
+lease can remain held after `ModelCatalog` records `attempt_cleanup_unconfirmed`.
+While held, a later request may retry bounded cleanup but cannot start credential
+lookup or provider I/O. The lease is owning-host process-lifecycle state, not catalog
+inventory or probe history.
 
 **Probe trigger** — the event that requested an attempt. Its closed values are
 `boot`, `ttl_read`, `credential_present`, and `forced`.
@@ -139,14 +153,19 @@ codes are:
 
 | Result | Cause codes |
 | --- | --- |
-| `probe_failed` | `provider_forbidden`, `transport_timeout`, `attempt_timeout`, `remote_host_auth_failed`, `probe_network_forbidden`, `client_version_filtered_empty`, `malformed_response`, `unclassified_failure` |
+| `probe_failed` | `provider_forbidden`, `transport_timeout`, `attempt_timeout`, `attempt_cleanup_unconfirmed`, `remote_host_auth_failed`, `probe_network_forbidden`, `client_version_filtered_empty`, `malformed_response`, `unclassified_failure` |
 | `credential_rejected` | `provider_unauthorized` |
 | `credential_unavailable` | `credential_missing`, `credential_in_progress`, `credential_store_unreadable`, `credential_kind_unknown` |
 
 Successful results and `never_probed` have no cause code. HTTP 401, or an equivalent
 structured provider-authentication rejection, maps to `provider_unauthorized`. HTTP
 403 alone maps to `provider_forbidden`; it does not prove that the credential is
-invalid.
+invalid. `attempt_cleanup_unconfirmed` means the caller did not receive an owning-host
+`reaped` acknowledgement within the five-second cleanup deadline. It is a terminal
+probe result. When the runner itself cannot confirm exit, it retains the attempt lease
+until a later bounded cleanup request observes those exits. After an SSH
+acknowledgement loss, the remote runner's locally observed lease state remains
+authoritative.
 
 `available_empty` is harness-specific. The Anthropic catalog contract can accept a
 valid empty model array. The Codex catalog contract cannot: when client-version
@@ -223,9 +242,11 @@ diagnosis.
    result, timestamps, trigger, actor, origin, or staleness.
 
 7. **One attempt runs per catalog key.** A catalog key never has overlapping
-   capability derivations or provider reads, including across a ModelCatalog restart.
-   A completion can mutate state only when its generation matches the active
-   generation for that key; a late completion from an older generation is discarded.
+   credential lookups, capability derivations, provider reads, renewal operations, or
+   credential-file writes, including across a ModelCatalog restart. The owning-host
+   runner never grants a new attempt lease until it releases the prior lease. A
+   completion can mutate state only when its generation matches the active generation
+   for that key; a late completion from an older generation is discarded.
 
 8. **Forced means post-admission evidence.** A successful
    `model-catalog-refresh` response is based on an attempt that started after the
@@ -236,12 +257,14 @@ diagnosis.
    it starts requires a later attempt. Coalescing never changes the result or scope.
 
 10. **Restart is explicit.** A ModelCatalog process restart discards inventory and
-    probe history. Before the replacement process starts any boot attempt, the
-    lifecycle owner terminates and observes the exit of every capability task and
-    descendant provider transport owned by the prior process. Sending a cancellation
-    signal or discarding a late completion is not sufficient. Before any post-restart
-    attempt completes, each catalog reports `lastProbe.result=never_probed`; boot
-    probes may be active at the same time.
+    probe history, but it does not discard an owning-host attempt lease. A replacement
+    process may request a boot attempt immediately. The runner first applies its
+    five-second termination-and-reaping protocol to any prior lease. It starts new
+    credential or provider I/O only after it observes the old process group exit. If
+    cleanup is unconfirmed at five seconds, the boot attempt completes as
+    `probe_failed` / `attempt_cleanup_unconfirmed` and no new credential or provider
+    I/O starts. Before any post-restart attempt completes, each catalog reports
+    `lastProbe.result=never_probed`; boot probes may be active at the same time.
 
 11. **Forced probing does not perform a credential ceremony.** It uses the same
     credential lookup and provider-read path as automatic catalog derivation. The
@@ -298,14 +321,48 @@ The existing boot, read-expiry, and credential-present triggers use the same sta
 transition seam as forced probes. A list read that starts an expiry probe returns a
 snapshot that already shows that probe under `activeProbe`.
 
-The ModelCatalog lifecycle owner owns each capability task and every provider
-transport that task starts as one attempt unit. Normal completion, timeout, and
-restart cleanup do not release the catalog key until the owner observes all processes
-in that unit exit. On restart, the lifecycle owner drains every prior-process attempt
-unit before it permits the replacement ModelCatalog to start boot probes. This
-ordering prevents old and new provider I/O, Anthropic renewal, and credential-file
-writes from overlapping. Generation matching still rejects any stale completion
-message that arrives after cleanup.
+### Owning-host attempt runner
+
+Every catalog attempt runs through one internal attempt runner on the host that owns
+the catalog key. The runner holds the attempt lease and starts the capability task in
+a dedicated operating-system process group. For an SSH host, the remote runner owns
+the lease and process group; observing the local SSH client exit is not proof of
+remote cleanup. The runner outlives the SSH channel that requested the attempt. Only
+the authenticated internal ModelCatalog host-transport path can start, stop, or query
+runner leases; the public Gateway cannot address this seam directly.
+
+Normal completion releases the lease only after the runner reaps the task and its
+process group. Timeout, restart, and later requests against a retained lease use this
+single cleanup protocol:
+
+1. At cleanup start, send termination to the whole process group.
+2. At two seconds, if any member remains, send forced termination to the whole group.
+3. At five seconds, return `reaped` only if the owning host has observed every member
+   exit. Release the lease on `reaped`.
+4. Otherwise return `cleanup_unconfirmed`, retain the lease, and stop waiting.
+
+The caller enforces the same five-second deadline end to end, including local runner
+dispatch or SSH connection and command delivery. If it lacks a structured
+acknowledgement at that deadline, it stops the control transport and returns
+`cleanup_unconfirmed`; it does not extend cleanup to the provider transport's
+30-second bound.
+
+The caller maps `cleanup_unconfirmed` to `probe_failed` /
+`attempt_cleanup_unconfirmed`, clears `activeProbe`, and retains prior inventory. A
+later automatic or forced attempt asks the same runner to acquire the lease. If a
+prior lease remains, the runner repeats bounded cleanup. It grants the new lease only
+after it locally observes the old group reaped. If cleanup remains unconfirmed, the
+new request returns the same typed failure within five seconds and starts no
+credential or provider I/O.
+
+For SSH execution, the remote runner returns a structured reaping acknowledgement.
+A missing acknowledgement, including an SSH disconnect, is
+`cleanup_unconfirmed` for that caller. The remote runner may release the lease only
+from its own observed process state; a later caller must reacquire through that runner
+before it starts I/O. The runner returns only the closed acknowledgement or cause;
+attempt tokens, process identifiers, commands, paths, and raw process output do not
+enter catalog state or public output. Generation matching still rejects any stale
+completion message that arrives after cleanup.
 
 ### List projection
 
@@ -384,17 +441,19 @@ inventory from `tightbeam list`.
 
 Each HTTP provider read retains its existing 30-second bound. `ModelCatalog` owns a
 40-second execution deadline for each attempt, including credential lookup and remote
-host transport. When that deadline expires, the lifecycle owner terminates the
-capability task and every descendant provider transport. After it observes their
-exits, `ModelCatalog` atomically completes its active generation as `probe_failed`
-with `causeCode=attempt_timeout`.
+host transport. When that deadline expires, it asks the owning-host runner to apply
+the five-second cleanup protocol. A `reaped` acknowledgement completes the generation
+as `probe_failed` / `attempt_timeout`. `cleanup_unconfirmed` completes it as
+`probe_failed` / `attempt_cleanup_unconfirmed`; the caller treats the lease as
+unreleased until a later runner acquisition proves it safe.
 
-The gateway waits at most 85 seconds for the admitted key set. This covers the
-remainder of one already-active 40-second attempt plus the forced request's required
-40-second follow-up attempt and five seconds of termination and dispatch overhead. If
-the gateway wait expires before `ModelCatalog` returns every required result, the
-gateway returns the top-level error `model_catalog_refresh_wait_timeout`. The gateway
-does not fabricate a probe result or mutate catalog state. The caller may retry.
+The gateway waits at most 95 seconds for the admitted key set. This covers the
+remainder of one already-active 40-second execution window and its five-second
+cleanup, the forced request's required 40-second execution window and five-second
+cleanup, and five seconds of dispatch overhead. If the gateway wait expires before
+`ModelCatalog` returns every required result, the gateway returns the top-level error
+`model_catalog_refresh_wait_timeout`. The gateway does not fabricate a probe result
+or mutate catalog state. The caller may retry.
 
 The command is safe to retry. It does not promise exactly-once provider I/O.
 Concurrent requests can coalesce as invariant 9 defines. A process restart can end an
@@ -410,8 +469,11 @@ before a typed result enters `ModelCatalog`.
 - Provider HTTP 403 becomes `probe_failed` / `provider_forbidden`.
 - A probe subprocess sandbox denial that contains the structured connect-`EPERM`
   condition becomes `probe_failed` / `probe_network_forbidden`.
-- SSH host authentication failure becomes `probe_failed` /
-  `remote_host_auth_failed`.
+- SSH host authentication failure while starting an attempt with no retained lease
+  becomes `probe_failed` / `remote_host_auth_failed`.
+- During cleanup of a known lease, any missing `reaped` acknowledgement at the
+  five-second deadline, including SSH authentication or transport loss, becomes
+  `probe_failed` / `attempt_cleanup_unconfirmed`.
 - A transport deadline becomes `probe_failed` / `transport_timeout`.
 - A Codex response whose entries are all removed by the client-version filter becomes
   `probe_failed` / `client_version_filtered_empty`.
@@ -520,21 +582,24 @@ output.
 11. **Restart semantics are visible and retry-safe.**
 
     Given cached inventory, completed history, a forced caller, and an active
-    Anthropic attempt whose injected provider transport is blocked,
-    when the lifecycle owner restarts ModelCatalog,
-    then the scheduler's ordered event log shows the old capability task and every
-    descendant provider transport exit before the replacement process starts its boot
-    attempt, shows no overlap between old and new provider I/O, renewal, or
-    credential-file writes, shows that the new process exposes no pre-restart
-    inventory and reports `lastProbe.result=never_probed` until its boot attempt
-    completes, and shows that the new process accepts a retried forced command without
-    credential setup.
+    Anthropic attempt whose injected owning-host runner retains its lease and whose
+    task ignores normal termination,
+    when ModelCatalog restarts and its boot attempt requests that lease,
+    then the injected clock and runner log termination at zero seconds, forced
+    termination at two seconds, and one of these outcomes at five seconds: `reaped`
+    before any new credential lookup or provider I/O starts, or
+    `probe_failed` / `attempt_cleanup_unconfirmed` with the lease retained and no new
+    I/O. Given the unconfirmed outcome, when a forced request retries while cleanup
+    remains unconfirmed, then it returns the same typed failure within five seconds
+    and starts no credential or provider I/O; and when a later forced request observes
+    the old group reaped, then the runner releases the lease, starts the new attempt,
+    and does not repeat credential setup.
 
 12. **Network and authentication failures stay separate.**
 
     Given redacted real envelopes for client-side `bwrap` connect `EPERM`, probe-side
-    connect `EPERM`, SSH public-key rejection, provider HTTP 401, and provider HTTP
-    403,
+    connect `EPERM`, ordinary attempt-start SSH public-key rejection with no retained
+    lease, provider HTTP 401, and provider HTTP 403,
     when each path is exercised,
     then the client-side failure admits no request and mutates no catalog state; the
     other four classify as `probe_network_forbidden`, `remote_host_auth_failed`,
@@ -567,10 +632,11 @@ output.
 
 16. **Deterministic tests cover time and races.**
 
-    Given an injected wall clock, monotonic clock, transport, and task-completion
-    scheduler,
+    Given an injected wall clock, monotonic clock, owning-host runner, transport, and
+    task-completion scheduler,
     when catalog tests exercise boot, expiry, forced coalescing, late completion,
-    ModelCatalog timeout, gateway wait timeout, and restart,
+    ModelCatalog timeout, reaped and cleanup-unconfirmed outcomes, retained-lease
+    retry, gateway wait timeout, and restart,
     then no test depends on wall-clock sleep or a live provider and repeated runs
     produce the same state and response order.
 
@@ -578,11 +644,13 @@ output.
 
     Given an admitted forced request and injected clocks,
     when its capability task remains active for 40 seconds,
-    then the scheduler's ordered event log shows the lifecycle owner terminate the
-    task and every descendant provider transport, observe all exits, and only then
-    let `ModelCatalog` atomically record `probe_failed` / `attempt_timeout`; and given
-    a ModelCatalog test double that does not answer,
-    when the gateway wait reaches 85 seconds,
+    then the owning-host runner starts its five-second cleanup protocol; a `reaped`
+    acknowledgement records `probe_failed` / `attempt_timeout`, while an unconfirmed
+    cleanup records `probe_failed` / `attempt_cleanup_unconfirmed`, and the runner
+    grants no new lease until its local process table shows the old group absent; both
+    outcomes set `completedAt` no later than 45 seconds after `startedAt`; and given a
+    ModelCatalog test double that does not answer,
+    when the gateway wait reaches 95 seconds,
     then the gateway returns `model_catalog_refresh_wait_timeout` without fabricating
     a result or mutating catalog state.
 
@@ -608,6 +676,26 @@ output.
     never-probed, failed, rejected, unavailable, or stale catalog, run
     `model-catalog-refresh` for that host and provider, then read the new typed
     evidence. No operating-manual amendment lands before the command exists.
+
+20. **Production process ownership is proved locally and over SSH.**
+
+    Given the production owning-host runner on a local test host and a registered SSH
+    test host, plus a fixture helper that forks a descendant and ignores normal
+    termination,
+    when each runner applies cleanup,
+    then owning-host lifecycle evidence shows termination at cleanup start, forced
+    termination at two seconds, both fixture processes absent from the owning host by
+    five seconds, and a structured `reaped` acknowledgement before any replacement
+    helper starts. Given an SSH connection that drops before that acknowledgement,
+    when the caller reaches its cleanup deadline,
+    then its result is `probe_failed` / `attempt_cleanup_unconfirmed`; and when a
+    replacement attempt later reaches the remote runner, then the runner grants its
+    lease only after its local process table shows the old group absent. Verification
+    proves that no replacement credential lookup, renewal, credential-file write, or
+    provider process overlaps the old group, that the runner survives the initiating
+    SSH-channel exit, and that the five-second caller deadline includes SSH setup and
+    delivery. Verification reads the owning-host runner record and process table; a
+    local SSH-client exit or an injected scheduler log alone does not pass this case.
 
 ## Open Questions
 
