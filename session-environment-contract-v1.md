@@ -57,8 +57,9 @@ mechanism.
 
 ## Invariants
 
-1. A capability is present only when an authorized row projects it or a bounded
-   probe observes it for the current evidence key.
+1. A capability is present only when a bounded doctor probe observes it for the
+   current evidence key. Authorized rows define the effective environment and
+   contribute to the evidence key; they never prove a tool capability.
 2. Guidance, repository text, login-shell state, installation elsewhere, and a
    prior session's observation are not capability evidence.
 3. The substrate reports facts only. It emits no aggregate `ready` boolean and
@@ -90,7 +91,8 @@ the acceptance example: prose naming `engram` cannot make it resolvable.
 ### Projection actor and timing
 
 The gateway assembles the `environment` object from existing session placement,
-model, authorized-row, and doctor evidence. It attaches the object to the
+model, and authorized rows, and assembles requirement status only from bounded
+doctor evidence for the current evidence key. It attaches the object to the
 existing authenticated session list/read response and corresponding wire row.
 
 Session reads are non-mutating. They do not execute a command, refresh a probe,
@@ -119,15 +121,17 @@ environment:
       declaredBy: harness_registry | repository_gate
       status: available | unavailable | probe_failed | unknown
       observedAt: epoch milliseconds or null
-      source: projected_row | doctor_probe | none
+      source: doctor_probe | none
       failure: not_found | not_executable | timed_out | refused | transport_failed | null
 ```
 
 No other status, source, or failure value is valid. `requirements` contains only
-declared requirements. `unknown` means there is no applicable observation for
-the current evidence key. `unavailable` means the bounded check completed and
-proved absence or non-executability. `probe_failed` means the check could not
-make that observation; it does not mean unavailable.
+declared requirements. `available`, `unavailable`, and `probe_failed` always
+have `source=doctor_probe`. `unknown` always has `source=none` and means there
+is no applicable doctor observation for the current evidence key. An authorized
+row alone never changes `unknown` to another status. `unavailable` means the
+bounded check completed and proved absence or non-executability. `probe_failed`
+means the check could not make that observation; it does not mean unavailable.
 
 `observedAt` is evidence time, not a freshness judgment. The substrate applies
 no age threshold. Agents may weigh age. A session-generation or authorized-row
@@ -188,18 +192,22 @@ the shipped field and command names only. No other guidance home is amended.
    records `unavailable`; timeout/transport/refusal records `probe_failed`; no
    applicable observation records `unknown`.
 7. Listing a session performs no probe and causes no environment mutation.
-8. A changed session generation or authorized-row revision prevents reuse of
-   earlier probe status and projects `unknown`.
-9. Unknown tool names and tools mentioned only in prose never enter
+8. An authorized environment or toolchain row alone never proves a declared
+   capability: before a bounded doctor observation, the requirement projects
+   `status=unknown` and `source=none`.
+9. A changed session generation or authorized-row revision prevents reuse of
+   earlier probe status and projects `status=unknown` and `source=none` until a
+   new bounded doctor observation records evidence for the new evidence key.
+10. Unknown tool names and tools mentioned only in prose never enter
    `requirements`.
-10. Tests plant secrets in overlay values, probe arguments, stdout, stderr,
+11. Tests plant secrets in overlay values, probe arguments, stdout, stderr,
     provider bodies, and exceptions; none appear in storage, list/read output,
     wire output, logs, or failure fields.
-11. A principal who cannot read a session cannot read its environment object.
-12. No aggregate readiness verdict, refusal, wake steering, or action gate is
+12. A principal who cannot read a session cannot read its environment object.
+13. No aggregate readiness verdict, refusal, wake steering, or action gate is
     derived from the object.
-13. Canonical gate tests name only the four scrubbed variable classes above.
-14. The shipping candidate amends only `docs/ONBOARDING.md` and uses only the
+14. Canonical gate tests name only the four scrubbed variable classes above.
+15. The shipping candidate amends only `docs/ONBOARDING.md` and uses only the
     actual shipped list/read and doctor field names.
 
 ## Open questions
