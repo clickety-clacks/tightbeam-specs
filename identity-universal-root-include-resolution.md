@@ -46,6 +46,10 @@ Its settled rulings are `resolve-both-shared-semantics`,
   returns rendered bytes plus provenance.
 - **Root reachability**: a universal-root fragment occurs in the archetype
   guidance render graph through an explicit include, directly or transitively.
+- **Universal-root occurrence**: one resolver traversal into a universal-root
+  fragment through an explicit include path. A direct directive and a
+  transitive directive path each count as an occurrence; it is not inferred
+  from matching rendered prose.
 - **Render contract**: the versioned composition rule named
   `universal-root-render-v1`: render archetype guidance first, append the
   engineering activity-table section when that existing feature applies, then
@@ -56,6 +60,14 @@ Its settled rulings are `resolve-both-shared-semantics`,
   guidance UTF-8 bytes.
 - **Candidate tree**: the identity working tree or exact Git commit proposed by
   one identity mutation seam before `tightbeam/live` moves.
+- **Canonical specification set**: this one-file set,
+  `identity-universal-root-include-resolution.md`, in the `tightbeam-specs`
+  repository. No companion specification is authoritative for this feature.
+- **Validation-publication marker**: one durable record at the existing
+  `AdminProjection` publication-stamp seam. Its key is the operation invocation
+  ID, candidate commit OID, and expected prior `tightbeam/live` OID. Its fields
+  include principal, validation result, typed cause when denied, and terminal
+  state `accepted` or `denied`; it never contains guidance bytes.
 - **Include provenance**: the root origin plus every traversed
   `fragment-name`, source path, and one-based line number in include order.
 
@@ -86,8 +98,10 @@ Its settled rulings are `resolve-both-shared-semantics`,
    named fragment. It trims only the included fragment's terminal newline to
    preserve the existing join behavior.
 5. The renderer expands each ordinary include occurrence. It does not globally
-   de-duplicate ordinary fragments. It composes each universal root at most once:
-   an explicitly reachable root is not appended again.
+   de-duplicate ordinary fragments. Validation rejects a second
+   universal-root occurrence of the same root with `identity_include_invalid`;
+   the first occurrence remains the only reachable occurrence and is not
+   appended again. It does not silently suppress the second directive.
 6. The include graph rooted at either universal root must not reach either
    universal-root name. Validation rejects this configuration with the typed
    error rather than creating an order-dependent second composition path.
@@ -102,13 +116,19 @@ Its settled rulings are `resolve-both-shared-semantics`,
    universal roots against one candidate tree before it creates a candidate
    commit. The sole publication gate revalidates the exact candidate commit
    immediately before it advances `tightbeam/live`.
-10. A failed validation leaves `tightbeam/live` unchanged. `identity edit`,
-   scaffold, and unlearn restore their pre-mutation working bytes. Learn and a
+10. A failed validation leaves `tightbeam/live` unchanged. Fresh `identity init`
+    creates and validates a candidate repository outside the canonical identity
+    path; it atomically exposes that repository at the canonical path only after
+    validation succeeds. On failure it removes only the candidate repository,
+    leaving no canonical identity repository or initialization marker.
+    `identity edit`,
+    scaffold, and unlearn restore their pre-mutation working bytes. Learn and a
    non-conflicted relearn abort their uncommitted merge/import. A failed
    `identity relearn --resolve` leaves its conflict open for correction.
-11. Each accepted or denied validation records one durable identity event with
-    the acting principal, candidate revision when one exists, result, and the
-    typed cause. The event carries no full guidance body.
+11. Each validation-publication marker reaches exactly one terminal result.
+    Its terminal result records the acting principal, candidate revision when
+    one exists, accepted or denied result, and typed cause. A pending marker is
+    not accepted evidence. The marker carries no full guidance body.
 12. A session with a missing render stamp, a different render-contract, a
     different identity revision, or a different rendered-guidance digest than
     the expected served render is stale.
@@ -128,10 +148,13 @@ An invalid directive, missing fragment, duplicate catalog name, active-stack
 cycle, or depth overflow returns the typed error; callers do not catch that
 error and substitute raw text.
 
-Universal roots cannot include either universal-root name. This is the smallest
-closure for the otherwise ambiguous cross-root ordering: deleting that graph
-surface preserves the fixed `operating-model.md`, then `operating-manual.md`
-order; accepting duplicate root bytes violates the exact-once ruling.
+Universal roots cannot include either universal-root name. The renderer also
+rejects a second explicit occurrence of one universal root while tracking
+reachability. This is the smallest closure for the otherwise ambiguous
+cross-root ordering: rejecting the second directive preserves the fixed
+`operating-model.md`, then `operating-manual.md` order; accepting duplicate root
+bytes violates the exact-once ruling, while silent suppression would conceal an
+invalid candidate.
 
 The composition algorithm is:
 
@@ -152,6 +175,10 @@ One validator constructs the candidate catalog, validates the duplicate-name
 rule, and renders every archetype plus each universal root. The validator is
 called by `identity init`, `identity edit`, kungfu scaffold, learn, unlearn,
 relearn, and relearn conflict resolution before their mutable commit boundary.
+Fresh init stages its seed repository beside, not at, the canonical identity
+path; it creates the seed commit and required refs there, validates that exact
+candidate, and then atomically renames the complete candidate into the
+canonical path. A failed candidate is discarded before the path is exposed.
 The publication seam receives an exact commit OID and runs the same validator
 against that OID before it fast-forwards `tightbeam/live`.
 
@@ -160,6 +187,23 @@ provenance. It must not create a live revision. A pre-commit caller restores or
 aborts as stated in Invariant 9. A publish-gate failure leaves the already
 published revision and every session's current context unchanged. This uses the
 existing identity mutation seam; no parallel validator or publisher is added.
+
+For a valid publish candidate, the gateway creates or reads the
+validation-publication marker keyed by the invocation, candidate OID, and
+expected prior live OID. It records `pending` only after validation succeeds,
+then calls the existing `Identity.publish_live!` live-ref move with that expected
+prior OID, and finally marks the same record `accepted` through the existing
+`AdminProjection.stamp_publication` path. Repeating the invocation reads the
+same marker: an `accepted` marker is a no-op, and a `pending` marker reconciles
+the live ref before doing anything else. If the ref still equals the expected
+prior OID, replay validates the same candidate, advances that ref, and finalizes
+the marker. If the ref already equals the candidate OID, replay finalizes the
+marker without moving Git again. Any other ref value finalizes the marker
+`denied` with a typed publication-conflict cause and leaves the ref unchanged.
+Thus a crash after `pending` but before the ref move replays the move, and a
+crash after the ref move but before `accepted` finalizes the already-moved
+candidate. The marker is the durable validation evidence only in a terminal
+state.
 
 ### Stamps, status, and refresh
 
@@ -214,6 +258,9 @@ sole live pointer mutation remains publication of `tightbeam/live`.
    when the snapshot is rendered, then that root's rendered content occurs once
    and the automatic append omits it. Given a normal fragment included twice,
    when rendered, then its content occurs twice at the two directive positions.
+   Given guidance with two explicit occurrences of the same universal root,
+   when validation runs, then it rejects with `identity_include_invalid`, names
+   both directive provenance paths and lines, and returns no partial guidance.
 
 4. Given nested valid includes, when rendered, then the output preserves
    ordinary-line order. Given each of a malformed include-like line, a missing
@@ -223,12 +270,24 @@ sole live pointer mutation remains publication of `tightbeam/live`.
    `identity_include_invalid` and the required provenance and it returns no
    partial guidance.
 
-5. Given an invalid candidate introduced through each identity mutation class,
-   when the operation reaches its commit boundary, then it reports denial,
-   records one causal event, restores or aborts its stated reversible state, and
+5. Given an invalid fresh-init candidate, when init reaches validation, then no
+   canonical identity directory, required identity ref, or initialization marker
+   exists. Given a valid fresh-init candidate, when validation succeeds, then
+   the canonical path first becomes visible with its complete required refs.
+   Given an invalid candidate introduced through each other identity mutation
+   class, when the operation reaches its commit boundary, then it reports denial,
+   records one denied validation-publication marker, restores or aborts its stated reversible state, and
    preserves the prior `main` and `tightbeam/live` revisions. Given an invalid
    exact candidate at the publication gate, when publication is attempted, then
-   `tightbeam/live` remains unchanged.
+   `tightbeam/live` remains unchanged. Given a valid publication that crashes
+   after its pending marker and before the live-ref move, when the same
+   invocation replays, then it advances the expected ref once and leaves one
+   accepted marker. Given a valid publication that crashes after the live-ref
+   move and before marker acceptance, when the same invocation replays, then it
+   does not move Git again and leaves that same marker accepted. Given a replay
+   whose ref differs from both expected prior and candidate OIDs, when it
+   reconciles, then it leaves the ref unchanged and records one denied marker
+   with the typed conflict cause.
 
 6. Given an identity revision that is valid and published, when a session is
    provisioned, then its recorded revision, contract `universal-root-render-v1`,
