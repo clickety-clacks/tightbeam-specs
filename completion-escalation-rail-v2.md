@@ -162,7 +162,7 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
    authority depends on them.
 4. **Bump and recreate.** Adding `assignments.completionReportToSessionKey` and widening
    the closed wake-cancellation source/disposition checks changes existing table shapes.
-   The build stamps `coordination-fabric-v1-phase1-v4`. A database stamped with another
+   The build stamps `coordination-fabric-v1-phase1-v6`. A database stamped with another
    shape is refused before DDL or feature writes and must be moved aside and recreated.
 5. **Route only from durable declarations.** A non-root completion's parent channel is
    exactly the holder session's `spawnedBy`. The optional commission channel is exactly
@@ -1059,8 +1059,8 @@ composition registers it after `Assignments`. The build also adds nullable
 `assignments.completionReportToSessionKey` and admits `completion_transition` in the
 closed `wake_cancellations` source/disposition checks. SQLite cannot widen those
 existing shapes through `CREATE TABLE IF NOT EXISTS`. Under Mike's waiver, Schema bumps
-the exact stamp from `coordination-fabric-v1-phase1-v3` to
-`coordination-fabric-v1-phase1-v4`. A database carrying the prior or any other stamp is
+the exact stamp from `coordination-fabric-v1-phase1-v5` to
+`coordination-fabric-v1-phase1-v6`. A database carrying the prior or any other stamp is
 refused by name before schema-module DDL or feature queries run. Tightbeam does not
 alter, rebuild, sniff, copy, or repair it. The operator moves it aside and lets this
 build create a fresh database, as the existing shape refusal instructs
@@ -1674,12 +1674,12 @@ existing bracket seam. Neither cancellation is authorized by the other mechanism
 
 ### A20 — Compatibility and shape refusal
 
-Given a database stamped `coordination-fabric-v1-phase1-v3`, including one whose
+Given a database stamped `coordination-fabric-v1-phase1-v5`, including one whose
 `wake_cancellations` table carries the old closed checks, when the new build boots, then
 Schema refuses it before any DDL, assignment query, cancellation insert, or completion
 producer call. The error names both stamps and says to move the database aside and let it
 be recreated. Given an empty database, when the new build boots, then it stamps
-`coordination-fabric-v1-phase1-v4` before table creation and creates the new assignment,
+`coordination-fabric-v1-phase1-v6` before table creation and creates the new assignment,
 cancellation, and completion shapes. A fixture inserts and validates each R8
 compatibility pair against the real recreated SQLite schema. The build performs no
 ALTER, table copy, data migration, or historical completion backfill. Current ordinary
