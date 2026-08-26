@@ -359,10 +359,13 @@ For each assignment completion committed after `CompletionEscalation.ensure_sche
 has succeeded, exactly one `completion_escalations` row exists. The assignment has
 `outcome='completed'` and a non-null `closingAttestId`. The completion row's
 `dedupeKey` is `completion:<closingAttestId>`. A unique constraint on
-`closingAttestId` and a unique constraint on `assignmentId` make a second record
-unrepresentable. A partial unique index on `childSessionKey` where `status='open'`
-makes two live disposition requests for one child unrepresentable. Historical
-`notice-only`, `acknowledged`, `retained_root`, and `superseded` rows can coexist.
+`closingAttestId` makes a replay of the same closing attest unrepresentable.
+`assignmentId` is intentionally non-unique. If a completed assignment reopens and
+completes again, the later completion creates a new row for the same assignment with a
+distinct `closingAttestId` and `dedupeKey`; every earlier row remains immutable durable
+history. A partial unique index on `childSessionKey` where `status='open'` makes two
+live disposition requests for one child unrepresentable. Historical `notice-only`,
+`acknowledged`, `retained_root`, and `superseded` rows can coexist.
 
 For each wake id stored in `currentParentNoticeWakeId`, `reportToNoticeWakeId`, or
 `deadlineWakeId`, exactly one
@@ -610,23 +613,29 @@ Elapsed time never means the parent is incapable or that retire is correct. An e
 parent that remains active is re-notified. An unavailable exact parent records the
 named failure and is not silently replaced because a timer elapsed.
 
-### R10 — Assignment-open race supersedes in the opening transaction
+### R10 — Assignment open or reopen supersedes in its transaction
 
-Every successful `assign` and `dispatch` insert for a child session calls the one
-`supersede_open_for_assignment_in_txn/3` seam after the assignment, effect, and file rows
-exist and before the supervision transition. The seam changes an open completion request
-for that child to `superseded/new-assignment`. It first writes the typed completion
-transition and its lifecycle observability mirror. It then cancels the deadline and any
-pending parent or report-to notice through `obligation_disposed`, with source and
-disposition `completion_transition`, in that same transaction. The row stores the new
-assignment id and transaction timestamp as
-`supersededAt`. The lifecycle row records that id and its typed opener principal. A
-refused cancellation raises and rolls back the assignment insert and the request
-transition (`assignments.ex:918-1057`).
+Every successful `assign` and `dispatch` insert and every successful
+`reopen-assignment` transition for a child session calls the one
+`supersede_open_for_assignment_in_txn/3` seam. An insert calls it after the assignment,
+effect, and file rows exist and before the supervision transition
+(`assignments.ex:918-1057`). A reopen calls it after the guarded assignment update
+changes the outcome to `open` and before the
+supervision transition. The seam changes an open completion request for that child to
+`superseded/new-assignment`. It first writes the typed completion transition and its
+lifecycle observability mirror. It then cancels the deadline and any pending parent or
+report-to notice through `obligation_disposed`, with source and disposition
+`completion_transition`, in that same transaction. The row stores the opened or
+reopened assignment id and transaction timestamp as `supersededAt`. The lifecycle row
+records that id and the typed principal that opened or reopened the assignment. A
+refused cancellation raises and rolls back the assignment insert or guarded reopen
+update and the request transition.
 
-If a new assignment and a disposition race, database serialization permits one result:
+If assignment opening or reopening and a disposition race, database serialization
+permits one result:
 
-- assignment wins: disposition returns `request_superseded` and enacts no disposition;
+- opening or reopening wins: disposition returns `request_superseded` and enacts no
+  disposition;
 - retain wins: the later assignment commits through the existing open path;
 - retire wins: the later assignment fails the existing active-holder interlock;
 - park wins: the future park contract defines and enforces the assignment interlock.
@@ -1127,7 +1136,7 @@ field.
 CREATE TABLE completion_escalations (
   id                        TEXT PRIMARY KEY,
   dedupeKey                 TEXT NOT NULL UNIQUE,
-  assignmentId              TEXT NOT NULL UNIQUE REFERENCES assignments(id),
+  assignmentId              TEXT NOT NULL REFERENCES assignments(id),
   workItemId                TEXT NULL REFERENCES work_items(id),
   childSessionKey           TEXT NOT NULL REFERENCES sessions(sessionKey),
   remainingOpenAssignments INTEGER NOT NULL CHECK (remainingOpenAssignments >= 0),
@@ -1231,6 +1240,8 @@ CREATE TABLE completion_escalations (
 );
 CREATE INDEX completion_escalations_child_status
   ON completion_escalations(childSessionKey, status);
+CREATE INDEX completion_escalations_assignment
+  ON completion_escalations(assignmentId);
 CREATE UNIQUE INDEX completion_escalations_one_open_child
   ON completion_escalations(childSessionKey) WHERE status = 'open';
 
@@ -1293,8 +1304,10 @@ record. A database
 write failure rolls back the entire terminal transition, as any failure inside the
 existing atomic close does.
 
-Assignment-open calls the supersede seam after it inserts assignment, effect, and file
-rows and before it commits the supervision transition. Retirement calls the
+Assignment opening by `assign` or `dispatch` calls the supersede seam after it inserts
+the assignment, effect, and file rows and before it commits the supervision transition.
+`reopen-assignment` calls the same seam after its guarded update changes the assignment
+to `open` and before it commits the supervision transition. Retirement calls the
 acknowledgment seam before `Org.retire_in_txn/4` changes the session state and performs
 typed target-wake cancellation. Before that transaction, Gateway resolves the owner and
 serialized acting principal from `call.principal` under R3. These calls share the caller's
@@ -1373,7 +1386,7 @@ Each acceptance case uses the real SQLite DB, real assignment handler, real wake
 real gateway delivery transaction, and real turn ledger. A hand-written notification
 object is not a fixture.
 
-Traceability is two-way: R1→A1,A2,A4; R2→A2,A3; R3→A5,A14,A21; R4→A1,A2; R5→A5-A8,A23,A24;
+Traceability is two-way: R1→A1,A2,A4,A12; R2→A2,A3; R3→A5,A14,A21; R4→A1,A2; R5→A5-A8,A23,A24;
 R6→A7,A19; R7→A6,A8-A10,A17,A23; R8→A4,A10-A14,A17; R9→A8,A11; R10→A12;
 R11→A14,A16,A24; R12→A13-A15,A24; R13→A14; R14→A10,A17,A18;
 R15→A5,A12-A14,A18,A22-A24; R16→A2,A24; R17→A20; and R18→A21. Each acceptance
@@ -1533,7 +1546,7 @@ with `target_unresolvable`, source kind `scheduler_delivery`, requester
 count remains one or zero exactly as generation 0 established; no report-to notice is
 reissued.
 
-### A12 — New assignment supersedes atomically
+### A12 — Assignment open or reopen supersedes atomically
 
 Given an open empty-slate request, when a new assignment to `C` commits, then that same
 transaction marks the request `superseded/new-assignment`, cancels the deadline and any
@@ -1549,6 +1562,20 @@ when its delayed delivery callback starts afterward, the delivery transaction ob
 the superseded status and inserts no message or turn. If delivery commits first, its
 turn precedes the supersede transaction. No pending notice or later deadline presents
 the stale request.
+
+Given completed assignment `A` left completion row `H0` open and `C` has no other open
+assignments, when
+`reopen-assignment A` commits, then that same transaction changes `A` to `open`, marks
+the request `superseded/new-assignment`, stores `A` as `supersededByAssignmentId`,
+records the typed reopen principal in the lifecycle row, and performs the same deadline
+and notice cancellations. The assignment's immutable report-to declaration does not
+change. If any attempted pending-wake cancellation is refused, then the guarded reopen
+update, supersede lifecycle row, request transition, and all cancellation rows roll
+back, so `A` remains completed and `H0` remains open. When `A` later completes again,
+the handler creates row `H1` with the same `assignmentId`, a distinct
+`closingAttestId` and `dedupeKey`, and `status='open'`. Row `H0` remains immutable
+`superseded/new-assignment` history. Exactly two completion rows exist for `A`, and only
+`H1` is open.
 
 ### A13 — Retain
 
