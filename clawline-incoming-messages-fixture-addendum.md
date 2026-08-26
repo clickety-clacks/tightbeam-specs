@@ -22,6 +22,20 @@ Authority:
   Spec assignment: `asg_e0b2dd4d-e4d2-444a-a8fc-f4eab4e82f81`.
   Spirit verdict: `att_6b8a8705-c3a0-48b0-bc0d-eda5b7d7852b`. Reconciliation:
   `att_def5abfb-9dbf-4a10-be11-d5b457486849`.
+- Reviewed residual disposition: artifact `art_5c219483` at commit
+  `c0069d5ba23695d232f37d6a5ba16919744a4741`, SHA-256
+  `b8410e8eb4c35d53eafebce489fa1a519e68a36af1d87f950c0dce754bac33fc`;
+  completion `att_6ce73eec-8c16-46f6-84c1-51f3f4722ce8`; reviewed-clean
+  verdict `att_5a4c74f6-936d-4b6e-abcc-9c950aed378e`; report
+  `art_f41bce99`.
+- Environment-variant correction work item:
+  `wi_b1e56963-82af-46b9-97d8-036acb2a048a`. Spec assignment:
+  `asg_6e8ab8d7-9d3e-45d0-9ce5-ac0ca1cefb88`. Spirit verdict:
+  `att_18068a8a-e40f-4c19-b4e1-069b0fa1949c`.
+- Fresh successor evidence: coder drift
+  `att_3e50fdec-e97c-4c01-9ddd-6477495707e7`; direct-green log
+  `art_6b4bf649` and result `art_84c59166`; focused log `art_f0e6e7b7` and
+  result `art_897be6ee`.
 - R1 code evidence: A16 stop `att_783930ea-955b-42bb-bfca-37f19d119ff0`;
   direct-green log `art_7ff30ca3` and result `art_fd741d91`; focused-red
   log `art_b5e4726b` and result `art_068b78e4`.
@@ -159,14 +173,18 @@ closure outside the R1 seam.
     production lines of repair.
 14. The corrected R1 direct result is valid. It reports 4 total tests, 4
     passes, zero failures, zero skips, and zero expected failures.
-15. The R1 focused result is valid. It reports 164 total tests, 131 passes, 33
+15. The reviewed R1 focused result is valid. It reports 164 total tests, 131
+    passes, 33 failures, zero skips, and zero expected failures. The fresh
+    successor result is valid. It reports 164 total tests, 132 passes, 32
     failures, zero skips, and zero expected failures.
-16. Thirty focused failures repeat an exact-S1 focused identifier and failure
-    signature. Sixteen exact-S1 focused failures are absent after R1.
+16. The two R1 focused results share 32 failure identifiers and signatures.
+    Sixteen exact-S1 focused failures are absent from each result.
 17. `historyResetPreservesCursorBackedActiveStreamWithEmptyReplayWindow()`
     failed in the exact-S1 combined run, passed in the exact-S1 focused run,
-    and failed in the R1 focused run with the same assertion. Its result varies
-    with the pre-R1 suite schedule.
+    failed in the reviewed R1 focused run, and passed in the fresh successor
+    summary. The fresh raw output records one failing clone and one passing
+    clone. Each observed failure has the row 14 assertion signature. The test
+    result varies with the pre-R1 suite schedule.
 18. Two R1 focused failures are outside the exact-S1 48-identifier union.
     Both fixtures emit an incoming message after a stream snapshot removes the
     message's session. R1 forwards that message once to unchanged
@@ -302,6 +320,11 @@ This ledger classifies every failure in `art_068b78e4` by identifier and
 observed assertion. “Historical” means that exact-S1 focused evidence contains
 the same identifier and assertion. Timestamp values may differ while the
 assertion and observed state stay the same.
+
+Rows 1 through 13 and 15 through 33 form the stable 32-failure set. Row 14 is
+the sole schedule-variant row. A focused result may omit row 14 because the
+test passes. If row 14 fails, its identifier and assertion signature must
+match this ledger.
 
 | # | Failed identifier | Observed assertion signature | Classification | Owner and disposition |
 | --- | --- | --- | --- | --- |
@@ -458,12 +481,13 @@ simulator identifier, counts, and exit status.
 
 The direct and protected commands are zero-failure R1 completion gates. The
 focused command is a non-vacuous scope diagnostic: it must report 164 total
-tests, zero skips, and zero expected failures. At the preserved R1 revision it
-must report 131 passes and the exact 33 failures in section 2.1. A new
-identifier, a changed assertion signature, or an I1-I5 failure returns to spec
-review. The combined command belongs to parent closure after the separately
-classified residual roots are reviewed; its zero-failure result is not a standalone
-R1 code-review precondition.
+tests, zero skips, and zero expected failures. It must report either 132 passes
+and the stable 32-failure set from section 2.1, or 131 passes and those 32
+failures plus row 14 with its exact reviewed signature. A new identifier, a
+changed assertion signature, or an I1-I5 failure returns to spec review. The
+combined command belongs to parent closure after the separately classified
+residual roots are reviewed; its zero-failure result is not a standalone R1
+code-review precondition.
 
 ### 6. Ordering and integration
 
@@ -473,7 +497,7 @@ The product owner applies this order:
 2. R1 code starts from exact commit `061d1230`.
 3. R1 receives independently reviewed-clean at its exact code revision after
    the direct and protected commands pass, static review satisfies I1 through
-   I5, and the focused diagnostic matches section 2.1 without a new residual.
+   I5, and the focused diagnostic satisfies A6 without a new residual.
 4. The product owner keeps the 33 residuals outside R1 and outside existing
    S2-S8 cards. A later behavior change requires its own reviewed root
    classification and assignment.
@@ -517,10 +541,17 @@ the direct command, then the result reports total=4, passed=4, failed=0,
 skipped=0, and zero expected failures.
 
 **A6 — Focused diagnostic.** Given the preserved R1 revision and a clean
-derived-data path, when the coder runs the focused command, then the result
-reports total=164, passed=131, failed=33, skipped=0, and zero expected
-failures. Each failure identifier and assertion matches section 2.1. The four
-direct tests and the four S1 proof tests named in Assumption 8 pass.
+derived-data path, when the coder runs the focused command, then it reports
+total=164, skipped=0, and zero expected failures. The result satisfies exactly
+one of these outcomes:
+
+- It reports passed=132 and failed=32. The failures match rows 1 through 13
+  and 15 through 33 in section 2.1 by identifier and assertion signature.
+- It reports passed=131 and failed=33. The failures match all section 2.1 rows
+  by identifier and assertion signature.
+
+In either outcome, the four direct tests and the four S1 proof tests named in
+Assumption 8 pass.
 
 **A7 — Combined parent boundary.** Given reviewed-clean R1, when the product
 owner schedules combined closure, then the owner first binds each remaining
@@ -572,8 +603,9 @@ change.
 when the direct or protected command reports one failure, then the code author
 files the exact evidence and returns to spec review. The author does the same
 when the focused diagnostic contains an I1-I5 failure, a new identifier, or a
-changed assertion signature. A section 2.1 match does not authorize another
-R1 file or mutation seam.
+changed assertion signature. The pass or exact reviewed failure of row 14 does
+not trigger this stop. A section 2.1 match does not authorize another R1 file
+or mutation seam.
 
 **A17 — Ordered review.** Given the full-green repair graph, when R1 code
 starts, then S1 is already reviewed-clean at `061d1230`. When S7 or S8 starts
