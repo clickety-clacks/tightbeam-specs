@@ -469,10 +469,10 @@ xcodebuild test \
   -derivedDataPath <OWNED_TOOL_PILL_DERIVED_DATA> \
   -resultBundlePath <OWNED_TOOL_PILL_RESULT_BUNDLE> \
   -parallel-testing-enabled YES \
-  -only-testing:ClawlineTests/ChatViewModelTests/liveAgentProgressUpdatesAndClears \
-  -only-testing:ClawlineTests/ProviderServiceTests/agentProgressDoesNotAdvanceReplayCursor \
-  -only-testing:ClawlineTests/ProviderServiceTests/structuredToolProgressPreservesNameAndArgumentsSummary \
-  -only-testing:ClawlineTests/ClawlineTests/toolActivityRendersDistinctVerbAndArgumentsPill
+  '-only-testing:ClawlineTests/ChatViewModelTests/liveAgentProgressUpdatesAndClears()' \
+  '-only-testing:ClawlineTests/ProviderServiceTests/agentProgressDoesNotAdvanceReplayCursor()' \
+  '-only-testing:ClawlineTests/ProviderServiceTests/structuredToolProgressPreservesNameAndArgumentsSummary()' \
+  '-only-testing:ClawlineTests/ClawlineTests/toolActivityRendersDistinctVerbAndArgumentsPill()'
 ```
 
 The runner retains the complete log and valid `.xcresult` from each command.
@@ -579,9 +579,11 @@ and a height greater than the summary-only indicator height.
 when Clawline receives a matching final assistant message or terminal progress
 state, then `liveProgress` for that session becomes absent.
 
-**A12 — Protected tool-pill run.** Given the exact R1 revision, when the coder
-runs the protected parent A7-A10 command, then all four named tests pass with
-zero failures. The R1 diff does not touch a tool-pill seam.
+**A12 — Protected tool-pill run.** Given the exact R1 revision, a fresh
+derived-data path, and a fresh result-bundle path, when the coder runs the
+protected parent A7-A10 command, then the result reports total=4, passed=4,
+failed=0, skipped=0, and expectedFailures=0. The R1 diff does not touch a
+tool-pill seam.
 
 **A13 — Exact file boundary.** Given the R1 code diff, when the reviewer lists
 changed paths, then it lists only
