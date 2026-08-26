@@ -32,6 +32,12 @@ narrowing valid-empty semantics by harness, preserving existing credential renew
 typing actor and origin independently, deleting an unused cause code, and deferring
 agent guidance until the public command exists.
 
+Exact-tip review verdict `att_a2393591-2d30-49b6-ba02-e04d8ec4ba4f` requested two
+more changes against commit `1be78383879e45fa356f8627892b67152a9c7e8b`.
+This revision makes `credential_present` origin null because its reserved fact does
+not carry an initiating author, and it requires observed termination of an old
+attempt and its descendant transport before replacement boot I/O starts.
+
 ## Goal
 
 Make the difference between cached model inventory and an active provider probe
@@ -93,7 +99,9 @@ attempt has a start time, a trigger, an actor, an optional origin, and one termi
 result.
 
 **Active probe** — the probe attempt currently performing credential lookup or
-provider I/O for a catalog key. At most one probe is active for a catalog key.
+provider I/O for a catalog key. An attempt remains active until its capability task
+and every descendant provider transport have exited. At most one probe is active for
+a catalog key.
 
 **Probe trigger** — the event that requested an attempt. Its closed values are
 `boot`, `ttl_read`, `credential_present`, and `forced`.
@@ -107,9 +115,9 @@ starts those attempts.
 **Probe origin** — the optional public attribution string carried separately from
 the actor, such as `agent:<role>`, `user:<id>`, or `process:<name>`. Forced probes
 copy the Gateway call origin. A trigger without a distinct public attribution uses
-null. A credential-present probe copies the condition fact's durable origin so the
-triggering author remains visible. Origin never replaces the actor used for
-authorization and accountability.
+null. A credential-present probe uses null because its reserved durable fact carries
+only `process:tightbeam`, not an initiating agent or user. Origin never replaces the
+actor used for authorization and accountability.
 
 **Last probe result** — the latest completed result for a catalog key, or
 `never_probed` when no attempt has completed since the current ModelCatalog process
@@ -215,9 +223,9 @@ diagnosis.
    result, timestamps, trigger, actor, origin, or staleness.
 
 7. **One attempt runs per catalog key.** A catalog key never has overlapping
-   capability derivations or provider reads. A completion can mutate state only when
-   its generation matches the active generation for that key; a late completion from
-   an older generation is discarded.
+   capability derivations or provider reads, including across a ModelCatalog restart.
+   A completion can mutate state only when its generation matches the active
+   generation for that key; a late completion from an older generation is discarded.
 
 8. **Forced means post-admission evidence.** A successful
    `model-catalog-refresh` response is based on an attempt that started after the
@@ -228,8 +236,12 @@ diagnosis.
    it starts requires a later attempt. Coalescing never changes the result or scope.
 
 10. **Restart is explicit.** A ModelCatalog process restart discards inventory and
-    probe history. Before any post-restart attempt completes, each catalog reports
-    `lastProbe.result=never_probed`; boot probes may be active at the same time.
+    probe history. Before the replacement process starts any boot attempt, the
+    lifecycle owner terminates and observes the exit of every capability task and
+    descendant provider transport owned by the prior process. Sending a cancellation
+    signal or discarding a late completion is not sufficient. Before any post-restart
+    attempt completes, each catalog reports `lastProbe.result=never_probed`; boot
+    probes may be active at the same time.
 
 11. **Forced probing does not perform a credential ceremony.** It uses the same
     credential lookup and provider-read path as automatic catalog derivation. The
@@ -240,9 +252,9 @@ diagnosis.
 
 12. **The projection is privacy-closed.** Catalog state and
     `model-catalog-refresh` output never include credential values, authorization
-    headers, response bodies, request URLs,
-    prompts, local credential paths, SSH destinations, or raw stdout/stderr. They
-    include only the fields and closed result and cause values defined here.
+    headers, response bodies, request URLs, prompts, local credential paths, SSH
+    destinations, or raw stdout/stderr. They include only the fields and closed
+    result and cause values defined here.
 
 13. **Existing model consumers remain compatible.** The shape and meaning of
     `models[host][harness]` do not change. New state appears in a sibling
@@ -285,6 +297,15 @@ separately.
 The existing boot, read-expiry, and credential-present triggers use the same state
 transition seam as forced probes. A list read that starts an expiry probe returns a
 snapshot that already shows that probe under `activeProbe`.
+
+The ModelCatalog lifecycle owner owns each capability task and every provider
+transport that task starts as one attempt unit. Normal completion, timeout, and
+restart cleanup do not release the catalog key until the owner observes all processes
+in that unit exit. On restart, the lifecycle owner drains every prior-process attempt
+unit before it permits the replacement ModelCatalog to start boot probes. This
+ordering prevents old and new provider I/O, Anthropic renewal, and credential-file
+writes from overlapping. Generation matching still rejects any stale completion
+message that arrives after cleanup.
 
 ### List projection
 
@@ -362,17 +383,18 @@ then returns the keys in ascending harness-name order. Each item contains `host`
 inventory from `tightbeam list`.
 
 Each HTTP provider read retains its existing 30-second bound. `ModelCatalog` owns a
-40-second overall deadline for each attempt, including credential lookup and remote
-host transport. When that deadline expires, `ModelCatalog` terminates the attempt and
-atomically completes its active generation as `probe_failed` with
-`causeCode=attempt_timeout`.
+40-second execution deadline for each attempt, including credential lookup and remote
+host transport. When that deadline expires, the lifecycle owner terminates the
+capability task and every descendant provider transport. After it observes their
+exits, `ModelCatalog` atomically completes its active generation as `probe_failed`
+with `causeCode=attempt_timeout`.
 
 The gateway waits at most 85 seconds for the admitted key set. This covers the
 remainder of one already-active 40-second attempt plus the forced request's required
-40-second follow-up attempt. If the gateway wait expires
-before `ModelCatalog` returns every required result, the gateway returns the top-level
-error `model_catalog_refresh_wait_timeout`. The gateway does not fabricate a probe result or
-mutate catalog state. The caller may retry.
+40-second follow-up attempt and five seconds of termination and dispatch overhead. If
+the gateway wait expires before `ModelCatalog` returns every required result, the
+gateway returns the top-level error `model_catalog_refresh_wait_timeout`. The gateway
+does not fabricate a probe result or mutate catalog state. The caller may retry.
 
 The command is safe to retry. It does not promise exactly-once provider I/O.
 Concurrent requests can coalesce as invariant 9 defines. A process restart can end an
@@ -467,7 +489,7 @@ output.
    credential-file write uses the existing internal probe and rotation-harvest seams;
    and when `tightbeam list` projects the forced attempt,
    then `actor` is the authenticated call principal and `origin` is the Gateway call
-   origin, while an automatic boot attempt has actor
+   origin, while automatic boot and `credential_present` attempts have actor
    `{kind: process, id: tightbeam}` and null origin.
 
 8. **A concurrent active probe cannot satisfy a forced request.**
@@ -497,11 +519,16 @@ output.
 
 11. **Restart semantics are visible and retry-safe.**
 
-    Given cached inventory, completed history, and a forced caller,
-    when ModelCatalog restarts before the caller receives a response,
-    then the new process exposes no pre-restart inventory, reports
-    `lastProbe.result=never_probed` until a boot attempt completes, and accepts a
-    retried forced command without credential setup.
+    Given cached inventory, completed history, a forced caller, and an active
+    Anthropic attempt whose injected provider transport is blocked,
+    when the lifecycle owner restarts ModelCatalog,
+    then the scheduler's ordered event log shows the old capability task and every
+    descendant provider transport exit before the replacement process starts its boot
+    attempt, shows no overlap between old and new provider I/O, renewal, or
+    credential-file writes, shows that the new process exposes no pre-restart
+    inventory and reports `lastProbe.result=never_probed` until its boot attempt
+    completes, and shows that the new process accepts a retried forced command without
+    credential setup.
 
 12. **Network and authentication failures stay separate.**
 
@@ -551,11 +578,13 @@ output.
 
     Given an admitted forced request and injected clocks,
     when its capability task remains active for 40 seconds,
-    then `ModelCatalog` terminates the task and atomically records `probe_failed` /
-    `attempt_timeout`; and given a ModelCatalog test double that does not answer,
+    then the scheduler's ordered event log shows the lifecycle owner terminate the
+    task and every descendant provider transport, observe all exits, and only then
+    let `ModelCatalog` atomically record `probe_failed` / `attempt_timeout`; and given
+    a ModelCatalog test double that does not answer,
     when the gateway wait reaches 85 seconds,
-    then the gateway returns `model_catalog_refresh_wait_timeout` without fabricating a
-    result or mutating catalog state.
+    then the gateway returns `model_catalog_refresh_wait_timeout` without fabricating
+    a result or mutating catalog state.
 
 18. **A real provider smoke proves the external path.**
 
@@ -587,6 +616,6 @@ output.
    may infer 0.1.8, active 0.1 maintenance, or main/0.2.0 from branch existence,
    source-code provenance, or this proposal.
 
-This revised proposal is ready for reviewer verification. It is not implementation authority
-until that review records a passing verdict, the approved content hash is bound to
-the work item, and Mike has elected an implementation target.
+This revised proposal is ready for reviewer verification. It is not implementation
+authority until that review records a passing verdict, the approved content hash is
+bound to the work item, and Mike has elected an implementation target.
