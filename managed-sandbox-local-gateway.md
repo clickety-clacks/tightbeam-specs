@@ -1,6 +1,6 @@
 # Managed-sandbox local Tightbeam gateway
 
-Status: F4-CORRECTED PROPOSAL PENDING CLEAN INDEPENDENT REVIEW
+Status: F4-LIFECYCLE-CORRECTED PROPOSAL PENDING CLEAN INDEPENDENT REVIEW
 
 Authority: work item `wi_7c53cfb2-1ad4-477c-b3df-bffc0d3714fa`;
 recon verdict `att_5b82a9c3-dfcc-4da5-bafc-d011bf537ada`;
@@ -17,6 +17,10 @@ the amended bytes before policy completion.
 Verification review `att_ca8e39a2-5175-4f52-a553-28cf0365c3da` and report
 `art_a178df78` cleared F1, F2, F3, and F5 and requested one F4 correction
 against commit `d33ce3dfd90d88f4e0c97c0565600756e9098671`.
+F4-only review `att_5c37ae5c-1688-4a8b-adba-595653c798d0` and report
+`art_89b5dd64` confirmed that commit
+`682c7167b86e8550085c0108bd0491d4bfe0dd73` closes the original unlink race
+and requested a complete activator failure and descriptor-lifecycle contract.
 
 Source basis: Tightbeam `7a70a2f616363074514237b5bee48ba67c52e2ea` and
 tightbeam-specs `2327bc66a45c7cedf6e726bf8e13b40153531e0b`, both current
@@ -74,12 +78,23 @@ outside the sandbox.
   not authority.
 - **Host socket activator**: the packaged Linux host component that owns the
   local socket directory under an operating-system identity distinct from the
-  gateway user, binds the configured socket, and passes its listening file
-  descriptor and activation receipt to the gateway. The gateway user cannot
-  write the directory.
-- **Activation receipt**: the host-owned record for one socket generation. It
-  binds the configured path, filesystem device and inode, gateway user,
-  activation generation, cause, and host principal. It contains no credential.
+  gateway user, stages the configured socket, and passes its bound descriptor
+  and activation receipt to its direct gateway child. The gateway user cannot
+  write the directory. The activator grants no gateway verb or session
+  authority.
+- **Activation record**: the durable activator-owned state for one socket
+  generation. It binds the schema version, phase, configured path, staging
+  path, prior and current filesystem identities, gateway user, activation
+  generation, activator process id and start identity, child process id and
+  start identity when launched, activator version, kernel release, runtime
+  filesystem type, primitive-probe digest, cause, and host principal.
+- **Activation receipt**: the immutable sealed snapshot of the staged activation
+  record that the activator passes to its direct gateway child. It contains no
+  credential.
+- **Installation id**: the stable, non-secret identifier that the packaged host
+  integration assigns to one Tightbeam installation. It selects one
+  activator-owned runtime and record path; callers cannot override it per
+  session.
 - **Local CLI listener**: the Bandit listener bound to the local agent socket.
   It delegates the permitted requests to the existing
   `Tightbeam.Wire.Router` with the same dependency map as the TCP listener.
@@ -121,16 +136,23 @@ outside the sandbox.
    requests. `Tightbeam.Wire.Router` remains the authority for principal and
    verb authorization.
 6. The gateway and each gateway-local managed command run as the same operating
-   system user. This MVP does not cross a user boundary.
+   system user. The gateway-to-command data path does not cross a user boundary.
+   This statement does not include the host socket activator. That component's
+   distinct identity is an explicit lifecycle-only boundary under R-1 and R-2.
 7. The existing operator decision subsystem can address the user who owns the
    managed session and can return one durable `allow-once` or `deny` ruling to
    the pending ACP permission request.
 8. The packaged Linux host supervisor can run the socket activator under an
-   identity distinct from the gateway user and can pass a listening Unix socket
-   descriptor to the gateway. The release gate must prove inherited-listener
-   support against the pinned Bandit and Thousand Island versions.
+   identity distinct from the gateway user. It can pass a bound Unix socket
+   descriptor, sealed receipt descriptor, and control descriptor only to its
+   direct gateway child during process creation. The release gate must prove
+   descriptor adoption against the pinned Bandit and Thousand Island versions.
+9. The supported Linux kernel and runtime filesystem enforce `memfd` seals,
+   `SO_PEERCRED`, `RENAME_NOREPLACE`, file and directory `fsync(2)`, and the
+   activator-owned ancestor permissions used by R-1 through R-3. The release
+   gate must exercise each primitive on the target host.
 
-If assumption 2, 3, 4, or 8 fails on a supported release candidate, the
+If assumption 2, 3, 4, 8, or 9 fails on a supported release candidate, the
 release is blocked. An implementer does not substitute a TCP exception, a
 wildcard Unix-socket permission, or full network access.
 
@@ -142,8 +164,10 @@ For the managed profile, Tightbeam generates an empty domain allowlist and one
 `allow` entry whose key is the absolute local agent socket path. Tightbeam sets
 `dangerously_allow_all_unix_sockets = false` and
 `allow_local_binding = false`. The host socket activator makes the runtime
-directory searchable but not writable by the gateway user. Its only entry is
-the local agent socket.
+directory searchable but not writable by the gateway user. At listener
+readiness its only entry is the local agent socket. Before readiness it may
+contain one generation-named staging socket that the managed profile does not
+allow.
 
 Acceptance example (AC-1): Given the generated profile, when a test reads its
 effective Codex network policy, then it contains one allowed Unix socket, zero
@@ -232,8 +256,9 @@ request bodies, response bodies, and credential paths.
 
 Acceptance example (AC-8): Given sentinel values in the token and request
 body, when connect, authentication, refusal, and outage cases run, then a scan
-of captured gateway logs, CLI stderr, operator decision rows, and approval
-notifications finds neither sentinel.
+of captured gateway and activator logs, activation records and receipts, CLI
+stderr, operator decision rows, and approval notifications finds neither
+sentinel.
 
 ### I-9 — Approval is explicit and single-use
 
@@ -260,31 +285,75 @@ readiness refuses before a turn.
 transport. Its default is `nil`, which starts no local listener and changes no
 session endpoint or command posture. A Linux host that offers the managed
 local-gateway mode sets it to an absolute path. The packaged host integration
-uses `<base_dir>/run/local-agent/gateway.sock` and installs one host socket
-activator. The activator runs outside the gateway-user security boundary. It is
-the only supported writer of the dedicated runtime directory. It creates that
-directory with its own ownership and mode `0711`, creates the socket with the
-gateway user as owner and mode `0600`, and passes the listening file descriptor
-to the gateway. The gateway user can search the directory and connect to the
-socket but cannot create, replace, rename, or unlink an entry in the directory.
-The activator and gateway consume the same `config.local_agent_socket` value;
-the activator accepts no independent path override.
+uses `/run/tightbeam/<installation-id>/gateway.sock` and installs one host
+socket activator. `/run/tightbeam` and the installation directory are owned by
+the activator identity with mode `0711`; no ancestor below `/run` is writable by
+the gateway user. The activator runs outside the gateway-user security boundary
+and is the only supported writer of the installation directory. The gateway
+user can search the path but cannot create, replace, rename, or unlink the
+installation directory or an entry in it. The activator and gateway consume the
+same `config.local_agent_socket` value; the activator accepts no independent
+path override. Its durable record lives at activator-owned
+`/var/lib/tightbeam/activations/<installation-id>.json`.
+For the packaged mode, a configured path other than the derived runtime path
+returns `invalid_local_agent_socket` before record or pathname mutation.
+Before the first generation, the activator runs the Assumption 9 primitives in
+an activator-owned disposable sibling directory. It records the successful
+probe digest in each activation record. A failed primitive returns
+`local_agent_activation_unsupported` and performs no configured-path mutation.
 
-The activator serializes socket creation and gateway launch. Its host-owned
-activation record is inaccessible to the gateway user. The record carries the
-prior device and inode, path, gateway user, activation generation, cause, and
-host principal. The activator writes and synchronizes a staged generation
-before pathname mutation. It removes only the prior inode that this record
-identifies. It performs that removal while no gateway-user process has
-directory write permission. It then binds the replacement, synchronizes the
-replacement identity into the record, and starts the gateway.
+The activator serializes socket creation and gateway launch. It uses one
+generation-named staging path in the same directory. It binds a Unix stream
+socket at that path without calling `listen(2)`, changes the socket owner to the
+gateway user and mode to `0600`, and passes the bound descriptor to its direct
+gateway child. After bind it records and synchronizes the staging device and
+inode before child launch. The configured pathname remains absent until R-3
+publishes the ready listener.
 
-After an activator restart, a staged generation resumes only when the pathname
-is absent, still names the recorded prior inode, or names the sole-writer
-successor socket with the required owner and mode. Another state returns
-`local_agent_runtime_conflict` and leaves each entry in place. Direct gateway
-launch with a configured path but no inherited listener returns
-`local_agent_socket_activation_required` before adapter start.
+The host-owned activation record is inaccessible to the gateway user. Its
+phase is exactly `staged`, `published`, `adopted`, `stopping`, or `stopped`.
+Its generation is an unsigned 64-bit integer. A fresh record starts at one;
+each successor is exactly the prior value plus one; a phase transition keeps
+the value unchanged; and exhaustion returns
+`local_agent_activation_generation_exhausted` before mutation.
+For each phase change, the activator writes a complete next record to a new
+mode-`0600` file, calls `fsync(2)` on that file, atomically renames it over the
+record, and calls `fsync(2)` on the record directory before the next pathname
+mutation. A create,
+write, sync, rename, or directory-sync failure returns
+`local_agent_activation_record_unavailable`. Before a durable `staged` record,
+the activator closes unpublished descriptors and removes nothing. After a
+durable record, a transition failure permits no further pathname mutation; the
+next activator recovers from the last durable phase.
+
+Recovery applies this closed table:
+
+- No record plus no configured or staging entry is a fresh start.
+- `staged` plus absent configured and staging paths resumes staging bind.
+  `staged` plus an absent configured path and a staging socket with the required
+  owner, mode, and recorded name records its current identity when missing and
+  resumes child launch.
+- `staged` plus the recorded current inode at the configured path, or
+  `published` or `adopted` after an activator restart, first relies on control
+  channel closure to stop the child, verifies the recorded process id and start
+  identity before any signal or wait, then durably advances to `stopping`.
+- `stopping` waits for child exit. It then removes the configured or staging
+  entry only when its identity equals the recorded current identity,
+  synchronizes the socket directory, and records `stopped`. If both paths are
+  already absent, it records `stopped` without pathname mutation.
+- `stopped` plus absent configured and staging paths permits the next increasing
+  generation. Another `stopped` state is a conflict.
+
+An absent record with any socket entry, a truncated or corrupt record, an
+unsupported schema, a non-increasing generation, an unlisted phase, or another
+path/record combination returns `local_agent_activation_record_invalid`. The
+activator removes nothing in these states. The error names the record phase,
+generation when readable, path, and the remedy to stop the gateway and repair
+the host-owned activation record; it contains no credential.
+
+Direct gateway launch with a configured path but without the three inherited
+activation descriptors returns `local_agent_socket_activation_required` before
+adapter start.
 
 The path must be absolute and must fit the host's Unix-socket path limit. A
 non-absolute or over-limit configured path stops gateway boot with
@@ -292,24 +361,43 @@ non-absolute or over-limit configured path stops gateway boot with
 
 Acceptance example (AC-9): Given `local_agent_socket = nil`, when the gateway
 boots, then it creates no listener or runtime directory. Given a configured
-path in a fresh Linux base directory, when the gateway boots, then the runtime
-directory and socket exist with the specified modes and the local listener
+path for a fresh disposable installation id, when the gateway boots, then the
+runtime directory and socket exist with the specified modes and the local listener
 accepts an authenticated `GET /harnesses`. Given an unexpected directory
 entry, activation returns `local_agent_runtime_conflict` without removing it.
 Given a configured direct gateway launch without an inherited listener, then
-the gateway refuses before adapter start.
+the gateway refuses before adapter start. Given record create, write, file-sync,
+rename, and directory-sync failures, then each returns
+`local_agent_activation_record_unavailable` at the named phase and performs no
+later pathname mutation. Given absent-with-entry, truncated, corrupt,
+unsupported-schema, non-increasing-generation, and unlisted-phase records, then
+each returns `local_agent_activation_record_invalid` and removes nothing. Given
+each missing Assumption 9 primitive, then activation returns
+`local_agent_activation_unsupported` before configured-path mutation. Given a
+maximum generation, then activation returns
+`local_agent_activation_generation_exhausted` and removes nothing.
 
 ### R-2 — The gateway never removes a socket pathname
 
-The gateway validates the inherited descriptor with `fstat(2)`,
-`getsockname(2)`, `SO_TYPE`, and `SO_ACCEPTCONN`. It requires a listening Unix
-stream socket whose pathname equals `config.local_agent_socket`. It uses
-`lstat(2)` to require that the pathname device and inode equal the activation
-receipt and that the pathname owner and mode equal the gateway user and `0600`.
-It requires the receipt generation in the activator launch envelope to equal
-the host record. A mismatch returns `invalid_local_agent_activation` before
-adapter start. The gateway neither binds nor unlinks the pathname during
-startup, shutdown, or crash recovery.
+The activator passes exactly three descriptors during direct child creation:
+the bound socket, a read-only sealed `memfd` containing the complete staged
+receipt, and one end of a Unix `SOCK_SEQPACKET` control socketpair. The gateway
+uses `SO_PEERCRED` on the control endpoint to require the activator operating-
+system identity and process id named by the receipt. It accepts the descriptors
+only in that direct child launch. The forked child waits behind an exec barrier
+while the activator records and synchronizes its process id and start identity.
+The activator then releases exec. It closes its socket duplicate after
+successful child exec. The gateway becomes the sole socket-descriptor owner.
+The activator retains the process handle and control endpoint, not a socket
+duplicate.
+
+The gateway validates the socket with `fstat(2)`, `getsockname(2)`, `SO_TYPE`,
+and `SO_ACCEPTCONN`. It requires a bound, non-listening Unix stream socket at
+the receipt's staging path. It validates every receipt field, the `memfd` write,
+grow, shrink, and seal seals, and the direct-child activation generation. A
+mismatch returns `invalid_local_agent_activation` before adapter start. The
+gateway neither binds nor mutates a pathname during startup, shutdown, or crash
+recovery.
 
 The activator is the sole pathname owner. Its activation record carries the
 socket device and inode, gateway user, path, and activation generation. Before
@@ -320,6 +408,16 @@ can remove the recorded socket and bind its successor. Thus the supported
 lifecycle contains no check-then-unlink interval that a same-user process can
 race.
 
+If child exec fails, the activator durably records `stopping` before it closes
+its socket descriptor. If the child exits before publication, the kernel closes
+the child's descriptor and the activator durably records `stopping` before
+pathname cleanup. A final stop, disable, uninstall, gateway crash, or activator
+control-channel loss follows the same order: record `stopping`, stop or observe
+the child, wait for descriptor closure, remove only the exact recorded inode,
+synchronize the directory, then record `stopped`. Uninstall removes the record
+and runtime directory only after both socket paths are absent and the directory
+is empty. An identity or record mismatch invokes R-1's remove-nothing refusal.
+
 Acceptance example (AC-10): Given two concurrent gateway starts, when both ask
 the activator for the configured socket, then the activator starts one gateway
 generation and refuses the other without changing the live pathname. Given a
@@ -328,20 +426,52 @@ before the activator's identity check, between that check and removal, and
 immediately after removal, then each operation fails with `EACCES` or `EPERM`.
 Given an unexpected pathname inode or another directory entry, when activation
 runs, then it returns `local_agent_runtime_conflict` and removes nothing. Given
-a gateway shutdown, then the gateway issues no bind, rename, or unlink syscall
-for the configured pathname.
+a gateway shutdown, failed exec, pre-publication child exit, final stop,
+disable, and uninstall, then the gateway issues no pathname-mutation syscall
+and the activator follows the exact teardown above. Given a crash after each
+durable record transition and each unlink, bind, publish, child-exec, and
+child-exit boundary, then restart selects exactly one recovery-table row or a
+remove-nothing refusal.
 
 ### R-3 — Listener order exposes only a complete gateway
 
-The gateway adopts the activated local CLI listener after its router
-dependencies and after `AdapterCoordinator` and `LaneManager`. It starts the
-existing TCP Bandit listener next. Readiness reports both listeners only after
-both accept connections, and it prints the local listener path without a token.
+After its router dependencies, `AdapterCoordinator`, and `LaneManager` are live,
+the gateway calls `listen(2)` on the staging descriptor and starts Bandit's
+accept loop. It then sends `listener_ready_to_publish` with the activation
+generation over the inherited control channel. Before this message the
+configured pathname is absent, so a CLI connect writes zero request bytes and
+reports `local_gateway_unavailable`.
+
+For the matching generation, the activator atomically renames the recorded
+staging entry to `config.local_agent_socket` with `RENAME_NOREPLACE`,
+synchronizes the socket directory, records `published`, and acknowledges the
+gateway. The gateway uses `lstat(2)` to match the published device, inode,
+owner, and mode to its sealed receipt. It sends `listener_adopted`; the
+activator records `adopted` and acknowledges. The gateway starts the existing
+TCP Bandit listener next. Readiness reports both listeners only after that
+final acknowledgment and both accept loops are live. It prints the configured
+local listener path without a token.
+
+A control-channel close, wrong generation, publication collision, rename or
+sync failure, receipt mismatch, or 30-second readiness deadline closes the gateway's
+socket descriptor and stops the child. Before any pathname cleanup, the
+activator must durably enter `stopping`; a record-transition failure permits no
+further pathname mutation and leaves recovery to the next activator. The
+activator then applies R-1 recovery and R-2 teardown. It never retains a
+listening socket duplicate.
+After atomic publication, a CLI request follows the normal byte-boundary rules:
+a completed response succeeds; a child failure after request bytes reports
+`local_gateway_outcome_unknown`.
 
 Acceptance example (AC-11): Given a boot probe at each child boundary, when the
 gateway starts, then the gateway processes no local request before
-`AdapterCoordinator` and `LaneManager` are live; after readiness, an
-authenticated `GET /harnesses` succeeds through both listeners.
+`AdapterCoordinator` and `LaneManager` are live. Given probes before staging
+listen and after staging listen but before atomic publication, then the
+configured path accepts zero connections and the CLI reports
+`local_gateway_unavailable`. Given publication, record sync, and acknowledgment,
+then an authenticated `GET /harnesses` succeeds through both listeners. Given
+each publication and control-channel failure above, then the child stops, no
+listening descriptor remains, and teardown selects one named recovery state.
 
 ### R-4 — A route filter reuses the existing router
 
@@ -529,23 +659,29 @@ layer and no fixture is classified as another row.
 
 The host activator preserves the configured address across gateway-process
 restarts. It serializes generation replacement, removes only its recorded old
-socket, and binds the successor before it launches the new gateway. The session
-endpoint file and token remain valid. A CLI command before successor bind
-reports `local_gateway_unavailable`; the first command after listener readiness
-uses the same path and principal.
+socket, stages the successor at its generation path, and atomically publishes
+the configured path only after the new accept loop is ready. The session
+endpoint file and token remain valid. While the configured path is absent, a
+CLI command reports `local_gateway_unavailable` before request bytes. The first
+command after publication uses the same configured path and principal. A crash
+after publication follows R-6's byte-boundary classification.
 
 Acceptance example (AC-18): Given one active local session, when the gateway is
 stopped between two read requests and restarted, then the first request
 succeeds, the gap request reports `local_gateway_unavailable`, the final
 request succeeds, and both successful rows carry the same session principal.
 The recorded socket inode changes by one activator generation, and the gateway
-process issues no pathname-removal syscall.
+process issues no pathname-mutation syscall. Given a failure after atomic
+publication and after the CLI writes one request byte, then the CLI reports
+`local_gateway_outcome_unknown`. Given final stop, disable, and uninstall, then
+the descriptors close, the configured and staging paths are absent, and the
+activator records `stopped` before optional empty-directory removal.
 
 ### R-11 — Upgrade order preserves old sessions
 
 The release installs the host socket activator, gateway, and matching CLI as one
 versioned package, as the current release contract requires. The new activator
-binds the local listener before the gateway projects `socket` into a
+publishes the ready local listener before the gateway projects `socket` into a
 gateway-local session file. Before it enables the managed profile, the gateway
 reconciles each active gateway-local session endpoint so `socket` equals
 `config.local_agent_socket`. A new CLI against an old session file uses HTTP.
@@ -569,17 +705,18 @@ without contacting `url`.
 
 The MVP support predicate is:
 
-`os == linux AND config.local_agent_socket != nil AND activated socket path == config.local_agent_socket AND activator generation is ready AND session.socket == config.local_agent_socket AND host.ssh == nil AND harness == codex AND mode == tightbeam-managed-local AND compatibility stamp matches AND host policy receipt matches AND per-session effective readback matches AND approval relay is available`.
+`os == linux AND activator identity != gateway user AND config.local_agent_socket == derived activator-owned runtime path AND activated socket path == config.local_agent_socket AND activator phase == adopted AND sealed receipt and control peer match AND session.socket == config.local_agent_socket AND host.ssh == nil AND harness == codex AND mode == tightbeam-managed-local AND compatibility stamp matches AND host policy receipt matches AND per-session effective readback matches AND approval relay is available`.
 
 When the predicate is false, Tightbeam keeps the existing transport and
 permission behavior. The predicate is a mechanical conjunction over recorded
 facts and a release-gate result; it makes no model or operator judgment.
 
 Acceptance example (AC-20): Given the cross-product of Linux/macOS,
-configured/unconfigured socket, ready/unready activator, local/satellite,
-Codex/Claude, proven/unproven effective policy, and available/unavailable
-approval relay, when Tightbeam selects a command posture, then only the tuple
-that satisfies the predicate selects the managed local-socket profile.
+derived/other socket path, distinct/same activator identity, ready/unready
+activator, local/satellite, Codex/Claude, proven/unproven effective policy, and
+available/unavailable approval relay, when Tightbeam selects a command posture,
+then only the tuple with an adopted generation and matching receipt/control
+peer selects the managed local-socket profile.
 
 ### Pattern and subtraction ruling
 
@@ -616,8 +753,8 @@ The implementation passes when AC-1 through AC-21 pass and the following
 reality smoke passes on Gibson against the release CLI, the release gateway,
 and the pinned Codex binary:
 
-1. Start a real host socket activator and gateway on a disposable base directory
-   and use the inherited Unix listener.
+1. Start a real host socket activator and gateway with a disposable installation
+   id under the activator-owned runtime root. Use the inherited Unix listener.
 2. Create a real gateway-local session endpoint through Placement; do not
    hand-author the endpoint fixture.
 3. Start two real sessions with different worktrees on one shared Codex adapter.
@@ -633,15 +770,21 @@ and the pinned Codex binary:
    operator decision is pending and after `deny`. Create a new attempt, rule
    `allow-once`, verify one out-of-sandbox connection, and verify its next
    invocation is pending again without changing the host profile.
-7. Restart the gateway between two CLI reads and verify AC-18 against the real
-   socket inode.
-8. Scan the captured CLI stderr, gateway log, and Codex sandbox log for the
-   sentinel token and body values. Verify AC-8.
+7. In the disposable activator, inject each record I/O failure and crash
+   boundary from AC-9 through AC-11. Verify the named recovery row or
+   remove-nothing refusal and verify that no listening descriptor survives a
+   failed launch.
+8. Restart the gateway between two CLI reads and verify AC-18 against the real
+   socket inode. Stop it finally and verify both socket paths are absent and the
+   durable phase is `stopped`.
+9. Scan the captured CLI stderr, gateway and activator logs, activation record
+   and receipt, and Codex sandbox log for the sentinel token and body values.
+   Verify AC-8.
 
 The test matrix records the Tightbeam commit, host-activator version and
 generation, CLI version, Codex version, `codex-acp` version, kernel version,
-canonical-template SHA-256,
-materialized-profile SHA-256, effective-policy SHA-256, host policy receipt,
+canonical-template SHA-256, materialized-profile SHA-256, effective-policy
+SHA-256, host policy receipt,
 baseline result, and after result. A hand-written idealized gateway response
 does not satisfy this acceptance.
 
