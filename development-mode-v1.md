@@ -1,6 +1,6 @@
 # Organization development mode v1
 
-Status: proposed revision 3
+Status: proposed revision 4
 
 Work item: `wi_cc890c75-4463-4a19-9c4a-166ac64a7558`
 
@@ -60,9 +60,9 @@ context.
 - **Legacy debugging-regime block**: the section that starts with the exact heading
   `## Debugging regime (mike's standing directive, 2026-08-06, until revoked)` and ends at
   the next same-level heading or end of file. At rollout it exists in the live identity
-  files `guidance/default.md`, `guidance/coder.md`, `guidance/reviewer.md`, and
-  `guidance/orchestrator.md`; its block includes the `Probe boundary (debugging regime)`
-  paragraph.
+  files `guidance/default.md`, `guidance/coder.md`, `guidance/reviewer.md`,
+  `guidance/orchestrator.md`, `guidance/recon.md`, and `guidance/spec-writer.md`; its
+  block includes the `Probe boundary (debugging regime)` paragraph.
 - **Canonical development-mode fragment**: the product-shipped file
   `priv/guidance/development-mode.md`. It is the sole source of bytes appended by
   development-mode composition; the live organization identity does not copy it.
@@ -169,13 +169,19 @@ This fragment teaches existing assignment attests, parent messages, `artifact-re
 lineage, and user permission. It creates no automatic report, escalation, or GitHub action.
 
 Before an organization first sets development mode to `on`, its rollout owner must remove
-every legacy debugging-regime block from the four named live guidance files through the
+every legacy debugging-regime block from the six named live guidance files through the
 existing identity edit and relearn process. The pre-enable check searches every
 `guidance/*.md` blob reachable from the current `tightbeam/live` revision for both the exact
-legacy heading and the distinctive sentence `A silent workaround destroys the evidence
-this org exists to produce.` It refuses enablement while either marker remains anywhere in
-that search scope. It also verifies that each installed archetype's fully expanded live
-guidance contains neither marker, including content reached through `#include`.
+legacy heading and this exact line-wrapped byte marker, including its newline:
+
+```text
+A silent
+workaround destroys the evidence this org exists to produce.
+```
+
+It refuses enablement while either marker remains anywhere in that search scope. It also
+verifies that each installed archetype's fully expanded live guidance contains neither
+marker, including content reached through `#include`.
 
 This is a reviewed rollout prerequisite, not an automatic content migration. After
 enablement, `priv/guidance/development-mode.md` is the sole byte source for the canonical
@@ -277,11 +283,12 @@ The implementation must prove:
    ancestor exists.
 10. The fragment requires explicit user permission for each proposed top-lineage GitHub
     issue. No code path posts externally.
-11. The rollout test begins with the legacy block in each of the four named live guidance
+11. The rollout test begins with the legacy block in each of the six named live guidance
     files. Enablement refuses until identity edit and relearn remove every block. It searches
-    all `guidance/*.md` blobs and fully expanded installed-archetype guidance for both legacy
-    markers. After removal, it proves `priv/guidance/development-mode.md` is the sole source,
-    no organization-identity copy exists, and each mode-on snapshot contains its bytes once.
+    all `guidance/*.md` blobs and fully expanded installed-archetype guidance for the exact
+    heading and exact line-wrapped byte marker defined above. After removal, it proves
+    `priv/guidance/development-mode.md` is the sole source, no organization-identity copy
+    exists, and each mode-on snapshot contains its bytes once.
 12. Existing identity status/apply behavior and identity Git revision truth remain intact.
 
 Run focused config, identity, list, readiness, same-millisecond collision, set/set,
