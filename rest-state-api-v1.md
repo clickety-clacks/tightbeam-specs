@@ -1037,9 +1037,16 @@ authenticated org principal. The detail route applies AU3 same-404 behavior.
 The assignment org-fault impacts route applies the parent assignment predicate
 and the same 404 for unknown or forbidden assignment IDs.
 
-The Org-fault notice predicate admits each authenticated user or session in the
-org because that principal can read the open-fault summary. The notice carries
-only `faultId` and source version; it grants no fault-detail or assignment read.
+The Org-fault notice predicate evaluates the committed event and fault state.
+For an open occurrence, and for the event that changes `state` from `open` to
+`closed`, it admits each authenticated user or session because that principal's
+open-fault summary dependency changes. For an event committed after the fault
+is closed, it admits the fault owner, an admin, and a principal allowed by AU4
+to read at least one assignment with an impact row for that fault. Each such
+principal can refetch a changed detail or assignment-impact dependency. An
+authenticated principal outside those post-close branches receives no notice.
+The notice carries only `faultId` and source version; it grants no fault-detail
+or assignment read.
 
 AU4a. ExecutionMap authorization composes existing AU4 grants and introduces
 none. A node requires the work-items grant for that principal and item. An
@@ -1417,6 +1424,14 @@ the three fault views, when the commit appends its `org_fault_events` row, then
 each principal admitted by the Org-fault notice predicate receives one
 `org_fault.changed` notice and refetch observes a changed dependency version.
 A request-id replay emits no notice and changes no version.
+
+Given that fault closes, when the closing event commits, then each authenticated
+org principal receives one notice and refetch removes the open summary. Given a
+later linked-assignment close or reopen appends an event to the closed fault,
+then the fault owner, an admin, and each principal allowed to read a linked
+assignment receive one notice and observe a changed authorized dependency. An
+authenticated principal with neither closed-detail nor linked-assignment access
+receives no post-close notice.
 
 ## Open questions — Spirit questions for Mike
 

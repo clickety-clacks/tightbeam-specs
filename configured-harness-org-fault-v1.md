@@ -438,10 +438,26 @@ The implementation adds these row families:
 The configuration seam maintains this transactional fence from
 `Placement.hosts/1`, `Harness.all/0`, and `credential_provider/0`; those
 authorities remain the configuration truth. Adding or re-adding a tuple inserts
-the next generation. Removing a tuple marks its active generation removed. If
-that scope affects an open fault or has a committed qualifying source result,
-the same transaction creates the deterministic `scope_removed` outbox source;
-otherwise it creates no OrgFaults source.
+the next generation: a tuple with no history starts at 1, and a re-added tuple
+uses one greater than its prior maximum. Removing a tuple marks its active
+generation removed. If that scope affects an open fault or has a committed
+qualifying source result, the same transaction creates the deterministic
+`scope_removed` outbox source; otherwise it creates no OrgFaults source.
+
+On the first gateway boot that contains this table, and on each later boot, a
+grant-generation initializer takes the configuration seam's write lock before
+the gateway admits a configuration mutation or starts a producer. In one
+transaction it snapshots the three configuration authorities and inserts
+generation 1 in `active` state for each configured tuple with no generation
+history. Each inserted row records the transaction commit time and
+`principal=process:tightbeam`. A tuple with an active generation produces no
+write. The initializer commits before OrgFaults readiness. If it fails, the
+gateway reports OrgFaults not ready and admits neither a producer nor a
+configuration mutation. A waiting add, removal, or provider-mapping change
+runs through the same configuration seam after initialization commits, so it
+updates the initialized row instead of racing an absent row.
+Two gateways running the initializer serialize on that lock; the second
+observes the committed active rows and writes nothing.
 
 `org_fault_source_outbox`
 
@@ -589,7 +605,9 @@ The existing producers submit typed results:
 - `ModelCatalog` submits the pre-projection refresh result for one grant scope;
 - the spawn/first-turn boundary submits usability evidence for one grant scope.
 
-Before provider I/O, each producer reads the exact active grant generation.
+The gateway starts producers only after the boot initializer in Architecture
+§1 commits. Before provider I/O, each producer reads the exact active grant
+generation.
 After I/O, the producer transaction locks that generation row and validates the
 closed scalar payload. If the generation is still active, the transaction
 records the typed result, assigns its source ordinal, and creates the outbox
@@ -675,6 +693,10 @@ itself. The explicit verb accepts `faultId`, `assignmentId`,
 assignment opener, or an admin. It rejects another cause code before its
 transaction.
 
+The request parser accepts `obligationKind` only when the field is absent or
+its value is the string `review`. It rejects a present null or another value
+before fingerprinting. Fingerprinting encodes the absent field as null.
+
 The CLI form is `tightbeam org-fault impact-link <faultId> <assignmentId>
 --request-id <req> --expected-version <n> --cause
 <manual_dependency|fault_waiver> [--obligation review]`. The rendered shell
@@ -688,9 +710,9 @@ rejects another obligation kind. It does not read assignment prose.
 
 An active relink with an omitted marker preserves the current classification.
 An active relink can add `obligationKind=review` to a null classification. It
-cannot remove that marker. The seam returns `impact_classification_conflict`
-with the remedy `clear the impact, then relink it with the intended marker` when
-an active relink requests removal or another classification.
+cannot remove that marker. The input domain has no removal sentinel. To remove
+the marker, an authorized principal clears the impact with
+`classification_reset`, then relinks it with the marker omitted.
 
 The explicit impact-clear verb accepts `faultId`, `assignmentId`, and
 `clearCauseCode=dependency_resolved | linked_in_error |
@@ -810,10 +832,14 @@ summary or detail authorization predicates.
 
 Each new `org_fault_events` commit emits the canonical
 `org_fault.changed` source-invalidation notice. REST R9 lists that class for
-org, org-fault detail, and assignment-impact reads. Its canonical visibility
-admits each authenticated user or session in the org because each can read the
-open-fault summary. An authorized cached client refetches the views it can read;
-an idempotency replay that creates no event emits no notice.
+org, org-fault detail, and assignment-impact reads. While the occurrence is
+open, and for the event that closes it, canonical visibility admits each
+authenticated user or session because that principal's open-fault summary
+dependency changes. For an event committed after the occurrence is closed,
+visibility admits only the fixed fault owner, an admin, or a principal allowed
+to read an assignment with an impact row for that fault. Each admitted
+principal therefore holds a detail or assignment-impact dependency that can
+change. An idempotency replay that creates no event emits no notice.
 
 The CLI detail verb is exactly `tightbeam org-fault show <faultId>`. The
 assignment-scoped read verb is exactly
@@ -953,6 +979,21 @@ row processed in the same transaction as its source claim. Crashes before that
 transaction commits leave the row pending; crashes after it commits create no
 second claim or observation.
 
+Given an upgraded org already configures Anthropic grants on Gibson and Eezo
+and the generation table is empty, when the first upgraded gateway boots, then
+the initializer inserts active generation 1 for each exact configured tuple
+with `principal=process:tightbeam` before producer or configuration admission.
+When the gateway restarts, the initializer writes no second row and preserves
+generation 1 and its original `createdAt`. When two upgraded gateways initialize
+concurrently, they serialize and produce that same single row per tuple.
+
+Given a removal request arrives while that first initializer holds the
+configuration write lock, when initialization commits and the request resumes,
+then the request removes initialized generation 1 through the configuration
+seam. A producer cannot begin between the empty-table state and initialization
+commit. Given initialization fails, when readiness is read, then OrgFaults is
+not ready and the gateway has admitted neither request type.
+
 ### A10 — First and last observation times are stable (I13)
 
 Given accepted observations carry `(sourceOrdinal, observedAt)` values
@@ -997,10 +1038,11 @@ and does not clear version 3.
 
 Given an active review-marked impact at version 1, when a new request with
 expected version 1 omits `obligationKind`, then the existing marker and key
-remain and the transition reaches version 2. When another new request at
-expected version 2 sends `obligationKind=none`, then the seam returns
-`impact_classification_conflict`, names the clear-then-relink remedy, and changes
-neither count nor marker.
+remain and the transition reaches version 2. Given an authorized principal
+wants to remove that marker, when it clears version 2 with
+`clearCauseCode=classification_reset` and a new request ID, then relinks the
+cleared impact with the marker omitted and another new request ID, the clear
+reaches version 3 and the relink reaches version 4 with a null marker and key.
 
 Given assignment A links to fault F with `requestId=req_collision`, when a
 table-driven test reuses `(F, req_collision)` and changes exactly one of
@@ -1185,6 +1227,15 @@ read. The help text uses only parser-accepted remediation
 commands. The same build's canonical REST R2/R7/R9, wire schema, and firehose
 R4c/R8b rows contain the org summary, fault detail, assignment-impact resource,
 `org_fault.changed` invalidation, visibility, and dependency-vector contracts.
+
+Given an open fault closes, when its close event commits, then each
+authenticated org principal receives `org_fault.changed` and refetch removes
+the summary from `/api/org`. Given a linked assignment later closes or reopens
+and appends an event to that closed fault, when firehose visibility runs, then
+the fault owner, an admin, and each principal allowed to read a linked
+assignment receive the notice and refetch a changed authorized dependency. An
+authenticated principal with no such detail or assignment grant receives no
+post-close notice.
 
 ## Open Questions
 

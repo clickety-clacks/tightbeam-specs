@@ -588,12 +588,13 @@ forced reconnect, rebuild, convergence.
 
 A8. Given an OrgFaults mutation appends a new event, when firehose fan-out runs,
 then an allowed fault owner or admin receives one `org_fault.changed` observe
-notice with only `faultId` and the positive event source version. Each other
-authenticated org principal receives the same notice and can refetch the
-compact org summary plus any assignment-impact view separately authorized for
-that principal. When a client holds the org, matching fault-detail, or
-assignment-impact view authorized for that principal, the notice triggers a
-refetch whose dependency version changes. Given the same request ID replays and
+notice with only `faultId` and the positive event source version. While the
+fault is open, and for its closing event, each other authenticated org principal
+receives the same notice and can refetch the compact org summary. After the
+fault is closed, only the owner, an admin, or a principal allowed to read a
+linked assignment receives a later notice; each can refetch a changed detail or
+assignment-impact dependency. An authenticated principal outside those
+post-close branches receives none. Given the same request ID replays and
 returns its existing event, no new notice appears.
 
 ## Open questions for Mike
