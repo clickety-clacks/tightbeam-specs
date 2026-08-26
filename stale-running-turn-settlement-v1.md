@@ -1,8 +1,9 @@
 # Stale-running-turn settlement — v1
 
-Status: SPEC CANDIDATE — review reconciliation revision. This artifact is
-bounded to the two supplied specimens. It is additive to `eea3e9a` and does
-not replace automatic adapter-death recovery.
+Status: SPEC CANDIDATE — review reconciliation revision. This artifact
+supersedes the incorrectly recorded SHA on `art_e081e04b`. It is bounded to
+the two supplied specimens, additive to `eea3e9a`, and does not replace
+automatic adapter-death recovery.
 
 Evidence boundary: PHANTOM `att_45772d58`, confirmation `att_7ef386ea`, and the
 ruled prior-specimen authority `dr_b7e2f1ff-c13f-4a36-9454-ce5f9026c71a`, which
@@ -30,15 +31,17 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    the exact `(sessionKey, turnSeq)`. The lane call SHALL retain its mailbox
    serialization across the live/stale decision and the guarded database
    transaction. The call SHALL report one of `live`, `stale`, or `ambiguous`.
-6. The lane SHALL report `live` when that exact sequence is its current task.
-   The verb SHALL return `turn_live` and SHALL perform no mutation. The lane
-   SHALL report `ambiguous` when it cannot establish the target's live status,
-   when the lane is unavailable, when its in-memory sequence disagrees with the
-   durable running row, or when the serialization call is lost or re-entered.
+6. The lane SHALL report `live` when that exact sequence is its current task or
+   when the harness reports a live provider request correlated to that target's
+   `requestRef` or ACP request identity. The verb SHALL return `turn_live` and
+   SHALL perform no mutation. The lane SHALL report `ambiguous` when it cannot
+   establish the target's live status, when the lane is unavailable, when its
+   in-memory sequence disagrees with the durable running row, when the provider
+   probe cannot answer, or when the serialization call is lost or re-entered.
    The verb SHALL return `turn_status_ambiguous` and SHALL perform no mutation.
-   The lane SHALL report `stale` only when it has established that the exact
-   target is not executing in the lane and it still holds the serialization
-   call while performing the CAS.
+   The lane SHALL report `stale` only when its task is absent and the bounded
+   provider probe returns no live request for the exact target while it still
+   holds the serialization call and performs the CAS.
 7. The substrate SHALL not classify staleness from elapsed time, queue age,
    adapter generation, process age, or a heuristic. The operator supplies the
    settlement decision; the substrate verifies only deterministic eligibility.
@@ -51,7 +54,11 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
 9. The transition SHALL be a compare-and-set on the exact target row. Its
    predicate SHALL include `seq`, `sessionKey`, `status='running'`,
    `endedAt IS NULL`, and the active-session condition. A zero-row CAS SHALL
-   leave the row unchanged and return the already-established terminal truth.
+   leave the row unchanged. The operation SHALL re-read the exact target and
+   session in the same lane call and SHALL return existing terminal truth when
+   the target is terminal, `session_retired` when the active-session predicate
+   lost to retirement, `turn_not_found` when the target disappeared, or
+   `turn_status_ambiguous` when the row cannot be classified without guessing.
 10. The winning CAS SHALL append the existing `terminal_committed` lifecycle
     event in the same transaction. The event SHALL have outcome `canceled` or
     `failed`, cause exactly `operator:stale-running-turn`, and principal
@@ -65,9 +72,10 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
     queued turn only after the target is terminal. Queued turns SHALL remain
     queued and valid.
 13. If no lane is currently registered but the session is active, the
-    operation SHALL obtain the normal lane seam before the live/stale/ambiguous
-    decision. Failure to obtain that seam SHALL be `turn_status_ambiguous`, not
-    permission to mutate the ledger directly.
+    operation SHALL obtain the normal lane seam without sending a nudge, then
+    execute the settlement call before any task-start message. Failure to
+    obtain that seam SHALL be `turn_status_ambiguous`, not permission to mutate
+    the ledger directly.
 14. A successful response SHALL identify `sessionKey`, `turnSeq`, the terminal
     status, and whether this call won the CAS or replayed existing terminal
     truth. A denial SHALL identify a stable code from the eligibility and
@@ -111,9 +119,9 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
 - **Still-extant session** — a session row with `state='active'`; a retired or
   absent row is not eligible.
 - **Live** — the session lane owns the target sequence as its current task.
-- **Stale** — the session lane owns the decision seam and establishes that the
-  target sequence is not executing there while the durable row still says
-  `running`.
+- **Stale** — the session lane owns the decision seam, has no task for the
+  target, and receives a bounded provider response that no live request is
+  correlated to that target while the durable row still says `running`.
 - **Ambiguous** — the substrate cannot establish the live/stale distinction at
   that seam. Ambiguity is a refusal, never an authorization to settle.
 - **Settlement** — one terminal CAS to `canceled` or `failed`, plus its
@@ -178,9 +186,10 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    `sessionKey`, `turnSeq`, `outcome`, `reason`, and `idempotencyKey`. The
    server SHALL derive the principal from authenticated admin identity.
 2. Add a `SessionLane.settle_stale/3` synchronous call. Its handler SHALL
-   inspect the exact target, refuse on `live` or `ambiguous`, and retain the
-   lane mailbox callback while it invokes the guarded settlement transaction.
-   A task cannot claim or start between that inspection and the CAS.
+   inspect the exact target and its correlated provider request, refuse on
+   `live` or `ambiguous`, and retain the lane mailbox callback while it invokes
+   the guarded settlement transaction. A task cannot claim or start between
+   that inspection and the CAS.
 3. In the stale branch, use the existing terminal transition seam with an
    operator-authorized terminal event. The transaction SHALL combine the
    guarded target update, lifecycle append, `turn.ended` publication effect,
@@ -233,10 +242,13 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    operator sends either outcome, then the response is `turn_live` and the
    target row, lifecycle table, queue, and publication table are byte-for-byte
    unchanged.
-5. **Ambiguous refusal.** Given a missing lane, unavailable runtime probe, or
-   lane/durable sequence disagreement, when the operator sends either outcome,
-   then the response is `turn_status_ambiguous` and no settlement mutation
-   occurs.
+5. **Live and ambiguous runtime refusal.** Given a missing lane, an unavailable
+   runtime probe, a provider probe that reports a live request for the target,
+   or a lane/durable sequence disagreement, when the operator sends either
+   outcome, then the response is respectively `turn_status_ambiguous`,
+   `turn_status_ambiguous`, `turn_live`, or `turn_status_ambiguous`, and no
+   settlement mutation occurs. A provider probe that returns no request is the
+   only provider result that can support `stale`.
 6. **Eligibility refusal.** Given each of: absent session, retired session,
    absent turn, queued turn, delivered turn, canceled turn, failed turn, and
    failed-unknown turn, when the operator sends `settle-turn`, then the
