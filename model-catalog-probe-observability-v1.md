@@ -1,6 +1,6 @@
 # Model Catalog Probe Observability v1
 
-Status: **PROPOSAL — review changes addressed; revised commit pending verdict**
+Status: **PROPOSAL — review changes addressed; revised commit pending owner-linked review**
 
 Work item: `wi_54d54f16-8e8e-4895-8191-6bb64384bcb8`
 
@@ -44,6 +44,12 @@ that unbounded drain with one bounded owning-host attempt-runner lease, a typed
 cleanup-unconfirmed result, and production lifecycle evidence for local and SSH
 process trees.
 
+Exact-tip review verdict `att_bc1fbe38-cf5e-4b8d-bcaf-34f7a233aaf4` found that a
+runner restart could erase the only lease authority and that retained lifecycle
+evidence had no closed privacy contract. This revision makes one durable owning-host
+authority record precede all attempt I/O, requires replacement runners to recover it
+fail closed, and defines bounded lifecycle evidence fields, retention, and redaction.
+
 ## Goal
 
 Make the difference between cached model inventory and an active provider probe
@@ -69,8 +75,9 @@ the cached inventory and runtime harness validation defined by the source specs.
   handling.
 - It does not change the catalog refresh interval, routing readiness, picker
   eligibility, CAP, spawn admission, or runtime validation.
-- It does not persist catalog inventory or probe state across a ModelCatalog process
-  restart.
+- It does not persist catalog inventory, result history, timestamps, or active-probe
+  state across a ModelCatalog process restart. The owning-host authority record is
+  lifecycle safety state, not catalog state or probe history.
 - It does not add automatic remediation or retry policy beyond the existing boot,
   read-expiry, and credential-present triggers.
 - It does not add catalog state to `org-options`, `session-status`, REST resources,
@@ -108,14 +115,39 @@ result.
 provider I/O or bounded cleanup for a catalog key. At most one probe is active in
 `ModelCatalog` for a catalog key.
 
-**Attempt lease** — the internal per-catalog-key execution lease owned by the attempt
-runner on the host that performs credential lookup and provider I/O. The runner
-acquires the lease before credential lookup and releases it only after it locally
-observes the capability task and every process in its provider process group exit. A
-lease can remain held after `ModelCatalog` records `attempt_cleanup_unconfirmed`.
-While held, a later request may retry bounded cleanup but cannot start credential
-lookup or provider I/O. The lease is owning-host process-lifecycle state, not catalog
-inventory or probe history.
+**Attempt lease** — the internal per-catalog-key execution lease enforced by the host
+that performs credential lookup and provider I/O. The owning host atomically creates
+the lease's authority record before it starts credential lookup, renewal, a
+credential-file write, or provider I/O. It releases the lease only after it locally
+observes the capability task and every process in its lifecycle unit exit. A lease
+can remain held after `ModelCatalog` records `attempt_cleanup_unconfirmed`. While
+held, a later request may retry bounded cleanup but cannot start credential or
+provider I/O. The lease is owning-host process-lifecycle state, not catalog inventory
+or probe history.
+
+**Lease authority record** — the sole durable no-overlap authority for one catalog
+key on its owning host. Its closed fields are `schemaVersion`, `host`, `harness`,
+`leaseGeneration`, `hostBootId`, `lifecycleUnitId`, and `phase`, where `phase` is
+`reserved`, `running`, or `cleaning`. `hostBootId` and `lifecycleUnitId` identify one
+operating-system lifecycle unit without storing a command, path, environment value,
+or provider material. The owning host retains exactly one authority record per key
+while a lease is reserved or held and deletes it atomically only after it proves the
+unit absent. The record survives an attempt-runner exit or restart. A host reboot
+changes `hostBootId`; that mismatch proves that processes from the prior boot cannot
+remain and permits deletion of the old record.
+
+**Lifecycle evidence record** — the privacy-closed terminal summary retained for
+verification. Its only fields are `schemaVersion`, `host`, `harness`,
+`leaseGeneration`, `transportKind`, `recoveredByReplacement`, `cleanupStartedAt`,
+`termSentAt`, `killSentAt`, `observedEmptyAt`, `unitState`, and `outcome`.
+`transportKind` is `local` or `ssh`; `recoveredByReplacement` is boolean;
+`unitState` is `absent`, `present`, or `unknown`; `outcome` is `reaped` or
+`cleanup_unconfirmed`; the four timestamps are epoch milliseconds or null. `reaped`
+requires `unitState=absent` and a non-null `observedEmptyAt`.
+`cleanup_unconfirmed` requires `unitState=present` or `unitState=unknown` and a null
+`observedEmptyAt`. The owning host retains at most the newest terminal summary per
+catalog key. A later terminal summary replaces it atomically, and a host restart
+clears it. No other runner event or process-table material is retained.
 
 **Probe trigger** — the event that requested an attempt. Its closed values are
 `boot`, `ttl_read`, `credential_present`, and `forced`.
@@ -162,10 +194,10 @@ structured provider-authentication rejection, maps to `provider_unauthorized`. H
 403 alone maps to `provider_forbidden`; it does not prove that the credential is
 invalid. `attempt_cleanup_unconfirmed` means the caller did not receive an owning-host
 `reaped` acknowledgement within the five-second cleanup deadline. It is a terminal
-probe result. When the runner itself cannot confirm exit, it retains the attempt lease
-until a later bounded cleanup request observes those exits. After an SSH
-acknowledgement loss, the remote runner's locally observed lease state remains
-authoritative.
+probe result. When the runner itself cannot confirm exit, the owning-host authority
+record retains the attempt lease until that runner or a replacement runner observes
+the lifecycle unit absent. After an SSH acknowledgement loss, the remote authority
+record and locally observed lifecycle-unit state remain authoritative.
 
 `available_empty` is harness-specific. The Anthropic catalog contract can accept a
 valid empty model array. The Codex catalog contract cannot: when client-version
@@ -237,14 +269,17 @@ diagnosis.
    connection error, timeout, malformed body, HTTP 403, SSH public-key failure, or
    sandbox network denial cannot produce `credential_rejected`.
 
-6. **One mutation seam owns state.** Capability-task completions send typed results
-   to `ModelCatalog`. Only `ModelCatalog` changes inventory, active-probe state, last
-   result, timestamps, trigger, actor, origin, or staleness.
+6. **One mutation seam owns catalog state.** Capability-task completions send typed
+   results to `ModelCatalog`. Only `ModelCatalog` changes catalog inventory,
+   active-probe state, last result, probe timestamps, trigger, actor, origin, or
+   staleness. Owning-host lifecycle records do not mutate or duplicate catalog state.
 
 7. **One attempt runs per catalog key.** A catalog key never has overlapping
    credential lookups, capability derivations, provider reads, renewal operations, or
    credential-file writes, including across a ModelCatalog restart. The owning-host
-   runner never grants a new attempt lease until it releases the prior lease. A
+   authority record is created before any such I/O. A runner never grants a new
+   attempt lease until it reconciles and releases the prior authority record. Runner
+   death, replacement, or lost volatile state cannot authorize replacement I/O. A
    completion can mutate state only when its generation matches the active generation
    for that key; a late completion from an older generation is discarded.
 
@@ -256,15 +291,19 @@ diagnosis.
    required follow-up attempt starts may share that attempt. A request admitted after
    it starts requires a later attempt. Coalescing never changes the result or scope.
 
-10. **Restart is explicit.** A ModelCatalog process restart discards inventory and
-    probe history, but it does not discard an owning-host attempt lease. A replacement
-    process may request a boot attempt immediately. The runner first applies its
-    five-second termination-and-reaping protocol to any prior lease. It starts new
-    credential or provider I/O only after it observes the old process group exit. If
-    cleanup is unconfirmed at five seconds, the boot attempt completes as
-    `probe_failed` / `attempt_cleanup_unconfirmed` and no new credential or provider
-    I/O starts. Before any post-restart attempt completes, each catalog reports
-    `lastProbe.result=never_probed`; boot probes may be active at the same time.
+10. **Restart is explicit.** A ModelCatalog or attempt-runner restart discards its
+    volatile state, but it does not discard an owning-host authority record. A
+    replacement may request a boot attempt immediately. The replacement runner first
+    reads and reconciles any prior record, then applies the five-second
+    termination-and-reaping protocol to the named lifecycle unit. It starts new
+    credential or provider I/O only after it observes the unit absent and atomically
+    deletes the old record. If recovery or cleanup is unconfirmed at five seconds,
+    the attempt completes as `probe_failed` / `attempt_cleanup_unconfirmed`; the old
+    record remains and no new I/O starts. A later automatic or forced request repeats
+    this bounded recovery, which supplies an agent-reachable exit once the owning
+    host observes the unit absent. Before any post-ModelCatalog-restart attempt
+    completes, each catalog reports `lastProbe.result=never_probed`; boot probes may
+    be active at the same time.
 
 11. **Forced probing does not perform a credential ceremony.** It uses the same
     credential lookup and provider-read path as automatic catalog derivation. The
@@ -273,11 +312,14 @@ diagnosis.
     write, and rotation-harvest behavior remains in force; this specification adds no
     second renewal or credential-write seam.
 
-12. **The projection is privacy-closed.** Catalog state and
-    `model-catalog-refresh` output never include credential values, authorization
-    headers, response bodies, request URLs, prompts, local credential paths, SSH
-    destinations, or raw stdout/stderr. They include only the fields and closed
-    result and cause values defined here.
+12. **Observation is privacy-closed.** Catalog state, `model-catalog-refresh`
+    output, authority records, lifecycle evidence records, runner logs, and
+    verification artifacts never retain or log credential values, authorization
+    headers, provider frames or response bodies, request URLs, prompts, local or
+    remote paths, SSH destinations, command lines or argument vectors, environment
+    names or values, process-table rows, or raw stdout/stderr. Catalog surfaces use
+    only their defined fields and closed result and cause values. Internal authority
+    and evidence records use only their closed schemas defined here.
 
 13. **Existing model consumers remain compatible.** The shape and meaning of
     `models[host][harness]` do not change. New state appears in a sibling
@@ -324,22 +366,58 @@ snapshot that already shows that probe under `activeProbe`.
 ### Owning-host attempt runner
 
 Every catalog attempt runs through one internal attempt runner on the host that owns
-the catalog key. The runner holds the attempt lease and starts the capability task in
-a dedicated operating-system process group. For an SSH host, the remote runner owns
-the lease and process group; observing the local SSH client exit is not proof of
-remote cleanup. The runner outlives the SSH channel that requested the attempt. Only
-the authenticated internal ModelCatalog host-transport path can start, stop, or query
-runner leases; the public Gateway cannot address this seam directly.
+the catalog key. The runner first obtains the owning host's exclusive kernel lock for
+that key. The lock serializes reserve, recovery, cleanup, and release, and the kernel
+releases it if the runner dies. Before any attempt I/O, the lock holder atomically
+reserves a per-catalog-key authority record with a new lease generation and a
+lifecycle-unit identity that cannot be reused during the named host boot. It then
+starts the capability task and all descendants inside that dedicated operating-system
+lifecycle unit and changes the record from `reserved` to `running`. The lifecycle
+unit is the process-ownership boundary; a bare process identifier or local transport
+process is not sufficient authority. The runner holds the kernel lock until it
+deletes the authority record or exits.
+
+For an SSH host, the remote authority record and lifecycle unit own the lease;
+observing the local SSH client exit is not proof of remote cleanup. The remote runner
+may outlive the SSH channel that requested the attempt. Only the authenticated
+internal ModelCatalog host-transport path can reserve, recover, stop, or query a
+lease. The public Gateway cannot address this seam directly.
+
+A runner starts no credential lookup, renewal, credential-file write, or provider I/O
+until it holds the kernel lock and has read back the `running` authority record for
+the lifecycle unit. If the runner exits at any point, a replacement must obtain that
+lock and read the authority record before it handles a new lease request. If the lock
+cannot be obtained inside the five-second caller deadline, the request returns
+`cleanup_unconfirmed` and starts no I/O. A `reserved`, `running`, or `cleaning`
+record on the current host boot is fail-closed: the replacement queries the named
+lifecycle unit, performs bounded cleanup when it exists, and grants no new lease
+while absence is unconfirmed. An absent named unit permits atomic record deletion
+while the lock is held. The dead runner cannot resume after the kernel has released
+its lock. A prior-boot record also permits deletion because no process from that boot
+can survive the reboot; the replacement emits `reaped` evidence with
+`recoveredByReplacement=true` and `unitState=absent`. An unreadable, malformed, or
+unsupported authority record returns `cleanup_unconfirmed`, remains in place, and
+authorizes no I/O; a later automatic or forced request retries the bounded read and
+recovery path.
+
+ModelCatalog assigns the attempt's 40-second execution budget, and the runner enforces
+that budget independently of ModelCatalog and the initiating SSH channel. Channel
+loss cannot leave the lock held indefinitely: the runner starts cleanup when its
+local monotonic budget expires and ends with `reaped` or `cleanup_unconfirmed` within
+the following five seconds. At cleanup start, the lock holder atomically changes the
+authority record to `cleaning` before it sends a termination signal.
 
 Normal completion releases the lease only after the runner reaps the task and its
-process group. Timeout, restart, and later requests against a retained lease use this
-single cleanup protocol:
+entire lifecycle unit. Timeout, ModelCatalog restart, runner restart, and later
+requests against a retained lease use this single cleanup protocol:
 
-1. At cleanup start, send termination to the whole process group.
-2. At two seconds, if any member remains, send forced termination to the whole group.
-3. At five seconds, return `reaped` only if the owning host has observed every member
-   exit. Release the lease on `reaped`.
-4. Otherwise return `cleanup_unconfirmed`, retain the lease, and stop waiting.
+1. At cleanup start, send termination to the whole lifecycle unit.
+2. At two seconds, if any member remains, send forced termination to the whole unit.
+3. At five seconds, return `reaped` only if the owning host has observed the lifecycle
+   unit absent. Atomically delete the authority record and release the lease on
+   `reaped`.
+4. Otherwise persist the closed `cleanup_unconfirmed` evidence record, retain the
+   authority record and lease, and end the runner so the kernel releases its lock.
 
 The caller enforces the same five-second deadline end to end, including local runner
 dispatch or SSH connection and command delivery. If it lacks a structured
@@ -349,20 +427,28 @@ acknowledgement at that deadline, it stops the control transport and returns
 
 The caller maps `cleanup_unconfirmed` to `probe_failed` /
 `attempt_cleanup_unconfirmed`, clears `activeProbe`, and retains prior inventory. A
-later automatic or forced attempt asks the same runner to acquire the lease. If a
-prior lease remains, the runner repeats bounded cleanup. It grants the new lease only
-after it locally observes the old group reaped. If cleanup remains unconfirmed, the
-new request returns the same typed failure within five seconds and starts no
-credential or provider I/O.
+later automatic or forced attempt asks the current runner to acquire the lease. If a
+prior authority record remains, that runner repeats bounded recovery and cleanup. It
+grants the new lease only after it locally observes the old unit absent and deletes
+the record. If cleanup remains unconfirmed, the new request returns the same typed
+failure within five seconds and starts no credential or provider I/O.
 
 For SSH execution, the remote runner returns a structured reaping acknowledgement.
 A missing acknowledgement, including an SSH disconnect, is
-`cleanup_unconfirmed` for that caller. The remote runner may release the lease only
-from its own observed process state; a later caller must reacquire through that runner
-before it starts I/O. The runner returns only the closed acknowledgement or cause;
-attempt tokens, process identifiers, commands, paths, and raw process output do not
-enter catalog state or public output. Generation matching still rejects any stale
+`cleanup_unconfirmed` for that caller. A remote runner may release the lease only
+from its own observed lifecycle-unit state; a later caller must recover the remote
+authority record before it starts I/O. Generation matching still rejects any stale
 completion message that arrives after cleanup.
+
+The runner persists only the authority record while a lease exists and the newest
+terminal lifecycle evidence record after an outcome. It may log only the lifecycle
+evidence record's closed fields. A lifecycle-unit query reduces process state in
+memory to `present`, `absent`, or `unknown`; the runner does not retain or log
+process-table rows, process identifiers, commands, paths, arguments, environment
+material, stdout, or stderr. Test and verification artifacts apply the same reduction
+and redaction. The authority record is deleted on observed absence. The terminal
+evidence record is replaced by the next terminal outcome for that key or cleared by
+host restart.
 
 ### List projection
 
@@ -439,13 +525,15 @@ then returns the keys in ascending harness-name order. Each item contains `host`
 `causeCode`. It contains no model identifiers or raw provider output; callers obtain
 inventory from `tightbeam list`.
 
-Each HTTP provider read retains its existing 30-second bound. `ModelCatalog` owns a
+Each HTTP provider read retains its existing 30-second bound. `ModelCatalog` assigns a
 40-second execution deadline for each attempt, including credential lookup and remote
-host transport. When that deadline expires, it asks the owning-host runner to apply
-the five-second cleanup protocol. A `reaped` acknowledgement completes the generation
-as `probe_failed` / `attempt_timeout`. `cleanup_unconfirmed` completes it as
+host transport, and the owning-host runner enforces the remaining budget locally.
+When that deadline expires, the runner applies the five-second cleanup protocol. A
+`reaped` acknowledgement completes the generation as `probe_failed` /
+`attempt_timeout`. `cleanup_unconfirmed` completes it as
 `probe_failed` / `attempt_cleanup_unconfirmed`; the caller treats the lease as
-unreleased until a later runner acquisition proves it safe.
+unreleased until the same runner or a replacement runner recovers the authority
+record and proves the lifecycle unit absent.
 
 The gateway waits at most 95 seconds for the admitted key set. This covers the
 remainder of one already-active 40-second execution window and its five-second
@@ -484,8 +572,9 @@ before a typed result enters `ModelCatalog`.
 Classifier tests use captured, redacted provider and transport envelopes from real
 probe responses. Hand-written ideal envelopes do not establish classifier fidelity.
 The catalog path stores and logs only the typed result, cause code, scope, actor,
-origin, and timestamps. It does not store or log raw response bodies or raw process
-output.
+origin, and timestamps. The runner stores and logs only the closed authority and
+lifecycle evidence fields. Neither path stores or logs raw response bodies, process
+tables, command material, environment material, or raw process output.
 
 ## Acceptance
 
@@ -592,8 +681,14 @@ output.
     I/O. Given the unconfirmed outcome, when a forced request retries while cleanup
     remains unconfirmed, then it returns the same typed failure within five seconds
     and starts no credential or provider I/O; and when a later forced request observes
-    the old group reaped, then the runner releases the lease, starts the new attempt,
-    and does not repeat credential setup.
+    the old unit absent, then the runner releases the lease, starts the new attempt,
+    and does not repeat credential setup. Given the runner is killed after its
+    authority record becomes `reserved`, `running`, or `cleaning`, when an injected
+    replacement runner handles the next automatic or forced request, then it obtains
+    the released kernel lock, recovers that exact record, and either proves the named
+    unit absent before new I/O or returns `attempt_cleanup_unconfirmed` by five
+    seconds. The scheduler proves no old and replacement credential lookup, renewal,
+    credential-file write, or provider I/O overlap in each kill phase.
 
 12. **Network and authentication failures stay separate.**
 
@@ -605,14 +700,19 @@ output.
     other four classify as `probe_network_forbidden`, `remote_host_auth_failed`,
     `provider_unauthorized`, and `provider_forbidden`, respectively.
 
-13. **Failure handling cannot leak raw material.**
+13. **Failure handling and lifecycle evidence cannot leak raw material.**
 
-    Given probe failures whose raw bodies and stderr contain a sentinel token, URL,
-    local path, and SSH destination,
+    Given probe failures whose credential, authorization header, request URL, prompt,
+    local and remote paths, SSH destination, command arguments, environment, raw
+    provider frame, stdout, and stderr each contain a distinct sentinel,
     when an agent reads `tightbeam list` and `model-catalog-refresh` output and the
-    test captures catalog logs,
-    then none of those sentinel values appear in the projections or logs and only the
-    closed result and cause fields identify the failure.
+    test captures catalog logs, runner logs, authority records, lifecycle evidence
+    records, and retained verification artifacts,
+    then no sentinel appears in any captured or retained surface. The authority and
+    lifecycle evidence records contain exactly their closed fields. A process-state
+    query retains only `unitState`, never a process-table row.
+    Each key retains at most one authority record while its lease exists and one
+    newest terminal evidence record until replacement or host restart.
 
 14. **Authentication and scope refusals are side-effect free.**
 
@@ -636,7 +736,8 @@ output.
     task-completion scheduler,
     when catalog tests exercise boot, expiry, forced coalescing, late completion,
     ModelCatalog timeout, reaped and cleanup-unconfirmed outcomes, retained-lease
-    retry, gateway wait timeout, and restart,
+    retry, runner death in `reserved`, `running`, and `cleaning` phases, replacement
+    recovery, host-boot mismatch, gateway wait timeout, and restart,
     then no test depends on wall-clock sleep or a live provider and repeated runs
     produce the same state and response order.
 
@@ -647,9 +748,9 @@ output.
     then the owning-host runner starts its five-second cleanup protocol; a `reaped`
     acknowledgement records `probe_failed` / `attempt_timeout`, while an unconfirmed
     cleanup records `probe_failed` / `attempt_cleanup_unconfirmed`, and the runner
-    grants no new lease until its local process table shows the old group absent; both
-    outcomes set `completedAt` no later than 45 seconds after `startedAt`; and given a
-    ModelCatalog test double that does not answer,
+    grants no new lease until its lifecycle-unit query reports the old unit absent;
+    both outcomes set `completedAt` no later than 45 seconds after `startedAt`; and
+    given a ModelCatalog test double that does not answer,
     when the gateway wait reaches 95 seconds,
     then the gateway returns `model_catalog_refresh_wait_timeout` without fabricating
     a result or mutating catalog state.
@@ -677,25 +778,37 @@ output.
     `model-catalog-refresh` for that host and provider, then read the new typed
     evidence. No operating-manual amendment lands before the command exists.
 
-20. **Production process ownership is proved locally and over SSH.**
+20. **Production process and runner-recovery ownership are proved locally and over
+    SSH.**
 
     Given the production owning-host runner on a local test host and a registered SSH
-    test host, plus a fixture helper that forks a descendant and ignores normal
-    termination,
+    test host, plus a fixture helper that forks a descendant, ignores normal
+    termination, and places distinct sentinels in its arguments, environment, stdout,
+    and stderr,
     when each runner applies cleanup,
-    then owning-host lifecycle evidence shows termination at cleanup start, forced
-    termination at two seconds, both fixture processes absent from the owning host by
-    five seconds, and a structured `reaped` acknowledgement before any replacement
-    helper starts. Given an SSH connection that drops before that acknowledgement,
+    then the privacy-closed owning-host lifecycle evidence shows termination at
+    cleanup start, forced termination at two seconds, the lifecycle unit absent from
+    the owning host by five seconds, and a structured `reaped` acknowledgement before
+    any replacement helper starts. Given the local runner and then the remote runner
+    are each killed while the fixture descendant remains active,
+    when a production replacement runner handles the next request,
+    then it obtains the released kernel lock, recovers the retained authority record,
+    reaps the old lifecycle unit before granting a new lease, and emits a terminal
+    evidence record with `recoveredByReplacement=true`. Given an SSH connection that
+    drops before the acknowledgement,
     when the caller reaches its cleanup deadline,
     then its result is `probe_failed` / `attempt_cleanup_unconfirmed`; and when a
     replacement attempt later reaches the remote runner, then the runner grants its
-    lease only after its local process table shows the old group absent. Verification
+    lease only after its lifecycle-unit query reports the old unit absent. Verification
     proves that no replacement credential lookup, renewal, credential-file write, or
-    provider process overlaps the old group, that the runner survives the initiating
-    SSH-channel exit, and that the five-second caller deadline includes SSH setup and
-    delivery. Verification reads the owning-host runner record and process table; a
-    local SSH-client exit or an injected scheduler log alone does not pass this case.
+    provider process overlaps the old unit, that runner death and the initiating
+    SSH-channel exit do not erase authority, and that the five-second caller deadline
+    includes SSH setup and delivery. Verification exercises the production kernel
+    lock, authority record, and lifecycle-unit query but retains only the closed
+    evidence record with `unitState=absent`. No fixture sentinel appears in runner
+    logs, authority records, lifecycle evidence records, or verification artifacts. A
+    local SSH-client exit, raw process-table capture, or an injected scheduler log
+    alone does not pass this case.
 
 ## Open Questions
 
@@ -704,6 +817,7 @@ output.
    may infer 0.1.8, active 0.1 maintenance, or main/0.2.0 from branch existence,
    source-code provenance, or this proposal.
 
-This revised proposal is ready for reviewer verification. It is not implementation
-authority until that review records a passing verdict, the approved content hash is
-bound to the work item, and Mike has elected an implementation target.
+This revised proposal is ready for owner-linked reviewer verification. It is not
+implementation authority until that review records a passing verdict, the approved
+content hash is bound to the work item, and Mike has elected an implementation
+target.
