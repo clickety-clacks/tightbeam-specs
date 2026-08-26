@@ -73,6 +73,17 @@ follows:
   Its operation vocabulary is currently closed; the candidate explicitly
   requires an additive `settle-turn` operation plus request-fingerprint and
   canonical-response fields.
+- `lib/tightbeam/lane_manager.ex` and `lib/tightbeam/session_lane.ex`: the
+  current `ensure_lane_quiet/2` path avoids an added doorbell but a newly
+  created lane still self-nudges from `init/1`. The candidate therefore defines
+  a new settlement-reserved acquisition seam that suppresses that self-nudge
+  and reconciliation nudges until release.
+- `lib/tightbeam/acp/conn.ex`: the current public seam is `request/4`, and its
+  pending map retains timed-out entries until the adapter resolves them. The
+  pinned source has no public request-status probe. The candidate therefore
+  defines a new local read-only `probe_request/4` contract with a 1,000 ms
+  deadline; it sends no ACP request and treats timeout, close, malformed
+  correlation, provider error, and late local reply as ambiguous.
 
 These anchors establish the source lineage claimed in
 `stale-running-turn-settlement-v1.md`; they do not authorize implementation in
