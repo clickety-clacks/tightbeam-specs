@@ -1,6 +1,6 @@
 # Managed-sandbox local Tightbeam gateway
 
-Status: AMENDED PROPOSAL PENDING CLEAN INDEPENDENT REVIEW
+Status: F4-CORRECTED PROPOSAL PENDING CLEAN INDEPENDENT REVIEW
 
 Authority: work item `wi_7c53cfb2-1ad4-477c-b3df-bffc0d3714fa`;
 recon verdict `att_5b82a9c3-dfcc-4da5-bafc-d011bf537ada`;
@@ -14,6 +14,9 @@ That sole review closed through completion `att_9facab30` and full report
 artifact `art_405ed9cf`. This amendment addresses its five findings. Continuation
 assignment `asg_7fa0cf19-956d-4c1b-807a-ae5c9391908e` requests clean review of
 the amended bytes before policy completion.
+Verification review `att_ca8e39a2-5175-4f52-a553-28cf0365c3da` and report
+`art_a178df78` cleared F1, F2, F3, and F5 and requested one F4 correction
+against commit `d33ce3dfd90d88f4e0c97c0565600756e9098671`.
 
 Source basis: Tightbeam `7a70a2f616363074514237b5bee48ba67c52e2ea` and
 tightbeam-specs `2327bc66a45c7cedf6e726bf8e13b40153531e0b`, both current
@@ -66,9 +69,17 @@ outside the sandbox.
   denial.
 - **Gateway-local session**: a Tightbeam session placed on the gateway's host,
   identified by a host-registry row with `ssh == nil`.
-- **Local agent socket**: the gateway-owned Unix-domain stream socket at the
-  absolute path in `config.local_agent_socket`. The path denotes transport, not
-  authority.
+- **Local agent socket**: the host-activator-owned Unix-domain stream socket at
+  the absolute path in `config.local_agent_socket`. The path denotes transport,
+  not authority.
+- **Host socket activator**: the packaged Linux host component that owns the
+  local socket directory under an operating-system identity distinct from the
+  gateway user, binds the configured socket, and passes its listening file
+  descriptor and activation receipt to the gateway. The gateway user cannot
+  write the directory.
+- **Activation receipt**: the host-owned record for one socket generation. It
+  binds the configured path, filesystem device and inode, gateway user,
+  activation generation, cause, and host principal. It contains no credential.
 - **Local CLI listener**: the Bandit listener bound to the local agent socket.
   It delegates the permitted requests to the existing
   `Tightbeam.Wire.Router` with the same dependency map as the TCP listener.
@@ -114,10 +125,14 @@ outside the sandbox.
 7. The existing operator decision subsystem can address the user who owns the
    managed session and can return one durable `allow-once` or `deny` ruling to
    the pending ACP permission request.
+8. The packaged Linux host supervisor can run the socket activator under an
+   identity distinct from the gateway user and can pass a listening Unix socket
+   descriptor to the gateway. The release gate must prove inherited-listener
+   support against the pinned Bandit and Thousand Island versions.
 
-If assumption 2, 3, or 4 fails on a supported release candidate, the release
-is blocked. An implementer does not substitute a TCP exception, a wildcard
-Unix-socket permission, or full network access.
+If assumption 2, 3, 4, or 8 fails on a supported release candidate, the
+release is blocked. An implementer does not substitute a TCP exception, a
+wildcard Unix-socket permission, or full network access.
 
 ## Invariants
 
@@ -126,15 +141,17 @@ Unix-socket permission, or full network access.
 For the managed profile, Tightbeam generates an empty domain allowlist and one
 `allow` entry whose key is the absolute local agent socket path. Tightbeam sets
 `dangerously_allow_all_unix_sockets = false` and
-`allow_local_binding = false`. The filesystem profile grants `read` to the
-private runtime directory, whose only entries are the local agent socket and
-its non-connectable lifecycle lock file.
+`allow_local_binding = false`. The host socket activator makes the runtime
+directory searchable but not writable by the gateway user. Its only entry is
+the local agent socket.
 
 Acceptance example (AC-1): Given the generated profile, when a test reads its
 effective Codex network policy, then it contains one allowed Unix socket, zero
 allowed domains, `allow_local_binding = false`, and
-`dangerously_allow_all_unix_sockets = false`; its added readable directory
-contains only the socket and a regular lock file.
+`dangerously_allow_all_unix_sockets = false`; its added filesystem permission
+names only the socket path, the host directory contains only that
+socket, and a process running as the gateway user cannot create, replace,
+rename, or unlink a directory entry there.
 
 ### I-2 — Gateway authorization is transport-independent
 
@@ -237,19 +254,37 @@ readiness refuses before a turn.
 
 ## Architecture
 
-### R-1 — One gateway-owned socket lifecycle
+### R-1 — One host-owned socket lifecycle
 
 `config.local_agent_socket` is the single mutation seam for the local
 transport. Its default is `nil`, which starts no local listener and changes no
 session endpoint or command posture. A Linux host that offers the managed
 local-gateway mode sets it to an absolute path. The packaged host integration
-uses `<base_dir>/run/local-agent/gateway.sock`. The gateway creates that
-path's dedicated parent directory with mode `0700` and the bound socket with
-mode `0600` before it starts a managed Codex adapter. It creates `gateway.lock`
-in the configured socket's parent directory as a regular file with mode `0600`.
-If the directory contains an entry other than the configured socket and lock,
-boot stops with
-`local_agent_runtime_conflict` and leaves every entry in place.
+uses `<base_dir>/run/local-agent/gateway.sock` and installs one host socket
+activator. The activator runs outside the gateway-user security boundary. It is
+the only supported writer of the dedicated runtime directory. It creates that
+directory with its own ownership and mode `0711`, creates the socket with the
+gateway user as owner and mode `0600`, and passes the listening file descriptor
+to the gateway. The gateway user can search the directory and connect to the
+socket but cannot create, replace, rename, or unlink an entry in the directory.
+The activator and gateway consume the same `config.local_agent_socket` value;
+the activator accepts no independent path override.
+
+The activator serializes socket creation and gateway launch. Its host-owned
+activation record is inaccessible to the gateway user. The record carries the
+prior device and inode, path, gateway user, activation generation, cause, and
+host principal. The activator writes and synchronizes a staged generation
+before pathname mutation. It removes only the prior inode that this record
+identifies. It performs that removal while no gateway-user process has
+directory write permission. It then binds the replacement, synchronizes the
+replacement identity into the record, and starts the gateway.
+
+After an activator restart, a staged generation resumes only when the pathname
+is absent, still names the recorded prior inode, or names the sole-writer
+successor socket with the required owner and mode. Another state returns
+`local_agent_runtime_conflict` and leaves each entry in place. Direct gateway
+launch with a configured path but no inherited listener returns
+`local_agent_socket_activation_required` before adapter start.
 
 The path must be absolute and must fit the host's Unix-socket path limit. A
 non-absolute or over-limit configured path stops gateway boot with
@@ -260,52 +295,51 @@ boots, then it creates no listener or runtime directory. Given a configured
 path in a fresh Linux base directory, when the gateway boots, then the runtime
 directory and socket exist with the specified modes and the local listener
 accepts an authenticated `GET /harnesses`. Given an unexpected directory
-entry, boot returns `local_agent_runtime_conflict` without removing it.
+entry, activation returns `local_agent_runtime_conflict` without removing it.
+Given a configured direct gateway launch without an inherited listener, then
+the gateway refuses before adapter start.
 
-### R-2 — Stale paths resolve without deleting unknown material
+### R-2 — The gateway never removes a socket pathname
 
-Before it inspects the socket path, the gateway opens the lock with
-`O_NOFOLLOW`, verifies that it is a regular file owned by the gateway user with
-link count one, acquires an exclusive non-blocking lifecycle lock, and holds
-that lock until listener cleanup finishes. A failed check or lock returns
-`local_agent_socket_lifecycle_busy` without inspecting or changing the socket
-path.
+The gateway validates the inherited descriptor with `fstat(2)`,
+`getsockname(2)`, `SO_TYPE`, and `SO_ACCEPTCONN`. It requires a listening Unix
+stream socket whose pathname equals `config.local_agent_socket`. It uses
+`lstat(2)` to require that the pathname device and inode equal the activation
+receipt and that the pathname owner and mode equal the gateway user and `0600`.
+It requires the receipt generation in the activator launch envelope to equal
+the host record. A mismatch returns `invalid_local_agent_activation` before
+adapter start. The gateway neither binds nor unlinks the pathname during
+startup, shutdown, or crash recovery.
 
-While it holds the lock, the gateway handles the socket path as follows:
+The activator is the sole pathname owner. Its activation record carries the
+socket device and inode, gateway user, path, and activation generation. Before
+removal it requires an exact record match. The runtime directory permissions
+prevent every gateway-user process, including each managed agent command, from
+changing the pathname before, during, or after that check. Only the activator
+can remove the recorded socket and bind its successor. Thus the supported
+lifecycle contains no check-then-unlink interval that a same-user process can
+race.
 
-- An absent path is available for bind.
-- A live socket owned by the gateway user returns
-  `local_agent_socket_in_use`; the gateway leaves it in place.
-- A socket owned by the gateway user for which `connect(2)` returns
-  `ECONNREFUSED` is a stale candidate. The gateway records its device and inode,
-  repeats `lstat(2)` immediately before unlink, and unlinks only an unchanged
-  socket with the same owner, device, and inode. A changed check returns
-  `local_agent_socket_path_conflict` without unlinking.
-- Another file type or another owner returns
-  `local_agent_socket_path_conflict`; the gateway leaves it in place.
-
-On clean listener termination, the gateway unlinks the path only when its
-device and inode still equal the socket that this listener bound. It leaves a
-replacement or conflicting path in place.
-
-Acceptance example (AC-10): Given each path state above, when the listener
-starts, then it binds only the absent and stale-owned cases, preserves the live
-and conflicting inodes, and reports the named result. Given a path replacement
-after bind, when the listener terminates, then it preserves that replacement.
-Given two concurrent gateway boots, then one holds the lifecycle lock and the
-other returns `local_agent_socket_lifecycle_busy` without probing or unlinking.
-Given a stale candidate replaced between its first and second identity checks,
-then the gateway preserves the replacement and refuses boot.
+Acceptance example (AC-10): Given two concurrent gateway starts, when both ask
+the activator for the configured socket, then the activator starts one gateway
+generation and refuses the other without changing the live pathname. Given a
+process running as the gateway user, when it attempts replacement immediately
+before the activator's identity check, between that check and removal, and
+immediately after removal, then each operation fails with `EACCES` or `EPERM`.
+Given an unexpected pathname inode or another directory entry, when activation
+runs, then it returns `local_agent_runtime_conflict` and removes nothing. Given
+a gateway shutdown, then the gateway issues no bind, rename, or unlink syscall
+for the configured pathname.
 
 ### R-3 — Listener order exposes only a complete gateway
 
-The gateway starts the local CLI listener after its router dependencies and
-after `AdapterCoordinator` and `LaneManager`. It starts the existing TCP Bandit
-listener next. Readiness reports both listeners only after both accept
-connections, and it prints the local listener path without a token.
+The gateway adopts the activated local CLI listener after its router
+dependencies and after `AdapterCoordinator` and `LaneManager`. It starts the
+existing TCP Bandit listener next. Readiness reports both listeners only after
+both accept connections, and it prints the local listener path without a token.
 
 Acceptance example (AC-11): Given a boot probe at each child boundary, when the
-gateway starts, then the local socket accepts no request before
+gateway starts, then the gateway processes no local request before
 `AdapterCoordinator` and `LaneManager` are live; after readiness, an
 authenticated `GET /harnesses` succeeds through both listeners.
 
@@ -369,7 +403,8 @@ Codex adapter process. It has no workspace path or session input. It:
 
 - extends the existing managed workspace filesystem posture;
 - preserves the existing `bypass_hook_trust` setting and configured hooks;
-- grants read access to the private local-agent runtime directory;
+- grants the exact filesystem access needed to search the host-owned runtime
+  directory and connect to its socket, without directory write access;
 - sets `network.enabled = true`;
 - activates `features.network_proxy`;
 - defines no allowed domain;
@@ -492,26 +527,30 @@ layer and no fixture is classified as another row.
 
 ### R-10 — Restart retains the address and principal
 
-The runtime directory persists across gateway-process restarts. A gateway
-restart replaces a stale owned socket at the same path. The session endpoint
-file and token remain valid. A CLI command during the gap reports
-`local_gateway_unavailable`; the first command after listener readiness uses
-the same path and principal.
+The host activator preserves the configured address across gateway-process
+restarts. It serializes generation replacement, removes only its recorded old
+socket, and binds the successor before it launches the new gateway. The session
+endpoint file and token remain valid. A CLI command before successor bind
+reports `local_gateway_unavailable`; the first command after listener readiness
+uses the same path and principal.
 
 Acceptance example (AC-18): Given one active local session, when the gateway is
 stopped between two read requests and restarted, then the first request
 succeeds, the gap request reports `local_gateway_unavailable`, the final
 request succeeds, and both successful rows carry the same session principal.
+The recorded socket inode changes by one activator generation, and the gateway
+process issues no pathname-removal syscall.
 
 ### R-11 — Upgrade order preserves old sessions
 
-The release installs the gateway and matching CLI as one versioned package, as
-the current release contract requires. The new gateway starts its local
-listener before it projects `socket` into a gateway-local session file. Before
-it enables the managed profile, it reconciles each active gateway-local session
-endpoint so `socket` equals `config.local_agent_socket`. A new CLI against an
-old session file uses HTTP. An old CLI ignores the added JSON field and retains
-its existing HTTP behavior outside the managed profile.
+The release installs the host socket activator, gateway, and matching CLI as one
+versioned package, as the current release contract requires. The new activator
+binds the local listener before the gateway projects `socket` into a
+gateway-local session file. Before it enables the managed profile, the gateway
+reconciles each active gateway-local session endpoint so `socket` equals
+`config.local_agent_socket`. A new CLI against an old session file uses HTTP.
+An old CLI ignores the added JSON field and retains its existing HTTP behavior
+outside the managed profile.
 
 The managed profile becomes selectable only after the matching CLI and local
 listener pass AC-15 and the adapter records the host policy receipt. This order
@@ -530,17 +569,17 @@ without contacting `url`.
 
 The MVP support predicate is:
 
-`os == linux AND config.local_agent_socket != nil AND session.socket == config.local_agent_socket AND host.ssh == nil AND harness == codex AND mode == tightbeam-managed-local AND compatibility stamp matches AND host policy receipt matches AND per-session effective readback matches AND approval relay is available`.
+`os == linux AND config.local_agent_socket != nil AND activated socket path == config.local_agent_socket AND activator generation is ready AND session.socket == config.local_agent_socket AND host.ssh == nil AND harness == codex AND mode == tightbeam-managed-local AND compatibility stamp matches AND host policy receipt matches AND per-session effective readback matches AND approval relay is available`.
 
 When the predicate is false, Tightbeam keeps the existing transport and
 permission behavior. The predicate is a mechanical conjunction over recorded
 facts and a release-gate result; it makes no model or operator judgment.
 
 Acceptance example (AC-20): Given the cross-product of Linux/macOS,
-configured/unconfigured socket, local/satellite, Codex/Claude,
-proven/unproven effective policy, and available/unavailable approval relay, when
-Tightbeam selects a command posture, then only the tuple that satisfies the
-predicate selects the managed local-socket profile.
+configured/unconfigured socket, ready/unready activator, local/satellite,
+Codex/Claude, proven/unproven effective policy, and available/unavailable
+approval relay, when Tightbeam selects a command posture, then only the tuple
+that satisfies the predicate selects the managed local-socket profile.
 
 ### Pattern and subtraction ruling
 
@@ -577,8 +616,8 @@ The implementation passes when AC-1 through AC-21 pass and the following
 reality smoke passes on Gibson against the release CLI, the release gateway,
 and the pinned Codex binary:
 
-1. Start a real gateway on a disposable base directory and its real Unix
-   listener.
+1. Start a real host socket activator and gateway on a disposable base directory
+   and use the inherited Unix listener.
 2. Create a real gateway-local session endpoint through Placement; do not
    hand-author the endpoint fixture.
 3. Start two real sessions with different worktrees on one shared Codex adapter.
@@ -599,8 +638,9 @@ and the pinned Codex binary:
 8. Scan the captured CLI stderr, gateway log, and Codex sandbox log for the
    sentinel token and body values. Verify AC-8.
 
-The test matrix records the Tightbeam commit, CLI version, Codex version,
-`codex-acp` version, kernel version, canonical-template SHA-256,
+The test matrix records the Tightbeam commit, host-activator version and
+generation, CLI version, Codex version, `codex-acp` version, kernel version,
+canonical-template SHA-256,
 materialized-profile SHA-256, effective-policy SHA-256, host policy receipt,
 baseline result, and after result. A hand-written idealized gateway response
 does not satisfy this acceptance.
@@ -633,5 +673,5 @@ Traceability:
 
 ## Open Questions
 
-None. A failed release-gate assumption is a named unsupported value under R-8,
-not an invitation to widen network access.
+None. A failed release-gate assumption is a named unsupported value under R-1,
+R-8, or R-12, not an invitation to widen network access.
