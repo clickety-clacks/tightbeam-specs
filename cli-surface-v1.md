@@ -41,6 +41,11 @@ Agent-facing (demanded by the shipped engineering-kungfu kernels/skills):
   <displayName>` (lookup returning candidates to choose from, never content),
   with tail-by-default and `--before`/`--after` cursors the previous response
   handed the caller (transcript-verb-v1).
+- **catalog-probe --host <host> --provider <provider>** — force fresh model
+  catalog reads for the configured harnesses that use one provider on one host;
+  consumers: agents obtaining post-admission evidence after `list` reports a
+  never-probed, failed, rejected, unavailable, or stale catalog
+  (model-catalog-probe-observability-v1).
 - **spawn / retire / list** — session lifecycle and orientation (kungfu:
   operating manual, recon-lifecycle).
 - **skill (list / put / rm)** — org skill management (kungfu: operating manual).
@@ -74,8 +79,9 @@ Substrate-internal (not agent surface, routed before the parser):
   appear in HELP and are not part of the agent surface contract.
 
 NOT in v1 (no consumer references them; they return when something does, by
-amending this spec first): probe, condition, escalation/waiver commands,
-critical, adjudicate, producer-management commands, cli-side init.
+amending this spec first): unscoped generic probe, condition,
+escalation/waiver commands, critical, adjudicate, producer-management commands,
+cli-side init.
 
 ## Invariants carried forward from the port era (living qualities, not port rules)
 
