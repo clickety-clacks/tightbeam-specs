@@ -46,16 +46,23 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    The provider check SHALL use the local read-only
    `Tightbeam.Acp.Conn.probe_request/5` seam defined in Architecture; it SHALL
    never issue an ACP or harness request.
-7. The substrate SHALL not classify staleness from elapsed time, queue age,
+7. The agent operating pattern SHALL be read-only diagnosis followed by human
+   operator action. An agent MAY report the exact session, turn, observed lane
+   state, and bounded evidence to an authenticated admin operator. An agent
+   SHALL NOT invoke `settle-turn`, even when it holds an assignment or detects
+   a phantom. The admin operator MAY then invoke the verb and the agent MAY
+   read the resulting terminal truth and normal queue drain. No automatic
+   component or agent self-nudge SHALL invoke this verb.
+8. The substrate SHALL not classify staleness from elapsed time, queue age,
    adapter generation, process age, or a heuristic. The operator supplies the
    settlement decision; the substrate verifies only deterministic eligibility.
-8. For a `stale` result, the lane's serialized settlement call SHALL verify all
+9. For a `stale` result, the lane's serialized settlement call SHALL verify all
    of the following and then perform the transition before releasing its
    mailbox: the session row exists, the session state is `active`, the target
    row belongs to that session, the target status is `running`, and `endedAt`
    is NULL. A nudge or task start that arrives during this call SHALL wait
    behind it and SHALL not create a live task in the probe-to-CAS window.
-9. The transition SHALL be a compare-and-set on the exact target row. Its
+10. The transition SHALL be a compare-and-set on the exact target row. Its
    predicate SHALL include `seq`, `sessionKey`, `status='running'`,
    `endedAt IS NULL`, and the active-session condition. A zero-row CAS SHALL
    leave the row unchanged. The operation SHALL re-read the exact target and
@@ -63,30 +70,30 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    the target is terminal, `session_retired` when the active-session predicate
    lost to retirement, `turn_not_found` when the target disappeared, or
    `turn_status_ambiguous` when the row cannot be classified without guessing.
-10. The winning CAS SHALL append the existing `terminal_committed` lifecycle
+11. The winning CAS SHALL append the existing `terminal_committed` lifecycle
     event in the same transaction. The event SHALL have outcome `canceled` or
     `failed`, cause exactly `operator:stale-running-turn`, and principal
     exactly the authenticated `user:<userId>`. The event SHALL not use the
     running turn's stale owner lease as operator authority.
-11. The winning CAS SHALL publish the existing `turn.ended` durable effect in
+12. The winning CAS SHALL publish the existing `turn.ended` durable effect in
     the same transaction. It SHALL not create a `stale` state, shadow turn,
     parallel settlement table, or replacement queue.
-12. After commit, the operation SHALL release the session lane through the
+13. After commit, the operation SHALL release the session lane through the
     existing terminal callback and drain path. The lane SHALL claim the next
     queued turn only after the target is terminal. Queued turns SHALL remain
     queued and valid.
-13. If no lane is currently registered but the session is active, the
+14. If no lane is currently registered but the session is active, the
     operation SHALL obtain a settlement-reserved lane seam. Lane creation SHALL
     suppress the lane's initial self-nudge and reconciliation nudges until the
     settlement call returns. The operation SHALL execute the settlement call
     before any task-start message. Failure to acquire or retain that reservation
     SHALL be `turn_status_ambiguous`, not permission to mutate the ledger
     directly.
-14. A successful response SHALL identify `sessionKey`, `turnSeq`, the terminal
+15. A successful response SHALL identify `sessionKey`, `turnSeq`, the terminal
     status, and whether this call won the CAS or replayed existing terminal
     truth. A denial SHALL identify a stable code from the eligibility and
     authorization vocabulary in Acceptance.
-15. The request's `idempotencyKey` SHALL be 1–200 characters and SHALL be
+16. The request's `idempotencyKey` SHALL be 1–200 characters and SHALL be
     scoped by `(principal, verb, idempotencyKey)`. The request fingerprint SHALL
     be the SHA-256 digest of canonical JSON containing `verb`, `sessionKey`,
     `turnSeq`, `outcome`, and the bounded `reason`. The handler SHALL use the
@@ -99,7 +106,7 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
     terminal truth and SHALL perform no second settlement. The `turns` row and
     its lifecycle event SHALL remain the only terminal source of truth; the
     idempotency row is replay metadata, not a terminal state.
-16. The accepted and denied dispatch observations SHALL record the verb,
+17. The accepted and denied dispatch observations SHALL record the verb,
     target identifiers, outcome, principal, idempotency-key digest, and stable
     result code. They SHALL not record the prompt body or raw credentials. The
     lifecycle row SHALL retain the cause and principal required by item 10.
@@ -141,6 +148,21 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
   connection's pending request entry only when that connection's generation
   equals `adapter_generation`; it does not send JSON-RPC, ACP, or harness
   traffic.
+- **Correlation fence** — one coordinator-owned lease over the checked
+  adapter connection generation. The lease is held from generation checkout
+  through the local probe and the settlement transaction. Adapter replacement,
+  close, and generation bump invalidate the lease and make the operation
+  ambiguous; they cannot silently succeed while the lease is held.
+- **Pointer snapshot** — the durable current `harness_pointers` row identity
+  and its `harnessSessionId`, read as one pair. The row identity is the fence
+  against a later pointer append.
+- **Generation-fence contract** —
+  `AdapterCoordinator.with_generation_fence(coordinator, adapter_key,
+  expected_generation, fun)`. It checks out the current adapter at the
+  expected generation, runs `fun` once while replacement and generation-bump
+  paths are fenced, and returns the callback result only if the fence stayed
+  valid. An unavailable adapter or invalidated fence returns an error that the
+  lane maps to `turn_status_ambiguous`.
 
 ## Assumptions
 
@@ -164,6 +186,12 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
   public request-status operation. Its contract is specified here so an
   implementation cannot issue a new provider request or inspect an unbounded
   private structure.
+- The settlement protocol can hold a coordinator generation fence while it
+  performs the local probe and database CAS. The durable pointer chain is
+  append-only, so its current row identity can participate in the CAS
+  predicate. These two fences are required because `Org.append_pointer/4`
+  commits independently and `AdapterCoordinator.adapter_for/2` returns a
+  process-owned adapter generation.
 - Boot recovery remains authoritative after process loss: every still-running
   row encountered at recovery becomes `failed_unknown` with cause
   `boot-recovery`, and is never requeued. A settlement request that loses its
@@ -180,10 +208,12 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    operator settlement, retirement, and boot recovery race through existing
    terminal truth; none may overwrite another terminal status.
 2. The live/stale/ambiguous decision and the settlement CAS execute through one
-   concrete `SessionLane.settle_stale/3` synchronous call. The lane SHALL hold
-   its mailbox serialization while the CAS transaction runs. A caller SHALL
-   NOT sample lane state, release the call, and later perform a database
-   update.
+   concrete `SessionLane.settle_stale/3` synchronous call with shape
+   `SessionLane.settle_stale(lane_pid, reservation_token, operator_request)`;
+   `operator_request` contains the target and all verb parameters. The lane
+   SHALL hold its mailbox serialization while the correlation fence, local
+   probe, and CAS transaction run. A caller SHALL NOT sample lane state,
+   release the call, and later perform a database update.
 3. A live or ambiguous target causes zero writes to `turns`, lifecycle events,
    terminal publications, queue rows, and session state.
 4. A missing target, a target whose session is absent, a target on a retired
@@ -219,20 +249,28 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    another creator wins without the requested reservation. The reservation
    SHALL be released exactly once after the settlement call, with one normal
    drain.
-3. Add a `SessionLane.settle_stale/4` synchronous call carrying the reservation
-   token and operator request. Its handler SHALL read exactly one
+3. Add the exact `SessionLane.settle_stale/3` synchronous call
+   `SessionLane.settle_stale(lane_pid, reservation_token, operator_request)`.
+   Its handler SHALL first obtain the target's adapter key and positive
+   `adapterGen` as a preliminary read; missing values are ambiguous. It SHALL
+   then acquire a correlation fence from
+   `AdapterCoordinator.with_generation_fence/4` for the target's adapter key
+   and expected `adapterGen`. Within that callback it SHALL read exactly one
    `prompt_dispatched` lifecycle event for the target, read the target's
-   `adapterGen`, resolve the current harness-session pointer, and obtain the
-   current `{conn, connection_generation}` from
-   `AdapterCoordinator.adapter_for/2`. It SHALL refuse before probing unless
-   `connection_generation == adapterGen`. It SHALL then call
-   `Tightbeam.Acp.Conn.probe_request/5`, refuse on `live` or `ambiguous`, and
-   retain the lane mailbox callback while it invokes the guarded settlement
-   transaction. A task cannot claim or start between that inspection and the
-   CAS.
+   `adapterGen`, and read one durable current-pointer snapshot consisting of
+   pointer row identity and `harnessSessionId` through
+   `Org.current_pointer_snapshot/2`. It SHALL obtain
+   `{:ok, adapter_pid, connection_generation}` from
+   `AdapterCoordinator.adapter_for/2` under that fence, obtain the connection
+   from `Acp.Adapter.conn(adapter_pid)` under the same fence, refuse before
+   probing unless the generation and pointer snapshot are valid, and then call
+   `Tightbeam.Acp.Conn.probe_request/5` on that fenced connection. It SHALL
+   retain the lane mailbox callback and the coordinator fence while it invokes
+   the guarded settlement transaction. A task cannot claim or start between
+   that inspection and the CAS.
 4. `probe_request/5` SHALL accept `(conn, acpRequestId, harnessSessionId,
    adapterGen, timeoutMs)` together with the coordinator-issued connection
-   generation check from item 3. It SHALL return `{:live, acpRequestId}` only
+   generation fence from item 3. It SHALL return `{:live, acpRequestId}` only
    when that checked connection is generation `adapterGen`, the pending
    entry's session id equals `harnessSessionId`, and that entry remains
    unresolved. It SHALL return `:absent` only when the checked
@@ -240,11 +278,21 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    missing, duplicated, or mismatched
    `prompt_dispatched` event or any generation/pointer mismatch SHALL prevent
    the call and produce `{:unknown, :uncorrelatable}`.
-5. In the stale branch, use the existing terminal transition seam with an
-   operator-authorized terminal event. The transaction SHALL combine the
-   guarded target update, lifecycle append, `turn.ended` publication effect,
-   and the `wire_idempotency` fingerprint/response write. It SHALL return the
-   row's terminal result when another writer won.
+5. In the stale branch, the correlation fence SHALL remain held while a
+   write-locked transaction re-reads the active session, target, exactly-one
+   dispatch event, target `adapterGen`, and current-pointer snapshot. The
+   transaction SHALL refuse as `turn_status_ambiguous` unless every value
+   equals the fenced observation, including the current pointer row identity,
+   pointer `harnessSessionId`, target generation, and dispatch request id. Its
+   guarded target update SHALL include the current-pointer identity and
+   `harnessSessionId` as an `EXISTS` predicate, with no newer pointer row for
+   the session. A pointer append that committed before the write lock makes
+   the CAS ineligible; an append that follows the commit is a later
+   linearized event. Adapter replacement or generation change invalidates the
+   held fence and makes the result ambiguous. The transaction SHALL combine
+   the guarded target update, lifecycle append, `turn.ended` publication
+   effect, and the `wire_idempotency` fingerprint/response write. It SHALL
+   return the row's terminal result when another writer won.
 6. After a winning commit, use the existing terminal callback, publication,
    and lane drain. If the response is lost after commit, the existing
    unpublished-terminal and pending-session reconciliation paths SHALL make
@@ -308,7 +356,8 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    id before the 1,000 ms deadline, then it returns `{:live, 42}` whether or
    not the original ACP caller has received its own request timeout, because
    the adapter has not resolved the pending entry. Given the same correlation
-   and no pending entry on generation 7, it returns `:absent`. Given a missing
+   and no pending entry on generation 7 while the coordinator fence remains
+   valid, it returns `:absent`. Given a missing
    or duplicate dispatch event, a missing or malformed event request id, a
    missing or zero target generation, a pointer mismatch, or a target stamped
    generation 6 while the only available connection is generation 7, it
@@ -331,8 +380,18 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    process principal, non-admin user, or missing authentication, when the
    caller sends `settle-turn`, then the response is `not_authorized` and the
    target remains unchanged.
-9. **CAS race.** Given one stale target and two concurrent settlement requests,
-   when both reach the CAS, then exactly one changes the row and appends the
+9. **Correlation replacement race.** Given a stale sample with pointer row P,
+   harness session `hs-1`, target `adapterGen=7`, and a generation-7 checked
+   connection, when a pointer append commits or the coordinator replaces that
+   connection before the write-locked correlation re-read, then the result is
+   `turn_status_ambiguous`, the target and all terminal/publication/queue
+   tables are unchanged, and no provider request or cancellation is sent.
+   Given the pointer append or generation replacement occurs only after the
+   settlement CAS commits, then the settlement remains the single earlier
+   linearization point and the later pointer/generation event does not create a
+   second terminal event.
+10. **CAS race.** Given one stale target and two concurrent settlement requests,
+   when both reach the exact `SessionLane.settle_stale/3` CAS, then exactly one changes the row and appends the
    lifecycle event; the loser returns the existing terminal truth and creates
    no event or publication. Given a runner completion races the operator, the
    same one-terminal rule decides the result. Given a queued successor sends a
@@ -340,48 +399,55 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
    successor cannot claim before the target CAS commits; if a task is already
    current at the call boundary, the operator receives `turn_live` and the CAS
    does not run.
-10. **Idempotent retry.** Given a committed settlement and a lost first
+11. **Idempotent retry.** Given a committed settlement and a lost first
    response, when the same request is retried with the same idempotency key,
    then the response identifies the existing terminal truth and counts one
    lifecycle event, one terminal publication, and one queue release.
-11. **Idempotency collision.** Given a principal and key already recorded for
+12. **Idempotency collision.** Given a principal and key already recorded for
     one target/outcome/reason fingerprint, when the same principal reuses that
     key with a different target, outcome, or reason, then the response is
     `idempotency_key_conflict` and the second target, lifecycle table, queue,
     and publication table remain unchanged. Given a different principal uses
     the same key, then the request has a separate scope and is evaluated only
     against its own target.
-12. **Queue release.** Given one stale running target and one queued successor,
+13. **Queue release.** Given one stale running target and one queued successor,
     when settlement commits, then the successor remains queued until the
     existing terminal callback/drain, then claims as the next turn. The
     settlement never deletes, cancels, or rewrites that successor.
-13. **Restart before commit.** Given a process loss before the settlement CAS
+14. **Restart before commit.** Given a process loss before the settlement CAS
     commits, when the gateway restarts, then existing boot recovery handles the
     still-running row as `failed_unknown` and the lost operator request does
     not reappear as a `canceled` or `failed` settlement.
-14. **Restart after commit.** Given process loss after the settlement CAS but
+15. **Restart after commit.** Given process loss after the settlement CAS but
     before the response or queue nudge, when the gateway restarts, then the
     existing unpublished-terminal and pending-session sweeps publish the
     committed terminal truth and drain the active session exactly once.
-15. **Compatibility and rollback.** Given an older client or server, then the
+16. **Compatibility and rollback.** Given an older client or server, then the
     unsupported verb is rejected as `unknown_verb` and existing `cancel`,
     automatic adapter recovery, retired-session handling, and terminal statuses
     retain their current behavior. Given the new handler is disabled after a
     successful settlement, existing terminal rows remain terminal and no queue
     row is recreated.
-16. **Observability.** Given one accepted request, one live refusal, one
+17. **Observability.** Given one accepted request, one live refusal, one
     ambiguous refusal, and one authorization refusal, then each produces one
     stable dispatch observation with the target and principal, and only the
     accepted CAS produces the operator lifecycle event. No observation contains
     prompt text, credentials, or an unbounded reason.
-17. **Fresh-lane ordering.** Given no registered lane, one active session, and
+18. **Fresh-lane ordering.** Given no registered lane, one active session, and
     one queued successor, when settlement-reserved acquisition starts, then
     the fresh lane emits no initial or reconciliation nudge before the
     settlement call returns. A queued successor cannot claim during the held
     reservation. After release, exactly one normal drain may claim it. If the
     reservation cannot be acquired or retained, the result is
     `turn_status_ambiguous` and the target remains unchanged.
-18. **Source lineage and deterministic replay matrix.** Given the immutable
+19. **Agent operating pattern.** Given an agent observes a candidate phantom,
+    when it needs operator action, then it emits a read-only escalation with
+    the exact `sessionKey`, `turnSeq`, lane result, correlation evidence, and a
+    bounded reason; it does not invoke `settle-turn`. Given an authenticated
+    admin operator then invokes the verb, the agent may consume the result and
+    observe the normal terminal callback and queue drain. An agent principal's
+    direct invocation remains `not_authorized` with zero mutation.
+20. **Source lineage and deterministic replay matrix.** Given the immutable
     source-evidence artifact, then its recorded commands prove the exact
     `eea3e9a1eb73a63ae41eafa05fb42e410f362ee7` object and its ancestry to the
     owned product clone, and its cited lane, ledger, lifecycle, publication,

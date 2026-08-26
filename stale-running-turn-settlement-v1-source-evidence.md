@@ -84,9 +84,18 @@ follows:
   defines a new local read-only `probe_request/5` contract. Its correlation
   reads the target's `adapterGen`, exactly one `prompt_dispatched` lifecycle
   event's `acpRequestId`, the current harness-session pointer, and the current
-  connection generation. It uses a 1,000 ms deadline, sends no ACP request,
-  and treats timeout, close, malformed or mismatched correlation, provider
-  error, and late local reply as ambiguous.
+  connection generation. The current `Org.current_pointer/2` projection omits
+  the append-only row id, so the candidate's additive
+  `Org.current_pointer_snapshot/2` seam must preserve that id for the CAS
+  predicate. The current `AdapterCoordinator.adapter_for/2` checkout is
+  `{:ok, adapter_pid, generation}`; the candidate obtains the connection from
+  that pid under a new coordinator-owned generation fence. The pinned source
+  has no such fence, so `with_generation_fence/4` is a required additive seam,
+  not a claim about existing implementation. The candidate's probe uses a
+  1,000 ms deadline, sends no ACP request, and treats timeout, close,
+  malformed or mismatched correlation, provider error, and late local reply as
+  ambiguous. The durable CAS rechecks the pointer id/session, dispatch event,
+  and target generation while the generation fence remains held.
 
 These anchors establish the source lineage claimed in
 `stale-running-turn-settlement-v1.md`; they do not authorize implementation in
