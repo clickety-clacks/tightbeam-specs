@@ -130,10 +130,11 @@ machine's failure, retirement, or authorization policy.
 
 ### Goal
 
-Once an assignment reaches a terminal disposition, a turn durably attributed
-to that assignment can start only if its claim committed before the terminal
-disposition. The ledger preserves the turn, attribution, wake, and lifecycle
-evidence for either race result.
+At each assignment-terminal transition, a turn already queued under that
+assignment can start only if its claim committed before that transition.
+Reopening makes turns enqueued after reopen eligible until the assignment's
+next terminal transition. The ledger preserves the turn, attribution, wake,
+and lifecycle evidence for each race result.
 
 ### Non-Goals
 
@@ -146,8 +147,7 @@ evidence for either race result.
   turn-read authorization, session-retirement authority, fault-bubble policy,
   or unknown-outcome recovery.
 - This amendment does not add a schema field, public verb, request parameter,
-  response field, queue process, timer, retry, attribution backfill, or
-  lifecycle backfill.
+  queue process, timer, retry, attribution backfill, or lifecycle backfill.
 - This amendment does not repair a non-null `turns.assignmentId` that names no
   assignment. The report-dirt path in ATI-10 fails that turn by a named cause
   instead of guessing an assignment or close disposition.
@@ -162,6 +162,8 @@ evidence for either race result.
 - **Assignment-open truth:** in the claim transaction's current durable
   snapshot, the assignment named by `turns.assignmentId` exists with
   `state = 'open'`.
+- **Head queued turn:** the queued turn with the lowest `turns.seq` for one
+  session. This is the existing per-session FIFO boundary.
 - **Matching queued turn:** a turn with `status = 'queued'` and
   `assignmentId` equal to the assignment-terminal transition's assignment id.
 - **Legacy queued turn:** a matching queued turn found at boot whose assignment
@@ -173,10 +175,11 @@ evidence for either race result.
   cause, identified by `requestRef = bubble:<cause_seq>`. It carries null
   assignment attribution because it is notice work for the recipient, not
   work under the cause turn's assignment.
-- **Assignment-terminal cancellation token:**
+- **Valid assignment-terminal cancellation token:** the exact string
   `assignment-terminal:<outcome>:<assignmentId>`, where `<outcome>` is the
-  assignment row's stored terminal outcome and `<assignmentId>` is its stored
-  id.
+  closed assignment row's stored terminal outcome and `<assignmentId>` equals
+  both that assignment row's stored id and the canceled turn's stored
+  `assignmentId`. No other outcome, id, delimiter, suffix, or shape is valid.
 
 ### Assumptions
 
@@ -185,8 +188,6 @@ evidence for either race result.
   attribution contract.
 - The database serializes assignment closure, turn claim, and boot recovery
   writes through transactions over the same ledger.
-- A turn has one-way state paths:
-  `queued -> running -> delivered | canceled | failed | failed_unknown`.
 - `turn_lifecycle_events` permits one `terminal:committed` event and one
   `terminal:published` event per lifecycle-covered turn. Its epoch boundary
   excludes earlier turns from event backfill.
@@ -196,10 +197,12 @@ evidence for either race result.
 
 ### Invariants
 
-**ATI-1 — Claim gate.** A queued turn can transition to `running` only when
+**ATI-1 — Claim gate.** When a session has no running turn, `claim_next`
+examines its head queued turn. That turn can transition to `running` only when
 its session exists and is active, and either its `assignmentId` is null or
-assignment-open truth holds. The claim update evaluates these predicates and
-changes the turn state in one atomic database statement.
+assignment-open truth holds. One atomic database statement rechecks the head
+selection, these predicates, and the transition. `claim_next` does not skip an
+unclaimable head turn to claim a later row.
 
 **ATI-2 — Terminal drain.** Each assignment-terminal transition changes the
 assignment state and cancels its matching queued turns in one transaction.
@@ -219,10 +222,14 @@ its `endedAt`, and its existing related rows are the historical evidence.
 Cancellation appends no lifecycle event for that turn.
 
 **ATI-2A — Lifecycle authority.** The lifecycle writer accepts an ownerless
-terminal commit with an `assignment-terminal:` cause only when the outcome is
-`canceled` and the principal is `process:tightbeam`. It rejects the same cause
-for another outcome or principal through its existing named lifecycle-write
-refusal.
+terminal commit with an assignment-terminal cause only when the turn row is
+`canceled`, its `error` and the event `cause` equal the valid
+assignment-terminal cancellation token, the event outcome is `canceled`, and
+the event principal is `process:tightbeam`. In the same transaction, the
+writer resolves `turns.assignmentId` to the closed assignment row and compares
+the cause with that row's stored id and outcome. A malformed cause or any row,
+outcome, id, error, or principal mismatch returns the existing named
+lifecycle-write refusal and appends no event.
 
 **ATI-3 — Exact scope.** The terminal drain selects by the exact stored
 `turns.assignmentId` and `status = 'queued'`. It leaves a turn with null
@@ -244,7 +251,8 @@ terminal transition for that turn.
 
 **ATI-6 — Reopen is prospective.** Reopening an assignment authorizes future
 work. It does not change a turn canceled under ATI-2 or ATI-5 and does not
-enqueue a replacement turn.
+enqueue a replacement turn. A turn enqueued with that assignment after reopen
+is eligible under ATI-1 until the assignment's next terminal transition.
 
 **ATI-7 — Fault evidence.** An assignment-terminal canceled cause turn does
 not start a fault bubble. A `failed` or `failed_unknown` cause turn that
@@ -255,10 +263,13 @@ production enqueues each ancestor notice with `assignmentId = NULL`, so a
 closed cause assignment does not assignment-gate the notice.
 
 **ATI-8 — Existing boundaries.** The change adds no reader or writer
-authority. An authorized existing turn or lifecycle read exposes the canceled
-status, stored `assignmentId`, assignment-terminal cancellation token, event
-principal, and timestamps. A caller that could not read the turn or assignment
-before this amendment gains no access through the cancellation.
+authority. For an already-authorized `turn-trace` read, the `turn` object adds
+`assignment_id`, equal to stored `turns.assignmentId`, and `error`, equal to
+stored `turns.error`; either value is null when its stored field is null. The
+change removes, renames, or changes no existing response key. The existing
+event projection exposes the cancellation token as `cause`, its principal,
+and event timestamps. A caller that could not read the turn before this
+amendment receives the existing `not_found` shape with none of these values.
 
 **ATI-9 — Retirement composition.** During holder retirement, assignment
 revocation applies ATI-2 before the existing session-retirement drain. The
@@ -266,16 +277,21 @@ assignment drain gives matching queued turns the assignment-terminal token.
 The session-retirement drain then handles the holder's remaining queued turns
 under its existing contract. A running turn follows ATI-4.
 
-**ATI-10 — Missing attribution fails loudly.** If a queued turn carries a
-non-null `assignmentId` that names no assignment, `claim_next` returns
-`{:unclaimable, :assignment_missing}` instead of claiming it. The existing
-unclaimable-turn seam then changes that queued row to `failed`, sets
-`turns.error` to
-`unclaimable: assignment row <assignmentId> does not exist`, and appends a
+**ATI-10 — Missing attribution fails loudly.** If an active session's head
+queued turn carries a non-null `assignmentId` that names no assignment,
+`claim_next` returns
+`{:unclaimable, {:assignment_missing, <turnSeq>, <assignmentId>}}` instead of
+claiming that turn or a later row. The existing unclaimable-turn seam then
+changes exactly that `turnSeq` to `failed` only if it remains queued, retains
+the same `assignmentId`, and the assignment row remains absent. It changes no
+other turn. A winning update sets `turns.error` to
+`unclaimable: assignment row <assignmentId> does not exist` and appends a
 terminal lifecycle event with cause `unclaimable:assignment_missing` and
 principal `process:tightbeam` when the turn is lifecycle-covered. Existing
-failed-cause bubbling applies. The update rechecks that the assignment row is
-still absent in the same statement that changes the turn state.
+failed-cause bubbling applies. Whether the failure update wins or its
+predicates have become false, the session lane immediately evaluates its next
+claim without an external wake, timer, or enqueue. Existing `no_session` and
+`session_retired` unclaimable behavior is unchanged.
 
 ### Architecture
 
@@ -286,17 +302,19 @@ claim update adds the assignment-open predicate beside its existing active-
 session predicate. Boot invokes the same cancellation semantics for queued
 rows joined to closed assignments before it starts session lanes.
 
-The cancellation token uses fields already visible through authorized turn
-and lifecycle reads. The existing unique terminal lifecycle keys make repeat
-recovery and publication no-ops after the first committed cancellation. No
-prompt or error prose parser, elapsed-time threshold, or inference
-participates. The assignment-terminal token is a typed lifecycle-cause
-convention, not prose from a caller.
+The cancellation token uses stored turn and assignment fields. The lifecycle
+writer validates its exact shape and cross-row equality; it does not authorize
+by prefix. The existing unique terminal lifecycle keys make repeat recovery
+and publication no-ops after the first committed cancellation. No prompt or
+error prose parser, elapsed-time threshold, or inference participates. The
+assignment-terminal token is a typed lifecycle-cause convention, not prose
+from a caller.
 
 The lifecycle writer's system-terminal authority list gains only the exact
-ATI-2A case. The existing unclaimable-turn path gains the exact ATI-10 value
-and assignment-absence predicate. The bubble producer continues to omit
-assignment attribution from ancestor notices.
+ATI-2A case. The existing unclaimable-turn path gains the exact ATI-10 tuple,
+single-row compare-and-set, and immediate next-claim evaluation. The
+authorized `turn-trace` projection adds the two ATI-8 fields. The bubble
+producer continues to omit assignment attribution from ancestor notices.
 
 Mechanism choice — ADD the exact state gate: deleting assignment attribution
 would destroy required causality, while accepting the failure would let work
@@ -333,12 +351,13 @@ the check.
 4. **ATI-A4 — Boot, replay, and reopen.** Given two synthetic legacy queued
    rows attributed to closed assignments, with one turn below the lifecycle
    epoch and one turn inside it, when boot runs twice, terminal publication
-   replays, both assignments reopen, and boot runs again, then the first boot
-   cancels both turns. The pre-epoch turn gains no lifecycle event or lifecycle
+   replays, both assignments reopen, boot runs again, and one new attributed
+   turn is enqueued for each reopened assignment, then the first boot cancels
+   both legacy turns. The pre-epoch turn gains no lifecycle event or lifecycle
    publication. The covered turn gains one committed event and one published
-   event.
-   Later actions leave both row shapes and event counts unchanged. Neither
-   reopen creates a queued turn.
+   event. Later actions leave both legacy row shapes and event counts
+   unchanged. Neither reopen creates a turn, but each new post-reopen turn is
+   claimable and follows its ordinary running and terminal path.
 5. **ATI-A5 — Attribution boundary.** Given one queued turn attributed to
    assignment A, one attributed to open sibling assignment B, one with null
    attribution, and one ordinary user turn with null attribution, when A
@@ -349,15 +368,19 @@ the check.
    assignment, when it closes, then only the queued rows gain the
    assignment-terminal cancellation. Each other row and lifecycle history is
    byte-for-byte unchanged.
-7. **ATI-A7 — Missing attribution dirt.** Given an active session with a
-   lifecycle-covered queued turn whose non-null `assignmentId` names no
-   assignment, when claim and the unclaimable-turn seam run, then claim returns
-   `{:unclaimable, :assignment_missing}` and the seam changes that turn to
-   `failed` with the ATI-10 error and lifecycle cause. A transaction that
-   inserts the named assignment before the failure update makes the predicate
-   false and leaves the turn queued. Neither order infers another assignment,
-   cancels the turn as an assignment disposition, or grants a new principal
-   access.
+7. **ATI-A7 — Missing attribution dirt.** Given an active session with no
+   running turn and three lifecycle-covered queued turns in sequence order —
+   head turn M whose non-null `assignmentId` names no assignment, turn B
+   attributed to an open sibling assignment, and turn N with null attribution
+   — when claim and the unclaimable-turn seam run, then claim returns
+   `{:unclaimable, {:assignment_missing, M.seq, M.assignmentId}}`. The seam
+   changes only M to `failed` with the ATI-10 error and lifecycle cause, then
+   the immediate next claim starts B. After B reaches terminal, the next claim
+   starts N. In a second fixture where B precedes M, claim starts B before it
+   diagnoses M. In a third fixture, inserting M's assignment as open before
+   the failure update makes the compare-and-set change no row; the immediate
+   next claim starts M. No case infers another assignment, fails a batch,
+   cancels M as an assignment disposition, or changes another turn.
 8. **ATI-A8 — Retirement order.** Given a retiring holder with one attributed
    turn whose claim committed before retirement, one attributed queued turn
    whose claim did not commit before retirement, and one queued
@@ -378,13 +401,15 @@ the check.
    session retirement or explicit cancellation, its underlying cause advances
    under the existing canceled-notice rule without creating a
    bubble-about-a-bubble.
-10. **ATI-A10 — Authorization and privacy.** Given a lifecycle-covered
-    matching turn and principals that can and cannot close the assignment or
-    read its turn, when ATI-2 cancels the turn, then close authorization results
-    and read authorization results equal the pre-amendment results. The
-    authorized trace contains the exact token, principal, assignment
-    attribution, and timestamps; the unauthorized read returns its existing
-    refusal shape without cancellation detail.
+10. **ATI-A10 — Authorization, observability, and compatibility.** Given a
+    lifecycle-covered matching turn and principals that can and cannot close
+    the assignment or read its turn, when ATI-2 cancels the turn, then close
+    authorization and trace-read authorization equal the pre-amendment
+    results. The authorized trace's `turn.assignment_id` equals the stored
+    assignment id, `turn.error` equals the cancellation token, and the event
+    exposes that token as its cause with principal and timestamps. Every
+    pre-amendment trace key and value remains unchanged. The unauthorized read
+    returns the existing `not_found` shape without cancellation detail.
 11. **ATI-A11 — Seven-row non-recurrence fixture.** Given synthetic cause turns
     69120, 69122, 69123, 69124, 69138, 69142, and 69143 that reach `failed`
     before their assignment closes, when closure, retirement, bubble
@@ -393,11 +418,17 @@ the check.
     its existing deterministic ancestor notice. No child turn is reclaimed,
     no cancellation replaces a historical failure, and no duplicate notice is
     created.
-12. **ATI-A12 — Lifecycle cause authority.** Given otherwise-identical direct
-    lifecycle writes that use an `assignment-terminal:` cause, when one write
-    uses a non-canceled outcome and another uses a principal other than
-    `process:tightbeam`, then each write returns the existing named
-    lifecycle-write refusal and appends no event.
+12. **ATI-A12 — Lifecycle cause authority.** Given canceled,
+    lifecycle-covered turns, two valid closed assignments, and
+    otherwise-identical direct lifecycle writes, when the writes respectively
+    use `assignment-terminal:revoked:<assignmentId>:extra`, a permitted
+    disposition different from the attributed closed assignment's stored
+    outcome, the other valid closed assignment's id instead of stored
+    `turns.assignmentId`, a turn `error` different from the event cause, a
+    non-canceled event outcome, and a principal other than
+    `process:tightbeam`, then each write returns
+    `{:error, {:turn_lifecycle_write_rejected,
+    :invalid_terminal_authority}}` and appends no event.
 
 Traceability: ATI-A1 verifies ATI-2, ATI-2E, and ATI-2A; ATI-A2 and ATI-A3
 verify ATI-1 and ATI-4; ATI-A4 verifies ATI-2L, ATI-5, and ATI-6; ATI-A5 and
