@@ -1,16 +1,22 @@
 # Managed-sandbox local Tightbeam gateway
 
-Status: PROPOSAL FOR INDEPENDENT REVIEW
+Status: SPEC-READY PROPOSAL AMENDED AFTER THE SOLE INDEPENDENT REVIEW
 
 Authority: work item `wi_7c53cfb2-1ad4-477c-b3df-bffc0d3714fa`;
 recon verdict `att_5b82a9c3-dfcc-4da5-bafc-d011bf537ada`;
 historical closure report `art_4a60cdf3` at SHA-256
 `869f650ee514d52e3450e3809b26bf679d4ec0adade2de69925c947dca094227`;
 live specimen `att_edd8f0e0-1568-4753-8079-e7bc9af3da61`.
+First independent review `att_da816395-6895-4e9c-be2a-89c645066765`
+requested five blocking changes against commit
+`39200fe74bfb9bbd8be8c2fe9204f544302e7556`.
+That sole review closed through completion `att_9facab30` and full report
+artifact `art_405ed9cf`. This amendment addresses its five findings; no second
+review is requested.
 
 Source basis: Tightbeam `7a70a2f616363074514237b5bee48ba67c52e2ea` and
-tightbeam-specs `130c0dff508df38ef84780bda08ca4704434ad4e`, both current
-`origin/main` when this proposal was drafted.
+tightbeam-specs `2327bc66a45c7cedf6e726bf8e13b40153531e0b`, both current
+`origin/main` when this amendment was frozen.
 
 ## Goal
 
@@ -20,8 +26,9 @@ on the same host without giving that sandbox IP-network access.
 The supported path uses one exact filesystem Unix-domain socket. The gateway
 serves the existing authenticated agent CLI routes on that socket. The Codex
 permission profile permits that socket and leaves its domain allowlist empty.
-An unrelated network action continues to require the existing explicit
-approval and out-of-sandbox execution path.
+The `tightbeam-managed-local` Codex mode sends an unrelated network escalation
+through an explicit, allow-once operator decision before Codex can execute it
+outside the sandbox.
 
 ## Non-Goals
 
@@ -35,19 +42,27 @@ approval and out-of-sandbox execution path.
   connection outside the command sandbox.
 - A general localhost proxy, a port allowlist, a domain allowlist, DNS access,
   or a joined host network namespace.
-- A new credential, capability token, identity rule, gateway verb, approval
-  policy, or authorization rule.
+- A new credential, capability token, identity rule, gateway verb, or gateway
+  authorization rule.
+- A change to approval behavior outside `tightbeam-managed-local` mode.
 - Automatic recovery by granting broad network access when the local transport
   fails.
 
 ## Terms
 
 - **Managed command sandbox**: the Linux sandbox that Codex applies to a
-  model-issued command. It uses an isolated network namespace and a named Codex
-  permission profile. Its hosting execution surface owns explicit sandbox
-  approvals. It does not include the Codex app-server or its provider
-  connection, and it is not a Tightbeam ACP permission request that
-  `Tightbeam.ACP.Conn` answers automatically.
+  model-issued command. It uses an isolated network namespace and the
+  `tightbeam-managed-local` Codex mode. It does not include the Codex app-server
+  or its provider connection.
+- **Managed local mode**: the `tightbeam-managed-local` ACP session mode. Its
+  Codex approval policy is `on-request`; its sandbox policy is workspace-write
+  with network enabled through the active Codex proxy; and its effective
+  network policy permits only the local agent socket.
+- **Explicit approval relay**: the mapping from one ACP
+  `session/request_permission` to one existing Tightbeam operator decision
+  request. Only an `allow-once` ruling selects the ACP allow-once option. A
+  denial, cancellation, timeout, missing option, or automatic responder selects
+  denial.
 - **Gateway-local session**: a Tightbeam session placed on the gateway's host,
   identified by a host-registry row with `ssh == nil`.
 - **Local agent socket**: the gateway-owned Unix-domain stream socket at the
@@ -65,11 +80,14 @@ approval and out-of-sandbox execution path.
   The CLI uses the phase in its error code so an operator can identify the
   failing local-CLI layer without interpreting prose. SSH and ACP provider
   failures retain their existing `ssh` and `acp` reported layers.
-- **Managed-profile compatibility stamp**: the exact Codex version and the
-  SHA-256 of the canonical managed-profile template that the release gate
-  proved. The template has typed `workspace_root` and `local_agent_socket`
-  slots. The Tightbeam release embeds the stamp beside its Codex harness
-  preset.
+- **Managed-profile compatibility stamp**: the exact Codex version,
+  `codex-acp` version, and SHA-256 of the canonical host-profile template that
+  the release gate proved. The template has one typed
+  `local_agent_socket` slot. The Tightbeam release embeds the stamp beside its
+  Codex harness preset.
+- **Host policy receipt**: the configured socket path, materialized host-profile
+  SHA-256, effective-policy SHA-256, and compatibility stamp recorded after the
+  real host readiness probe passes.
 - **Unrelated network action**: a command attempt to use an IP destination.
   The local agent socket is not an IP destination.
 
@@ -92,9 +110,9 @@ approval and out-of-sandbox execution path.
    verb authorization.
 6. The gateway and each gateway-local managed command run as the same operating
    system user. This MVP does not cross a user boundary.
-7. The hosting Codex execution surface sends a blocked unrelated network action
-   to its existing explicit approval path. A surface that automatically allows
-   a Codex sandbox escalation does not satisfy this spec's support predicate.
+7. The existing operator decision subsystem can address the user who owns the
+   managed session and can return one durable `allow-once` or `deny` ruling to
+   the pending ACP permission request.
 
 If assumption 2, 3, or 4 fails on a supported release candidate, the release
 is blocked. An implementer does not substitute a TCP exception, a wildcard
@@ -108,13 +126,14 @@ For the managed profile, Tightbeam generates an empty domain allowlist and one
 `allow` entry whose key is the absolute local agent socket path. Tightbeam sets
 `dangerously_allow_all_unix_sockets = false` and
 `allow_local_binding = false`. The filesystem profile grants `read` to the
-private runtime directory, whose only entry is the local agent socket.
+private runtime directory, whose only entries are the local agent socket and
+its non-connectable lifecycle lock file.
 
 Acceptance example (AC-1): Given the generated profile, when a test reads its
 effective Codex network policy, then it contains one allowed Unix socket, zero
 allowed domains, `allow_local_binding = false`, and
 `dangerously_allow_all_unix_sockets = false`; its added readable directory
-contains only the socket.
+contains only the socket and a regular lock file.
 
 ### I-2 — Gateway authorization is transport-independent
 
@@ -139,10 +158,11 @@ returns its existing authentication error and writes no domain mutation.
 
 ### I-4 — Selected local transport does not degrade to IP
 
-When a session endpoint file contains `socket`, the CLI makes one local-socket
-connection attempt. A failed attempt ends the command without using `url`.
-Before the CLI writes request bytes, it reports a connect error. After it writes
-one request byte, a missing complete HTTP response reports
+When a session endpoint file contains the `socket` key, the CLI never uses
+`url`. A valid value causes one local-socket connection attempt. An invalid
+value reports `invalid_local_gateway_endpoint` in phase `discovery`. Before the
+CLI writes request bytes, a failed connection reports a connect error. After it
+writes one request byte, a missing complete HTTP response reports
 `local_gateway_outcome_unknown`.
 
 Acceptance example (AC-4): Given a session file with a dead socket and a live
@@ -194,7 +214,25 @@ request bodies, response bodies, and credential paths.
 
 Acceptance example (AC-8): Given sentinel values in the token and request
 body, when connect, authentication, refusal, and outage cases run, then a scan
-of captured gateway logs and CLI stderr finds neither sentinel.
+of captured gateway logs, CLI stderr, operator decision rows, and approval
+notifications finds neither sentinel.
+
+### I-9 — Approval is explicit and single-use
+
+`Tightbeam.ACP.Conn` does not auto-select an allow option for a managed-local
+session. It keeps the ACP request pending until the owning user rules the
+linked operator decision. One `allow-once` ruling resolves one request and
+creates no reusable rule.
+
+Acceptance example (AC-21): Given an unrelated network command in managed-local
+mode, when no ruling exists, then the command remains blocked and the fixture
+receives zero connections. When the user rules `deny`, cancels the turn, or
+does not rule within ten minutes, then the ACP request resolves denied and the
+fixture receives zero connections. Given a new request that the user rules
+`allow-once`, then that request runs once outside the sandbox. When the same
+command runs again, then it creates a new pending decision and remains blocked
+until a new ruling. Given the old automatic responder, then managed-mode
+readiness refuses before a turn.
 
 ## Architecture
 
@@ -206,8 +244,10 @@ session endpoint or command posture. A Linux host that offers the managed
 local-gateway mode sets it to an absolute path. The packaged host integration
 uses `<base_dir>/run/local-agent/gateway.sock`. The gateway creates that
 path's dedicated parent directory with mode `0700` and the bound socket with
-mode `0600` before it starts a managed Codex adapter. If the directory contains
-an entry other than the configured socket, boot stops with
+mode `0600` before it starts a managed Codex adapter. It creates `gateway.lock`
+in the configured socket's parent directory as a regular file with mode `0600`.
+If the directory contains an entry other than the configured socket and lock,
+boot stops with
 `local_agent_runtime_conflict` and leaves every entry in place.
 
 The path must be absolute and must fit the host's Unix-socket path limit. A
@@ -223,14 +263,23 @@ entry, boot returns `local_agent_runtime_conflict` without removing it.
 
 ### R-2 — Stale paths resolve without deleting unknown material
 
-At bind time the gateway handles the socket path as follows:
+Before it inspects the socket path, the gateway opens the lock with
+`O_NOFOLLOW`, verifies that it is a regular file owned by the gateway user with
+link count one, acquires an exclusive non-blocking lifecycle lock, and holds
+that lock until listener cleanup finishes. A failed check or lock returns
+`local_agent_socket_lifecycle_busy` without inspecting or changing the socket
+path.
+
+While it holds the lock, the gateway handles the socket path as follows:
 
 - An absent path is available for bind.
 - A live socket owned by the gateway user returns
   `local_agent_socket_in_use`; the gateway leaves it in place.
 - A socket owned by the gateway user for which `connect(2)` returns
-  `ECONNREFUSED` is stale; the gateway unlinks that socket inode and binds the
-  replacement.
+  `ECONNREFUSED` is a stale candidate. The gateway records its device and inode,
+  repeats `lstat(2)` immediately before unlink, and unlinks only an unchanged
+  socket with the same owner, device, and inode. A changed check returns
+  `local_agent_socket_path_conflict` without unlinking.
 - Another file type or another owner returns
   `local_agent_socket_path_conflict`; the gateway leaves it in place.
 
@@ -242,6 +291,10 @@ Acceptance example (AC-10): Given each path state above, when the listener
 starts, then it binds only the absent and stale-owned cases, preserves the live
 and conflicting inodes, and reports the named result. Given a path replacement
 after bind, when the listener terminates, then it preserves that replacement.
+Given two concurrent gateway boots, then one holds the lifecycle lock and the
+other returns `local_agent_socket_lifecycle_busy` without probing or unlinking.
+Given a stale candidate replaced between its first and second identity checks,
+then the gateway preserves the replacement and refuses boot.
 
 ### R-3 — Listener order exposes only a complete gateway
 
@@ -274,13 +327,22 @@ extends `Endpoint` with an HTTP or Unix transport while keeping
 
 Discovery keeps the existing precedence: nearest session file, then explicit
 environment endpoint, then provisioned `gateway.json`. Within a selected
-session file, a valid `socket` selects Unix transport and `url` remains
-diagnostic compatibility material. A session file without `socket` selects the
-existing HTTP transport.
+session file, the presence of the `socket` key suppresses HTTP selection. Its
+value is valid only when it is a non-empty JSON string, absolute, lexically
+normalized, contains no NUL byte, and fits the host Unix-socket path limit. If
+the path exists, `lstat(2)` must identify a socket owned by the current user.
+A valid value selects Unix transport and `url` remains diagnostic compatibility
+material. An invalid present value returns `invalid_local_gateway_endpoint` in
+phase `discovery`, names the failed constraint, and makes no connection. A
+session file without the key selects the existing HTTP transport.
 
 Acceptance example (AC-13): Given nested working directories and a nearest
 session file with `socket`, when discovery runs, then it selects that socket,
 retains the nearest file as origin, and ignores an environment HTTP endpoint.
+Given empty, non-string, relative, non-normalized, NUL-containing, over-limit,
+and existing non-socket values beside a live `url`, when discovery runs, then
+each returns `invalid_local_gateway_endpoint` and the HTTP fixture receives
+zero connections.
 
 ### R-6 — The CLI speaks the existing HTTP contract over Unix transport
 
@@ -299,9 +361,10 @@ CLI route runs, then the captured request has the existing headers and body,
 and the existing response parser returns the same CLI result as its TCP
 fixture.
 
-### R-7 — The managed profile permits the socket, not localhost
+### R-7 — One host profile and one per-session mode compose the boundary
 
-Tightbeam generates a Codex permission profile that:
+Tightbeam generates one host-scoped Codex permission profile for the shared
+Codex adapter process. It has no workspace path or session input. It:
 
 - extends the existing managed workspace filesystem posture;
 - preserves the existing `bypass_hook_trust` setting and configured hooks;
@@ -312,13 +375,24 @@ Tightbeam generates a Codex permission profile that:
 - allows the exact `config.local_agent_socket` under
   `network.unix_sockets`;
 - keeps `allow_local_binding = false`;
-- keeps `dangerously_allow_all_unix_sockets = false`; and
-- keeps the existing interactive approval policy for sandbox escalation.
+- keeps `dangerously_allow_all_unix_sockets = false`.
 
-Tightbeam writes the generated profile into session-owned launch material. It
-does not modify the identity repository, the user's Codex configuration, or
-the user's permission profiles. The adapter passes the merged configuration
-only to the selected managed command launch.
+The matching `codex-acp` exposes a `tightbeam-managed-local` session mode. That
+mode sets `approvalPolicy = on-request` and selects workspace-write with
+network enabled. The selected session `cwd` supplies the workspace root; the
+host profile supplies only the shared socket capability. Two sessions with
+different worktrees therefore share one process-wide network profile without
+sharing filesystem roots.
+
+Tightbeam writes the complete merged profile into its existing owned
+`CODEX_HOME` launch material before it starts the shared adapter. It does not
+modify the identity repository, the user's Codex configuration, or the user's
+permission profiles. It selects `tightbeam-managed-local` per session through
+`session/set_mode`; other sessions retain their existing mode. After the
+effective readback succeeds, the adapter registers that ACP session id as
+managed-local in `Tightbeam.ACP.Conn` and removes the registration when the
+session closes. A permission request follows the relay only when its session id
+has that live registration.
 
 Codex applies proxy readiness, the effective destination policy, and command
 start as one boundary. If the proxy cannot start or the profile cannot apply,
@@ -328,8 +402,21 @@ gate executes this failure case.
 
 The profile generator accepts no caller-supplied domain, wildcard socket,
 proxy URL, or local-binding override. An operator who wants another network
-destination uses Codex's existing approval path; this feature does not add an
-allow surface.
+destination uses the explicit approval relay. For a managed-local session,
+`Tightbeam.ACP.Conn` records one existing operator decision request and waits.
+It returns Codex's allow-once option only after the owning user rules
+`allow-once`; otherwise it returns denial. It never selects allow-always and
+never treats an automatic response as an explicit ruling. Turn cancellation,
+user denial, and a ten-minute decision deadline resolve the ACP request as
+denied and close the pending decision.
+
+The operator decision carries the ACP request id, session display name,
+working directory, executable basename, zero or more requested network
+destinations reduced to scheme, host, and port, and requested permission
+options. It replaces other argument values with
+`<redacted>` and omits environment values, bearer values, session endpoint
+bytes, and unrelated conversation content. A sentinel scan of the durable
+decision and its user notification is part of AC-8.
 
 Acceptance example (AC-15): Given the generated profile in a real Codex
 managed sandbox, when a command connects to the Tightbeam socket, an unlisted
@@ -337,20 +424,37 @@ Unix socket, the gateway's TCP loopback port, and a host-side TCP fixture, then
 only the Tightbeam socket connects without approval. The effective launch
 keeps the pre-existing hooks and `bypass_hook_trust` value, and the files that
 supplied them remain unchanged. When the proxy-start fixture fails, then the
-command does not start.
+command does not start. Given two managed-local sessions with different `cwd`
+values on one shared adapter, then each can read only its own workspace and
+both can reach the same local agent socket. Given an unrelated network request,
+then AC-21 proves deny, allow-once, and re-prompt behavior.
 
 ### R-8 — Capability mismatch refuses the managed profile
 
-Before enabling the managed profile for a Codex release, the release gate runs
-the pinned `CODEX_PATH` binary with strict configuration and the generated
-profile. It proves local-socket success, IP denial, and proxy-start failure.
-The release embeds the resulting managed-profile compatibility stamp. At
-adapter start, Tightbeam compares the selected `CODEX_PATH` version and
-canonical template SHA-256 with that stamp. It also verifies that the
-materialized `workspace_root` equals the selected worktree and that the
-materialized `local_agent_socket` equals `config.local_agent_socket`. A
-mismatch or a release that cannot parse or enforce the profile receives
-`managed_local_gateway_unsupported`.
+Before enabling the managed profile for a release, the release gate runs the
+pinned `CODEX_PATH` and `codex-acp` binaries with an isolated Tightbeam-owned
+`CODEX_HOME` and the complete generated profile. It proves local-socket
+success, IP denial, proxy-start failure, per-session workspace isolation, and
+the explicit approval relay. The release embeds the resulting compatibility
+stamp.
+
+The matching `codex-acp` returns typed `effectivePermissions` after
+`session/set_mode`. The value comes from Codex's resolved session state, not
+from the template. It includes mode id, approval policy, sandbox kind,
+workspace roots, proxy-active state, effective domains, effective Unix
+sockets, local-binding flag, and wildcard-socket flag.
+
+At adapter start, Tightbeam compares the selected binary versions and canonical
+template SHA-256 with the release stamp, materializes the socket slot, and runs
+a real probe session. It records a host policy receipt only when the typed
+readback and behavioral probe agree. After selecting mode for each managed
+session, Tightbeam requires another typed readback whose mode, approval policy,
+workspace root, and network fields equal the receipt and that session's `cwd`.
+Any extra config layer, legacy `sandbox_mode`, added domain or socket, changed
+binding flag, wildcard permission, wrong workspace, wrong approval policy, or
+missing readback returns `managed_local_gateway_unsupported` before a turn.
+The receipt is generation-scoped state in `AdapterCoordinator`; an adapter
+restart discards it and repeats the probe before a managed session can run.
 
 Open-network and full-access Codex modes keep their existing behavior. The
 gateway does not silently select one of those modes after this refusal.
@@ -358,7 +462,10 @@ gateway does not silently select one of those modes after this refusal.
 Acceptance example (AC-16): Given a Codex fixture that rejects
 `network.unix_sockets`, when managed-mode readiness runs, then the adapter
 refuses before a turn with `managed_local_gateway_unsupported` and starts no
-fallback adapter.
+fallback adapter. Given fixtures that inject a legacy `sandbox_mode`, extra
+domain, extra socket, local binding, wildcard sockets, wrong approval policy,
+wrong mode, or wrong workspace root, then each effective readback refuses the
+managed session before its first command.
 
 ### R-9 — Errors identify the layer and next action
 
@@ -367,6 +474,7 @@ The CLI maps outcomes to the following stable classes:
 | Observed boundary | CLI result | Remedy |
 | --- | --- | --- |
 | `connect(2)` returns `EACCES` or `EPERM` before HTTP bytes | `local_gateway_connect_denied` | expose the configured socket in the managed profile; do not change token or provider |
+| A present `socket` fails endpoint validation | `invalid_local_gateway_endpoint` in phase `discovery` | repair or re-project the session endpoint; do not use `url` as fallback |
 | Socket is absent, refuses, or times out before the CLI writes a request byte | `local_gateway_unavailable` | start or restart the local Tightbeam gateway; do not re-onboard |
 | Connection resets, returns EOF, or times out after the CLI writes a request byte but before a complete HTTP response | `local_gateway_outcome_unknown` | inspect the referenced work before repeating a mutation |
 | Gateway returns `401` | preserve the gateway authentication code and prefix phase `gateway` | repair the session endpoint/token projection |
@@ -405,19 +513,23 @@ old session file uses HTTP. An old CLI ignores the added JSON field and retains
 its existing HTTP behavior outside the managed profile.
 
 The managed profile becomes selectable only after the matching CLI and local
-listener pass AC-15. This order prevents an old CLI from entering an
-IP-disabled sandbox with no Unix transport implementation.
+listener pass AC-15 and the adapter records the host policy receipt. This order
+prevents an old CLI from entering an IP-disabled sandbox with no Unix transport
+implementation. For the new CLI, a present invalid `socket` never invokes the
+old HTTP path.
 
 Acceptance example (AC-19): Given the four old/new CLI and old/new endpoint
 file combinations, when they run outside managed mode, then each uses its
 supported transport; when managed mode is requested with the old CLI, then
-readiness refuses before a turn.
+readiness refuses before a turn. Given a new endpoint file with an invalid
+present `socket`, then both managed and non-managed invocation refuse discovery
+without contacting `url`.
 
 ### R-12 — Host and harness scope is explicit
 
 The MVP support predicate is:
 
-`os == linux AND config.local_agent_socket != nil AND session.socket == config.local_agent_socket AND host.ssh == nil AND harness == codex AND compatibility stamp matches AND approval surface == explicit`.
+`os == linux AND config.local_agent_socket != nil AND session.socket == config.local_agent_socket AND host.ssh == nil AND harness == codex AND mode == tightbeam-managed-local AND compatibility stamp matches AND host policy receipt matches AND per-session effective readback matches AND approval relay is available`.
 
 When the predicate is false, Tightbeam keeps the existing transport and
 permission behavior. The predicate is a mechanical conjunction over recorded
@@ -425,7 +537,7 @@ facts and a release-gate result; it makes no model or operator judgment.
 
 Acceptance example (AC-20): Given the cross-product of Linux/macOS,
 configured/unconfigured socket, local/satellite, Codex/Claude,
-proven/unproven capability, and explicit/automatic approval surface, when
+proven/unproven effective policy, and available/unavailable approval relay, when
 Tightbeam selects a command posture, then only the tuple that satisfies the
 predicate selects the managed local-socket profile.
 
@@ -440,7 +552,8 @@ Canonical example: a gateway-local Codex agent runs `tightbeam attest ...` in
 its managed sandbox; the CLI discovers `.tightbeam-session.socket`, connects
 over the allowlisted Unix socket, and the existing router records the session
 principal. A subsequent `curl https://example.com` remains denied until the
-operator approves an out-of-sandbox retry.
+operator rules its decision `allow-once`. That ruling executes one request
+outside the sandbox and does not authorize the next invocation.
 
 ADD wins because managed agents need the existing durable coordination verbs
 inside ordinary turns. DELETE loses because removing those verbs from managed
@@ -459,7 +572,7 @@ approval heuristic.
 
 ## Acceptance
 
-The implementation passes when AC-1 through AC-20 pass and the following
+The implementation passes when AC-1 through AC-21 pass and the following
 reality smoke passes on Gibson against the release CLI, the release gateway,
 and the pinned Codex binary:
 
@@ -467,23 +580,27 @@ and the pinned Codex binary:
    listener.
 2. Create a real gateway-local session endpoint through Placement; do not
    hand-author the endpoint fixture.
-3. Run the released `tightbeam` CLI inside Codex's real managed Linux sandbox
-   with the generated profile.
+3. Start two real sessions with different worktrees on one shared Codex adapter.
+   Select `tightbeam-managed-local` for both and verify their typed effective
+   permission readbacks before running a command.
 4. Execute one authenticated read and one idempotent mutation through the Unix
    socket. Verify the returned JSON and the attributed durable row.
 5. In the same sandbox, attempt the gateway TCP loopback port, another host TCP
    listener, and one unlisted Unix socket. Verify three denials and zero
    connections at the fixtures. These local fixtures prove the sandbox's IP
    namespace and socket allowlist without depending on DNS or an Internet host.
-6. Run one approved out-of-sandbox network fixture. Verify it succeeds without
-   changing the generated managed profile.
+6. Attempt one unrelated network action. Verify zero connections while its
+   operator decision is pending and after `deny`. Create a new attempt, rule
+   `allow-once`, verify one out-of-sandbox connection, and verify its next
+   invocation is pending again without changing the host profile.
 7. Restart the gateway between two CLI reads and verify AC-18 against the real
    socket inode.
 8. Scan the captured CLI stderr, gateway log, and Codex sandbox log for the
    sentinel token and body values. Verify AC-8.
 
 The test matrix records the Tightbeam commit, CLI version, Codex version,
-kernel version, canonical-template SHA-256, materialized-profile SHA-256,
+`codex-acp` version, kernel version, canonical-template SHA-256,
+materialized-profile SHA-256, effective-policy SHA-256, host policy receipt,
 baseline result, and after result. A hand-written idealized gateway response
 does not satisfy this acceptance.
 
@@ -494,19 +611,20 @@ Traceability:
 | I-1 | AC-1, AC-15 |
 | I-2 | AC-2, AC-14 |
 | I-3 | AC-3 |
-| I-4 | AC-4 |
+| I-4 | AC-4, AC-13, AC-19 |
 | I-5 | AC-5, AC-20 |
 | I-6 | AC-6, AC-12 |
 | I-7 | AC-7, AC-17 |
 | I-8 | AC-8 |
+| I-9 | AC-15, AC-21 |
 | R-1 | AC-9 |
 | R-2 | AC-10, AC-18 |
 | R-3 | AC-11 |
 | R-4 | AC-6, AC-12 |
-| R-5 | AC-5, AC-13 |
+| R-5 | AC-5, AC-13, AC-19 |
 | R-6 | AC-2, AC-14 |
-| R-7 | AC-1, AC-15 |
-| R-8 | AC-16, AC-19 |
+| R-7 | AC-1, AC-15, AC-21 |
+| R-8 | AC-15, AC-16, AC-20 |
 | R-9 | AC-7, AC-17 |
 | R-10 | AC-18 |
 | R-11 | AC-19 |
