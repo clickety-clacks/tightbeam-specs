@@ -1,6 +1,6 @@
 # Urgency-aware notice batching — v1
 
-Status: FROZEN FOR PARENT-OPENED INDEPENDENT REVIEW
+Status: DRAFT — changes requested by independent review `att_03e59aea`
 
 Work item: `wi_1100e078-2479-4d1b-8549-d65f7a82fd3d`
 
@@ -15,10 +15,9 @@ envelope; they do not block, own, or absorb this mechanism.
 ## Goal
 
 The substrate reduces needless agent turns by delivering eligible pending
-non-user notices for one recipient in one source-preserving envelope. It keeps
-each source notice as a durable row, applies the current class urgency policy
-before batching, and creates the envelope by the earlier of the recipient's
-next turn boundary and that policy's delivery ceiling.
+non-user `fyi` notices for one recipient in one source-preserving envelope. It
+keeps each source notice as a durable row and creates the envelope by the earlier
+of the recipient's next turn boundary and the `fyi` delivery ceiling.
 
 The mechanism is delivery physics. It does not decide notice importance,
 change a notice class, infer a recipient, alter work state, or require a
@@ -29,9 +28,11 @@ decision to release a batch.
 - This v1 does not batch a user-authored message.
 - This v1 does not batch `algedonic` traffic. That traffic follows the immediate
   bypass defined by `coordination-fabric-v1.md` §7.
-- This v1 does not change the class policy for `fyi`, `status-query`,
-  `input-needed`, or `blocker`; it consumes the target and due time that the
-  policy already selected.
+- This v1 does not batch `input-needed` or `blocker` traffic. Those classes keep
+  the current immediate and floor-bounded delivery behavior in
+  `coordination-fabric-v1.md` §7.
+- This v1 reads delivery selection only for `fyi`. It does not change the
+  class policy for `fyi`, `status-query`, `input-needed`, or `blocker`.
 - This v1 does not classify, summarize, annotate, answer, triage, escalate, or
   judge notice content. Exec-desk policy owns those cognitive acts.
 - This v1 does not replace recurrence suppression, prod suppression, wake
@@ -47,19 +48,19 @@ decision to release a batch.
   notification before this mechanism considers delivery. Its row identifier,
   sender principal, cause, recipient address, class election, payload, and
   authorization context remain authoritative.
-- **Dispatchable notice** — a source notice for which the existing class policy
-  has selected a recipient delivery. A `status-query` that class policy routes
-  to a rows-only answer is not dispatchable to a principal.
+- **Eligible notice** — a non-user source notice whose class election is
+  `fyi`. A `status-query` that current class policy routes to a
+  rows-only answer is not eligible. `input-needed`, `blocker`, and `algedonic`
+  notices are not eligible.
 - **Recipient address** — the exact target form selected by existing policy:
   session, role, or user. Role addresses retain the existing send-time
   resolution rule; this mechanism does not substitute a session.
 - **Visibility scope** — the recipient principal and authorization scope that
   authorize access to a source notice's payload.
-- **Urgency lane** — a policy-provided delivery lane with one due time. Two
-  notices share a lane only when they have the same recipient address,
-  visibility scope, and due-time policy. A routine `fyi` notice therefore
-  cannot delay an `input-needed` or `blocker` notice.
-- **Batch** — a durable delivery envelope for one urgency lane. It contains an
+- **Recipient lane** — a `fyi` delivery lane with one due time. Two notices
+  share a lane only when they have the same recipient address and visibility
+  scope. V1 has no lane for `input-needed`, `blocker`, or `algedonic` traffic.
+- **Batch** — a durable delivery envelope for one recipient lane. It contains an
   ordered, immutable list of member references after sealing. It is not a
   source notice and it does not replace any source row.
 - **Member** — the durable link from one source notice to one batch. It records
@@ -69,10 +70,9 @@ decision to release a batch.
   mechanism observes that event and seals an open batch without guessing from
   elapsed time. An idle recipient at insertion is not a boundary; the delivery
   ceiling releases that batch.
-- **Delivery ceiling** — the latest time at which the current class policy
-  requires a delivery wake to be created. The fabric currently gives `fyi` a
-  four-hour ceiling and `input-needed` or `blocker` the prodder floor. This spec
-  does not set those policy values.
+- **Delivery ceiling** — the latest time at which `fyi` policy requires a
+  delivery wake to be created. The fabric currently gives `fyi` a four-hour
+  ceiling. This spec does not set that policy value.
 - **Delivery token** — the deterministic token derived from a batch id. The
   wake/turn delivery path uses it as the idempotency key for that batch.
 
@@ -82,8 +82,8 @@ decision to release a batch.
    calls the batch mutation seam.
 2. The current wake pipeline accepts an idempotency key that prevents a retry
    from committing a second recipient turn for the same delivery token.
-3. The current class policy can provide a dispatchable recipient address and a
-   delivery ceiling without inspecting batch state.
+3. The current class policy can provide a recipient address and a delivery
+   ceiling for an eligible `fyi` notice without inspecting batch state.
 4. A recipient turn terminal event is observable. If it is not observed, the
    ceiling timer remains the deterministic release path.
 5. The deployment can store a batch with at least 50 member references and a
@@ -96,10 +96,10 @@ decision to release a batch.
    source notice row exists. It never edits or deletes that row. Each included
    member exposes the source row id, sender principal, cause, class, and
    payload in recipient-authorized form.
-2. **Urgency preservation.** Existing class policy decides whether a notice is
-   dispatchable, its recipient address, its visibility scope, and its ceiling.
-   Batching cannot make a notice less urgent, move it to another recipient, or
-   create a delivery later than its lane's ceiling.
+2. **Urgency preservation.** V1 admits only `fyi`. It sends
+   `input-needed`, `blocker`, and `algedonic` notices through their existing
+   class paths without a batch row. Batching cannot move an eligible notice to
+   another recipient or create its delivery later than the `fyi` ceiling.
 3. **One mutable seam.** `NoticeBatcher.enqueue_or_recover` is the sole mutation
    seam for batch, member, schedule, retry, cancellation, and recovery state.
    It performs each change in one database transaction.
@@ -124,7 +124,7 @@ decision to release a batch.
    policy after delivery. Its state, directive, availability, or judgment cannot
    prevent, merge, split, or reclassify a batch before the delivery path acts.
 10. **Independent suppression.** Recurrence suppression runs before a source is
-    dispatchable. This mechanism consumes a dispatchable source row only. It
+    eligible. This mechanism consumes an eligible source row only. It
     does not compute recurrence identity, rearm a recurrence, or convert a
     recurrence audit event into a member. Prod suppression remains responsible
     for duplicate triggered turns; batching never reads or writes prod counters,
@@ -139,22 +139,23 @@ decision to release a batch.
 
 The existing publisher first authenticates the sender, writes the source notice,
 and applies current class policy. It calls `NoticeBatcher.enqueue_or_recover`
-only for a dispatchable non-user notice whose class is not `algedonic`.
+only for an eligible non-user `fyi` notice. `input-needed`, `blocker`, and
+`algedonic` notices bypass this seam and retain their existing class delivery.
 
 The call receives the source row id, recipient address, visibility scope, class
-policy revision, and ceiling selected by policy. It rejects a caller-supplied
+policy revision, and `fyi` ceiling selected by policy. It rejects a caller-supplied
 recipient, ceiling, class, sender, cause, or visibility scope. The source row
 remains the authority for those values.
 
-The seam constructs an urgency-lane key from the recipient address, visibility
-scope, and policy-provided due-time policy. It never mixes two address forms or
-two visibility scopes. A role-addressed batch remains role-addressed through
-delivery, so existing role rebinding and fallback behavior remain controlling.
+The seam constructs a recipient-lane key from the recipient address and
+visibility scope. It never mixes two address forms or two visibility scopes. A
+role-addressed batch remains role-addressed through delivery, so existing role
+rebinding and fallback behavior remain controlling.
 
 ### 2. Accumulation, ordering, and fairness
 
 In one transaction, the seam assigns the next monotonically increasing
-publication sequence for the urgency lane, inserts or reuses the unique member,
+publication sequence for the recipient lane, inserts or reuses the unique member,
 and attaches that member to the one open batch for the lane. When it creates the
 first member, it stores both release triggers: the next observable recipient turn
 boundary and the class-policy ceiling.
@@ -246,8 +247,8 @@ enqueue_or_recover(source_notice_id, policy_delivery_ref) ->
 
 `policy_delivery_ref` is an opaque reference to the existing policy decision.
 The seam resolves authoritative recipient, class, ceiling, sender, cause, and
-visibility data from durable rows. A stale, unauthorized, missing, non-user, or
-`algedonic` source returns a typed refusal and creates no batch state.
+visibility data from durable rows. A stale, unauthorized, missing, user-authored,
+or non-`fyi` source returns a typed refusal and creates no batch state.
 
 The internal delivery interface is:
 
@@ -291,20 +292,20 @@ turn loss and avoids replaying a source through the legacy path.
 Each acceptance check is a deterministic automated fixture against a file-backed
 database and the ordinary wake/turn delivery test seam.
 
-1. **Routine envelope.** Given two dispatchable non-user `fyi` source rows with
+1. **Routine envelope.** Given two eligible non-user `fyi` source rows with
    the same recipient address and visibility scope, when both enter an open lane,
    then the turn-boundary seal creates one envelope with two ordered member records
    and commits one recipient turn with both original payloads and source ids.
 2. **User exclusion.** Given a user-authored message with the same recipient as
    an open batch, when it reaches publication, then no member references that
    message and the existing user-message delivery path receives it.
-3. **Algedonic bypass.** Given an `algedonic` source row and an open routine
-   batch, when the source reaches publication, then the source follows the
-   immediate bypass path and the routine batch has no new member.
-4. **Urgency separation.** Given an open `fyi` batch and a dispatchable blocker
-   for the same recipient, when the blocker enters the seam, then it receives a
-   separate urgency lane whose delivery wake is armed no later than the blocker
-   ceiling; the `fyi` batch remains unchanged.
+3. **Urgent bypass.** Given an `input-needed`, `blocker`, or `algedonic` source
+   row and an open routine batch, when the source reaches publication, then the
+   source follows its existing class delivery path and the routine batch has no
+   new member.
+4. **Routine isolation.** Given an open `fyi` batch and a blocker source notice
+   for the same recipient, when the blocker reaches publication, then the
+   blocker has no batch row and the `fyi` batch remains unchanged.
 5. **Policy no-delivery.** Given a `status-query` that current policy resolves
    without a principal delivery, when its source row is published, then the
    batch tables contain no member or batch row for that source.
@@ -359,7 +360,7 @@ database and the ordinary wake/turn delivery test seam.
     commits its ordinary delivery without reading the desk card, directives, or
     availability. The desk receives the envelope as inbound material.
 20. **Suppression separation.** Given a recurrence audit row that has no
-    dispatchable source notice and a prod state with a triggered turn in flight,
+    eligible source notice and a prod state with a triggered turn in flight,
     when the batcher runs, then it creates no member from the audit row and makes
     no write to recurrence identity, rearm fields, prod counters, trigger state,
     or turn-accounting rows.
@@ -375,3 +376,15 @@ None. V1 fixes the bounded member and rendered-payload floors in Assumption 5 to
 make overflow behavior testable. A later policy extraction may replace those
 constants after evidence from this feature's observability queries; it must
 preserve the no-truncation and bounded-prefix invariants.
+
+## Spec-homing
+
+The canonical file is `notice-batching-v1.md` in the `tightbeam-specs`
+repository. This revision supersedes the frozen source text at
+`1a3ea08c1aacaf7939db38bf8f7177b75e5c0803` after review verdict
+`att_03e59aea-1e5d-47c6-be28-e3390b6ac8bf`. It supersedes only this work item's
+delivery-batching ownership reading of `coordination-fabric-v1.md` §13; the
+fabric's class policy, delivery ceilings, and all other authority remain live.
+
+The parent opens any re-review against the content hash of the amended canonical
+file. A builder or reviewer must use that pin, not this filename alone.
