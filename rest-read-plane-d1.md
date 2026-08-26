@@ -1,12 +1,23 @@
 # REST read plane D1 — transport foundation and six shared-seam resources
 
-Status: build specification. Authority: canonical REST r3 `art_971f45b5`,
+Status: build specification. Amendment status: FROZEN FOR ONE LINKED INDEPENDENT
+REVIEW — cursor-signing seam. Authority: canonical REST r3 `art_971f45b5`,
 reviewed SHA-256 `49b86ec874283c523001be7449b1e14aef47ca72932955445638ce6443aad754`;
 the adopted six-resource contract `art_b1995a26` / fact 1093; reviewed
 firehose tip `8e4a412f25950dae1e1f33af42c390a4707bcf89`; PO rulings
 `att_2d3a8333` and `att_304a6d07`; and the reviewed canonical AU2 repair
 required by `wi_b0a6f85f-3523-45bb-8d10-1a67a2ad02bb` /
 `asg_cd74975c-70c4-479b-8e34-20f91ef44452`.
+
+This is one bounded amendment to the cursor-authenticity seam. It serves
+`wi_cb5734eb-c175-4815-8763-882d69dfa9bf` / `asg_3aa6cba1-d7cf-4859-81a7-41209df77991`.
+Its authority inputs are the rejected D1 tip `af4c8b21d1173a23646434491e22700ce2b8b0e4`,
+recovery review `att_1a124822-e5de-4cf2-ae20-c313e339856d` / report
+`art_53518583`, missing-seam evidence `att_acef51b5-42d2-491a-8ce4-f88124374504` /
+`art_c2b2ca17`, and the product-owner disposition
+`att_df797c4a-083c-4a30-9e98-224a5a9900f3`. It changes design only and authorizes
+no product edit, implementation, main landing, `specRef` change, D2/D3 work,
+deployment, or release.
 
 ## Spec homing
 
@@ -62,6 +73,18 @@ the resource. It adds no second data shape.
   principal, authorization grant, durable row, or wire field. Its lifetime is
   exactly one synchronous logical read operation and ends before that caller
   returns, responds, or enqueues output.
+- **Cursor-signing material**: exactly 32 cryptographically random octets held
+  by the server for authenticating D1 cursors. It is not the bearer
+  credential, a principal identifier, a request binding, a node cookie, or any
+  value derived from a request.
+- **Cursor-signing provider**: the internal capability owned by
+  `Tightbeam.CursorSigning` that provisions, loads, rotates, signs, and verifies
+  cursor-signing material. It is composed by `Tightbeam.Application`, injected
+  by `Tightbeam.Gateway`, and consumed by `Tightbeam.Wire.Router`; no bearer
+  client can supply or select it.
+- **Canonical route key**: the fixed route-table key for the collection route
+  that issued a cursor, such as `users.collection`. It is an internal signed
+  binding, not a URL, query-string fragment, or response field.
 
 ## Assumptions
 
@@ -339,6 +362,99 @@ SQLite `rowid`, or live-row locator. A malformed, wrong-resource, or
 changed-filter cursor returns `400 invalid_cursor`; a principal-binding
 mismatch returns the canonical `404 not_found`.
 
+### Canonical server-held cursor-signing seam
+
+This amendment closes the D1 cursor-authenticity gap without changing a
+resource query, item serializer, route, envelope, filter, or response field.
+Every D1 cursor is authenticated by one `Tightbeam.CursorSigning` provider.
+The provider uses HMAC-SHA-256 with the current server-held 32-octet material
+and the fixed domain-separation prefix
+`tightbeam/rest-read-plane-d1/cursor/v1\0`. The HMAC input is the existing
+canonical opaque cursor body, with these bindings in its fixed D1 order: cursor
+version, canonical route key, resource, exclusive page direction (`before` or
+`after`), normalized filter fingerprint, complete immutable order tuple, and
+exact resolved-principal kind and stable identifier. The signature is 32 octets
+and remains inside the existing opaque cursor encoding. The key-generation
+record is never a cursor field. Any version, route, resource, direction,
+filter, tuple, or principal change therefore invalidates the signature or
+produces the existing binding refusal; `limit` remains adjustable because D1
+does not bind it.
+
+#### Ownership, provisioning, and injection
+
+`Tightbeam.CursorSigning` is the sole owner of signing material. Its canonical
+durable location is `base_dir/secrets/rest-cursor-signing.v1`, a regular file
+containing exactly 32 octets, with no text encoding, newline, metadata, or
+second key. The containing directory is owner-only and the file mode is exactly
+`0600`; the provider rejects symlinks, non-regular files, and a file not owned
+by the service identity. A deployment that cannot enforce those permissions
+fails closed.
+
+Only the local gateway bootstrap, before the HTTP listener is admitted, may
+invoke the provider's provisioning operation. If the file is absent during
+explicit first provisioning, the provider obtains 32 octets from the operating
+system CSPRNG and creates the file exclusively, with owner-only permissions and
+durable flush. Provisioning never overwrites an existing file. Normal
+`Tightbeam.Application` startup loads and validates the existing file before it
+starts the listener. A missing, unreadable, wrongly sized, or otherwise
+malformed file at normal startup is a typed startup failure; startup must not
+silently generate a replacement, serve REST, or accept a cursor.
+
+The application composition root creates the provider and passes its internal
+capability through the existing gateway dependency map as `cursor_signing` to
+every router instance. The router owns canonical cursor framing, binding
+checks, HMAC invocation, and the existing AU7 error mapping. It owns no key
+bytes, provisioning, rotation, fallback, or key store. `StateResources`, all
+six query seams, all six public serializers, `StateVisibility`, and all
+CLI/firehose callers are unchanged by this amendment.
+
+#### Stability, rotation, and failure behavior
+
+Each sign or verify operation reads one complete current material record through
+the provider; it does not retain a key in a process dictionary, module
+attribute, ETS table, `persistent_term`, Router state, request cache, or any
+other process-local store. Atomic replacement makes every request process and
+every OS process observe either the old complete record or the new complete
+record. The transient bytes needed by one HMAC call are not an authority or a
+cache. A missing `cursor_signing` capability or an unavailable material record
+is never replaced by a dummy key, bearer-derived key, node cookie, runtime
+value, or random per-request key.
+
+Rotation is an explicit local operator maintenance operation owned by
+`Tightbeam.CursorSigning`; it is not a REST route and cannot be requested by a
+bearer client. The provider obtains fresh CSPRNG material, writes a same-
+directory owner-only temporary file, flushes it, and atomically renames it over
+the active file. It removes the old material from the verification set at the
+rename boundary. A failed rotation leaves the old complete file and behavior
+unchanged; it never leaves a partial file or a mixed key set. Existing cursors
+issued before a successful rotation are immediately rejected as the existing
+`400 invalid_cursor`, before a resource-row lookup. Cursors issued after the
+rename verify with the new material. There is no old-key grace window.
+
+Sign and verify operations linearize at their complete material read.
+Concurrent operations before the rename use the old material and operations
+after it use the new material; no operation may combine bytes from two records.
+A restart reopens the same durable file and therefore accepts cursors issued
+before the restart, while a restart after rotation accepts only post-rotation
+cursors.
+
+For an authentic cursor whose signature is valid but whose resolved-principal
+binding differs from the request, the router preserves the canonical identical
+`404 not_found` body, headers, and no-row-lookup behavior. A caller-forged body,
+including one re-signed with the bearer credential or any other client-known
+value, fails signature validation and returns the existing `400 invalid_cursor`
+before a resource-row lookup. Malformed, wrong-version, wrong-route,
+wrong-resource, wrong-direction, changed-filter, and bad-signature cases remain
+the same typed invalid-cursor class.
+
+The material, its path, raw HMAC key, decoded cursor body, and signature-input
+bytes never enter HTTP, cursor diagnostics, logs, traces, telemetry, exceptions,
+crash reports, artifacts, or test output. Internal failures expose no key,
+principal, route, tuple, or name-presence detail. If an already-running provider
+cannot read an intact material record, the route emits the existing `500
+projection_invalid` envelope with `Cache-Control: no-store` and no partial
+response; it does not downgrade to an unauthenticated cursor mode.
+
 ### Authentication, visibility, errors, and cache
 
 The transport uses `Authorization: Bearer <existing gateway credential>`.
@@ -502,10 +618,65 @@ the cases specified above. It uses the canonical error envelope and
     and version source used by REST. The test fails if router code adds a
     REST-local serializer, projection, field, parallel `list_*` query seam,
     second identity query function, or serializer database access.
+19. Given a cursor issued for each collection route, `before` and `after`, every
+    allowed filter combination, tied order tuples, and each resolved-principal
+    kind, when the test inspects only the server-side decoded body, then the
+    signed body contains exactly the D1 cursor version, canonical route key,
+    resource, exclusive direction, normalized filter fingerprint, complete
+    immutable tuple, and exact principal binding. It contains no bearer,
+    offset, `rowid`, live locator, payload, or key bytes. Changing any listed
+    binding returns `400 invalid_cursor` before a row lookup; changing only
+    `limit` retains the existing D1 behavior.
+20. Given a valid cursor whose principal binding is changed, when a test caller
+    recomputes its signature with the bearer credential, a hash of that
+    credential, a node cookie, or any other client-known value, then the server
+    returns `400 invalid_cursor`, performs no resource-row lookup, and emits no
+    cursor detail. Given an unmodified authentic cursor used by another
+    principal, then the server returns the canonical identical `404 not_found`
+    result from Acceptance 10.
+21. Given a provisioned material file and a cursor issued before a clean
+    application restart, when the same route and principal reuse that cursor
+    after restart, then verification succeeds with unchanged D1 item bytes;
+    the test proves the key was loaded from the durable file and not regenerated
+    or retained only in the prior request process.
+22. Given a valid pre-rotation cursor, when the local operator invokes the
+    provider's rotation operation, then the replacement is a fresh 32-octet
+    material file installed by one atomic rename, the old cursor returns
+    `400 invalid_cursor` before a row lookup, and a cursor issued after the
+    rename succeeds. A failed rotation preserves the old file and old-cursor
+    behavior. No REST or bearer-client operation can invoke rotation.
+23. Given at least 64 concurrent request processes and at least two application
+    processes, when they issue and verify cursors before, during, and after one
+    rotation, then every operation observes one complete generation: pre-rename
+    cursors verify only before the rename, post-rename cursors verify after it,
+    and no torn, mixed, process-local, dummy, or bearer-derived key succeeds.
+    The test records the operation boundary and performs no resource-row lookup
+    for rejected cursors.
+24. Given an empty first-boot secrets directory, explicit local bootstrap
+    provisioning creates exactly one owner-only 32-octet file and admits the
+    listener only after durable creation. Given that file is absent, unreadable,
+    not owner-only, or not exactly 32 octets during normal startup, then startup
+    fails before listener admission, emits no secret-bearing diagnostic, and
+    does not silently regenerate or serve REST. Given a missing or malformed
+    injected provider, Router startup also fails closed with no fallback.
+25. Given a material file, a cursor, and each D1 route, when the test captures
+    logs, traces, telemetry, exceptions, crash output, HTTP bytes, and artifact
+    output for provisioning, restart, signing, verification, rotation, and
+    failure, then none contains the material, path contents, HMAC input, raw
+    cursor body, or signature detail. Error bodies remain the existing closed
+    envelopes and `Cache-Control: no-store`.
+26. Given all Acceptance 1–18 fixtures and gates, when they rerun with the
+    provider injected, then routes, envelopes, status codes, cache headers,
+    authentication, visibility, filters, order, pagination, six shared query
+    seams, identity staging, CLI behavior, firehose behavior, and serialized
+    item bytes are unchanged. The provider adds no serializer, query, route,
+    public field, credential, principal rule, D2/D3 behavior, deployment, or
+    release behavior.
 
 ## Open Questions
 
-None. A new D1 filter, host-environment detail route, public item field, or
-principal rule requires a canonical REST amendment. D1 code remains blocked
-until the reviewed AU2 correction described in Assumption 3 lands on canonical
-green `main`.
+None for this cursor-signing amendment. A new D1 filter, host-environment detail
+route, public item field, or principal rule requires another canonical REST
+amendment. D1 code remains blocked until this amendment is independently
+reviewed and the reviewed AU2 correction described in Assumption 3 lands on
+canonical green `main`.
