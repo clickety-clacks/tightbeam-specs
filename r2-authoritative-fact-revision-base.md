@@ -25,6 +25,16 @@ in `att_66d3f0e9-df19-4aae-9a0b-44362ba6b2a4`. The reviewed F7 predecessor is
 `e98c898f9bda0cef462e4a4d0bd9a0e10eff6cb810f9299f4fe7b7955694f2ef`, reviewed-clean
 in `att_43f3bd21-bd5c-48b0-802a-981c6998f0dc`.
 
+Independent review `asg_36af280a-516a-410c-8ec3-c12680f127bc` returned
+changes-requested verdict `att_4ada3bd6-886d-4a29-a3c2-ee5f01d16455` on exact prior
+artifact `art_fa69464e`, commit `6d40d4597b9c8f3c5398439f8b42f6b2c775a496`, SHA-256
+`fbe2b6784cfea28b23b387e1a8fe62b0cd2e6feeadfad5adb9803d5402eb5ae8`. Clause report
+`art_7ce5bd63`, SHA-256
+`ce3da43e21b869b893a11a068b9d2afe12d039c694b7ed7d350cccda5f731f32`, found five
+gaps. This revision names internal actors, rails the sole writer, serializes concurrent
+mutations, requires real quota-envelope captures, and closes ordinary source-event ID
+privacy.
+
 This file does not amend either consumer. It preserves F7 R1-R8 and A1-A7 as reviewed.
 It also preserves `art_6d4c9985`'s implementation gate: no product implementation,
 exact-tip code review, migration, release, deployment, runtime mutation, credential
@@ -71,10 +81,16 @@ It must not combine fields from different committed revisions.
 - **Adapter harness ID**: the adapter key's `harnessId`. It is the exact stored UTF-8
   value of the execution selection's `harness`; the two names do not introduce a
   mapping or alias.
-- **Source event**: one typed local event accepted from a named source owner. It carries
-  a `sourceEventId` of 1 through 512 UTF-8 bytes, a typed cause, an authenticated actor
-  principal, and an observation time. A source event contains no fact ID, fact kind,
-  match key, revision, or writer principal supplied by a caller.
+- **Source event**: one typed local event accepted from a named source owner. An
+  ordinary event carries `sourceEventId=r2e_<32 lowercase hexadecimal characters>`.
+  The source owner obtains those 128 random bits from zero-argument internal function
+  `R2Facts.new_source_event_id/0`, which reads the operating-system CSPRNG. The source
+  owner calls it once when it creates the source event and retains that value for exact
+  replay. No request, provider, credential, account, quota, or prose value enters the
+  generator. Only the B7 expiry and migration forms may use another source event ID.
+  The event carries a typed cause, an actor principal, and an observation time. A source
+  event contains no fact ID, fact kind, match key, revision, or writer principal supplied
+  by a caller.
 - **Canonical source payload**: the deterministic CBOR map
   `{naturalKey, causeKind, actorPrincipal, observedAt, typedInputState}`. It excludes the
   source event ID and every R2-derived ID, revision, writer principal, fact field, and
@@ -86,6 +102,11 @@ It must not combine fields from different committed revisions.
   `{sourceOwner, registryKind, sourceEventId}` and byte-equal canonical typed payload. A
   replay returns the first committed result and changes no row. The same identifier with
   a different payload returns `r2_source_event_conflict` and changes no row.
+- **R2 write capability**: an unforgeable process-local reference that the database
+  write serializer creates and owns at boot. The serializer exposes it to mutation code
+  only inside the private `R2Facts` callback. It is never serialized, persisted, logged,
+  projected, returned, or accepted as input. The database rejects B2 data mutation
+  without this capability.
 - **Same-value transition**: a source event with a new `sourceEventId` whose typed state
   equals the current typed state. It is a new observation and advances the registry
   revision.
@@ -123,6 +144,20 @@ It must not combine fields from different committed revisions.
   `sourceTurnSeq` to a carrier turn that Gateway admitted and the existing turn
   lifecycle recorded. A standalone health check, catalog request, credential check, or
   synthetic turn is not an ordinary execution observation.
+- **Quota envelope shape**: one row in the closed compile-time
+  `QuotaClassifier.acceptedShapes` registry. The row is
+  `{harness, provider, adapterEnvelopeVersion, terminalDecoderId, fixtureSha256,
+  provenanceArtifactId}`. Its first three members are the unique key and select the one
+  production terminal decoder named by `terminalDecoderId`. `QuotaClassifier` owns the
+  registry, exposes no runtime mutation, and accepts no unregistered key.
+- **Quota capture fixture**: a sanitized structured execution envelope captured from a
+  real ordinary turn that produced a typed quota signal. For each envelope shape the
+  classifier accepts, one fixture preserves field names, types, nulls, and nesting while
+  replacing credential, account, response, quota, session, and message values with typed
+  non-secret fixture values. Its provenance receipt names the product commit, adapter
+  build, harness, provider, source turn sequence, capture time, sanitizer version,
+  fixture SHA-256, and artifact ID. Neither the fixture nor receipt stores raw response
+  bytes, credential material, an account ID, quota amount, or provider prose.
 - **Authoritative fact**: one immutable `r2_authoritative_facts` row with `factId`, one
   R2 `factKind`, the complete typed R2 match key, `sourceTransitionId`,
   `selectionTransitionId`, `materializedByTransitionId`, `causeKind`, `principal`,
@@ -152,8 +187,12 @@ It must not combine fields from different committed revisions.
   consumer's existing database transaction. It contains one execution selection,
   available current tokens, and exact matching current facts ordered by F7 R2 priority.
 - **Writer principal**: exact value `process:tightbeam`, stored on each registry event
-  and authoritative fact. The registry event separately stores the authenticated actor
-  principal that caused the transition.
+  and authoritative fact. The registry event separately stores the authenticated or
+  reserved internal actor principal that caused the transition.
+- **Reserved internal actor principals**: exact value
+  `process:tightbeam:r2-expiry` for expiry transitions and exact value
+  `process:tightbeam:schema-migration-v7-v8` for structured v7-to-v8 initialization.
+  Only `R2Facts` and `Schema`, respectively, may supply them.
 
 ## Assumptions
 
@@ -182,8 +221,28 @@ ordered module seam.
 
 `R2Facts` is the only module that inserts, updates, or deletes an R2 registry current
 row; appends an R2 registry event; or inserts an authoritative fact. A source owner must
-call a typed `R2Facts` transition function inside the source owner's existing database
-transaction. A source owner must not write an R2 table directly.
+call a typed `R2Facts` transition function inside the database transaction for its
+existing source mutation. The database write serializer admits the source operation
+before it creates that transaction. A waiting operation holds no database snapshot or
+write lock. A source owner must not write an R2 table directly.
+
+The database write serializer requires the R2 write capability for each `INSERT`,
+`UPDATE`, or `DELETE` whose target is a B2 table. It returns
+`r2_writer_forbidden` before executing a statement that lacks the capability. The
+private `R2Facts` mutation callback is the only mutation-code recipient; the serializer
+is the sole issuer and validator. `Schema` receives a separate migration context that
+permits the exact B2 DDL strings but no B2 data mutation. No test helper, migration
+helper, source owner, generic database API, or raw SQL API can create, copy, inspect, or
+accept the R2 write capability.
+The database accepts the capability only for the dynamic extent of that private callback
+and clears it on return, raise, or transaction rollback.
+
+The same database write serializer admits one source transaction at a time before
+`R2Facts` reads a current R2 row. A second source transaction waits outside the read
+boundary. After the first transaction commits or rolls back, the second transaction
+reads the resulting current revision. This single serialized write path has no
+revision-conflict outcome and exposes no writer-versus-writer database-busy outcome as
+an R2 result.
 
 `R2Facts` derives each transition ID, revision, fact kind, complete match key, fact ID,
 writer principal, and fact expiry. A caller supplies none of those derived fields.
@@ -217,6 +276,12 @@ Each ID and required text has a non-empty check. Revisions, generations, and tim
 `INTEGER`; revisions and generations are positive, and times are non-negative. Canonical
 typed payloads use `BLOB`. Explicit-null fields use SQL null. Each named relationship
 uses a foreign key. No registry or fact column stores JSON.
+
+The `sourceEventId` check accepts only the ordinary `r2e_` form, the exact B7 expiry
+form, or the exact B7 migration form. `R2Facts` returns
+`r2_source_event_id_invalid` before hashing, logging, or persistence for any other value.
+An error identifies only this error code and source owner; it never echoes the rejected
+value.
 
 `r2_transitions` stores the common source fields and canonical payload. Replay compares
 the stored payload bytes, not only its digest. The payload must decode canonically and
@@ -255,14 +320,27 @@ Only these typed source calls may create transitions:
 | `QuotaClassifier` | `record_quota_transition` | one bounded typed window state derived from an ordinary execution observation | `quota_exhausted` while exhausted and unexpired |
 | `R2Facts` expiry worker | `expire_due_entities` | due hold or quota expiry selected by the transaction clock | no inability fact for the expired revision |
 
-The authenticated transport supplies `actorPrincipal`; request data cannot override it.
-`R2Facts` stores `process:tightbeam` as writer principal on the derived event and fact.
+For an ordinary source call, the authenticated source-domain context supplies
+`actorPrincipal`; request data cannot override it. `R2Facts` supplies
+`process:tightbeam:r2-expiry` only inside `expire_due_entities`. `Schema` supplies
+`process:tightbeam:schema-migration-v7-v8` only while the v7-to-v8 transaction calls a
+named source owner against a structured current row. A public, remote, or other internal
+caller that supplies either reserved principal receives `r2_actor_forbidden` before any
+row changes. `R2Facts` stores `process:tightbeam` as writer principal on the derived
+event and fact.
 The typed local quota classifier may consume a structured provider or harness signal
 that an ordinary execution already produced. `QuotaClassifier` is callable only from
 that turn's existing terminal transaction. It derives `sourceTurnSeq` from the carrier
 and the credential token from the adapter's structured execution envelope, not request
 data or a later current-token read. The quota event stores that token in its canonical
 payload. It cannot initiate traffic or translate an untyped string into exhaustion.
+
+`QuotaClassifier` may accept an envelope shape only when A5 contains its quota capture
+fixture and provenance receipt. The fixture test drives the production terminal
+transaction path with the captured envelope and invokes no separate decoder or
+classifier entry point. A hand-written ideal envelope does not satisfy this requirement.
+Capture must reuse an organically produced ordinary turn; it must not start a probe,
+synthetic turn, credential check, or quota-triggering request.
 
 The hold row is a hold under T-RECOGNITION. This base records it by that name. It does
 not hide it behind adjudication or decision vocabulary. Each activation records its
@@ -271,9 +349,10 @@ cause, actor principal, and either an explicit expiry or the separately authoriz
 authority. This base adds no policy that decides activation or release.
 
 An actor principal has exact form `user:<non-empty-id>`, `session:<non-empty-id>`, or
-`process:<non-empty-id>`. The writer principal is exactly `process:tightbeam`. The closed
-`registryKind` values are `session_execution`, `session_hold`, `adapter`, `circuit`,
-`catalog`, `credential`, and `quota_window`. The closed source cause set is:
+`process:<non-empty-id>`, subject to the reserved-principal rule above. The writer
+principal is exactly `process:tightbeam`. The closed `registryKind` values are
+`session_execution`, `session_hold`, `adapter`, `circuit`, `catalog`, `credential`, and
+`quota_window`. The closed source cause set is:
 
 | Registry kind | Allowed `causeKind` |
 |---|---|
@@ -346,14 +425,19 @@ When a same-value event preserves an inability state, the transaction inserts or
 the fact for the new exact revision and the older fact stops matching. When it preserves
 a runnable or unknown state, it inserts no inability fact.
 
-A replay returns the original transition and derived facts. A compare-and-set conflict,
-authorization failure, malformed input, database validation failure, or transaction
-rollback changes no revision and creates no event or fact.
+A replay returns the original transition and derived facts. An authorization failure,
+malformed input, database validation failure, or transaction rollback changes no
+revision and creates no event or fact.
 
-A compare-and-set conflict returns `r2_revision_conflict`. A typed event with an empty,
-oversized, or invalid-UTF-8 source event ID; negative time; invalid enum; missing
-required field; extra field; or state transition forbidden by B2 returns
-`r2_transition_invalid`.
+Two source calls for the same entity cannot read one prior revision concurrently. The
+B1 serializer admits the first call, lets it commit or roll back, and then admits the
+second. Two new events that commit receive consecutive revisions in serializer admission
+order. Two calls with the same replay identity produce one transition. This base defines
+no revision-conflict or writer-versus-writer database-busy product outcome.
+
+A typed event with a negative time, invalid enum, missing required field, extra field,
+or state transition forbidden by B2 returns `r2_transition_invalid`. An invalid source
+event ID returns `r2_source_event_id_invalid` under B2.
 
 An entity at the greatest positive 64-bit revision rejects a new event with
 `r2_revision_exhausted`. The same error applies when `adapterGeneration` or
@@ -489,8 +573,11 @@ The transaction clock makes a fact non-current at `expiresAt`. The expiry worker
 due active holds and quota windows in `{expiresAt, entityId}` order. It commits one typed
 expiry transition per entity through the same mutation seam. Its source event ID is
 `r2-expire:<entityId>:<currentRevision>:<expiresAt>` and its observation time is the
-transaction clock. A worker failure leaves the current revision unchanged for the
-uncommitted entity. Restart repeats selection and writes only missing expiry transitions.
+transaction clock. The revision and expiry members use unsigned base-10 ASCII with no
+leading zero except the value zero. Its actor principal is exactly
+`process:tightbeam:r2-expiry`. A worker failure leaves the current revision unchanged
+for the uncommitted entity. Restart repeats selection and writes only missing expiry
+transitions.
 At startup, `R2Facts` validates once, runs this worker, validates again, and only then
 permits Gateway or Wakes to start. A validation error returns its B7 code. An expiry
 transaction failure returns `{r2_expiry_failed, entityId}` and starts no consumer.
@@ -513,7 +600,10 @@ its B2 natural key. A source owner that cannot produce a complete typed event le
 registry absent and its ability unknown.
 Each migration event uses source event ID
 `r2-migrate-v7:<sourceOwner>:<sha256(canonicalStructuredSourceIdentityAndVersion)>`,
-using the Fact ID canonical CBOR rules. The ID exposes no source identity member.
+using the Fact ID canonical CBOR rules and 64 lowercase hexadecimal digest characters.
+The ID exposes no structured source-row identity or natural-key member. Each migration
+event's actor principal is exactly
+`process:tightbeam:schema-migration-v7-v8`.
 
 Before the composition transaction changes its stamp, `R2Facts.validate/1` must compare
 each normalized database object with the one owning DDL string, validate event-to-current
@@ -522,9 +612,11 @@ recompute each canonical payload digest, transition ID, and fact ID, and prove t
 canonical payload equals its header and typed event detail. It must prove that each
 fact's source event permits its kind and that its selection event equals its complete
 execution selection. It must also prove that its materializer is the source, selection,
-or token transition that required that fact, require an empty foreign-key check, and
-require an `ok` integrity check. The stamp change remains the composition transaction's
-final mutation.
+or token transition that required that fact. It must prove that each ordinary actor has
+a B3 form and is not reserved, each expiry or migration actor equals its exact B3
+reserved value, and each writer principal equals `process:tightbeam`. It must require an
+empty foreign-key check and an `ok` integrity check. The stamp change remains the
+composition transaction's final mutation.
 
 Validation uses this closed error set in priority order:
 
@@ -535,11 +627,12 @@ Validation uses this closed error set in priority order:
 5. `r2_payload_digest_invalid`;
 6. `r2_transition_id_invalid`;
 7. `r2_event_payload_mismatch`;
-8. `r2_current_projection_mismatch`;
-9. `r2_fact_shape_invalid`;
-10. `r2_fact_id_invalid`;
-11. `r2_foreign_key_invalid`;
-12. `r2_integrity_invalid`.
+8. `r2_principal_invalid`;
+9. `r2_current_projection_mismatch`;
+10. `r2_fact_shape_invalid`;
+11. `r2_fact_id_invalid`;
+12. `r2_foreign_key_invalid`;
+13. `r2_integrity_invalid`.
 
 Within one code, validation names the first identifier by exact stored bytes: a schema
 object name for a DDL mismatch and an entity, transition, or fact ID for a row mismatch.
@@ -562,8 +655,9 @@ next revision.
 
 Only the internal source-owner calls in B3 can request mutation. Each call must pass the
 existing authorization for its source domain before `R2Facts` writes. A remote request
-or public command that supplies a registry state, entity ID, revision, fact kind, match
-key, fact ID, writer principal, observed time, or expiry is rejected before mutation.
+or public command that supplies a source event ID, actor principal, registry state,
+entity ID, revision, fact kind, match key, fact ID, writer principal, observed time, or
+expiry is rejected before mutation.
 
 Gateway and Wakes may read a snapshot inside their authorized transaction. The existing
 F7 R7 authorization controls public refusal, terminal, trace, and notice projections.
@@ -586,6 +680,15 @@ repair workflow, or retry workflow is added. Unknown remains the named absence o
 The substrate records and verifies local truth; Gateway applies the already-reviewed R2
 policy. This preserves wisdom 6, 9, and 10.
 
+The writer rail deletes the unguarded direct-SQL surface; guidance or acceptance alone
+loses because either can leave a second writer executable. The single write serializer
+deletes the revision-conflict outcome; a second conflict workflow loses because ordered
+transactions can preserve each event. The real quota capture is added because deleting
+quota violates reviewed F7 and accepting a synthetic envelope cannot prove real input.
+The ordinary caller-controlled event ID is deleted; a named source owner now generates
+only the closed opaque form, while expiry and migration retain their closed non-secret
+forms.
+
 This capability establishes one pattern: a consumer that gates on local failure evidence
 uses immutable facts bound to monotonically revised source tokens and reads them in the
 same transaction as its action. Guidance must not teach that pattern until this base is
@@ -597,12 +700,16 @@ The base has one write path:
 
 1. A named source owner receives or creates one typed local source event through its
    existing authorized path.
-2. In the source transaction, the owner calls its B3 `R2Facts` transition function.
-3. `R2Facts` checks authorization and source-event replay identity.
-4. `R2Facts` validates the typed event against the source registry shape.
-5. `R2Facts` appends one registry event and updates its current projection.
-6. `R2Facts` derives and inserts the exact immutable inability facts permitted by B5.
-7. The transaction commits the source mutation, registry event, current projection, and
+2. The source operation waits without a database transaction for admission to the one
+   database write serializer.
+3. After admission, the serializer begins the source transaction and the owner calls its
+   B3 `R2Facts` transition function.
+4. The private mutation callback receives the R2 write capability and checks
+   authorization and source-event replay identity.
+5. `R2Facts` validates the typed event against the source registry shape.
+6. `R2Facts` appends one registry event and updates its current projection.
+7. `R2Facts` derives and inserts the exact immutable inability facts permitted by B5.
+8. The transaction commits the source mutation, registry event, current projection, and
    facts together.
 
 The base has one read path:
@@ -617,12 +724,12 @@ Traceability is explicit in both directions:
 
 | Base requirement | Architecture step | Acceptance evidence |
 |---|---|---|
-| B1-B3 | write steps 1-4 | A1 and A5 |
-| B4 | write steps 3-5 | A2 |
-| B5 | write step 6 | A3 |
+| B1-B3 | write steps 1-5 | A1 and A5 |
+| B4 | write steps 2-6 | A2 |
+| B5 | write step 7 | A3 |
 | B6 | read steps 1-4 | A4 |
-| B7 | schema and write steps 5-7 | A2 and A6 |
-| B8 | write step 3 and read step 3 | A5 |
+| B7 | schema and write steps 6-8 | A2 and A6 |
+| B8 | write step 4 and read step 3 | A5 |
 | B9 | object census and exclusions | A1 and A7 |
 
 The current projection is an affordance; the append-only event and fact histories are
@@ -638,15 +745,23 @@ exactly the B2 tables, required uniqueness indexes, foreign keys, fact-shape che
 append-only triggers from the module DDL. The object census contains no wake, terminal,
 notice, sibling-ledger, retry, alias, probe, or positive-runnable object.
 
-Given one creation event for each hold, adapter, circuit, catalog, credential slot, and
-quota window registry, when the transaction commits, then each entity ID has its exact
-B2 prefix plus 32 lowercase hexadecimal characters, each revision is `1`, and each
-event names `process:tightbeam` plus the authenticated actor and typed cause. No ID
-contains host, harness, provider, credential, account, or quota text.
+Given one ordinary creation event for each hold, adapter, circuit, catalog, credential
+slot, and quota window registry, when the transaction commits, then each entity ID has
+its exact B2 prefix plus 32 lowercase hexadecimal characters, each revision is `1`, and
+each event names `process:tightbeam` plus the authenticated source-domain actor and
+typed cause. No ID contains host, harness, provider, credential, account, or quota text.
 
-Given an update or delete against an event or fact row outside `R2Facts`, when the
-database executes it, then an append-only trigger aborts the statement and each row
-remains byte-for-byte equal.
+For each B2 table, given an instrumented module outside the private `R2Facts` mutation
+callback, when it attempts one direct SQL `INSERT`, `UPDATE`, and `DELETE`, then the
+database returns `r2_writer_forbidden` before executing the statement. The table census,
+row counts, and existing rows remain byte-for-byte equal. The same fixture proves that
+`Schema`'s DDL context cannot mutate B2 data and that no generic database or test API can
+obtain or submit the R2 write capability.
+
+Given the valid R2 write capability inside the private callback, when an injected defect
+attempts to update or delete an event or fact row, then the append-only trigger aborts
+the statement with `r2_append_only` and the row remains byte-for-byte equal. This proves
+the history rail independently of the writer rail.
 
 ### A2. Revision lifecycle, expiry, restart, and rollback
 
@@ -679,8 +794,10 @@ revision advances to `N+2`.
 Given one active hold with an expiry and one exhausted quota window, when the transaction
 clock reaches each expiry, then neither old fact is current. When the expiry worker
 runs, it advances each due entity exactly once to `expired` in B7 order and inserts no
-inability fact. When Tightbeam restarts before or after that worker commit, then startup
-finishes the missing expiry transition once and preserves a committed transition.
+inability fact. Each expiry event names actor
+`process:tightbeam:r2-expiry`, writer `process:tightbeam`, and the matching typed expiry
+cause. When Tightbeam restarts before or after that worker commit, then startup finishes
+the missing expiry transition once and preserves a committed transition.
 
 Given a due entity and a forced expiry-transaction failure during startup, when startup
 runs, then it returns `{r2_expiry_failed, entityId}`, starts neither Gateway nor Wakes,
@@ -692,6 +809,15 @@ Given a forced failure after event insertion, current-row update, or fact insert
 when the transaction rolls back, then the prior event count, current revision, and fact
 count remain exact. Given database restart without a due expiry, then no revision,
 transition ID, fact ID, or row changes.
+
+Given two authorized calls with distinct new source event IDs for one entity at revision
+`N`, when a barrier releases them together before serializer admission, then one call
+commits `N+1` and the other commits `N+2` in observed admission order. The event payloads
+remain attached to their assigned revisions, the current row equals `N+2`, any current
+inability fact names revision `N+2`, and every revision-`N+1` fact is stale. Neither call
+returns a revision-conflict or writer-versus-writer database-busy outcome. Given that
+the first admitted call rolls back, then the other commits `N+1` with no gap. Given two
+concurrent exact replays, then one transition exists and both calls return its IDs.
 
 Given the greatest positive 64-bit revision, an entity-ID collision, a transition-ID
 digest collision with a different full identity tuple, or a fact-ID digest collision
@@ -790,18 +916,40 @@ revision. This fixture proves the check and action share one transactional step.
 ### A5. Writers, authorization, privacy, and validation
 
 Given the compiled `R2Facts` API, when the source-owner function census runs, then it
-contains the exact B3 functions and contains no generic fact, transition, or map-shaped
-mutation entry point.
+contains the exact B3 functions plus zero-argument
+`R2Facts.new_source_event_id/0` and contains no generic fact, transition, or map-shaped
+mutation entry point. The generator call graph reaches only the operating-system CSPRNG
+and formatting code. Given the database and `R2Facts` capability census, then exactly one
+private callback can receive the R2 write capability, no exported function accepts its
+type, and no source, migration, or test module contains a second capability issuer.
+Given the B3 call-site dataflow census, each ordinary source event ID traces only to a
+fresh generator result or to that same retained result on replay; no request, provider,
+credential, account, quota, or prose field reaches the argument.
 
 Given one request from each unauthorized user, session, and process principal, when it
 attempts an R2 transition, then existing source-domain authorization returns `denied`
 before an event, current row, or fact changes.
 
-Given a public or remote request that supplies a registry entity ID, revision,
-transition ID, fact kind, match key, fact ID, writer principal, observation time, or
-expiry, when request validation runs, then it returns `r2_derived_field_forbidden` and
-changes no row. Internal source calls identify current entities through their exact B2
-natural keys; only `R2Facts` resolves the opaque entity ID.
+Given a public or remote request that supplies a source event ID, actor principal,
+registry entity ID, revision, transition ID, fact kind, match key, fact ID, writer
+principal, observation time, or expiry, when request validation runs, then it returns
+`r2_derived_field_forbidden` and changes no row. Internal source calls identify current
+entities through their exact B2 natural keys; only `R2Facts` resolves the opaque entity
+ID.
+
+Given an ordinary internal source event ID equal to a credential-shaped string, account
+name, provider prose, Unicode text, uppercase hexadecimal value, or a value with fewer
+or more than 32 hexadecimal characters after `r2e_`, when `R2Facts` validates it, then it
+returns `r2_source_event_id_invalid`. The supplied value appears in no database cell,
+error body, log capture, trace, or artifact. Given `r2e_` plus exactly 32 lowercase
+hexadecimal characters returned by `R2Facts.new_source_event_id/0` and retained by the
+named source owner, then the transition may store that value. Given the B7 expiry and
+migration forms, only their derived non-secret members appear.
+
+Given a public, remote, or non-owning internal caller that supplies
+`process:tightbeam:r2-expiry` or
+`process:tightbeam:schema-migration-v7-v8`, when authorization runs, then it returns
+`r2_actor_forbidden` and changes no row.
 
 Given an adapter source event whose scope is not exact `shared`, when validation runs,
 then it returns `r2_adapter_scope_invalid` and changes no row.
@@ -812,6 +960,17 @@ an unbounded exhaustion claim, a predicted threshold, a missing or non-admitted 
 turn, a structured execution envelope that does not name the credential token, or an
 event produced by a probe, then validation returns `r2_quota_evidence_invalid` and
 changes no row.
+
+For each structured envelope shape that `QuotaClassifier` accepts, given its sanitized
+quota capture fixture and provenance receipt, when the production terminal decoder and
+classifier consume the fixture, then they produce the exact typed credential token,
+bounded window, exhaustion state, and source-turn link expected by the fixture. The
+fixture manifest and accepted-shape census are equal. The receipt resolves to the named
+real ordinary turn, product commit, adapter build, fixture SHA-256, and artifact. A
+secret-field and provider-prose scan returns zero matches. A one-member synthetic
+control that omits the credential token, bound, typed state, or source-turn link returns
+`r2_quota_evidence_invalid`; the synthetic control does not satisfy the real-capture
+requirement.
 
 Given an authorized R2 consumer, when it resolves a fact evidence reference, then it
 receives the B8 non-secret projection. Given an unrelated principal, then the resolver
@@ -825,7 +984,9 @@ when migration runs, then it creates each B2 object from its one module DDL stri
 creates no fact from prompt text, error text, prior failed turns, unstructured origin, or
 in-memory state. It creates session events first and then source events in the exact B7
 order. A named source owner either supplies one complete typed local event or leaves the
-source absent and ability unknown.
+source absent and ability unknown. Each created migration event names actor
+`process:tightbeam:schema-migration-v7-v8`, writer `process:tightbeam`, and its exact
+typed source cause.
 
 Given a failure during each B7 migration stage, when the migration transaction exits,
 then the predecessor stamp, rows, and objects remain byte-for-byte equal and no B2 object
@@ -836,9 +997,11 @@ Given one fixture for a missing DDL object, changed normalized SQL, revision gap
 duplicate revision, orphan event, current/event mismatch, invalid fact nullability,
 fact source that does not permit its kind, selection event that differs from its
 execution selection, invalid materializer, wrong payload digest, wrong transition ID,
-canonical payload/detail mismatch, wrong fact ID, foreign-key failure, or integrity
-failure, when validation runs, then it returns the corresponding B7 error before Gateway
-or Wakes starts. Given several faults, it returns the first B7 code and identifier in the
+canonical payload/detail mismatch, malformed ordinary actor, ordinary event using a
+reserved actor, wrong reserved expiry actor, wrong reserved migration actor, wrong
+writer principal, wrong fact ID, foreign-key failure, or integrity failure, when
+validation runs, then it returns the corresponding B7 error before Gateway or Wakes
+starts. Given several faults, it returns the first B7 code and identifier in the
 specified orders.
 
 Given a backup at revision `N` and later live revision `N+1`, when the backup is restored,
