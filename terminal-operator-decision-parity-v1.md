@@ -1,7 +1,7 @@
 # Terminal operator-decision parity and integrity — v1
 
-Status: SPEC-READY, TARGETLESS — awaiting one parent-opened independent
-exact-revision review
+Status: SPEC-READY, TARGETLESS — exact-revision review findings F1-F3 applied;
+awaiting parent-opened independent re-review
 
 Authority: work item `wi_435301fa-dead-4a1a-8e78-4a594c0f8b0d`, assignment
 `asg_edf0c74c-65e3-4668-a208-002765c7304b`, diagnosed verdicts
@@ -17,8 +17,13 @@ Source evidence: Tightbeam `main` commit
 `decision-request-expecter-preference-v1.md`, and visitor-attribution spec
 `visitor-principal-v3.md` at commit
 `9fed0adef203904ef44e9252cd0c5b4b8f6c6a70` and file SHA-256
-`03fe3dd2d6f93537a5477d3037c1ff79b484f8810c33790391aa6c6cc76cf015`.
+`03fe3dd000a920be82c17e1a4246ef9e0482edfd7b8cffda125a94ab4ec1c32c`.
 These source revisions are evidence pins, not implementation targets.
+
+Revision evidence: independent exact-revision review verdict
+`att_8a08d480-8aae-46b9-93c8-191a18dcd749` and report artifact
+`art_1dfda29c` against commit
+`a98b3cac7a0734c5ddf2c53201f7b8829815eeee`.
 
 This contract supersedes only the owner-scoped operator-request read projection,
 terminal-attribution, integrity, and raiser-delivery clauses of
@@ -152,9 +157,13 @@ deciding the answer.
 - **Canonical ruling fact**: one durable condition fact with kind exactly
   `escalation-ruled`, scope exactly the decision request id, and id exactly
   `rulingFactId`.
-- **Raiser notification wake**: one durable prompt wake addressed to the
-  request's recorded `raiserSessionKey`, armed for condition kind
-  `escalation-ruled` and scope equal to the request id.
+- **Canonical ruling lifecycle event**: exactly one lifecycle row whose kind
+  is `decision_request_ruled` and whose subject is the request id. Integrity
+  checks use those relational fields and do not parse lifecycle prose.
+- **Raiser notification wake**: for a post-activation ruling, exactly one
+  durable prompt wake with the complete relational shape in Architecture §2.
+  It is addressed to the request's recorded `raiserSessionKey` and armed for
+  condition kind `escalation-ruled` and scope equal to the request id.
 - **Durable delivery**: one committed prompt message/turn associated with the
   raiser notification wake under the existing wake outbox and wake-state
   compare-and-set. It does not mean one network publication or one inference
@@ -270,10 +279,12 @@ compare-and-set. Only its winner may write the terminal tuple, canonical fact,
 lifecycle event, and raiser notification wake. A loser observes the committed
 row and follows the existing typed conflict or exact-replay contract.
 
-**INV-10 — Atomic ruling evidence.** The terminal request row, ruling
-attribution, canonical condition fact, `rulingFactId` reference, ruling
-lifecycle event, and raiser notification wake commit or roll back together. No
-observer can see one committed component without the others.
+**INV-10 — Atomic ruling evidence.** For a post-activation ruling, the terminal
+request row, ruling attribution, canonical condition fact, `rulingFactId`
+reference, ruling lifecycle event, and raiser notification wake commit or roll
+back together. No observer can see one committed component without the others.
+Pre-activation rows remain governed by the legacy boundary in INV-05 and do not
+gain a historical wake.
 
 **INV-11 — The event, not a proxy.** The raiser wake matches only the canonical
 fact. Its fallback time bounds delivery recovery. It does not imply that a
@@ -282,11 +293,12 @@ wake and fact commit together and the fire seam rechecks for a matching fact
 before it classifies a due wake, a valid automatic notification records
 `firedBy="condition"`, never `fallback`.
 
-**INV-12 — Idempotent automatic delivery.** One operator request has at most
-one raiser notification wake for its ruling. An exact ruling replay returns the
-stored result and creates no wake, fact, event, or turn. The existing wake-state
-compare-and-set and unique wake-to-turn relation permit at most one committed
-prompt turn from that wake.
+**INV-12 — Idempotent automatic delivery.** One post-activation operator
+ruling has exactly one canonical raiser notification wake. An exact ruling
+replay returns the stored result and creates no wake, fact, event, or turn. The
+existing wake-state compare-and-set and unique wake-to-turn relation permit at
+most one committed prompt turn from that wake. Pre-activation rulings do not
+acquire a wake by migration, projection, replay, or consumption.
 
 **INV-13 — Canonical condition name.** Producers and consumers use the literal
 `escalation-ruled`. `operator-decision-ruled`, `decision_request_ruled`, and all
@@ -324,13 +336,16 @@ principal and carries no operator ruling authority. A broker or presenting
 visitor session cannot be projected as the owner or performing operator ruler.
 The operator-rule handler rejects the visitor before mutation.
 
-**INV-19 — Future invalid rulings are rejected at write time.** After
+**INV-19 — Future attribution defects are rejected at write time.** After
 activation, a database trigger rejects an `open` to `ruled` operator transition
 unless performing principal and presenting-session state form the closed
-post-migration shape in Architecture §2. The read-time integrity rail still
-covers legacy data, manual corruption, restore defects, and disabled or unaware
-writers. This is the highest affordable rung: a database refusal, not prose or
-serializer convention.
+post-migration attribution shape in Architecture §2. The ruling transaction's
+single commit supplies the event and wake. The read-time relational checks
+cover missing, wrong, or duplicate event and wake rows, plus legacy data,
+manual corruption, restore defects, and disabled or unaware writers. The
+trigger takes the database-refusal rung for attribution; the visibility-first
+read and consume refusal is the deterministic rail for cross-relation
+integrity.
 
 ## Architecture
 
@@ -459,6 +474,24 @@ database snapshot:
    session value produces `legacy-unknown`, never `none`.
 10. `status` is exactly `ruled` and `consumedAt` is null. `consumed` is not a
     valid operator lifecycle state.
+11. Exactly one lifecycle event has kind `decision_request_ruled` and subject
+    equal to the request id. Zero or more than one matching row is invalid.
+    Validation does not inspect `detail` prose.
+12. If `rulingFactId` is greater than `legacyRulingFactMaxId`, exactly one wake
+    has all of this canonical shape: `sessionKey` equals the stored
+    `raiserSessionKey`; `targetRole` is null; `origin` is
+    `process:tightbeam`; `prompt` equals the literal in §3 after substituting
+    the request id; `consumer` is `prompt`; `conditionKind` is
+    `escalation-ruled`; `conditionScope` equals the request id;
+    `conditionAfterId` is less than `rulingFactId`; `creatorSessionKey` equals
+    the known presenting session or is null for a `none` session;
+    `dueAt` equals `ruledAt` plus the existing operator-decision duration;
+    `targetGate` is `0`; and role re-resolution is absent. Its state is either
+    pending with null `firedAt` and `firedBy`, or fired with an integer
+    `firedAt` and `firedBy="condition"`. Zero or more than one matching wake is
+    invalid. A pre-activation ruling has no automatic-wake integrity
+    requirement because this contract never invents or backfills historical
+    delivery.
 
 A row that fails a check is an impossible ruled shape. The list projector
 validates all admitted rows before it encodes the collection. It commits one
@@ -486,9 +519,11 @@ id does not disclose a hidden request.
 
 The additive relation `decision_request_integrity_evidence` has one row per
 `(requestId, shapeDigest)`. `shapeDigest` is SHA-256 over a versioned canonical
-structural descriptor for checks 1-10: each inspected member's presence and
+structural descriptor for checks 1-12: each inspected member's presence and
 type class, each closed-vocabulary state, each cross-field equality result,
-each fact-reference match result, and the sorted failing-field names. The
+each fact, event, and wake cardinality or relational-match result, and the
+sorted failing-field names. The closed failure vocabulary includes
+`rulingLifecycleEvent` and `raiserNotificationWake`. The
 descriptor contains no field value, free text, credential, principal id, user
 id, session key, option label, decision, or timestamp. The row stores:
 
@@ -574,23 +609,29 @@ The selected target shall use one additive schema migration:
    legacy cutoff in the same snapshot. Classify non-ruling rows as applicable,
    ruled rows as legacy-complete or impossible, and any consumed row as
    impossible. The migration writes no request row.
-4. If any row is impossible, leave the epoch and new schema stamp absent,
-   commit the privacy-safe evidence batch through the additive evidence
-   relation, and refuse activation with
-   `decision_request_integrity_invalid`. No gateway serves during the failed
-   activation.
-5. If preflight passes, insert the immutable epoch row with the proposed fact
-   cutoff, `cause="terminal-operator-decision-parity-v1"`, and
+4. In that transaction, record or reuse privacy-safe evidence for every
+   impossible pre-existing shape, then insert the immutable epoch row with the
+   proposed fact cutoff, `cause="terminal-operator-decision-parity-v1"`, and
    `principal="process:tightbeam"`; install the future-write trigger; and move
-   the existing schema stamp to the new version in the same exclusive
-   transaction. Legacy-complete request rows retain null storage and project
+   the existing schema stamp to the new version. The presence of an impossible
+   row does not withhold activation. After activation, an admitted read or
+   consumer refuses that row through §2 while other gateway behavior remains
+   available. The migration adds no repair, disposition, hold, or request-row
+   write. Legacy-complete request rows retain null storage and project
    `legacy-unknown` at read time.
-6. The trigger covers both a new terminal insert and an `open` to `ruled`
+5. The trigger covers both a new terminal insert and an `open` to `ruled`
    update. It requires non-null `ruledViaPrincipal`,
    `ruledViaSessionState` in `known|none`, and the exact session-state/key
    relation from §2. It aborts the entire caller transaction with
    `decision_request_integrity_invalid` before an incomplete new ruling can
    commit.
+
+An evidence or schema write failure aborts the activation transaction and can
+be retried against unchanged request history. An impossible request shape is a
+named accepted failure value, not an activation dependency: only its admitted
+serialization or consumption is refused. This deletion wins over a repair
+workflow because the visibility-first per-row rail already prevents the lossy
+behavior, and a repair would violate the no-history-rewrite boundary.
 
 Wire compatibility is additive: the exact-id verb and `rulingAttribution` are
 new, while existing list envelopes and flat fields retain their names and
@@ -618,7 +659,8 @@ mutate history.
 The existing request row, canonical condition fact, lifecycle event, wake row,
 and prompt turn remain the primary trace. The immutable epoch row brackets
 legacy facts. The integrity relation adds refusal evidence without duplicating
-private payloads. The trace for one successful ruling shall join:
+private payloads. The trace for one successful post-activation ruling shall
+join:
 
 ```text
 decision request id
@@ -626,6 +668,10 @@ decision request id
   -> one raiser notification wake
   -> zero or one prompt turn while pending, exactly one after durable delivery
 ```
+
+A legacy-complete trace joins the request to its canonical fact and exactly one
+canonical ruling lifecycle event. Absence of a historical automatic wake is not
+repaired or presented as proof of delivery.
 
 The successful automatic wake lifecycle shall name `condition` as its firing
 cause. Test-only wrong-name wakes can name `fallback`. The request trace shall
@@ -762,16 +808,26 @@ neither row. After commit, the new fact id is greater than the wake cursor and
 the exact kind/scope match fires it. A rollback exposes neither wake nor fact.
 
 **A-18 — List integrity refusal.** Given an authorized list contains one valid
-row and two ruled rows missing `rulingFactId`, when the caller lists them, then
-the response is HTTP 500 `decision_request_integrity_invalid`, contains the
-lexicographically smallest bad request id and no decision fields, emits no
-partial collection bytes, and commits one evidence row for each bad shape whose
-failing fields are `["rulingFactId"]`.
+row and separate post-activation ruled rows with a missing `rulingFactId`, no
+canonical ruling lifecycle event, no canonical raiser wake, two canonical
+ruling lifecycle events, and two canonical raiser wakes, when the caller lists
+them, then the response is HTTP 500
+`decision_request_integrity_invalid`, contains the lexicographically smallest
+bad request id and no decision fields, emits no partial collection bytes, and
+commits one evidence row for each bad shape. The evidence names
+`rulingFactId`, `rulingLifecycleEvent`, or `raiserNotificationWake` as
+applicable.
 
-**A-19 — Detail integrity refusal.** Given a visible ruled row whose fact has a
-wrong kind or scope, when the caller fetches its exact id, then it receives the
-same named refusal and no row bytes. Evidence names `rulingFactId` under the
-closed failure vocabulary and stores no fact payload or private request field.
+**A-19 — Detail integrity refusal.** Given separate visible post-activation
+ruled rows whose fact has a wrong kind or scope, whose only ruling lifecycle
+event has a wrong kind or subject, or whose only intended automatic wake has a
+wrong target session, origin, prompt, consumer, condition kind, condition
+scope, fact cursor, creator session, fallback deadline, target gate,
+role-resolution state, or wake/firing state, when the caller fetches each exact
+id, then it receives the
+same named refusal and no row bytes. Evidence names `rulingFactId`,
+`rulingLifecycleEvent`, or `raiserNotificationWake` under the closed failure
+vocabulary and stores no fact, event, wake, or private request payload.
 
 **A-20 — Consumption integrity refusal.** Given an impossible ruled row is the
 candidate for policy consumption, when the consumer transaction runs, then it
@@ -797,22 +853,24 @@ contains the question, context, rationale, option, owner id, or session key.
 **A-23 — Migration preflight.** Given legacy-complete rows with and without a
 stored session, a row missing decision, a row missing owner, a consumed operator
 row, a row with a missing fact, and a row with a wrong-name fact, when migration
-preflight runs twice, then it classifies the legacy-complete rows without
-request writes, records one evidence row per impossible shape, leaves no epoch
-or new schema stamp, and refuses schema activation. After only valid
-pre-existing fixtures remain in a fresh database, activation atomically records
-one epoch whose fact cutoff equals the snapshot maximum, installs the
-future-write trigger, advances the schema stamp, and does not rewrite a request
-row. A later null-principal ruling cannot qualify as legacy because its fact id
-exceeds the cutoff.
+runs, then it classifies the legacy-complete rows without request writes,
+records one evidence row per impossible shape, atomically records one epoch
+whose fact cutoff equals the snapshot maximum, installs the future-write
+trigger, advances the schema stamp, and activates without repairing or
+disposing of a request. Authorized reads and consumers refuse only the admitted
+impossible rows through §2; other gateway behavior remains available. When the
+migration is invoked again, the epoch and schema stamp remain unchanged and the
+evidence count does not increase. A later null-principal ruling cannot qualify
+as legacy because its fact id exceeds the cutoff.
 
 **A-24 — Rollback fence.** Given schema activation has not occurred, when the
 deployment rolls back, then the prior binary resumes under the predecessor
-schema stamp; dormant additive columns, relations, and evidence remain and no
-reverse migration runs. Given the new schema is active, when an unaware old
-binary attempts gateway start with zero or more new rulings and evidence rows,
-then preflight refuses it and leaves all rows intact. Redeploying an aware
-binary restores service.
+schema stamp and request history remains unchanged; no reverse migration runs.
+A failed activation transaction leaves no epoch, evidence batch, trigger, or
+new schema stamp. Given the new schema is active, when an unaware old binary
+attempts gateway start with zero or more new rulings and evidence rows, then
+preflight refuses it and leaves all rows intact. Redeploying an aware binary
+restores service.
 
 **A-25 — Manual mitigation does not mask automatic delivery.** Given a manual
 intermediary wake reaches the raiser before the owner rules, when the owner
@@ -842,7 +900,9 @@ than hand-written. Existing non-operator decision-request tests remain green.
 **A-28 — Trace completeness.** Given one known-attribution ruling, one legacy
 ruling, one delivered raiser wake, and one integrity refusal, when an authorized
 operator inspects their traces, then it can join each request to its canonical
-fact, lifecycle event, wake, and prompt turn when present; distinguish
+fact and exactly one canonical ruling lifecycle event, join each
+post-activation ruling to exactly one canonical wake and its prompt turn when
+present, and distinguish
 on-behalf-of actor, performer principal, and presenting-session state; confirm
 that the automatic wake fired by condition while a test-only wrong-name wake
 fell back; and find the privacy-safe evidence row. No join depends on lifecycle
@@ -851,6 +911,6 @@ prose parsing.
 ## Open Questions
 
 None. Target selection, `specRef` binding, implementation, and the independent
-exact-revision review are intentionally outside this assignment. The parent
-shall open one independent review against the published commit and file SHA
-after this spec's required cold digest and spec-ready receipt.
+exact-revision re-review are intentionally outside this assignment. The parent
+shall open that re-review against the successor commit and file SHA after this
+spec's required cold digest and spec-ready receipt.
