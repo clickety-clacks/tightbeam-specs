@@ -245,11 +245,13 @@ The supervision turn-end candidate query admits discrete assignments only and or
 those candidates by `(openedAt, id)` as it does now.
 
 The standing-accountability candidate query admits open standing assignments only. It
-orders eligible candidates by `(openedAt, id)`. A standing candidate becomes due when
-its stored entitlement `dueAt` is at or before the evaluator time and the existing
-pending-turn, pending-wake, blocking-fact, and terminal guards admit it. The evaluator
-returns `standing_not_due` without a claim when a holder has standing custody but no
-due candidate.
+orders eligible candidates by `(dueAt, openedAt, id)`. A standing candidate becomes
+due when its stored entitlement `dueAt` is at or before the evaluator time and the
+existing pending-turn, pending-wake, blocking-fact, and terminal guards admit it. The
+turn-end, scheduled, and recovery entry points run this query through the existing
+supervision evaluator; a new terminal is not required. The evaluator returns
+`standing_not_due` without a claim when a holder has standing custody but no due
+candidate.
 
 The discrete production has priority when a turn-end evaluation finds both a discrete
 candidate and a due standing candidate. Otherwise, the evaluator claims one due
@@ -410,6 +412,11 @@ without a pending wake, queued or running turn, current blocking fact, or receip
 `standing_accountability`, writes one tier-1 prod whose production kind is
 `standing_accountability`, and uses the exact AR3 prompt. The transaction writes no
 effort generation, effort decision request, or completion-rail action.
+
+**Given** equivalent due fixture rows and no terminal since the entitlement was armed,
+**when** the test invokes the scheduled and recovery entry points separately at the same
+fixture clock, **then** each path produces the same tier-1 standing-accountability result
+on its isolated database. The test invokes the entry points directly and does not sleep.
 
 **When** the holder files `tightbeam attest <assignmentId> --kind reaffirmation`,
 **then** the gateway stores one non-terminal reaffirmation attest, leaves the assignment
