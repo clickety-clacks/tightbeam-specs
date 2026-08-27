@@ -1392,6 +1392,7 @@ does not borrow that bit.
 | artifacts | creating session; work-item owner; any principal allowed to read the linked work item; admin |
 | assets | asset's `ownerUserId` user principal; admin |
 | decision requests — statute | raiser; `ownerUserId` user principal; admin |
+| decision requests — operator | raiser session; `ownerUserId` user principal; admin |
 | decision requests — effort | named expecter session or user; holder of the linked assignment; admin |
 | decision requests — agent question | asker session; asked session; stamped accountable owner user; admin |
 | read markers | marker's `userId` user principal; admin |

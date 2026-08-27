@@ -47,6 +47,11 @@ F4 successor re-review: exact revision
 `att_809f2f1e` and report `art_3faf8619`. Its sole finding requires the
 expecter-preference companion to appear in every F4 custody declaration.
 
+F4 successor re-review: exact revision
+`6f5a48c69b99ed2fdfc8bfa71f58d75d63a41c6a` received changes-requested verdict
+`att_c045d05a` and report `art_ee96bdbd`. Its sole finding requires AU4 to name
+the existing operator owner/raiser visibility predicate.
+
 This contract supersedes only the owner-scoped operator-request read projection,
 terminal-attribution, integrity, and raiser-delivery clauses of
 `escalation-substrate-v1.md` and any candidate client projection that omits the
