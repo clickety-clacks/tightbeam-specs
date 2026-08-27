@@ -455,6 +455,25 @@ one value of `F`. For one `sessionKey`, the observable value of `F` is
 non-decreasing. A production mutation cannot expose a row that an earlier
 value of `F` hid.
 
+Session creation is the sole initializer and writes
+`clearedThroughSeq = 0`. After creation, the sole production write seam is the
+canonical session-store operation
+`advanceClearedThroughSeq(sessionKey,candidateSeq)`. It atomically writes and
+returns `max(storedValue,candidateSeq)` in the session transaction. When that
+maximum changes the row, the same commit publishes the resulting session
+`rowVersion`; a no-change candidate returns the unchanged row and version. The
+closed v1 caller inventory contains exactly two causes and source sites:
+
+- the harness-change path submits the current maximum message `seq` at
+  `gateway.ex:2700-2712`; and
+- turn-failure recovery submits the old session's failed-prompt `seq` at
+  `gateway.ex:3742-3758`.
+
+Both sites must call the sole operation. No other production statement or
+caller may write the column. A new cause requires an independently reviewed
+amendment to this inventory before implementation and must call the same
+operation.
+
 The signed message cursor contains the immutable `(seq,id)` tuple and R5/AU7
 request binding. It does not contain `clearedThroughSeq`; that value is
 server-owned state, not a request filter. The service compares the decoded
@@ -1097,7 +1116,9 @@ that response. A wrapper that currently sends dispatch `asUser` sends the
 same value as the GET `asUser` parameter. During M4 migration, the existing
 dispatch adapter may remain; both transports resolve the same principal and
 call the same canonical query function and serializer. No CLI read keeps a
-second query or serializer implementation.
+second query or serializer implementation. Until the `transcript` adapter is
+removed, it retains the audit-elision and router non-target safeguards in
+`transcript-verb-v1.md` I10 and I11.
 
 C2. New flexible reads are designed REST-first; the CLI gains a wrapper
 only when a common agent task wants one line. `doctor` stays local (it
@@ -1120,8 +1141,10 @@ those seams. M3. Point the firehose payload builders at the same
 serializers. M4. Point CLI read handlers at the canonical read services.
 Move each wrapper from dispatch to its REST GET using the existing bearer plus
 AU2's `asUser` principal selection where required. Remove its legacy dispatch
-read path after parity acceptance passes. This transport move does not change
-item shapes, authorization, or the M1 query and serializer seams.
+read path after parity acceptance passes. Before removal, the `transcript`
+adapter retains the audit-elision and router non-target proofs in
+`transcript-verb-v1.md` A9 and A10. This transport move does not change item
+shapes, authorization, or the M1 query and serializer seams.
 M5. Keep current routes only as migration aliases (/api/streams,
 /api/org-options, /api/session-status, /api/work[/:id],
 /api/trackable-sessions, /harnesses); no new client may adopt them. M6. Migrate
@@ -1417,24 +1440,25 @@ caller requests the next page, then the page is empty and sets
 `after` or a `newestCursor` used as `before`, the service returns
 `400 invalid_cursor`.
 
-A36c. Given each production seam that can change `clearedThroughSeq`, when the
-seam would produce a candidate below the stored value, then the next session
-read returns the stored value and the transcript route exposes no previously
-cleared row.
+A36c. A source-structure test finds one session-creation seam that initializes
+`clearedThroughSeq` at zero, exactly one post-creation production write
+statement owned by `advanceClearedThroughSeq`, and exactly the two inventoried
+caller sites: the harness-change maximum-message-seq path at
+`gateway.ex:2700-2712` and the turn-failure old-session failed-prompt-seq path at
+`gateway.ex:3742-3758`. Given concurrent candidates above, equal to, and below
+the stored value through both callers, then every committed and subsequently
+read value equals the maximum value seen for that session. A changed value and
+its new session `rowVersion` become visible in the same commit; an unchanged
+value retains its row version. The transcript route exposes no previously
+cleared row. The test fails for a direct write, a second writer, an unlisted
+caller, a decreasing result, or separate boundary and row-version publication.
 
-A37. Given a cold client subscribed before its snapshot, when
-`clearedThroughSeq` changes after its message pages but before its confirming
-session read, then the client detects the boundary change, discards the
-candidate slice, and rebuilds from a cursorless tail. The accepted slice
-contains no row whose `seq` is at or below the accepted boundary. Given the
-boundary changes after the confirming session read, then the buffered session
-notice triggers the same discard and rebuild. Given a firehose sequence skip
-or reconnect, the same displayed-slice rebuild converges without a replay
-route, stream cursor, or event retention. A concurrent boundary-advance test
-proves each returned page corresponds wholly to the boundary before or after
-the commit and never mixes both. The subscription includes `message.created`
-and the `session.` prefix supplied by recon finding G2 for the selected
-`sessionKey`.
+A37. Given concurrent message inserts and a boundary advance, when the REST
+tail and backward pages run, then each returned page corresponds wholly to the
+boundary before or after the commit and never mixes both. The versioned
+snapshot-to-buffer handoff and reconnect proof are
+`transcript-verb-v1.md` A5 and A6; this REST test does not define a second
+client recovery algorithm.
 
 A38. Given the same principal and selection, when direct REST and the M4
 `transcript` wrapper run successfully, then their R4 envelopes, R7 items, and

@@ -6,7 +6,9 @@ firehose prerequisite. When this exact candidate passes independent review and
 lands, it supersedes the prior `transcript-verb-v1.md` lookup, projection,
 history-floor, response-envelope, and message-id cursor clauses. Git history
 retains those clauses as implementation history; they do not remain a second
-public contract.
+public contract. It does not supersede the existing dispatch audit-elision or
+router non-target safeguards. This revision restates both safeguards for the
+M4 migration window.
 
 Authority: `rest-state-api-v1.md` owns the conversation query, item,
 authorization, visibility-floor, page, and cursor semantics.
@@ -34,6 +36,9 @@ history, and recovery after a firehose gap.
 - This wrapper does not preserve the superseded case-insensitive substring
   lookup, five-field candidate projection, message-id cursor, or 12-field
   message projection.
+- This wrapper does not remove the dispatch audit-elision or router non-target
+  safeguards before the legacy dispatch adapter passes M4 parity and is
+  removed.
 - This wrapper does not use firehose notices as history. Firehose r6 stores no
   notice history and defines no retention horizon.
 
@@ -74,8 +79,9 @@ supplies `session.spawned`, `session.updated`, and `session.retired` under the
 `session.` subscription prefix. That prerequisite owns their mutation mapping;
 this spec does not duplicate it.
 
-AS4. Firehose M1 and M2 supply subscribe-first buffering, last-version-wins
-application, gap detection, and full displayed-slice rebuild.
+AS4. Firehose M1 and M2 supply subscribe-first buffering, version comparison,
+gap detection, and full displayed-slice rebuild. A history-boundary change is
+a rebuild trigger under I7; it is not an ordinary last-version-wins merge.
 
 ## Invariants
 
@@ -106,7 +112,7 @@ otherwise valid cursor malformed.
 
 I6a. The observable `clearedThroughSeq` for one `sessionKey` is
 non-decreasing. A session mutation cannot make a cleared message visible
-again.
+again. REST R5d owns the sole transition seam and its closed caller inventory.
 
 I7. A client uses `page.oldestCursor` as the next `before` value to walk
 backward. It uses `page.newestCursor` as an `after` value only while the same
@@ -120,6 +126,15 @@ counts. It does not add a data field or cursor meaning.
 I9. The wrapper preserves REST authorization, unknown-versus-forbidden
 indistinguishability, error precedence, bearer credential, and `asUser`
 principal selection. It does not implement a second visibility decision.
+
+I10. While the legacy dispatch adapter exists, a successful or crashed
+`transcript` call cannot copy returned transcript or candidate content into a
+durable audit payload. A denial remains unelided because it contains no
+transcript result.
+
+I11. While the legacy dispatch adapter exists, `transcript` is a non-target
+verb. The router refuses every top-level typed-target field before it resolves
+that field. The retrieval key travels only in the ordinary verb parameters.
 
 ## Architecture
 
@@ -151,23 +166,73 @@ boundary:
 - `after=<cursor>` returns the first visible page above the boundary; and
 - neither request resolves the cursor through a live message row.
 
-Cold build uses this sequence:
+REST R5d defines the only production transition of `clearedThroughSeq`. This
+wrapper consumes the resulting session item and does not write the boundary.
+
+Cold build uses this closed snapshot-to-buffer handoff:
 
 1. Resolve or choose one `sessionKey`. Name lookup selects a key but builds no
    conversation state.
 2. Establish a firehose subscription filtered to that `sessionKey`. The
    subscription includes `message.created` and the `session.` prefix supplied
    by recon finding G2. Receive `subscription_ready`.
-3. Fetch the selected R7 session item and record its `clearedThroughSeq`.
+3. Fetch the selected R7 session item as `S0`. Record its
+   `clearedThroughSeq` as `F0` and its `rowVersion` as `V0`.
 4. Fetch the transcript tail. Page backward with `oldestCursor` only until the
    displayed slice is complete.
-5. Fetch the session item again. If `clearedThroughSeq` changed, discard the
+5. Fetch the session item again as `S1` and record `F1` and `V1`. Accept the
+   session snapshot only if both `F1 = F0` and `V1 = V0`. Otherwise discard the
    candidate slice and repeat from step 3.
-6. Inspect buffered session notices before accepting the slice. If one carries
-   a different `clearedThroughSeq`, discard the candidate slice and repeat from
-   step 3.
-7. Apply buffered notices by the firehose M1 last-version-wins rule. Remove a
-   cached message when its `seq` is at or below the accepted history boundary.
+6. Enter one client-state critical section. Capture the current buffer-tail
+   position as `Q` and detach the finite buffered prefix through `Q`. If the
+   connection has entered doubt through `Q`, reject the candidate and restart
+   from step 2 on a healthy subscription.
+7. In the same critical section, drain the detached prefix one notice at a time
+   in connection order. For a session notice, discard a
+   `rowVersion <= V1` as covered by `S1`, even when it carries an older
+   boundary. Compare a higher version with the current accepted session item,
+   starting with `S1`. A higher version with boundary `F1` advances that item.
+   A higher version with any other boundary rejects the candidate before
+   publication; mark the entire detached prefix as covered by the next REST
+   rebuild, leave notices after `Q` buffered, and repeat from step 3. For a
+   message notice, apply `(id,rowVersion)` last-version-wins and omit the
+   message when its `seq <= F1`. After the ordered drain, mark the prefix
+   through `Q` consumed and publish the candidate. Drain, consumption, and
+   publication form one client-state transition; no notice can enter the
+   accepted slice between the buffer cut and publication.
+8. Process each later notice in connection-sequence order. A session notice at
+   or below the accepted session `rowVersion` is a no-op. A newer session notice
+   with the same boundary is an ordinary last-version-wins update. A newer
+   session notice with a different boundary invalidates the displayed slice
+   before the next repaint and starts a cursorless cold build. A gap also
+   invalidates the slice and starts that build.
+
+During M4 migration, the legacy dispatch adapter preserves two safeguards:
+
+- `transcript` remains in the closed result-elided verb set. Its successful
+  audit payload is exactly
+  `%{elided: true, params: <call params>, count: N}`, where `N` is the returned
+  entry or candidate count. Its denial audit payload remains the ordinary error
+  map. Its raised-handler audit payload is exactly
+  `%{elided: true, params: <call params>, crash: true, code: "server_error"}`
+  and never contains `Exception.message/1`. Elision governs the audit row only;
+  the caller-facing error remains unchanged. Dispatch rails still run before
+  the handler. Result elision changes no rail and "read-only" describes only
+  the verb's own effects.
+- The router classifies `transcript` as non-target before typed-target parsing
+  or lookup. Any top-level `sessionKey`, `role`, `userId`, or retired `target`,
+  alone or in combination, returns HTTP 400 with code `invalid_message` and
+  message `transcript takes no typed target`. The response is identical for
+  unknown, readable, and unreadable volunteered targets. The router performs no
+  target lookup. This transcript-specific refusal precedes the generic retired
+  `target` and multiple-typed-target refusals. JSON object key order is not part
+  of this error contract. The legitimate key is `params.session_key`;
+  consequently the dispatch call and audit row have a null top-level
+  `sessionKey`.
+
+The safeguards end only when independently reviewed M4 parity passes and the
+legacy dispatch adapter is removed in the same migration. They do not add a
+second history contract to the final REST wrapper.
 
 Operating-guidance impact: none. This product contract creates no agent
 procedure outside the existing spec handoff.
@@ -212,15 +277,24 @@ when the caller requests the next page, then the page is empty and sets
 `after` or a `newestCursor` used as `before`, REST returns
 `400 invalid_cursor`.
 
-A4b (I6a). Given each production seam that can change the boundary, when that
-seam would produce a candidate below the stored value, then the next session
-read returns the stored value and no cleared message becomes visible.
+A4b (I6a). Given REST R5d's closed boundary-transition inventory, when the
+harness-change caller and the turn-failure-recovery caller each submit a
+candidate below the stored value through the sole transition seam, then the
+next session read returns the stored value and no cleared message becomes
+visible. The source-structure proof in REST A36c finds no other initializer,
+writer, or caller.
 
-A5 (I5, I6, I6a). Given a boundary advance between cold-build steps 4 and 5, when the client
-re-reads the session item, then it observes the changed boundary, discards the
-candidate slice, and repeats the REST build. The accepted slice contains no
-row at or below the accepted boundary. Given a boundary advance after step 5,
-then the buffered session notice produces the same discard and repeat.
+A5 (I5, I6, I6a). Given buffered session versions with boundaries `F=5` then
+`F=10`, when `S0` and `S1` are the later version with `F=10`, then step 7
+discards both covered notices and does not livelock. Given any session mutation
+between `S0` and `S1`, including one that retains the boundary, then the
+`rowVersion` comparison rejects the candidate. Given a boundary advance between
+the last message page and `S1`, then the boundary comparison also rejects the
+candidate. Given a newer different-boundary notice at or before cut `Q`, then
+the critical section rejects the candidate before publication. Given that
+notice after `Q`, then step 8 invalidates the published slice before its next
+repaint and performs a cursorless rebuild. Every accepted slice contains no row
+with `seq <=` its accepted boundary.
 
 A6 (I7). Given a firehose sequence skip after the client has paged three history
 pages, when gap recovery runs, then the client subscribes first, refetches the
@@ -238,6 +312,22 @@ M4 parity passes.
 A8 (I4). Given a prior transcript message id in `--before`, when the M4 wrapper
 runs, then REST returns `400 invalid_cursor`. The wrapper does not retry with a
 legacy handler and does not convert the id.
+
+A9 (I10). While the legacy dispatch adapter exists, given a successful
+transcript result containing message content, a denial, and a raised handler
+whose exception text contains message content, when Dispatch writes each audit
+row, then success and crash have the exact elided shapes above, denial retains
+its ordinary error map, and neither elided payload contains the content. The
+test also proves that the caller-facing raised-handler error is unchanged and
+that elision does not bypass or change a rail outcome.
+
+A10 (I11). While the legacy dispatch adapter exists, given each top-level
+typed-target field alone and every multi-field combination with unknown,
+readable, and unreadable values, when the router receives `transcript`, then it
+returns the same transcript-specific 400 error bytes before any target lookup
+and before the generic retired-target or multi-target refusal. Given
+`params.session_key`, then the handler receives that parameter while the
+dispatch call and audit row top-level `sessionKey` remain null.
 
 ## Open Questions
 

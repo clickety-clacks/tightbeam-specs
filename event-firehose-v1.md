@@ -435,6 +435,16 @@ upsert on (id, rowVersion) (V4a): an older version over a newer one is a
 no-op, anything applied twice converges. Plain drop-by-id is FORBIDDEN
 (it silently keeps stale rows).
 
+M4's conversation-specific snapshot-to-buffer cut is a client-state critical
+section. The session reads before and after the REST message snapshot must
+match in both `rowVersion` and `clearedThroughSeq`; that accepted `rowVersion`
+is the snapshot coverage watermark. The client detaches a finite buffered
+prefix, discards covered session versions, resolves higher versions in order,
+marks the prefix consumed, and publishes the candidate in that critical
+section. Notices above the cut remain buffered and are processed in
+connection-sequence order. M4 defines when a higher session version invalidates
+the candidate instead of entering the model as an upsert.
+
 M1b. Apply only R8 `upsert` and `delete` payloads directly to the model under
 M1. For each allowed R8b `observe` notice, refetch every currently held R9 view
 that declares the class and replace that composed snapshot. The client does
@@ -483,7 +493,10 @@ seq skip, or a session history-boundary change, it applies M2: subscribe first
 and rebuild the displayed slice from a cursorless REST tail. It does not
 request notice replay, use a stream cursor, or treat an `after` page as gap
 recovery. REST R5d and `transcript-verb-v1.md` carry the history and wrapper
-acceptance. Recon wi_9fdc0c07 remains the demand evidence.
+acceptance. The closed M1 cut, covered-version comparison, and the mandatory
+rebuild for every newer different-boundary session notice are specified by
+`transcript-verb-v1.md` steps 3 through 8 and A5. Recon wi_9fdc0c07 remains the
+demand evidence.
 
 ## Delivery semantics
 
