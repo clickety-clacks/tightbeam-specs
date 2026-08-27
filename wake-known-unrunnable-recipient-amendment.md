@@ -1,8 +1,8 @@
 # Bug A amendment: known-unrunnable wake recipients
 
-Status: V7 COMPOSITION SUCCESSOR — FROZEN FOR INDEPENDENT REVIEW
+Status: V7 COMPOSITION REVIEW CANDIDATE — IMPLEMENTATION BLOCKED ON NAMED R2 FACT BASE
 
-Date: 2026-08-27 UTC
+Date: 2026-08-27 PT
 
 Successor assignment: `asg_c59889f4-dbe4-4ac9-bb96-e605bcb525d1`
 
@@ -54,7 +54,19 @@ report `art_637121bf`, verified SHA-256
 main is already v7 and lacks the assumed Bug A terminal, `wake_sender_notices`, and
 sibling-registry bases. Operator ruling
 `dr_f99d1bc5-626c-44f9-b5c4-bd19e5060a6f=amend_and_review_spec` authorizes this
-successor. This revision changes only the stale base and schema-composition clauses.
+successor. This revision is limited to base and schema composition; it does not alter
+reviewed R1-R7 or A1-A6.
+
+Independent composition review `asg_c381f52a-423c-4607-b929-58aa828cf516`
+returned changes-requested verdict
+`att_66e4d5c8-0d05-4a03-b397-cf1b357a38b6` and report `art_4b9bb6f3`, SHA-256
+`a3c9b98a534d1ce4b843fa216551c3ffac3ed3f35357513f8dca64a25fbc84c9`.
+It proved that current v7 also lacks the R2 fact-and-revision base, that direct
+`process:tightbeam` prompt wakes can have linked carriers without an accepted wake
+event, and that the proposed migration conflict created a boot-wide hold with no
+agent-reachable exit. This revision names the missing base as blocking, composes the
+actual stored delivery-principal rule, and replaces the global hold with a per-wake
+quarantine.
 
 ## Spec identity and authority
 
@@ -66,6 +78,9 @@ Each review and handoff must bind this file by its SHA-256 digest and containing
 The reviewed base `art_aac9cafc` and the final F2 ruling control the public terminal
 contract. Current main does not implement that base. R8 makes its Bug A terminal and
 sender-notice slice an explicit part of this successor instead of assuming it exists.
+Current main and the reviewed bases also do not define the R2 authoritative fact store,
+registry revisions, or their writer transitions. This successor names that missing base
+and blocks implementation; it does not invent it inside schema-composition text.
 In preserved F7 clauses, “existing” or “pre-amendment” terminal and notice behavior
 denotes that reviewed contract. It does not assert that current main already implements
 the contract.
@@ -78,11 +93,13 @@ Controlling sequencing: `att_a034fbd6-2542-4404-8fa5-f22a3ffa7be5`.
 Historical partial implementation pointer `art_7409e650` remains integrity and custody
 evidence only. Its missing bytes are not current source authority.
 
-This successor changes design only. It authorizes no implementation, source edit,
+This successor changes design only. It is not implementation-ready while the R2 base
+question in Open Questions is blocking. It authorizes no implementation, source edit,
 release-line work, provider probe, credential access, wake experiment, deployment,
 runtime mutation, or work-item disposition. R1-R7 and A1-A6 from reviewed F7 remain
 unchanged. R8, the schema paragraph in Architecture, and A7 supersede only F7's stale
-v3/v4-to-v5 registry composition.
+v3/v4-to-v5 schema composition, legacy-routing migration, and boot-conflict behavior.
+The Terms and Assumptions ground those replacement clauses against current v7.
 
 ## Goal
 
@@ -99,6 +116,11 @@ The sender must receive one of two visible results:
 1. a synchronous `target_known_unrunnable` refusal before Tightbeam accepts the wake; or
 2. the reviewed `delivered | failed | canceled` terminal result and its existing sender
    notice after Tightbeam accepts the wake.
+
+This sender-visible goal applies to wakes accepted by v8 and to v7 wakes whose trusted
+routing and terminal shape are reconstructible. R8 preserves a v7 pre-carrier
+cancellation without inventing a notice, and represents untrusted legacy routing as one
+durable conflict instead of inventing a sender.
 
 ## Non-Goals
 
@@ -141,6 +163,12 @@ The sender must receive one of two visible results:
   advance each registry revision named in `matchKey` whenever that registry state
   changes. A fact is current only when each named revision equals the revision read by
   the checking transaction and `expiresAt` is null or later than the transaction clock.
+- **Missing R2 fact base**: the absent authority that must define the durable
+  authoritative-fact object, each hold, circuit, adapter, catalog, credential, and quota
+  registry token used by R2, the sole writer for each object, and the exact transition
+  that advances each revision. Current main v7, reviewed Bug A, and reviewed F7 define
+  none of those objects or writer transitions. This is a BLOCKING base, not an
+  implementation detail or a sibling-registry alias.
 - **Exact fact match**: member-for-member equality between a fact's complete typed
   `matchKey` and the cause-specific key that R2 constructs from the current execution
   selection and local registry tokens inside the same transaction. Text compares by
@@ -155,6 +183,12 @@ The sender must receive one of two visible results:
   proves inability before a carrier exists.
 - **Late carrier failure**: an admitted carrier reaches the reviewed `failed` or
   `canceled` terminal path.
+- **Prompt wake**: a `wakes` row whose `consumer='prompt'`. Unqualified accepted-wake
+  requirements in this amendment refer to prompt wakes. Internal consumer wakes are
+  outside this amendment's terminal, notice, and migration-conflict scope. R8 separately
+  names the legacy exceptions: it preserves a v7 pre-carrier cancellation without a new
+  terminal, and represents a v7 prompt wake whose stored sender cannot be reconstructed
+  by one migration-conflict row and no invented public terminal or notice.
 - **Public wake terminal**: one `wake_terminal_outcomes` wake-level row whose closed
   terminal values are `delivered | failed | canceled`. It is separate from the current
   turn row and from the proposed sibling carrier ledger. Current main v7 has no such
@@ -169,9 +203,16 @@ The sender must receive one of two visible results:
 - **Sibling carrier ledger**: the proposed `wake_delivery_outcomes` table in
   `art_b770c2f7`. Current main v7 does not contain this table, its migration-conflict
   table, or its normalized object registry. This successor does not make them a base.
+- **V7 stored delivery principal**: the current delivery rule in
+  `Gateway.wake_delivery_principal/1`: a non-empty `wakes.creatorSessionKey` denotes that
+  exact session; otherwise the exact stored `wakes.origin` is the delivery principal.
+  For migration, a fallback origin is trusted only when it is the reserved exact value
+  `process:tightbeam`. User and session routing still require an accepted wake event or
+  a validated creator session.
 - **Routing migration conflict**: one durable
-  `wake_known_unrunnable_migration_conflicts` row that preserves the identity of a
-  legacy null-carrier terminal for which migration cannot derive trusted sender routing.
+  `wake_known_unrunnable_migration_conflicts` row that quarantines one legacy prompt wake
+  for which migration cannot derive trusted sender routing. It is a named final value,
+  not a boot hold and not a public wake terminal.
 
 ## Assumptions
 
@@ -194,17 +235,17 @@ The sender must receive one of two visible results:
    implementation assignment `asg_e7556f25-d909-42f1-ba89-68e1714e6cef`.
 4. Normal resolution returns one exact session after it applies the existing direct,
    role-fallback, and owner-Main rules.
-5. The gateway can read current session, hold, circuit, harness, ACP, adapter,
-   credential-presence, and typed quota facts without an external call.
+5. Current main v7 has no durable R2 fact-and-revision base. The Gateway can read
+   session state, but no reviewed authority defines the hold, circuit, adapter, catalog,
+   credential, or quota objects and writer transitions required to construct every R2
+   key. R1-R7 remain controlling intent, but implementation is blocked until the owner
+   selects or supplies the missing base named in Open Questions.
 6. The 2026-08-18 specimen records session `s_f63d31e5`, twelve failed turns, and lost
    wakes `w_45faa8a8` and `w_a2a13028`. The specimen motivates this amendment. It does
    not authorize a live replay or provider probe.
 7. Existing request idempotency remains available. The same implementation slice must
    add the reviewed wake-terminal compare-and-set, deterministic notice identity, and
    publisher recovery because current main v7 does not contain them.
-8. Current main's terminal compare-and-set has one winner. Its terminal failure
-   classifier returns at most one class, so one turn has at most one
-   `harness-turn:<turnSeq>:<failureClass>` terminal-failure observation.
 
 ## Invariants
 
@@ -380,6 +421,13 @@ implementation choices. The successor must add the reviewed Bug A public-termina
 sender-notice slice before it can satisfy R4-R7. It must add the known-unrunnable cause,
 typed failure classes, evidence reference, and trigger provenance to that same slice.
 
+Current main v7 also has no Missing R2 fact base. This amendment does not authorize an
+implementer to choose its tables, in-memory state, token encodings, revision sources, or
+writers. No v8 implementation assignment may open until a reviewed authority answers
+the BLOCKING Open Question and this canonical file incorporates that answer. The final
+authority must make each R2 source and revision constructible in one checking
+transaction; an unspecified phrase such as “R2 fact material” is not a base.
+
 This table remains normative:
 
 | Case | Public wake terminal | Carrier link | Sibling carrier ledger | Notice |
@@ -389,6 +437,7 @@ This table remains normative:
 | admitted carrier failure | `failed`, reviewed carrier class | exact carrier | a separately approved ledger may link the carrier | same reviewed notice identity |
 | retirement cancels admitted queued carrier | `canceled`, `session_retired` | exact carrier | a separately approved ledger may link the carrier | same reviewed notice identity |
 | legacy null-carrier terminal | `failed`, `legacy_outcome_unknown` | null | no row | one notice from trusted migrated routing |
+| legacy prompt wake with untrusted sender routing | none; one migration conflict | preserve existing link or null | no new row | none |
 
 The sibling proposal's `CHECK (kind NOT IN ('admitted','handled','failed') OR turnSeq IS
 NOT NULL)` remains valid because this successor writes no null-carrier row to that
@@ -396,6 +445,10 @@ ledger. A build must not project the R4 public failure into that ledger, relax i
 carrier-integrity constraint, or create an `undeliverable` substitute. If another branch
 later adds the proposed table, its migration must leave it unchanged and empty for each
 R4 or legacy null-carrier result.
+
+The v7-to-v8 wake backfill applies only to rows whose `consumer='prompt'`. It must
+preserve every other consumer row and create no public terminal, sender notice, or
+migration-conflict row for it.
 
 The required `wake_terminal_outcomes` table must keep the final F2 enum exactly
 `delivered | failed | canceled`. It must carry `terminalOutcomeId`, `wakeId`, nullable
@@ -408,31 +461,44 @@ same-session push constraint, publisher recovery, and Bubble boundary remain tho
 reviewed `art_aac9cafc` as narrowed by final F2 and R4-R7 here.
 
 The trusted-routing migration must use structured v7 rows only. It may accept an exact
-`events(kind='verb', verb='wake')` row whose JSON result names the same wake ID and whose
-stored principal is one typed `user`, `session`, or `process` principal. It may also use
-a non-null `wakes.creatorSessionKey` only when the current `sessions` row proves that
-exact session identity. The reserved `process:tightbeam` identity is trusted only when
-that exact accepted event principal carries it. If two structured sources disagree,
-neither is trusted. Migration must not parse `wakes.origin`, event prose, lifecycle
-detail, prompt text, or error text.
+`events` row with `kind='verb'`, `verb='wake'`,
+`json_extract(payload, '$.wake_id')=wakes.wakeId`, and a stored principal whose exact
+prefix is `user:`, `session:`, or `process:` with a non-empty ID. It may also use a
+non-null `wakes.creatorSessionKey` only when the current `sessions` row proves that exact
+session identity. When neither source exists, it may use the actual v7 stored delivery
+principal only when `wakes.creatorSessionKey IS NULL` and
+`wakes.origin='process:tightbeam'`; this is the reserved internal process identity used
+by direct current-main scheduling call sites. It must not accept another `origin` value
+as user, session, role, or process routing. If two present structured sources disagree,
+or either disagrees with that reserved process fallback, routing is untrusted. Migration
+must not parse another `wakes.origin`, event prose, lifecycle detail, prompt text, or
+error text.
 
 For a trusted v7 wake with one linked terminal turn, migration maps `delivered` to the
 public `delivered` terminal, `canceled` to `canceled`, and `failed | failed_unknown` to
 `failed`. When that turn has one typed `turn_lifecycle_events` `terminal_committed` row,
 migration copies its exact `cause` and `principal`. A pre-epoch turn without that row
 uses cause `legacy_import` and principal `process:tightbeam`; migration must not parse
-`turns.error` to invent either value. For `failed | failed_unknown`, migration copies
-the exact `failureClass` from the sole `harness_health_observations` row whose
-`evidenceKind='terminal-failure'` and whose `correlationId` is
-`harness-turn:<turnSeq>:<failureClass>`, when that row exists. It otherwise uses
-`legacy_outcome_unknown`; it must not classify stored error or cause prose.
+`turns.error` to invent either value. Current v7 has no wake-delivery failure class.
+Migration therefore maps every `failed | failed_unknown` carrier to
+`legacy_outcome_unknown`. It must not substitute a harness-health class or classify
+stored error or cause prose.
 
-Migration leaves a queued or running carrier without a wake terminal; R5 settles it
-later. It leaves an accepted wake without a carrier eligible for R4. It creates no
-terminal for a v7 wake that was canceled before carrier admission. A v7 `fired` wake
-without a carrier maps only through final F2 to `failed`, `legacy_outcome_unknown`, a
-null carrier, and one notice from trusted routing. Migration creates deterministic
-terminal and notice IDs, so replay reads the first rows.
+For trusted routing, migration leaves a queued or running carrier without a wake
+terminal; R5 settles it later. It leaves an accepted wake without a carrier eligible for
+R4. It creates no terminal for a v7 wake that was canceled before carrier admission. A
+v7 `fired` wake without a carrier maps only through final F2 to `failed`,
+`legacy_outcome_unknown`, a null carrier, and one notice. Migration creates
+deterministic terminal and notice IDs, so replay reads the first rows.
+
+For untrusted routing, migration must create one conflict for every prompt wake that
+either remains eligible to admit a carrier or already links a queued, running, or
+terminal carrier. A v7 wake canceled before carrier admission needs no conflict because
+it can perform no later settlement. A conflicted pending or fired null-carrier wake must
+be excluded from post-migration Wakes eligibility. A conflicted linked carrier remains
+in its current turn lifecycle, but no public wake terminal or sender notice may be
+invented for it. This is the explicit legacy exception to R6: the durable conflict is
+the final named record that exact sender routing was not reconstructible.
 
 The successor shape must contain this amendment-owned conflict table:
 
@@ -443,16 +509,27 @@ CREATE TABLE wake_known_unrunnable_migration_conflicts (
                       CHECK (predecessorShape =
                         'coordination-fabric-v1-phase1-v7'),
   wakeId            TEXT NOT NULL CHECK (length(wakeId) > 0),
-  sourceTerminalId  TEXT NOT NULL CHECK (length(sourceTerminalId) > 0),
+  sourceKind        TEXT NOT NULL CHECK (sourceKind IN ('wake','turn')),
+  sourceId          TEXT NOT NULL CHECK (length(sourceId) > 0),
   reason            TEXT NOT NULL
                       CHECK (reason = 'trusted_sender_routing_unknown'),
-  causeKind         TEXT NOT NULL CHECK (causeKind = 'legacy_import'),
-  causeId           TEXT NOT NULL CHECK (length(causeId) > 0),
-  priorTerminalKind TEXT NOT NULL CHECK (priorTerminalKind = 'failed'),
-  priorCarrierSeq   INTEGER NULL CHECK (priorCarrierSeq IS NULL),
+  priorWakeState    TEXT NOT NULL CHECK (priorWakeState IN ('pending','fired')),
+  priorTurnStatus   TEXT NULL
+                      CHECK (priorTurnStatus IS NULL OR priorTurnStatus IN
+                        ('queued','running','delivered','canceled','failed',
+                         'failed_unknown')),
+  priorCarrierSeq   INTEGER NULL,
   recordedAt        INTEGER NOT NULL CHECK (recordedAt >= 0),
   principal         TEXT NOT NULL CHECK (principal = 'process:tightbeam'),
-  UNIQUE (wakeId, sourceTerminalId, reason)
+  CHECK (
+    (sourceKind = 'wake' AND sourceId = wakeId AND priorTurnStatus IS NULL
+      AND priorCarrierSeq IS NULL)
+    OR
+    (sourceKind = 'turn' AND priorTurnStatus IS NOT NULL
+      AND priorCarrierSeq IS NOT NULL AND priorCarrierSeq >= 0
+      AND sourceId = CAST(priorCarrierSeq AS TEXT))
+  ),
+  UNIQUE (wakeId, sourceKind, sourceId, reason)
 );
 
 CREATE TRIGGER wake_known_unrunnable_conflicts_no_update
@@ -472,8 +549,10 @@ The successor stamp is `coordination-fabric-v1-phase1-v8`. The central `Schema` 
 gate remains the one stamp owner. `Schema.@schema_modules` remains the actual ordered
 schema-owner list. Wakes remains the one DDL and mutation owner for wakes, public wake
 terminals, sender notices, the migration-conflict table, and its two triggers. The
-product must contain one DDL string for each new object. This successor does not add
-`Schema.known_unrunnable_successor_registry/0` or any sibling normalized registry.
+product must contain one DDL string for each new Wakes object. The missing R2 base must
+name its own schema module and mutation owners before this v8 shape can be implemented.
+This successor does not invent `Schema.known_unrunnable_successor_registry/0` or reuse
+the sibling normalized registry as that owner.
 
 The pre-boot shape gate must select one path from the durable stamp:
 
@@ -484,20 +563,22 @@ The pre-boot shape gate must select one path from the durable stamp:
 2. An exact v4, v5, or v6 database runs the current main transition chain to v7. It then
    runs the v7-to-v8 transition.
 3. An exact v7 database runs only the v7-to-v8 transition.
-4. An exact v8 database validates the v8-owned Wakes objects and starts no migration.
+4. An exact v8 database validates every module-owned v8 object and starts no migration.
 
 A non-empty database with no stamp, multiple stamps, or another stamp must return
 `ShapeError`. It must run no successor DDL and start no database consumer.
 
 The v7-to-v8 transition must acquire exclusive custody and recheck that one v7 stamp
 remains. In one transaction it must add the missing typed sender snapshot, public wake
-terminal, sender notice, publisher state, R2 fact material, migration-conflict objects,
-vocabulary, checks, and trusted legacy rows. Before it changes the stamp, it must compare
-each new normalized `sqlite_master` object with its one Wakes-owned DDL string, require
-an empty `PRAGMA foreign_key_check`, and require an `ok` `PRAGMA integrity_check`. The
-stamp change to v8 is the transaction's final mutation. Failure before commit preserves
-the exact v7 stamp, schema, rows, and objects. Immediate validation and a clean restart
-must perform read-only v8 validation.
+terminal, sender notice, publisher state, migration-conflict objects, vocabulary,
+checks, trusted legacy rows, and the exact objects later incorporated from the reviewed
+R2 base. Before it changes the stamp, it must compare each new normalized
+`sqlite_master` object with its owning module's one DDL string, require an empty
+`PRAGMA foreign_key_check`, and require an `ok` `PRAGMA integrity_check`. The stamp
+change to v8 is the transaction's final mutation. Failure before commit preserves the
+exact v7 stamp, schema, rows, and objects. Immediate validation and a clean restart must
+perform read-only v8 validation. Until the R2 base is incorporated, this paragraph is a
+composition constraint and authorizes no partial v8 transition.
 
 The earlier v4-to-v5, v5-to-v6, and v6-to-v7 transitions remain the current main
 transactions. A failure in one preserves that transition's exact predecessor. A restart
@@ -505,41 +586,47 @@ from a committed intermediate v5, v6, or v7 stamp resumes the next named transit
 This successor does not replace those reviewed current-main contracts with a direct
 v3/v4-to-feature registry.
 
-If trusted routing for a legacy null-carrier terminal cannot be derived, the v7-to-v8
-transaction must preserve the legacy wake and the source values from which a public
-terminal would be derived. It must insert one conflict row with deterministic
-`conflictId='wake-routing:<wakeId>:terminal:<sourceTerminalId>'`,
-`causeId='terminal:<sourceTerminalId>'`, and the migration clock as `recordedAt`. It
-must create no public terminal, notice, message, carrier, route, or sibling-ledger row
-for that wake.
+If trusted routing cannot be derived for a legacy prompt wake in a shape named above,
+the v7-to-v8 transaction must preserve the wake and every linked turn. For a wake with
+no carrier it must insert
+`conflictId='wake-routing:<wakeId>:wake:<wakeId>'`, `sourceKind='wake'`, and
+`sourceId=<wakeId>`. For a linked carrier it must insert
+`conflictId='wake-routing:<wakeId>:turn:<turnSeq>'`, `sourceKind='turn'`,
+`sourceId=CAST(<turnSeq> AS TEXT)`, the same integer `priorCarrierSeq`, and the exact
+stored `priorTurnStatus`. Each row uses the exact stored `priorWakeState`, the migration
+clock, predecessor v7 stamp, and reserved recording principal. The transaction must not
+parse or normalize prose to construct any field.
 
-`sourceTerminalId` must equal the deterministic `terminalOutcomeId` that the trusted
-migration path would create, rendered in canonical text form. `predecessorShape` must equal
-`coordination-fabric-v1-phase1-v7`. The transaction must use those stored values in the
-conflict and cause IDs without parsing or normalizing prose.
+The migration must commit the v8 schema, stamp, and conflict rows together. It must not
+commit a prospective terminal, notice, message, route, carrier, or sibling-ledger row
+for a conflicted wake. The v8 shape gate must verify the conflict table and both
+triggers, then start Gateway, Wakes, the notice publisher, Bubble, and session-lane
+consumers normally. Wakes must exclude only conflicted pending or fired null-carrier
+wakes from trigger selection and delivery. Existing linked carriers remain governed by
+their current turn lifecycle; the conflict prevents public wake-terminal or notice
+materialization for them. A restart must retain the same conflict rows, create no
+duplicates, and leave unrelated wakes and carriers runnable.
 
-The migration must commit the v8 schema, stamp, and conflict row together. It must not
-commit the prospective terminal for that wake. After that commit, the pre-boot gate must
-verify the conflict table and both triggers, then return `wake_migration_conflict` with
-`conflictId`, `wakeId`, `sourceTerminalId`, and `reason`. It must start no Gateway,
-Wakes, notice publisher, Bubble, or session-lane consumer. The error must omit each
-untrusted sender or recipient value.
-
-A restart against the committed conflict must return the same error and change no row.
-The unique conflict identity must prevent a second record. This successor authorizes no
-automatic repair. An operator can restore the exact v7 predecessor backup with corrected
-trusted identity and rerun migration. A failure before the conflict transaction commits
+This successor authorizes no automatic conflict repair. The conflict is an accepted,
+named historical failure, not a hold whose exit waits for another principal. A future
+authority may define a repair only if it can prove the original authenticated sender
+without caller-supplied identity. A failure before the migration transaction commits
 must preserve v7 and leave no v8 conflict object or row.
 
-Closure choice: ADD the missing Bug A base in this successor. DELETE would leave accepted
-wake failures invisible. ACCEPT would contradict the goal that no accepted intent
-disappears. The sibling registry loses because current main has no such mechanism and
-the existing module-owner seam can represent this change without importing a second
-schema system.
+Subtraction ruling: ADD the reviewed Bug A terminal and notice base because deleting it
+would leave new accepted wake failures invisible. ACCEPT untrusted legacy routing as one
+durable per-wake conflict because inventing a sender is forbidden. DELETE the earlier
+boot-wide conflict hold because one historical ambiguity must not stop unrelated work.
+Do not ADD an R2 registry in this amendment: its state owners and revision transitions
+are missing authority, so the BLOCKING Open Question must be answered first. The sibling
+registry loses because current main has no such mechanism and its non-null carrier
+boundary cannot represent R4 or legacy null-carrier results.
 
 ## Architecture
 
-The gateway composes the new guard with the existing lifecycle:
+The following gateway path becomes implementable only after the Missing R2 fact base
+has named its objects, writers, and revision transitions and this file incorporates that
+authority:
 
 1. Resolve the target through the current direct or role-fallback path.
 2. Construct the R1 execution selection and the R2 cause-specific key from current
@@ -571,16 +658,23 @@ sender notices. The Bug A notice publisher added by R8 is the only failed-or-can
 push writer. Bubble may reference the committed notice and must not publish a second
 sender message.
 
+The Missing R2 fact base has no architecture owner in current authority. A builder must
+not assign it to Wakes, `ConditionFacts`, `HarnessHealth`, an in-memory adapter, or the
+sibling registry by analogy. The owner named by the future ruling must be added here and
+to R8 before implementation handoff.
+
 The response schema adds only `target_known_unrunnable` and its closed precondition.
 The durable schema adds the missing Bug A `wake_terminal_outcomes` and
 `wake_sender_notices` base, extends its cause and failure-class checks, and adds R8's
-append-only migration-conflict table, v8 stamp, v7 transition, and pre-boot conflict
-gate. It adds no wake attempt ledger, retry scheduler, alternate recipient,
-provider-health probe, sibling carrier ledger, or normalized schema registry.
+append-only migration-conflict table, v8 stamp, v7 transition, and per-wake exclusion
+for conflicted null-carrier rows. It adds no wake attempt ledger, retry scheduler,
+alternate recipient, provider-health probe, sibling carrier ledger, or normalized schema
+registry.
 
 Wakes owns the public-terminal and sender-notice mutation seam. `Schema` owns the one
 shape transition. The R8 notice publisher owns the only post-commit push. Bubble consumes
-the committed terminal and notice. No second writer or schema system is added.
+the committed terminal and notice. This amendment authorizes no second schema system and
+does not pre-assign the missing R2 mutation seam.
 
 After implementation passes acceptance, CLI help and the operating manual must state:
 
@@ -722,6 +816,10 @@ remain byte-for-byte equal. No new notice, terminal, or carrier appears.
 
 ### A7. Null-carrier integration and recovery
 
+Every A7 v8 fixture includes the exact R2 base objects and writers from the future
+reviewed authority incorporated into this file. Until that blocking authority exists,
+A7 is a composition contract and no implementation gate may claim it passed.
+
 Given a v7 fixture that does not include the proposed sibling `wake_delivery_outcomes`
 table, when migration and the next clean boot run, then the v8 product still satisfies
 R1-R8 and does not create that sibling table or registry.
@@ -748,28 +846,37 @@ finishes at v8 without repeating an earlier committed transition.
 
 Given an exact v7 fixture, when startup runs, then one v7-to-v8 transaction creates the
 missing typed sender snapshot, `wake_terminal_outcomes`, `wake_sender_notices`, notice
-publisher state, R2 fact material, migration-conflict objects, vocabulary, checks, and
-trusted legacy rows. It changes the stamp last. Immediate validation and a clean restart
-change no schema object or row.
+publisher state, migration-conflict objects, vocabulary, checks, trusted legacy rows,
+and every exact object required by the incorporated R2 base. It changes the stamp last.
+Immediate validation and a clean restart change no schema object or row.
+
+Given one v7 row for each non-prompt consumer present in current main, when migration
+runs, then it preserves that wake byte-for-byte and creates no public terminal, sender
+notice, or migration-conflict row for it.
 
 Given one v7 wake for each typed `user`, `session`, and `process` principal whose exact
 accepted `events` row names that wake, when migration runs, then the migrated sender and
 recipient equal the event's structured principal. Given a validated
 `creatorSessionKey` without a conflicting event, when migration runs, then it uses that
-session identity. Given two structured sources that disagree, when migration runs, then
-it takes the conflict path and exposes neither candidate as trusted.
+session identity. Given one direct current-main prompt wake with null
+`creatorSessionKey`, no accepted wake event, and exact `origin='process:tightbeam'`, when
+migration runs, then sender and recipient equal that reserved process principal. Given
+two present sources that disagree, when migration runs, then it takes the conflict path
+and exposes neither candidate as trusted. Given another origin without an event or
+validated creator session, then it takes the conflict path and does not parse that
+origin as a principal.
 
 Given one trusted v7 wake linked to each terminal turn state `delivered`, `canceled`,
 `failed`, and `failed_unknown`, when migration runs, then it creates one deterministic
 public wake terminal with the R8 mapping and one deterministic notice. Given a terminal
-turn with typed `terminal_committed` and terminal-failure rows, then the migrated
-terminal copies their cause, principal, and failure class. Given a pre-epoch terminal
-turn without those rows, then it uses `legacy_import`, `process:tightbeam`, and, for a
-failed result, `legacy_outcome_unknown`; changing only `turns.error` changes no migrated
-value. Given a queued or running linked turn, when migration runs, then it creates no
-wake terminal and leaves R5 eligible. Given an accepted wake without a carrier, when
-migration runs, then it creates no wake terminal unless the exact v7 row is the final F2
-legacy null-carrier case.
+turn with a typed `terminal_committed` row, then the migrated terminal copies its cause
+and principal. Given a pre-epoch terminal turn without that row, then it uses
+`legacy_import` and `process:tightbeam`. Every migrated `failed | failed_unknown`
+carrier uses `legacy_outcome_unknown`; changing only `turns.error` or a harness-health
+classification changes no migrated public value. Given a queued or running linked turn,
+when migration runs, then it creates no wake terminal and leaves R5 eligible. Given an
+accepted prompt wake without a carrier, when migration runs, then it creates no wake
+terminal unless the exact v7 row is the final F2 legacy null-carrier case.
 
 Given an exact v7 fixture, when a failure is injected during DDL, copy, trusted-routing
 settlement, terminal creation, notice creation, conflict creation, object comparison,
@@ -800,24 +907,36 @@ each run twice, then the notice reaches `state='pushed'`, stores the determinist
 `wake-notice:<noticeId>` message identity, and one durable message exists. Migration,
 Bubble, and boot recovery do not create another message.
 
-Given routing is not derivable, when migration runs, then it preserves the legacy wake
-and the source values for the prospective terminal, commits one
-`wake_known_unrunnable_migration_conflicts` row with the deterministic conflict ID,
-reason `trusted_sender_routing_unknown`, cause `legacy_import`, exact terminal cause ID,
-predecessor stamp `coordination-fabric-v1-phase1-v7`, null prior carrier, migration time,
-and `process:tightbeam`
-principal, and creates no public terminal, notice, message, carrier, route, or
-sibling-ledger row. The v8 stamp and conflict commit together. The pre-boot gate verifies
-the conflict table and triggers, returns `wake_migration_conflict` with the four R8
-identifiers, and starts no database consumer.
+Given routing is not derivable for each of these prompt-wake shapes—pending without a
+carrier, fired without a carrier, or linked to a queued, running, delivered, canceled,
+failed, or failed-unknown turn—when migration runs, then it preserves the wake and linked
+turn and commits one `wake_known_unrunnable_migration_conflicts` row with the exact R8
+`sourceKind`, `sourceId`, prior wake state, optional carrier and turn status,
+`trusted_sender_routing_unknown`, predecessor v7 stamp, migration time, and
+`process:tightbeam` recording principal. It creates no public terminal, notice, message,
+route, carrier, or sibling-ledger row for that wake. A v7 wake canceled before carrier
+admission creates no conflict and remains canceled.
 
-Given that committed conflict, when startup runs twice, then both runs return the same
-error and the database still contains one conflict row and unchanged copied source rows.
-Given the operator restores the same v7 predecessor backup whose structured identity now
-proves trusted routing, when migration runs, then it creates the normal legacy terminal
-notice and no conflict row.
+Given one conflict for a pending or fired null-carrier wake and one unrelated due prompt
+wake, when startup and Wakes delivery run twice, then all consumers start normally, the
+conflicted wake admits no carrier, the unrelated wake follows its ordinary delivery
+path, and the database still contains exactly one unchanged conflict row. Given a
+conflicted linked carrier, when its current turn later terminates, then its turn lifecycle
+remains authoritative and no public wake terminal or sender notice is fabricated. A
+restart creates no duplicate conflict and does not block another wake or carrier.
 
 ## Open Questions
 
-None. A new precondition, external health probe, alternate recipient, automatic retry,
-or rerouting rule requires a separate reviewed amendment.
+1. **BLOCKING — R2 fact base ownership.** Which reviewed authority supplies the durable
+   authoritative-fact object, the hold, circuit, adapter, catalog, credential, and quota
+   registry tokens, each sole writer, and every revision transition required by R2?
+   Current main v7, Bug A, F7, `ConditionFacts`, `HarnessHealth`, and the sibling proposal
+   do not supply that base. Operator request
+   `dr_99628605-cb7a-44b4-a509-d46b8e7f4ffd` asks the owner to commission that base,
+   issue a new ruling that narrows the reviewed R2 surface, or stop the feature. The
+   chosen authority must be incorporated here. No producer, exact-tip code review, v8
+   implementation, or implementation handoff may start while this question is open.
+
+No other question is open. A new precondition, external health probe, alternate
+recipient, automatic retry, conflict repair, or rerouting rule requires a separate
+reviewed amendment.
