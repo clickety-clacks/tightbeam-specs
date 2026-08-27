@@ -77,6 +77,10 @@ The substrate classifies and records. The recipient decides what to do (wisdom 6
 - **Bubble notice terminal**: a turn whose stored typed cause reference identifies it
   as route machinery for an existing Bubble cause. This includes wake-named,
   ordinary-turn, and patrol-threshold causes; prompt text cannot establish the class.
+- **Delivered Bubble notice**: a Bubble notice terminal whose committed turn row has
+  typed status `delivered`. Notice admission, message arrival, prose, and later route
+  state cannot establish delivery. Every other Bubble notice terminal is
+  **non-delivered**.
 - **D3-eligible provider error**: a ran-and-failed provider error that is neither a
   wake-cause-entitled terminal nor a Bubble notice terminal. A source terminal belongs
   to one downstream fault route, never both.
@@ -141,8 +145,9 @@ The substrate classifies and records. The recipient decides what to do (wisdom 6
 7. **Consecutive means consecutive.** A delivered turn, a different failure domain,
    `could_not_run`, `run_canceled`, `outcome_unknown`, a non-provider `run_failed`
    terminal, or a wake-cause-entitled provider failure ends the current
-   provider-failure streak before later provider failures count. A Bubble notice
-   terminal is route machinery and changes no D3 streak.
+   provider-failure streak before later provider failures count. A delivered Bubble
+   notice is a delivered-turn reset. A non-delivered Bubble notice is route machinery
+   and changes no D3 streak.
 8. **Threshold reuse.** Exactly six consecutive qualifying terminals admit the logical
    provider-failure escalation. The seventh and later failures in the same streak do
    not admit another one.
@@ -155,7 +160,9 @@ The substrate classifies and records. The recipient decides what to do (wisdom 6
     and final outcome entitlement, never later cause-row existence. D2 only classifies
     the terminal for negligence.
 11. **Route machinery cannot recurse.** A Bubble notice terminal cannot increment,
-    start, reset, or escalate a D3 streak, regardless of its typed run failure.
+    start, or escalate a D3 streak, regardless of its typed run failure. Only a
+    delivered Bubble notice changes D3 state, by applying the existing delivered-turn
+    reset boundary.
 12. **Cause and principal.** Every classification, reset, streak increment, threshold,
     route admission, and no-recipient result names the source turn or wake, the affected
     assignment or session, a closed cause kind, and principal `process:tightbeam`
@@ -183,9 +190,12 @@ other module shall write patrol strike or provider-streak state.
 The seam shall read typed terminal and wake outcomes before it evaluates holder
 accountability. It shall apply this precedence:
 
-1. A Bubble notice terminal records `bubble_notice_ignored`, charges no strike, and
-   makes no D3 state change, including no streak reset. The existing Bubble route still
-   consumes the notice outcome and continues its original cause when required.
+1. A Bubble notice terminal wins before provider-failure classification. If its
+   committed terminal is delivered, it records `bubble_notice_delivered`, charges no
+   strike, and ends the active D3 streak under the existing delivered-turn reset rule.
+   Otherwise it records `bubble_notice_ignored`, charges no strike, and makes no D3
+   state change. The existing Bubble route still consumes either notice outcome and
+   settles or continues its original cause as required.
 2. A retry-eligible `could_not_run` wake outcome records `could_not_run_pending`. It
    charges no strike and admits no new route. Existing retry and exhaustion continue.
 3. A final `could_not_run` outcome records `could_not_run_final`, charges no strike,
@@ -271,8 +281,9 @@ The following event ends the streak before it is classified for any new streak: 
 delivered turn, a failure-domain change, `could_not_run`, `run_canceled`,
 `outcome_unknown`, non-provider `run_failed`, or a wake-cause-entitled provider
 failure. The reset transaction shall record the prior generation, count, boundary turn,
-cause, and principal. A Bubble notice terminal is ignored by D3 and changes no streak
-on its recipient session.
+cause, and principal. A delivered Bubble notice ends the recipient session's active
+streak as a delivered-turn boundary. Any other Bubble notice is ignored by D3 and
+changes no streak on its recipient session.
 
 Acceptance: R-C is proven by checks 4, 5, 6, 7, and 8 below.
 
@@ -463,6 +474,13 @@ Bubble notice turns from six distinct original roots, when patrol classifies all
 then it records six `bubble_notice_ignored` classifications, leaves the recipient with
 no D3 streak, and admits no patrol threshold cause. Each of the six original Bubble
 causes continues its existing climb independently.
+
+Given one recipient session and one failure domain, five D3-eligible provider failures,
+one delivered Bubble notice, and five more D3-eligible provider failures, when patrol
+classifies the sequence, then the delivered notice records `bubble_notice_delivered`
+and ends the first streak generation at count 5. The later failures form a second
+generation at count 5, no threshold escalation exists, and the original Bubble cause
+settles under its existing delivered-notice behavior.
 
 Exercise one D3 threshold escalation against each topology below:
 
