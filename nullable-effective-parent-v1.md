@@ -8,7 +8,10 @@ Authority: `wi_cd2bb06d-a736-451c-98c3-428129bbe246`, Mike brief
 `att_b90d64e1-f333-4aba-b594-79d426c56b72`, visibility clarification
 `att_d9d5b31d-9467-4514-8088-973e50d81e7f`, and controlling simplification
 `att_e759139e-0ae6-4c96-a0f8-6ffc16e589df`. Compatibility receipt:
-`att_aa1111e0-ebbe-4452-a09d-92f5cf08c472`.
+`att_aa1111e0-ebbe-4452-a09d-92f5cf08c472`. Missing-Main advisory:
+`att_15fd37b3-5b07-4dfa-bdce-14047bbafa93` from source
+`att_114c9b72`. Completion compatibility receipt: `att_d6bbed39` against
+`art_ae962883`.
 
 Target baselines: main/0.2.0 at `8e269e89c04b6b8569813142a12742f3325b8503`;
 0.1.9 at `6c0eacb337c1de086d8d7d76f1c1dc57cad9a3d5`.
@@ -40,6 +43,8 @@ machinery that manufactures explicit parents.
 6. This spec does not port main's bootstrap, cold-start, replay, or activation subsystems
    to 0.1.9.
 7. This spec does not make the governance rule a prose-parsing runtime rail.
+8. This spec does not make 0.1.9 headless first-spawn legal and does not define or review
+   the minimal add-user transaction on which that flow depends.
 
 ## Terms
 
@@ -65,10 +70,13 @@ machinery that manufactures explicit parents.
 4. Schema migration and parent-routed writes use the existing database transaction owner.
 5. A parent consumer already owns its authorization, eligibility, idempotency, and named
    failure rules.
-6. The reviewed completion contract currently selects `spawnedBy` in R5. This conflicts
-   with Mike's later ruling and is replaced only as stated in ARC-04.
+6. The reviewed completion contract requires raw `spawnedBy` target equality and treats a
+   null parent as unavailable with no Main fallback. Those two rules conflict with Mike's
+   later ruling and are replaced only as stated in ARC-04.
 7. The reviewed exec-desk work has no semantic conflict. It consumes the resolver and owns
    no fallback or migration logic.
+8. A 0.1.9 org can lack its canonical Main. Deriving a Main key does not prove that the row,
+   first admin, credential, or admission receipt exists.
 
 ## Invariants
 
@@ -119,17 +127,22 @@ machinery that manufactures explicit parents.
 3. **ARC-03 — 0.1.9 migration.** The 0.1.9 arm introduces nullable `operationalParent`.
    Every pre-feature row receives stored null because that line has no elected
    operational-parent history. It does not infer a value from `spawnedBy` and does not pass
-   through a `NOT NULL` design.
+   through a `NOT NULL` design. The migration does not create a missing canonical Main.
 4. **ARC-04 — Consumer substitution.** Escalation, prod, completion notice, ALWAYS-PARENT
    reporting, exec-desk escalation, and terminal-assignment reporting call the shared
-   resolver. In
-   `completion-escalation-rail-v2.md` R5, effective parent replaces `spawnedBy` as the
-   parent source. Its owner checks, deadlines, deduplication, idempotency, and named failure
-   outcomes remain unchanged. This is the only reviewed-contract contradiction.
+   resolver. In `completion-escalation-rail-v2.md` Goal, Terms, R5, A8, and A21, effective
+   parent replaces raw `spawnedBy` as the completion target and equality source. A non-null
+   stored parent therefore keeps the existing explicit-parent route. Null selects Owner
+   Main before R5 applies its existing target checks; null alone is not unavailable. A
+   missing or ineligible selected Main still takes R5's named unavailable outcome. The
+   report-to target continues to come only from explicit `reportTo`; its existing
+   shared-parent deduplication remains. Disposition authority, owner checks, deadlines,
+   idempotency, and all other completion rules remain unchanged. These two parent-source
+   rules are the only reviewed-contract contradictions.
 5. **ARC-05 — Session surfaces.** Session serializers compute effective parent through the
    shared resolver. They add the additive fields `effectiveParent` and
-   `effectiveParentSource` beside nullable
-   `operationalParent`. The same meaning applies to session detail, list, topline, support,
+   `effectiveParentSource` beside nullable `operationalParent`. The same meaning applies to
+   session detail, list, topline, support,
    transcript-facing, and ATC projections. An implementation inventory names every
    session surface before its arm can pass review.
 6. **ARC-06 — Deletion inventory.** The main arm deletes machinery whose only purpose is
@@ -137,10 +150,12 @@ machinery that manufactures explicit parents.
    from kind or provenance; required stored self-roots; creation-time parent manufacture;
    `resolve_personal_main_defaults/1`; `ensure_personal_main_in_txn/3`; the internal
    `bootstrap-user` route; self-root receipt proof; and consumer-local parent selection.
-   Required user and canonical-Main admission moves to the minimal add-user seam before
-   those bootstrap paths disappear. Existing cold-start admission, authorization, replay,
-   and activation outcomes remain unchanged. The 0.1.9 arm adds neither that obsolete
-   machinery nor a constraint-relaxation migration.
+   This spec binds, but does not absorb, a separately reviewed minimal add-user transaction.
+   Before headless spawn, that transaction creates the first admin, credential, canonical
+   Main, receipt, and provenance. Existing main cold-start admission, authorization, replay,
+   and activation outcomes remain unchanged. The 0.1.9 arm adds neither the obsolete
+   machinery nor a constraint-relaxation migration. Resolver evidence alone cannot close
+   0.1.9 headless cold-start.
 7. **ARC-07 — Compatibility and rollback.** Each arm rejects an unknown predecessor without
    writes. Migration is atomic and restart-safe. Rollback before successor writes restores
    the captured predecessor database and binary. Rollback after successor writes requires
@@ -153,16 +168,17 @@ machinery that manufactures explicit parents.
 9. **ARC-09 — Separate gates.** The canonical spec receives one parent-opened independent
    exact-hash review. Mike reads that reviewed revision before either implementation
    assignment opens. The main and 0.1.9 arms then receive separate producer cards,
-   migrations, tests, reviews, landing
-   decisions, and release gates. Evidence from one arm cannot satisfy the other.
+   migrations, tests, reviews, landing decisions, and release gates. Evidence from one arm
+   cannot satisfy the other.
 
 **Headline release note — Parent routing for existing 0.1.9 sessions changes on upgrade.**
-Every pre-feature session receives a null stored operational parent and therefore routes
-parent escalations to its owner's Main through the shared resolver. Release evidence must
-name the observed live owner and relief sessions, 32 null-parent roots, 423 superseded
-effort decision requests, and the ATC product-owner surrender. These counts describe the
-elected snapshot; the release gate must recapture them because knowledge rows can become
-stale.
+Every pre-feature session receives a null stored operational parent, so the shared resolver
+selects its owner's Main for parent escalation. Delivery still requires that Main row to
+exist and be eligible; otherwise the consumer records its named missing-target result.
+Release evidence must name the observed live owner and relief sessions, 32 null-parent
+roots, 423 superseded effort decision requests, and the ATC product-owner surrender. These
+counts describe the elected snapshot; the release gate must recapture them because
+knowledge rows can become stale.
 
 ## Acceptance Criteria
 
@@ -186,9 +202,12 @@ stale.
    authorization, eligibility, idempotency, and named failure behavior. Static source
    closure finds no consumer-local read of `operationalParent` or parent fallback to
    `spawnedBy`.
-6. **AC-06 — Cross-lane composition.** Given R5 completion and exec-desk escalation fixtures
-   with null stored parent, each targets Owner Main through the resolver. Completion does
-   not use `spawnedBy`; exec desk owns no fallback mechanism.
+6. **AC-06 — Cross-lane composition.** Given R5 fixtures where `spawnedBy` differs from a
+   non-null stored parent, completion targets that explicit stored parent through the
+   resolver. Given null and eligible Owner Main, completion targets Main instead of taking
+   null-unavailable. Given null and missing Main, it records R5's named unavailable result.
+   Report-to routing and disposition-authority fixtures pass unchanged. Exec-desk escalation
+   uses the same resolver and owns no fallback mechanism.
 7. **AC-07 — Terminal fallback.** Given terminal completion, surrender, revocation, or
    failed assigned-turn fixtures with null stored parent, the existing parent action targets
    eligible Owner Main once through the resolver. Source closure finds no separate
@@ -199,7 +218,11 @@ stale.
    ordering. Restart resolves from committed rows and no effective-parent cache.
 9. **AC-09 — Deletion proof.** Given the main successor diff, review confirms every `ARC-06`
    deletion or a surviving non-parent requirement that justifies retention. Main's existing
-   cold-start outcome fixtures pass unchanged. Given the 0.1.9 successor diff, review
+   cold-start outcome fixtures pass unchanged. Given a 0.1.9 org without canonical Main,
+   resolver tests return the derived key, the consumer records its named missing-target
+   result, and headless spawn remains refused. Only evidence from the separately reviewed
+   minimal add-user transaction can satisfy creation of the first admin, credential, Main,
+   receipt, and provenance before headless spawn. Given the 0.1.9 successor diff, review
    confirms the obsolete bootstrap machinery was not introduced.
 10. **AC-10 — Rollback.** Given a predecessor capture and successor shape, rollback tests
     prove the `ARC-07` paths and prove that the predecessor binary refuses the successor
