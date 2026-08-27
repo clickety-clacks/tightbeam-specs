@@ -23,8 +23,13 @@ keys use the exact types defined under “Canonical array and map order.”
 For a sessions item, `rowVersion` changes if and only if at least one other
 serialized R7 field changes. The transaction stores the greater version with
 the changed item before its post-commit session notice becomes eligible for
-publication. The serializer does not compute `mechanicalStatus` from a mutable
-input outside that versioned mutation seam.
+publication. `mechanicalStatus` is exactly `idle` when the committed count of
+this session's turns with `status` equal to `queued` or `running` is zero, and
+exactly `running` when that count is positive. No other value or mutable input
+is valid. A turn transaction that crosses the zero/positive boundary stores
+the new `mechanicalStatus` and session `rowVersion` atomically. The serializer
+reads that stored value; it does not count turns or compute the field from
+another mutable input.
 
 The condition-fact projection `id`, firehose notice `refs.factId`, and natural
 version are positive JSON integers with the same numeric value.

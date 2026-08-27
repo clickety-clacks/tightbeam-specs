@@ -220,6 +220,12 @@ canonical R7 session field other than `rowVersion` differ for one
 `rowVersion` excluded. It does not infer change from a verb name, timer, or
 declared effect list.
 
+T8. **Session mechanical status** — the R7 `mechanicalStatus` string preserves
+the existing `Tightbeam.Gateway.session_status/2` `run.state` projection. Its
+closed values are `idle` and `running`. Its only mutable input is the committed
+count of this session's turn rows whose `status` is `queued` or `running`:
+zero maps to `idle`; a positive count maps to `running`.
+
 ## Architecture — the event vocabulary law
 
 V1. Every state-changing commit SHALL emit its notices as part of the
@@ -575,6 +581,13 @@ exactly one of `session.spawned`, `session.updated`, or `session.retired` by
 the R8 rule. Given unchanged serialized bytes, then it advances no version and
 emits no session state notice. The test fails if any writer can change a
 mutable input to the R7 session item outside this seam.
+
+For the T8 input, the table commits these cases: zero qualifying turns to one,
+one to zero, one to two, two to one, `queued` to `running`, and a change wholly
+outside the `queued`/`running` set. Only zero to positive and positive to zero
+change `mechanicalStatus`, advance the session `rowVersion`, and select
+`session.updated`. The other cases emit their mapped turn notices and no
+session notice from the T8 input.
 
 A2. A subscriber receives a notice for a matching commit made after its
 registration cut, and never one from before it.

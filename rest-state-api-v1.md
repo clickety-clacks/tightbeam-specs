@@ -193,6 +193,21 @@ session item. The seam detects a change from the complete canonical item with
 selects one session class. A verb declaration, elapsed time, or later read is
 not the detector.
 
+I9. `mechanicalStatus` preserves the existing
+`Tightbeam.Gateway.session_status/2` `run.state` meaning. It is the string
+`idle` exactly when this session has zero committed turn rows whose `status` is
+`queued` or `running`; it is `running` exactly when that count is positive.
+These are its only values and the qualifying-turn count is its only mutable
+input. The field is not the full legacy session-status payload.
+
+I10. Every turn transaction that can change membership in the
+`queued`/`running` set invokes the session projection mutation seam before
+commit. A zero-to-positive count transition stores `running`; a
+positive-to-zero transition stores `idle`. A positive-to-positive transition,
+including `queued` to `running`, changes no session bytes. The transaction
+stores any changed `mechanicalStatus` and the next session `rowVersion`
+atomically; its post-commit session notice uses that version.
+
 ## Architecture
 
 The read plane has four seams. A principal resolver produces one authenticated
@@ -203,11 +218,11 @@ envelope, CLI result, or firehose notice. Composed views declare their source
 classes in R9 and use a dependency digest instead of a notice class.
 
 The session item is a direct R8 resource, not a composed R9 view. Its
-`mechanicalStatus` value is materialized in the versioned R7 item. Each mutable
-input that can change that value enters the session projection mutation seam;
-the serializer does not derive it at read time from unversioned adapter memory,
-turns, wakes, or another mutable source. This rule closes freshness without
-adding a second session status resource.
+`mechanicalStatus` value is materialized in the versioned R7 item under I9-I10.
+The serializer does not count turns or derive the field at read time from
+unversioned adapter memory, wakes, or another mutable source. This rule closes
+freshness without adding a second session status resource or changing the
+existing `idle`/`running` meaning.
 
 Operating-guidance impact: none. This amendment applies the existing REST
 resource/query/serializer pattern and creates no cross-repository agent rule.
@@ -1414,11 +1429,21 @@ A39. Given one suppressed session notice, when the next sequence or heartbeat
 exposes the gap, then the client runs the same resubscribe-and-snapshot path and
 converges to a fresh quiescent sessions read.
 
-A40. Given each mutable input to the R7 session item, including the input to
-`mechanicalStatus`, when a test changes that input, then the change is possible
-only through the session projection mutation seam and produces the R8 outcome
-required by A35-A36. The test fails on a direct writer or an unversioned
-read-time input.
+A40. A table drives every mutable input to the R7 session item through the
+session projection mutation seam and verifies A35-A36. For I9, it begins with
+zero qualifying turns and `mechanicalStatus:"idle"`, then tests these committed
+qualifying-count transitions: zero to one, one to zero, one to two, and two to
+one. The first two cases produce `running` and `idle`, respectively, advance
+the session `rowVersion`, and emit one `session.updated`; the latter two leave
+the session item and its version unchanged and emit no session state notice.
+
+A40a. Given one qualifying turn, changing its status from `queued` to `running`
+leaves `mechanicalStatus:"running"` unchanged. Given a turn whose old and new
+statuses are both outside `queued` and `running`, changing that status leaves
+`mechanicalStatus` unchanged. Each case emits no session state notice from this
+input. The table fails on a direct session writer, a turn writer that bypasses
+I10, another input to `mechanicalStatus`, a value outside `idle` and `running`,
+or any read-time derivation of the field.
 
 ## Open questions — Spirit questions for Mike
 
