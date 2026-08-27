@@ -300,8 +300,8 @@ monitor row for the standing assignment.
 ### AC4 — Completion is impossible; custody has exits (G4; I2-I5; AR4)
 
 **Given** an open standing assignment, **when** its holder files a completion attest,
-**then** the gateway returns `standing_has_no_completion`, the assignment remains
-open, and no completion attest or secondary state row exists.
+**then** the gateway returns `standing_has_no_completion` with the exact AR4 message,
+the assignment remains open, and no completion attest or secondary state row exists.
 
 **When** the schema test attempts to commit that standing assignment with
 `outcome = completed`, **then** the database constraint refuses the transaction.
