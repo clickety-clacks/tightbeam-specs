@@ -42,6 +42,11 @@ F4 successor re-review: exact revision
 `att_302bdd5b` and report `art_2fb4665d`. Its sole finding requires the existing
 agent/effort exact-read contract to adopt the same local non-complete-id refusal.
 
+F4 successor re-review: exact revision
+`ae73db245f7de0a66b36b0da4eb4c5bca04aae06` received changes-requested verdict
+`att_809f2f1e` and report `art_3faf8619`. Its sole finding requires the
+expecter-preference companion to appear in every F4 custody declaration.
+
 This contract supersedes only the owner-scoped operator-request read projection,
 terminal-attribution, integrity, and raiser-delivery clauses of
 `escalation-substrate-v1.md` and any candidate client projection that omits the
@@ -465,9 +470,10 @@ success.
 The canonical CLI surface is `cli-surface-v1.md`; the canonical REST item,
 detail route, and error envelope are `rest-state-api-v1.md` and
 `rest-state-api-v1-wire-schema.md`; the narrower decision-row state amendment
-is `decision-request-client-observable-state-v1.md`. Their F4 clauses are part
-of this exact successor. They define only the public command and public bytes.
-The storage columns `ruledViaPrincipal` and `ruledViaSessionState` remain
+is `decision-request-client-observable-state-v1.md`; the agent/effort exact-id
+companion is `decision-request-expecter-preference-v1.md`. Their F4 clauses are
+part of this exact successor. They define only the public command and public
+bytes. The storage columns `ruledViaPrincipal` and `ruledViaSessionState` remain
 internal and never become CLI or REST fields.
 
 ### 2. Integrity contract

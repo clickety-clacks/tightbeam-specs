@@ -32,7 +32,8 @@ error and G8 authority-label contracts.
 
 The F4 coupled custody set is this file, `rest-state-api-v1.md`,
 `cli-surface-v1.md`, `terminal-operator-decision-parity-v1.md`, and
-`decision-request-client-observable-state-v1.md`.
+`decision-request-client-observable-state-v1.md`, and
+`decision-request-expecter-preference-v1.md`.
 `event-firehose-v1.md` is not in that set because F4 adds no notice or
 firehose payload.
 

@@ -50,7 +50,8 @@ and its typed integrity refusal to the existing decision-request collection and
 detail surfaces. Its coupled custody set is this file,
 `rest-state-api-v1-wire-schema.md`, `cli-surface-v1.md`, and
 `terminal-operator-decision-parity-v1.md`, and
-`decision-request-client-observable-state-v1.md`. It adds no route family,
+`decision-request-client-observable-state-v1.md`, and
+`decision-request-expecter-preference-v1.md`. It adds no route family,
 identity input, authorization grant, storage-column projection, firehose class,
 target, or product-code authority.
 
