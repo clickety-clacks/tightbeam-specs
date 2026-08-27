@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Firehose client buildability recon — 2026-08-26</title>
+  <style>
+    :root { color-scheme: light; --ink:#172033; --muted:#58657a; --line:#d8dee8; --paper:#f7f8fb; --panel:#fff; --bad:#9f1d24; --warn:#8a5500; --good:#146c43; --blue:#2456a6; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.5 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { max-width:1180px; margin:0 auto; padding:32px 24px 64px; }
+    h1,h2,h3 { line-height:1.18; margin:0 0 12px; }
+    h1 { font-size:2rem; } h2 { margin-top:32px; font-size:1.35rem; } h3 { margin-top:22px; font-size:1.05rem; }
+    p { margin:8px 0 14px; } a { color:var(--blue); } code { font:0.9em ui-monospace,SFMono-Regular,Consolas,monospace; overflow-wrap:anywhere; }
+    .hero,.card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px; }
+    .verdict { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:18px; align-items:start; border-left:6px solid var(--bad); }
+    .badge { display:inline-block; border-radius:999px; padding:4px 10px; font-weight:700; white-space:nowrap; }
+    .bad { color:var(--bad); background:#fdecee; } .warn { color:var(--warn); background:#fff3d6; } .good { color:var(--good); background:#e6f5ed; }
+    .meta { color:var(--muted); font-size:.92rem; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    table { width:100%; border-collapse:separate; border-spacing:0; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+    th,td { text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--line); min-width:0; overflow-wrap:anywhere; }
+    th { background:#eef2f8; font-size:.83rem; text-transform:uppercase; letter-spacing:.035em; }
+    tr:last-child td { border-bottom:0; }
+    .status { font-weight:700; white-space:nowrap; }
+    ol,ul { padding-left:22px; } li { margin:6px 0; }
+    .finding { border-left:4px solid var(--bad); }
+    .finding.secondary { border-left-color:var(--warn); }
+    .finding h3 { display:flex; gap:8px; align-items:baseline; }
+    .finding h3 code { color:var(--muted); font-size:.8rem; }
+    .cite { color:var(--muted); font-size:.9rem; }
+    .source { background:#111827; color:#e5e7eb; padding:12px; border-radius:8px; overflow-wrap:anywhere; }
+    @media (max-width:760px) { .grid,.verdict { grid-template-columns:1fr; } main { padding:20px 12px 48px; } th,td { padding:8px; } }
+  </style>
+</head>
+<body>
+<main>
+  <section class="hero verdict">
+    <div>
+      <div class="badge bad">VERDICT: NO — INSUFFICIENT</div>
+      <h1>Firehose client buildability recon</h1>
+      <p>A Clawline-class client cannot cold-build and then maintain the specified model from the current contract without choosing between contradictory authorities or importing private wire knowledge.</p>
+      <p><strong>Confidence: high.</strong> The decisive defects are explicit field and mutation omissions in the canonical files, independently confirmed by current product mutation and route inventories. The missing short-form kin cards reduce confidence only in their historical detail, not in this verdict.</p>
+    </div>
+    <div class="meta">
+      <div>Question fixed: can a client use only public query contracts for state and the firehose only for freshness?</div>
+      <div>Evidence cut: 2026-08-26 21:27 PT</div>
+      <div>Specs: <code>45a650e25f334827e8238bfff3ea58e7a32b4916</code></div>
+      <div>Product: <code>cba8d6c5e43e974e93890a901b83abd55f723500</code></div>
+    </div>
+  </section>
+
+  <h2>Decision boundary</h2>
+  <div class="card">
+    <p>A “yes” requires one cold implementer to derive these behaviors from durable public contracts: authenticate; subscribe first; enumerate visible sessions; page transcript history backward; send a message; fetch work items, assignments, attests, and related state; correlate every rebuildable notice to the same public row; survive duplicate, missing, and reordered notices; and rebuild after reconnect without SQLite or an internal serializer.</p>
+    <p>Observational notices and R8b source invalidations are deliberate exceptions to row correlation: the former are ignored as model state and the latter trigger a declared composed-view refetch. This report does not count either design as a defect.</p>
+  </div>
+
+  <h2>Needs matrix</h2>
+  <table>
+    <thead><tr><th>Client need</th><th>Specified surface</th><th>Contract result</th><th>Current-main result</th></tr></thead>
+    <tbody>
+      <tr><td>Subscribe and recover</td><td><code>GET /ws/changes?protocolVersion=1</code>; subscribe-first; heartbeat/seq; rebuild on doubt</td><td><span class="status good">Adequate after auth</span>. Registration cut, ordering, duplicate convergence, slow-consumer close, restart close, and one rebuild path are defined.</td><td>Firehose route exists. This does not cure the incomplete snapshot plane.</td></tr>
+      <tr><td>Enumerate sessions</td><td><code>GET /api/sessions</code>, order <code>(createdAt,sessionKey)</code>, signed keyset cursors</td><td><span class="status warn">Snapshot adequate; live maintenance not adequate</span>. Session changes other than spawn/retire have no mapping.</td><td>Canonical route absent; only legacy <code>/api/streams</code> exists.</td></tr>
+      <tr><td>Page conversation backward</td><td><code>GET /api/sessions/:sessionKey/messages</code>, order <code>(seq,id)</code>, tail default, <code>before</code>/<code>after</code></td><td><span class="status warn">Core paging adequate; barrier and wrapper contracts conflict</span>.</td><td>Canonical route absent. Legacy chat replay caps one reconnect batch at 500.</td></tr>
+      <tr><td>Render message kind</td><td>Transcript R7 row plus <code>message.created</code></td><td><span class="status bad">Missing</span>: no public <code>messageType</code> or equivalent closed discriminator.</td><td>Internal rendering derives marker/substrate meaning from sender and content conventions.</td></tr>
+      <tr><td>Send a message</td><td>Firehose M4 says “send via wake”; write-plane ruling names <code>POST /agent/dispatch</code>; existing chat socket also accepts <code>message</code></td><td><span class="status bad">Not one cold-buildable contract</span>: exact device-authenticated request/ack/error path is not selected and frozen here.</td><td>Device clients send on the chat socket; <code>/agent/dispatch</code> authenticates CLI/session tokens, not device tokens.</td></tr>
+      <tr><td>Fetch work state</td><td>Work items, assignments, bulk/nested attests, wakes, turns, decisions</td><td><span class="status warn">Snapshot routes adequate</span>; decision lifecycle notice coverage is incomplete.</td><td>Only legacy assignment/work-item HTTP seeds exist; canonical routes are absent.</td></tr>
+      <tr><td>Correlate and dedupe</td><td>V5 id equality; R8 primary refs; <code>(primary id,rowVersion)</code> last-version-wins</td><td><span class="status good">Adequate for mapped direct resources</span>. Message/work/assignment/attest identifiers are specified.</td><td>Current registry diverges for productions, returned decisions, and composite read markers.</td></tr>
+      <tr><td>Handle REST errors</td><td>Typed status clauses plus envelopes</td><td><span class="status bad">Incomplete</span>: the only closed error envelope and header contract is ExecutionMap-specific.</td><td>Legacy router has a private generic error convention, not the v1 public contract.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Exact contract gaps</h2>
+
+  <section class="card finding">
+    <h3><code>G1</code> Transcript rows have no public message-kind discriminator</h3>
+    <p>The REST row freezes <code>role</code>, <code>sender</code>, and content/correlation fields but no <code>messageType</code>. The normative wire schema restricts role to <code>user|assistant</code>. Current product guidance distinguishes model speech, substrate deliveries, and marker messages by an internal sender-plus-first-line convention. A cold client must parse content and reproduce that private convention, directly violating the no-internal-serializer condition.</p>
+    <p><strong>Exact repair needed:</strong> add one closed public field (the named kin proposal is <code>messageType</code>) to the REST R7 row, wire schema, shared message serializer, and <code>message.created</code> payload. It must distinguish at least assistant, substrate, and marker without content parsing.</p>
+    <p><strong>Blocks:</strong> correct bubble/divider/error rendering and preservation of marker semantics.</p>
+    <p class="cite">Evidence: <code>rest-state-api-v1.md:577-590</code>; <code>rest-state-api-v1-wire-schema.md:147-165,178-196</code>; product <code>wire/payloads.ex:10-66</code>.</p>
+  </section>
+
+  <section class="card finding">
+    <h3><code>G2</code> Sessions are modeled as direct versioned rows but most session mutations have no freshness class</h3>
+    <p>The public session row includes mutable display name, adoption, identity revision, harness/model/effort/context, host, history barrier, state, updated time, mechanical status, and row version. R8 maps only <code>session.spawned</code> and <code>session.retired</code>. There is no <code>session.updated</code>, and sessions have no R9 dependency list for derived <code>mechanicalStatus</code>.</p>
+    <p>Current main confirms the gap is real: <code>tune</code> mutates session state but declares only <code>message.created</code>; identity apply/repoint also change session projection state without a session class. The A1 verb-table test can pass because it checks declared effects rather than detecting every changed public projection.</p>
+    <p><strong>Exact repair needed:</strong> define a session mutation mapping that emits whenever canonical session bytes or rowVersion change, and either make <code>mechanicalStatus</code> stored/versioned under it or declare the complete R9 dependency set and make sessions a composed view.</p>
+    <p><strong>Blocks:</strong> live session picker names, active/retired state, model/harness badges, host, identity revision, and correct transcript barrier after tune or recovery.</p>
+    <p class="cite">Evidence: <code>rest-state-api-v1.md:589,694-720</code>; <code>event-firehose-v1.md:266-277</code>; product <code>gateway.ex:1138-1140</code> and <code>org.ex:560-751</code>.</p>
+  </section>
+
+  <section class="card finding">
+    <h3><code>G3</code> The message-send path is referenced, not specified as one public client contract</h3>
+    <p>The firehose forbids writes on the change socket, then says a chat client sends “through normal gateway verbs (wake)” and M4 says “send via wake.” The three-plane ruling names <code>POST /agent/dispatch</code> as the write door, but the examined contract set does not freeze the device-authenticated wake request body, target fields, acknowledgement, idempotency, or error outcomes. The existing chat socket instead accepts a <code>message</code> frame and dispatches the private <code>post</code> verb.</p>
+    <p><strong>Exact repair needed:</strong> select one Clawline write route and freeze its auth principal, request fields, idempotency key, reply/attachment shape, ack, errors, and correlation to the resulting <code>message.created</code>. If the existing chat socket remains the route, M4/N4 must say so instead of “wake.”</p>
+    <p><strong>Blocks:</strong> sending any message from the same device credential used for REST/firehose, including retry without duplicates.</p>
+    <p class="cite">Evidence: <code>event-firehose-v1.md:151-154,373-377,474-477</code>; <code>rest-vs-cli-adjudication.md:17-29,80-101</code>; product <code>wire/router.ex:140-147,400-451</code> and <code>wire/socket.ex:439-494</code>.</p>
+  </section>
+
+  <section class="card finding">
+    <h3><code>G4</code> General REST error wire is not closed</h3>
+    <p>R4 freezes list/detail success envelopes. Status/code behavior is scattered through pagination and authorization clauses. Only ExecutionMap gets an exact error object, JSON key order, headers, and closed code variants. Nothing applies that R4b contract to sessions, messages, work items, assignments, or attests.</p>
+    <p><strong>Exact repair needed:</strong> one general v1 error envelope with status/code mapping, optional fields, content type, caching headers, malformed-query precedence, and identical unknown/forbidden bytes; then state which special resources override it.</p>
+    <p><strong>Blocks:</strong> deterministic auth recovery, invalid-cursor restart, user-visible refusal handling, and forward-compatible decoding.</p>
+    <p class="cite">Evidence: <code>rest-state-api-v1.md:340-388,390-398,921-1051</code>.</p>
+  </section>
+
+  <section class="card finding">
+    <h3><code>G5</code> REST and transcript authorities disagree on lookup, cursor, projection, and history-barrier semantics</h3>
+    <p>The transcript spec uses case-insensitive substring name lookup, a five-field candidate projection ordered by last activity, message-id cursors, and a 12-key transcript entry that deliberately excludes four client correlation fields. REST uses exact Unicode display-name equality returning complete R7 session rows in <code>(createdAt,sessionKey)</code> order, opaque signed <code>(seq,id)</code> cursors, and a 28-key message row that includes those correlation fields and rowVersion. REST M4/A8 says the CLI wrapper moves to REST and returns the same item shape, but the living CLI surface still points to the transcript spec.</p>
+    <p>The transcript spec also makes <code>clearedThroughSeq</code> a hard history floor and defines cursor behavior across it. The REST message route exposes the field on session rows but does not state that query floor or the across-barrier cursor behavior.</p>
+    <p><strong>Exact repair needed:</strong> supersede or amend the transcript contract explicitly. Freeze whether REST history applies <code>clearedThroughSeq</code>; freeze the REST-to-CLI cursor translation; and choose one lookup/projection behavior.</p>
+    <p><strong>Blocks:</strong> a thin CLI wrapper, deep scroll across a mid-page engine swap, and any client sharing cursor/cache code with the CLI.</p>
+    <p class="cite">Evidence: <code>transcript-verb-v1.md:72-79,88-125,127-205</code>; <code>rest-state-api-v1.md:390-430,540-590,1055-1088</code>.</p>
+  </section>
+
+  <section class="card finding secondary">
+    <h3><code>G6</code> Decision-request state and notice vocabulary are not closed over current product states</h3>
+    <p>REST R8 and the firehose registry name opened, ruled, and withdrawn. Current product also emits <code>decision_request.returned</code>, and stored states include answered, consumed, superseded, and returned transitions. The REST wire enum omits returned. A fetched decision can therefore change without a class the spec tells a client to watch, and current-main frames can carry a class/schema value absent from the contract.</p>
+    <p><strong>Exact repair needed:</strong> freeze the complete decision status enum and map every state-changing transition to one R8 class, primary ref, and serializer.</p>
+    <p><strong>Blocks:</strong> live work-state decision banners and correct execution/work refresh after answer, return, consume, or supersede.</p>
+    <p class="cite">Evidence: <code>rest-state-api-v1.md:708</code>; <code>rest-state-api-v1-wire-schema.md:171,194-195</code>; product <code>gateway.ex:780-785</code>, <code>firehose/registry.ex:32-35</code>, and <code>escalation.ex:20,62,610-611,855,1489</code>.</p>
+  </section>
+
+  <section class="card finding secondary">
+    <h3><code>G7</code> “REST detail equals notice payload” names detail items that have no detail route</h3>
+    <p>R2 exposes only collections for bulk attests and roles; R3 exposes collection-only facts and critical state; messages are nested pages, not addressable message details. Yet A2/A6 repeatedly require every R8 notice payload to equal “the REST detail item.” The shared serializer intent is clear, but the observable comparator is not.</p>
+    <p><strong>Exact repair needed:</strong> either add the missing detail routes (<code>/api/attests/:id</code>, <code>/api/roles/:name</code>, <code>/api/facts/:id</code>, <code>/api/critical-state/:sessionKey</code>, and a message detail form) or redefine A2/A6 as equality to the same resource item returned by any named collection/detail route.</p>
+    <p><strong>Blocks:</strong> executable conformance and single-row recovery; it does not block whole-collection rebuild if the remaining contracts are repaired.</p>
+    <p class="cite">Evidence: <code>rest-state-api-v1.md:263-308,1092-1105</code>; <code>event-firehose-v1.md:557-568</code>.</p>
+  </section>
+
+  <section class="card finding secondary">
+    <h3><code>G8</code> The current three-file “canonical set” has contradictory authority labels</h3>
+    <p>The REST file calls itself canonical r4, calls embedded ExecutionMap and Toplines/session sections amendment candidates or proposed, says fresh exact review is required before implementation, then also records canonical r3 and a prior reviewed merge. The file is on specs main, but it does not delimit which clauses are r3, r4, candidate, or proposed. The firehose header likewise calls r6 draft while later clauses treat the REST companion as adopted.</p>
+    <p><strong>Exact repair needed:</strong> publish one revision status for the exact three-file bytes, or split proposed amendments from the current contract. A cold builder must not reconstruct authority from git archaeology.</p>
+    <p><strong>Blocks:</strong> knowing whether ExecutionMap, Toplines/session lookup, and source invalidations are build requirements.</p>
+    <p class="cite">Evidence: <code>rest-state-api-v1.md:1-43,94-108</code>; <code>event-firehose-v1.md:1-41,71-84</code>.</p>
+  </section>
+
+  <h2>Exact implementation gaps, not reasons to weaken the contract</h2>
+  <table>
+    <thead><tr><th>ID</th><th>Observed at product main</th><th>Classification and effect</th></tr></thead>
+    <tbody>
+      <tr><td><code>I1</code></td><td>The router has legacy <code>/api/streams</code>, <code>/api/work</code>, and seed <code>/api/work-items</code>; it has no canonical sessions/messages/assignments/attests routes.</td><td><strong>Unimplemented sufficient clauses.</strong> Blocks any current cold build, but does not justify a spec redesign. Evidence: <code>wire/router.ex:166-336</code>.</td></tr>
+      <tr><td><code>I2</code></td><td>Current firehose maps <code>prod.fired</code> to <code>productions/eventId</code>; REST maps it to <code>turns/turnSeq</code> and defines no productions resource.</td><td><strong>Implementation/spec divergence.</strong> A current client cannot correlate that frame to the specified read plane. Evidence: product <code>firehose/registry.ex:29</code>; REST <code>rest-state-api-v1.md:706</code>.</td></tr>
+      <tr><td><code>I3</code></td><td>Current registry maps <code>read_marker.updated</code> with only <code>scopeKey</code>; the spec requires composite <code>userId + scopeKey</code>.</td><td><strong>Implementation defect under an adequate spec clause.</strong> Colliding users cannot be correlated safely. Evidence: product <code>firehose/registry.ex:46</code>; REST <code>rest-state-api-v1.md:711-714</code>.</td></tr>
+      <tr><td><code>I4</code></td><td>Asset upload writes outside dispatch and artifact archive/release mutate public fields, but neither has a rebuildable class. Device pairing likewise inserts pending device state without a class.</td><td><strong>Contract inventory gap plus implementation gap for the admitted full state model.</strong> These are secondary to Clawline chat, but violate firehose G2/I5. Evidence: product <code>wire/router.ex:352-386</code>, <code>artifacts.ex:265-374</code>, <code>devices.ex:96-137</code>; firehose <code>event-firehose-v1.md:129-137</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What the evidence disproved</h2>
+  <div class="grid">
+    <div class="card"><h3>“Pagination itself is missing” — disproved</h3><p>REST fixes tail default, exclusive before/after, oldest-to-newest pages, signed immutable tuples, filter binding, deleted-boundary behavior, and cap 500. The remaining defect is authority/barrier reconciliation, not basic paging.</p></div>
+    <div class="card"><h3>“Events must replay history” — disproved</h3><p>Subscribe-first plus buffered LWW notices and a full re-snapshot on any doubt is coherent. Heartbeat seq detects a lost trailing notice. Replay is unnecessary if every displayed state mutation has a mapping.</p></div>
+    <div class="card"><h3>“Core work/message ids cannot correlate” — disproved in the spec</h3><p>V5 and REST R8 bind messageId, workItemId, assignmentId, and attestId to the public projection ids. R10 defines version lifetime through delete/recreate. Current-main deviations remain implementation findings.</p></div>
+    <div class="card"><h3>“Stream assembly must glue chunks” — disproved</h3><p>The planned model uses finalized message rows and <code>message.created</code>; current public chat payloads declare <code>streaming:false</code>. One stored message is one model row. The closed historical assembly defect does not justify client chunk assembly.</p></div>
+  </div>
+
+  <h2>Minimum decision this report supports</h2>
+  <div class="card">
+    <p>Do not dispatch slice-2 client implementation from the present query/firehose contract. First repair G1-G5 and G8, then re-run this matrix against one exact reviewed three-file revision. G6-G7 and I2-I4 must close before claiming the broader “every admitted shared-state model” goal. I1 can proceed as implementation only after that spec revision is fixed; it is not evidence that the intended REST architecture is wrong.</p>
+    <p>The evidence strength is high for the negative verdict and for G1-G5. It is medium-high for the exhaustive mutation inventory because the assignment supplied four kin ids in short form and the live substrate refused each; repository evidence independently establishes the named Clawline message-type and transport defects.</p>
+  </div>
+
+  <h2>Source and method</h2>
+  <div class="source">
+    <div>Decision artifacts examined at specs commit 45a650e25f334827e8238bfff3ea58e7a32b4916:</div>
+    <div>event-firehose-v1.md; rest-state-api-v1.md; rest-state-api-v1-wire-schema.md; rest-state-api-r3-adjudication.md; rest-vs-cli-adjudication.md; cli-surface-v1.md; transcript-verb-v1.md; 0.2 program/handoff/build-ledger authorities.</div>
+    <div style="margin-top:8px">Product evidence examined at commit cba8d6c5e43e974e93890a901b83abd55f723500:</div>
+    <div>wire/router.ex; wire/socket.ex; wire/payloads.ex; firehose/registry.ex; gateway.ex; org.ex; escalation.ex; artifacts.ex; assets.ex; devices.ex.</div>
+    <div style="margin-top:8px">Method: enumerate cold-client needs and competing sufficiency explanations; derive one client algorithm from specs only; falsify it at each contract seam; then compare current main solely to distinguish missing implementation from missing authority. No product code, spec behavior, target, merge, deploy, release, or client implementation changed.</div>
+  </div>
+</main>
+</body>
+</html>
