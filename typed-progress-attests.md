@@ -6,6 +6,12 @@ owner-opened review assignment. This spec is targetless. It authorizes no
 product integration, release, deployment, live mutation, identity edit, or
 configuration change.
 
+Review evidence: exact-tip review `att_00078fa7` / `art_34d5ff29` requested
+changes on commit `b226273db5707aa930cee26fd4f76a77800881fb` because `(ts,
+id)` is deterministic query order but not append-monotonic recovery order.
+This successor uses full assignment reconciliation plus durable seen-id
+deduplication; it does not add a server cursor or firehose history.
+
 Authority: Mike ruling `art_e15670c9` (SHA-256
 `26a9ce6832c1e442ce18dddf0b00768a2b23158442072fe256ad29b9046ff3e3`) and
 spirit verdict `att_9c95b557-c4d2-4c73-be9f-6d24d3a22390` on work item
@@ -18,7 +24,7 @@ other clauses remain in force.
 Source evidence: Tightbeam `origin/main` commit
 `cba8d6c5e43e974e93890a901b83abd55f723500`; typed-progress candidate
 `a3268d1e3f8d69d82fc7a28c870844eee5024e7b`; tightbeam-specs `origin/main`
-commit `5f4b636d02aa8f1cd0670dd090d0af8c35894e88`. Code is evidence for the
+commit `45a650e25f334827e8238bfff3ea58e7a32b4916`. Code is evidence for the
 current seams. The rulings above are the behavior authority.
 
 ## Goal
@@ -94,9 +100,10 @@ note, judge the work, or infer intent.
   `refs.attestId` and `payload.id`, and returned by the `attests` read as
   `attest.id`. A ChangeSocket `seq` is delivery order for one live connection;
   it is not this identity and is not a durable cursor.
-- **Recovery cursor:** the last durably consumed attest id for one assignment.
-  The existing `attests --after <attestId>` read resolves it to that row's
-  immutable `(ts, id)` order key and returns rows strictly after it.
+- **Durable seen-id set:** the consumer-owned, durably stored set of every
+  attest id already observed for one assignment. Recovery computes a set
+  difference against a complete assignment read. This set, not query order or
+  socket sequence, is the recovery watermark.
 - **Recovery scope:** one exact assignment id under the existing `attests`
   read authorization. A work-item, session, origin, principal, or subscription
   filter is not a durable replay scope; a consumer resolves and retains the
@@ -135,6 +142,11 @@ note, judge the work, or infer intent.
     and advance within one connection.
 12. At source commit `cba8d6c`, there is no supported attest deletion or
     retention-compaction verb.
+13. At source commit `cba8d6c`, attest ids are random UUIDv4 values and attest
+    `ts` values come from a wall clock. The `(ts, id)` query key is
+    deterministic and immutable for a stored row, but a later commit can sort
+    before an earlier commit after a same-millisecond lower UUID or wall-clock
+    regression.
 
 ## Invariants
 
@@ -165,12 +177,15 @@ note, judge the work, or infer intent.
     The later delivery state is `DONE-AWAITING-TARGET`.
 12. Live notice loss does not lose the fact. While an attest row is retained,
     an authorized consumer can recover its exact stored kind, `effectKind`,
-    and canonical identity through the existing assignment-scoped `attests`
-    read.
+    and canonical identity by reconciling the complete existing
+    assignment-scoped `attests` read against its durable seen-id set.
 13. One attest id denotes one fact across live delivery and durable readback.
     A consumer suppresses a duplicate delivery of that id, but it never
     collapses two different ids merely because their kind, note, timestamp, or
     effect kind match.
+14. `(ts, id)` is presentation and page order, not append or causal order. A
+    consumer never discards an unseen id because that row sorts at or before a
+    previously seen row.
 
 ## Architecture
 
@@ -377,14 +392,13 @@ The existing `invalid_note` code uses exact message
 over-limit acknowledgment note. Each refusal commits no domain row, marker,
 event, or firehose notice.
 
-The existing recovery read keeps its current typed failures and transport
-classes: `principal_required` and `process_denied` are HTTP 403;
-`unknown_assignment` is HTTP 404; `cursor_not_found` for a nonexistent cursor
-or a cursor belonging to another assignment is HTTP 400 with message
-`unknown attest cursor: <id>`; and an invalid `limit` is HTTP 400 `invalid`.
-The CLI exits nonzero and prints the returned error. REST returns the ordinary
-`{"error":{"code","message"}}` envelope. A consumer does not advance its
-durable cursor on any refusal or transport failure.
+The existing unpaged recovery read keeps its current typed failures and
+transport classes: `principal_required` and `process_denied` are HTTP 403, and
+`unknown_assignment` is HTTP 404. The CLI exits nonzero and prints the returned
+error. REST returns the ordinary `{"error":{"code","message"}}` envelope. A
+refusal or transport failure does not change the durable seen-id set; retrying
+the same unpaged read is safe because the set difference suppresses ids already
+consumed.
 
 R24. `attest` remains non-idempotent. Two accepted requests append two attest
 rows. A client that receives an unknown mutation outcome must read the
@@ -412,46 +426,63 @@ ChangeSocket `seq` is not durable across reconnect, and this contract creates
 no firehose replay operation.
 
 The durable recovery source is the existing assignment-scoped `attests` read.
-For each tracked assignment, the consumer stores the last attest id it has
-durably consumed. It calls:
+For each tracked assignment, the consumer durably stores the complete set of
+attest ids it has observed. Every reconciliation begins at the start of the
+assignment trail and reads the whole trail in one call:
 
 ```text
-tightbeam attests <assignmentId> --limit <n> [--after <lastAttestId>]
+tightbeam attests <assignmentId>
 ```
 
-and follows `nextAfter` while `hasMoreAfter` is true. The equivalent agent REST
-call is authenticated `POST /agent/dispatch` with body:
+The equivalent agent REST call is authenticated `POST /agent/dispatch` with
+body:
 
 ```json
-{"verb":"attests","params":{"assignmentId":"<assignmentId>","after":"<lastAttestId>","limit":<n>}}
+{"verb":"attests","params":{"assignmentId":"<assignmentId>"}}
 ```
 
-The first reconciliation may omit `after`. The read returns the exact stored
-rows in immutable `(ts, id)` order. The consumer selects the progress and
-acknowledgment rows its typed-progress use requires, suppresses already-seen
-attest ids, processes each remaining id once, and advances the per-assignment
-cursor only after durable consumption. It does not use note equality,
-`effectKind`, `occurredAt`, or socket `seq` as identity.
+The read returns every exact stored row in deterministic `(ts, id)` order, but
+that order is not append-monotonic: UUIDv4 ids and wall-clock timestamps allow
+a later commit to sort before an earlier one. Therefore recovery does not pass
+`after` or `limit`, and the consumer never uses `nextAfter`, the last returned
+id, the greatest timestamp, or the greatest socket sequence as durable
+recovery state. The existing paged read remains available for interactive
+audit traversal, outside this recovery contract.
+
+At the end of a successful full read, the consumer unions every returned id
+with live-buffer ids, computes `unseen = union - durableSeenIds`, processes
+each unseen progress or acknowledgment fact once by canonical id, then
+durably adds every returned or buffered attest id to `durableSeenIds`. It does
+not use note equality, `effectKind`, `occurredAt`, `(ts, id)` position, or
+socket `seq` as identity. If processing stops partway through the difference,
+the fact's consumer-side effect and insertion of its id into the seen set must
+commit atomically; when the effect target cannot share that transaction, the
+consumer makes the effect idempotent under the canonical attest id. Merely
+recording the id before its effect could commit would lose the fact, while
+performing a non-idempotent effect before recording the id could duplicate it.
+Retrying the full read is safe under either supported shape.
 
 A consumer reconciles after its first subscription, every reconnect, its own
 restart, a gateway restart, a slow-consumer close, any observed in-connection
 sequence gap, and any other interval in which it cannot prove continuous live
 delivery. To close the subscribe/query race without server history, it first
 reaches `subscription_ready`, buffers subsequent matching live notices, walks
-the durable query from its prior cursor to exhaustion, then unions buffered
-notices and query rows by attest id before resuming ordinary live processing.
-An attest committed before subscription readiness is found by the query; one
-committed after readiness is found by the live buffer, the query, or both.
+the complete unpaged durable query, then unions buffered notices and query rows
+by attest id before resuming ordinary live processing. An attest committed
+before subscription readiness is found by the full query, even when it sorts
+before every previously seen row. One committed after
+readiness is found by the live buffer, the query, or both. A later full read
+also finds it independently of `(ts, id)` position.
 
 Recovery scope is the exact assignment id. Existing live filters continue to
 govern best-effort notices, and the existing `attests` principal gate governs
 readback. This clause does not turn a subscription filter into a query, add a
 cross-assignment scan, or widen visibility. A missing or foreign cursor returns
-`cursor_not_found`; the consumer reports the assignment and cursor and does not
-silently reset its watermark. Current attest rows have no supported deletion
-or compaction path. Any future retention change must preserve every retained
-cursor's ordered successor rows or amend this contract with a replacement
-recovery seam before it ships.
+`cursor_not_found` only on the separate paged audit surface; recovery supplies
+no cursor. Current attest rows have no supported deletion or compaction path.
+Any future retention change must preserve unseen durable rows until
+reconciliation or amend this contract with a replacement recovery seam before
+it ships.
 
 ### 7. Operating-manual seed and pattern
 
@@ -576,8 +607,8 @@ requirement ids they verify.
    values, foreign keys, and rowids match their predecessor values; each row
    projects `effectKind: null`; a historical progress row after an armed
    watermark increments `historicalUntypedProgress` and earns no effect. An
-   `attests --after` cursor that names a preserved predecessor row returns its
-   exact ordered successor rows after migration and gateway restart.
+   unpaged `attests` reconciliation after migration and gateway restart returns
+   every preserved id for comparison with the consumer's durable seen-id set.
 11. **A11 — migration restart and shape refusal (R13, R26).** Given the
     predecessor fixture, when a forced exception interrupts migration after
     copy and in a separate run after table replacement, then each transaction
@@ -640,26 +671,37 @@ requirement ids they verify.
       kind, and stored `effectKind` equal the mutation response and durable
       row. The socket `seq` is asserted only as connection-local delivery
       order.
-    - **Disconnected recovery.** After the consumer durably records a prior
-      attest id and disconnects, both rows are filed. No live backlog is
-      expected. `attests --after <prior> --limit 1`, followed through
-      `nextAfter`/`hasMoreAfter`, returns both exact ids once in `(ts, id)`
-      order, including a fixture where the rows share one timestamp.
+    - **Disconnected recovery across nonmonotonic order.** After the consumer
+      durably records a prior id in its seen-id set and disconnects, a later
+      row is inserted with the same timestamp and a lexically lower UUID. A
+      separate fixture appends a later row after forcing its wall-clock
+      timestamp below the prior row. No live backlog is expected. In each
+      fixture an unpaged `attests <assignmentId>` read includes both exact ids,
+      and the set difference returns the later appended id exactly once even
+      though it sorts before the prior id. A control assertion proves
+      `--after <prior>` would return neither regression row and is not used for
+      recovery.
     - **Reconnect race and duplicate suppression.** The consumer reconnects,
       reaches `subscription_ready`, buffers live notices, and walks the query
       while a barrier releases one filing. Both legal commit positions —
-      before and after the first query page — converge to the same id set.
-      A row delivered by both paths is processed once by id; two distinct ids
-      with byte-identical kind, note, timestamp, and effect kind remain two
-      facts.
+      before and after the unpaged query statement — converge to the same id
+      set through the query, live buffer, or both. A row delivered by both
+      paths is processed once by id; two distinct ids with byte-identical kind,
+      note, timestamp, and effect kind remain two facts. Forced consumer
+      crashes at the effect/seen-id boundary prove the shared-transaction form
+      commits both or neither and the external-effect form safely retries by
+      canonical attest-id idempotency.
     - **Gateway and consumer restart.** With the database preserved and the
       live hub replaced, a fresh gateway plus a fresh consumer holding only
-      the prior attest-id cursor recover the same rows, ids, kinds, and stored
-      types. The test asserts the new hub emits no historical notice.
-    - **Gap and cursor failures.** An in-connection `seq` gap triggers the same
-      query sweep. A nonexistent cursor and a cursor from another assignment
-      return byte-equivalent `cursor_not_found` shapes and do not advance the
-      consumer cursor; zero or malformed limits return `invalid`.
+      the durable seen-id set recover the same rows, ids, kinds, and stored
+      types through a new unpaged read. This is run for both the same-timestamp
+      lower-UUID and wall-clock-regression fixtures. The test asserts the new
+      hub emits no historical notice.
+    - **Gap and read failures.** An in-connection `seq` gap triggers the same
+      unpaged reconciliation. A transport failure, missing principal, process
+      principal, and unknown assignment leave the durable seen-id set
+      byte-identical. The supported retry begins another unpaged read; it does
+      not invent or resume a cursor.
     - **Authorization, filter scope, and privacy.** The existing permitted
       session and user principals recover the same rows; a process and missing
       principal receive the R23 403 failures; an unknown assignment receives
