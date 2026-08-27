@@ -62,6 +62,13 @@ from a line that lacks that plane. It does not authorize a REST route family,
 map REST proof to the gateway mutation carrier, change an elected target, or
 weaken the F4 projection.
 
+A-27a successor review: exact revision
+`91f5a786ccba6673201140de1759c0aca8839f01` received changes-requested verdict
+`att_51255efe-4c82-4a05-800d-63039b874514` and report `art_de65e5dc`. Its sole
+finding requires the REST-present proof arm to assert nonterminal key-set
+compatibility and hidden-id `not_found` privacy, rather than capture those bytes
+without a required result.
+
 This contract supersedes only the owner-scoped operator-request read projection,
 terminal-attribution, integrity, and raiser-delivery clauses of
 `escalation-substrate-v1.md` and any candidate client projection that omits the
@@ -1006,8 +1013,15 @@ gateway-wire results:
 For the REST-present arm, the lane also captures real base and candidate bytes
 from `GET /api/decision-requests` and `GET /api/decision-requests/:id` for the
 same nonterminal, ruled, hidden-id, and impossible-shape fixtures. Candidate
-list and detail contain byte-equal terminal fields. An admitted impossible row
-returns the exact R4c F4 error envelope and emits no item or partial collection.
+collection and detail items for each `open`, `withdrawn`, and `superseded`
+fixture have the same key set as their corresponding captured base items. They
+contain neither `ruledViaPrincipal` nor `ruledViaSessionState` nor a
+terminal-only extension. For a complete hidden id, the candidate collection
+omits the item and the candidate detail response equals the captured predecessor
+`not_found` status, body, and application headers; neither candidate request
+writes integrity evidence. Candidate list and detail contain byte-equal terminal
+fields for the ruled fixture. An admitted impossible row returns the exact R4c
+F4 error envelope and emits no item or partial collection.
 
 For the REST-absent arm, the route-inventory captures replace the REST response
 captures. The lane does not call `/agent/dispatch` a REST route, wrap its result
