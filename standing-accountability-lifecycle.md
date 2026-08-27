@@ -9,7 +9,7 @@ This spec is the authoritative bounded amendment for these clauses:
 |---|---|
 | `accountability-constitution-v1.md` | Section 1 guarantee 3: a standing assignment satisfies Patrol through AR3's standing-accountability production, not a completion prod. |
 | `supervision-v1.md` | The invariant, stall predicate, prod lifecycle items 1-3, and the “no standing reminders” paragraph: AR3 supplies the standing lifecycle's distinct receipt, prompt, and due production. |
-| `supervision-impl-v1.md` | The `:prod_ladder` turn-end slot, Goals 1-3, the periodic-sweep non-goal, and Self-driving liveness: AR3 adds no sweep and specializes the existing per-assignment entitlement by stored lifecycle kind. |
+| `supervision-impl-v1.md` | The `:prod_ladder` turn-end slot, Goals 1-3, the periodic-sweep non-goal, Self-driving liveness, and the no-terminal due-entitlement deferral: AR3 adds no sweep and specializes the existing per-assignment entitlement by stored lifecycle kind. |
 | `effort-checkin-v2.md` | Design item 1 and Acceptance items 1-3: `dispatch` arms effort check-in only for a discrete assignment. |
 | `work-item-brackets-v1.md` | Bracket 1 and Bracket 2 assignment-cancellation clauses: a standing assignment is custody, and its cancellation receipt uses T4. |
 | `attest-v1.md` | The closed kind vocabulary, non-terminal filing behavior, response shape, CLI usage, and tests: T6 adds holder-filed `reaffirmation`. |
@@ -159,6 +159,10 @@ A6. The existing supervision entitlement stores a positive
 provides durable wake delivery, counters, and escalation. AR3 specializes those seams
 by immutable lifecycle kind.
 
+A7. At the A2 baseline, a due entitlement whose holder has no terminal row re-arms with
+`basisKind = no_terminal` and produces no prod. AR3 retains that rule for a discrete
+assignment and excludes a standing assignment from it.
+
 ## Invariants
 
 I1. Each assignment has exactly one lifecycle kind. A new assignment stores the kind
@@ -197,9 +201,9 @@ discrete assignment.
 
 I10. A due standing assignment with no valid receipt, pending continuation, queued or
 running turn, current blocking fact, or terminal disposition produces one
-standing-accountability prod. Its empty answer advances the existing counter and
-escalation ladder. Its prompt offers reaffirmation, continuation, or surrender and
-does not offer completion.
+standing-accountability prod. A holder with zero terminal-turn history remains eligible.
+The prod's empty answer advances the existing counter and escalation ladder. Its prompt
+offers reaffirmation, continuation, or surrender and does not offer completion.
 
 I11. A wake-cancellation receipt can use `standing_accountability` only when its id
 names an open standing assignment whose holder is active and the receipt's primary
@@ -247,11 +251,20 @@ those candidates by `(openedAt, id)` as it does now.
 The standing-accountability candidate query admits open standing assignments only. It
 orders eligible candidates by `(dueAt, openedAt, id)`. A standing candidate becomes
 due when its stored entitlement `dueAt` is at or before the evaluator time and the
-existing pending-turn, pending-wake, blocking-fact, and terminal guards admit it. The
-turn-end, scheduled, and recovery entry points run this query through the existing
-supervision evaluator; a new terminal is not required. The evaluator returns
-`standing_not_due` without a claim when a holder has standing custody but no due
-candidate.
+existing pending-turn, pending-wake, blocking-fact, holder-active, and
+terminal-disposition guards admit it. The standing branch does not apply the discrete
+evaluator's `no_terminal` deferral. The turn-end, scheduled, and recovery entry points
+run this query through the existing supervision evaluator; a new terminal is not
+required. The evaluator returns `standing_not_due` without a claim when a holder has
+standing custody but no due candidate.
+
+When the holder has no terminal row, the standing evaluator claims the entitlement's
+current armed generation at its stored `dueAt`. It does not increment or re-arm that
+generation before the claim. The claim records `lastAttemptGeneration` as that current
+generation, passes `terminalSeq = null` to the existing nullable watermark seam, writes
+`cause = standing_due` and `principal = process:tightbeam`, and retains the entitlement's
+existing `basisKind` and `basisId`. It writes no `no_terminal` re-arm or
+`supervision_entitlement_rearmed` event.
 
 The discrete production has priority when a turn-end evaluation finds both a discrete
 candidate and a due standing candidate. Otherwise, the evaluator claims one due
@@ -275,7 +288,8 @@ The reaffirmation re-arm records `basisKind = standing_reaffirmation`,
 `principal = session:<holderKey>` on the entitlement transition and its lifecycle
 event. The standing-progress re-arm records `basisKind = progress`, the progress attest
 id, `cause = progress`, and the same holder principal. The schema widens the closed
-entitlement basis and cause vocabularies by `standing_reaffirmation`.
+entitlement basis vocabulary by `standing_reaffirmation` and the closed cause vocabulary
+by `standing_reaffirmation` and `standing_due`.
 
 The gateway returns `reaffirmation_requires_standing` when the holder files
 reaffirmation against a discrete assignment with this message:
@@ -413,10 +427,14 @@ without a pending wake, queued or running turn, current blocking fact, or receip
 `standing_accountability`, and uses the exact AR3 prompt. The transaction writes no
 effort generation, effort decision request, or completion-rail action.
 
-**Given** equivalent due fixture rows and no terminal since the entitlement was armed,
+**Given** equivalent due fixture rows whose active holder has zero rows in `turns`,
 **when** the test invokes the scheduled and recovery entry points separately at the same
-fixture clock, **then** each path produces the same tier-1 standing-accountability result
-on its isolated database. The test invokes the entry points directly and does not sleep.
+fixture clock, **then** each path claims the current armed entitlement generation and
+produces the same tier-1 standing-accountability result on its isolated database. Each
+claim leaves `supervision_watermarks.lastEvaluatedTerminal = null` and stores
+`cause = standing_due`, the exact generation, and the principal from AR3. It leaves no
+`no_terminal` re-arm or re-arm event. The test invokes the entry points directly and
+does not sleep.
 
 **When** the holder files `tightbeam attest <assignmentId> --kind reaffirmation`,
 **then** the gateway stores one non-terminal reaffirmation attest, leaves the assignment
