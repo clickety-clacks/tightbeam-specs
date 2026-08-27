@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>G4 successor exact-commit review — 6509ce91</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#121a2c;--ink:#e8edf7;--muted:#9aa8bd;--line:#293650;--ok:#50d890;--accent:#79a8ff;--code:#d7e3ff}*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#08101f,#11182a);color:var(--ink);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,sans-serif}main{max-width:1120px;margin:0 auto;padding:40px 24px 72px}header,.card{background:rgba(18,26,44,.94);border:1px solid var(--line);border-radius:16px;padding:24px;margin-bottom:18px;box-shadow:0 14px 36px #0005}h1{font-size:30px;margin:0 0 8px}h2{font-size:19px;margin:0 0 14px}.eyebrow{color:var(--accent);text-transform:uppercase;letter-spacing:.13em;font-size:12px;font-weight:700}.verdict{display:inline-block;margin-top:14px;padding:7px 12px;border:1px solid #3d9c6b;border-radius:999px;color:var(--ok);font-weight:800}.muted{color:var(--muted)}code{color:var(--code);overflow-wrap:anywhere}table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:top;padding:11px 12px;border-bottom:1px solid var(--line)}th{color:#bcd0f5;font-size:12px;text-transform:uppercase;letter-spacing:.07em}.status{color:var(--ok);font-weight:750}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.metric{background:#0d1425;border:1px solid var(--line);border-radius:12px;padding:15px}.metric strong{display:block;font-size:23px;color:var(--ok)}ul{margin:8px 0 0;padding-left:20px}@media(max-width:760px){.grid{grid-template-columns:1fr}table{font-size:13px}th,td{padding:9px 7px}}
+</style>
+</head>
+<body><main>
+<header>
+  <div class="eyebrow">Independent exact-commit specification review</div>
+  <h1>G4 closed REST error envelope successor</h1>
+  <p class="muted">Review assignment <code>asg_069639c7-ad41-4aa4-b726-e67af73b832f</code> · producer <code>asg_9dde6cb0-9ff6-42e7-8c78-43eb4e5fef2e</code></p>
+  <div class="verdict">REVIEWED CLEAN</div>
+</header>
+
+<section class="card">
+  <h2>Exact custody</h2>
+  <table><thead><tr><th>Evidence</th><th>Verified value</th><th>Result</th></tr></thead><tbody>
+    <tr><td>Remote commit</td><td><code>6509ce91a946347a4a4151728d4bd9c8c7fe6cc4</code></td><td class="status">Exact</td></tr>
+    <tr><td>Parent</td><td><code>c94b7639076266475ec20c2b0e62bf47c712b912</code></td><td class="status">Exact</td></tr>
+    <tr><td>REST SHA-256</td><td><code>72b5ab46d83e3acb857c69e09dc199f3d0ddd27c198c171517a5871e4b9faebb</code></td><td class="status">Match</td></tr>
+    <tr><td>Wire SHA-256</td><td><code>f2af34b3d3ba907f1fae3b67cfdec0120d59b3ccc1e8ed047791d3d2296f1153</code></td><td class="status">Match</td></tr>
+    <tr><td>Producer manifest SHA-256</td><td><code>fd83c8190b71b149856b127440c3489f6c68caa764b3b392b3a00c938cdb3d07</code></td><td class="status">Match</td></tr>
+    <tr><td>Changed canonical files</td><td><code>rest-state-api-v1.md</code>, <code>rest-state-api-v1-wire-schema.md</code></td><td class="status">Two only</td></tr>
+  </tbody></table>
+</section>
+
+<section class="card">
+  <h2>Successor closure</h2>
+  <div class="grid">
+    <div class="metric"><strong>55 / 55</strong>canonical route templates mapped</div>
+    <div class="metric"><strong>0</strong>duplicate or missing routes</div>
+    <div class="metric"><strong>2</strong>G4 custody files, unambiguous</div>
+  </div>
+  <ul>
+    <li>F1 is closed by one exact route-template-to-resource-literal table. REST owns it; the wire companion binds to it. A35 enumerates every row exactly once and rejects absent, duplicate, inferred, or query-dependent mappings.</li>
+    <li>F2 is closed by distinguishing this two-file G4 candidate set from the prior three-file ExecutionMap/Toplines amendment set.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>Clause conformance</h2>
+  <table><thead><tr><th>Clause</th><th>Evidence</th><th>Assessment</th></tr></thead><tbody>
+    <tr><td>Remote custody</td><td>Fresh reviewer clone; remote branch resolves to exact commit and hashes.</td><td class="status">Satisfied</td></tr>
+    <tr><td>One closed envelope</td><td>Outer key order and three closed <code>RestError</code> variants remain unchanged.</td><td class="status">Satisfied</td></tr>
+    <tr><td>Route resource literals</td><td>55 unique templates; exact literals; no coverage delta against R2/R3/R3a.</td><td class="status">Satisfied</td></tr>
+    <tr><td>REST / wire identity</td><td>Wire points to the sole R4c table and requires the same success literal.</td><td class="status">Satisfied</td></tr>
+    <tr><td>Status and code closure</td><td>Ten-condition mapping unchanged; no additional code or status.</td><td class="status">Satisfied</td></tr>
+    <tr><td>Message and details</td><td>Only <code>identity_not_yours</code> carries <code>message</code>; only <code>ambiguous_id</code> carries sorted candidate ids.</td><td class="status">Satisfied</td></tr>
+    <tr><td>Headers and bytes</td><td>Exact JSON, no whitespace, <code>Content-Type</code> and <code>Cache-Control</code>; prohibited headers unchanged.</td><td class="status">Satisfied</td></tr>
+    <tr><td>Selection precedence</td><td>R4d seven-stage precedence and A36 paired failures unchanged.</td><td class="status">Satisfied</td></tr>
+    <tr><td>Settled exceptions</td><td>ExecutionMap R4a/R4b, aliases, version, download, empty-name and null-config cases preserved.</td><td class="status">Satisfied</td></tr>
+    <tr><td>Shared projections</td><td>R7/R7a, R8/R8b, R9, AU4 and the adopted six serializer shapes are untouched.</td><td class="status">Satisfied</td></tr>
+    <tr><td>Scope / YAGNI</td><td>Diff contains only F1/F2 specification closure; no product code, target, merge, deploy, or release.</td><td class="status">Satisfied</td></tr>
+  </tbody></table>
+</section>
+
+<section class="card">
+  <h2>Review conclusion</h2>
+  <p>No blocking, important, or minor finding remains at exact commit <code>6509ce91a946347a4a4151728d4bd9c8c7fe6cc4</code>. This verdict does not transfer to another revision.</p>
+</section>
+</main></body></html>
