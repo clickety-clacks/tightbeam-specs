@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>REST G4 error-envelope review — c94b7639</title>
+  <style>
+    :root { color-scheme: light; --ink:#172033; --muted:#58657a; --line:#d8dee8; --paper:#f7f8fb; --panel:#fff; --bad:#9f1d24; --warn:#8a5500; --good:#146c43; --blue:#2456a6; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.5 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { max-width:1180px; margin:0 auto; padding:32px 24px 64px; }
+    h1,h2,h3 { line-height:1.18; margin:0 0 12px; }
+    h1 { font-size:2rem; } h2 { margin-top:32px; font-size:1.35rem; } h3 { margin-top:20px; font-size:1.05rem; }
+    p { margin:8px 0 14px; } code { font:0.9em ui-monospace,SFMono-Regular,Consolas,monospace; overflow-wrap:anywhere; }
+    .hero,.card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px; }
+    .verdict { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:18px; align-items:start; border-left:6px solid var(--bad); }
+    .badge { display:inline-block; border-radius:999px; padding:4px 10px; font-weight:700; white-space:nowrap; }
+    .bad { color:var(--bad); background:#fdecee; } .warn { color:var(--warn); background:#fff3d6; } .good { color:var(--good); background:#e6f5ed; }
+    .meta { color:var(--muted); font-size:.92rem; }
+    table { width:100%; border-collapse:separate; border-spacing:0; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden; table-layout:fixed; }
+    th,td { text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--line); min-width:0; overflow-wrap:anywhere; }
+    th { background:#eef2f8; font-size:.83rem; text-transform:uppercase; letter-spacing:.035em; }
+    tr:last-child td { border-bottom:0; }
+    .status { font-weight:700; }
+    .finding { border-left:4px solid var(--bad); }
+    .finding.important { border-left-color:var(--warn); }
+    .cite { color:var(--muted); font-size:.9rem; }
+    .source { background:#111827; color:#e5e7eb; padding:12px; border-radius:8px; overflow-wrap:anywhere; }
+    ul { padding-left:22px; } li { margin:6px 0; }
+    @media (max-width:760px) { .verdict { grid-template-columns:1fr; } main { padding:20px 12px 48px; } th,td { padding:8px; } table { table-layout:auto; } }
+  </style>
+</head>
+<body>
+<main>
+  <section class="hero verdict">
+    <div>
+      <div class="badge bad">VERDICT: CHANGES REQUESTED</div>
+      <h1>REST G4 closed error-envelope review</h1>
+      <p>The candidate defines one closed error type, exact variants, status mapping, headers, precedence, preserved exceptions, and deterministic acceptance. It is not yet buildable to exact bytes because most routes do not have a literal canonical <code>resource</code> value. The spec-homing section also gives both two-file and three-file review sets for the current amendment.</p>
+    </div>
+    <div class="meta">
+      <div>Reviewed assignment: <code>asg_9dde6cb0-9ff6-42e7-8c78-43eb4e5fef2e</code></div>
+      <div>Exact commit: <code>c94b7639076266475ec20c2b0e62bf47c712b912</code></div>
+      <div>Parent: <code>2669ab73152193bf0a7f6d7e8f1906142bbed35b</code></div>
+      <div>Review date: 2026-08-26 23:30 PT</div>
+    </div>
+  </section>
+
+  <h2>Custody and evidence</h2>
+  <div class="card">
+    <ul>
+      <li>Remote branch <code>origin/spec/rest-g4-error-envelope-v1</code> contains the exact reviewed commit.</li>
+      <li><code>rest-state-api-v1.md</code> SHA-256: <code>7eeb49fd58e7b1eb35b5762c185a11460ccf8fcb05396425b5001f91a64cf0a6</code>.</li>
+      <li><code>rest-state-api-v1-wire-schema.md</code> SHA-256: <code>b37e48ecc90dc0400f0d64cea9376179ca473c7f6c6237b4989208016cb139c1</code>.</li>
+      <li>Deterministic two-file manifest SHA-256: <code>185a3d87a396b066ca0c9c387d4def9bf857e1b8df02c3431bf1ccc35f007501</code>.</li>
+      <li>Producer artifact: <code>art_d933d230</code>. Recon verdict/report: <code>att_556f55ae-f1d2-4c83-b55d-9daf06aae929</code> / <code>art_1d389e8e</code>.</li>
+      <li><code>git diff --check c94b7639^</code> passed. The repository exposes no separate spec-lint command.</li>
+    </ul>
+  </div>
+
+  <h2>Findings</h2>
+  <section class="card finding">
+    <h3>F1 — Blocking: exact error bytes depend on undefined resource-label literals</h3>
+    <p>R4c and the wire companion require every error to copy the route's exact success-envelope <code>resource</code> value. The spec gives literal values only for <code>assignments</code> and <code>execution map</code>. R2 and R3 enumerate many other routes, while R7 uses human resource names without stating that those table labels are the encoded envelope strings.</p>
+    <p>Two confident implementations can therefore differ. For <code>GET /api/facts</code>, one can encode <code>"facts"</code> from the R7 row, while another can encode <code>"condition facts"</code> from R8's statement that this is the exact firehose resource for the same resource. Similar ambiguity exists for <code>/api/catalog/harnesses</code>, transcript messages, coordination share, work-item trace, and digest members. Both implementations satisfy the current cross-reference, but their exact error bytes differ. That violates the G4 goal and makes A35 undecidable for the full route surface.</p>
+    <p class="cite">Evidence: <code>rest-state-api-v1.md:128-130,201-203,288-300,309-370,386-390,436-442,683-723,859-862,1474-1481</code>; <code>rest-state-api-v1-wire-schema.md:92-111</code>.</p>
+    <p><strong>Deletion test:</strong> deleting <code>resource</code> from generic errors would remove the ambiguity, but it would break the preserved ExecutionMap bytes and the commissioned envelope. Acceptance as a named failure would defeat deterministic client decoding. A closed route-to-resource-label mapping is therefore the smallest viable closure.</p>
+  </section>
+
+  <section class="card finding important">
+    <h3>F2 — Important: spec homing names both a two-file and three-file review set</h3>
+    <p>The G4 header and the inserted homing clause say the exact candidate set is the main REST spec plus its wire companion. The same homing section then says “This amendment” remains a candidate until one exact revision of its three-file canonical set passes review and lands. A reviewer or lander can reasonably treat either statement as controlling, so the required custody/review boundary is not decidable from the document.</p>
+    <p class="cite">Evidence: <code>rest-state-api-v1.md:3-10,103-120</code>.</p>
+    <p><strong>Deletion test:</strong> deletion or precise qualification of the stale three-file sentence closes this finding. Adding another lifecycle mechanism is unnecessary.</p>
+  </section>
+
+  <h2>Clause table</h2>
+  <table>
+    <thead><tr><th style="width:20%">Clause group</th><th style="width:14%">Result</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr><td>Canonical structure</td><td><span class="status good">Satisfied</span></td><td>Goal, named non-goals, falsifiable assumptions, invariants, architecture, terms, acceptance, open questions, spec homing, and operating-guidance impact are present.</td></tr>
+      <tr><td>Exact custody</td><td><span class="status warn">Unsatisfied</span></td><td>Remote commit and hashes are proven, but the current amendment's two-file versus three-file review set conflicts. F2.</td></tr>
+      <tr><td>One closed envelope</td><td><span class="status good">Satisfied</span></td><td>I8, architecture, R4c, and wire <code>RestError</code> define one encoder and three closed variants.</td></tr>
+      <tr><td>Code/status/message/details</td><td><span class="status good">Satisfied</span></td><td>R4c closes ten codes and statuses. Only <code>identity_not_yours</code> carries <code>message</code>; only <code>ambiguous_id</code> carries <code>candidateIds</code>; other detail fields are declined.</td></tr>
+      <tr><td>Headers and JSON bytes</td><td><span class="status good">Satisfied</span></td><td>R4c fixes key order, whitespace, content type, cache control, forbidden application headers, and no redirects.</td></tr>
+      <tr><td>Error precedence</td><td><span class="status good">Satisfied</span></td><td>T8 and R4d order authentication, raw-query decode, principal resolution, query validation, cursor validation, visibility/existence, and projection.</td></tr>
+      <tr><td>Full-route resource label</td><td><span class="status bad">Unsatisfied</span></td><td>R4c requires an exact success resource value without freezing one for most R2/R3 routes. F1.</td></tr>
+      <tr><td>Preserved exceptions</td><td><span class="status good">Satisfied</span></td><td>R4c/R4d and A37 preserve ExecutionMap bytes, positive empty results, config null, collection omission, aliases, version, and asset-download behavior.</td></tr>
+      <tr><td>Deterministic acceptance</td><td><span class="status bad">Unsatisfied</span></td><td>A35-A37 cover variants, precedence, and preserved cases, but A35 cannot assert full-surface exact resource bytes until F1 is closed.</td></tr>
+      <tr><td>Scope and YAGNI</td><td><span class="status good">Satisfied</span></td><td>The change is confined to two spec files, adds no product code or target, and declines retries, presentation, proxy/network/process failures, methods, aliases, version, and downloads.</td></tr>
+      <tr><td>Operating guidance</td><td><span class="status good">Satisfied</span></td><td>The architecture records “Operating-guidance impact: none” and adds no agent-facing capability.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Verdict basis</h2>
+  <div class="source">
+    <div><strong>Changes requested.</strong> F1 blocks deterministic implementation of the commissioned exact error bytes across the required read surface. F2 leaves the review/landing set ambiguous. No other important or blocking defect was found. No product code, target, merge, deployment, release, or spec correction was performed.</div>
+  </div>
+</main>
+</body>
+</html>
