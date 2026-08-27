@@ -103,10 +103,10 @@ Authority and inputs:
 ## Spec homing
 
 The canonical spec lives only in the `tightbeam-specs` repository as
-`rest-state-api-v1.md`. This amendment's exact canonical set is
-`rest-state-api-v1.md`, `rest-state-api-v1-wire-schema.md`, and
-`event-firehose-v1.md`; a change to an ExecutionMap envelope, dependency
-entry, or R8b mapping lands those coupled files in one reviewed revision.
+`rest-state-api-v1.md`. The ExecutionMap/Toplines amendment's exact canonical
+set is `rest-state-api-v1.md`, `rest-state-api-v1-wire-schema.md`, and
+`event-firehose-v1.md`; a change to an ExecutionMap envelope, dependency entry,
+or R8b mapping lands those coupled files in one reviewed revision.
 G4 changes the shared error type without changing an encoded ExecutionMap
 envelope, dependency entry, or firehose mapping. Its exact candidate set is
 therefore `rest-state-api-v1.md` and `rest-state-api-v1-wire-schema.md`.
@@ -115,9 +115,9 @@ therefore `rest-state-api-v1.md` and `rest-state-api-v1-wire-schema.md`.
 amendment. A worktree, artifact row, transcript, adjudication ledger, or review
 report is evidence, not canonical custody. Canonical r3 passed joint
 independent review at `att_45676d30` and landed on the canonical branch in
-merge `c84b1b8dc856861baeaa7b5ff781317ded568cb1`. This amendment remains a
-candidate until one exact revision of its three-file canonical set passes
-independent review and lands in `tightbeam-specs`.
+merge `c84b1b8dc856861baeaa7b5ff781317ded568cb1`. G4 remains a candidate until
+one exact revision of its two-file candidate set passes independent review
+and lands in `tightbeam-specs`.
 
 ## Goal
 
@@ -440,6 +440,70 @@ the route's exact success-envelope resource value, including on `401`; an
 error does not mint an error-only resource label.
 For example, an assignment detail miss encodes exactly
 `{"schemaVersion":1,"resource":"assignments","error":{"code":"not_found"}}`.
+
+Each canonical GET route template has exactly this `resource` value in every
+success and R4c error envelope. A query string does not change the value.
+
+| Canonical GET route template | Exact `resource` value |
+|---|---|
+| `/api/org` | `org` |
+| `/api/catalog/harnesses` | `harness catalog` |
+| `/api/hosts` | `hosts` |
+| `/api/hosts/:host` | `hosts` |
+| `/api/sessions` | `sessions` |
+| `/api/sessions/:sessionKey` | `sessions` |
+| `/api/sessions/:sessionKey/messages` | `transcript messages` |
+| `/api/sessions/:sessionKey/coordination-share` | `coordination share` |
+| `/api/work-items` | `work items` |
+| `/api/work-items/:id` | `work items` |
+| `/api/work-items/:id/trace` | `work-item trace` |
+| `/api/assignments` | `assignments` |
+| `/api/assignments/:id` | `assignments` |
+| `/api/assignments/:id/attests` | `attests` |
+| `/api/attests` | `attests` |
+| `/api/wakes` | `wakes` |
+| `/api/wakes/:wakeId` | `wakes` |
+| `/api/wakes/:wakeId/digest-members` | `digest members` |
+| `/api/turns` | `turns` |
+| `/api/turns/:seq` | `turns` |
+| `/api/artifacts` | `artifacts` |
+| `/api/artifacts/:artifactId` | `artifacts` |
+| `/api/assets` | `assets` |
+| `/api/assets/:assetId` | `assets` |
+| `/api/decision-requests` | `decision requests` |
+| `/api/decision-requests/:id` | `decision requests` |
+| `/api/read-markers` | `read markers` |
+| `/api/read-markers/:scopeKey` | `read markers` |
+| `/api/roles` | `roles` |
+| `/api/toplines` | `toplines` |
+| `/api/toplines/:id` | `toplines` |
+| `/api/execution-map` | `execution map` |
+| `/api/execution-map/tree` | `execution map` |
+| `/api/execution-map/subtrees/:workItemId` | `execution map` |
+| `/api/execution-map/assignments` | `execution map` |
+| `/api/facts` | `condition facts` |
+| `/api/critical-state` | `critical state` |
+| `/api/identity` | `identity` |
+| `/api/identity/:name` | `identity` |
+| `/api/archetypes` | `archetypes` |
+| `/api/archetypes/:name` | `archetypes` |
+| `/api/kungfu` | `kungfu` |
+| `/api/kungfu/:name` | `kungfu` |
+| `/api/guidance` | `guidance` |
+| `/api/guidance/:name` | `guidance` |
+| `/api/rails` | `rails` |
+| `/api/rails/:name` | `rails` |
+| `/api/config` | `config` |
+| `/api/config/:key` | `config` |
+| `/api/host-env` | `host environment` |
+| `/api/harness-processes` | `harness processes` |
+| `/api/users` | `users` |
+| `/api/users/:userId` | `users` |
+| `/api/devices` | `devices` |
+| `/api/devices/:deviceId` | `devices` |
+
+Compatibility aliases, `/version`, and `/download/:assetId` do not enter this
+table because R4c does not govern their response envelopes.
 
 The closed status and code mapping is:
 
@@ -1471,14 +1535,19 @@ inline SQL, a second visibility predicate, a second item serializer, a
 caller-selected field/sort/join parameter, and a candidate-only session
 projection.
 
-A35. Given canonical assignment collection and detail routes and one fixture
-that triggers each R4c condition without a second failure, when the client
-receives each error, then the status, exact body bytes, application headers,
-and resource label equal R4c and the wire companion. The test covers each
-closed code once. It uses an ExecutionMap ambiguous-prefix request for
-`ambiguous_id` and a mismatched session bearer for the sole message-bearing
-`identity_not_yours` variant. It rejects an extra code, key, whitespace byte,
-application header, partial item, or changed key order.
+A35. Given one R4c error request for every canonical GET route template in the
+R4c route-to-resource table, when the client receives each error, then its
+exact `resource` value equals that route's table row. The table-driven test
+enumerates every row exactly once and rejects an absent, duplicate, inferred,
+or query-dependent route mapping. Given canonical assignment collection and
+detail routes and one fixture that triggers each R4c condition without a
+second failure, when the client receives each error, then the status, exact
+body bytes, application headers, and resource label equal R4c and the wire
+companion. The test covers each closed code once. It uses an ExecutionMap
+ambiguous-prefix request for `ambiguous_id` and a mismatched session bearer for
+the sole message-bearing `identity_not_yours` variant. It rejects an extra
+code, key, whitespace byte, application header, partial item, or changed key
+order.
 
 A36. Given requests that each contain two independently failing inputs, when
 the handler evaluates them, then this table proves R4d precedence and proves

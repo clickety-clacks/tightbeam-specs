@@ -91,7 +91,9 @@ typed J below and still passes SR2/SR6 secret exclusion.
 
 Canonical REST error responses are closed top-level objects in this key order:
 `{schemaVersion:I, resource:S, error:O<RestError>}`. `schemaVersion` is exactly
-`1`. `resource` is the exact resource string in the route's success envelope.
+`1`. `resource` is the exact literal in R4c's canonical route-to-resource
+table for that route. The same literal appears in the route's success
+envelope; no other route or error-only resource literal is permitted.
 `RestError` is one of these closed variants:
 
 - `{code:S}`, where `code` is exactly one of `auth_failed`,
