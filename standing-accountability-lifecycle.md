@@ -431,8 +431,10 @@ effort generation, effort decision request, or completion-rail action.
 **when** the test invokes the scheduled and recovery entry points separately at the same
 fixture clock, **then** each path claims the current armed entitlement generation and
 produces the same tier-1 standing-accountability result on its isolated database. Each
-claim leaves `supervision_watermarks.lastEvaluatedTerminal = null` and stores
-`cause = standing_due`, the exact generation, and the principal from AR3. It leaves no
+claim sets `lastAttemptGeneration` to the fixture generation, preserves the fixture
+`generation`, `dueAt`, `basisKind`, and `basisId`, and leaves
+`supervision_watermarks.lastEvaluatedTerminal = null`. The entitlement and claim event
+store `cause = standing_due` and `principal = process:tightbeam`. The claim leaves no
 `no_terminal` re-arm or re-arm event. The test invokes the entry points directly and
 does not sleep.
 
