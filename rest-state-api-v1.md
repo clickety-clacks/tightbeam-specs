@@ -11,6 +11,15 @@ amendment adds the durable `/api/toplines` `(createdAt,id)` cursor and closed
 `transcript --name`. It leaves the ExecutionMap/firehose companion, R7 items,
 authorization, and public serializers unchanged.
 
+G4 error-contract successor, 2026-08-26: PROPOSED. This amendment applies one
+closed typed error envelope to the canonical `/api` read routes in R2, R3, and
+R3a. It changes no success envelope, resource label, R7/R7a item, R8/R8b
+mapping, authorization grant, cursor, compatibility alias, `/version`
+response, `/download/:assetId` response, firehose frame, or encoded
+ExecutionMap error. The exact candidate set for G4 is this file and
+`rest-state-api-v1-wire-schema.md`; it requires fresh independent review
+before implementation or specRef binding.
+
 Review history: exact review
 `att_90efe520-f84c-4d3b-bd09-9c36f8a0ff08` requested changes on exact
 `e4a27977477a25c3037bba164db2bc1d508bcd7a`; full report `art_bffa387b`
@@ -93,6 +102,9 @@ The canonical spec lives only in the `tightbeam-specs` repository as
 `rest-state-api-v1.md`, `rest-state-api-v1-wire-schema.md`, and
 `event-firehose-v1.md`; a change to an ExecutionMap envelope, dependency
 entry, or R8b mapping lands those coupled files in one reviewed revision.
+G4 changes the shared error type without changing an encoded ExecutionMap
+envelope, dependency entry, or firehose mapping. Its exact candidate set is
+therefore `rest-state-api-v1.md` and `rest-state-api-v1-wire-schema.md`.
 `rest-state-api-r3-adjudication.md`, `rest-vs-cli-adjudication.md`, and
 `topline-map-v1.md` remain authority inputs, not custody companions for this
 contract. A worktree, artifact row, transcript, adjudication ledger, or review
@@ -102,12 +114,19 @@ independent review at `att_45676d30` and landed in merge
 landed at `0139d9a71180a7175965473fade9b183d2b57601`; the Toplines/session lookup
 landed at `05d08b8af74a877d4dabe3dcba8250787d5d430e`; and the AU2 parity correction
 landed at `8133efdab14c5470937360a2e4be7fe595639a9d`.
+G4 remains a candidate until
+one exact revision of its two-file candidate set passes independent review
+and lands in `tightbeam-specs`.
 
 ## Goal
 
 Define a complete, authorized, deterministic REST read plane from which ATC,
 Clawline, and future clients can rebuild every admitted shared-state model and
 correlate later firehose notices without reading SQLite or replaying history.
+
+For G4, a client can classify each application error from the HTTP status,
+the closed error code, and the exact response bytes without private router or
+serializer knowledge.
 
 ## Non-goals
 
@@ -120,6 +139,10 @@ correlate later firehose notices without reading SQLite or replaying history.
 - REST v1 does not retire compatibility aliases before their clients migrate
   or decide future tailnet identity.
 - REST v1 does not authorize implementation, deployment, or client migration.
+- G4 does not define proxy, network, process-crash, undeclared-route,
+  unsupported-method, compatibility-alias, `/version`, or successful binary
+  download behavior. It does not prescribe a client's retry or presentation
+  policy.
 - REST v1 does not alias ExecutionMap telemetry through `/api/toplines`, add an
   ExecutionMap firehose class, or change the six adopted shared serializer
   shapes from `art_b1995a26` / fact 1093. Exact source invalidation notices for
@@ -142,6 +165,11 @@ test falsifies this if an admin content query reads the latter stores.
 
 AS4. Each collection has a stable public natural key. A schema test fails
 before a route ships if any item lacks that key.
+
+AS5. The router identifies a declared R2, R3, or R3a route and its canonical
+resource label before it authenticates that route's request. A route-contract
+test falsifies this if one application error cannot carry the same resource
+label as the route's success envelope.
 
 ## Invariants
 
@@ -169,6 +197,10 @@ resources. `/api/toplines[/:id]` reads durable Topline rows and memberships.
 `/api/execution-map` reads a composed snapshot of execution rows. Neither name
 aliases, replaces, or widens the other.
 
+I8. One closed error type and one encoder serve every canonical R2, R3, and
+R3a read route. A route supplies only its canonical resource label, one allowed
+error code, and the fields that the selected variant requires.
+
 ## Architecture
 
 The read plane has four seams. A principal resolver produces one authenticated
@@ -177,6 +209,9 @@ filters. The R7 serializer emits the closed wire item defined by the wire
 schema. An outer adapter places that item in a REST envelope, compatibility
 envelope, CLI result, or firehose notice. Composed views declare their source
 classes in R9 and use a dependency digest instead of a notice class.
+`Tightbeam.RestEnvelope` is the sole encoder for R4c error bytes. A route
+adapter selects a closed variant; it does not build an error object or add a
+field or application header.
 
 Operating-guidance impact: none. Canonical r4 applies the existing REST
 resource/query/serializer pattern and creates no cross-repository agent rule.
@@ -248,6 +283,20 @@ adds no table, mutation, or `execution_map.*` notice. Its underlying source
 mutations retain their R8 mappings and the marker source has the ruled R8b
 mapping. Its REST home is
 `/api/execution-map` and the three nested routes in R3a.
+
+T6. **Canonical read route** — one declared `/api` GET route in R2, R3, or
+R3a. Compatibility aliases, `/version`, `/download/:assetId`, undeclared
+paths, and unsupported methods are outside G4.
+
+T7. **Application header** — a response header selected by the REST handler.
+Protocol-managed framing and transport headers, including `Date`, `Server`,
+`Connection`, `Transfer-Encoding`, and `Content-Length`, are not application
+headers.
+
+T8. **Malformed query encoding** — an incomplete or non-hexadecimal percent
+escape, or percent-decoded query bytes that are not valid UTF-8. A decoded but
+disallowed key, repeated key, combination, type, or value is query validation,
+not malformed encoding.
 
 ## Requirements — surface
 
@@ -382,6 +431,149 @@ and error: `Content-Type: application/json; charset=utf-8` and
 application data. The JSON encoder emits the R4b key order with no
 insignificant whitespace. Unknown and forbidden selectors therefore use the
 same status, literal `not_found` body bytes, and application header bytes.
+
+R4c. Every canonical read-route error uses the closed `RestError` envelope in
+the wire companion. The encoded outer object has exactly `schemaVersion`,
+`resource`, and `error`, in that order. `schemaVersion` is `1`. `resource` is
+the route's exact success-envelope resource value, including on `401`; an
+error does not mint an error-only resource label.
+For example, an assignment detail miss encodes exactly
+`{"schemaVersion":1,"resource":"assignments","error":{"code":"not_found"}}`.
+
+Each canonical GET route template has exactly this `resource` value in every
+success and R4c error envelope. A query string does not change the value.
+
+| Canonical GET route template | Exact `resource` value |
+|---|---|
+| `/api/org` | `org` |
+| `/api/catalog/harnesses` | `harness catalog` |
+| `/api/hosts` | `hosts` |
+| `/api/hosts/:host` | `hosts` |
+| `/api/sessions` | `sessions` |
+| `/api/sessions/:sessionKey` | `sessions` |
+| `/api/sessions/:sessionKey/messages` | `transcript messages` |
+| `/api/sessions/:sessionKey/coordination-share` | `coordination share` |
+| `/api/work-items` | `work items` |
+| `/api/work-items/:id` | `work items` |
+| `/api/work-items/:id/trace` | `work-item trace` |
+| `/api/assignments` | `assignments` |
+| `/api/assignments/:id` | `assignments` |
+| `/api/assignments/:id/attests` | `attests` |
+| `/api/attests` | `attests` |
+| `/api/wakes` | `wakes` |
+| `/api/wakes/:wakeId` | `wakes` |
+| `/api/wakes/:wakeId/digest-members` | `digest members` |
+| `/api/turns` | `turns` |
+| `/api/turns/:seq` | `turns` |
+| `/api/artifacts` | `artifacts` |
+| `/api/artifacts/:artifactId` | `artifacts` |
+| `/api/assets` | `assets` |
+| `/api/assets/:assetId` | `assets` |
+| `/api/decision-requests` | `decision requests` |
+| `/api/decision-requests/:id` | `decision requests` |
+| `/api/read-markers` | `read markers` |
+| `/api/read-markers/:scopeKey` | `read markers` |
+| `/api/roles` | `roles` |
+| `/api/toplines` | `toplines` |
+| `/api/toplines/:id` | `toplines` |
+| `/api/execution-map` | `execution map` |
+| `/api/execution-map/tree` | `execution map` |
+| `/api/execution-map/subtrees/:workItemId` | `execution map` |
+| `/api/execution-map/assignments` | `execution map` |
+| `/api/facts` | `condition facts` |
+| `/api/critical-state` | `critical state` |
+| `/api/identity` | `identity` |
+| `/api/identity/:name` | `identity` |
+| `/api/archetypes` | `archetypes` |
+| `/api/archetypes/:name` | `archetypes` |
+| `/api/kungfu` | `kungfu` |
+| `/api/kungfu/:name` | `kungfu` |
+| `/api/guidance` | `guidance` |
+| `/api/guidance/:name` | `guidance` |
+| `/api/rails` | `rails` |
+| `/api/rails/:name` | `rails` |
+| `/api/config` | `config` |
+| `/api/config/:key` | `config` |
+| `/api/host-env` | `host environment` |
+| `/api/harness-processes` | `harness processes` |
+| `/api/users` | `users` |
+| `/api/users/:userId` | `users` |
+| `/api/devices` | `devices` |
+| `/api/devices/:deviceId` | `devices` |
+
+Compatibility aliases, `/version`, and `/download/:assetId` do not enter this
+table because R4c does not govern their response envelopes.
+
+The closed status and code mapping is:
+
+| HTTP status | Error code | Condition |
+|---|---|---|
+| 400 | `malformed_query` | T8 query decoding fails |
+| 400 | `invalid_as_user` | `asUser` is repeated, or a device bearer supplies it, as AU2 defines |
+| 400 | `invalid_message` | an org bearer omits `asUser` or supplies an empty value, as AU2 defines |
+| 400 | `invalid_filter` | a decoded query key, multiplicity, combination, type, or value violates R5/R6 |
+| 400 | `invalid_cursor` | AU7 rejects cursor encoding, signature, resource, direction, schema, tuple, or normalized filter fingerprint |
+| 400 | `ambiguous_id` | an R6a typed prefix resolves to more than one visible full id |
+| 401 | `auth_failed` | AU1 credential verification rejects an absent, empty, invalid, or expired bearer |
+| 403 | `identity_not_yours` | a session bearer supplies a present empty or nonmatching AU2 `asUser` value |
+| 404 | `not_found` | AU3, AU4, AU4a, the canonical nested-route part of AU5, or AU7 requires the same unknown-or-forbidden result |
+| 500 | `projection_invalid` | after input validation, the service cannot complete the visibility-filtered query, derive one complete result, or encode it against the closed schema |
+
+No canonical read route emits another application error status or code. A
+route emits a listed code only when its named condition applies. In
+particular, `ambiguous_id` remains limited to R6a typed-prefix selectors.
+ExecutionMap remains the exact specialization in R4a/R4b. Its encoded error
+bytes, candidate-id rule, message-bearing refusal, and A27 cases do not change.
+
+G4 declines a second generic error family, per-route error messages or detail
+objects, a transient/retryable code, and a new error-only resource label.
+After input validation, an in-handler failure uses `projection_invalid`.
+A failure that prevents the handler from returning an application response is
+outside R4c, and client retry policy remains a non-goal.
+
+Each R4c error sets exactly these application headers:
+`Content-Type: application/json; charset=utf-8` and
+`Cache-Control: no-store`. It sets no `ETag`, `Vary`, `Location`,
+`Retry-After`, `WWW-Authenticate`, or `Set-Cookie` application header. The
+handler returns no redirect. The encoder emits no insignificant whitespace.
+For one route and principal,
+unknown and forbidden selectors use the same status, exact body bytes,
+application header bytes, database statement shape, and AU8 timing class.
+
+R4d. Error selection follows this exact precedence. The handler completes one
+step before it starts the next:
+
+1. Authenticate the bearer. Failure returns `401 auth_failed` without query
+   decoding or a resource query.
+2. Decode the raw query. T8 failure returns `400 malformed_query` without
+   principal resolution or a resource query.
+3. Validate and resolve AU2 `asUser`. Return its applicable
+   `invalid_as_user`, `invalid_message`, or `identity_not_yours` result before
+   resource-specific query validation.
+4. Validate decoded query structure and non-cursor values. This includes
+   allowed keys, key multiplicity, key combinations, filters, `limit`, and the
+   mutual exclusion of `before` and `after`. Failure returns
+   `400 invalid_filter` without cursor-token validation or a resource query.
+5. Validate each supplied cursor token against the fields named in AU7.
+   Failure returns
+   `400 invalid_cursor` without a resource query.
+6. Apply the cursor principal binding, AU4 authorization, selector
+   visibility, and existence rules. A required denial or miss returns
+   `404 not_found`. An allowed R6a prefix with multiple visible matches returns
+   `400 ambiguous_id`. Authorization, visibility, and existence selection use
+   one visibility-filtered query snapshot. No unfiltered existence result can
+   affect error selection. Failure to complete that operation returns
+   `500 projection_invalid` and no partial response.
+7. Produce and encode one complete canonical result. Failure returns
+   `500 projection_invalid` and no partial success body.
+
+This precedence does not change positive results already settled elsewhere.
+A sessions `displayName` query with no visible exact match remains a successful
+empty page. An unknown config detail key remains SR5's successful item with
+`value:null`. Collection authorization still omits denied rows before a
+successful response. R4a/R4b continue to govern ExecutionMap. Compatibility
+aliases, `/version`, and `/download/:assetId` responses retain
+their existing wire contracts.
 
 R5. Pagination: `before`/`after` are mutually exclusive, exclusive bounds.
 `limit` defaults to 50 and caps at 500 by clamping. No cursor means the newest
@@ -1342,7 +1534,48 @@ inline SQL, a second visibility predicate, a second item serializer, a
 caller-selected field/sort/join parameter, and a candidate-only session
 projection.
 
+A35. Given one R4c error request for every canonical GET route template in the
+R4c route-to-resource table, when the client receives each error, then its
+exact `resource` value equals that route's table row. The table-driven test
+enumerates every row exactly once and rejects an absent, duplicate, inferred,
+or query-dependent route mapping. Given canonical assignment collection and
+detail routes and one fixture that triggers each R4c condition without a
+second failure, when the client receives each error, then the status, exact
+body bytes, application headers, and resource label equal R4c and the wire
+companion. The test covers each closed code once. It uses an ExecutionMap
+ambiguous-prefix request for `ambiguous_id` and a mismatched session bearer for
+the sole message-bearing `identity_not_yours` variant. It rejects an extra
+code, key, whitespace byte, application header, partial item, or changed key
+order.
+
+A36. Given requests that each contain two independently failing inputs, when
+the handler evaluates them, then this table proves R4d precedence and proves
+that no later step runs:
+
+| Earlier failure | Later failure | Exact result |
+|---|---|---|
+| invalid bearer | malformed percent escape | `401 auth_failed` |
+| malformed percent escape | repeated `asUser` | `400 malformed_query` |
+| repeated `asUser` | unknown filter key | `400 invalid_as_user` |
+| unknown filter key | invalid cursor signature | `400 invalid_filter` |
+| invalid cursor signature | unknown or forbidden selector | `400 invalid_cursor` |
+| valid cursor with wrong principal binding | otherwise visible selector | `404 not_found` |
+
+A37. Given an unknown detail id and a forbidden detail id on the same route,
+when the same principal requests each, then status, exact body bytes,
+application header bytes, statement shape, and AU8 timing checks match. Given
+an unmatched sessions `displayName`, an unknown config detail key, a
+collection containing only denied rows, an ExecutionMap R4b error, a
+compatibility-alias request, and an asset-download request, each retains A32,
+SR5, AU3, A27, M5, and AU5 behavior respectively. The G4 error encoder is not
+invoked for a compatibility alias or an asset-download response. The
+ExecutionMap case reruns A27 and requires byte-identical encoded errors.
+
 ## Open questions — Spirit questions for Mike
+
+G4 has no open questions. R4c closes its error variants, status map, headers,
+precedence, and preserved special cases. The broader ruled and non-blocking
+questions below are unchanged.
 
 SQ1. **RULED 2026-08-25 — transport existing `asUser`.** Remove the
 prohibition on an `asUser` GET parameter. It only transports the CLI's

@@ -15,6 +15,10 @@ envelope, dependency-entry, or shared serializer change lands each affected
 file in one reviewed revision. A worktree, report, transcript, or artifact row
 is evidence, not canonical custody.
 
+G4 error-contract successor, 2026-08-26: PROPOSED. Promote the existing
+ExecutionMap error variants into one canonical REST error type while
+preserving every encoded ExecutionMap error byte.
+
 ## Encoding rules
 
 JSON is UTF-8. Integers are signed JSON integers and never floating-point
@@ -94,6 +98,29 @@ typed J below and still passes SR2/SR6 secret exclusion.
   `{oldestCursor:S|null, newestCursor:S|null, hasMoreBefore:B,
   hasMoreAfter:B}`.
 
+Canonical REST error responses are closed top-level objects in this key order:
+`{schemaVersion:I, resource:S, error:O<RestError>}`. `schemaVersion` is exactly
+`1`. `resource` is the exact literal in R4c's canonical route-to-resource
+table for that route. The same literal appears in the route's success
+envelope; no other route or error-only resource literal is permitted.
+`RestError` is one of these closed variants:
+
+- `{code:S}`, where `code` is exactly one of `auth_failed`,
+  `invalid_as_user`, `invalid_message`, `not_found`, `invalid_filter`,
+  `malformed_query`, `invalid_cursor`, or `projection_invalid`;
+- `{code:S, message:S}`, where `code` is exactly `identity_not_yours` and
+  `message` is exactly `this session belongs to <session.owner_user_id>`, with
+  `<session.owner_user_id>` replaced by the target session row's exact stored
+  non-null owner user id;
+- `{code:S, candidateIds:A<S>}`, where `code` is exactly `ambiguous_id` and
+  `candidateIds` contains the visible full typed ids in ascending order.
+
+`identity_not_yours` is the sole message-bearing variant. `ambiguous_id` is
+the sole `candidateIds`-bearing variant. The simple variant contains only
+`code`; no variant contains another key. The encoder emits no insignificant
+whitespace. R4c owns the status mapping, allowed route conditions, exact
+application headers, and evaluation precedence.
+
 ExecutionMap responses are closed top-level objects in this key order:
 
 - flat: `{schemaVersion:I, resource:S, edgeBasis:S,
@@ -112,25 +139,11 @@ in the R7 order followed by `children:A<O<ExecutionMapTreeNode>>`. No unpaged
 response contains `page`, and no flat or assignment-selected node contains
 `children`.
 
-ExecutionMap error responses are closed top-level objects in this key order:
-`{schemaVersion:I, resource:S, error:O<ExecutionMapError>}`.
-`schemaVersion` is exactly `1`; `resource` is exactly `execution map`.
-`ExecutionMapError` is one of these closed variants:
-
-- `{code:S}`, where `code` is exactly one of `auth_failed`,
-  `invalid_as_user`, `invalid_message`, `not_found`, `invalid_filter`,
-  `malformed_query`, `invalid_cursor`, or `projection_invalid`;
-- `{code:S, message:S}`, where `code` is exactly `identity_not_yours` and
-  `message` is exactly `this session belongs to <session.owner_user_id>`, with
-  `<session.owner_user_id>` replaced by the target session row's exact stored
-  non-null owner user id;
-- `{code:S, candidateIds:A<S>}`, where `code` is exactly `ambiguous_id` and
-  `candidateIds` contains visible full typed ids in ascending order.
-
-`identity_not_yours` is the sole message-bearing variant. No other error
-variant contains `message` or another key. The encoder emits no insignificant
-whitespace. Each ExecutionMap response sets exactly the application headers
-`Content-Type: application/json; charset=utf-8` and `Cache-Control: no-store`.
+ExecutionMap error responses use `RestError`, set `resource` to exactly
+`execution map`, and retain R4b's route-specific variant restrictions. Each
+ExecutionMap success and error response sets exactly the application headers
+`Content-Type: application/json; charset=utf-8` and
+`Cache-Control: no-store`.
 
 ## Resource field types and nullability
 
