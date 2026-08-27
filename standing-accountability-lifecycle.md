@@ -1,4 +1,4 @@
-# Standing accountability lifecycle v1
+# Standing accountability lifecycle
 
 Status: canonical MVP spec for `wi_0552815b-e5b5-4c56-90ed-c40825c3b9ad`.
 
@@ -72,14 +72,15 @@ Its open row names the current accountable holder. It can close as `surrendered`
 ### T4 — Standing accountability trigger
 
 A standing accountability trigger is the existing open standing assignment row with
-an active holder. Its wire form is:
+an active holder. Its internal typed-reference form is:
 
 ```json
 {"kind":"standing_accountability","id":"<assignmentId>"}
 ```
 
-The trigger proves that linked work remains owned when a routing wake or another
-related wake is canceled. It does not carry a clock and does not arm a monitor.
+The trigger proves that linked work remains owned when a wake-cancellation receipt
+names that assignment or its linked work item as primary work. It does not carry a
+clock and does not arm a monitor.
 
 ### T5 — Completion-oriented monitor
 
@@ -120,8 +121,9 @@ assignment preserves its original kind.
 I3. A standing assignment has no completion target, completion deadline, completion
 attest, or `completed` outcome.
 
-I4. A standing assignment can accept progress attests. The presence or absence of a
-progress attest does not arm a completion-oriented monitor.
+I4. A standing assignment accepts progress and verdict attests under their existing
+authority rules. The presence or absence of either attest kind does not arm a
+completion-oriented monitor.
 
 I5. A standing assignment can close only through the existing surrender or revocation
 seam. Each close retains its existing principal, cause, and papertrail.
@@ -139,7 +141,8 @@ claim, prod, escalation, completion rail action, or decision request.
 
 I9. A wake-cancellation receipt can use `standing_accountability` only when its id
 names an open standing assignment whose holder is active and the receipt's primary
-work is that assignment or its linked work item.
+work is that assignment or its linked work item. The receipt retains the existing
+cause and requester principal fields.
 
 I10. Each canonical assignment projection exposes `lifecycleKind`. A consumer never
 infers it from `effectKind`, subject text, attests, age, or monitor rows.
@@ -167,9 +170,10 @@ transaction as the lifecycle action. The discrete branch keeps the existing
 supervision entitlement. The standing branch uses T4 as the liveness trigger and
 does not create a supervision entitlement.
 
-Work-item routing cancellation accepts `standing_accountability` as a liveness
+Work-item bracket cancellation accepts `standing_accountability` as a liveness
 trigger. Its validator reads the assignment type, open state, current holder state,
-and work-item relation from durable rows. A stale or mismatched trigger is refused.
+and work-item relation from durable rows. The validator refuses a stale or mismatched
+trigger.
 
 ### AR3 — Monitor admission
 
@@ -178,13 +182,13 @@ The supervision turn-end candidate query admits discrete assignments only and or
 those candidates by `(openedAt, id)` as it does now.
 
 When a holder has no open discrete assignment, supervision returns the deterministic
-no-match reason `standing_accountability` if that holder has an open standing
+no-match reason `standing_only` if that holder has an open standing
 assignment. The no-match path writes no watermark or completion-oriented lifecycle
 row.
 
-The lifecycle check and the decision to arm or claim a monitor occur in one database
-transaction. No check-then-act interval may admit a standing assignment after the
-check.
+The lifecycle read and the decision to arm a monitor occur in the same transaction as
+assignment creation or reopening. The immutable lifecycle kind governs later monitor
+claims without a second classification decision.
 
 ### AR4 — Completion refusal and lawful exits
 
@@ -213,8 +217,8 @@ The gateway's `assign`, `dispatch`, `assignment-get`, `assignments`,
 `assignments`, `work-item-get`, and `work-item-trace` without removing that field.
 REST assignment resources and Firehose assignment state resources include the same
 field and enum. In the canonical REST assignment field order, `lifecycleKind`
-follows `effectKind` and precedes `derivedStatus`. Wake-cancellation trace objects may expose
-`livenessTriggerKind = standing_accountability` and
+follows `effectKind` and precedes `derivedStatus`. Wake-cancellation trace objects may
+expose `livenessTriggerKind = standing_accountability` and
 `livenessTriggerId = <assignmentId>`.
 
 Existing creation callers remain input-compatible because omitted input defaults to
@@ -225,6 +229,9 @@ Existing creation callers remain input-compatible because omitted input defaults
 ADD wins because deleting assignment custody would leave standing intent unowned,
 while accepting completion prods would make supervision report a known falsehood.
 The design adds no scheduler or parallel work object.
+
+Reusing `supervision_entitlement` as the standing trigger would falsely represent an
+armed completion monitor, so T4 uses the open assignment row itself.
 
 Operating pattern: the CLI help is the instruction surface for selecting this type.
 This MVP requires no operating-manual or Kung Fu amendment.
@@ -242,36 +249,53 @@ that type, and the command result includes `"lifecycleKind":"standing"`.
 **then** each assignment object reports `"lifecycleKind":"standing"`. A Firehose
 `assignment.opened` state event hydrates the same value.
 
+**When** the REST schema conformance fixture serializes that assignment, **then** its
+declared field order places `lifecycleKind` after `effectKind` and before
+`derivedStatus`.
+
 ### AC2 — Compatible default and input refusal (G2; I6, I11; AR1, AR5)
 
-**Given** the same holder, **when** a caller omits `--lifecycle-kind`, **then** the
-stored and projected lifecycle kind is `discrete` and existing supervision behavior
-is unchanged.
+**Given** the same holder, **when** a caller runs `assign` without
+`--lifecycle-kind`, **then** the stored and projected lifecycle kind is `discrete`
+and the creation transaction writes one supervision entitlement.
+
+**When** the caller runs `dispatch` without `--lifecycle-kind`, **then** the stored
+and projected lifecycle kind is `discrete` and the creation transaction writes one
+supervision entitlement and one effort generation.
+
+**Given** a legacy assignment without a stored lifecycle value, **when** a caller
+reads it through a surface named in AR5, **then** the projection reports
+`lifecycleKind = discrete`.
+
+**When** a caller runs `tightbeam help`, **then** the `assign` and `dispatch` usage
+lines name `--lifecycle-kind discrete|standing` and the help states that omission
+selects `discrete`.
 
 **When** a caller supplies `--lifecycle-kind perpetual`, **then** the command returns
-`invalid_lifecycle_kind` and creates no assignment or secondary row.
+`invalid_lifecycle_kind` and creates no assignment, monitor, wake, message, or
+Firehose state event.
 
 **When** a caller combines `--reviews <assignmentId>` with
 `--lifecycle-kind standing`, **then** the command returns
-`standing_review_conflict` and creates no assignment or secondary row.
+`standing_review_conflict` and creates no assignment, monitor, wake, message, or
+Firehose state event.
 
 ### AC3 — Deterministic no-prod regression (G3; I7, I8; AR2, AR3)
 
-**Given** one standing assignment created by `dispatch`, **when** the test advances
-the injected clock past the configured effort and supervision horizons and invokes
-the turn-end supervision evaluator directly, **then** the assignment has zero effort generations, zero supervision
-entitlements, zero supervision controller wakes, zero `prod_fired` events, zero
-effort decision requests, and zero completion-rail actions.
+**Given** one standing assignment created by `dispatch` and one committed terminal
+turn for its holder, **when** the test invokes the turn-end supervision evaluator
+directly, **then** the evaluator returns `standing_only` and the assignment has zero
+effort generations, zero supervision entitlements, zero supervision controller
+wakes, zero `prod_fired` events, zero effort decision requests, and zero
+completion-rail actions. The evaluator writes no supervision watermark.
 
-The test uses injected clocks and direct evaluator calls. It does not sleep or wait
-for a scheduler.
+The test uses direct evaluator calls and committed fixture rows. It does not sleep or
+wait for a scheduler.
 
 **Given** an older standing assignment and a newer discrete assignment for one
 holder, **when** the same turn-end evaluator runs, **then** it selects the discrete
-assignment and preserves the discrete prod behavior.
-
-**Given** only open standing assignments for one holder, **when** the evaluator runs,
-**then** it returns `standing_accountability` and writes no watermark.
+assignment, produces one tier-1 prod for that discrete assignment, and creates no
+monitor row for the standing assignment.
 
 ### AC4 — Completion is impossible; custody has exits (G4; I2-I5; AR4)
 
@@ -285,6 +309,9 @@ open, and no completion attest or secondary state row exists.
 **When** its holder files a progress attest, **then** the gateway stores that attest
 and creates no supervision entitlement or effort generation.
 
+**When** an authorized caller files a verdict attest, **then** the gateway stores that
+attest and creates no supervision entitlement or effort generation.
+
 **When** its holder files surrender instead, **then** the assignment closes with
 `outcome = surrendered` through the existing papertrail.
 
@@ -293,13 +320,19 @@ it, **then** it closes with `outcome = revoked` through the existing papertrail.
 
 **When** an authorized principal reopens either assignment, **then** its
 `lifecycleKind` remains `standing` and no completion-oriented monitor row exists.
+The corresponding Firehose `assignment.closed` and `assignment.reopened` state
+events hydrate `lifecycleKind = standing`.
 
 ### AC5 — Typed work-item liveness (G1, G2; I9; AR2, AR5)
 
-**Given** an open work item whose routing wake is canceled because a standing
-assignment now owns it, **when** the cancellation receipt is read through
-`work-item-trace`, **then** it reports `standing_accountability`, the exact assignment
-id, `workImpactKind = linked_work_open`, and `actionNeeded = true`.
+**Given** one open work item with a pending routing wake and a second open work item
+with a pending slate wake, **when** a standing assignment takes custody of each item,
+**then** the assignment transition cancels each bracket wake. **When** a caller reads
+each cancellation receipt through `work-item-trace`, **then** it reports
+`standing_accountability`, the exact assignment id,
+`workImpactKind = linked_work_open`, `actionNeeded = true`,
+`causalSourceKind = assignment_transition`, `causalSourceId = <assignmentId>`,
+`requesterKind = process`, and `requesterId = tightbeam:work-items`.
 
 **Given** a closed, discrete, foreign-work-item, or retired-holder assignment,
 **when** a cancellation attempts to cite it as `standing_accountability`, **then** the
