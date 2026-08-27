@@ -119,6 +119,366 @@ productions match (prodding stops); it does not stop a turn from being
 enqueued or claimed — a parent that orders a retry must be able to land one.
 The queue's only gates remain session existence and `state = 'active'`.
 
+## Assignment-terminal effort-generator retirement
+
+Authority: `wi_a608cc9b-e34e-4f59-b330-5d83709eb62f`, supported by
+`art_a4f39376`: Main recorded 201 adjudication signals, approximately all
+effort check-ins; 31 fired for assignments that were already closed; none
+required a true decision. This amendment extends the existing assignment-close
+transaction. It does not change when effort supervision arms or what its
+check-ins say. Source baselines: main
+`31c91a7a79bf411791d8422bb220495a72dd8d0c`; active 0.1.9
+`7090a63069ec024a918ade3f659bbd5560936285`.
+
+### Goal
+
+When completion, surrender, or revocation closes an assignment, that same
+transaction retires the assignment's effort-check-in generator. No pending
+output owned by that generator may fire after the close commits. No internal
+probe, deadline, ruling, boot, or replay may re-arm or escalate that retired
+generator. The ledger preserves the generator, wake, check-in, cancellation,
+decision, cause, and principal evidence for every disposition.
+
+### Non-Goals
+
+- This amendment does not cancel a running turn or rewrite a fired wake,
+  delivered check-in, ruled decision request, terminal turn, or generation
+  outside the exact retirement set in EGR-2.
+- This amendment does not cancel an effort generator for an open sibling
+  assignment, an unrelated generator, an ordinary scheduled or condition
+  wake, or a supervision-controller wake.
+- This amendment does not infer ownership from prompt text, origin alone,
+  recipient, assignment holder, work item, timing, or elapsed time.
+- This amendment does not change effort horizons, evidence channels, prod
+  wording, escalation order, effort-ruling choices, assignment-close
+  authority, decision authority, wake-read authority, trace-read authority,
+  or privacy.
+- This amendment does not own queued-turn invalidation. The review-challenged,
+  revised proposal at commit `69663367eaed3eb862e55769841e8d37b3021b5e` for
+  `wi_154bf46b-acd6-4ff4-a2b0-732737a03d64` owns that sibling lane.
+- This amendment adds no public verb, request parameter, timer, polling loop,
+  prompt convention, decision kind, or agent instruction. It takes no action
+  on 0.1.8.
+
+### Terms
+
+- **Assignment-terminal transition:** one transaction that changes an
+  assignment from `open` to `closed` with stored outcome `completed`,
+  `surrendered`, or `revoked`.
+- **Effort-check-in generator:** the durable generation sequence in
+  `effort_checkin_generations` for one assignment, including the wakes that
+  the effort controller schedules from that sequence.
+- **Effort-owned wake:** a wake whose id has a durable row in
+  `effort_checkin_wake_ownership`. The row stores its exact `assignmentId`,
+  `generation`, and one role: `probe`, `holder_checkin`, `parent_escalation`,
+  `decision_deadline`, or `decision_notification`.
+- **Pending generator output:** an effort-owned wake whose durable wake state
+  is `pending`.
+- **Retirement set:** each unretired generation that owns pending generator
+  output selected by the terminal transition, plus the assignment's maximum
+  unretired generation when one exists. An unretired generation has null
+  `retiredAt`, `retiredOutcome`, `retiredCause`, and `retiredPrincipal`.
+- **Retired generation:** a generation in the exact retirement set in EGR-2,
+  stamped with the assignment-terminal transition's time, stored outcome,
+  cause, and principal. The transition also changes an `armed` member of that
+  set to `canceled`; it retains a member already in `probed` or `canceled`.
+- **Terminal cause:** the exact string
+  `assignment-terminal:<outcome>:<assignmentId>`, derived from the closed
+  assignment row in the terminal transaction.
+- **Terminal principal:** `session:<sessionKey>` or `user:<userId>` for the
+  principal authorized to make the terminal transition. Holder retirement
+  uses the durable principal already required by that transition.
+- **Legacy structurally-owned wake:** a pre-amendment probe referenced by
+  `effort_checkin_generations.wakeId`, or a pre-amendment effort deadline
+  referenced by `decision_requests.deadlineWakeId`.
+- **Ambiguous legacy prompt wake:** a pre-amendment pending `prompt` wake from
+  `process:tightbeam` with non-null `assignmentId` for an assignment that has
+  effort-generation history, but no effort-ownership row. The term does not
+  assert that the wake is an effort wake.
+
+### Assumptions
+
+- Assignment closure, wake scheduling, wake delivery, internal effort
+  callbacks, effort rulings, and schema migration serialize through database
+  transactions over one ledger.
+- Wake delivery commits the prompt message, its queued turn, and the wake's
+  `fired` state in one transaction.
+- Existing typed wake cancellation preserves the wake row and appends
+  `wake_cancellations` cause, requester, outcome, and liveness evidence in the
+  cancellation transaction.
+- The main line creates holder check-ins and parent escalations and retains the
+  deadline and ruling path for a migrated legacy effort request. Active 0.1.9
+  creates holder check-ins, effort decision notifications, and effort decision
+  deadlines. This amendment covers both line-specific sets.
+- The queued-turn amendment named in Non-Goals remains a separately reviewed
+  contract. When both amendments land, the assignment-terminal transaction
+  invokes both sibling mutations without making either mutation call the
+  other.
+
+### Invariants
+
+**EGR-1 — Typed ownership at creation.** Every effort wake created after this
+contract activates receives its wake row and one matching ownership row in the
+same transaction. The ownership row's assignment and generation must equal the
+durable source rows used to schedule the wake. A transaction that cannot write
+that ownership row does not schedule the wake, change the generation, open or
+advance an effort decision request, or emit a prompt.
+
+**EGR-2 — Atomic retirement.** Each assignment-terminal transition performs
+all of these writes in its assignment-close transaction: it changes the
+assignment state; cancels every pending effort-owned wake for that assignment;
+stamps the retirement set; changes each `armed` member of that set to
+`canceled`; and supersedes any open effort decision request under the existing
+disposition rule. A generation already in `probed` or `canceled` retains that
+state while receiving the retirement stamp. A transition with an empty
+retirement set closes without inventing or rewriting a generation. A failure
+rolls back the assignment close and every retirement write.
+
+**EGR-3 — Exact scope.** Retirement selects wakes only through
+`effort_checkin_wake_ownership.assignmentId` and `wakes.state = 'pending'`.
+It selects the retirement set only through the exact assignment id, maximum
+unretired generation number, null retirement fields, and ownership rows for
+the selected pending wakes. It does not select by prompt, origin, recipient,
+holder, work item, or time. It changes no row owned by another assignment and
+no unowned wake.
+
+**EGR-4 — Exact evidence.** The retired generation stores `retiredAt` equal to
+the assignment's `closedAt`, `retiredOutcome` equal to the stored assignment
+outcome, `retiredCause` equal to the terminal cause, and `retiredPrincipal`
+equal to the terminal principal. Each canceled owned wake retains its wake and
+ownership rows and receives the existing typed cancellation record with
+the close path's existing process requester, reason `obligation_disposed`,
+causal-source kind `assignment_transition`, causal-source id equal to the
+assignment id, and disposition id equal to the assignment id. The permanent
+ownership relation joins that cancellation to the retired generation's exact
+terminal cause and principal through the ownership row's generation. The
+maximum unretired generation records the terminal retirement even when no wake
+was pending. A fired or previously canceled owned wake is not rewritten; its
+wake state and ownership row remain the evidence of its disposition. A later
+terminal transition never overwrites non-null retirement fields.
+
+**EGR-5 — Serialized wake race.** Wake delivery and assignment retirement
+form one serialized race. If retirement commits first, a pending effort-owned
+wake is canceled and cannot deliver. If delivery commits first, the wake stays
+`fired`; retirement records the generator retirement and does not rewrite the
+message or turn. A queued turn produced by that delivery belongs only to the
+queued-turn amendment. A turn whose claim committed before closure follows
+its existing running-turn contract.
+
+**EGR-6 — Serialized controller race.** An effort probe, deadline, or ruling
+transaction rechecks that the assignment is open before it changes controller
+state or creates output. If retirement commits first, the callback or ruling
+creates no wake, generation, deadline, escalation, or decision transition. If
+the controller transaction commits first, it writes all new generations and
+owned wakes before retirement selects them; retirement then cancels the
+pending rows and stamps the resulting retirement set. On 0.1.9, a close-first
+effort ruling returns the existing non-open decision result. A rule-first
+`continue` may re-arm, but the following close retires that new generation in
+the same terminal transaction.
+
+**EGR-7 — No resurrection.** Boot, callback replay, terminal-command retry,
+and terminal-publication replay do not change retired generation fields,
+create an ownership row for a new wake, reopen a superseded decision request,
+or schedule effort output for a closed assignment. Reopening is prospective:
+it does not alter a retired generation or canceled wake, and the next lawful
+arm uses a generation number greater than every stored generation for that
+assignment.
+
+**EGR-8 — History and adjudication.** Retirement never deletes or rewrites a
+fired check-in wake, prompt message, turn, closed or ruled decision request,
+decision ruling, generation outside the retirement set, supervision row, or
+cancellation row. On either line it supersedes only an open effort decision
+request and cancels only that request's pending owned deadline and notification
+wakes. Active 0.1.9 may create the request; main applies the disposition only
+to a migrated legacy request. Existing `continue` and `dismiss` semantics are
+unchanged for a request that remains open on either line.
+
+**EGR-9 — Compatibility boundary.** Each elected line migrates only from its
+exact predecessor stamp: main from `coordination-fabric-v1-phase1-v7`, and
+0.1.9 from `operator-decision-requests-v1`. The migration adds the ownership
+relation and retirement fields, then backfills ownership only for legacy
+structurally-owned wakes by exact foreign-key equality. Before the new stamp
+commits and before any scheduler starts, it searches for ambiguous legacy
+prompt wakes. If any exist, migration rolls back and returns
+`incompatible_effort_wake_provenance` with their wake ids. It does not inspect
+their prompts, classify them, cancel them, or advance the schema stamp. An
+operator may retry only after each named wake reaches `fired` or `canceled`
+through predecessor behavior. If predecessor behavior cannot lawfully settle
+a named wake, upgrade remains blocked for a separately authorized data repair;
+this migration does not invent that authority. An unknown predecessor stamp
+receives the existing exact-shape refusal.
+
+**EGR-10 — Authorization, privacy, and wire stability.** The terminal actor,
+effort ruler, wake reader, and work-item trace reader receive exactly their
+pre-amendment authorization results. Existing public requests and responses
+remove or rename no field. An authorized `work-item-trace` adds
+`effortRole` to an effort-owned wake entry and adds `retiredAt`,
+`retiredOutcome`, `retiredCause`, and `retiredPrincipal` to an effort
+generation entry; each value is null when absent. An unauthorized caller
+receives the existing refusal without ownership or retirement data.
+
+**EGR-11 — Holder-retirement order.** Holder retirement first revokes each of
+the holder's open assignments and applies EGR-2. The existing session-
+retirement drain then disposes the holder's remaining pending wakes. An
+effort-owned wake canceled by assignment revocation records the assignment-
+terminal cause and is not re-canceled as target retirement. A pending unowned
+wake remains in the session-retirement lane. Both stages stay inside the
+existing holder-retirement transaction.
+
+### Architecture
+
+Add one narrow relation, `effort_checkin_wake_ownership`, keyed and
+foreign-keyed by `wakeId` to the wake, and composite-foreign-keyed by
+`(assignmentId, generation)` to the generation row. Its other column is the
+closed role set in Terms. Rows are permanent provenance; no close, reopen,
+replay, or rollback path deletes them. Every effort wake scheduling site uses
+one internal write seam that creates the wake and its ownership row together.
+
+Add nullable `retiredAt`, `retiredOutcome`, `retiredCause`, and
+`retiredPrincipal` fields to `effort_checkin_generations`. A database check
+requires all four to be null or all four to be non-null; non-null values
+require `state` in `probed` or `canceled`, a permitted outcome, and the exact
+terminal-cause shape derived from the row's assignment id. Non-terminal
+generation replacement continues to use `state = 'canceled'` with null
+retirement fields.
+
+The existing shared completion, surrender, and revocation seam supplies the
+closed assignment row and authorized principal to one retirement mutation.
+That mutation cancels the exact pending ownership join, stamps the retirement
+set, and disposes the open effort request. It runs beside, not inside, the
+queued-turn drain proposed by `wi_154bf46b`. The two mutations share only the
+outer assignment-terminal transaction and terminal cause. Neither owns the
+other's tables or acceptance lane.
+
+Main advances to shape `coordination-fabric-v1-phase1-v8`. Active 0.1.9
+advances to `operator-decision-requests-v2`. Each migration is additive and
+transactional. A preflight provenance refusal leaves the predecessor stamp and
+all rows unchanged. After activation, rollback means restoring the
+pre-activation database snapshot before starting the predecessor binary; a
+predecessor binary must not run against the advanced stamp because it can emit
+unowned effort wakes.
+
+Mechanism choice — ADD typed ownership at the existing close seam. Deleting
+effort supervision would remove a live safety bracket. Accepting stale
+post-close output would retain the measured false-prod defect and spend agent
+judgment on a durable fact the substrate already knows.
+
+Operating pattern taught to agents: none. This is ledger physics. The
+substrate owns exact rows and transitions; no agent decides whether a wake
+belongs to the generator.
+
+### Acceptance
+
+Each race check uses deterministic transaction barriers at the real close,
+wake delivery, probe, deadline, ruling, boot, and claim seams. Sleeps and
+elapsed-time assertions do not satisfy a race check. Each elected line runs
+its applicable checks against its exact predecessor migration fixture.
+
+1. **EGR-A1 — Three terminal outcomes.** Given three open assignments with an
+   armed current generation and pending owned output, when completion closes
+   the first, surrender closes the second, and an authorized principal revokes
+   the third, then each close commits with its generator retired and only its
+   pending owned wakes canceled. The retirement fields equal the closed row,
+   terminal cause, and terminal principal on the maximum unretired generation
+   and each selected wake's unretired source generation. An `armed` selected
+   generation becomes canceled; a `probed` selected generation retains that
+   state. Removing any retirement write from the fixture makes the close
+   transaction roll back. A fourth assignment with an empty retirement set
+   closes without creating or rewriting a generation or wake.
+2. **EGR-A2 — Exact wake scope.** Given assignment A with pending owned probe,
+   holder-checkin, parent-escalation, decision-deadline, and
+   decision-notification wakes; open sibling B with the same roles; and
+   pending ordinary scheduled, condition, and supervision wakes attributed to
+   A, when A closes, then only A's five owned wakes change to canceled. B's
+   generator and every unowned wake remain byte-for-byte unchanged. Run the
+   line-applicable subset where a role does not exist.
+3. **EGR-A3 — Delivery race.** Given two identical pending owned prompt wakes,
+   when close commits before delivery for the first and delivery commits
+   before close for the second, then the first has one typed cancellation and
+   no message or turn, and its ownership row joins directly to its source
+   generation's retirement cause and principal. The second remains fired with
+   its message and turn, gains no cancellation record, and the maximum
+   unretired generation records the retirement. With the sibling queued-turn
+   amendment active, its queued turn receives that amendment's exact terminal
+   disposition; a turn claimed before close remains running.
+4. **EGR-A4 — Probe race and re-arm.** Given an armed probe at its callback
+   boundary, when close wins, then the callback emits no output and creates no
+   generation. When the probe wins and emits a prompt plus a new generation,
+   then close cancels that prompt and the new probe, retires the new current
+   generation, and retains the consumed generation's `probed` state while
+   stamping its retirement fields. Replaying either callback creates no row.
+5. **EGR-A5 — Decision races on both lines.** Given separate open effort
+   requests at notification, deadline, and `continue` ruling boundaries, when
+   close wins each race, then the request is superseded, its pending owned
+   wakes are canceled, and the losing action creates no replacement. When
+   each action wins first, close cancels every pending replacement and retires
+   any new current generation. A ruled request and its ruling remain byte-for-
+   byte unchanged. The main fixture starts from a migrated legacy open effort
+   request; the 0.1.9 fixture also exercises new request creation.
+6. **EGR-A6 — Restart, replay, and reopen.** Given a retired generator with
+   canceled, fired, and ruled history, when boot runs twice, the terminal
+   command and publication replay, the assignment reopens and closes once
+   without a new arm, reopens again, boot runs, and one new arm commits, then
+   all prior rows and retirement fields remain unchanged. The intervening
+   close creates no generation and overwrites no retirement field. No pre-
+   reopen output fires. Exactly one new generation with a greater number and
+   one owned probe exist after the arm.
+7. **EGR-A7 — Migration and refusal.** Given each exact predecessor fixture
+   with generation probes and 0.1.9 decision deadlines, when migration runs,
+   then ownership backfill matches only the exact referenced wake ids and the
+   successor stamp commits. Given a second fixture with one ambiguous legacy
+   prompt wake, migration returns `incompatible_effort_wake_provenance` with
+   that id, writes no ownership row, cancels no wake, changes no business row,
+   and retains the predecessor stamp. A prompt with effort-looking text but no
+   structural ownership is never backfilled. After predecessor behavior
+   settles the named wake, the same fixture migrates; if the wake remains
+   pending, every retry returns the same refusal without changing data.
+8. **EGR-A8 — Evidence, authorization, and privacy.** Given canceled, fired,
+   and unaffected owned wakes plus authorized and unauthorized trace readers,
+   when the authorized reader requests the work-item trace, then wake entries
+   expose their stored roles, cancellation entries expose their existing typed
+   disposition, and each retired generation exposes its terminal cause and
+   principal in the four retirement fields. Historical prompt and decision
+   content is unchanged. The unauthorized reader receives the existing refusal
+   and no new data. Terminal and ruling authorization matrices equal the
+   predecessor fixtures.
+9. **EGR-A9 — Idempotency and rollback.** Given one successful retirement,
+   when the close command retries and boot replays, then row counts, wake
+   states, retirement fields, cancellations, requests, and trace entries do
+   not change. Given a migration fault before stamp commit, the transaction
+   restores the predecessor bytes. Given an activated successor snapshot,
+   restoring its paired pre-activation snapshot allows the predecessor binary
+   to start with its predecessor stamp; starting that binary on the successor
+   stamp receives the exact-shape refusal.
+10. **EGR-A10 — Shared transaction composition.** Given a pending owned prompt
+    wake, a fired owned prompt whose turn is queued, a fired owned prompt whose
+    turn is running, and a queued unrelated turn, when the assignment-terminal
+    transaction runs with both amendments active, then this amendment cancels
+    only the pending wake and retires the generator. The sibling amendment
+    alone disposes the matching queued turn. Neither amendment changes the
+    running or unrelated turn, and a forced failure in either mutation rolls
+    back the assignment close and both mutations.
+11. **EGR-A11 — Holder-retirement order.** Given a retiring holder with two
+    open assignments, one pending effort-owned wake for each assignment, one
+    pending unowned wake, and one already-running turn, when holder retirement
+    commits, then each assignment revocation retires its generator and cancels
+    its owned wake with the revoked terminal cause before the session drain.
+    The session drain cancels only the unowned pending wake with its existing
+    target-retirement cause. It does not add a second cancellation for either
+    owned wake, and it does not change the running turn. A forced failure in
+    either stage rolls back the holder retirement, assignment revocations,
+    generator retirements, and wake dispositions.
+
+Traceability: EGR-A1 verifies EGR-2 and EGR-4; EGR-A2 verifies EGR-1 and EGR-3;
+EGR-A3 verifies EGR-5; EGR-A4 and EGR-A5 verify EGR-6 and EGR-8; EGR-A6
+verifies EGR-7; EGR-A7 verifies EGR-9; EGR-A8 verifies EGR-10; EGR-A9 verifies
+EGR-2, EGR-7, and EGR-9; EGR-A10 verifies the composition assumption and
+EGR-3; EGR-A11 verifies EGR-11.
+
+### Open Questions
+
+None. Implementation is gated on independent acceptance of this exact revision.
+
 ## The prod production
 
 The supervision prodder is the first production formalized under this spec.
