@@ -9,7 +9,7 @@ This spec is the authoritative bounded amendment for these clauses:
 |---|---|
 | `accountability-constitution-v1.md` | Section 1 guarantee 3: a standing assignment satisfies Patrol through AR3's standing-accountability production, not a completion prod. |
 | `supervision-v1.md` | The invariant, stall predicate, prod lifecycle items 1-3, and the “no standing reminders” paragraph: AR3 supplies the standing lifecycle's distinct receipt, prompt, and due production. |
-| `supervision-impl-v1.md` | The `:prod_ladder` turn-end slot, Goals 1-3, the periodic-sweep non-goal, Self-driving liveness, and the no-terminal due-entitlement deferral: AR3 adds no sweep and specializes the existing per-assignment entitlement by stored lifecycle kind. |
+| `supervision-impl-v1.md` | The `:prod_ladder` turn-end slot, Goals 1-3, the periodic-sweep non-goal, Self-driving liveness, the no-terminal due-entitlement deferral, the `supervision_watermarks` DDL, and terminal dedupe in turn-end and recovery evaluation: AR3 adds no sweep and specializes the existing per-assignment entitlement by stored lifecycle kind. |
 | `effort-checkin-v2.md` | Design item 1 and Acceptance items 1-3: `dispatch` arms effort check-in only for a discrete assignment. |
 | `work-item-brackets-v1.md` | Bracket 1 and Bracket 2 assignment-cancellation clauses: a standing assignment is custody, and its cancellation receipt uses T4. |
 | `attest-v1.md` | The closed kind vocabulary, non-terminal filing behavior, response shape, CLI usage, and tests: T6 adds holder-filed `reaffirmation`. |
@@ -163,6 +163,10 @@ A7. At the A2 baseline, a due entitlement whose holder has no terminal row re-ar
 `basisKind = no_terminal` and produces no prod. AR3 retains that rule for a discrete
 assignment and excludes a standing assignment from it.
 
+A8. At the A2 baseline, `supervision_watermarks.lastEvaluatedTerminal` is non-null.
+The turn-end and recovery dedupe functions do not define a null prior followed by an
+integer terminal. AR3 amends both facts for a terminal-free standing claim.
+
 ## Invariants
 
 I1. Each assignment has exactly one lifecycle kind. A new assignment stores the kind
@@ -261,10 +265,36 @@ standing custody but no due candidate.
 When the holder has no terminal row, the standing evaluator claims the entitlement's
 current armed generation at its stored `dueAt`. It does not increment or re-arm that
 generation before the claim. The claim records `lastAttemptGeneration` as that current
-generation, passes `terminalSeq = null` to the existing nullable watermark seam, writes
+generation, passes `terminalSeq = null` to the watermark seam, writes
 `cause = standing_due` and `principal = process:tightbeam`, and retains the entitlement's
 existing `basisKind` and `basisId`. It writes no `no_terminal` re-arm or
 `supervision_entitlement_rearmed` event.
+
+The `supervision_watermarks` DDL declares `lastEvaluatedTerminal INTEGER NULL`. A null
+value means that supervision claimed a standing-accountability production before the
+holder had a terminal turn. The row retains `pendingBranch`, `pendingAssignment`,
+`pendingK`, and `pendingN`, so existing delivery, revalidation, and clearing use `IS`
+equality and remain durable while the terminal value is null. Only a terminal-free
+standing claim writes null; each discrete claim and each terminal-driven claim writes
+an integer. The schema migration preserves each existing row's six values and changes
+only the nullability constraint; it does not backfill a null value.
+
+For a non-null candidate terminal `t`, both terminal dedupe functions apply this order:
+
+1. no watermark row means `new`;
+2. a watermark whose `lastEvaluatedTerminal` is null means `new`;
+3. a watermark whose value equals `t` means `duplicate`;
+4. a watermark whose value is greater than `t` means `coalesced`;
+5. a watermark whose value is less than `t` means `new`.
+
+The turn-end path and the scheduled/recovery `new_terminal?` path use the same ordering.
+Turn-end returns `new`, `duplicate`, or `coalesced`. The scheduled/recovery predicate
+returns true only for `new` and false for the other two results.
+
+The zero-terminal claim keeps the null watermark and pending branch through existing
+wake revalidation. Delivery clears the pending branch through the existing transaction.
+When the resulting first real terminal follows that null prior, evaluation replaces the
+null value with that terminal sequence.
 
 The discrete production has priority when a turn-end evaluation finds both a discrete
 candidate and a due standing candidate. Otherwise, the evaluator claims one due
@@ -437,6 +467,31 @@ claim sets `lastAttemptGeneration` to the fixture generation, preserves the fixt
 store `cause = standing_due` and `principal = process:tightbeam`. The claim leaves no
 `no_terminal` re-arm or re-arm event. The test invokes the entry points directly and
 does not sleep.
+
+**Given** the A2 watermark schema with one non-null watermark row, **when** the schema
+migration runs, **then** that row retains its six field values and a second fixture row
+commits with `lastEvaluatedTerminal = null`, `pendingBranch = prod`, the standing
+assignment id in `pendingAssignment`, and its exact `pendingK` and `pendingN` values.
+
+**Given** that null-watermark row, **when** existing wake revalidation reads its null
+terminal value and pending branch, **then** it returns ready and delivers the tier-1
+standing-accountability prod. The delivery transaction clears the pending fields and
+leaves `lastEvaluatedTerminal = null`.
+
+**Given** that delivered prod, **when** the resulting first holder turn commits terminal
+sequence `t`, **then** the turn-end dedupe returns `new`, not `duplicate` or `coalesced`,
+and replaces the null watermark value with `t`. When the entitlement remains not due,
+the evaluator returns `standing_not_due` and writes no second prod.
+
+**Given** an equivalent isolated watermark with `lastEvaluatedTerminal = null` and first
+terminal sequence `t`, **when** the scheduled/recovery `new_terminal?` path runs,
+**then** it returns true, evaluates that terminal once, and stores `t`. A second
+evaluation of `t` returns false. A later terminal returns true. An earlier terminal
+returns false. These fixtures invoke the entry points directly and do not sleep.
+
+**Given** an equivalent due discrete entitlement whose holder has zero terminal rows,
+**when** the scheduled/recovery evaluator runs, **then** it performs the A7
+`no_terminal` re-arm and writes no null watermark or prod.
 
 **When** the holder files `tightbeam attest <assignmentId> --kind reaffirmation`,
 **then** the gateway stores one non-terminal reaffirmation attest, leaves the assignment
