@@ -1,12 +1,12 @@
 # The reporting-contract system — one release, four parts
 
 Status: grouping record, 2026-08-21. These ship together as a system; none
-is complete alone. Target: a single 0.2.x release landing (order within it
+is complete alone. Target: a single 0.2.0 release landing (order within it
 per the wi_ecd8cd9d fold's build cards).
 
 | part | work item | state |
 |---|---|---|
-| cannot-proceed replaces surrender; typed awaiting; boundary-anchored checkpoints | wi_ecd8cd9d (staffed: asg_bed98474) | spec fold in progress |
+| cannot-proceed replaces surrender; typed awaiting; boundary-anchored checkpoints | wi_ecd8cd9d (staffed: asg_bed98474) | review-ready fold produced; independent review next |
 | effect kind `outcome` (enum + DDL migration) with one opener guidance line and `unspecified` → `code` | rides wi_ecd8cd9d, same MVP fold | clause filed; `fixture` deferred |
 | identity CLI verb: shared guidance docs + manual override (`identity edit --doc`) | wi_2629d68d | iceboxed until fold sizes it |
 | user-alerted → decision-request threshold statute | wi_a8de6fe5 (notes: user-alerted-decision-request-escalation.md) | iceboxed pending Mike discussion |
