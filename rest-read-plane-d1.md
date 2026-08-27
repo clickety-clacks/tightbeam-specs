@@ -1,7 +1,8 @@
 # REST read plane D1 — transport foundation and six shared-seam resources
 
-Status: build specification. Amendment status: FROZEN FOR ONE LINKED INDEPENDENT
-REVIEW — cursor-signing seam. Authority: canonical REST r3 `art_971f45b5`,
+Status: build specification. Amendment status: FROZEN CANDIDATE FOR ONE LINKED
+INDEPENDENT REVIEW — cursor-signing indeterminate-commit quarantine and recovery.
+Authority: canonical REST r3 `art_971f45b5`,
 reviewed SHA-256 `49b86ec874283c523001be7449b1e14aef47ca72932955445638ce6443aad754`;
 the adopted six-resource contract `art_b1995a26` / fact 1093; reviewed
 firehose tip `8e4a412f25950dae1e1f33af42c390a4707bcf89`; PO rulings
@@ -19,6 +20,18 @@ recovery review `att_1a124822-e5de-4cf2-ae20-c313e339856d` / report
 no product edit, implementation, main landing, `specRef` change, D2/D3 work,
 deployment, or release.
 
+The durability amendment serves
+`wi_d417a2dd-13a4-49c5-a285-917eca9fea03` /
+`asg_29485a6f-b7a1-40ef-b701-b43ca6c01dfd`. Its authority inputs are the
+exact-tip review `att_4cb0d3e7-33f4-46ff-8618-2f68d289ec83` / report
+`art_ff237615`, the stop ruling
+`att_8e52b146-5a2c-40c3-8599-ed797a41ab3a`, and the storage-contract evidence
+`att_1a39c856-a23d-4ac9-a1c1-050fd32044d9` / `art_5516885a`. It changes only
+provisioning and rotation durability outcomes, the resulting quarantine and
+recovery behavior, and their acceptance. It authorizes no product edit,
+implementation, D1 route, D2/D3/CLI/firehose work, `specRef` change, target,
+landing, deployment, or release.
+
 ## Spec homing
 
 This file is the D1 build specification for
@@ -26,6 +39,9 @@ This file is the D1 build specification for
 than an unreviewed branch tip or a worktree copy, is the implementation
 binding. A later D1 amendment replaces this file and receives a fresh exact
 review before the work item binding changes.
+
+Operating pattern taught to agents: none. This file specifies product storage
+behavior; it does not amend the Tightbeam operating manual or agent guidance.
 
 ## Goal
 
@@ -46,6 +62,9 @@ the resource. It adds no second data shape.
   to the staged identity query contract below; their public bytes and behavior
   do not change.
 - D1 does not start M3 through M8. M1 owns the shared seams; D1 is M2.
+- This durability amendment does not add a key store, database row, authority
+  pointer, journal, recovery marker, backup authority, fallback key, or old-key
+  grace window. It does not weaken file or containing-directory durability.
 
 ## Terms
 
@@ -82,6 +101,19 @@ the resource. It adds no second data shape.
   cursor-signing material. It is composed by `Tightbeam.Application`, injected
   by `Tightbeam.Gateway`, and consumed by `Tightbeam.Wire.Router`; no bearer
   client can supply or select it.
+- **Publication boundary**: the filesystem event that makes a complete new
+  canonical material record visible at `rest-cursor-signing.v1`. Provisioning
+  publishes when the canonical entry becomes visible. Rotation publishes when
+  the atomic rename completes.
+- **Cursor-signing generation**: one complete 32-octet material value that the
+  canonical file makes authoritative. The generation has no stored identifier,
+  pointer, metadata record, or wire representation.
+- **Indeterminate commit**: the single typed terminal outcome after publication
+  when containing-directory synchronization fails. It states that canonical
+  authority may have advanced. It is neither success nor an ordinary error.
+- **Cursor-signing quarantine**: the provider state that admits only recovery.
+  It refuses signing, verification, provisioning, and rotation across the
+  application processes that share the canonical path.
 - **Canonical route key**: the fixed route-table key for the collection route
   that issued a cursor, such as `users.collection`. It is an internal signed
   binding, not a URL, query-string fragment, or response field.
@@ -126,6 +158,19 @@ the resource. It adds no second data shape.
 6. M1 freezes projections, R8 mappings, R9 dependencies, and AU4 visibility.
    M2 adds REST on those seams before M3 points firehose payload builders to
    the same serializers.
+7. The canonical 32-octet file remains the sole cursor-signing authority.
+   Quarantine and recovery create no second durable state or alternate
+   authority.
+8. A provisioning or rotation failure before publication returns an ordinary
+   error and preserves the prior restart authority. A containing-directory
+   synchronization failure after publication returns indeterminate commit and
+   enters quarantine before the local owner caller receives that outcome.
+9. The provider returns success only after it proves both the material-file
+   flush and the containing-directory synchronization. It does not retry a
+   failed post-publication directory synchronization inside the operation.
+10. Recovery keeps the provider quarantined while it validates and synchronizes
+    the sole canonical file. It re-enables exactly the validated generation in
+    one step relative to signing, verification, provisioning, and rotation.
 
 ## Architecture
 
@@ -393,12 +438,23 @@ fails closed.
 Only the local gateway bootstrap, before the HTTP listener is admitted, may
 invoke the provider's provisioning operation. If the file is absent during
 explicit first provisioning, the provider obtains 32 octets from the operating
-system CSPRNG and creates the file exclusively, with owner-only permissions and
-durable flush. Provisioning never overwrites an existing file. Normal
-`Tightbeam.Application` startup loads and validates the existing file before it
-starts the listener. A missing, unreadable, wrongly sized, or otherwise
-malformed file at normal startup is a typed startup failure; startup must not
-silently generate a replacement, serve REST, or accept a cursor.
+system CSPRNG, writes an owner-only same-directory staging file, and durably
+flushes the complete record. It then publishes that record at the canonical
+path with one exclusive atomic rename that refuses an existing canonical entry.
+The staging file and canonical file use exact mode `0600`. The staging file is
+not an authority and recovery never selects it. The provider synchronizes the
+containing directory before it reports success.
+Provisioning never overwrites an existing file. A failure before publication
+returns an ordinary error and leaves the service unprovisioned across restart.
+A directory-synchronization failure after publication returns the
+indeterminate-commit outcome defined below.
+
+Normal `Tightbeam.Application` startup begins with the provider quarantined. It
+loads and validates the existing file, synchronizes the containing directory,
+then atomically exposes that exact generation to the gateway before it admits
+the listener. A missing, unreadable, wrongly sized, otherwise malformed, or
+unsynchronizable file is a typed startup failure. Startup does not silently
+generate a replacement, serve REST, or accept a cursor.
 
 The application composition root creates the provider and passes its internal
 capability through the existing gateway dependency map as `cursor_signing` to
@@ -423,20 +479,83 @@ value, or random per-request key.
 Rotation is an explicit local operator maintenance operation owned by
 `Tightbeam.CursorSigning`; it is not a REST route and cannot be requested by a
 bearer client. The provider obtains fresh CSPRNG material, writes a same-
-directory owner-only temporary file, flushes it, and atomically renames it over
-the active file. It removes the old material from the verification set at the
-rename boundary. A failed rotation leaves the old complete file and behavior
-unchanged; it never leaves a partial file or a mixed key set. Existing cursors
-issued before a successful rotation are immediately rejected as the existing
-`400 invalid_cursor`, before a resource-row lookup. Cursors issued after the
-rename verify with the new material. There is no old-key grace window.
+directory temporary file with exact mode `0600`, flushes it, and atomically
+renames it over the active file. It then synchronizes the containing directory.
+A successful return means the material-file flush and containing-directory
+synchronization succeeded. It removes the old material from the verification
+set at the rename boundary. A failure before that boundary
+returns an ordinary error and leaves the old complete file and behavior
+unchanged. A directory-synchronization failure after that boundary returns the
+indeterminate-commit outcome defined below. Existing cursors issued before a
+successful rotation are rejected as the existing `400 invalid_cursor`, before
+a resource-row lookup. Cursors issued after a successful rotation verify with
+the new material. There is no old-key grace window.
 
 Sign and verify operations linearize at their complete material read.
 Concurrent operations before the rename use the old material and operations
-after it use the new material; no operation may combine bytes from two records.
-A restart reopens the same durable file and therefore accepts cursors issued
-before the restart, while a restart after rotation accepts only post-rotation
-cursors.
+after a successful directory synchronization use the new material; no
+operation may combine bytes from two records. Before publication, the mutation
+waits for admitted sign and verify operations to finish their complete material
+read. From publication until the directory synchronization returns, the
+provider admits no new sign, verify, provision, or rotate operation across the
+application processes that share the canonical path. Success releases that
+admission boundary onto the new generation. Failure converts the same boundary
+to quarantine, so no operation can observe a healthy provider between the
+failed synchronization and quarantine.
+
+#### Indeterminate-commit quarantine and recovery
+
+This named pattern applies only when provisioning or rotation publishes a
+complete record and the following containing-directory synchronization fails.
+It does not reclassify a pre-publication failure or a sign/verify read failure.
+Canonical example: rotation rename succeeds, directory synchronization returns
+an error, and the provider returns indeterminate commit from quarantine.
+
+A post-publication containing-directory synchronization failure returns exactly
+`{:indeterminate_commit, :cursor_signing_authority_may_have_advanced}` to the
+local owner caller. Before it releases that outcome, the provider atomically
+enters cursor-signing quarantine across the application processes that share
+the canonical path. The provider does not translate this outcome to success,
+an ordinary error, or an internal retry loop.
+
+In quarantine, sign, verify, provision, and rotate calls return the typed
+internal refusal `{:error, :cursor_signing_quarantined}` without reading key
+bytes or performing a namespace mutation. A router that reaches this refusal
+emits the existing `500 projection_invalid` envelope with
+`Cache-Control: no-store` and no partial response. `Tightbeam.Gateway` checks
+the provider state and admits each Router dispatch as one indivisible operation
+relative to the quarantine transition. The quarantine transition does not
+retroactively cancel a Router dispatch admitted before publication; a later
+provider call from that dispatch still observes the current provider state. A
+request not admitted before quarantine receives that closed response and
+performs no resource-row lookup. The gateway does not cache a prior healthy
+state or bypass the provider. No HTTP or bearer-client operation can invoke
+recovery.
+
+Recovery has two entry points: application startup before listener admission,
+and an explicit local owner operation on a quarantined running provider. Both
+entry points use only `base_dir/secrets/rest-cursor-signing.v1`. While the
+provider stays quarantined, recovery validates one complete regular 32-octet
+record, its exact `0600` mode, service ownership, and its owner-only containing
+directory. Recovery then synchronizes that directory and proves that the same
+validated record remains canonical. Only then does it atomically re-enable
+that exact generation across the application processes that share the path.
+
+A missing, malformed, replaced-during-recovery, or unsynchronizable canonical
+file returns `{:error, :cursor_signing_recovery_refused}`. Startup remains
+refused or the running provider remains quarantined. Recovery does not select a
+temporary file, database row, pointer, journal, marker, backup, cached value,
+or newly generated value. A later recovery attempt begins from the canonical
+file again; no background retry runs.
+
+After power loss during an indeterminate rotation, the canonical file may
+contain the old or new complete generation. Recovery re-enables whichever
+complete generation the canonical path contains after validation and a
+successful directory synchronization. Old cursors verify only if the old
+generation is recovered; new cursors verify only if the new generation is
+recovered. This named failure preserves the sole-file design: deleting
+rotation would violate the operator goal, while a second durable record would
+violate the sole-authority invariant.
 
 For an authentic cursor whose signature is valid but whose resolved-principal
 binding differs from the request, the router preserves the canonical identical
@@ -450,10 +569,17 @@ the same typed invalid-cursor class.
 The material, its path, raw HMAC key, decoded cursor body, and signature-input
 bytes never enter HTTP, cursor diagnostics, logs, traces, telemetry, exceptions,
 crash reports, artifacts, or test output. Internal failures expose no key,
-principal, route, tuple, or name-presence detail. If an already-running provider
-cannot read an intact material record, the route emits the existing `500
-projection_invalid` envelope with `Cache-Control: no-store` and no partial
-response; it does not downgrade to an unauthenticated cursor mode.
+resolved request principal, route, tuple, or name-presence detail. If an
+already-running provider cannot read an intact material record, the route emits
+the existing `500 projection_invalid` envelope with
+`Cache-Control: no-store` and no partial response; it does not downgrade to an
+unauthenticated cursor mode.
+
+The indeterminate-commit and recovery-refused outcomes expose only their exact
+type, the operation kind, the safe cause class, and the acting local principal:
+the owner for an explicit operation or application bootstrap for startup.
+They expose no material, path, generation value, temporary name, filesystem
+detail, cursor body, signature input, route, tuple, or resolved principal.
 
 ### Authentication, visibility, errors, and cache
 
@@ -486,6 +612,18 @@ the cases specified above. It uses the canonical error envelope and
 
 ### Implementation and test touchpoints
 
+- `lib/tightbeam/cursor_signing.ex` and `lib/tightbeam/application.ex`: preserve
+  the sole canonical 32-octet file; implement the three terminal durability
+  outcomes, cross-process quarantine, startup and owner recovery, and their
+  serialization boundaries without another durable record.
+- `lib/tightbeam/gateway.ex` and `lib/tightbeam/wire/router.ex`: keep Gateway
+  injection and application-boundary admission atomic with quarantine. Router
+  remains a signing-provider consumer and owns no maintenance operation, key,
+  state cache, or recovery path.
+- Focused cursor-signing tests and the existing filesystem failure probe:
+  prove persistent pre-publication and post-publication failures, restart and
+  power-loss recovery, cross-process admission boundaries, exact typed
+  outcomes, and redaction with captured real failure responses.
 - `lib/tightbeam/wire/router.ex`: add the listed GET matches; reuse bearer and
   AU2 dispatch-parity resolution; call M1 seams; encode R4 responses and
   canonical errors.
@@ -635,36 +773,46 @@ the cases specified above. It uses the canonical error envelope and
     principal, then the server returns the canonical identical `404 not_found`
     result from Acceptance 10.
 21. Given a provisioned material file and a cursor issued before a clean
-    application restart, when the same route and principal reuse that cursor
-    after restart, then verification succeeds with unchanged D1 item bytes;
-    the test proves the key was loaded from the durable file and not regenerated
-    or retained only in the prior request process.
+    application restart, when startup validates that file and synchronizes its
+    containing directory, then the provider re-enables that exact generation
+    before listener admission. The same route and principal can reuse the
+    cursor with unchanged D1 item bytes. The test proves that startup neither
+    regenerated material nor used material retained by the prior process.
 22. Given a valid pre-rotation cursor, when the local operator invokes the
-    provider's rotation operation, then the replacement is a fresh 32-octet
-    material file installed by one atomic rename, the old cursor returns
-    `400 invalid_cursor` before a row lookup, and a cursor issued after the
-    rename succeeds. A failed rotation preserves the old file and old-cursor
-    behavior. No REST or bearer-client operation can invoke rotation.
+    provider's rotation operation and the file flush, atomic rename, and
+    containing-directory synchronization succeed, then the operation returns
+    success. The old cursor returns `400 invalid_cursor` before a row lookup,
+    and a cursor issued after success verifies with the fresh 32-octet
+    generation. No REST or bearer-client operation can invoke rotation.
 23. Given at least 64 concurrent request processes and at least two application
     processes, when they issue and verify cursors before, during, and after one
-    rotation, then every operation observes one complete generation: pre-rename
-    cursors verify only before the rename, post-rename cursors verify after it,
-    and no torn, mixed, process-local, dummy, or bearer-derived key succeeds.
-    The test records the operation boundary and performs no resource-row lookup
-    for rejected cursors.
+    successful rotation, then each admitted operation observes one complete
+    generation. Operations that finish their material read before publication
+    use the old generation. The provider admits no operation from publication
+    through directory synchronization. Operations admitted after success use
+    the new generation. The test records the read, publication, synchronization,
+    and admission boundaries. No torn, mixed, process-local, dummy, or
+    bearer-derived key succeeds, and a rejected cursor causes no row lookup.
 24. Given an empty first-boot secrets directory, explicit local bootstrap
-    provisioning creates exactly one owner-only 32-octet file and admits the
-    listener only after durable creation. Given that file is absent, unreadable,
-    not owner-only, or not exactly 32 octets during normal startup, then startup
-    fails before listener admission, emits no secret-bearing diagnostic, and
-    does not silently regenerate or serve REST. Given a missing or malformed
-    injected provider, Router startup also fails closed with no fallback.
+    provisioning creates exactly one canonical 32-octet file with exact mode
+    `0600` and admits the listener only after the material-file flush and
+    containing-directory synchronization succeed. Given that file is absent,
+    unreadable, not exact mode `0600`, not exactly 32 octets, or its directory
+    cannot be synchronized during normal startup, then startup remains
+    quarantined and fails before listener admission. It emits no secret-bearing
+    diagnostic, silently generates no replacement, and serves no REST request.
+    Given a missing or malformed injected provider, Router startup also fails
+    closed with no fallback.
 25. Given a material file, a cursor, and each D1 route, when the test captures
     logs, traces, telemetry, exceptions, crash output, HTTP bytes, and artifact
-    output for provisioning, restart, signing, verification, rotation, and
-    failure, then none contains the material, path contents, HMAC input, raw
-    cursor body, or signature detail. Error bodies remain the existing closed
-    envelopes and `Cache-Control: no-store`.
+    output for provisioning, restart, signing, verification, rotation,
+    indeterminate commit, quarantine, and recovery refusal, then none contains
+    the material, path, generation value, temporary name, HMAC input, raw
+    cursor body, signature detail, route, tuple, or resolved principal. A safe
+    internal fault may contain only the exact outcome type, operation kind,
+    safe cause class, and acting local principal: the owner for an explicit
+    operation or application bootstrap for startup. HTTP error bodies remain
+    the existing closed envelopes and `Cache-Control: no-store`.
 26. Given all Acceptance 1–18 fixtures and gates, when they rerun with the
     provider injected, then routes, envelopes, status codes, cache headers,
     authentication, visibility, filters, order, pagination, six shared query
@@ -672,6 +820,55 @@ the cases specified above. It uses the canonical error envelope and
     item bytes are unchanged. The provider adds no serializer, query, route,
     public field, credential, principal rule, D2/D3 behavior, deployment, or
     release behavior.
+27. Given deterministic failure injection before the publication boundary of
+    first provisioning, when the local owner invokes provisioning, then the
+    operation returns an ordinary error and restart observes the unprovisioned
+    state. Given the same injection before rotation publication, then rotation
+    returns an ordinary error and restart loads the byte-identical prior
+    generation. Neither case enters quarantine or leaves a temporary authority.
+28. Given a persistent containing-directory synchronization failure immediately
+    after first-provision publication and after rotation rename, when the local
+    owner invokes each operation, then each invocation returns exactly
+    `{:indeterminate_commit, :cursor_signing_authority_may_have_advanced}` after
+    one failed synchronization and performs no internal retry. It never returns
+    success or an ordinary error. The provision case leaves a complete canonical
+    record visible. The rotation case leaves either old or new restart authority
+    possible and removes the old generation from the running verification set
+    at rename.
+29. Given the failure in Acceptance 28 and concurrent sign, verify, provision,
+    and rotate calls from at least two application processes, when the failed
+    directory synchronization returns, then the provider converts the held
+    publication boundary to quarantine before it releases the indeterminate
+    outcome. Each later call returns
+    `{:error, :cursor_signing_quarantined}`, reads no key bytes, and performs no
+    namespace mutation. A real HTTP request that reaches that provider returns
+    `500 projection_invalid`, `Cache-Control: no-store`, and no partial response
+    or row lookup.
+30. Given a quarantined provider and one complete canonical record, when an
+    explicit local owner recovery validates that record, successfully
+    synchronizes its containing directory, and proves that the record stayed
+    canonical, then recovery atomically re-enables exactly that generation
+    across both application processes. Given a missing, malformed, concurrently
+    replaced, or persistently unsynchronizable canonical record, then recovery
+    returns `{:error, :cursor_signing_recovery_refused}` and both processes
+    remain quarantined. The test observes no alternate store, generated
+    replacement, background retry, HTTP recovery path, or bearer-client
+    recovery path.
+31. Given power loss after an indeterminate rotation and fixtures that restore
+    the canonical path once with the old complete generation and once with the
+    new complete generation, when the application restarts, then startup first
+    remains quarantined, validates the restored record, and synchronizes the
+    containing directory. It then admits the listener with exactly the restored
+    generation. The old fixture accepts only old-generation cursors; the new
+    fixture accepts only new-generation cursors. A validation or synchronization
+    failure refuses startup and admits no listener.
+32. Given power loss after indeterminate first provisioning and fixtures that
+    restore the canonical path once absent and once with the complete published
+    generation, when the application restarts, then the absent fixture returns
+    `{:error, :cursor_signing_recovery_refused}`, remains unprovisioned, and
+    admits no listener. The complete-record fixture validates and synchronizes
+    that exact record, then atomically enables it before listener admission.
+    Neither fixture silently generates material or selects a staging file.
 
 ## Open Questions
 
