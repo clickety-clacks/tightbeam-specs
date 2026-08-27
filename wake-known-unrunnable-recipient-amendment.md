@@ -1,10 +1,12 @@
 # Bug A amendment: known-unrunnable wake recipients
 
-Status: V7 COMPOSITION REVIEW CANDIDATE — IMPLEMENTATION BLOCKED ON COMMISSIONED R2 FACT BASE
+Status: V8 COMPOSITION REVIEW CANDIDATE — IMPLEMENTATION UNAUTHORIZED PENDING EXACT-BYTE REVIEW
 
 Date: 2026-08-27 PT
 
-Successor assignment: `asg_c59889f4-dbe4-4ac9-bb96-e605bcb525d1`
+Incorporation assignment: `asg_419e375e-9b05-4142-a69a-4e49200069f5`
+
+Predecessor composition assignment: `asg_c59889f4-dbe4-4ac9-bb96-e605bcb525d1`
 
 Work items:
 
@@ -68,19 +70,31 @@ agent-reachable exit. This revision names the missing base as blocking, composes
 actual stored delivery-principal rule, and replaces the global hold with a per-wake
 quarantine.
 
+R2 producer `asg_8d329203-251e-4204-8ae6-54ca651e89e8` then supplied exact separate
+base `art_bce15c1c`, commit `92b0e0ceeb894203bc397d0b0be2abe08720e61d`,
+SHA-256 `41f5d08d2f0a2334c76a78428cfa5424b17d4dffa550fb5d3094b696c3ee1a1a`.
+Independent re-review `asg_d7f12ecb-fa94-4ad8-9cb9-7f45b6173ef9` returned
+reviewed-clean verdict `att_0f47859d-bb97-4aa6-afe7-99de6b979204` and report
+`art_eba35f77`, SHA-256
+`f008aed6bf08bd8686ca552de4250ab6cc24dfd08141d34709c279bcc487bcfe`.
+This revision incorporates that exact base by immutable reference and by carrying its
+byte-exact canonical file beside this composition. It does not restate or fork B1-B9.
+
 ## Spec identity and authority
 
 The canonical identity remains
 `tightbeam-specs/wake-known-unrunnable-recipient-amendment.md`. Assignment
-`asg_c59889f4-dbe4-4ac9-bb96-e605bcb525d1` owns this v7 composition successor.
+`asg_419e375e-9b05-4142-a69a-4e49200069f5` owns this R2 incorporation successor.
 Each review and handoff must bind this file by its SHA-256 digest and containing commit.
 
 The reviewed base `art_aac9cafc` and the final F2 ruling control the public terminal
 contract. Current main does not implement that base. R8 makes its Bug A terminal and
 sender-notice slice an explicit part of this successor instead of assuming it exists.
-Current main and the reviewed bases also do not define the R2 authoritative fact store,
-registry revisions, or their writer transitions. This successor names that missing base
-and blocks implementation; it does not invent it inside schema-composition text.
+Exact reviewed R2 base `art_bce15c1c` now defines the authoritative fact store,
+registry revisions, writer transitions, validation, and transactional snapshot seam.
+This successor incorporates that authority without copying its clauses. The byte-exact
+`r2-authoritative-fact-revision-base.md` at the commit and digest above is normative for
+every R2 object, owner, transition, error, and acceptance fixture referenced here.
 In preserved F7 clauses, “existing” or “pre-amendment” terminal and notice behavior
 denotes that reviewed contract. It does not assert that current main already implements
 the contract.
@@ -94,9 +108,10 @@ Historical partial implementation pointer `art_7409e650` remains integrity and c
 evidence only. Its missing bytes are not current source authority.
 
 Operator request `dr_99628605-cb7a-44b4-a509-d46b8e7f4ffd` is ruled
-`commission_r2_fact_base`. The ruling selects the missing-base path; it does not define
-the base. This successor remains non-buildable until that commissioned authority exists,
-passes independent review, and is incorporated here.
+`commission_r2_fact_base`. Exact `art_bce15c1c` fulfills that commission and
+`att_0f47859d-bb97-4aa6-afe7-99de6b979204` independently reviews it clean. This
+successor incorporates the reviewed base. Implementation remains unauthorized until one
+independent exact-byte review returns reviewed-clean on this composition commit.
 
 This successor changes design only. It authorizes no implementation, source edit,
 release-line work, provider probe, credential access, wake experiment, deployment,
@@ -162,17 +177,17 @@ durable conflict instead of inventing a sender.
   `{host, harness, provider, credentialSlotId, credentialRevision}` read from the local
   credential registry. `credentialSlotId` is an opaque local identifier. A refusal or
   projection must not expose it.
-- **Authoritative local fact**: a typed local record with `factId`, `factKind`,
-  `matchKey`, `principal`, `observedAt`, and optional `expiresAt`. The fact writer must
-  advance each registry revision named in `matchKey` whenever that registry state
-  changes. A fact is current only when each named revision equals the revision read by
-  the checking transaction and `expiresAt` is null or later than the transaction clock.
-- **Missing R2 fact base**: the absent authority that must define the durable
-  authoritative-fact object, each hold, circuit, adapter, catalog, credential, and quota
-  registry token used by R2, the sole writer for each object, and the exact transition
-  that advances each revision. Current main v7, reviewed Bug A, and reviewed F7 define
-  none of those objects or writer transitions. This is a BLOCKING base, not an
-  implementation detail or a sibling-registry alias.
+- **Authoritative local fact**: the exact immutable B2/B5
+  `r2_authoritative_facts` row from `art_bce15c1c`. It carries `factId`, `factKind`,
+  the complete typed match key, source, selection and materializing transition IDs,
+  cause, principal, observation time, and optional expiry. It is current only under
+  that base's B5-B7 typed-key, revision, source-state, and transaction-clock rules.
+- **Incorporated R2 fact base**: exact `art_bce15c1c` at commit
+  `92b0e0ceeb894203bc397d0b0be2abe08720e61d` and SHA-256
+  `41f5d08d2f0a2334c76a78428cfa5424b17d4dffa550fb5d3094b696c3ee1a1a`,
+  reviewed-clean in `att_0f47859d-bb97-4aa6-afe7-99de6b979204`. Its B1-B9 and A1-A7
+  clauses are normative here. No sibling registry, in-memory substitute, or copied
+  subset aliases that base.
 - **Exact fact match**: member-for-member equality between a fact's complete typed
   `matchKey` and the cause-specific key that R2 constructs from the current execution
   selection and local registry tokens inside the same transaction. Text compares by
@@ -239,12 +254,11 @@ durable conflict instead of inventing a sender.
    implementation assignment `asg_e7556f25-d909-42f1-ba89-68e1714e6cef`.
 4. Normal resolution returns one exact session after it applies the existing direct,
    role-fallback, and owner-Main rules.
-5. Current main v7 has no durable R2 fact-and-revision base. The Gateway can read
-   session state, but no reviewed authority defines the hold, circuit, adapter, catalog,
-   credential, or quota objects and writer transitions required to construct every R2
-   key. Operator ruling `dr_99628605-cb7a-44b4-a509-d46b8e7f4ffd` commissions that
-   base. R1-R7 remain controlling intent, but implementation is blocked until the
-   commissioned authority is reviewed and incorporated here.
+5. Current main v7 has no durable R2 fact-and-revision base. The incorporated R2 base
+   now supplies the reviewed authority for each hold, circuit, adapter, catalog,
+   credential, quota, session-execution, transition, and fact object required to
+   construct every R2 key. The v7-to-v8 transaction in R8 must create and validate those
+   exact objects before consumers start.
 6. The 2026-08-18 specimen records session `s_f63d31e5`, twelve failed turns, and lost
    wakes `w_45faa8a8` and `w_a2a13028`. The specimen motivates this amendment. It does
    not authorize a live replay or provider probe.
@@ -417,7 +431,7 @@ They must not require or synthesize a `wake_delivery_outcomes` cursor entry. Bub
 publish the committed notice through the reviewed outbox path; it must not create a
 second notice or start a second logical failure climb.
 
-### R8. Compose current v7 with the missing Bug A base
+### R8. Compose current v7 with Bug A and the incorporated R2 base
 
 Current main v7 has turn terminals but no public wake terminal. It also has no
 `wake_sender_notices` table, notice publisher, `wake-notices` projection, sibling
@@ -426,14 +440,36 @@ implementation choices. The successor must add the reviewed Bug A public-termina
 sender-notice slice before it can satisfy R4-R7. It must add the known-unrunnable cause,
 typed failure classes, evidence reference, and trigger provenance to that same slice.
 
-Current main v7 also has no Missing R2 fact base. This amendment does not authorize an
-implementer to choose its tables, in-memory state, token encodings, revision sources, or
-writers. Operator ruling `dr_99628605-cb7a-44b4-a509-d46b8e7f4ffd` commissions a
-separate R2 fact-base authority. No v8 implementation assignment may open until that
-authority passes independent review and this canonical file incorporates its exact
-objects, owners, and transitions. It must make each R2 source and revision constructible
-in one checking transaction; an unspecified phrase such as “R2 fact material” is not a
-base.
+Current main v7 also has none of the incorporated R2 base. Exact `art_bce15c1c` fixes
+the tables, token encodings, revision sources, owners, transitions, errors, and
+validation rules. An implementation must use those exact definitions. It must not
+substitute an in-memory store, sibling registry, generic fact writer, alternate token,
+or prose-derived state. The base makes each R2 source and revision constructible and
+readable in one checking transaction through `R2Facts.snapshot_for_selection/2`.
+
+This composition incorporates these exact R2 ownership boundaries without restating
+their full B1-B9 contracts:
+
+| Boundary | Incorporated authority |
+|---|---|
+| Schema objects | `R2Facts` supplies one normalized DDL string for each B2 table, index, and append-only trigger. `Schema` orders that module and remains the sole stamp and migration coordinator. |
+| Mutation admission | The database write serializer is the sole issuer and validator of the process-local R2 write capability and serializes one source transaction at a time. |
+| Registry and fact mutation | Only `R2Facts` writes R2 current rows, event histories, transitions, and `r2_authoritative_facts`, through its private capability callback. |
+| Source transitions | Only `Sessions`, `R2Facts.Holds`, `AdapterCoordinator`, `AdapterCircuit`, `HarnessCatalog`, `Credentials`, `QuotaClassifier`, and the `R2Facts` expiry worker call their exact B3 typed transition functions with the B3 causes and principals. |
+| Read and evidence | Gateway and Wakes call `R2Facts.snapshot_for_selection/2` inside their existing transaction. Authorized evidence resolution uses only the B8 non-secret projection. |
+| Validation and startup | `R2Facts.validate/1`, then the expiry worker, then a second validation complete before Gateway or Wakes starts, under B7's closed errors and ordering. |
+
+The incorporated B2 object set is exactly `r2_transitions`,
+`r2_session_execution_events`, `r2_session_holds`, `r2_session_hold_events`,
+`r2_adapter_instances`, `r2_adapter_events`, `r2_adapter_circuits`,
+`r2_adapter_circuit_events`, `r2_harness_catalogs`, `r2_harness_catalog_events`,
+`r2_harness_catalog_entries`, `r2_harness_catalog_event_entries`,
+`r2_credential_slots`, `r2_credential_events`, `r2_quota_windows`,
+`r2_quota_window_events`, and `r2_authoritative_facts`, plus only the exact B2 indexes
+and append-only triggers. The exact columns, checks, foreign keys, stable IDs, revision
+rules, transition causes, source event forms, canonical CBOR, fact shapes, snapshot
+ordering, expiry, replay, rollback, restart, backup, privacy, and acceptance fixtures
+remain those of byte-exact `art_bce15c1c`.
 
 This table remains normative:
 
@@ -556,10 +592,11 @@ The successor stamp is `coordination-fabric-v1-phase1-v8`. The central `Schema` 
 gate remains the one stamp owner. `Schema.@schema_modules` remains the actual ordered
 schema-owner list. Wakes remains the one DDL and mutation owner for wakes, public wake
 terminals, sender notices, the migration-conflict table, and its two triggers. The
-product must contain one DDL string for each new Wakes object. The missing R2 base must
-name its own schema module and mutation owners before this v8 shape can be implemented.
-This successor does not invent `Schema.known_unrunnable_successor_registry/0` or reuse
-the sibling normalized registry as that owner.
+product must contain one DDL string for each new Wakes object. `R2Facts` must supply the
+exact B2 DDL strings and mutation seam from `art_bce15c1c`; `Schema` must insert that
+module in dependency order before Wakes consumers can start. This successor does not
+invent `Schema.known_unrunnable_successor_registry/0` or reuse the sibling normalized
+registry as that owner.
 
 The pre-boot shape gate must select one path from the durable stamp:
 
@@ -578,14 +615,15 @@ A non-empty database with no stamp, multiple stamps, or another stamp must retur
 The v7-to-v8 transition must acquire exclusive custody and recheck that one v7 stamp
 remains. In one transaction it must add the missing typed sender snapshot, public wake
 terminal, sender notice, publisher state, migration-conflict objects, vocabulary,
-checks, trusted legacy rows, and the exact objects later incorporated from the reviewed
-R2 base. Before it changes the stamp, it must compare each new normalized
+checks, trusted legacy rows, and the exact objects incorporated from reviewed
+`art_bce15c1c`. Before it changes the stamp, it must compare each new normalized
 `sqlite_master` object with its owning module's one DDL string, require an empty
 `PRAGMA foreign_key_check`, and require an `ok` `PRAGMA integrity_check`. The stamp
 change to v8 is the transaction's final mutation. Failure before commit preserves the
 exact v7 stamp, schema, rows, and objects. Immediate validation and a clean restart must
-perform read-only v8 validation. Until the R2 base is incorporated, this paragraph is a
-composition constraint and authorizes no partial v8 transition.
+perform read-only v8 validation. This paragraph incorporates R2 B7 and authorizes no
+partial v8 transition or product implementation before this exact composition passes
+independent review.
 
 The earlier v4-to-v5, v5-to-v6, and v6-to-v7 transitions remain the current main
 transactions. A failure in one preserves that transition's exact predecessor. A restart
@@ -624,25 +662,23 @@ Subtraction ruling: ADD the reviewed Bug A terminal and notice base because dele
 would leave new accepted wake failures invisible. ACCEPT untrusted legacy routing as one
 durable per-wake conflict because inventing a sender is forbidden. DELETE the earlier
 boot-wide conflict hold because one historical ambiguity must not stop unrelated work.
-Do not ADD an R2 registry in this amendment: its state owners and revision transitions
-are missing authority, and `dr_99628605-cb7a-44b4-a509-d46b8e7f4ffd` commissions that
-authority separately. The sibling registry loses because current main has no such
-mechanism and its non-null carrier boundary cannot represent R4 or legacy null-carrier
-results.
+ADD only the exact reviewed R2 registries and transitions through incorporated
+`art_bce15c1c`; do not invent or duplicate them in this amendment. The sibling registry
+loses because current main has no such mechanism and its non-null carrier boundary
+cannot represent R4 or legacy null-carrier results.
 
 ## Architecture
 
-The following gateway path becomes implementable only after the Missing R2 fact base
-has named its objects, writers, and revision transitions and this file incorporates that
-authority:
+After this exact composition passes independent review, the gateway path uses the
+incorporated R2 base as follows:
 
 1. Resolve the target through the current direct or role-fallback path.
-2. Construct the R1 execution selection and the R2 cause-specific key from current
-   local rows inside the scheduling transaction.
-3. Return R3 only when one current fact's complete key equals that constructed key.
+2. Call `R2Facts.snapshot_for_selection/2` inside the scheduling transaction and use
+   its execution selection, tokens, and F7-priority `currentFacts`.
+3. Return R3 only for the first exact current fact returned by that seam.
 4. Otherwise, run the existing wake insertion path.
 5. At the act edge, first claim and preserve the ordinary, condition-match, or fallback
-   trigger under R4, then repeat steps 1 and 2 from new current reads.
+   trigger under R4, then repeat steps 1 and 2 in that act-edge transaction.
 6. Commit the R4 trigger evidence, null-carrier public `failed` result, and notice, or
    admit the carrier through the reviewed admission path.
 7. After carrier admission, use only the reviewed `delivered | failed | canceled`
@@ -666,10 +702,11 @@ sender notices. The Bug A notice publisher added by R8 is the only failed-or-can
 push writer. Bubble may reference the committed notice and must not publish a second
 sender message.
 
-The Missing R2 fact base has no architecture owner in current authority. A builder must
-not assign it to Wakes, `ConditionFacts`, `HarnessHealth`, an in-memory adapter, or the
-sibling registry by analogy. The owner named by the future ruling must be added here and
-to R8 before implementation handoff.
+`R2Facts` is the sole R2 schema, registry-mutation, transition, fact, validation, expiry,
+and snapshot owner under incorporated B1-B8. The database write serializer owns only
+admission and the unforgeable capability. `Schema` owns only ordered DDL and the v8
+stamp transition. A builder must not assign R2 ownership to Wakes, `ConditionFacts`,
+`HarnessHealth`, an in-memory adapter, or the sibling registry by analogy.
 
 The response schema adds only `target_known_unrunnable` and its closed precondition.
 The durable schema adds the missing Bug A `wake_terminal_outcomes` and
@@ -682,7 +719,7 @@ registry.
 Wakes owns the public-terminal and sender-notice mutation seam. `Schema` owns the one
 shape transition. The R8 notice publisher owns the only post-commit push. Bubble consumes
 the committed terminal and notice. This amendment authorizes no second schema system and
-does not pre-assign the missing R2 mutation seam.
+does not duplicate the incorporated R2 mutation seam.
 
 After implementation passes acceptance, CLI help and the operating manual must state:
 
@@ -824,10 +861,20 @@ remain byte-for-byte equal. No new notice, terminal, or carrier appears.
 
 ### A7. Null-carrier integration and recovery
 
-Every A7 v8 fixture includes the exact R2 base objects and writers from the future
-commissioned authority incorporated into this file. Until that authority passes review
-and is incorporated, A7 is a composition contract and no implementation gate may claim
-it passed.
+Every A7 v8 fixture includes the exact objects, owners, transitions, validation, and
+writers from incorporated `art_bce15c1c`. A7 remains a composition contract until one
+independent exact-byte review returns reviewed-clean on this revision. No implementation
+gate may claim it passed before that verdict.
+
+Given this composition candidate, when its containing commit is inspected, then that
+commit descends from both predecessor composition commit
+`344ac913382d768af8bdeff0bdabf226009d7cb7` and R2 commit
+`92b0e0ceeb894203bc397d0b0be2abe08720e61d`; its
+`r2-authoritative-fact-revision-base.md` has SHA-256
+`41f5d08d2f0a2334c76a78428cfa5424b17d4dffa550fb5d3094b696c3ee1a1a`; and its R8,
+Architecture, and A7 name the exact R2 objects, owners, transition seam, read seam, and
+validation order without copying or weakening B1-B9. The R1-R7 and A1-A6 sections
+remain byte-for-byte equal to predecessor composition `art_6d4c9985`.
 
 Given a v7 fixture that does not include the proposed sibling `wake_delivery_outcomes`
 table, when migration and the next clean boot run, then the v8 product still satisfies
@@ -937,9 +984,10 @@ restart creates no duplicate conflict and does not block another wake or carrier
 ## Open Questions
 
 None. The owner answered the only blocking choice through
-`dr_99628605-cb7a-44b4-a509-d46b8e7f4ffd=commission_r2_fact_base`. Production remains
-blocked on that commissioned, reviewed, and incorporated dependency; the dependency is
-not an unanswered spec choice.
+`dr_99628605-cb7a-44b4-a509-d46b8e7f4ffd=commission_r2_fact_base`. Exact reviewed-clean
+`art_bce15c1c` fulfills that commission and this revision incorporates it. Product
+implementation remains unauthorized until this exact composition receives one
+independent reviewed-clean verdict; that review gate is not an unanswered design choice.
 
 A new precondition, external health probe, alternate recipient, automatic retry,
 conflict repair, or rerouting rule requires a separate reviewed amendment.
