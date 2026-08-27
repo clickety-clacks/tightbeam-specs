@@ -1,6 +1,6 @@
 # Decision-expecter smoke integration
 
-Status: verified before landing.
+Status: landed and verified.
 
 - Work item: `wi_db31a5d5-3c61-4da4-b4d4-a021900ea3dd`
 - Integration assignment: `asg_8284d0a3-c53e-452e-9b32-a246a8152aed`
@@ -79,8 +79,26 @@ reuse the different-session process.
 This discrepancy changes the teardown claim in the review report. It does not
 change the exact source, independent code review, or repeated gate results.
 
-## Landing boundary
+## Landing evidence
 
-The product push has not occurred. The integrator must read the remote refs
-again immediately before a non-force fast-forward of `main`. Any movement or
-ancestry mismatch stops the landing.
+At 22:13 PT, the final pre-write read showed `main` at exact
+`cba8d6c5e43e974e93890a901b83abd55f723500`. It showed the source and owned
+integration branch at exact
+`c5a56f005edbd1648b7e0b9140f40f07922db9be`. The old `main` was an ancestor
+of the candidate. `git diff --check` passed.
+
+The non-force command `git push origin
+c5a56f005edbd1648b7e0b9140f40f07922db9be:refs/heads/main` advanced `main`
+by one direct fast-forward. The remote accepted the update from `cba8d6c5` to
+`c5a56f0`.
+
+The immediate remote readback returned `main`, the source branch, and the
+owned integration branch at exact `c5a56f005edbd1648b7e0b9140f40f07922db9be`.
+It returned `0.1.9` unchanged at
+`6c0eacb337c1de086d8d7d76f1c1dc57cad9a3d5`. It returned locked `0.1.8`
+unchanged at `2ff4ed2a93527f1a7eeb56f2b9a8c52f10368ab5`.
+
+The remote proof log SHA-256 is
+`a9e98a8f22d8050ef35735880da6518df95b643c5e6a33b1b2ae8ce9e78513f4`.
+No release, deployment, maintenance-line change, configuration change,
+credential change, identity change, or unrelated live-state change occurred.
