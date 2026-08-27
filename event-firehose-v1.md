@@ -471,10 +471,19 @@ repaints. Precedents for server-side seen-state: IMAP `\Seen`, Slack
 per-user per-channel `last_read`, Matrix read markers, Kafka
 broker-stored consumer-group offsets.
 
-M4. A chat client: model from the transcript read (paginated,
-before/after); send via wake; watch `wake.scheduled` and the turn/message
-classes update the model; deep scroll-back pages the transcript read.
-Whether every piece stands on today's query surface is recon wi_9fdc0c07.
+M4. A chat client builds conversation state from the canonical REST
+`GET /api/sessions/:sessionKey/messages` read and may reach it through the
+`transcript` CLI wrapper. Deep scroll-back passes REST's opaque
+`page.oldestCursor` as `before`. The client sends via wake and watches
+`wake.scheduled`, the turn/message classes, and `session.*` as supplied by the
+separate recon-finding-G2 prerequisite. After the client chooses a
+`sessionKey`, it subscribes to `message.created` and the `session.` prefix for
+the selected key before reading conversation state. On reconnect, a
+seq skip, or a session history-boundary change, it applies M2: subscribe first
+and rebuild the displayed slice from a cursorless REST tail. It does not
+request notice replay, use a stream cursor, or treat an `after` page as gap
+recovery. REST R5d and `transcript-verb-v1.md` carry the history and wrapper
+acceptance. Recon wi_9fdc0c07 remains the demand evidence.
 
 ## Delivery semantics
 

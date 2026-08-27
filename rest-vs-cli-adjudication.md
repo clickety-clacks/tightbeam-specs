@@ -58,7 +58,7 @@ convenience) and the data moves to/lands on a REST resource.
 | work-item-trace | GET /api/work-items/:id/trace | composed resource |
 | assignments / assignment-get | GET /api/assignments, /api/assignments/:id | today's /api/work reconciles into this naming |
 | attests | GET /api/assignments/:id/attests | |
-| transcript | GET /api/sessions/:key/messages?before&after&limit | pagination precedent from transcript.ex |
+| transcript | GET /api/sessions/:key/messages?before&after&limit | REST R5/R5d owns opaque cursor and history-boundary semantics; the CLI wrapper owns no data contract |
 | inspect | GET /api/sessions/:key | |
 | artifacts / artifact-get | GET /api/artifacts, /api/artifacts/:id (+ existing /download/:asset_id) | |
 | decision-requests / decision-request | GET /api/decision-requests, /:id | |
@@ -107,8 +107,10 @@ GET /api/wakes/:wakeId/digest-members.)
   plane computes the projection. CLI wrapper stays because agents live in
   it.
 - **transcript**: REST with before/after pagination; the chat client's
-  model build is the canonical consumer (spec M4). CLI wrapper stays for
-  agents reading a colleague's conversation.
+  model build is the canonical consumer (spec M4). The CLI wrapper stays for
+  agents reading a colleague's conversation and passes REST's opaque cursors
+  through unchanged. It does not retain the superseded message-id cursor or
+  candidate/message projection.
 - **work-item-trace**: REST composed resource; the CLI wrapper stays.
 - **attend**: verb — it changes attention state. **coordination-share
   and digest-members**: r2 correction — pure reads (gateway.ex confirms

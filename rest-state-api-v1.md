@@ -444,6 +444,42 @@ whitespace, non-ASCII digit, non-integer, or repeated key as
 route clamps a valid value above 500 to 500. This clause changes no other
 resource's pagination contract.
 
+R5d. Conversation history has one authority: the REST transcript-messages
+collection. For a target session with current history boundary
+`clearedThroughSeq = F`, the visible set is the R7 transcript-message rows
+whose `seq > F`, ordered by R5a `(seq,id)`. Tail, `before`, `after`,
+`hasMoreBefore`, and `hasMoreAfter` operate only on that visible set. Cleared
+rows do not make either page flag true. The service reads `F`, selects the
+items, and computes the flags as one indivisible read; a returned page reflects
+one value of `F`. For one `sessionKey`, the observable value of `F` is
+non-decreasing. A production mutation cannot expose a row that an earlier
+value of `F` hid.
+
+The signed message cursor contains the immutable `(seq,id)` tuple and R5/AU7
+request binding. It does not contain `clearedThroughSeq`; that value is
+server-owned state, not a request filter. The service compares the decoded
+tuple directly and does not resolve it through a live row. Deleting the
+boundary row or advancing the history boundary therefore does not invalidate
+an otherwise valid cursor.
+
+When a valid cursor tuple is at or below the current history boundary,
+`before` returns an empty page with `hasMoreBefore:false` and
+`hasMoreAfter:true` exactly when the visible set is nonempty. `after` returns
+the first visible page above the boundary. An empty caught-up `after` page has
+`hasMoreAfter:false`; the caller retains its last non-null `newestCursor` for
+healthy catch-up. Reconnect, a firehose sequence skip, or a history-boundary
+change invokes a fresh displayed-slice rebuild from a cursorless tail instead
+of treating `after` as gap recovery.
+
+For a nonempty page, `hasMoreBefore` is true exactly when a visible row exists
+below the page's first item, and `hasMoreAfter` is true exactly when a visible
+row exists above its last item. A cursorless tail has `hasMoreAfter:false`. An
+empty cursorless tail has both flags false. An empty caught-up `after` page has
+`hasMoreBefore:true` exactly when the visible set is nonempty and
+`hasMoreAfter:false`. The service emits `oldestCursor` bound to `before` and
+`newestCursor` bound to `after`; using either cursor in the other direction
+returns `400 invalid_cursor`.
+
 R6. Filters are whitelisted per resource:
 
 | Resource | V1 whitelist filters |
@@ -555,7 +591,10 @@ sessions collection lookup. It returns zero, one, or many visible R7 session
 candidates without transcript content. The caller then chooses a `sessionKey`
 and calls `GET /api/sessions/:sessionKey/messages`. The wrapper does not issue
 an unfiltered session read, a substring lookup, SQL, or another session-name
-endpoint.
+endpoint. The wrapper passes REST's opaque `before` and `after` cursors through
+unchanged and returns the R4 page object unchanged. It does not accept or emit
+a message id as a cursor, translate the superseded transcript projection, or
+fall back to a legacy dispatch read after M4 parity passes.
 
 R6c. The shared seams for these two resources are named and exclusive:
 
@@ -1064,6 +1103,15 @@ C2. New flexible reads are designed REST-first; the CLI gains a wrapper
 only when a common agent task wants one line. `doctor` stays local (it
 probes the host, it is not a state resource).
 
+C3. `transcript --name` maps to the exact-name sessions collection and returns
+full R7 session items. `transcript --session` maps to the transcript-messages
+collection and returns full R7 message items. Machine-readable CLI output
+preserves the successful R4 envelope, R7 items, and page cursors. On refusal,
+it returns the REST error code without choosing a second authorization or
+cursor outcome. A human renderer may select fields, add labels, or summarize
+counts without creating another data field or cursor meaning.
+`transcript-verb-v1.md` owns only this wrapper and presentation mapping.
+
 ## Migration (order is normative)
 
 M1. Freeze R7 projections, R8 mappings, R9 dependency lists, and AU4
@@ -1345,6 +1393,55 @@ query seam and serializer and emits the unchanged R7 object. The test rejects
 inline SQL, a second visibility predicate, a second item serializer, a
 caller-selected field/sort/join parameter, and a candidate-only session
 projection.
+
+A35. Given 1,205 visible transcript messages with tied and regressed
+timestamps, when a caller reads the cursorless tail and repeatedly passes each
+`oldestCursor` as `before`, then each visible `(seq,id)` appears once, each page
+is oldest-to-newest, and the chain stops with `hasMoreBefore:false`. Decoding
+each cursor yields the complete `(seq,id)` tuple and no message-id alias or live
+row locator.
+
+A36. Given a cursor returned before its boundary row is deleted, when the next
+page runs, then its items and page object equal the result produced while that
+row existed while the other rows remain unchanged.
+
+A36a. Given a cursor whose tuple is at or below a newly advanced
+`clearedThroughSeq`, when `before` runs, then it returns an empty item list,
+`hasMoreBefore:false`, and `hasMoreAfter:true` exactly when visible rows exist.
+When `after` runs with that cursor, it returns only visible rows above the new
+boundary.
+
+A36b. Given nonempty visible history and a caught-up `after` cursor, when the
+caller requests the next page, then the page is empty and sets
+`hasMoreBefore:true` and `hasMoreAfter:false`. Given an `oldestCursor` used as
+`after` or a `newestCursor` used as `before`, the service returns
+`400 invalid_cursor`.
+
+A36c. Given each production seam that can change `clearedThroughSeq`, when the
+seam would produce a candidate below the stored value, then the next session
+read returns the stored value and the transcript route exposes no previously
+cleared row.
+
+A37. Given a cold client subscribed before its snapshot, when
+`clearedThroughSeq` changes after its message pages but before its confirming
+session read, then the client detects the boundary change, discards the
+candidate slice, and rebuilds from a cursorless tail. The accepted slice
+contains no row whose `seq` is at or below the accepted boundary. Given the
+boundary changes after the confirming session read, then the buffered session
+notice triggers the same discard and rebuild. Given a firehose sequence skip
+or reconnect, the same displayed-slice rebuild converges without a replay
+route, stream cursor, or event retention. A concurrent boundary-advance test
+proves each returned page corresponds wholly to the boundary before or after
+the commit and never mixes both. The subscription includes `message.created`
+and the `session.` prefix supplied by recon finding G2 for the selected
+`sessionKey`.
+
+A38. Given the same principal and selection, when direct REST and the M4
+`transcript` wrapper run successfully, then their R4 envelopes, R7 items, and
+page cursors are equal. Given a REST refusal, the wrapper returns the same
+error code without choosing a second authorization or cursor outcome. Passing
+a prior message id as `before` returns `400 invalid_cursor`; the wrapper does
+not decode, translate, retry, or invoke the legacy dispatch read.
 
 ## Open questions — Spirit questions for Mike
 
