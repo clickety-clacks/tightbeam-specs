@@ -6,9 +6,14 @@ Amendment candidate, 2026-08-25: add the ExecutionMap composed response,
 closed error envelope, and dependency-entry schema. The durable Toplines
 schema below is unchanged.
 
-G1 amendment candidate, 2026-08-27: add the nullable, open
+G1 amendment candidate, 2026-08-27: add the optional, open
 `messageType` discriminator to the canonical transcript-message item. REST,
 CLI wrappers, and `message.created` use this same item shape.
+
+G1 review successor, 2026-08-27: close F1 and F2 from exact-commit verdict
+`att_7f3ba935-e366-42f0-a0ca-bdd8e17d813e` and report `art_8bd52233` by
+restoring omission for a null stored discriminator and the ruled `assistant`
+fallback for a missing or unrecognized public value.
 
 ## Encoding rules
 
@@ -25,21 +30,24 @@ version are positive JSON integers with the same numeric value.
 these three fields. `facts.id` is the sole numeric public field named `id` in
 v1.
 
-Every item contains exactly the keys listed by R7/R7a, in that listed order.
-Nested objects contain exactly the keys listed here, in their listed order.
-The encoder emits no insignificant whitespace. It escapes JSON strings by the
-same library path for REST, CLI, and firehose.
+Every item contains exactly the keys listed by R7/R7a, in that listed order,
+except for the conditional transcript-message `messageType` key defined
+below. Nested objects contain exactly the keys listed here, in their listed
+order. The encoder emits no insignificant whitespace. It escapes JSON strings
+by the same library path for REST, CLI, and firehose.
 
 Maps whose keys are product data encode keys in ascending Unicode code-point
 order. Set-like arrays sort by the tuple named below. Sequence arrays preserve
 the named semantic order. Null is allowed only where this file names it.
 
-The transcript-message `messageType` key is always present. Its value is a
-string or null. Current writers emit exactly `assistant`, `substrate`,
-`marker`, or `agent`; human-authored and historical unclassified rows emit
-null. The string domain is open for additive compatibility: a reader accepts
-an unrecognized string without changing the item's `role`, and the client
-keeps its existing role-based rendering behavior. An encoder does not derive
+The transcript-message `messageType` key is present in the R7 position only
+when the stored discriminator is non-null. Its value is then a string. A null
+stored discriminator omits the key; an encoder never emits `messageType:null`.
+Current writers emit exactly `assistant`, `substrate`, `marker`, or `agent`;
+human-authored and historical unclassified rows omit the key. The string
+domain is open for additive compatibility: a reader accepts an unrecognized
+string. A missing or unrecognized value means `assistant` for message-type
+presentation and does not change the item's `role`. An encoder does not derive
 this field from `content`, `sender`, or another public field.
 
 Notation: `S` string, `I` integer, `B` boolean, `N` JSON number, `O<T>` closed
@@ -137,8 +145,10 @@ whitespace. Each ExecutionMap response sets exactly the application headers
 
 ## Resource field types and nullability
 
-Fields not listed under “nullable” are required and non-null. Enum fields use
-the domains in the next section.
+Fields not listed under “nullable” are required and non-null, except for the
+conditional transcript-message `messageType` key defined above. That key is
+optional and non-null when present. Enum fields use the domains in the next
+section.
 
 ### Catalog and identity
 
@@ -161,7 +171,7 @@ the domains in the next section.
 | Resource | Strings | Integers | Booleans | Arrays / objects | Nullable |
 |---|---|---|---|---|---|
 | sessions | sessionKey, displayName, kind, ownerUserId, origin, spawnedBy, handle, archetype, identityName, identityRevision, harness, provider, model, thinkingLevel, modelContext, host, state, mechanicalStatus | orderIndex, clearedThroughSeq, createdAt, updatedAt, rowVersion | isBuiltIn, adopted | overrides `O<SessionOverrides>` | ownerUserId, spawnedBy, handle, identityName, identityRevision, provider, model, thinkingLevel, modelContext, host, clearedThroughSeq, overrides |
-| transcript messages | id, sessionKey, role, messageType, content, sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, llmVisibleMessageId, assignmentId, jobRef, harness, provider, model, effort | seq, at, attentionTier, turnSeq, rowVersion | — | attachments `A<O<Attachment>>`, context `J` | messageType, sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, assignmentId, jobRef, harness, provider, model, effort, turnSeq, context |
+| transcript messages | id, sessionKey, role, messageType, content, sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, llmVisibleMessageId, assignmentId, jobRef, harness, provider, model, effort | seq, at, attentionTier, turnSeq, rowVersion | — | attachments `A<O<Attachment>>`, context `J` | sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, assignmentId, jobRef, harness, provider, model, effort, turnSeq, context |
 | work items | id, title, specRefName, specRefSha256, ownerUserId, state, failReason, routingWakeId, slateWakeId, createdByUser, createdBySession | createdInTurnSeq, createdAt, rowVersion | isBug, createdContextKnown | — | specRefName, specRefSha256, ownerUserId, failReason, routingWakeId, slateWakeId, createdByUser, createdBySession, createdInTurnSeq |
 | assignments | id, subject, holderKey, holderRole, openedByUser, openedBySession, state, outcome, closedByUser, closedBySession, closingAttestId, workItemId, reviewsAssignmentId, holderHarness, holderProvider, effectKind, derivedStatus | openedAt, closedAt, rowVersion | holderFallback | files `A<S>` | holderRole, openedByUser, openedBySession, outcome, closedAt, closedByUser, closedBySession, closingAttestId, workItemId, reviewsAssignmentId, holderHarness, holderProvider |
 | attests | id, assignmentId, kind, verdictKind, note, bySession, byUser, producer, producerCommand, byHarness, byProvider | ts, rowVersion | — | commitRefs `A<O<CommitRef>>` | verdictKind, note, bySession, byUser, producer, producerCommand, byHarness, byProvider, commitRefs |
@@ -192,8 +202,8 @@ the domains in the next section.
 - session kind: `main|dm|custom`; session state: `active|retired`.
 - message role: `user|assistant`; attentionTier: `-1|0|1`.
 - messageType current producer values: `assistant|substrate|marker|agent`.
-  This discriminator is the sole open string domain in this file; null and
-  unrecognized strings use the role fallback defined above.
+  This discriminator is the sole open string domain in this file; missing and
+  unrecognized values use the `assistant` fallback defined above.
 - work-item state: `open|iceboxed|closed|failed`.
 - assignment state: `open|closed`; outcome:
   `completed|surrendered|revoked|null`.
@@ -249,8 +259,9 @@ the domains in the next section.
   equal to the stored positive epoch-millisecond value.
 
 Any field without a declared type, nullable rule, enum value, nested key, or
-order is a schema failure. An unrecognized non-null `messageType` is the sole
-enum exception and remains a valid string. A reviewed projection-field
+order is a schema failure. A present `messageType` that is not a string is a
+schema failure. An unrecognized `messageType` string is the sole enum exception
+and remains valid. A reviewed projection-field
 amendment must change this file and the main R7/R7a row together. An envelope
 or dependency-entry amendment must change this file and the corresponding main
 R4 or R9 clause together.

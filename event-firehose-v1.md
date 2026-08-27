@@ -5,6 +5,11 @@ G1 amendment candidate, 2026-08-27: add the canonical transcript
 by `message.created` and the matching REST rows. This amendment changes no
 notice envelope, class, filter, authorization rule, or message content.
 
+G1 review successor, 2026-08-27: close F1 and F2 from exact-commit verdict
+`att_7f3ba935-e366-42f0-a0ca-bdd8e17d813e` and report `art_8bd52233` by
+restoring omission for a null stored discriminator and the ruled `assistant`
+fallback for a missing or unrecognized public value.
+
 Amendment candidate, 2026-08-25: add source-invalidation notices for durable
 Topline mutations and independently committed subagent markers. These notices
 make the composed Toplines and ExecutionMap REST views refreshable from each
@@ -217,8 +222,10 @@ class, source seam, refs, natural version, visibility, and payload.
 T7. **Message type** — the nullable classification stored at the message write
 seam and exposed as `messageType` in the canonical transcript-message
 projection. Current writers emit `assistant`, `substrate`, `marker`, or
-`agent`. A null or unrecognized value does not override `role`; the client
-keeps its existing role-based rendering behavior.
+`agent`. The serializer omits `messageType` when the stored classification is
+null. A client accepts an unrecognized string; a missing or unrecognized value
+means `assistant` for message-type presentation. `role` still carries
+authorship direction.
 
 ## Architecture — the event vocabulary law
 
@@ -282,9 +289,11 @@ state (the correlation seam; recon wi_9fdc0c07 verifies it).
 V5a. The `message.created` payload is the exact shared R7 transcript-message
 item. Its `messageType` value comes from the stored discriminator; neither the
 firehose adapter nor the serializer derives it from `content`, `sender`, or a
-first-line convention. The notice carries `refs.messageId` equal to item `id`
-and `refs.sessionKey` equal to item `sessionKey`. The matching REST row and
-notice payload therefore expose the same `messageType` bytes for one message.
+first-line convention. A null stored discriminator omits the key from both
+surfaces. The notice carries `refs.messageId` equal to item `id` and
+`refs.sessionKey` equal to item `sessionKey`. The matching REST row and notice
+payload therefore expose the same present or omitted `messageType` bytes for
+one message.
 
 ## The class registry (initial enumeration, derived from main tip)
 
@@ -345,7 +354,7 @@ correlation contract). A class without a row is a red build.
 |---|---|---|---|---|---|---|---|
 | `condition_fact.filed` | `condition facts` | `upsert` | `factId` | exact shared R7 condition-fact serializer | The condition fact `id` is its append-only natural version; its `rowVersion` equals `id`. Each successful insertion into `condition_facts` emits one notice after commit. An idempotent filing that returns the existing fact emits none. | `GET /api/facts` visibility. Consumers apply last-version-wins by `factId`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 | `critical_lease.updated` | `critical state` | `upsert` | `sessionKey` | exact shared R7 critical-state serializer | The item uses R7 critical-state `rowVersion`. Each committed change to the R7 item for one `sessionKey` emits one notice after commit. A replay or idempotent request that leaves the item and `rowVersion` unchanged emits none. | `GET /api/critical-state` admin-only visibility. Consumers apply last-version-wins by `sessionKey`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
-| `message.created` | `transcript messages` | `upsert` | `messageId`, `sessionKey` | exact shared R7 transcript-message serializer | The item uses its R7 `rowVersion`. Each newly committed transcript message emits one notice after commit; an idempotency replay that returns the existing row emits none. | `GET /api/sessions/:sessionKey/messages` visibility. Consumers correlate by `messageId` and apply last-version-wins by `(payload.id, payload.rowVersion)`. | A1 covers the class and both refs. A6 verifies the complete item, including `messageType`, is byte-equivalent to the matching REST row. |
+| `message.created` | `transcript messages` | `upsert` | `messageId`, `sessionKey` | exact shared R7 transcript-message serializer | The item uses its R7 `rowVersion`. Each newly committed transcript message emits one notice after commit; an idempotency replay that returns the existing row emits none. | `GET /api/sessions/:sessionKey/messages` visibility. Consumers correlate by `messageId` and apply last-version-wins by `(payload.id, payload.rowVersion)`. | A1 covers the class and both refs. A6 verifies the complete item, including conditional `messageType` omission, is byte-equivalent to the matching REST row. |
 
 R8b. Source invalidation classes are deliberately not R8 rebuildable-state
 rows. Each emits `op:"observe"`, omits `resource`, and carries exactly
@@ -604,11 +613,18 @@ historical message whose stored discriminator is null, when an authorized
 client fetches the rows and receives their `message.created` notices, then
 each notice payload is byte-equivalent to its matching fetched item. Each
 notice also has `refs.messageId == payload.id` and
-`refs.sessionKey == payload.sessionKey`.
+`refs.sessionKey == payload.sessionKey`. The historical item and payload both
+omit `messageType`.
 
 Given equal message content across those fixtures, when REST and firehose
 serialize them, then each surface preserves the stored discriminator. The test
 fails if either surface parses content or calls a route-local serializer.
+
+Given a matching fetched item and notice payload with an unrecognized
+nonempty `messageType`, when a conforming client reads either item, then it
+accepts the item and treats its message type as `assistant`. Given a matching
+pair that omits `messageType`, the client does the same. Neither fallback
+changes `role`.
 
 R8b source invalidations are outside A6 because they expose no rebuildable
 resource. A table-driven test instead requires their exact `op`, absent

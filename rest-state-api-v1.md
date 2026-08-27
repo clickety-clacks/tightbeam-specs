@@ -1,8 +1,14 @@
 # REST state API v1 — the read plane (product spec, canonical r4)
 
-G1 amendment candidate, 2026-08-27: add one nullable, open `messageType`
+G1 amendment candidate, 2026-08-27: add one optional, open `messageType`
 discriminator to the canonical transcript-message item shared by REST, CLI
-wrappers, and `message.created`. This amendment adds no second item shape.
+wrappers, and `message.created`. Its stored source is nullable; a null source
+omits the public key. This amendment adds no second item shape.
+
+G1 review successor, 2026-08-27: close F1 and F2 from exact-commit verdict
+`att_7f3ba935-e366-42f0-a0ca-bdd8e17d813e` and report `art_8bd52233` by
+restoring omission for a null stored discriminator and the ruled `assistant`
+fallback for a missing or unrecognized public value.
 
 Amendment candidate, 2026-08-25: distinguish durable Toplines from the
 mechanical ExecutionMap and add the REST-only ExecutionMap contract. The
@@ -278,10 +284,13 @@ mutations retain their R8 mappings and the marker source has the ruled R8b
 mapping. Its REST home is
 `/api/execution-map` and the three nested routes in R3a.
 
-T6. **Message type** — the nullable `messageType` field on the canonical
-transcript-message item. Current message writers emit `assistant`,
-`substrate`, `marker`, or `agent`. A null or unrecognized value does not
-override `role`; the client keeps its existing role-based rendering behavior.
+T6. **Message type** — the nullable stored discriminator exposed through the
+optional `messageType` key on the canonical transcript-message item. Current
+message writers emit `assistant`,
+`substrate`, `marker`, or `agent`. The serializer omits the public key when the
+stored field is null. A client accepts an unrecognized string; a missing or
+unrecognized value means `assistant` for message-type presentation. `role`
+still carries authorship direction.
 
 ## Requirements — surface
 
@@ -605,11 +614,13 @@ displayName collision set and does not select an arbitrary match or return a
 collision error.
 
 R7. Projection fields are closed-world and normative. Every item contains
-exactly the keys in its row below. Nullable keys remain present with `null`;
-an adapter does not omit them. Every notice-backed stored-state item carries
-`rowVersion`, a monotonically increasing integer derived at the write seam.
-A composed item carries `dependencyVersion` as described in R9 instead. No
-adapter may add a storage column or a caller-selected field.
+exactly the keys in its row below, subject only to the transcript-message
+`messageType` omission rule below. Nullable keys remain present with `null`;
+an adapter does not omit them. `messageType` is optional, not a nullable public
+key. Every notice-backed stored-state item carries `rowVersion`, a
+monotonically increasing integer derived at the write seam. A composed item
+carries `dependencyVersion` as described in R9 instead. No adapter may add a
+storage column or a caller-selected field.
 
 | Resource | Canonical item fields |
 |---|---|
@@ -637,6 +648,11 @@ adapter may add a storage column or a caller-selected field.
 | coordination share | `sessionKey`, `from`, `to`, `turns`, `wakeTurns`, `classedTurns`, `coordinationTurns`, `summons`, `algedonic`, `byClass`, `share`, `dependencyVersion` |
 | digest members | `wakeId`, `prompt`, `class`, `classElection`, `createdAt`, `dependencyVersion` |
 | work-item trace | `workItem`, `assignments`, `causalChildren`, `attribution`, `dependencyVersion` |
+
+For transcript messages, `messageType` is the sole conditional R7 key. The
+serializer emits it in the listed position when the stored discriminator is
+non-null and omits it when the stored discriminator is null. Every other R7
+key follows the ordinary closed-world presence and order rules.
 
 R7a. The SQ2 admin resources have these additional closed-world projections.
 Nested `documents` entries contain exactly `path`, `content`, and `sha256`.
@@ -666,20 +682,21 @@ message content. Current assignments are exact:
 - `marker`: a structural transcript boundary created through the marker write
   seam.
 
-A human-authored message and a historical row without the discriminator use
-`null`. Current writers emit no other string. Readers accept an unrecognized
-future string without changing `role`; the client keeps its existing
-role-based rendering behavior. Readers do not reject the item or parse
-`content`. The R7 serializer copies the stored value, including null. REST,
-CLI wrappers, and `message.created` call that one serializer; an adapter does
-not construct another transcript-message map.
+A human-authored message and a historical row without the discriminator store
+null. The R7 serializer omits `messageType` for either row. Current writers
+emit no other string. Readers accept an unrecognized future string. A missing
+or unrecognized value means `assistant` for message-type presentation; it
+does not change the item's `role`. Readers do not reject the item or parse
+`content`. For a non-null source, the R7 serializer copies the stored string.
+REST, CLI wrappers, and `message.created` call that one serializer; an adapter
+does not construct another transcript-message map.
 
 R7c. `rest-state-api-v1-wire-schema.md` is normative. A route is not frozen
 under M1 until its R7/R7a field row and wire-schema row both exist. The wire
 schema fixes JSON types, nullability, nested object keys, enum domains, and
 array order. An unknown closed-enum value fails serialization and emits no
 partial response. `messageType` is the one open discriminator defined by R7m;
-an unrecognized non-null value remains a valid string.
+an unrecognized string remains valid.
 
 R7b. `/download/:assetId` returns bytes, not a JSON projection. The asset row
 is its sole authorization metadata; no inferred artifact or work-item link
@@ -1148,7 +1165,9 @@ A2. For every non-observational rebuildable-state class governed by
 firehose A6, the REST detail item equals the notice payload after envelope
 removal.
 A3. Closed-world projection proof: every collection and detail item has
-exactly its R7 keys and no others. The secret-exclusion sweep rejects
+exactly its required R7 keys plus only the conditional keys that R7 names.
+The transcript-message cases prove `messageType` is the sole conditional key.
+The secret-exclusion sweep rejects
 `cliToken`, device `token`, `identityToken`, credential paths, environment
 secrets including MCP environment values, and every value outside SR5's
 explicit allowlist.
@@ -1221,7 +1240,7 @@ secret-bank value, PEM block, token assignment, Tightbeam base path, home path,
 symlink, `..`, receipt, and non-allowlisted kungfu document in every admitted
 content source; SR6 redacts or excludes each and preserves ordinary prose.
 A17. The wire-schema suite validates every R7/R7a item against its exact JSON
-types, nullability, nested keys, and enum domain. It randomizes input map and
+types, nullability, optionality, nested keys, and enum domain. It randomizes input map and
 set order 1,000 times and requires byte-identical item serialization and
 dependency digests. The ExecutionMap cases include the literal causal-event,
 subagent-marker, and coverage-epoch triples from R9a and reject a changed
@@ -1398,9 +1417,10 @@ projection.
 A35. Given visible messages whose stored `messageType` values are
 `assistant`, `substrate`, `marker`, and `agent`, plus one human-authored
 message and one historical row with no stored discriminator, when a caller
-fetches `GET /api/sessions/:sessionKey/messages`, then their `messageType`
-values are `assistant`, `substrate`, `marker`, `agent`, `null`, and `null`,
-respectively. Each item contains the `messageType` key in the R7 position.
+fetches `GET /api/sessions/:sessionKey/messages`, then the four classified
+items expose `assistant`, `substrate`, `marker`, and `agent`, respectively.
+Each classified item contains the key in the R7 position. The human-authored
+and historical items omit the key.
 
 A36. Given those messages and their matching `message.created` notices, when
 the contract suite removes the notice envelope, then each notice payload is
@@ -1412,7 +1432,9 @@ A37. Given two rows with identical `role`, `sender`, and `content` but distinct
 stored discriminators, when the shared serializer runs, then it preserves each
 stored `messageType`. Given a decoder fixture with an unrecognized nonempty
 `messageType`, when a conforming client reads it, then the client accepts the
-item and uses `role` as the rendering fallback.
+item and treats its message type as `assistant`. Given a fixture that omits
+`messageType`, the client also treats its message type as `assistant`. Neither
+fallback changes the item's `role`.
 
 ## Open questions — Spirit questions for Mike
 
