@@ -1,44 +1,63 @@
-# REST state API v1 — the read plane (product spec, canonical r4)
+# REST state API v1 — the read plane (product spec)
 
-Amendment candidate, 2026-08-25: distinguish durable Toplines from the
-mechanical ExecutionMap and add the REST-only ExecutionMap contract. The
-amendment changes no durable Toplines field, mutation, or route. Its companion
-firehose amendment adds source invalidation notices for existing durable
-Topline and subagent-marker commits; it adds no ExecutionMap class.
+Status: CANONICAL r4, 2026-08-25. r4 incorporates the landed ExecutionMap,
+source-invalidation, Toplines/session lookup, and AU2 parity amendments. The
+ExecutionMap amendment distinguishes durable Toplines from the mechanical
+ExecutionMap and adds the REST-only ExecutionMap contract. Its firehose
+companion adds source invalidation notices for existing durable Topline and
+subagent-marker commits; it adds no ExecutionMap class. The Toplines/session
+amendment adds the durable `/api/toplines` `(createdAt,id)` cursor and closed
+`state` filter plus the exact sessions `displayName` lookup used by
+`transcript --name`. It leaves the ExecutionMap/firehose companion, R7 items,
+authorization, and public serializers unchanged.
 
-Review status, 2026-08-25: AMENDED AFTER exact review
+G7 detail-route candidate, 2026-08-27: make each collection-only R8 resource
+addressable by its canonical public key. The routes use the existing shared
+query, visibility, serializer, and outer-envelope seams. This amendment adds
+no R7/R7a field, R8 class, authorization grant, REST-local projection, or
+second wire shape.
+
+G4 error-contract successor, 2026-08-26: PROPOSED. This amendment applies one
+closed typed error envelope to the canonical `/api` read routes in R2, R3, and
+R3a. It changes no success envelope, resource label, R7/R7a item, R8/R8b
+mapping, authorization grant, cursor, compatibility alias, `/version`
+response, `/download/:assetId` response, firehose frame, or encoded
+ExecutionMap error. The exact candidate set for G4 is this file and
+`rest-state-api-v1-wire-schema.md`; it requires fresh independent review
+before implementation or specRef binding.
+
+Review history: exact review
 `att_90efe520-f84c-4d3b-bd09-9c36f8a0ff08` requested changes on exact
 `e4a27977477a25c3037bba164db2bc1d508bcd7a`; full report `art_bffa387b`
-supplies findings F6-F7. Product-owner ruling
-`att_c0fee9c0-3489-4a57-b981-080fbcca4f66` preserves the existing
-message-bearing session-owner refusal and restores canonical R6 while keeping
-ExecutionMap-scoped R6a. Earlier F1-F5 and SQ6-SQ8 rulings remain incorporated.
-The resulting three-file successor requires a fresh independent review before
-M1, M2, specRef binding, or implementation. Separable r3 resources remain
-unaffected.
+supplied findings F6-F7. Product-owner ruling
+`att_c0fee9c0-3489-4a57-b981-080fbcca4f66` preserved the existing
+message-bearing session-owner refusal and restored R6 while keeping
+ExecutionMap-scoped R6a. Earlier F1-F5 and SQ6-SQ8 rulings remain
+incorporated.
 
-Toplines/session successor, 2026-08-25: PROPOSED. This amendment adds the
-durable `/api/toplines` `(createdAt,id)` cursor and closed `state` filter plus
-the exact sessions `displayName` lookup used by `transcript --name`. It leaves
-the canonical ExecutionMap/firehose companion, R7 items, authorization, and
-public serializers unchanged. It becomes canonical only after its own fresh
-independent exact-byte review is reviewed-clean.
+G1 current-main composition successor, 2026-08-27: PROPOSED. This amendment
+composes the accepted `messageType` F1/F2 behavior onto canonical
+`277bb5031a06270aabbc57e3c222cbd2ec89bc73`. Exact candidate `b53b1f5f` passed
+the G1 behavior review but requested current-main composition in verdict
+`att_adea7aeb-5448-4286-8cad-4fe250e1648c` and report `art_a3fc1d81`.
+Product-owner disposition `att_e0a20ce9-3bcc-4a0c-800f-681a51cd85c4`
+preserves F1/F2 and requires unique current-canonical clause identifiers. This
+successor changes no G4 error or G8 authority-label behavior.
 
-Status: CANONICAL r3, 2026-08-22. r3 folds the REST-side adjudicated
-findings F1/F8/F9/F13/F14/F16/F21/F22 from
-`review-gate-observability-2026-08-21.md` and aligns with firehose r6.
-This successor resolves changes-requested `att_71210c7b` against exact commit
+Revision history: r3 folded the REST-side adjudicated findings
+F1/F8/F9/F13/F14/F16/F21/F22 from
+`review-gate-observability-2026-08-21.md` and aligned with firehose r6. It
+resolved changes-requested `att_71210c7b` against exact commit
 `c8eb1d080890ad571c5319b2514230c71a021427`; its closure map is in the
-adjudication companion.
-It also consumes Mike's ruled SQ2: the admin read plane includes users,
-devices, ops metadata, and first-class archetype, kungfu, rail, and guidance
-content, all admin-only with secrets structurally excluded.
-r2 folds the reviewed mechanical amendment
+adjudication companion. r3 also consumed Mike's ruled SQ2: the admin read plane
+includes users, devices, ops metadata, and first-class archetype, kungfu, rail,
+and guidance content, all admin-only with secrets structurally excluded. r2
+folded the reviewed mechanical amendment
 `art_8e2d8444` (reviewed-clean `att_0b648694`): adopted route/filter
 inventory, interim/final CLI transport, firehose serializer scope, the
 R12-to-M5 repair, and the harness-catalog compatibility ruling. Written
 by tb02 and product-owner:rest-state-api. Untargeted (0.2.0 or
-later); when build work starts it branches from main tip. The current amendment
+later); when build work starts it branches from main tip. The current contract
 is owned by successor `product-owner:rest-state-api-v2`; the legacy PO session
 is revoked. Spirit questions route through the successor.
 
@@ -83,6 +102,12 @@ Authority and inputs:
   `5db8aab3496747d008fb8c024a4f1617f92695d144c89481bca3a1f20842550a`:
   condition facts and critical leases enter firehose R8 with the exact R8 rows
   below; it supersedes the fact-only `art_5d8bacb2`.
+- Firehose client-buildability recon verdict
+  `att_556f55ae-f1d2-4c83-b55d-9daf06aae929` and report `art_1d389e8e`
+  identify G1. Mike's 2026-08-27 remediation ruling adopts one canonical
+  transcript-message discriminator across fetched rows and the firehose.
+  Prior product commit `505b56aa29f151faab7cd9618ca1bba922cff357`
+  supplies the additive values and compatibility behavior.
 - ExecutionMap authority: `topline-map-v1.md` plus product source
   `Tightbeam.ExecutionMap` at `d00e06aea578d711e608637d38a97872487df15e`.
   Durable `Tightbeam.Toplines` at that revision remains a separate source.
@@ -94,24 +119,41 @@ Authority and inputs:
 ## Spec homing
 
 The canonical spec lives only in the `tightbeam-specs` repository as
-`rest-state-api-v1.md`. This amendment's exact canonical set is
+`rest-state-api-v1.md`. Canonical r4's coupled set is
 `rest-state-api-v1.md`, `rest-state-api-v1-wire-schema.md`, and
 `event-firehose-v1.md`; a change to an ExecutionMap envelope, dependency
 entry, or R8b mapping lands those coupled files in one reviewed revision.
+G4 changes the shared error type without changing an encoded ExecutionMap
+envelope, dependency entry, or firehose mapping. Its exact candidate set is
+therefore `rest-state-api-v1.md` and `rest-state-api-v1-wire-schema.md`.
+G1 changes the transcript-message projection and `message.created` mapping.
+Its exact candidate set is this file, `rest-state-api-v1-wire-schema.md`, and
+`event-firehose-v1.md`; all three land in one reviewed revision.
 `rest-state-api-r3-adjudication.md`, `rest-vs-cli-adjudication.md`, and
 `topline-map-v1.md` remain authority inputs, not custody companions for this
-amendment. A worktree, artifact row, transcript, adjudication ledger, or review
+contract. A worktree, artifact row, transcript, adjudication ledger, or review
 report is evidence, not canonical custody. Canonical r3 passed joint
-independent review at `att_45676d30` and landed on the canonical branch in
-merge `c84b1b8dc856861baeaa7b5ff781317ded568cb1`. This amendment remains a
-candidate until one exact revision of its three-file canonical set passes
-independent review and lands in `tightbeam-specs`.
+independent review at `att_45676d30` and landed in merge
+`c84b1b8dc856861baeaa7b5ff781317ded568cb1`. The r4 ExecutionMap companion set
+landed at `0139d9a71180a7175965473fade9b183d2b57601`; the Toplines/session lookup
+landed at `05d08b8af74a877d4dabe3dcba8250787d5d430e`; and the AU2 parity correction
+landed at `8133efdab14c5470937360a2e4be7fe595639a9d`.
+G4 remains a candidate until
+one exact revision of its two-file candidate set passes independent review
+and lands in `tightbeam-specs`.
 
 ## Goal
 
 Define a complete, authorized, deterministic REST read plane from which ATC,
 Clawline, and future clients can rebuild every admitted shared-state model and
 correlate later firehose notices without reading SQLite or replaying history.
+
+For G4, a client can classify each application error from the HTTP status,
+the closed error code, and the exact response bytes without private router or
+serializer knowledge.
+
+For G1, REST, CLI wrappers, and `message.created` expose one stored
+message-kind discriminator through one shared transcript-message serializer.
 
 ## Non-goals
 
@@ -124,6 +166,16 @@ correlate later firehose notices without reading SQLite or replaying history.
 - REST v1 does not retire compatibility aliases before their clients migrate
   or decide future tailnet identity.
 - REST v1 does not authorize implementation, deployment, or client migration.
+- The G7 detail routes do not add filters, alternate identifiers, route-local
+  queries, route-local serializers, or a second error envelope. They do not
+  redefine firehose A6 against a collection page.
+- G1 does not add a second transcript-message projection; change `role`,
+  `sender`, or `content`; infer a message kind from content; or add a
+  `messageType` alias.
+- G4 does not define proxy, network, process-crash, undeclared-route,
+  unsupported-method, compatibility-alias, `/version`, or successful binary
+  download behavior. It does not prescribe a client's retry or presentation
+  policy.
 - REST v1 does not alias ExecutionMap telemetry through `/api/toplines`, add an
   ExecutionMap firehose class, or change the six adopted shared serializer
   shapes from `art_b1995a26` / fact 1093. Exact source invalidation notices for
@@ -146,6 +198,11 @@ test falsifies this if an admin content query reads the latter stores.
 
 AS4. Each collection has a stable public natural key. A schema test fails
 before a route ships if any item lacks that key.
+
+AS5. The router identifies a declared R2, R3, or R3a route and its canonical
+resource label before it authenticates that route's request. A route-contract
+test falsifies this if one application error cannot carry the same resource
+label as the route's success envelope.
 
 ## Invariants
 
@@ -173,6 +230,15 @@ resources. `/api/toplines[/:id]` reads durable Topline rows and memberships.
 `/api/execution-map` reads a composed snapshot of execution rows. Neither name
 aliases, replaces, or widens the other.
 
+I8. One closed error type and one encoder serve every canonical R2, R3, and
+R3a read route. A route supplies only its canonical resource label, one allowed
+error code, and the fields that the selected variant requires.
+
+I9. `messageType` is the sole public message-kind discriminator on a
+transcript-message item. `role` retains authorship direction and `sender`
+retains provenance. No adapter emits `message_type`, `messageKind`, `kind`, or
+another message-kind alias.
+
 ## Architecture
 
 The read plane has four seams. A principal resolver produces one authenticated
@@ -181,9 +247,17 @@ filters. The R7 serializer emits the closed wire item defined by the wire
 schema. An outer adapter places that item in a REST envelope, compatibility
 envelope, CLI result, or firehose notice. Composed views declare their source
 classes in R9 and use a dependency digest instead of a notice class.
+`Tightbeam.RestEnvelope` is the sole encoder for R4c error bytes. A route
+adapter selects a closed variant; it does not build an error object or add a
+field or application header.
 
-Operating-guidance impact: none. This amendment applies the existing REST
+Operating-guidance impact: none. Canonical r4 applies the existing REST
 resource/query/serializer pattern and creates no cross-repository agent rule.
+
+Subtraction ruling for G7: ADD wins because deleting these admitted R8
+resources or classes would remove approved shared state, while accepting
+collection-only access would leave A6 without an addressable comparator and
+would prevent single-row recovery.
 
 ## Spirit (read this before quizzing Mike)
 
@@ -253,6 +327,27 @@ mutations retain their R8 mappings and the marker source has the ruled R8b
 mapping. Its REST home is
 `/api/execution-map` and the three nested routes in R3a.
 
+T6. **Canonical read route** — one declared `/api` GET route in R2, R3, or
+R3a. Compatibility aliases, `/version`, `/download/:assetId`, undeclared
+paths, and unsupported methods are outside G4.
+
+T7. **Application header** — a response header selected by the REST handler.
+Protocol-managed framing and transport headers, including `Date`, `Server`,
+`Connection`, `Transfer-Encoding`, and `Content-Length`, are not application
+headers.
+
+T8. **Malformed query encoding** — an incomplete or non-hexadecimal percent
+escape, or percent-decoded query bytes that are not valid UTF-8. A decoded but
+disallowed key, repeated key, combination, type, or value is query validation,
+not malformed encoding.
+
+T9. **Message type** — the nullable discriminator stored at the message write
+seam and exposed through the optional `messageType` key on the canonical
+transcript-message item. Current writers emit `assistant`, `substrate`,
+`marker`, or `agent`. A null source omits the public key. A reader accepts an
+unrecognized string; a missing or unrecognized value means `assistant` for
+message-type presentation and does not change `role`.
+
 ## Requirements — surface
 
 R1. Namespace `/api/<resource>`, JSON, every response carrying
@@ -269,18 +364,18 @@ R2. Core model resources:
 | GET /api/hosts[, /:host] | paged host registry and host detail; the underlying state resource for `host.registered` |
 | GET /api/sessions | paged sessions |
 | GET /api/sessions/:sessionKey | session detail + mechanical status |
-| GET /api/sessions/:sessionKey/messages | paged transcript projection |
+| GET /api/sessions/:sessionKey/messages[, /:messageId] | paged transcript projection and message detail |
 | GET /api/sessions/:sessionKey/coordination-share?from=&to= | pure bounded aggregate read |
 | GET /api/work-items[, /:id, /:id/trace] | paged collection, detail, composed trace |
 | GET /api/assignments[, /:id, /:id/attests] | paged collection (with derived status, advisory files, effect), detail, nested attests |
-| GET /api/attests | bulk paged attests across authorized work |
+| GET /api/attests[, /:attestId] | bulk paged attests across authorized work and attest detail |
 | GET /api/wakes[, /:wakeId, /:wakeId/digest-members] | paged wakes, detail, digest audit read |
 | GET /api/turns[, /:seq] | paged turns, detail |
 | GET /api/artifacts[, /:artifactId] | paged artifact metadata, detail (+ existing GET /download/:assetId for bytes) |
 | GET /api/assets[, /:assetId] | paged binary-asset metadata and detail; bytes remain on existing GET /download/:assetId |
 | GET /api/decision-requests[, /:id] | paged collection, detail |
 | GET /api/read-markers[, /:scopeKey] | caller's markers (write stays a verb, firehose RM2) |
-| GET /api/roles | paged role registry |
+| GET /api/roles[, /:name] | paged role registry and role detail |
 
 The bulk attests/wakes/turns collections are first-class on purpose:
 nested-only resources force ATC-class clients into one request per parent.
@@ -293,11 +388,13 @@ envelope; the compatibility alias preserves its legacy raw array until M8
 removes that alias.
 
 R3. Durable human-intent reads are GET `/api/toplines[/:id]`. Mechanical
-reads are GET `/api/execution-map` and its R3a nested routes, `/api/facts`,
-and `/api/critical-state`. Admin reads are GET /api/identity[, /:name],
+reads are GET `/api/execution-map` and its R3a nested routes,
+`/api/facts[/:factId]`, and `/api/critical-state[/:sessionKey]`. Admin reads are
+GET /api/identity[, /:name],
 /api/archetypes[, /:name], /api/kungfu[, /:name],
 /api/guidance[, /:name], /api/rails[, /:name], /api/config[, /:key],
-/api/host-env, /api/harness-processes, /api/users[, /:userId], and
+/api/host-env[, /:host/:harness/:name], /api/harness-processes,
+/api/users[, /:userId], and
 /api/devices[, /:deviceId]. SQ2 admits these routes. Every one is admin-only;
 SR2 and SR5 still exclude secrets. Mechanical and admin views are not part of
 a normal display-model bootstrap.
@@ -336,6 +433,60 @@ predicate. Neither predicate grants authority of its own.
 `Tightbeam.RestEnvelope` remain the one route, cursor, and outer-envelope
 adapters. Route code does not query rows, build a node, copy a visibility rule,
 or encode an envelope.
+
+R3c. These are the complete G7 detail routes. Each route addresses one
+existing R8 public item by the same canonical key carried in the notice and
+R7/R7a projection.
+
+| Detail route | Canonical public key | Exact success `resource` |
+|---|---|---|
+| `GET /api/attests/:attestId` | R7 attest `id`; equals R8 `refs.attestId` | `attests` |
+| `GET /api/roles/:name` | R7 role `name`; equals R8 `refs.role` | `roles` |
+| `GET /api/sessions/:sessionKey/messages/:messageId` | R7 message `(sessionKey,id)`; `id` equals R8 `refs.messageId` | `transcript messages` |
+| `GET /api/facts/:factId` | canonical positive base-10 R7 fact `id`; equals R8 `refs.factId` and `rowVersion` numerically | `condition facts` |
+| `GET /api/critical-state/:sessionKey` | R7 critical-state `sessionKey`; equals R8 `refs.sessionKey` | `critical state` |
+| `GET /api/host-env/:host/:harness/:name` | R7a host-environment `(host,harness,name)`; equals the three R8 primary refs | `host environment` |
+
+Each string placeholder uses the existing route identifier decoder and exact
+public-key comparison. It does not trim, case-fold, alias, or normalize the
+decoded value. `factId` is valid only when its path text matches
+`[1-9][0-9]*` and its parsed integer equals the stored R7 `id`; a sign,
+leading zero, whitespace, decimal point, exponent, or non-ASCII digit is not a
+second spelling of that id. The message route returns a row only when both
+path values equal that row's `sessionKey` and `id`. The host-environment route
+returns a row only when all three path values equal the same row's composite
+key.
+
+Each G7 route accepts only AU2's transport-only `asUser` query parameter. The
+route passes the resolved principal and canonical key to the resource's
+existing shared query seam. That seam applies the existing AU4 predicate
+before it exposes whether the key exists. The route then passes the returned
+row to the resource's sole R7/R7a public serializer and R4 detail-envelope
+adapter. Collection, detail, CLI, and firehose callers do not gain another
+query, visibility predicate, field selection, projection, or serializer.
+
+Each G7 route uses the read plane's single shared error encoder. An absent or
+invalid bearer returns `401 auth_failed`. AU2 `asUser` failures retain AU2's
+exact status and code. Malformed percent encoding returns
+`400 malformed_query`. An unsupported query key returns
+`400 invalid_filter`. An unknown key, a forbidden row, a noncanonical
+identifier spelling, or a message whose `sessionKey` and `messageId` do not
+name the same row returns the same `404 not_found` response under AU3/AU8.
+Serializer failure returns `500 projection_invalid` without a partial item.
+G7 adds no error code or body variant.
+
+Each G7 success and error response inherits the existing shared read-plane
+cache contract: it carries `Cache-Control: no-store`, carries no ETag, and
+implements no conditional request behavior. The G7 route adapter adds no
+cache mechanism or route-specific cache policy.
+
+`role.removed` does not create a historical detail read. Before deletion, the
+roles query and detail route expose the current item through the sole roles
+serializer. The delete commit applies that same serializer to the last
+pre-delete projection with the newly allocated delete `rowVersion`; the
+result is the R8 tombstone payload. After commit,
+`GET /api/roles/:name` returns the ordinary `404 not_found`. No route stores or
+returns a tombstone as a second role shape.
 
 R4. Envelopes. List:
 `{"schemaVersion":1,"resource":"assignments","items":[],"page":{"oldestCursor":null,"newestCursor":null,"hasMoreBefore":false,"hasMoreAfter":false}}`.
@@ -386,6 +537,155 @@ and error: `Content-Type: application/json; charset=utf-8` and
 application data. The JSON encoder emits the R4b key order with no
 insignificant whitespace. Unknown and forbidden selectors therefore use the
 same status, literal `not_found` body bytes, and application header bytes.
+
+R4c. Every canonical read-route error uses the closed `RestError` envelope in
+the wire companion. The encoded outer object has exactly `schemaVersion`,
+`resource`, and `error`, in that order. `schemaVersion` is `1`. `resource` is
+the route's exact success-envelope resource value, including on `401`; an
+error does not mint an error-only resource label.
+For example, an assignment detail miss encodes exactly
+`{"schemaVersion":1,"resource":"assignments","error":{"code":"not_found"}}`.
+
+Each canonical GET route template has exactly this `resource` value in every
+success and R4c error envelope. A query string does not change the value.
+
+| Canonical GET route template | Exact `resource` value |
+|---|---|
+| `/api/org` | `org` |
+| `/api/catalog/harnesses` | `harness catalog` |
+| `/api/hosts` | `hosts` |
+| `/api/hosts/:host` | `hosts` |
+| `/api/sessions` | `sessions` |
+| `/api/sessions/:sessionKey` | `sessions` |
+| `/api/sessions/:sessionKey/messages` | `transcript messages` |
+| `/api/sessions/:sessionKey/messages/:messageId` | `transcript messages` |
+| `/api/sessions/:sessionKey/coordination-share` | `coordination share` |
+| `/api/work-items` | `work items` |
+| `/api/work-items/:id` | `work items` |
+| `/api/work-items/:id/trace` | `work-item trace` |
+| `/api/assignments` | `assignments` |
+| `/api/assignments/:id` | `assignments` |
+| `/api/assignments/:id/attests` | `attests` |
+| `/api/attests` | `attests` |
+| `/api/attests/:attestId` | `attests` |
+| `/api/wakes` | `wakes` |
+| `/api/wakes/:wakeId` | `wakes` |
+| `/api/wakes/:wakeId/digest-members` | `digest members` |
+| `/api/turns` | `turns` |
+| `/api/turns/:seq` | `turns` |
+| `/api/artifacts` | `artifacts` |
+| `/api/artifacts/:artifactId` | `artifacts` |
+| `/api/assets` | `assets` |
+| `/api/assets/:assetId` | `assets` |
+| `/api/decision-requests` | `decision requests` |
+| `/api/decision-requests/:id` | `decision requests` |
+| `/api/read-markers` | `read markers` |
+| `/api/read-markers/:scopeKey` | `read markers` |
+| `/api/roles` | `roles` |
+| `/api/roles/:name` | `roles` |
+| `/api/toplines` | `toplines` |
+| `/api/toplines/:id` | `toplines` |
+| `/api/execution-map` | `execution map` |
+| `/api/execution-map/tree` | `execution map` |
+| `/api/execution-map/subtrees/:workItemId` | `execution map` |
+| `/api/execution-map/assignments` | `execution map` |
+| `/api/facts` | `condition facts` |
+| `/api/facts/:factId` | `condition facts` |
+| `/api/critical-state` | `critical state` |
+| `/api/critical-state/:sessionKey` | `critical state` |
+| `/api/identity` | `identity` |
+| `/api/identity/:name` | `identity` |
+| `/api/archetypes` | `archetypes` |
+| `/api/archetypes/:name` | `archetypes` |
+| `/api/kungfu` | `kungfu` |
+| `/api/kungfu/:name` | `kungfu` |
+| `/api/guidance` | `guidance` |
+| `/api/guidance/:name` | `guidance` |
+| `/api/rails` | `rails` |
+| `/api/rails/:name` | `rails` |
+| `/api/config` | `config` |
+| `/api/config/:key` | `config` |
+| `/api/host-env` | `host environment` |
+| `/api/host-env/:host/:harness/:name` | `host environment` |
+| `/api/harness-processes` | `harness processes` |
+| `/api/users` | `users` |
+| `/api/users/:userId` | `users` |
+| `/api/devices` | `devices` |
+| `/api/devices/:deviceId` | `devices` |
+
+Compatibility aliases, `/version`, and `/download/:assetId` do not enter this
+table because R4c does not govern their response envelopes.
+
+The closed status and code mapping is:
+
+| HTTP status | Error code | Condition |
+|---|---|---|
+| 400 | `malformed_query` | T8 query decoding fails |
+| 400 | `invalid_as_user` | `asUser` is repeated, or a device bearer supplies it, as AU2 defines |
+| 400 | `invalid_message` | an org bearer omits `asUser` or supplies an empty value, as AU2 defines |
+| 400 | `invalid_filter` | a decoded query key, multiplicity, combination, type, or value violates R5/R6 |
+| 400 | `invalid_cursor` | AU7 rejects cursor encoding, signature, resource, direction, schema, tuple, or normalized filter fingerprint |
+| 400 | `ambiguous_id` | an R6a typed prefix resolves to more than one visible full id |
+| 401 | `auth_failed` | AU1 credential verification rejects an absent, empty, invalid, or expired bearer |
+| 403 | `identity_not_yours` | a session bearer supplies a present empty or nonmatching AU2 `asUser` value |
+| 404 | `not_found` | AU3, AU4, AU4a, the canonical nested-route part of AU5, or AU7 requires the same unknown-or-forbidden result |
+| 500 | `projection_invalid` | after input validation, the service cannot complete the visibility-filtered query, derive one complete result, or encode it against the closed schema |
+
+No canonical read route emits another application error status or code. A
+route emits a listed code only when its named condition applies. In
+particular, `ambiguous_id` remains limited to R6a typed-prefix selectors.
+ExecutionMap remains the exact specialization in R4a/R4b. Its encoded error
+bytes, candidate-id rule, message-bearing refusal, and A27 cases do not change.
+
+G4 declines a second generic error family, per-route error messages or detail
+objects, a transient/retryable code, and a new error-only resource label.
+After input validation, an in-handler failure uses `projection_invalid`.
+A failure that prevents the handler from returning an application response is
+outside R4c, and client retry policy remains a non-goal.
+
+Each R4c error sets exactly these application headers:
+`Content-Type: application/json; charset=utf-8` and
+`Cache-Control: no-store`. It sets no `ETag`, `Vary`, `Location`,
+`Retry-After`, `WWW-Authenticate`, or `Set-Cookie` application header. The
+handler returns no redirect. The encoder emits no insignificant whitespace.
+For one route and principal,
+unknown and forbidden selectors use the same status, exact body bytes,
+application header bytes, database statement shape, and AU8 timing class.
+
+R4d. Error selection follows this exact precedence. The handler completes one
+step before it starts the next:
+
+1. Authenticate the bearer. Failure returns `401 auth_failed` without query
+   decoding or a resource query.
+2. Decode the raw query. T8 failure returns `400 malformed_query` without
+   principal resolution or a resource query.
+3. Validate and resolve AU2 `asUser`. Return its applicable
+   `invalid_as_user`, `invalid_message`, or `identity_not_yours` result before
+   resource-specific query validation.
+4. Validate decoded query structure and non-cursor values. This includes
+   allowed keys, key multiplicity, key combinations, filters, `limit`, and the
+   mutual exclusion of `before` and `after`. Failure returns
+   `400 invalid_filter` without cursor-token validation or a resource query.
+5. Validate each supplied cursor token against the fields named in AU7.
+   Failure returns
+   `400 invalid_cursor` without a resource query.
+6. Apply the cursor principal binding, AU4 authorization, selector
+   visibility, and existence rules. A required denial or miss returns
+   `404 not_found`. An allowed R6a prefix with multiple visible matches returns
+   `400 ambiguous_id`. Authorization, visibility, and existence selection use
+   one visibility-filtered query snapshot. No unfiltered existence result can
+   affect error selection. Failure to complete that operation returns
+   `500 projection_invalid` and no partial response.
+7. Produce and encode one complete canonical result. Failure returns
+   `500 projection_invalid` and no partial success body.
+
+This precedence does not change positive results already settled elsewhere.
+A sessions `displayName` query with no visible exact match remains a successful
+empty page. An unknown config detail key remains SR5's successful item with
+`value:null`. Collection authorization still omits denied rows before a
+successful response. R4a/R4b continue to govern ExecutionMap. Compatibility
+aliases, `/version`, and `/download/:assetId` responses retain
+their existing wire contracts.
 
 R5. Pagination: `before`/`after` are mutually exclusive, exclusive bounds.
 `limit` defaults to 50 and caps at 500 by clamping. No cursor means the newest
@@ -581,13 +881,17 @@ an adapter does not omit them. Every notice-backed stored-state item carries
 A composed item carries `dependencyVersion` as described in R9 instead. No
 adapter may add a storage column or a caller-selected field.
 
+For transcript messages, “exactly” applies after the conditional R7m rule.
+`messageType` is optional, not a nullable public key, and is the sole R7 key
+that an adapter conditionally omits.
+
 | Resource | Canonical item fields |
 |---|---|
 | org | `id`, `archetypes`, `hosts`, `modelCatalog`, `dependencyVersion` |
 | harness catalog | `harness`, `provider`, `models`, `capabilities`, `dependencyVersion` |
 | hosts | `host`, `rowVersion` |
 | sessions | `sessionKey`, `displayName`, `kind`, `orderIndex`, `isBuiltIn`, `adopted`, `ownerUserId`, `origin`, `spawnedBy`, `handle`, `archetype`, `overrides`, `identityName`, `identityRevision`, `harness`, `provider`, `model`, `thinkingLevel`, `modelContext`, `host`, `clearedThroughSeq`, `state`, `createdAt`, `updatedAt`, `mechanicalStatus`, `rowVersion` |
-| transcript messages | `id`, `seq`, `sessionKey`, `role`, `content`, `at`, `sender`, `deviceId`, `clientMessageId`, `replyToMessageId`, `replyToClientMessageId`, `llmVisibleMessageId`, `attachments`, `attentionTier`, `turnSeq`, `assignmentId`, `jobRef`, `harness`, `provider`, `model`, `effort`, `context`, `rowVersion` |
+| transcript messages | `id`, `seq`, `sessionKey`, `role`, `messageType`, `content`, `at`, `sender`, `deviceId`, `clientMessageId`, `replyToMessageId`, `replyToClientMessageId`, `llmVisibleMessageId`, `attachments`, `attentionTier`, `turnSeq`, `assignmentId`, `jobRef`, `harness`, `provider`, `model`, `effort`, `context`, `rowVersion` |
 | work items | `id`, `title`, `specRefName`, `specRefSha256`, `isBug`, `ownerUserId`, `state`, `failReason`, `routingWakeId`, `slateWakeId`, `createdByUser`, `createdBySession`, `createdInTurnSeq`, `createdContextKnown`, `createdAt`, `rowVersion` |
 | assignments | `id`, `subject`, `holderKey`, `holderRole`, `holderFallback`, `openedByUser`, `openedBySession`, `openedAt`, `state`, `outcome`, `closedAt`, `closedByUser`, `closedBySession`, `closingAttestId`, `workItemId`, `reviewsAssignmentId`, `holderHarness`, `holderProvider`, `files`, `effectKind`, `derivedStatus`, `rowVersion` |
 | attests | `id`, `assignmentId`, `kind`, `verdictKind`, `note`, `bySession`, `byUser`, `producer`, `producerCommand`, `byHarness`, `byProvider`, `commitRefs`, `ts`, `rowVersion` |
@@ -607,6 +911,25 @@ adapter may add a storage column or a caller-selected field.
 | coordination share | `sessionKey`, `from`, `to`, `turns`, `wakeTurns`, `classedTurns`, `coordinationTurns`, `summons`, `algedonic`, `byClass`, `share`, `dependencyVersion` |
 | digest members | `wakeId`, `prompt`, `class`, `classElection`, `createdAt`, `dependencyVersion` |
 | work-item trace | `workItem`, `assignments`, `causalChildren`, `attribution`, `dependencyVersion` |
+
+R7m. The transcript-message write seam assigns `messageType` without parsing
+message content. Current assignments are exact:
+
+- `assistant`: the session model's own output;
+- `agent`: a message delivered from an `agent:<handle>` origin;
+- `substrate`: a message delivered from a `process:<name>` or
+  `remedy:<statute>` origin, including ordinary Tightbeam notices;
+- `marker`: a structural transcript boundary created through the marker write
+  seam.
+
+A human-authored message and a historical row without the discriminator store
+null. The R7 serializer omits `messageType` for either row and never emits
+`messageType:null`. Current writers emit no other string. Readers accept an
+unrecognized future string. A missing or unrecognized value means `assistant`
+for message-type presentation; it does not change `role`. Readers do not reject
+the item or parse `content`. For a non-null source, the R7 serializer copies the
+stored string. REST, CLI wrappers, and `message.created` call that one
+serializer; an adapter does not construct another transcript-message map.
 
 R7a. The SQ2 admin resources have these additional closed-world projections.
 Nested `documents` entries contain exactly `path`, `content`, and `sha256`.
@@ -631,6 +954,10 @@ under M1 until its R7/R7a field row and wire-schema row both exist. The wire
 schema fixes JSON types, nullability, nested object keys, enum domains, and
 array order. An unknown enum value fails serialization and emits no partial
 response.
+
+The preceding unknown-enum failure applies to closed enums. `messageType` is
+the one open discriminator defined by R7m; an unrecognized string remains
+valid.
 
 R7b. `/download/:assetId` returns bytes, not a JSON projection. The asset row
 is its sole authorization metadata; no inferred artifact or work-item link
@@ -714,7 +1041,7 @@ remain outside this table.
 | `artifact.recorded` | artifacts | upsert | `artifactId` |
 | `read_marker.updated` after set | read markers | upsert | `userId` + `scopeKey` |
 | `read_marker.updated` after clear | read markers | delete | `userId` + `scopeKey` |
-| `message.created` | transcript messages | upsert | `messageId` |
+| `message.created` | transcript messages | upsert | `messageId` + `sessionKey` |
 | `condition_fact.filed` | condition facts | upsert | `factId` |
 | `critical_lease.updated` | critical state | upsert | `sessionKey` |
 | `config.updated` | config | upsert | `key` |
@@ -1103,6 +1430,10 @@ exactly its R7 keys and no others. The secret-exclusion sweep rejects
 `cliToken`, device `token`, `identityToken`, credential paths, environment
 secrets including MCP environment values, and every value outside SR5's
 explicit allowlist.
+
+For transcript messages, the proof evaluates the R7m condition first and then
+requires the resulting key set exactly. It proves `messageType` is the sole
+conditional key.
 A4. Subscribe-first multi-resource snapshot plus buffered notices converges
 under concurrent creates/updates/deletes by last-version-wins upsert on
 `(primary key, rowVersion)`; reconnect + fresh rebuild converges with no event
@@ -1178,6 +1509,10 @@ dependency digests. The ExecutionMap cases include the literal causal-event,
 subagent-marker, and coverage-epoch triples from R9a and reject a changed
 source-kind label, key type, or version type. Semantic sequences retain their
 declared order.
+
+The transcript-message cases also validate conditional `messageType`
+optionality, non-null string type when present, open-reader behavior, and the
+canonical key position.
 A18. Facts and critical-state rows have immutable cursors, complete R7 wire
 schemas, AU4 visibility tests, and exactly one R8 state mapping. The suite
 fails if either companion firehose class is absent from the adopted registry.
@@ -1346,7 +1681,121 @@ inline SQL, a second visibility predicate, a second item serializer, a
 caller-selected field/sort/join parameter, and a candidate-only session
 projection.
 
+A35. Given one R4c error request for every canonical GET route template in the
+R4c route-to-resource table, when the client receives each error, then its
+exact `resource` value equals that route's table row. The table-driven test
+enumerates every row exactly once and rejects an absent, duplicate, inferred,
+or query-dependent route mapping. Given canonical assignment collection and
+detail routes and one fixture that triggers each R4c condition without a
+second failure, when the client receives each error, then the status, exact
+body bytes, application headers, and resource label equal R4c and the wire
+companion. The test covers each closed code once. It uses an ExecutionMap
+ambiguous-prefix request for `ambiguous_id` and a mismatched session bearer for
+the sole message-bearing `identity_not_yours` variant. It rejects an extra
+code, key, whitespace byte, application header, partial item, or changed key
+order.
+
+A36. Given requests that each contain two independently failing inputs, when
+the handler evaluates them, then this table proves R4d precedence and proves
+that no later step runs:
+
+| Earlier failure | Later failure | Exact result |
+|---|---|---|
+| invalid bearer | malformed percent escape | `401 auth_failed` |
+| malformed percent escape | repeated `asUser` | `400 malformed_query` |
+| repeated `asUser` | unknown filter key | `400 invalid_as_user` |
+| unknown filter key | invalid cursor signature | `400 invalid_filter` |
+| invalid cursor signature | unknown or forbidden selector | `400 invalid_cursor` |
+| valid cursor with wrong principal binding | otherwise visible selector | `404 not_found` |
+
+A37. Given an unknown detail id and a forbidden detail id on the same route,
+when the same principal requests each, then status, exact body bytes,
+application header bytes, statement shape, and AU8 timing checks match. Given
+an unmatched sessions `displayName`, an unknown config detail key, a
+collection containing only denied rows, an ExecutionMap R4b error, a
+compatibility-alias request, and an asset-download request, each retains A32,
+SR5, AU3, A27, M5, and AU5 behavior respectively. The G4 error encoder is not
+invoked for a compatibility alias or an asset-download response. The
+ExecutionMap case reruns A27 and requires byte-identical encoded errors.
+
+A38. Given visible messages whose stored `messageType` values are
+`assistant`, `substrate`, `marker`, and `agent`, plus one human-authored
+message and one historical row with no stored discriminator, when a caller
+fetches `GET /api/sessions/:sessionKey/messages`, then the four classified
+items expose their stored values in the R7 position. The human-authored and
+historical items omit the key; no item emits `messageType:null`.
+
+A39. Given those messages and their matching `message.created` notices, when
+the contract suite removes each notice envelope, then each payload is
+byte-equivalent to its fetched item. For each pair,
+`refs.messageId == payload.id` and
+`refs.sessionKey == payload.sessionKey`. The suite fails if REST or firehose
+uses a route-local message map or a second serializer.
+
+A40. Given two rows with identical `role`, `sender`, and `content` but distinct
+stored discriminators, when the shared serializer runs, then it preserves each
+stored `messageType`. Given a decoder fixture with an unrecognized nonempty
+`messageType`, the client accepts the item and treats its message type as
+`assistant`. Given a fixture that omits `messageType`, the client does the
+same. Neither fallback changes `role`, and neither surface parses `content`.
+
+A41. Given one visible stored row for each R3c route, when the allowed
+principal fetches its collection item, its detail item, and a matching R8
+upsert notice, then the detail response is `200`, its `resource` equals the
+R3c table value, and its `item` bytes equal both the collection item and
+notice payload.
+The test constructs each path only from the R7/R7a key and matching R8 refs.
+For a message, it uses both the payload `sessionKey` and `refs.messageId`. For
+host environment, it uses the payload `host`, `harness`, and `name`.
+
+Given a visible role and its next `role.removed` commit, when the test captures
+the detail item before deletion and inspects the tombstone afterward, then the
+tombstone contains the captured public fields from the sole roles serializer
+and the newly allocated delete `rowVersion`. That version exceeds the
+captured upsert version. A post-commit detail request returns the shared
+`404 not_found`; no historical row, tombstone route, or second role serializer
+exists.
+
+A42. Given each R3c row, when the test repeats the detail request as each
+principal that its AU4 row allows, then each case returns the same R7/R7a
+bytes. For each R3c resource whose AU4 row excludes at least one authenticated
+user or session principal, the test repeats the request as one such denied
+principal; that response equals an unknown-key response in status, body,
+application headers, statement count, and AU8 timing class. The roles resource
+has no denied authenticated-principal case because AU4 grants it to each
+authenticated user and session; A43 covers its absent and invalid bearer
+cases. For a message, a visible session with a message id from another session
+produces the same result. For an attest, the test denies the parent assignment.
+For facts and critical state, the test covers their exact AU4 principal sets.
+
+A43. Given each R3c route, when the test sends no bearer, each AU2 `asUser`
+failure, malformed percent encoding, an unsupported query key, a
+noncanonical fact id, an unknown key, and a forced serializer failure, then
+the route returns respectively `401 auth_failed`, AU2's exact result,
+`400 malformed_query`, `400 invalid_filter`, `404 not_found`,
+`404 not_found`, and `500 projection_invalid`. Each response uses the shared
+general error encoder and contains no partial item. A seam-identity test fails
+if route code adds SQL, a visibility predicate, an item map, a serializer, or
+an error encoder instead of calling the existing shared seams.
+
+Given each A41 success and each A43 error, when the shared response adapter
+encodes it, then the response carries `Cache-Control: no-store` and no ETag.
+Given the same visible-detail request with `If-None-Match` and
+`If-Modified-Since`, when the route runs, then it ignores those conditional
+headers and returns the same `200` item instead of `304`.
+
 ## Open questions — Spirit questions for Mike
+
+G4 has no open questions. R4c closes its error variants, status map, headers,
+precedence, and preserved special cases. The broader ruled and non-blocking
+questions below are unchanged.
+
+G1 has no open questions. T9, R7m, A38, A39, and A40 close its discriminator,
+compatibility, correlation, and shared-serializer behavior.
+
+G7 has no open question. The G4 general error envelope is a delivery
+dependency, not an unruled behavior; no G7 route ships before that envelope is
+canonical.
 
 SQ1. **RULED 2026-08-25 — transport existing `asUser`.** Remove the
 prohibition on an `asUser` GET parameter. It only transports the CLI's
@@ -1391,7 +1840,7 @@ topline-work-membership mutations. No snapshot-only or no-notice exclusion
 exists. Authority: `att_d5b0a440-bd51-498f-8b96-e6512fedf68f`.
 
 SQ8. **RULED 2026-08-25 — pre-build evidence boundary.** Deterministic spec
-lint and fresh independent exact-byte review are this amendment's pre-build
+lint and fresh independent exact-byte review are canonical r4's pre-build
 gate. Acceptance clauses remain executable and decidable. Product tests and a
 `tests-passed` receipt belong to the later implementation card; this spec-only
 assignment does not implement or claim them. Authority:
