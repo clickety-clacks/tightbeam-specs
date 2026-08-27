@@ -1,8 +1,8 @@
 # REST read plane D1 — transport foundation and six shared-seam resources
 
-Status: build specification. Amendment status: FROZEN SUCCESSOR CANDIDATE FOR
-ONE FRESH LINKED INDEPENDENT REVIEW — cursor-signing indeterminate-commit
-quarantine and recovery.
+Status: build specification. Amendment status: FROZEN OWNER-DEATH SUCCESSOR
+CANDIDATE FOR ONE FRESH LINKED INDEPENDENT REVIEW — cursor-signing
+indeterminate-commit quarantine and recovery.
 Authority: canonical REST r3 `art_971f45b5`,
 reviewed SHA-256 `49b86ec874283c523001be7449b1e14aef47ca72932955445638ce6443aad754`;
 the adopted six-resource contract `art_b1995a26` / fact 1093; reviewed
@@ -35,6 +35,12 @@ changes only provisioning and rotation durability outcomes, the resulting
 quarantine and recovery behavior, and their acceptance. It authorizes no
 product edit, implementation, D1 route, D2/D3/CLI/firehose work, `specRef`
 change, target, landing, deployment, or release.
+
+The successor review `att_d4aba352-ce0a-41c8-bc8c-dba303fc85cd` / report
+`art_ccf48b43` found one remaining case: mutation-admission owner death
+after atomic publication and before a durability outcome. Product-owner
+disposition `att_a4ff40b1-a065-4215-9969-269aa7d6e360` limits this revision to
+that admitted-mutation failure boundary and its acceptance fixture.
 
 ## Spec homing
 
@@ -131,8 +137,15 @@ the resource. It adds no second data shape.
   application processes that share the canonical path.
 - **Cursor-signing mutation admission**: the one ephemeral, cross-process
   admission seam shared by provision, rotate, and recovery for a canonical
-  path. It admits at most one mutation transition at a time and creates no
-  durable file, marker, authority, or recovery input.
+  path. A provider-lifetime state observer owns this admission independently of
+  the admitted mutation's per-operation owner process. It admits at most one
+  mutation transition at a time and creates no durable file, marker,
+  authority, or recovery input.
+- **Published-but-unsynchronized phase**: the ephemeral mutation-observer state
+  after successful atomic publication and before containing-directory
+  synchronization establishes success or failure. The observer enters this
+  phase at publication's linearization point and creates no durable phase
+  marker or recovery input.
 - **Canonical route key**: the fixed route-table key for the collection route
   that issued a cursor, such as `users.collection`. It is an internal signed
   binding, not a URL, query-string fragment, or response field.
@@ -199,6 +212,11 @@ the resource. It adds no second data shape.
     mutation-admission decision. At most one such transition is admitted for a
     canonical path, and an overlapping mutation performs no material or
     namespace action.
+13. The provider-lifetime state observer retains mutation admission
+    independently of the per-operation owner process. If that owner dies in
+    the published-but-unsynchronized phase, the observer establishes
+    quarantine before it releases admission or exposes another lifecycle
+    state.
 
 ## Architecture
 
@@ -519,21 +537,23 @@ directory temporary file with exact mode `0600`, flushes it, and atomically
 renames it over the active file. It then synchronizes the containing directory.
 A successful return means the material-file flush and containing-directory
 synchronization succeeded. It removes the old material from the verification
-set at the rename boundary. A failure before that boundary
-returns an ordinary error and leaves the old complete file and behavior
-unchanged. A directory-synchronization failure after that boundary returns the
+set at the rename boundary. A failure before that boundary returns an ordinary
+error and leaves the old complete file and behavior unchanged. A
+directory-synchronization failure after that boundary returns the
 indeterminate-commit outcome defined below. Existing cursors issued before a
 successful rotation are rejected as the existing `400 invalid_cursor`, before
 a resource-row lookup. Cursors issued after a successful rotation verify with
 the new material. There is no old-key grace window.
 
 Provision, rotate, and recovery enter through the same mutation-admission seam.
-The provider attempts exclusive cross-process mutation admission before it
-evaluates the requested transition against the lifecycle state or performs
-mutation I/O. The admitted caller then evaluates the transition and holds
-admission through establishment of the resulting lifecycle state and return of
-the operation's one terminal outcome. An overlapping provision, rotate, or
-recovery call returns exactly
+The provider-lifetime state observer attempts exclusive cross-process mutation
+admission before it evaluates the requested transition against the lifecycle
+state or permits mutation I/O. The observer, not the admitted mutation's
+per-operation owner process, owns that admission. It monitors that owner and
+holds admission through establishment of the resulting lifecycle state and
+return of the operation's one terminal outcome, or through establishment of
+quarantine when owner death makes a return impossible. An overlapping
+provision, rotate, or recovery call returns exactly
 `{:error, :cursor_signing_mutation_in_progress}` to its
 local owner caller before lifecycle validation, material read, CSPRNG access,
 staging-file creation, or namespace mutation. It does not wait, queue, or retry
@@ -543,17 +563,44 @@ mutation has returned success or entered quarantine.
 Sign and verify operations linearize at their complete material read.
 Concurrent operations before the rename use the old material and operations
 after a successful directory synchronization use the new material; no
-operation may combine bytes from two records. Before publication, the admitted
-mutation closes sign and verify admission and waits for already admitted sign
-and verify operations to finish their complete material read. From publication
-until the directory synchronization returns, the provider admits no new sign
-or verify operation across the application processes that share the canonical
-path. Success releases that admission boundary onto the new generation.
-Failure converts the same boundary to quarantine, so no operation can observe
-a healthy provider between the failed synchronization and quarantine. The
-provider releases exclusive mutation admission only after it atomically
-establishes that resulting state across the application processes that share
-the canonical path.
+operation may combine bytes from two records. Before publication, the observer
+closes sign and verify admission and waits for already admitted sign and verify
+operations to finish their complete material read. From publication until the
+directory synchronization returns, the provider admits no new sign or verify
+operation across the application processes that share the canonical path.
+Success releases that admission boundary onto the new generation. Failure
+converts the same boundary to quarantine, so no operation can observe a healthy
+provider between the failed synchronization and quarantine. The provider
+releases exclusive mutation admission only after it atomically establishes
+that resulting state across the application processes that share the canonical
+path.
+
+The provider-lifetime observer is the state observer for per-operation owner
+death. It performs provision and rotation publication within its serialized
+mutation transition. Successful atomic rename completion is the publication
+linearization point. In the same serialized transition, before it permits the
+directory-synchronization step, the observer enters the
+published-but-unsynchronized phase. No owner-exit handling or admission release
+can occur between rename completion and that phase entry. The per-operation
+owner cannot release admission by exiting.
+
+If the observer receives that owner's exit while the mutation is in the
+published-but-unsynchronized phase, it linearizes owner-death handling by
+transitioning directly from that phase to quarantine across the application
+processes. It establishes quarantine before it releases mutation admission.
+An in-flight or later directory-synchronization result from the abandoned
+operation cannot establish success, ordinary error, healthy state, or another
+generation. The dead owner receives no fabricated outcome. Calls made before
+the quarantine transition completes remain outside mutation admission; calls
+made after it completes observe the quarantine behavior below.
+
+Owner-death quarantine uses only the canonical file for recovery. Restart or
+explicit local owner recovery validates the complete record, successfully
+synchronizes its containing directory, and atomically re-enables that exact
+generation under the recovery contract below. This observer state creates no
+durable record, authority, pointer, marker, journal, or alternate recovery
+input. Owner death outside the published-but-unsynchronized phase is unchanged
+by this amendment.
 
 #### Indeterminate-commit quarantine and recovery
 
@@ -868,14 +915,14 @@ the cases specified above. It uses the canonical error envelope and
 25. Given a material file, a cursor, and each D1 route, when the test captures
     logs, traces, telemetry, exceptions, crash output, HTTP bytes, and artifact
     output for provisioning, restart, signing, verification, rotation,
-    unprovisioned refusal, mutation-overlap refusal, indeterminate commit,
-    quarantine, and recovery refusal, then none contains the material, path,
-    generation value, temporary name, HMAC input, raw cursor body, signature
-    detail, route, tuple, or resolved principal. A safe internal fault may
-    contain only the exact outcome type, operation kind, safe cause class, and
-    acting local principal: the owner for an explicit operation or application
-    bootstrap for startup. HTTP error bodies remain the existing closed
-    envelopes and `Cache-Control: no-store`.
+    unprovisioned refusal, mutation-overlap refusal, mutation-owner death,
+    indeterminate commit, quarantine, and recovery refusal, then none contains
+    the material, path, generation value, temporary name, HMAC input, raw
+    cursor body, signature detail, route, tuple, or resolved principal. A safe
+    internal fault may contain only the exact outcome type, operation kind,
+    safe cause class, and acting local principal: the owner for an explicit
+    operation or application bootstrap for startup. HTTP error bodies remain
+    the existing closed envelopes and `Cache-Control: no-store`.
 26. Given all Acceptance 1–18 fixtures and gates, when they rerun with the
     provider injected, then routes, envelopes, status codes, cache headers,
     authentication, visibility, filters, order, pagination, six shared query
@@ -956,6 +1003,27 @@ the cases specified above. It uses the canonical error envelope and
     after release is evaluated against that resulting state. No losing overlap
     publishes later, changes the admitted operation's outcome, or creates a
     durable lock, marker, journal, authority, or recovery input.
+34. Given at least two application processes sharing one canonical path and a
+    provision or rotation whose observer has completed atomic publication,
+    entered the published-but-unsynchronized phase, and blocked the containing-
+    directory synchronization from returning, when the test kills the admitted
+    mutation's per-operation owner process, then the observer records the owner
+    exit and transitions directly to quarantine before it releases mutation
+    admission. While admission remains held, concurrent provision, rotate, and
+    recovery calls return `{:error, :cursor_signing_mutation_in_progress}`;
+    sign and verify are not admitted. After quarantine and admission release,
+    sign, verify, provision, and rotate return
+    `{:error, :cursor_signing_quarantined}` without a material read or namespace
+    mutation; recovery alone may enter Acceptance 30. The dead owner receives
+    no success, ordinary error, or fabricated indeterminate return. The test
+    trace orders atomic rename, published-but-unsynchronized phase entry, owner
+    exit, quarantine, and admission release. An in-flight or later
+    synchronization result cannot establish success or healthy state. Explicit
+    owner recovery and restart each use only the canonical file and follow
+    Acceptance 30–32 before that exact generation is re-enabled. The provision
+    and rotation fixtures each prove that no later generation publishes before
+    recovery and that no second durable record, pointer, marker, journal, retry,
+    or secret-bearing diagnostic appears.
 
 ## Open Questions
 
