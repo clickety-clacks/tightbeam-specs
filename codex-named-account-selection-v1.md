@@ -10,20 +10,24 @@ Authority: `wi_008ad6d7-d976-4120-9e90-8557a24f7602`, recon verdict
 The successor also answers independent changes-requested verdict `att_de28818e` and
 report `art_5d90dcdd` at SHA-256
 `e8556161e30d3de18de219e69639fedfcc0c1c3c022fc028eb85512e768871f1`.
-This draft answers second independent changes-requested verdict `att_790131ff` and
+This revision answers second independent changes-requested verdict `att_790131ff` and
 report `art_415178b8` at SHA-256
 `8c0d122dd540d404582a8b3f65847decb2d9637f13f7e7a211bca63c61923ec2`.
+It also answers third independent changes-requested verdict `att_2cbb5bcd` and report
+`art_e7a71cfa` at SHA-256
+`86e50680ff6b54760c57c6621d7b1bbddd33fadfd23be0223ddd03a97f178e14`.
 
 This spec introduces the **Named harness-account binding** pattern. It applies to one
 Tightbeam harness on one registered host and names a non-secret account identity held
 by the provider-account custodian on that host. V1 applies the pattern only to the
 Codex harness and Lachesis. It does not apply to model selection, agent placement,
-Claude, or account lifecycle.
+or Claude. It adds no account lifecycle action.
 
 Subtraction ruling: ADD wins because deleting account choice leaves the stated repair
 verb absent, while accepting the failure preserves the measured org-wide outage. The
 addition is one typed binding, one mutation seam, one agent-reachable verb, one
-custodian activation lease, and reuse of the existing adapter and harness-health seams.
+custodian activation operation with process handoff, and reuse of the existing adapter
+and harness-health seams.
 The review repairs extend those same seams with a typed candidate role, bounded activation
 and transition ownership, generation-correlated failure evidence, and an explicit
 park-release transition. Deleting any repair loses proof-before-publish, account lifecycle
@@ -69,8 +73,8 @@ the harness reads that account's credential.**
   loop, or polling process.
 - V1 does not create a second adapter key for a candidate or bypass the durable harness
   process ledger.
-- V1 does not convert a consumer activation lease into account lifecycle state or a
-  durable Tightbeam binding field.
+- V1 does not persist an activation or process-owned lock as account lifecycle state or
+  as a durable Tightbeam binding field.
 - V1 does not choose an implementation branch, release line, release version, host for
   deployment, or deployment time.
 - V1 teaches no new operating pattern to agents beyond the command contract in this
@@ -102,7 +106,8 @@ the harness reads that account's credential.**
   it never hashes credential bytes or a provider-home path.
 - **Ready account**: a Lachesis account for which the consumer activation's initial
   frame returns `status: "ready"`, `working: true`, and `mutationState: "idle"` while
-  Lachesis holds the account operation lock.
+  Lachesis holds the account operation lock and has established that no provider process
+  already uses the account's provider home.
 - **Capacity-positive sample**: a synchronous Lachesis usage result whose `status` is
   `live` or `cache`, whose `sample.windows` contains at least one window, and for which
   each window has `used_percent < 100`. `stale`, `error`, a missing sample, an empty
@@ -112,11 +117,19 @@ the harness reads that account's credential.**
   capacity-positive.
 - **Consumer activation lease**: one connection-scoped Lachesis operation that acquires
   the account's existing exclusive operation lock, proves provider, readiness, mutation
-  idleness, and capacity, and returns the provider home required by the provider CLI.
-  Lachesis assigns an activation ID and an absolute expiry 200,000 milliseconds after lock
-  acquisition. It releases the lock on response closure, expiry, or Tightbeam cancellation,
-  whichever happens first. The lease contains no credential bytes, account mutation,
-  durable account field, or caller-chosen timeout.
+  idleness, capacity, and absence of a provider process already using the exact account
+  home, and returns that home for the provider CLI. Lachesis assigns an activation ID and
+  an absolute expiry 200,000 milliseconds after lock acquisition. Before process handoff,
+  it releases the lock on response closure, expiry, or Tightbeam cancellation, whichever
+  happens first. The lease contains no credential bytes, account mutation, durable
+  account field, or caller-chosen timeout.
+- **Consumer process handoff**: the one-shot final frame on a consumer activation. After
+  the real ready token, Tightbeam supplies the exact candidate OS process identity.
+  Lachesis verifies that process against the leased provider home and atomically transfers
+  the existing operation-lock owner from the activation connection to that process.
+  Handoff and activation expiry linearize in the same Lachesis account state machine.
+  Process exit releases the transferred lock. The handoff creates no second lock, durable
+  account field, credential access, renewal, or caller-selected duration.
 - **Process role**: `serving`, `candidate`, or `retiring` on one durable harness-process
   row. The role is subordinate to the unchanged adapter key; it is not another routing
   key. At most one unresolved row of each role exists for one adapter key.
@@ -169,9 +182,9 @@ the harness reads that account's credential.**
   selected Codex provider home.
 - Lachesis already serializes verify, refresh, delete, re-onboard, and job operations with
   one per-account operation lock. Ordinary usage reads do not acquire that lock. The V1
-  activation operation acquires the existing lock first, then performs its verify and
-  synchronous capacity read without reacquiring it. V1 adds no second lock or account
-  mutation state.
+  activation operation acquires the existing lock first, establishes provider-process
+  absence for the exact provider home, then performs its verify and synchronous capacity
+  read without reacquiring the lock. V1 adds no second lock or account mutation state.
 - Lachesis account IDs are stable across service restarts. Labels are non-secret display
   values and do not identify a binding without the ID.
 - Lachesis `POST /api/v1/accounts/{id}/verify` observes credential and usage state. It
@@ -212,13 +225,16 @@ supplied choice; they cannot replace it.
 
 **I6 — check and exclude before publish.** Authorization, host existence, harness
 support, account existence, provider match, readiness, mutation idleness, capacity,
-consumer binding, expected revision, and candidate adapter health must pass before the
-named binding becomes current. The Lachesis account operation lock stays held from the
-final provider/readiness/capacity observations through candidate proof and publication.
-Refresh, re-onboard, delete, or another lifecycle mutation cannot begin in that interval.
-The activation expires after 200,000 milliseconds and the enclosing reservation expires
-after 240,000 milliseconds. Expiry or authorized cancellation closes the activation,
-settles the candidate, and leaves the prior binding, generation, and park authoritative.
+consumer binding, absence of a process already using that provider home, expected
+revision, and candidate adapter health must pass before the named binding becomes
+current. The Lachesis account operation lock stays held by the activation from the final
+provider/readiness/capacity observations through candidate proof. Before publication,
+Lachesis atomically hands that same lock to the exact proven candidate process. Refresh,
+re-onboard, delete, and credential-affecting jobs cannot begin while either owner holds
+it. Activation expiry before handoff settles the candidate and leaves the prior source
+authoritative. If handoff wins, activation expiry cannot release the process-owned lock;
+candidate exit becomes the only lock-release event. The enclosing reservation still
+expires after 240,000 milliseconds.
 
 **I7 — old path stays authoritative until proof.** During candidate staging, the durable
 binding remains unchanged. When the prior adapter is serving, lanes keep using it. When
@@ -229,15 +245,19 @@ published generation.
 
 **I8 — serialized source transition.** Every binding-changing operation for one harness
 key, including `account-select` and interactive onboarding finish, shares one critical
-section from transition reservation through publication. The coordinator reservation
+section from transition reservation through publication. After authentication, the
+binding module returns a completed exact replay or `idempotency_conflict` before the
+caller consults transition ownership. A replay therefore cannot return
+`source_transition_busy`. The coordinator reservation
 does not block the coordinator process: ordinary checkouts and calls from the reservation
 owner continue. Reservation acquisition is non-waiting; another source-transition request
 receives `source_transition_busy` with the safe operation key and expiry and performs no
 Lachesis, credential-install, or candidate action. The owner, an authorized same-verb
 selection cancel, onboarding cancel, owner death, or the fixed reservation deadline can
 abort ownership before commit. The implementation rechecks
-authorization, lifecycle-lease liveness when applicable, and binding revision at the
-commit boundary. `AdapterCoordinator`, the existing single owner of checkouts and
+authorization, activation or process-handoff ownership when applicable, and binding
+revision at the commit boundary. A named candidate must also retain its acknowledged process handoff.
+`AdapterCoordinator`, the existing single owner of checkouts and
 generations, owns the final publication call. While that call is running, it executes
 the binding and process-role transaction and swaps the ready candidate into the current
 generation before it serves another checkout or source transition. A failed transaction
@@ -254,7 +274,9 @@ before serving a checkout. No durable pending-selection binding exists.
 Every launch or relaunch from a committed named binding, including restart recovery after
 the serving process is absent, reacquires a bounded consumer activation for that exact
 account, derives the transient home, and holds the account operation lock until the real
-adapter ready token. A launch that loses or exceeds activation does not become serving.
+adapter ready token. Lachesis then hands the same lock to that exact process before it can
+become serving. A launch that loses activation, exceeds activation, or fails process
+handoff does not become serving.
 
 **I10 — idempotent result.** A caller supplies a non-empty idempotency key. The completed
 result is keyed by `{principal, account-select, idempotency_key}` and bound to a digest
@@ -263,8 +285,10 @@ the same digest returns the recorded result without another activation lease, ad
 stage, generation change, or binding change. Reusing the key with a different digest
 returns `idempotency_conflict`.
 Cancel mode is keyed by `{principal, account-select-cancel, harness_key,
-idempotency_key}`. Repeating a completed cancel returns its recorded safe outcome. Cancel
-after publication returns `selection_not_active` and cannot undo the committed transition.
+idempotency_key}` and bound to a digest of `{host, harness, operation_key, cause}`.
+Repeating the same digest returns its recorded safe outcome. Reusing the key with a
+different digest returns `idempotency_conflict`. Cancel after publication returns
+`selection_not_active` and cannot undo the committed transition.
 
 **I11 — cause and principal.** Each selection attempt records the authenticated
 principal, the caller's non-empty cause, request digest, target harness key, candidate
@@ -274,9 +298,11 @@ and timestamp. The record contains no credential bytes or consumer-binding path.
 **I12 — selection does not mutate an account.** The selection operation may list
 accounts and acquire one consumer activation lease. Lease acquisition performs verify,
 usage, and consumer-binding reads while holding Lachesis's existing account operation
-lock. It does not call account create, adopt, delete, refresh, re-onboard, job, or
-code-submission endpoints. Releasing or losing the lease changes only transient lock
-ownership, not account or credential state.
+lock. Its process handoff transfers only the transient owner of that lock. Selection does
+not call account create, adopt, delete, refresh, re-onboard, job, or code-submission
+endpoints. Releasing or losing the activation, handing the lock to the exact candidate,
+or releasing it on candidate exit changes only transient lock ownership, not account or
+credential state.
 
 **I13 — one shared exhaustion incident.** Each checkout records its adapter key and
 generation on the turn. Each published generation has an immutable safe mapping to its
@@ -368,14 +394,18 @@ Add one supported Lachesis operation:
 
 ```http
 POST /api/v1/accounts/{id}/consumer-activation
+Content-Type: application/x-ndjson
 Accept: application/x-ndjson
 ```
 
-The request body is empty. Lachesis resolves the exact account, acquires that account's
-existing operation lock, refuses a non-idle lifecycle state, and performs verify and
-one synchronous provider-capacity read while it owns the lock without re-entering the
-lock-taking service path. The first response frame is either one typed
-refusal or:
+The first request frame is `{"action":"open"}`. Lachesis resolves the exact account, acquires that account's
+existing operation lock, refuses a non-idle lifecycle state, and runs the provider-process
+check for the account's exact provider home while it owns the lock. A matching process or
+an inspection result that cannot establish process absence returns `account_busy` and
+releases the lock. This backstops both orphaned provider processes and transient lock loss
+after a Lachesis restart. Only after that check establishes absence does Lachesis perform
+verify and one synchronous provider-capacity read without re-entering the lock-taking
+service path. The first response frame is either one typed refusal or:
 
 ```json
 {
@@ -395,14 +425,14 @@ refusal or:
 }
 ```
 
-After that frame Lachesis keeps the response open and retains the operation lock until
-response closure or the server-assigned expiry exactly 200,000 milliseconds after lock
-acquisition, whichever occurs first. Tightbeam cancellation closes the response. The
-endpoint has no renewal verb, heartbeat poller, caller-selected duration, or durable lease
-row. `activationId` exists only in Lachesis memory for the life of the connection and in
-Tightbeam's in-memory operation state; neither side persists or logs it. Refresh,
-re-onboard, delete, and other account lifecycle operations use the same existing lock and
-therefore cannot start while the response remains open.
+After that frame Lachesis keeps the duplex stream open and retains the operation lock.
+Before the real ready token, response closure or the server-assigned expiry exactly
+200,000 milliseconds after lock acquisition releases the lock. Tightbeam cancellation
+closes the stream. The endpoint has no renewal verb, heartbeat poller, caller-selected
+duration, or durable lease row. `activationId` exists only in Lachesis memory for the
+activation and in Tightbeam's in-memory operation state; neither side persists or logs it.
+Refresh, re-onboard, delete, and credential-affecting jobs use the same existing lock and
+therefore cannot start while the activation owns it.
 
 Lock acquisition is non-waiting; an owned lock returns `account_busy`. The operation
 reads the registry row and normalized file store binding. It returns no
@@ -412,12 +442,31 @@ failure closes the response. The operation returns direct observations without u
 account status, mutation state, registry state, usage cache, provider-home contents, or
 credential state.
 
-Tightbeam keeps the response open through candidate proof and ready-source publication.
-It monitors transport closure and expiry as selection failures. At the commit boundary the
-candidate is already a running Codex process in the leased home, so Lachesis's existing
-provider-process check continues to exclude refresh or re-onboard after Tightbeam closes
-the lease. Tightbeam keeps `home` only in memory and omits it from DB rows, CLI output,
-firehose, lifecycle events, artifacts, and selection-attempt records.
+After the candidate reaches the real ready token, Tightbeam sends one final request frame:
+
+```json
+{"action":"process_handoff","activationId":"act-7","process":{"pid":321,"startToken":"os-start-9"}}
+```
+
+Lachesis verifies that the exact live process belongs to the activation's provider home.
+Under the same per-account state machine, it linearizes this frame against activation
+expiry. If expiry wins, Lachesis releases the connection-owned lock and returns
+`operation_deadline_exceeded`; Tightbeam settles the candidate. If handoff wins, Lachesis
+changes the transient owner of the existing operation lock from the connection to that
+exact process and returns `{"status":"process_bound"}`. The original expiry can then close
+the stream but cannot release the process-owned lock. Tightbeam publishes only after it
+receives `process_bound` and while the coordinator still observes that exact process as
+live and ready. Process exit releases the lock and invalidates an uncommitted publication.
+
+Each Lachesis operation that can mutate an account row, credential, or provider home,
+including delete, refresh, re-onboard, and credential-affecting jobs, acquires the existing
+operation lock. It also performs the provider-process check for that exact provider home
+while it owns the lock. This extends the existing refresh and re-onboard guard to every
+named lifecycle mutation, including delete. The check preserves exclusion after a Lachesis
+restart reconstructs no transient process owner. Tightbeam keeps `home`, `activationId`,
+PID, and start token only in memory.
+It omits them from DB rows, CLI output, firehose, lifecycle events, artifacts, and
+selection-attempt records.
 
 ### C. Agent-reachable wire and CLI
 
@@ -429,6 +478,7 @@ tightbeam account-select \
   --harness codex \
   --account <lachesis-account-id> \
   --if-revision <non-negative-integer> \
+  [--repair-legacy-park] \
   --cause <non-empty-text> \
   --key <idempotency-key>
 
@@ -464,6 +514,9 @@ the same admin mutation rule. Before commit it closes the matching activation co
 settles the exact candidate, aborts the reservation, and records cancel principal and
 cause. It cannot cancel onboarding, another harness key, an operation whose key does not
 match, or a committed transition. Onboarding continues to use its existing cancel path.
+The cancel idempotency digest covers `host`, `harness`, `operationKey`, and `cause`.
+Reusing a cancel key with a changed target or cause returns `idempotency_conflict` and
+does not affect either selection.
 
 Select mode may set `repairLegacyPark: true`. This is an explicit compare-and-replace
 request for the one legacy fence on the target key; omission never infers permission to
@@ -509,17 +562,17 @@ Typed refusals are:
 | `lachesis_unavailable` | target-host activation connection cannot complete | none |
 | `account_not_found` | Lachesis list has no exact account ID | none; return safe known IDs |
 | `account_provider_mismatch` | account provider differs from `codex` | none |
-| `account_busy` | mutation state differs from `idle` or another lifecycle operation owns the account lock | none |
+| `account_busy` | mutation state differs from `idle`, an activation or lifecycle operation owns the account lock, or Lachesis cannot establish that no provider process uses the exact home | none |
 | `account_not_ready` | verify does not return ready and working | none |
 | `account_capacity_exhausted` | usage result is not capacity-positive | none; return normalized windows |
 | `consumer_binding_unavailable` | Lachesis cannot return a file-backed provider home | none |
 | `park_owner_conflict` | a park stands but is not owned by the exact open rate-limit incident | resolve candidate; prior binding, generation, and park remain |
 | `legacy_park_repair_required` | a legacy park stands and select mode omitted `repairLegacyPark` | none; return the safe fence kind and remedy |
 | `legacy_park_not_found` | select mode requested legacy repair but the observed fence is absent or not legacy | none |
-| `activation_lease_lost` | Lachesis activation connection closes before publication | resolve candidate; prior binding, generation, and park remain |
-| `operation_deadline_exceeded` | activation or transition reaches its fixed expiry before commit | close activation, resolve candidate, abort reservation; prior state remains |
+| `activation_lease_lost` | Lachesis activation connection closes before process handoff | resolve candidate; prior binding, generation, and park remain |
+| `operation_deadline_exceeded` | activation expires before process handoff or transition reservation expires before commit | close activation, resolve candidate, abort reservation; prior state remains |
 | `selection_not_active` | cancel mode finds no matching uncommitted selection | none |
-| `candidate_activation_failed` | candidate adapter fails to start or reach ready | resolve candidate; prior binding, generation, and park remain |
+| `candidate_activation_failed` | candidate adapter fails to start, reach ready, or match process handoff | resolve candidate; prior binding, generation, and park remain |
 | `process_cleanup_required` | an exact candidate or retiring process cannot be terminated and settled | fence key; return safe current binding and whether publication committed |
 | `idempotency_conflict` | key exists with a different request digest | none |
 
@@ -591,12 +644,17 @@ On gateway startup, reconciliation handles role before adapter checkout:
 - A committed transition already records its promoted process as `serving`; startup may
   reconcile that process. If the exact process is absent, startup must reacquire bounded
   consumer activation for the committed named account before it derives the transient
-  home or relaunches. It cannot revert the binding or launch from an unleased home.
+  home or relaunches. After the real ready token, it must complete process handoff before
+  checkout can use the relaunch. It cannot revert the binding or launch from an unleased
+  home.
 - An unresolved `retiring` process is terminated and resolved without touching the
   current binding or serving row.
-- Every open `rate-limit-dead` incident re-establishes its park fence unless its incident
-  release fields prove that a ready-source transition released that incident's park. Thus a
-  pre-commit crash cannot accidentally unpark the failed source.
+- Startup first reads the one existing park fence for the key. When any fence exists, it
+  preserves that exact fence and owner without retagging or replacement. When no fence
+  exists, an open `rate-limit-dead` incident re-establishes its incident-owned park only
+  if its release fields are null. Thus a migrated legacy fence remains legacy until the
+  explicit exact-ID repair, and a pre-commit crash cannot accidentally unpark a failed
+  source.
 
 Failure to identify or terminate a candidate or retiring process leaves the adapter key
 fenced and startup reports the existing process-ledger cleanup refusal. It never starts
@@ -618,33 +676,37 @@ they omit provider home and credential material.
 For one harness key, the gateway performs this sequence:
 
 1. Parse the request and authenticate the principal.
-2. Acquire the per-harness-key ready-source transition reservation and allocate its
+2. Compute the request digest and check the completed idempotency record. Return an exact
+   replay or `idempotency_conflict` before consulting transition ownership.
+3. Acquire the per-harness-key ready-source transition reservation and allocate its
    transition ID and fixed expiry. Refuse immediately if another transition owns the key.
-3. Read the registered host, current safe binding, and any park fence with its typed
+4. Read the registered host, current safe binding, and any park fence with its typed
    owner.
-4. Check for an exact idempotent replay.
 5. Compare `expectedRevision` to the current revision. Accept an incident-owned park, or
    accept a legacy park only when `repairLegacyPark` is true; refuse every other owner.
 6. Open target-host Lachesis consumer activation for the exact account ID. Refuse unless
-   its first frame establishes provider, ready state, mutation idleness, capacity, and a
-   file-backed consumer binding while holding the account operation lock.
+   its first frame establishes provider, ready state, mutation idleness, capacity,
+   provider-process absence for the exact home, and a file-backed consumer binding while
+   holding the account operation lock.
 7. Start the unpublished candidate through `prepare_candidate_launch` for the resolved
    Codex adapter key and transition ID.
 8. Wait for the candidate's existing real boot gate to issue its ready token while the
    activation connection remains open.
-9. Recheck principal authorization, activation-connection liveness and expiry,
+9. Send the process-handoff frame for the exact candidate and require `process_bound`.
+10. Recheck principal authorization, process-handoff ownership and candidate liveness,
    reservation liveness and expiry, exact candidate identity, current binding revision,
    and the exact park fence observed in step 5.
-10. Call `AdapterCoordinator`'s prepared-generation publication operation. While the
+11. Call `AdapterCoordinator`'s prepared-generation publication operation. While the
     coordinator is not serving another checkout or publication for this adapter key,
     that operation executes the binding, process-role, history, attempt, lifecycle, and
     repair-park transaction described above.
-11. After that transaction commits and before the publication call returns, swap the
+12. After that transaction commits and before the publication call returns, swap the
     ready candidate into the adapter key's next generation. New checkouts see the new
     generation. If the transaction fails, discard the candidate and keep the prior
     generation and park. Retire the prior process through existing process-ledger
     reconciliation.
-12. Close the Lachesis activation connection only after publication returns, then return
+13. Close the Lachesis activation stream after handoff; the process-owned lock remains.
+    After publication returns, return
     the safe selected identity, revision, adapter key, generation, and readiness.
 
 Candidate staging does not change the durable binding and does not make the candidate
@@ -654,15 +716,17 @@ remain authoritative. A crash before the publication transaction restarts from t
 binding and reconciles the candidate. A crash after it restarts from the new binding and
 reconciles the promoted serving process. The implementation must not persist a `pending`,
 `activating`, or `waiting` binding state.
-Cancel, deadline handling, and publication linearize through the same coordinator-owned
-commit boundary. If cancel or deadline wins before publication begins, it closes the
-activation, settles the candidate, releases the reservation, and leaves source state
-unchanged. If publication wins, cancel returns `selection_not_active` and the deadline
-handler observes the immutable completed result. Neither can reverse the publication
-transaction.
+Cancel, reservation-deadline handling, candidate exit, and publication linearize through
+the coordinator-owned commit boundary. Activation expiry linearizes against process
+handoff inside Lachesis before this boundary. If expiry wins there, publication cannot
+begin. If handoff wins, activation expiry cannot release the process-owned lock. Before
+publication, cancel, reservation expiry, or candidate exit settles the candidate,
+releases transition ownership, and leaves source state unchanged. If publication wins,
+cancel returns `selection_not_active`; later handlers observe the immutable completed
+result. None can reverse the publication transaction.
 
-The authorization, lease-liveness, candidate-identity, and revision checks in step 9 and
-the coordinator-owned commit/publication in steps 10–11 form the selection commit
+The authorization, process-handoff, candidate-identity, and revision checks in step 10 and
+the coordinator-owned commit/publication in steps 11–12 form the selection commit
 boundary. The coordinator
 queues supported adapter checkouts across this boundary. The binding module exposes no
 independent current-binding read to lanes, so another selector or adapter checkout cannot
@@ -673,11 +737,13 @@ observe a new binding paired with the prior published adapter generation.
 When a named Lachesis binding exists and its exact serving process is absent, every launch
 path opens the same bounded consumer activation for the bound account. Placement derives
 `CODEX_HOME` from that transient response, starts the exact process, and holds activation
-until the real ready token. Response closure, expiry, provider mismatch, loss of readiness,
-or capacity refusal leaves the binding durable but the adapter unavailable; checkout
-refuses and placement does not start from a cached home. The fixed activation expiry bounds restart and lazy
-relaunch just as it bounds selection. Once ready, the running provider-process exclusion
-continues after activation closes. The adapter launch reads the credential from that home.
+until the real ready token. It then requires process handoff before the process can become
+serving. Response closure or expiry before handoff, provider mismatch, loss of readiness,
+handoff refusal, or capacity refusal leaves the binding durable but the adapter unavailable;
+checkout refuses and placement does not start from a cached home. The fixed activation
+expiry bounds restart and lazy relaunch just as it bounds selection. Once handed off, the
+same account operation lock remains owned by the running process until exit. The adapter
+launch reads the credential from that home.
 Tightbeam's credential store is not copied into it and is not rewritten.
 
 When the binding is the implicit Tightbeam-managed source, placement uses the existing
@@ -739,15 +805,18 @@ another incident or fault state.
 
 Opening the incident or attaching another generation-correlated exact
 `usageLimitExceeded` authoritative observation clears the release fields and idempotently
-establishes an incident-owned park fence. A successful ready-source publication writes
-its new binding revision and adapter generation into the release record and deletes that
-exact incident-owned fence in the same transaction. A differently owned fence causes
+establishes an incident-owned park fence only when no fence exists. When any fence exists,
+the observation preserves its exact owner and ID. A successful ready-source publication
+writes its new binding revision and adapter generation into the release record and deletes
+that exact incident-owned fence in the same transaction. A differently owned fence causes
 `park_owner_conflict`. A legacy fence requires the explicit migration transition below;
 a failed source transition changes neither release field nor fence.
 
-Startup re-derives the fence for an open incident only when
-`parkReleasedByBindingRevision` is null. This makes pre-commit crash recovery preserve
-the park and post-commit recovery preserve the deliberate proof-turn opening. If the
+Startup preserves any existing fence and its owner. Only when no fence exists does it
+re-derive an incident-owned fence for an open incident whose
+`parkReleasedByBindingRevision` is null. This makes migrated legacy ownership stable,
+pre-commit crash recovery preserve the park, and post-commit recovery preserve the
+deliberate proof-turn opening. If the
 released serving generation immediately emits another exact `usageLimitExceeded`, the
 generation-correlated observation clears the release fields and re-parks the key. An
 event from a retired generation cannot do so.
@@ -836,20 +905,23 @@ names `acct-b`, then Tightbeam verifies and stages only `acct-b`. The response n
 `acct-b`. No request selects `acct-a`.
 
 **A4 — provider, readiness, and capacity.** Given table-driven real-response fixtures
-for missing account, Claude provider, busy mutation, degraded account, empty windows,
-stale usage, 100-percent primary window, and ready Codex account with each window below
-100 percent, when selection evaluates each fixture, then only the last fixture reaches
-candidate adapter staging and its activation connection stays open through publication.
+for missing account, Claude provider, busy mutation, matching provider process,
+unavailable process inspection, degraded account, empty windows, stale usage, 100-percent
+primary window, and ready Codex account with each window below 100 percent, when selection
+evaluates each fixture, then only the last fixture reaches candidate adapter staging and
+process handoff.
 Each other case returns its typed refusal, closes any granted connection, and leaves
 state unchanged. The activation frame carries an expiry exactly 200,000 milliseconds
-after lock acquisition. Advancing the server clock to that instant closes the response,
-releases the account lock, resolves any candidate, and returns
-`operation_deadline_exceeded` without publication.
+after lock acquisition. Before process handoff, advancing the server clock to that
+instant closes the response, releases the account lock, resolves any candidate, and
+returns `operation_deadline_exceeded` without publication.
 
 **A5 — real candidate proof.** Given a ready Codex account fixture and a real captured
 candidate adapter boot exchange, when the candidate reaches the existing gate ready
-token, then its durable process row has role `candidate` under the same adapter key and
-selection can commit. Given captured adapter startup refusal and gate failure responses,
+token and Lachesis acknowledges process handoff for its exact PID and start token, then
+its durable process row has role `candidate` under the same adapter key and selection can
+commit. Given captured adapter startup refusal, gate failure, and handoff process-mismatch
+responses,
 when selection stages each candidate, then it returns `candidate_activation_failed`,
 resolves the unpublished candidate row, and the prior adapter PID, generation, binding,
 park, and catalog entry remain authoritative.
@@ -864,6 +936,10 @@ deadline arrives, then the coordinator closes activation, settles the candidate,
 the reservation, and a new transition can acquire it. Adapter checkouts observe either the prior binding with its prior
 generation or the new binding with its new generation. No checkout observes a crossed
 pair, two candidate roles, or a candidate process.
+Given a completed selection replay while a different transition owns the reservation,
+when the same principal repeats the exact completed request, then the binding module
+returns the recorded replay before it consults the reservation. The result is not
+`source_transition_busy`, and neither owner receives an additional effect.
 
 **A7 — host confinement.** Given registered hosts Gibson and Eezo with separate
 Lachesis fixtures and running Codex adapters, when selection targets Eezo, then only the
@@ -879,6 +955,9 @@ Given an active pre-commit selection with key `k`, when an authorized agent invo
 mode for `k`, then activation closes, the exact candidate settles, the reservation releases,
 and the cancel result is restart-safe. Repeating cancel returns its recorded result. Cancel
 after commit returns `selection_not_active` and does not change the published result.
+Given a completed cancel with cancel key `c`, when the principal reuses `c` with a
+different `operationKey` or cause, then the gateway returns `idempotency_conflict` and
+does not cancel either operation.
 
 **A9 — crash boundaries.** Given an injected gateway crash before the binding
 transaction while serving and candidate process groups exist, when the gateway restarts,
@@ -887,9 +966,10 @@ source, and preserves any incident-owned park. Given an injected crash after the
 and process-role transaction, when the gateway restarts, then it resolves the new named
 binding, cleans the retiring process, and starts or adopts the adapter from that account.
 If the promoted process is absent, restart opens bounded activation for the committed
-account, holds its operation lock through the real ready token, and only then serves a
-checkout. Concurrent refresh, re-onboard, and delete cannot mutate the home during that
-relaunch. Activation expiry leaves the named binding durable, the adapter unavailable
+account, holds its operation lock through the real ready token, completes process handoff,
+and only then serves a checkout. Concurrent refresh, re-onboard, delete, and
+credential-affecting jobs cannot mutate the home during that relaunch. Activation expiry
+before handoff leaves the named binding durable, the adapter unavailable
 with checkout refusing, and no serving process. In every successful reconciliation the database has no
 pending-selection binding and no unresolved candidate or retiring process.
 
@@ -906,16 +986,20 @@ succeeds and when each validation case fails, then observed methods and paths ar
 to account list and `POST /api/v1/accounts/{id}/consumer-activation`. Registry bytes,
 credential bytes, account count, labels, account mutation state, and provider-home file
 hashes remain unchanged except for credential activity produced by the real Codex
-candidate itself. The account operation lock is released after success, every refusal,
-transport loss, fixed expiry, and authorized cancellation. A spy on ordinary usage proves
-that it does not take the operation lock; a spy on consumer activation proves that the
-activation acquires the existing lock before its direct capacity read and does not
-reacquire it.
+candidate itself. Before process handoff, the account operation lock is released after
+each refusal, transport loss, fixed expiry, and authorized cancellation. After handoff,
+the exact process retains the lock through success and releases it on process exit; cancel
+terminates the candidate before it returns. A spy on ordinary usage proves that it does
+not take the operation lock. A spy on consumer activation proves that activation acquires
+the existing lock before its provider-process check and direct capacity read, fails closed
+when process absence cannot be established, does not reacquire the lock, and transfers
+that same lock only to the exact proven process.
 
 **A12 — safe projection.** Given a named binding, when `tightbeam list` and
 `account-select` render success or refusal, then they include host, harness, revision,
 account ID, label, and provider. They omit consumer home, credential path, access token,
-refresh token, device code, and raw Lachesis response.
+refresh token, device code, activation ID, PID, process start token, and raw Lachesis
+response.
 
 **A13 — one exhaustion fault.** Given three assignments on `{codex, gibson}` fail with
 the exact `usageLimitExceeded` event while the selected account is at 100 percent and
@@ -958,7 +1042,9 @@ is released, and only the target host's Codex adapter rotates.
 
 **A18 — migration refusal and rollback.** Given a pre-V1 legacy fence, when ordinary
 selection omits `repairLegacyPark`, then it returns `legacy_park_repair_required` without
-activation. Given an authorized selection includes the flag and the captured legacy owner
+activation. Given an authorized agent invokes `tightbeam account-select` with
+`--repair-legacy-park`, then the wire sets `repairLegacyPark: true`. Given an authorized
+selection includes the flag and the captured legacy owner
 ID remains current, then candidate proof runs behind the fence and one publication
 transaction publishes the new source, removes that exact fence, records the release on an
 open incident when present, and never reruns the old source. A changed fence refuses with
@@ -983,13 +1069,23 @@ Lachesis or Codex boundary fixture does not satisfy this clause.
 **A20 — lifecycle exclusion race.** Given a selector has received an idle activation
 frame, when concurrent refresh and re-onboard calls start before candidate readiness,
 then neither lifecycle call enters credential or provider-home mutation while the
-activation connection is open. If the connection closes before publication, selection
+activation connection is open. If the connection closes before process handoff, selection
 returns `activation_lease_lost`, resolves its candidate, and neither binding nor adapter
-generation changes. After successful publication closes the connection, the running
-Codex candidate makes both lifecycle calls return the existing provider-process-busy
-refusal. Advancing to activation expiry or invoking authorized same-verb cancellation
-before publication produces the same no-change outcome and releases both account lock and
-transition reservation within the same test tick.
+generation changes. Given handoff and activation expiry become runnable in the same
+Lachesis account-state step, when expiry linearizes first, then handoff refuses,
+publication does not begin, and the prior source remains authoritative. When handoff
+linearizes first, then expiry closes only the activation stream; the exact process retains
+the account operation lock and publication can commit. Concurrent refresh, re-onboard,
+delete, and credential-affecting jobs remain blocked until that process exits. A Lachesis
+restart during the process-owned phase makes each lifecycle mutation acquire the lock,
+detect the live provider process, and refuse before changing an account row, credential,
+or provider-home byte. Given that restart and a new consumer activation for the same
+account, when activation holds the reconstructed operation lock and checks the provider
+home, then it detects the serving process and returns `account_busy` before verify,
+capacity read, or candidate launch. A process-inspection error returns the same fail-closed
+refusal. Authorized same-verb cancellation before publication terminates the candidate
+and releases the transition reservation. The resulting process exit releases the account
+lock in the same test tick.
 
 **A21 — lawful candidate coexistence.** Given one serving adapter and one selector, when
 candidate boot begins, then the process ledger contains one `serving` and one `candidate`
@@ -1015,6 +1111,10 @@ fence on the key, when publication reaches its boundary, then it returns
 published generation. Given a late `usageLimitExceeded` event from the retired generation,
 then the event remains turn evidence but cannot clear the release fields or re-park the
 new generation. Legacy behavior is covered by A18.
+Given a migrated legacy fence and an open incident with null release fields, when the
+gateway restarts, then it preserves the exact legacy fence ID and owner. It neither
+retags the fence nor creates a second incident-owned fence. Given the same open incident
+with no fence, startup creates one incident-owned fence.
 
 **A23 — selector and onboarding race.** Given OpenAI onboarding begin captured revision
 `4` and `account-select` also expects revision `4`, when both finish concurrently, then
@@ -1025,6 +1125,17 @@ serving generation. Retrying the loser with expected revision `4` returns
 `binding_conflict`. Cancel, owner death, or fixed expiry frees the reservation and settles
 the owner's candidate or staged-credential path. No checkout observes a crossed
 binding/generation pair and no second candidate exists.
+
+**A24 — refusal completeness.** Given an unregistered host, when an authorized selection
+names it, then the gateway returns `unknown_host` before any Lachesis or candidate action.
+Given harness `claude`, when the same principal invokes selection, then the gateway
+returns `unsupported_harness` before any host transport or state change. Given a registered
+remote host whose Lachesis connection refuses or times out, when selection opens
+activation, then it returns `lachesis_unavailable` and preserves the binding, generation,
+park, and account registry. Given an exact ready account backed by an unsupported keychain
+store, when activation evaluates its consumer binding, then it returns
+`consumer_binding_unavailable`, closes the activation, creates no candidate, and preserves
+the binding, generation, park, and provider-home bytes.
 
 ## Open Questions
 
