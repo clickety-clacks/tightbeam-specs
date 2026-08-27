@@ -1,5 +1,11 @@
 # REST state API v1 — the read plane (product spec, canonical r4)
 
+G2 session-freshness amendment candidate, 2026-08-27: add the complete
+session mutation mapping shared with `event-firehose-v1.md`. This amendment
+adds `session.updated` and fixes session versioning, correlation, cold-start,
+reconnect, and gap recovery. It changes no R7 session field, route, visibility
+grant, write surface, target, or release authority.
+
 Amendment candidate, 2026-08-25: distinguish durable Toplines from the
 mechanical ExecutionMap and add the REST-only ExecutionMap contract. The
 amendment changes no durable Toplines field, mutation, or route. Its companion
@@ -57,6 +63,11 @@ Authority and inputs:
   events; SQL against state.db is not a product interface; the CLI makes
   common things easy and never re-creates SQL; auth is the existing
   gateway credential, no API keys; deployment is localhost/tailscale.
+- Mike's firehose gap remediation ruling, message
+  `s_fe001c27-c509-4cf6-8866-47defe5eaa21` (2026-08-27), accepts recon verdict
+  `att_556f55ae-f1d2-4c83-b55d-9daf06aae929` and report `art_1d389e8e`.
+  It makes G2 session freshness a read-side firehose prerequisite and leaves
+  G1 and G3-G8 outside this amendment.
 - Mike's rulings, 2026-08-25: remove the `asUser` GET prohibition. The
   parameter only transports the CLI's existing principal selection and adds
   no credential, binding, authorization, or tailnet-identity behavior. After
@@ -97,7 +108,7 @@ The canonical spec lives only in the `tightbeam-specs` repository as
 `rest-state-api-v1.md`. This amendment's exact canonical set is
 `rest-state-api-v1.md`, `rest-state-api-v1-wire-schema.md`, and
 `event-firehose-v1.md`; a change to an ExecutionMap envelope, dependency
-entry, or R8b mapping lands those coupled files in one reviewed revision.
+entry, or R8/R8b mapping lands those coupled files in one reviewed revision.
 `rest-state-api-r3-adjudication.md`, `rest-vs-cli-adjudication.md`, and
 `topline-map-v1.md` remain authority inputs, not custody companions for this
 amendment. A worktree, artifact row, transcript, adjudication ledger, or review
@@ -124,6 +135,9 @@ correlate later firehose notices without reading SQLite or replaying history.
 - REST v1 does not retire compatibility aliases before their clients migrate
   or decide future tailnet identity.
 - REST v1 does not authorize implementation, deployment, or client migration.
+- This amendment does not change session field meanings or add a session write
+  route. It only makes changes to the existing R7 session item observable and
+  recoverable.
 - REST v1 does not alias ExecutionMap telemetry through `/api/toplines`, add an
   ExecutionMap firehose class, or change the six adopted shared serializer
   shapes from `art_b1995a26` / fact 1093. Exact source invalidation notices for
@@ -173,6 +187,12 @@ resources. `/api/toplines[/:id]` reads durable Topline rows and memberships.
 `/api/execution-map` reads a composed snapshot of execution rows. Neither name
 aliases, replaces, or widens the other.
 
+I8. One session projection mutation seam owns each mutable input to the R7
+session item. The seam detects a change from the complete canonical item with
+`rowVersion` excluded, advances its version in the same transaction, and
+selects one session class. A verb declaration, elapsed time, or later read is
+not the detector.
+
 ## Architecture
 
 The read plane has four seams. A principal resolver produces one authenticated
@@ -181,6 +201,13 @@ filters. The R7 serializer emits the closed wire item defined by the wire
 schema. An outer adapter places that item in a REST envelope, compatibility
 envelope, CLI result, or firehose notice. Composed views declare their source
 classes in R9 and use a dependency digest instead of a notice class.
+
+The session item is a direct R8 resource, not a composed R9 view. Its
+`mechanicalStatus` value is materialized in the versioned R7 item. Each mutable
+input that can change that value enters the session projection mutation seam;
+the serializer does not derive it at read time from unversioned adapter memory,
+turns, wakes, or another mutable source. This rule closes freshness without
+adding a second session status resource.
 
 Operating-guidance impact: none. This amendment applies the existing REST
 resource/query/serializer pattern and creates no cross-repository agent rule.
@@ -706,7 +733,7 @@ remain outside this table.
 | `wake.scheduled`, `wake.fired`, `wake.canceled` | wakes | upsert | `wakeId` |
 | `prod.fired`, `turn.started`, `turn.ended` | turns | upsert | `turnSeq` |
 | `decision_request.opened`, `decision_request.ruled`, `decision_request.withdrawn` | decision requests | upsert | `decisionRequestId` |
-| `session.spawned`, `session.retired` | sessions | upsert | `sessionKey` |
+| `session.spawned`, `session.updated`, `session.retired` | sessions | upsert | `sessionKey` |
 | `role.created`, `role.bound` | roles | upsert | `role` |
 | `role.removed` | roles | delete | `role` |
 | `user.added`, `user.promoted` | users | upsert | `userId` |
@@ -732,6 +759,17 @@ integers with the same positive numeric value; `rowVersion` equals `id`.
 once after a committed lease change and uses the R7 version. An idempotent
 no-change replay emits no state notice. Both use the same AU4 visibility and
 exact R7 serializer as their REST resources, per `art_4a1cce6e`.
+
+The session projection mutation seam uses one class per committed item change.
+First materialization selects `session.spawned`. An `active` to `retired`
+transition selects `session.retired`. Each other change to an R7 item field
+other than `rowVersion` selects `session.updated`. The seam stores the changed
+item and its next durable `rowVersion` atomically. Post-commit publication
+carries that exact version.
+A request whose complete serialized item, excluding `rowVersion`, is unchanged
+leaves `updatedAt` and `rowVersion` unchanged and emits no session state notice.
+`refs.sessionKey`, `payload.sessionKey`, and the REST item `sessionKey` are
+equal. Sessions soft-retire and therefore use no delete operation.
 
 SQ2 admits every admin row above. They enter the REST/firehose A6 overlap and
 use the same admin-only visibility function. Archetypes, guidance, and rails
@@ -1345,6 +1383,42 @@ query seam and serializer and emits the unchanged R7 object. The test rejects
 inline SQL, a second visibility predicate, a second item serializer, a
 caller-selected field/sort/join parameter, and a candidate-only session
 projection.
+
+A35. Given first materialization, a non-retirement item change, and an
+`active` to `retired` transition for one session, when each transaction
+commits, then the mapping selects exactly `session.spawned`, `session.updated`,
+and `session.retired`, respectively. Each notice uses resource `sessions`, op
+`upsert`, primary ref `sessionKey`, and the R7 session serializer.
+
+A36. Given a change to a session item field other than `rowVersion`, when REST
+detail and its notice payload are encoded, then their item bytes are equal and
+their `sessionKey` values equal `refs.sessionKey`. The transaction stores a
+greater `rowVersion` before the post-commit notice becomes eligible for
+publication.
+
+A36a. Given a request whose session item fields other than `rowVersion` do not
+change, then `updatedAt` and `rowVersion` remain unchanged and no session state
+notice exists.
+
+A37. Given a client that receives `subscription_ready` for `session.`, when it
+pages `GET /api/sessions` while the target session changes, then applying the
+buffered notice and snapshot items by `(sessionKey,rowVersion)` yields the same
+collection as a fresh quiescent read. Reversing the arrival order yields the
+same bytes.
+
+A38. Given a session change during a disconnected interval, when the client
+reconnects, then it resubscribes before paging the visible sessions collection
+and converges from that snapshot plus live notices.
+
+A39. Given one suppressed session notice, when the next sequence or heartbeat
+exposes the gap, then the client runs the same resubscribe-and-snapshot path and
+converges to a fresh quiescent sessions read.
+
+A40. Given each mutable input to the R7 session item, including the input to
+`mechanicalStatus`, when a test changes that input, then the change is possible
+only through the session projection mutation seam and produces the R8 outcome
+required by A35-A36. The test fails on a direct writer or an unversioned
+read-time input.
 
 ## Open questions — Spirit questions for Mike
 

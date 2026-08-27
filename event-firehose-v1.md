@@ -1,5 +1,11 @@
 # Event firehose v1 — state-change notifications over ws (product spec, r6)
 
+Amendment candidate, 2026-08-27: add sessions to the complete rebuildable-state
+mapping. The amendment adds `session.updated`, fixes the session projection
+mutation seam, and makes cold start, reconnect, and gap recovery decidable for
+session models. It changes no session field, visibility grant, socket protocol,
+write surface, target, or release authority.
+
 Amendment candidate, 2026-08-25: add source-invalidation notices for durable
 Topline mutations and independently committed subagent markers. These notices
 make the composed Toplines and ExecutionMap REST views refreshable from each
@@ -61,6 +67,11 @@ Authority and inputs:
   past. The recon proves a Clawline-class chat client stands on queries
   plus this subscription — its gaps are blocking findings against the
   query surface.
+- Mike's firehose gap remediation ruling, message
+  `s_fe001c27-c509-4cf6-8866-47defe5eaa21` (2026-08-27), accepts recon verdict
+  `att_556f55ae-f1d2-4c83-b55d-9daf06aae929` and report `art_1d389e8e`.
+  It makes G2 session freshness a read-side firehose prerequisite and leaves
+  the G3 write contract outside this amendment.
 - Superseded input: the archived focused design and draft (specs repo
   archive/) contributed the durable-row/cursor/pump replay machinery that
   r4 removes. observability-v1.md r4's doorbell contract ("frames are
@@ -74,9 +85,9 @@ Authority and inputs:
 ## Spec homing
 
 The canonical firehose spec lives only in the `tightbeam-specs` repository as
-`event-firehose-v1.md`. This source-invalidation amendment's exact canonical
-set is `event-firehose-v1.md`, `rest-state-api-v1.md`, and
-`rest-state-api-v1-wire-schema.md`; a change to an R8b mapping, its R9
+`event-firehose-v1.md`. This amendment's exact canonical set is
+`event-firehose-v1.md`, `rest-state-api-v1.md`, and
+`rest-state-api-v1-wire-schema.md`; a change to an R8 or R8b mapping, its R9
 dependency, its filter value, or its wire type lands those coupled files in
 one reviewed revision. Recon documents, adjudication ledgers, artifact rows,
 transcripts, worktrees, and review reports are authority evidence, not
@@ -93,6 +104,11 @@ type.
 AS2. The REST companion ships each R9 snapshot read before the matching
 freshness class. Firehose A7 falsifies this assumption if a consumer cannot
 rebuild the displayed slice after reconnect.
+
+AS3. The REST companion ships the R7 sessions collection, detail route, and
+serializer before `session.spawned`, `session.updated`, or `session.retired`.
+Firehose A4 and A5 falsify this assumption if a consumer cannot rebuild its
+visible sessions after cold start, reconnect, or a detected gap.
 
 ## Invariants — the state model is the entity
 
@@ -162,6 +178,10 @@ N7. No webhooks, SSE, or polling interface in v1.
 
 N8. This spec does not authorize implementation.
 
+N9. This amendment does not define the G1 message discriminator, the G3 write
+contract, the G4 error envelope, the G5 transcript reconciliation, the G6
+decision-state subset, the G7 detail-route set, or the G8 authority labels.
+
 Operating-guidance impact: none. This amendment extends the existing
 source-class registry and creates no cross-repository agent rule.
 
@@ -194,11 +214,21 @@ durable commit that makes a composed REST view stale. It is a refetch trigger,
 not a rebuildable resource or a direct model upsert. Its R8b mapping fixes its
 class, source seam, refs, natural version, visibility, and payload.
 
+T7. **Session projection mutation** — a committed change that makes one
+canonical R7 session field other than `rowVersion` differ for one
+`sessionKey`. The comparison uses the complete serialized item with
+`rowVersion` excluded. It does not infer change from a verb name, timer, or
+declared effect list.
+
 ## Architecture — the event vocabulary law
 
 V1. Every state-changing commit SHALL emit its notices as part of the
 commit path (post-commit, nonblocking to the transaction): a change with
 no notice class is a defect the registry test catches (A1).
+
+This amendment adds one class and one mutation seam because deleting sessions
+would remove the core Clawline model, while accepting stale session bytes would
+violate the ruled freshness-only architecture.
 
 V2. Classes are namespaced `area.happening`, lowercase, dot-separated. The
 registry below is part of this spec. A class name never changes meaning.
@@ -267,7 +297,7 @@ R2. Attention and escalation:
 `decision_request.ruled`, `decision_request.withdrawn`.
 
 R3. Org shape:
-`session.spawned`, `session.retired`, `role.created`, `role.bound`,
+`session.spawned`, `session.updated`, `session.retired`, `role.created`, `role.bound`,
 `role.removed`, `user.added`, `device.approved`, `device.denied`,
 `device.revoked`.
 
@@ -310,6 +340,7 @@ correlation contract). A class without a row is a red build.
 
 | Class | Resource | Op | Primary notice ref | Serializer | Version and emission | Visibility and convergence | A1/A6 coverage |
 |---|---|---|---|---|---|---|---|
+| `session.spawned`, `session.updated`, `session.retired` | `sessions` | `upsert` | `sessionKey` | exact shared R7 session serializer | The session projection mutation seam allocates the next durable session `rowVersion` in the same transaction as the changed projection. First materialization selects `session.spawned`; an `active` to `retired` state transition selects `session.retired`; each other changed item selects `session.updated`. One commit selects one class. A no-change request emits none. | REST AU4 session visibility. Consumers apply last-version-wins by `sessionKey`. The payload `sessionKey` equals `refs.sessionKey`. | A1 covers the mutation seam and class selection. A6 verifies byte equivalence with `GET /api/sessions/:sessionKey`. |
 | `condition_fact.filed` | `condition facts` | `upsert` | `factId` | exact shared R7 condition-fact serializer | The condition fact `id` is its append-only natural version; its `rowVersion` equals `id`. Each successful insertion into `condition_facts` emits one notice after commit. An idempotent filing that returns the existing fact emits none. | `GET /api/facts` visibility. Consumers apply last-version-wins by `factId`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 | `critical_lease.updated` | `critical state` | `upsert` | `sessionKey` | exact shared R7 critical-state serializer | The item uses R7 critical-state `rowVersion`. Each committed change to the R7 item for one `sessionKey` emits one notice after commit. A replay or idempotent request that leaves the item and `rowVersion` unchanged emits none. | `GET /api/critical-state` admin-only visibility. Consumers apply last-version-wins by `sessionKey`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 
@@ -431,7 +462,8 @@ between building the model and receiving the first notice — subscribing
 first closes it, and the worst case becomes duplicate records, never
 missed ones. Therefore the client's model-build algorithm SHALL be
 IDEMPOTENT under duplicate records — implemented as last-version-wins
-upsert on (id, rowVersion) (V4a): an older version over a newer one is a
+upsert on (primary id, rowVersion) (V4a), where a session's primary id is
+`sessionKey`: an older version over a newer one is a
 no-op, anything applied twice converges. Plain drop-by-id is FORBIDDEN
 (it silently keeps stale rows).
 
@@ -473,7 +505,9 @@ broker-stored consumer-group offsets.
 
 M4. A chat client: model from the transcript read (paginated,
 before/after); send via wake; watch `wake.scheduled` and the turn/message
-classes update the model; deep scroll-back pages the transcript read.
+classes update the model; watch `session.*` for picker, engine, identity,
+history-barrier, retirement, and mechanical-status freshness; deep scroll-back
+pages the transcript read.
 Whether every piece stands on today's query surface is recon wi_9fdc0c07.
 
 ## Delivery semantics
@@ -531,6 +565,17 @@ and one denied principal. The REST detail and firehose fan-out invoke that
 same function; the allowed principal receives the committed notice and the
 denied principal receives neither detail nor notice.
 
+For sessions, the A1 table drives first materialization, display-name change,
+adoption change, archetype, identity or override change, engine or host change,
+history-barrier change, mechanical-status change, and retirement through the
+single projection mutation seam. Given a successful commit, when any R7 item
+field other than `rowVersion` changes, then the same transaction advances
+`rowVersion` and selects
+exactly one of `session.spawned`, `session.updated`, or `session.retired` by
+the R8 rule. Given unchanged serialized bytes, then it advances no version and
+emits no session state notice. The test fails if any writer can change a
+mutable input to the R7 session item outside this seam.
+
 A2. A subscriber receives a notice for a matching commit made after its
 registration cut, and never one from before it.
 
@@ -544,6 +589,12 @@ A3. A filtered subscriber receives exactly the matching notices; a change
 matching several of a connection's subscriptions arrives once per
 matching subscription, each tagged.
 
+For each session class, a table tests the closed filter rules: its literal
+class matches the `session.` prefix; `refs.sessionKey` matches only the equal
+`sessionKey` filter; and `origin` and `principal` never match. The visibility
+predicate runs before the matcher, and a denied session invokes no matcher and
+emits no frame.
+
 For each R8b class, a table tests the closed filter rules: its literal class
 matches the correct prefix; each present `sessionKey` or `workItemId` ref
 matches only the equal filter; each absent ref does not match; and `origin`
@@ -555,8 +606,21 @@ to a fresh query at a quiescent moment. Reapplying the same R8 notice converges
 through V4a last-version-wins. Receiving the same R8b source version twice may
 cause two refetches and cannot mutate the model directly.
 
+Given a client that receives `subscription_ready` for `session.`, when it pages
+`GET /api/sessions` while one session changes concurrently, then applying the
+buffered session notice and snapshot items by `(sessionKey,rowVersion)` yields
+the same session collection as a fresh quiescent read. The outcome is the same
+whether the snapshot item or notice arrives first.
+
 A5. Kill the gateway mid-stream: clients detect the close, resubscribe,
 rebuild, and converge again (M2). Force a slow consumer into 4008: same.
+
+Given a client that misses `session.updated`, when a later sequence or
+heartbeat exposes the gap, then the client resubscribes, pages the visible
+sessions collection, and converges from that snapshot plus live notices.
+
+Given a disconnect after a session change, reconnect uses the same
+resubscribe-and-snapshot sequence and reaches the same result.
 
 A6. For every R8 rebuildable-state class, the notice payload and the REST
 detail item are BYTE-EQUIVALENT after removing envelope fields — one
@@ -576,6 +640,12 @@ duplicate, and newer detail items and notices in both orders for one `factId`
 and one `sessionKey`. It proves per-resource last-version-wins convergence to
 the R7 item: condition facts use equal integer `id`, `refs.factId`, and
 `rowVersion`; critical state uses its R7 `rowVersion`.
+
+For each session class, the A6 test requires `resource:"sessions"`,
+`op:"upsert"`, equal payload and ref `sessionKey`, and the exact R7 session
+bytes returned by `GET /api/sessions/:sessionKey`. Older, duplicate, and newer
+snapshot items and notices applied in both orders converge by the session
+`rowVersion`.
 
 A7. The feature-smoke drives one real external consumer (ATC or a script)
 end to end: cold build from queries, live updates via subscription,

@@ -6,6 +6,11 @@ Amendment candidate, 2026-08-25: add the ExecutionMap composed response,
 closed error envelope, and dependency-entry schema. The durable Toplines
 schema below is unchanged.
 
+G2 session-freshness amendment candidate, 2026-08-27: session item keys and
+types remain unchanged. The complete item, including materialized
+`mechanicalStatus`, is the versioned value shared by REST and the three
+`session.*` firehose classes.
+
 ## Encoding rules
 
 JSON is UTF-8. Integers are signed JSON integers and never floating-point
@@ -14,6 +19,12 @@ all digests are strings. ExecutionMap's non-resource dependency-vector primary
 keys use the exact types defined under “Canonical array and map order.”
 `rowVersion` is a positive integer. `dependencyVersion` is a lowercase
 64-character SHA-256 hex string.
+
+For a sessions item, `rowVersion` changes if and only if at least one other
+serialized R7 field changes. The transaction stores the greater version with
+the changed item before its post-commit session notice becomes eligible for
+publication. The serializer does not compute `mechanicalStatus` from a mutable
+input outside that versioned mutation seam.
 
 The condition-fact projection `id`, firehose notice `refs.factId`, and natural
 version are positive JSON integers with the same numeric value.
