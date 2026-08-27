@@ -7,9 +7,9 @@
 `att_819bdf81-3c42-4cdd-9569-2c6ab70b1521`, and
 `att_b947ee66-5703-4438-9f1c-4d5e2e1fe172`
 **Product baseline:** `clickety-clacks/tightbeam` commit
-`8e269e89c04b6b8569813142a12742f3325b8503`
+`cba8d6c5e43e974e93890a901b83abd55f723500`
 **Specs baseline:** `clickety-clacks/tightbeam-specs` commit
-`5f4b636d02aa8f1cd0670dd090d0af8c35894e88`
+`45a650e25f334827e8238bfff3ea58e7a32b4916`
 
 ## Goal
 
@@ -22,12 +22,12 @@ This proposal closes two defects only:
    ladder. A prod whose turn could not run cannot. Adjacent strikes use a durable,
    positive eligibility clock, and the default three-strike ladder cannot complete in
    the four-second incident window.
-2. Six consecutive turns that ran and ended with a typed provider error, and are not
-   already governed by a conserved wake-named Bubble cause, produce one durable patrol
-   escalation through the existing Bubble lineage route. They do not end with no
-   recipient. A `could_not_run` failure keeps the existing nearest-active-ancestor
-   Bubble route after the existing wake retry and exhaustion contract reaches its
-   routing boundary.
+2. Six consecutive D3-eligible turns that ran and ended with a typed provider error
+   produce one durable patrol escalation through the existing Bubble lineage route.
+   Wake-cause-entitled terminals and Bubble notice terminals cannot enter that streak.
+   The escalation does not end with no recipient. A `could_not_run` failure keeps the
+   existing nearest-active-ancestor Bubble route after the existing wake retry and
+   exhaustion contract reaches its routing boundary.
 
 The substrate classifies and records. The recipient decides what to do (wisdom 6).
 
@@ -70,10 +70,16 @@ The substrate classifies and records. The recipient decides what to do (wisdom 6
   `run_failed` and typed failure category `provider_error`. Both fields come from the
   run boundary. Error prose, marker text, numeric HTTP text, and exception inspection
   cannot establish this class.
-- **D3-eligible provider error**: a ran-and-failed provider error whose terminal is not
-  already represented by a wake-named Bubble cause under
-  `wake-delivery-conservation.md`. A source terminal belongs to one downstream fault
-  route, never both.
+- **Wake-cause-entitled terminal**: a wake-linked failed terminal whose committed final
+  wake outcome requires a wake-named Bubble cause under
+  `wake-delivery-conservation.md`, whether Bubble recognition is pending, admitted, or
+  replayed.
+- **Bubble notice terminal**: a turn whose stored typed cause reference identifies it
+  as route machinery for an existing Bubble cause. This includes wake-named,
+  ordinary-turn, and patrol-threshold causes; prompt text cannot establish the class.
+- **D3-eligible provider error**: a ran-and-failed provider error that is neither a
+  wake-cause-entitled terminal nor a Bubble notice terminal. A source terminal belongs
+  to one downstream fault route, never both.
 - **Accountability strike**: one durable `did_not_answer` classification charged to
   the current assignment receipt epoch. The configured `prod_limit` remains the number
   of strikes before the existing escalation ladder begins.
@@ -134,8 +140,9 @@ The substrate classifies and records. The recipient decides what to do (wisdom 6
    provider-failure streak at most once.
 7. **Consecutive means consecutive.** A delivered turn, a different failure domain,
    `could_not_run`, `run_canceled`, `outcome_unknown`, a non-provider `run_failed`
-   terminal, or a provider failure already governed by a wake-named Bubble cause ends
-   the current provider-failure streak before later provider failures count.
+   terminal, or a wake-cause-entitled provider failure ends the current
+   provider-failure streak before later provider failures count. A Bubble notice
+   terminal is route machinery and changes no D3 streak.
 8. **Threshold reuse.** Exactly six consecutive qualifying terminals admit the logical
    provider-failure escalation. The seventh and later failures in the same streak do
    not admit another one.
@@ -144,21 +151,24 @@ The substrate classifies and records. The recipient decides what to do (wisdom 6
    same cause upward; they cannot create a second cause.
 10. **Wake conservation stays authoritative.** Every source wake keeps the outcome,
     retry, exhaustion, wake-cause identity, and Bubble admission required by
-    `wake-delivery-conservation.md`. A terminal with that conserved cause is ineligible
-    for the D3 streak and patrol threshold cause. D2 only classifies it for negligence.
-11. **Cause and principal.** Every classification, reset, streak increment, threshold,
+    `wake-delivery-conservation.md`. D3 exclusion derives from committed wake linkage
+    and final outcome entitlement, never later cause-row existence. D2 only classifies
+    the terminal for negligence.
+11. **Route machinery cannot recurse.** A Bubble notice terminal cannot increment,
+    start, reset, or escalate a D3 streak, regardless of its typed run failure.
+12. **Cause and principal.** Every classification, reset, streak increment, threshold,
     route admission, and no-recipient result names the source turn or wake, the affected
     assignment or session, a closed cause kind, and principal `process:tightbeam`
     (wisdom 5).
-12. **No silent absence.** A threshold with no runnable ancestor still commits the
+13. **No silent absence.** A threshold with no runnable ancestor still commits the
     existing Bubble terminal record and standing owner fact. Failure of the gateway
     itself to persist that transaction is outside this proposal and remains
     `wi_f1013180`.
-13. **Privacy.** Durable patrol state, lifecycle rows, projections, and notices contain
+14. **Privacy.** Durable patrol state, lifecycle rows, projections, and notices contain
     only allowlisted identifiers, closed classes, counts, timestamps, and the existing
     safe public failure summary. They contain no prompt, response, raw exception,
     credential value, token, or provider response body.
-14. **Targetless compatibility.** Existing rows remain readable. Missing new patrol
+15. **Targetless compatibility.** Existing rows remain readable. Missing new patrol
     state means zero strikes, no active provider streak, and no threshold escalation.
     No migration invents classifications for legacy prose-only failures.
 
@@ -173,26 +183,35 @@ other module shall write patrol strike or provider-streak state.
 The seam shall read typed terminal and wake outcomes before it evaluates holder
 accountability. It shall apply this precedence:
 
-1. A retry-eligible `could_not_run` wake outcome records `could_not_run_pending`. It
+1. A Bubble notice terminal records `bubble_notice_ignored`, charges no strike, and
+   makes no D3 state change, including no streak reset. The existing Bubble route still
+   consumes the notice outcome and continues its original cause when required.
+2. A retry-eligible `could_not_run` wake outcome records `could_not_run_pending`. It
    charges no strike and admits no new route. Existing retry and exhaustion continue.
-2. A final `could_not_run` outcome records `could_not_run_final`, charges no strike,
+3. A final `could_not_run` outcome records `could_not_run_final`, charges no strike,
    and leaves its conserved wake-named cause eligible for the existing nearest-active-
    ancestor Bubble route.
-3. A terminal already represented by a wake-named Bubble cause records
-   `wake_cause_conserved`, charges no strike, and makes no D3 state or route change.
-4. A D3-eligible `run_failed` terminal with typed `provider_error` records one
+4. A wake-cause-entitled terminal records `wake_cause_conserved`, charges no strike,
+   and makes no D3 increment or route change. It ends an existing D3 streak as the
+   consecutive-sequence boundary in Invariant 7.
+5. A D3-eligible `run_failed` terminal with typed `provider_error` records one
    provider-streak observation, charges no strike, and follows section C.
-5. Other `run_failed`, `run_canceled`, and `outcome_unknown` terminals charge no
+6. Other `run_failed`, `run_canceled`, and `outcome_unknown` terminals charge no
    strike and end any provider streak for that failure domain. Their existing wake and
    Bubble dispositions remain unchanged.
-6. A handled prod terminal with no qualifying receipt in its frozen epoch records
+7. A handled prod terminal with no qualifying receipt in its frozen epoch records
    `did_not_answer` and follows section B.
-7. A qualifying receipt records progress and resets the current accountability epoch.
+8. A qualifying receipt records progress and resets the current accountability epoch.
 
 The check and its chosen state transition shall be one transaction. A lower-priority
 branch cannot run after a higher-priority branch matches.
 
-Acceptance: R-A is proven by checks 1, 2, 5, and 7 below.
+For a wake-linked failed terminal, the seam shall read the committed final wake outcome
+in the same snapshot. `undeliverable` or any other outcome that entitles the wake-named
+cause selects item 4 before Bubble recognition can run. Missing or non-final wake
+outcome state is `patrol_wake_outcome_incomplete`; it cannot fall through to D3.
+
+Acceptance: R-A is proven by checks 1, 2, 5, 7, and 8 below.
 
 ### B. Accountability strikes and the durable clock
 
@@ -250,12 +269,12 @@ replace a source cause, or acquire a wake id from `wake-delivery-conservation.md
 
 The following event ends the streak before it is classified for any new streak: a
 delivered turn, a failure-domain change, `could_not_run`, `run_canceled`,
-`outcome_unknown`, non-provider `run_failed`, or a provider failure already governed by
-a wake-named Bubble cause. The reset transaction shall record the prior generation,
-count, boundary turn, cause, and principal. A threshold notice turn is route machinery
-and does not reset the source session's streak.
+`outcome_unknown`, non-provider `run_failed`, or a wake-cause-entitled provider
+failure. The reset transaction shall record the prior generation, count, boundary turn,
+cause, and principal. A Bubble notice terminal is ignored by D3 and changes no streak
+on its recipient session.
 
-Acceptance: R-C is proven by checks 4, 5, 6, and 7 below.
+Acceptance: R-C is proven by checks 4, 5, 6, 7, and 8 below.
 
 ### D. Patrol-threshold routing and recipient absence
 
@@ -268,12 +287,22 @@ When a D3 streak reaches six, patrol shall admit its deterministic threshold cau
 the existing Bubble lineage route. That cause is a new patrol fact, not a delayed,
 coalesced, or renamed source-turn Bubble cause.
 
+Every notice turn admitted for that threshold cause shall carry the same stored typed
+Bubble-notice reference as existing route machinery. Supervision shall identify that
+reference before it examines run disposition, so a failed threshold notice cannot
+become a D3 source on its recipient session.
+
 At the provider threshold, Bubble shall resolve the nearest active operational ancestor
 from the failing session. If that recipient's notice turn fails or is canceled, the
 existing climb continues with the same logical escalation. If no active ancestor
 remains, the existing terminal transaction records the owner alert and standing
 `user-alerted` fact. If the composed owner Main stream is absent, the record and fact
 still commit and the result is `record_only`; no session is created.
+
+Recipient selection is not a reservation. Bubble shall validate that the selected
+recipient remains active in the same transaction that admits its notice. If the row is
+absent or retired, that transaction shall re-resolve the lineage and admit to the next
+active ancestor or commit the closed absence result.
 
 The patrol threshold cause shall freeze the owner user id when T6 is classified. If the
 source session row is absent before routing, the route shall use that frozen owner for
@@ -284,7 +313,7 @@ The route transaction shall store the selected recipient or the closed absence r
 It shall never leave the logical escalation in a state that only a later inference
 decision can release. This is a routed fact, not a hold (T-RECOGNITION).
 
-Acceptance: R-D is proven by checks 2, 4, and 7 below.
+Acceptance: R-D is proven by checks 2, 4, 7, and 8 below.
 
 ### E. Concurrency, restart, replay, and audit
 
@@ -299,6 +328,12 @@ classification but before notice delivery shall leave the escalation eligible fo
 existing Bubble sweeper. A crash after notice admission shall replay to the same
 deterministic id.
 
+Supervision-before-Bubble and Bubble-before-Supervision callback orders shall produce
+the same classification. A crash after a final wake outcome commits and before its
+wake-named cause is admitted shall still select `wake_cause_conserved` from the outcome
+entitlement, leave D3 unchanged, and allow Bubble recovery to admit that same wake
+cause later.
+
 The caller-visible supervision projection and linked work-item trace shall expose the
 closed classification, strike count and clock, provider streak count and generation,
 threshold state, logical escalation id, selected recipient or absence result, source
@@ -312,10 +347,11 @@ mutate state. Required codes are:
 
 - `patrol_failure_class_unknown`;
 - `patrol_failure_domain_invalid`;
+- `patrol_wake_outcome_incomplete`;
 - `patrol_strike_clock_invalid`; and
 - `patrol_state_incompatible`.
 
-Acceptance: R-E is proven by checks 1, 4, 5, 6, and 7 below.
+Acceptance: R-E is proven by checks 1, 4, 5, 6, 7, and 8 below.
 
 ### F. Smallest mechanism and compatibility
 
@@ -380,12 +416,12 @@ cause.
 
 For each reset boundary—delivered turn, failure-domain change, `could_not_run`,
 `run_canceled`, `outcome_unknown`, non-provider `run_failed`, and a provider failure
-with a conserved wake-named Bubble cause—given five qualifying provider failures, the
-boundary, and five more qualifying provider failures, when patrol classifies the
-sequence, then two streak generations each end at count 5 and no threshold escalation
-exists. The conserved wake cause keeps its own route unchanged. Given a qualifying
-receipt after two accountability strikes, the next handled no-receipt prod is strike 1
-of a new receipt epoch.
+that is wake-cause-entitled—given five qualifying provider failures, the boundary, and
+five more qualifying provider failures, when patrol classifies the sequence, then two
+streak generations each end at count 5 and no threshold escalation exists. This is
+true even when the wake-named cause has not yet been admitted. The conserved wake cause
+keeps its own route unchanged. Given a qualifying receipt after two accountability
+strikes, the next handled no-receipt prod is strike 1 of a new receipt epoch.
 
 ### 6. Concurrency, restart, and typed refusal
 
@@ -393,9 +429,9 @@ Given a database snapshot at provider count 5, when two recognizers classify T6
 concurrently, then one count-6 transition and one logical escalation commit. Kill the
 gateway after that commit and before notice delivery; after restart and two sweeps, the
 same escalation id has one first-recipient notice. Repeating the test with an unknown
-run disposition, invalid failure domain, nonpositive clock, and incompatible patrol
-state returns the matching typed code, writes one safe lifecycle row, and changes no
-strike, streak, route, or wake row.
+run disposition, invalid failure domain, missing or non-final wake outcome,
+nonpositive clock, and incompatible patrol state returns the matching typed code,
+writes one safe lifecycle row, and changes no strike, streak, route, or wake row.
 
 ### 7. Privacy, audit, compatibility, and boundary census
 
@@ -411,6 +447,42 @@ new state is empty, and no escalation exists. The implementation diff and source
 show no changes to wake cancel/admit ordering, wake outcome enums, retry delays,
 undeliverable settlement, re-arm policy, assignment staff transfer, substrate-down
 alerts, identity, credentials, or release targeting.
+
+### 8. Wake ordering, route recursion, and recipient absence
+
+Given a wake-linked provider-error terminal whose committed final wake outcome entitles
+a wake-named Bubble cause, run the supervision callback before Bubble recognition and
+again after Bubble recognition in otherwise identical fixtures. In both fixtures,
+patrol records `wake_cause_conserved`, starts no D3 streak, admits no patrol threshold
+cause, and leaves the one wake-named cause to Bubble. Repeat after a crash between final
+wake-outcome commit and Bubble admission; restart produces the same classification and
+one recovered wake-named cause.
+
+Given one recipient session with no D3 streak and six typed provider-error failures of
+Bubble notice turns from six distinct original roots, when patrol classifies all six,
+then it records six `bubble_notice_ignored` classifications, leaves the recipient with
+no D3 streak, and admits no patrol threshold cause. Each of the six original Bubble
+causes continues its existing climb independently.
+
+Exercise one D3 threshold escalation against each topology below:
+
+1. The nearest ancestor is already retired; Bubble skips it and admits the notice to
+   the next active ancestor.
+2. The selected nearest ancestor retires or disappears before admission; admission
+   re-resolves and selects the next active ancestor.
+3. The admitted notice fails or is canceled; Bubble continues the same logical cause
+   to the next active ancestor.
+4. No active ancestor remains; Bubble commits one terminal owner record and one
+   standing `user-alerted` fact.
+5. No active ancestor or composed owner Main stream exists; Bubble commits that same
+   record and fact once with result `record_only` and creates no session.
+6. The source session is absent or retired before routing; Bubble uses the frozen owner
+   user id, reaches the applicable result above, and does not take a silent parentless
+   branch.
+
+After restart and two replays of each topology, exactly one logical escalation and one
+closed route disposition exist. No replay creates a session or duplicates a notice,
+owner record, or `user-alerted` fact.
 
 ## Open Questions
 
