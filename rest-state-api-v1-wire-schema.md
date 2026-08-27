@@ -19,6 +19,12 @@ G4 error-contract successor, 2026-08-26: PROPOSED. Promote the existing
 ExecutionMap error variants into one canonical REST error type while
 preserving every encoded ExecutionMap error byte.
 
+G1 current-main composition successor, 2026-08-27: PROPOSED. Add the optional,
+open `messageType` discriminator to the canonical transcript-message item on
+base `277bb5031a06270aabbc57e3c222cbd2ec89bc73`. REST, CLI wrappers, and
+`message.created` use this same item shape. This composition preserves the G4
+error and G8 authority-label contracts.
+
 ## Encoding rules
 
 JSON is UTF-8. Integers are signed JSON integers and never floating-point
@@ -39,9 +45,23 @@ Nested objects contain exactly the keys listed here, in their listed order.
 The encoder emits no insignificant whitespace. It escapes JSON strings by the
 same library path for REST, CLI, and firehose.
 
+For transcript messages, “exactly” applies after the conditional
+`messageType` rule below. `messageType` is the sole key that the encoder may
+omit conditionally.
+
 Maps whose keys are product data encode keys in ascending Unicode code-point
 order. Set-like arrays sort by the tuple named below. Sequence arrays preserve
 the named semantic order. Null is allowed only where this file names it.
+
+The transcript-message `messageType` key is present in the R7 position only
+when the stored discriminator is non-null. Its value is then a string. A null
+stored discriminator omits the key; an encoder never emits `messageType:null`.
+Current writers emit exactly `assistant`, `substrate`, `marker`, or `agent`;
+human-authored and historical unclassified rows omit the key. The string
+domain is open for additive compatibility: a reader accepts an unrecognized
+string. A missing or unrecognized value means `assistant` for message-type
+presentation and does not change the item's `role`. An encoder does not derive
+this field from `content`, `sender`, or another public field.
 
 Notation: `S` string, `I` integer, `B` boolean, `N` JSON number, `O<T>` closed
 object shape T, `M<T>` string-keyed map of T, and `A<T>` array of T.
@@ -150,6 +170,9 @@ ExecutionMap success and error response sets exactly the application headers
 Fields not listed under “nullable” are required and non-null. Enum fields use
 the domains in the next section.
 
+The transcript-message `messageType` key is the sole exception to required
+presence. It is optional and non-null when present.
+
 ### Catalog and identity
 
 | Resource | Strings | Integers | Booleans | Arrays / objects | Nullable |
@@ -171,7 +194,7 @@ the domains in the next section.
 | Resource | Strings | Integers | Booleans | Arrays / objects | Nullable |
 |---|---|---|---|---|---|
 | sessions | sessionKey, displayName, kind, ownerUserId, origin, spawnedBy, handle, archetype, identityName, identityRevision, harness, provider, model, thinkingLevel, modelContext, host, state, mechanicalStatus | orderIndex, clearedThroughSeq, createdAt, updatedAt, rowVersion | isBuiltIn, adopted | overrides `O<SessionOverrides>` | ownerUserId, spawnedBy, handle, identityName, identityRevision, provider, model, thinkingLevel, modelContext, host, clearedThroughSeq, overrides |
-| transcript messages | id, sessionKey, role, content, sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, llmVisibleMessageId, assignmentId, jobRef, harness, provider, model, effort | seq, at, attentionTier, turnSeq, rowVersion | — | attachments `A<O<Attachment>>`, context `J` | sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, assignmentId, jobRef, harness, provider, model, effort, turnSeq, context |
+| transcript messages | id, sessionKey, role, messageType, content, sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, llmVisibleMessageId, assignmentId, jobRef, harness, provider, model, effort | seq, at, attentionTier, turnSeq, rowVersion | — | attachments `A<O<Attachment>>`, context `J` | sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, assignmentId, jobRef, harness, provider, model, effort, turnSeq, context |
 | work items | id, title, specRefName, specRefSha256, ownerUserId, state, failReason, routingWakeId, slateWakeId, createdByUser, createdBySession | createdInTurnSeq, createdAt, rowVersion | isBug, createdContextKnown | — | specRefName, specRefSha256, ownerUserId, failReason, routingWakeId, slateWakeId, createdByUser, createdBySession, createdInTurnSeq |
 | assignments | id, subject, holderKey, holderRole, openedByUser, openedBySession, state, outcome, closedByUser, closedBySession, closingAttestId, workItemId, reviewsAssignmentId, holderHarness, holderProvider, effectKind, derivedStatus | openedAt, closedAt, rowVersion | holderFallback | files `A<S>` | holderRole, openedByUser, openedBySession, outcome, closedAt, closedByUser, closedBySession, closingAttestId, workItemId, reviewsAssignmentId, holderHarness, holderProvider |
 | attests | id, assignmentId, kind, verdictKind, note, bySession, byUser, producer, producerCommand, byHarness, byProvider | ts, rowVersion | — | commitRefs `A<O<CommitRef>>` | verdictKind, note, bySession, byUser, producer, producerCommand, byHarness, byProvider, commitRefs |
@@ -201,6 +224,9 @@ the domains in the next section.
 
 - session kind: `main|dm|custom`; session state: `active|retired`.
 - message role: `user|assistant`; attentionTier: `-1|0|1`.
+- messageType current producer values: `assistant|substrate|marker|agent`.
+  This discriminator is the sole open string domain in this file; missing and
+  unrecognized values use the `assistant` fallback defined above.
 - work-item state: `open|iceboxed|closed|failed`.
 - assignment state: `open|closed`; outcome:
   `completed|surrendered|revoked|null`.
@@ -260,3 +286,6 @@ order is a schema failure. A reviewed projection-field amendment must change
 this file and the main R7/R7a row together. An envelope or dependency-entry
 amendment must change this file and the corresponding main R4 or R9 clause
 together.
+
+A present `messageType` that is not a string is a schema failure. An
+unrecognized `messageType` string is the sole enum exception and remains valid.

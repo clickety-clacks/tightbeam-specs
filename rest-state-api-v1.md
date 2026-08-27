@@ -29,6 +29,15 @@ message-bearing session-owner refusal and restored R6 while keeping
 ExecutionMap-scoped R6a. Earlier F1-F5 and SQ6-SQ8 rulings remain
 incorporated.
 
+G1 current-main composition successor, 2026-08-27: PROPOSED. This amendment
+composes the accepted `messageType` F1/F2 behavior onto canonical
+`277bb5031a06270aabbc57e3c222cbd2ec89bc73`. Exact candidate `b53b1f5f` passed
+the G1 behavior review but requested current-main composition in verdict
+`att_adea7aeb-5448-4286-8cad-4fe250e1648c` and report `art_a3fc1d81`.
+Product-owner disposition `att_e0a20ce9-3bcc-4a0c-800f-681a51cd85c4`
+preserves F1/F2 and requires unique current-canonical clause identifiers. This
+successor changes no G4 error or G8 authority-label behavior.
+
 Revision history: r3 folded the REST-side adjudicated findings
 F1/F8/F9/F13/F14/F16/F21/F22 from
 `review-gate-observability-2026-08-21.md` and aligned with firehose r6. It
@@ -87,6 +96,12 @@ Authority and inputs:
   `5db8aab3496747d008fb8c024a4f1617f92695d144c89481bca3a1f20842550a`:
   condition facts and critical leases enter firehose R8 with the exact R8 rows
   below; it supersedes the fact-only `art_5d8bacb2`.
+- Firehose client-buildability recon verdict
+  `att_556f55ae-f1d2-4c83-b55d-9daf06aae929` and report `art_1d389e8e`
+  identify G1. Mike's 2026-08-27 remediation ruling adopts one canonical
+  transcript-message discriminator across fetched rows and the firehose.
+  Prior product commit `505b56aa29f151faab7cd9618ca1bba922cff357`
+  supplies the additive values and compatibility behavior.
 - ExecutionMap authority: `topline-map-v1.md` plus product source
   `Tightbeam.ExecutionMap` at `d00e06aea578d711e608637d38a97872487df15e`.
   Durable `Tightbeam.Toplines` at that revision remains a separate source.
@@ -105,6 +120,9 @@ entry, or R8b mapping lands those coupled files in one reviewed revision.
 G4 changes the shared error type without changing an encoded ExecutionMap
 envelope, dependency entry, or firehose mapping. Its exact candidate set is
 therefore `rest-state-api-v1.md` and `rest-state-api-v1-wire-schema.md`.
+G1 changes the transcript-message projection and `message.created` mapping.
+Its exact candidate set is this file, `rest-state-api-v1-wire-schema.md`, and
+`event-firehose-v1.md`; all three land in one reviewed revision.
 `rest-state-api-r3-adjudication.md`, `rest-vs-cli-adjudication.md`, and
 `topline-map-v1.md` remain authority inputs, not custody companions for this
 contract. A worktree, artifact row, transcript, adjudication ledger, or review
@@ -128,6 +146,9 @@ For G4, a client can classify each application error from the HTTP status,
 the closed error code, and the exact response bytes without private router or
 serializer knowledge.
 
+For G1, REST, CLI wrappers, and `message.created` expose one stored
+message-kind discriminator through one shared transcript-message serializer.
+
 ## Non-goals
 
 - REST v1 does not create a general mutation API.
@@ -139,6 +160,9 @@ serializer knowledge.
 - REST v1 does not retire compatibility aliases before their clients migrate
   or decide future tailnet identity.
 - REST v1 does not authorize implementation, deployment, or client migration.
+- G1 does not add a second transcript-message projection; change `role`,
+  `sender`, or `content`; infer a message kind from content; or add a
+  `messageType` alias.
 - G4 does not define proxy, network, process-crash, undeclared-route,
   unsupported-method, compatibility-alias, `/version`, or successful binary
   download behavior. It does not prescribe a client's retry or presentation
@@ -200,6 +224,11 @@ aliases, replaces, or widens the other.
 I8. One closed error type and one encoder serve every canonical R2, R3, and
 R3a read route. A route supplies only its canonical resource label, one allowed
 error code, and the fields that the selected variant requires.
+
+I9. `messageType` is the sole public message-kind discriminator on a
+transcript-message item. `role` retains authorship direction and `sender`
+retains provenance. No adapter emits `message_type`, `messageKind`, `kind`, or
+another message-kind alias.
 
 ## Architecture
 
@@ -297,6 +326,13 @@ T8. **Malformed query encoding** — an incomplete or non-hexadecimal percent
 escape, or percent-decoded query bytes that are not valid UTF-8. A decoded but
 disallowed key, repeated key, combination, type, or value is query validation,
 not malformed encoding.
+
+T9. **Message type** — the nullable discriminator stored at the message write
+seam and exposed through the optional `messageType` key on the canonical
+transcript-message item. Current writers emit `assistant`, `substrate`,
+`marker`, or `agent`. A null source omits the public key. A reader accepts an
+unrecognized string; a missing or unrecognized value means `assistant` for
+message-type presentation and does not change `role`.
 
 ## Requirements — surface
 
@@ -769,13 +805,17 @@ an adapter does not omit them. Every notice-backed stored-state item carries
 A composed item carries `dependencyVersion` as described in R9 instead. No
 adapter may add a storage column or a caller-selected field.
 
+For transcript messages, “exactly” applies after the conditional R7m rule.
+`messageType` is optional, not a nullable public key, and is the sole R7 key
+that an adapter conditionally omits.
+
 | Resource | Canonical item fields |
 |---|---|
 | org | `id`, `archetypes`, `hosts`, `modelCatalog`, `dependencyVersion` |
 | harness catalog | `harness`, `provider`, `models`, `capabilities`, `dependencyVersion` |
 | hosts | `host`, `rowVersion` |
 | sessions | `sessionKey`, `displayName`, `kind`, `orderIndex`, `isBuiltIn`, `adopted`, `ownerUserId`, `origin`, `spawnedBy`, `handle`, `archetype`, `overrides`, `identityName`, `identityRevision`, `harness`, `provider`, `model`, `thinkingLevel`, `modelContext`, `host`, `clearedThroughSeq`, `state`, `createdAt`, `updatedAt`, `mechanicalStatus`, `rowVersion` |
-| transcript messages | `id`, `seq`, `sessionKey`, `role`, `content`, `at`, `sender`, `deviceId`, `clientMessageId`, `replyToMessageId`, `replyToClientMessageId`, `llmVisibleMessageId`, `attachments`, `attentionTier`, `turnSeq`, `assignmentId`, `jobRef`, `harness`, `provider`, `model`, `effort`, `context`, `rowVersion` |
+| transcript messages | `id`, `seq`, `sessionKey`, `role`, `messageType`, `content`, `at`, `sender`, `deviceId`, `clientMessageId`, `replyToMessageId`, `replyToClientMessageId`, `llmVisibleMessageId`, `attachments`, `attentionTier`, `turnSeq`, `assignmentId`, `jobRef`, `harness`, `provider`, `model`, `effort`, `context`, `rowVersion` |
 | work items | `id`, `title`, `specRefName`, `specRefSha256`, `isBug`, `ownerUserId`, `state`, `failReason`, `routingWakeId`, `slateWakeId`, `createdByUser`, `createdBySession`, `createdInTurnSeq`, `createdContextKnown`, `createdAt`, `rowVersion` |
 | assignments | `id`, `subject`, `holderKey`, `holderRole`, `holderFallback`, `openedByUser`, `openedBySession`, `openedAt`, `state`, `outcome`, `closedAt`, `closedByUser`, `closedBySession`, `closingAttestId`, `workItemId`, `reviewsAssignmentId`, `holderHarness`, `holderProvider`, `files`, `effectKind`, `derivedStatus`, `rowVersion` |
 | attests | `id`, `assignmentId`, `kind`, `verdictKind`, `note`, `bySession`, `byUser`, `producer`, `producerCommand`, `byHarness`, `byProvider`, `commitRefs`, `ts`, `rowVersion` |
@@ -795,6 +835,25 @@ adapter may add a storage column or a caller-selected field.
 | coordination share | `sessionKey`, `from`, `to`, `turns`, `wakeTurns`, `classedTurns`, `coordinationTurns`, `summons`, `algedonic`, `byClass`, `share`, `dependencyVersion` |
 | digest members | `wakeId`, `prompt`, `class`, `classElection`, `createdAt`, `dependencyVersion` |
 | work-item trace | `workItem`, `assignments`, `causalChildren`, `attribution`, `dependencyVersion` |
+
+R7m. The transcript-message write seam assigns `messageType` without parsing
+message content. Current assignments are exact:
+
+- `assistant`: the session model's own output;
+- `agent`: a message delivered from an `agent:<handle>` origin;
+- `substrate`: a message delivered from a `process:<name>` or
+  `remedy:<statute>` origin, including ordinary Tightbeam notices;
+- `marker`: a structural transcript boundary created through the marker write
+  seam.
+
+A human-authored message and a historical row without the discriminator store
+null. The R7 serializer omits `messageType` for either row and never emits
+`messageType:null`. Current writers emit no other string. Readers accept an
+unrecognized future string. A missing or unrecognized value means `assistant`
+for message-type presentation; it does not change `role`. Readers do not reject
+the item or parse `content`. For a non-null source, the R7 serializer copies the
+stored string. REST, CLI wrappers, and `message.created` call that one
+serializer; an adapter does not construct another transcript-message map.
 
 R7a. The SQ2 admin resources have these additional closed-world projections.
 Nested `documents` entries contain exactly `path`, `content`, and `sha256`.
@@ -819,6 +878,10 @@ under M1 until its R7/R7a field row and wire-schema row both exist. The wire
 schema fixes JSON types, nullability, nested object keys, enum domains, and
 array order. An unknown enum value fails serialization and emits no partial
 response.
+
+The preceding unknown-enum failure applies to closed enums. `messageType` is
+the one open discriminator defined by R7m; an unrecognized string remains
+valid.
 
 R7b. `/download/:assetId` returns bytes, not a JSON projection. The asset row
 is its sole authorization metadata; no inferred artifact or work-item link
@@ -902,7 +965,7 @@ remain outside this table.
 | `artifact.recorded` | artifacts | upsert | `artifactId` |
 | `read_marker.updated` after set | read markers | upsert | `userId` + `scopeKey` |
 | `read_marker.updated` after clear | read markers | delete | `userId` + `scopeKey` |
-| `message.created` | transcript messages | upsert | `messageId` |
+| `message.created` | transcript messages | upsert | `messageId` + `sessionKey` |
 | `condition_fact.filed` | condition facts | upsert | `factId` |
 | `critical_lease.updated` | critical state | upsert | `sessionKey` |
 | `config.updated` | config | upsert | `key` |
@@ -1291,6 +1354,10 @@ exactly its R7 keys and no others. The secret-exclusion sweep rejects
 `cliToken`, device `token`, `identityToken`, credential paths, environment
 secrets including MCP environment values, and every value outside SR5's
 explicit allowlist.
+
+For transcript messages, the proof evaluates the R7m condition first and then
+requires the resulting key set exactly. It proves `messageType` is the sole
+conditional key.
 A4. Subscribe-first multi-resource snapshot plus buffered notices converges
 under concurrent creates/updates/deletes by last-version-wins upsert on
 `(primary key, rowVersion)`; reconnect + fresh rebuild converges with no event
@@ -1366,6 +1433,10 @@ dependency digests. The ExecutionMap cases include the literal causal-event,
 subagent-marker, and coverage-epoch triples from R9a and reject a changed
 source-kind label, key type, or version type. Semantic sequences retain their
 declared order.
+
+The transcript-message cases also validate conditional `messageType`
+optionality, non-null string type when present, open-reader behavior, and the
+canonical key position.
 A18. Facts and critical-state rows have immutable cursors, complete R7 wire
 schemas, AU4 visibility tests, and exactly one R8 state mapping. The suite
 fails if either companion firehose class is absent from the adopted registry.
@@ -1571,11 +1642,35 @@ SR5, AU3, A27, M5, and AU5 behavior respectively. The G4 error encoder is not
 invoked for a compatibility alias or an asset-download response. The
 ExecutionMap case reruns A27 and requires byte-identical encoded errors.
 
+A38. Given visible messages whose stored `messageType` values are
+`assistant`, `substrate`, `marker`, and `agent`, plus one human-authored
+message and one historical row with no stored discriminator, when a caller
+fetches `GET /api/sessions/:sessionKey/messages`, then the four classified
+items expose their stored values in the R7 position. The human-authored and
+historical items omit the key; no item emits `messageType:null`.
+
+A39. Given those messages and their matching `message.created` notices, when
+the contract suite removes each notice envelope, then each payload is
+byte-equivalent to its fetched item. For each pair,
+`refs.messageId == payload.id` and
+`refs.sessionKey == payload.sessionKey`. The suite fails if REST or firehose
+uses a route-local message map or a second serializer.
+
+A40. Given two rows with identical `role`, `sender`, and `content` but distinct
+stored discriminators, when the shared serializer runs, then it preserves each
+stored `messageType`. Given a decoder fixture with an unrecognized nonempty
+`messageType`, the client accepts the item and treats its message type as
+`assistant`. Given a fixture that omits `messageType`, the client does the
+same. Neither fallback changes `role`, and neither surface parses `content`.
+
 ## Open questions — Spirit questions for Mike
 
 G4 has no open questions. R4c closes its error variants, status map, headers,
 precedence, and preserved special cases. The broader ruled and non-blocking
 questions below are unchanged.
+
+G1 has no open questions. T9, R7m, A38, A39, and A40 close its discriminator,
+compatibility, correlation, and shared-serializer behavior.
 
 SQ1. **RULED 2026-08-25 — transport existing `asUser`.** Remove the
 prohibition on an `asUser` GET parameter. It only transports the CLI's
