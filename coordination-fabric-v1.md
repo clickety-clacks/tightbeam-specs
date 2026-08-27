@@ -8,6 +8,10 @@ Amended 2026-08-22 by Mike's direct ruling on wi_f3f1ae8f: a decision
 reader may return an insufficient-information agent question to its asker
 without answering it; the typed return is terminal, reasoned, and auditable
 (§7, Phase 1 seam ③).
+Amended 2026-08-27 by Mike's ruling `art_e15670c9`: directives still cannot
+request acknowledgment turns, while an optional holder acknowledgment row may
+preserve non-effect traffic without proving compliance or earning effect
+(§6, §7, and §11.5; `typed-progress-attests.md`).
 Prior: r4 READY (2026-08-13; declared after the cross-vendor delta
 re-check + its prescribed fix round — see `review-gate-findings-2026-08-13.md`).
 Folded from the 2026-08-13 review gate
@@ -201,9 +205,10 @@ creation. The office exploits the seam:
   exec session.
 - **Obligations stay on the back desk.** The worker holds its assignment cards
   and files its own lifecycle attests — holder-filed doctrine untouched
-  (scoped: LIFECYCLE attests — progress, completion, surrender — are
-  holder-only; directive-kind attests on a delegation card may be filed by
-  the card's named principal, and by nobody else, refused by name).
+  (scoped: LIFECYCLE attests — progress, acknowledgment, completion, and
+  surrender — are holder-only; directive-kind attests on a delegation card
+  may be filed by the card's named principal, and by nobody else, refused by
+  name).
 - **The delegation card is the written scope.** The exec holds exactly one
   assignment whose subject IS its bounded verb list (§6). The card names its
   principal at creation. Everything the exec does traces to that card;
@@ -368,8 +373,10 @@ subject enumerates exactly these:
 
 MAY: read substrate rows; file its own lifecycle attests on its own card
 (directive receipt is proven by BEHAVIOR — the next filing that reflects
-the directive — never by an acknowledgment filing, per the
-no-acknowledgment law, §7); answer routine queries answerable from rows;
+the directive — never by a required acknowledgment turn; an optional
+`kind=acknowledgment` row may preserve non-effect traffic under
+`typed-progress-attests.md`, but it is not proof of compliance); answer routine
+queries answerable from rows;
 batch, schedule, and deliver to its principal within §7's ceilings; summon
 its principal with a brief; escalate to rumination; tune its principal's
 personal reflex policy on instruction (§8); spawn offices from the seed
@@ -603,9 +610,13 @@ alarm before it rings once). (r4.3: re-classification is a DESK behavior —
 it ships with Phase 3's first front desk, recorded here so its absence in
 Phase 1 is a deferral, not a hole.)
 
-**The no-acknowledgment law's fabric anchor (r5, CR-001):** `fyi` NEVER
-obliges a reply turn. Receipt is proven by the fired wake and the next
-filing; directives never request acknowledgment turns. (Observed origin:
+**The no-acknowledgment law's fabric anchor (r5, CR-001; amended by typed
+progress attests):** `fyi` NEVER obliges a reply turn. Receipt is proven by the
+fired wake and the next behavior that reflects it; directives never request
+acknowledgment turns. A holder may elect an optional `kind=acknowledgment` row
+on its own card to preserve a ruling receipt or non-effect coordination
+traffic. The row earns no assignment effect, creates no reply obligation, and
+does not prove compliance with the directive. (Observed origin:
 directive fan-outs generating hundreds of turns whose entire content was
 "RECEIVED" — half a day's attests were comms-class. The class contract is
 where the law becomes a bone's default instead of a discipline agents must
@@ -771,11 +782,12 @@ Acceptance (evidence, not vibes; each clause decidable):
    or summon (§5's quiet definition) is satisfied, not a violation.
 4. **Both seams exercised:** at least one personal override and one
    skeletal change end-to-end.
-5. **No substance verdicts:** audit of the exec's card shows only its
-   lifecycle attests — zero verdict-kind attests on cards it does not
-   hold, zero attest content judging work products (§6's definition
-   decides), and zero acknowledgment-only filings (receipt is behavior,
-   never a filing — the no-ack law, §7).
+5. **No substance verdicts or acknowledgment obligations:** audit of the
+   exec's card shows only its lifecycle attests — zero verdict-kind attests on
+   cards it does not hold, zero attest content judging work products (§6's
+   definition decides), zero directives that request an acknowledgment turn,
+   and zero optional acknowledgment rows treated as proof of compliance or as
+   assignment effect (§7 and `typed-progress-attests.md`).
 
 Generalize to worker archetypes only after the pilot (Phase 4 entry is a
 RULING on this acceptance, not just the evidence).
@@ -814,7 +826,9 @@ Marked blocking (B: blocks the phase named) or non-blocking (NB).
     first-class state, candidates items 1 and 3): NEXT-iteration seam
     candidates per CR-001 §B, deliberately not in the current build. Until
     then specimens are a filing discipline and correctly-blocked is the
-    nurse's verdict (§5b).
+    nurse's verdict (§5b). An optional acknowledgment note can preserve blocker
+    prose, but the substrate does not classify that note or make a blocker a
+    first-class row.
 11. (NB) Spirit-interview protocol details (question set, STE style
     guide): the PO playbook's business (workstream 3), not this spec's.
 
@@ -972,6 +986,15 @@ never cross); `wake-on-fact-v1.md` (consumed primitive); `tightbeam.md`
 
 ## Revision trail
 
+2026-08-27 typed-progress-attests proposal amendment: Mike's ruling in
+`art_e15670c9` preserves the no-required-reply purpose of the r5 law and adds
+one optional holder filing for ruling receipts and non-effect coordination
+traffic. Sections 4, 6, 7, and 11.5 now forbid requested acknowledgment turns
+and effect credit without making the optional row itself a violation. The
+canonical mechanism, schemas, manual replacement, and acceptance live in
+`typed-progress-attests.md`; this amendment authorizes no implementation or
+target.
+
 2026-08-22 decision-reader return amendment: Mike directly authorized
 wi_f3f1ae8f. Terms, §7, and Phase 1 seam ③ now define the typed `returned`
 disposition, immutable source row, required return reason, stamped actor and
@@ -988,11 +1011,12 @@ the substrate parsing content (gate Q1/Q6; candidates item 11's
 contentless-mechanism ruling). Terms entry aligned. Finding 8 (bone still
 named Avasarala in program-doc measurement text) fixed in the program
 record, same sitting. Seed-arm residue, same sitting: §6's MAY list and
-§11.5's acceptance clause dropped the "acknowledge directives" filing —
-this fold's own no-ack law makes directive receipt provable by behavior
-(the next filing that reflects the directive), never by an
-acknowledgment filing; §11.5 now audits acknowledgment-only filings as a
-violation instead of expecting them.
+§11.5's acceptance clause dropped the "acknowledge directives" filing. At r5,
+the no-ack law made directive receipt provable by behavior and audited
+acknowledgment-only filings as violations. The 2026-08-27
+typed-progress-attests amendment above supersedes only that zero-row rule:
+optional non-effect rows are lawful, but requested acknowledgment turns and
+treating a row as compliance remain violations.
 
 r5 (2026-08-13): the CR fold — executes `0.2-change-request-001.md` §C
 (items 1–7) and `0.2-change-request-002.md` (D1–D9), both AUTHORIZED by

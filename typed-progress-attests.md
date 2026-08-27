@@ -1,19 +1,22 @@
 # Typed progress attests
 
-Status: PROPOSAL for one different-session independent review. This spec is
-targetless. It authorizes no product integration, release, deployment, live
-mutation, identity edit, or configuration change.
+Status: PROPOSAL amended after independent review. The amended bytes require
+fresh different-session review on the existing linked review assignment; this
+change does not open a second review card. This spec is targetless. It
+authorizes no product integration, release, deployment, live mutation,
+identity edit, or configuration change.
 
 Authority: Mike ruling `art_e15670c9` (SHA-256
 `26a9ce6832c1e442ce18dddf0b00768a2b23158442072fe256ad29b9046ff3e3`) and
 spirit verdict `att_9c95b557-c4d2-4c73-be9f-6d24d3a22390` on work item
-`wi_990f7b7e-837b-4aba-8f2e-ac6617327d78`. This spec amends `attest-v1.md`
-and `effort-checkin-v2.md` only where this text names a change. Their other
-clauses remain in force.
+`wi_990f7b7e-837b-4aba-8f2e-ac6617327d78`. This spec amends `attest-v1.md`,
+`effort-checkin-v2.md`, and the no-acknowledgment clauses in
+`coordination-fabric-v1.md` only where this change names a replacement. Their
+other clauses remain in force.
 
 Source evidence: Tightbeam `origin/main` commit
 `8e269e89c04b6b8569813142a12742f3325b8503`; tightbeam-specs `origin/main`
-commit `1bb5881b9813f24e61cc3760e34a7a36cbddb805`. Code is evidence for the
+commit `8e451fbd1291cb83f60d6d494649be482c932aac`. Code is evidence for the
 current seams. The ruling above is the behavior authority.
 
 ## Goal
@@ -44,14 +47,16 @@ note, judge the work, or infer intent.
    progress-ineligible attest kind.
 6. This spec does not make acknowledgment a required reply. The fabric's
    no-acknowledgment law still forbids directives from requesting an
-   acknowledgment turn. An acknowledgment row records traffic when the holder
-   elects to preserve it; it does not prove compliance with a directive.
+   acknowledgment turn. An optional acknowledgment row records non-effect
+   traffic when the holder elects to preserve it. The row does not prove
+   compliance with a directive or satisfy a requested reply.
 7. This spec does not rewrite or backfill a historical attest.
 8. This spec does not add an idempotency key to `attest`.
 9. This spec does not select or request an integration, release, deployment,
    or live-state target.
-10. This spec does not edit the operating manual. It supplies the seed text
-    that a later implementation change must land with the capability.
+10. This proposal does not edit product or served identity. It specifies the
+    guidance text that a later implementation change must land with the
+    capability.
 
 ## Terms
 
@@ -67,8 +72,9 @@ note, judge the work, or infer intent.
 - **Inherited progress type:** the assignment effect kind that the server
   copies into a progress attest when the caller omits `effectKind`.
 - **Acknowledgment attest:** a nonterminal holder filing whose `kind` is
-  `acknowledgment`, whose `effectKind` is null, and whose note names the ruling
-  receipt or coordination traffic that the holder records.
+  `acknowledgment`, whose `effectKind` is null, and whose note records a ruling
+  receipt or non-effect coordination traffic. Coordination traffic includes an
+  exact blocker or refusal and the condition that would clear it.
 - **Historical untyped progress:** a progress row that predates this contract
   and therefore stores `effectKind = null` after migration.
 - **Attest-channel effect credit:** the effort check-in's finding that at least
@@ -125,8 +131,8 @@ note, judge the work, or infer intent.
 9. An effort check-in records counts and enum classifications needed for
    audit. It does not copy attest notes into effort evidence or prod text.
 10. A directive does not request an acknowledgment turn. The acknowledgment
-    kind makes non-effect traffic representable without recasting it as
-    progress.
+    kind makes optional non-effect traffic representable without recasting it
+    as progress. Filing the row does not prove directive compliance.
 11. This work stays targetless through reviewed-clean code and green gates.
     The later delivery state is `DONE-AWAITING-TARGET`.
 
@@ -150,9 +156,9 @@ stores the resolved assignment value. If the request supplies the matching
 value, the handler stores that value. If the request supplies a mismatch, the
 handler returns `effect_kind_mismatch`.
 
-R4. For `kind=acknowledgment`, the handler requires a nonblank `note` under the
-existing 2,000-character limit. The handler stores `effectKind = null`, leaves
-the assignment open, and runs no progress transition.
+R4. For `kind=acknowledgment`, the handler requires a nonblank `note` from 1 to
+2,000 characters inclusive. The handler stores `effectKind = null`, leaves the
+assignment open, and runs no progress transition.
 
 R5. The handler accepts `effectKind` only for `kind=progress`. A request that
 supplies it for `acknowledgment`, `completion`, `surrender`, or `verdict`
@@ -198,19 +204,31 @@ The usage line lists `acknowledgment` in the kind vocabulary and lists
 
 R10. The `attests` table gains nullable camel-case column `effectKind TEXT`.
 Its value constraint admits null or one assignment effect-kind enum value. The
-`kind` constraint gains `acknowledgment`.
+`kind` constraint admits exactly `progress`, `acknowledgment`, `completion`,
+`surrender`, and `verdict`.
 
-R11. The table attribution constraint admits acknowledgment only with
-`bySession` nonnull, `byUser` null, `verdictKind` null, `effectKind` null, and
-`note` nonnull. The constraint admits progress with a holder session and a
-nullable effect kind so historical rows remain representable. Completion,
-surrender, and verdict require `effectKind` null.
+R11. The rebuilt table uses these complete row-shape constraints:
 
-R12. A database trigger rejects a new progress insert whose `effectKind` is
-null. A second database trigger rejects a new progress insert whose
-`effectKind` differs from the parent assignment's resolved effect kind. The
-handler maps its own pre-insert checks to the typed errors in R3 and R6; a
-trigger failure is an invariant breach, not a public mismatch path.
+- Progress requires `bySession` nonnull, `byUser` null, and `verdictKind` null.
+  Its `effectKind` is nullable only so a historical row remains representable.
+- Acknowledgment requires `bySession` nonnull, `byUser` null,
+  `verdictKind` null, `effectKind` null, and `note` nonnull.
+- Completion and surrender require `bySession` nonnull, `byUser` null,
+  `verdictKind` null, and `effectKind` null.
+- Verdict requires `verdictKind` nonnull, `effectKind` null, and exactly one of
+  `bySession` and `byUser` nonnull.
+- The existing note-length and verdict-only producer, producer-command,
+  harness, and provider constraints remain in force.
+
+R12. Four named database triggers protect the cross-table progress invariant.
+`attests_typed_progress_nonnull_insert` and
+`attests_typed_progress_match_insert` reject a new progress insert whose type
+is null or differs from the parent assignment's resolved effect kind.
+`attests_typed_progress_nonnull_update` and
+`attests_typed_progress_match_update` apply the same checks before an update
+changes `kind`, `assignmentId`, or `effectKind`. The handler maps its own
+pre-insert checks to the typed errors in R3 and R6. A trigger failure is an
+invariant breach, not a public mismatch path.
 
 R13. The targetless candidate shape is
 `coordination-fabric-v1-phase1-v7-typed-progress-attests`. It accepts
@@ -224,15 +242,25 @@ The migration uses the repository's foreign-key rebuild transaction to:
 2. copy each old row with its explicit SQLite `rowid` and
    `effectKind = null`;
 3. replace the old table;
-4. create the two progress triggers;
+4. create the four named progress triggers;
 5. run `PRAGMA foreign_key_check`; and
 6. replace the shape stamp in the same transaction.
 
 A crash exposes the predecessor shape and table or the complete successor. It
 does not expose a mixed shape. A restart retries the named predecessor
-migration. An unknown or partially assembled shape refuses with
-`incompatible_typed_progress_attests_v1` and names the observed stamp or
-object mismatch.
+migration. The exact successor inventory is the successor stamp, one rebuilt
+`attests` table with R10-R11's column and constraints, and the four R12
+triggers. The migration creates no new index and preserves every other schema
+object. Shape recognition compares the stamp and this inventory. A predecessor
+stamp with any successor-only object, a successor stamp with a missing or
+nonconforming inventory object, or any other stamp refuses startup with
+`incompatible_typed_progress_attests_v1`. Its message is
+`database shape <observed-stamp> is incompatible with typed-progress-attests-v1: <mismatches>`,
+where `<observed-stamp>` is the stored value or `<missing>` when no stamp row
+exists. `<mismatches>` is a lexically sorted comma-separated list drawn from
+`shape_stamp`, `attests.effectKind`, `attests.kind_constraint`,
+`attests.row_shape_constraints`, and the four exact trigger names. The
+refusal changes no schema object, stamp, or domain row.
 
 ### 4. Effort check-in consumption
 
@@ -328,16 +356,52 @@ migration.
 
 ### 7. Operating-manual seed and pattern
 
-The capability teaches one operating pattern: progress is a typed effect
-claim; acknowledgment is a non-effect record. The implementation change must
-land this operating-manual seed with the shipped command:
+R27. The implementation candidate lands the operating-manual replacement and
+the two role-refraction amendments in this section with the shipped command.
 
-> File `kind=progress` only for forward motion on the assignment deliverable in
-> its `effectKind`. File `kind=acknowledgment` for a ruling receipt or
-> coordination traffic. An acknowledgment does not count as assignment effect.
+The capability teaches one operating pattern: progress is a typed effect
+claim; acknowledgment is an optional non-effect record. The implementation
+change must replace the current blocked-as-progress instruction and the
+ambiguous reporting-attest instruction. It must land this seed with the
+shipped command:
+
+> An assignment's `effectKind` classifies its deliverable as `code`, `policy`,
+> `release`, `live_mutation`, `evidence`, `review`, or `coordination`. File
+> `kind=progress` only for forward motion on that deliverable. Omit
+> `--effect-kind` to inherit the assignment value. File
+> `kind=acknowledgment` when you elect to preserve a ruling receipt or
+> non-effect coordination traffic. If progress has stopped, use
+> `kind=acknowledgment` to record the exact blocker or refusal, its evidence,
+> and the condition that would clear it. Keep the card and schedule a concrete
+> continuation wake. An acknowledgment does not count as assignment effect.
+
+The replacement must map each reporting exception to one lawful path. If the
+holder elects an attest for a material result that moved the deliverable
+forward, the holder uses matching typed progress. Existing artifact and
+work-item-update paths remain separate effect channels. An exact blocker or
+refusal uses acknowledgment and a continuation wake. A bounded decision
+request uses the decision-request command and its continuation wake; it may
+also have an acknowledgment row when the holder needs a durable
+assignment-local receipt, but that row earns no effect. A checkpoint with no
+forward motion uses a continuation wake, not progress.
 
 The manual must retain the no-acknowledgment directive: do not request an
-acknowledgment turn for an ordinary directive or `fyi` delivery.
+acknowledgment turn for an ordinary directive or `fyi` delivery. An elected
+acknowledgment row does not prove directive compliance.
+
+The same implementation change must amend two role refractions in the
+agentic-engineering kungfu:
+
+- The unblocking skill must direct the reader to the latest blocker-bearing
+  acknowledgment or terminal surrender. For rows filed before this capability,
+  it must also accept the last historical progress attest as blocker evidence.
+- The recon-lifecycle skill must direct the holder to record a finding beyond
+  the assigned question as a non-effect acknowledgment and not pursue it. It
+  must not call that out-of-scope finding progress.
+
+The coder ready-for-review attest, orchestrator first-progress check, and
+recon-first root-cause attest remain progress instructions because each names
+forward motion on its assignment deliverable.
 
 ### 8. Subtraction ruling
 
@@ -365,17 +429,25 @@ requirement ids they verify.
    returns `effect_kind_mismatch`, names supplied and expected values, and
    commits no row, marker, firehose notice, supervision transition, or effort
    effect.
-4. **A4 — database rails (R10-R12).** Given a successor database, when a direct
-   insert attempts new progress with null `effectKind`, then SQLite rejects the
-   insert. When a direct insert supplies an enum value that differs from the
-   parent assignment effect kind, then SQLite rejects the insert. Each attempt
-   leaves the attest table unchanged.
+4. **A4 — database rails (R10-R12).** Given a successor database, direct
+   inserts independently attempt: an unknown kind; an unknown nonnull effect
+   value; acknowledgment with null `bySession`, nonnull `byUser`, nonnull
+   `verdictKind`, nonnull `effectKind`, null `note`, blank `note`, a
+   2,001-character `note`, or any nonnull verdict-only producer, command,
+   harness, or provider field; progress with invalid attribution; completion
+   or surrender with nonnull `effectKind`; verdict with nonnull `effectKind`
+   or invalid principal cardinality; progress with null `effectKind`; and
+   progress with a mismatching enum value. SQLite rejects every attempt and
+   leaves the table unchanged. Direct updates that change a valid progress
+   row's kind, parent, or type to a null or mismatching progress shape also
+   fail and leave the row unchanged.
 5. **A5 — invalid value and scope (R5-R6, R23).** Given an open assignment,
-   when the holder supplies an unknown value on progress, then the handler returns
-   `invalid_effect_kind`. When the holder supplies an enum value on
-   acknowledgment, completion, surrender, or verdict, then the handler returns
+   when the holder supplies an unknown value on each attest kind, then the
+   handler returns `invalid_effect_kind` under the stated validation order.
+   When the holder supplies an enum value on acknowledgment, completion,
+   surrender, or verdict, then the handler returns
    `invalid_effect_kind_scope` with the exact messages and transport class in
-   R23, and commits no mutation.
+   R23. Each case commits no mutation.
 6. **A6 — acknowledgment contract (R4, R7-R9, R18-R23).** Given an open
    assignment of each effect kind, when its holder files acknowledgment with a
    nonblank note, then each response contains the exact acknowledgment message,
@@ -404,12 +476,19 @@ requirement ids they verify.
    values, foreign keys, and rowids match their predecessor values; each row
    projects `effectKind: null`; a historical progress row after an armed
    watermark increments `historicalUntypedProgress` and earns no effect.
-11. **A11 — migration restart (R13, R26).** Given the predecessor fixture,
-    when a forced exception interrupts migration after copy and in a separate
-    run after table replacement, then each transaction rolls back to the exact
-    predecessor stamp and rows. When the gateway starts again, one migration
-    completes, foreign-key check returns empty, and the successor objects and
-    stamp exist once.
+11. **A11 — migration restart and shape refusal (R13, R26).** Given the
+    predecessor fixture, when a forced exception interrupts migration after
+    copy and in a separate run after table replacement, then each transaction
+    rolls back to the exact predecessor stamp and rows. When the gateway starts
+    again, one migration completes, foreign-key check returns empty, and the
+    exact successor inventory exists once. Separate startup fixtures cover: an
+    unknown stamp with a conforming successor inventory; a predecessor stamp
+    with each successor-only object; a successor stamp with the predecessor
+    table; each missing trigger; a wrong kind constraint; and a wrong row-shape
+    constraint. Each fixture returns
+    `incompatible_typed_progress_attests_v1` with the exact message and sorted
+    mismatch inventory in R13, and its before/after schema and data dumps are
+    byte-for-byte equal.
 12. **A12 — effort boundary race (R15).** Given one armed generation and one
     matching progress filing released on a barrier with the effort evaluation,
     when progress commits first, then the evaluation observes it. When the
@@ -428,7 +507,7 @@ requirement ids they verify.
     new forms, then only the holder succeeds. Existing authorized readers see
     `effectKind`; principals without parent-read access gain no row, count,
     note, or event access. Effort evidence contains no note text.
-16. **A16 — CLI contract (R2, R8-R9).** Given the release CLI built from the
+16. **A16 — CLI contract (R2, R8-R9).** Given the candidate CLI built from the
     candidate, when a user runs `tightbeam help`, then the usage and two exact
     semantic statements appear. When the CLI files inherited progress and an
     acknowledgment against a real gateway fixture, then stdout contains the
@@ -444,6 +523,23 @@ requirement ids they verify.
     candidate code and green required gates in the later build lane, when the
     producer reports delivery state, then it reports `DONE-AWAITING-TARGET`
     without an integration, release, deployment, or live-state mutation.
+19. **A19 — typed-progress projection matrix (R18, R20, R26).** Given one
+    newly filed typed progress row with a nonnull effect kind, when an
+    authorized reader obtains the mutation response, `attests` query,
+    work-item trace, work-state detail, and every abbreviated public attest
+    row, then each emits the same stored nonnull value. The live
+    `attest.filed` resource and a replay from before that event emit that same
+    value and event identity. Gateway restart does not change any emitted
+    value. No projection derives a different value from the parent.
+20. **A20 — guidance refractions (R9, R27).** Given the
+    candidate product and served-identity tree, when a deterministic guidance
+    scan runs, then the operating manual contains the exact seed and path
+    mapping in Architecture 7; the unblocking skill names acknowledgment,
+    surrender, and the historical-progress fallback; and the recon-lifecycle
+    skill names acknowledgment for findings beyond the assigned question. The
+    scan finds no instruction that files a current blocker or an out-of-scope
+    finding as progress. The coder ready-for-review, orchestrator
+    first-progress, and recon-first root-cause progress instructions remain.
 
 ## Open Questions
 
