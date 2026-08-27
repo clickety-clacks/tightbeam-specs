@@ -202,6 +202,9 @@ The sender must receive one of two visible results:
 7. Existing request idempotency remains available. The same implementation slice must
    add the reviewed wake-terminal compare-and-set, deterministic notice identity, and
    publisher recovery because current main v7 does not contain them.
+8. Current main's terminal compare-and-set has one winner. Its terminal failure
+   classifier returns at most one class, so one turn has at most one
+   `harness-turn:<turnSeq>:<failureClass>` terminal-failure observation.
 
 ## Invariants
 
@@ -408,19 +411,28 @@ The trusted-routing migration must use structured v7 rows only. It may accept an
 `events(kind='verb', verb='wake')` row whose JSON result names the same wake ID and whose
 stored principal is one typed `user`, `session`, or `process` principal. It may also use
 a non-null `wakes.creatorSessionKey` only when the current `sessions` row proves that
-exact session identity, or the existing reserved process identity
-`process:tightbeam`. If two structured sources disagree, neither is trusted. Migration
-must not parse `wakes.origin`, event prose, lifecycle detail, prompt text, or error text.
+exact session identity. The reserved `process:tightbeam` identity is trusted only when
+that exact accepted event principal carries it. If two structured sources disagree,
+neither is trusted. Migration must not parse `wakes.origin`, event prose, lifecycle
+detail, prompt text, or error text.
 
 For a trusted v7 wake with one linked terminal turn, migration maps `delivered` to the
 public `delivered` terminal, `canceled` to `canceled`, and `failed | failed_unknown` to
-`failed` while preserving the structured turn cause and failure class. It leaves a
-queued or running carrier without a wake terminal; R5 settles it later. It leaves an
-accepted wake without a carrier eligible for R4. It creates no terminal for a v7 wake
-that was canceled before carrier admission. A v7 `fired` wake without a carrier maps
-only through final F2 to `failed`, `legacy_outcome_unknown`, a null carrier, and one
-notice from trusted routing. Migration creates deterministic terminal and notice IDs,
-so replay reads the first rows.
+`failed`. When that turn has one typed `turn_lifecycle_events` `terminal_committed` row,
+migration copies its exact `cause` and `principal`. A pre-epoch turn without that row
+uses cause `legacy_import` and principal `process:tightbeam`; migration must not parse
+`turns.error` to invent either value. For `failed | failed_unknown`, migration copies
+the exact `failureClass` from the sole `harness_health_observations` row whose
+`evidenceKind='terminal-failure'` and whose `correlationId` is
+`harness-turn:<turnSeq>:<failureClass>`, when that row exists. It otherwise uses
+`legacy_outcome_unknown`; it must not classify stored error or cause prose.
+
+Migration leaves a queued or running carrier without a wake terminal; R5 settles it
+later. It leaves an accepted wake without a carrier eligible for R4. It creates no
+terminal for a v7 wake that was canceled before carrier admission. A v7 `fired` wake
+without a carrier maps only through final F2 to `failed`, `legacy_outcome_unknown`, a
+null carrier, and one notice from trusted routing. Migration creates deterministic
+terminal and notice IDs, so replay reads the first rows.
 
 The successor shape must contain this amendment-owned conflict table:
 
@@ -743,17 +755,21 @@ change no schema object or row.
 Given one v7 wake for each typed `user`, `session`, and `process` principal whose exact
 accepted `events` row names that wake, when migration runs, then the migrated sender and
 recipient equal the event's structured principal. Given a validated
-`creatorSessionKey` or reserved `process:tightbeam` identity without a conflicting event,
-when migration runs, then it uses that structured identity. Given two structured sources
-that disagree, when migration runs, then it takes the conflict path and exposes neither
-candidate as trusted.
+`creatorSessionKey` without a conflicting event, when migration runs, then it uses that
+session identity. Given two structured sources that disagree, when migration runs, then
+it takes the conflict path and exposes neither candidate as trusted.
 
 Given one trusted v7 wake linked to each terminal turn state `delivered`, `canceled`,
 `failed`, and `failed_unknown`, when migration runs, then it creates one deterministic
-public wake terminal with the R8 mapping and one deterministic notice. Given a queued or
-running linked turn, when migration runs, then it creates no wake terminal and leaves R5
-eligible. Given an accepted wake without a carrier, when migration runs, then it creates
-no wake terminal unless the exact v7 row is the final F2 legacy null-carrier case.
+public wake terminal with the R8 mapping and one deterministic notice. Given a terminal
+turn with typed `terminal_committed` and terminal-failure rows, then the migrated
+terminal copies their cause, principal, and failure class. Given a pre-epoch terminal
+turn without those rows, then it uses `legacy_import`, `process:tightbeam`, and, for a
+failed result, `legacy_outcome_unknown`; changing only `turns.error` changes no migrated
+value. Given a queued or running linked turn, when migration runs, then it creates no
+wake terminal and leaves R5 eligible. Given an accepted wake without a carrier, when
+migration runs, then it creates no wake terminal unless the exact v7 row is the final F2
+legacy null-carrier case.
 
 Given an exact v7 fixture, when a failure is injected during DDL, copy, trusted-routing
 settlement, terminal creation, notice creation, conflict creation, object comparison,
