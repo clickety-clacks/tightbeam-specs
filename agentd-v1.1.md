@@ -1,6 +1,6 @@
 # agentd v1.1 — harness-reported activity and reversible user integrations
 
-Status: READY FOR INDEPENDENT SPEC REVIEW
+Status: READY FOR INDEPENDENT RE-REVIEW
 
 Date: 2026-08-26 PT
 
@@ -13,6 +13,10 @@ Canonical product repository: `https://github.com/clickety-clacks/agentd`
 Authority and evidence:
 
 - Owner Spirit gate: `att_e27a7ee6-63b6-4346-b293-15c204d58542`.
+- The canonical spec home is `https://github.com/clickety-clacks/tightbeam-specs`.
+  The complete Agentd v1.1 canonical set is the repository-root paths
+  `/agentd-v1.md` and `/agentd-v1.1.md` at one pushed commit. A checkout or artifact
+  pointer is evidence of that set, not a second spec home.
 - This amendment supersedes `agentd-v1.md` for an Agentd v1.1 build. The pinned base
   file has SHA-256
   `03445f45652b9e517a3fc1f158510ee053e66454124480fa0202ed879af68248`.
@@ -84,6 +88,9 @@ Codex processes on Linux and retains the full v1 acceptance contract.
   or in-memory boundaries.
 - Byte-for-byte preservation of JSON whitespace. Preservation means that unrelated JSON
   values and array order remain semantically equal.
+- Restoring pre-install absence of a user hook file or deleting an empty root `hooks`
+  object. Receipt-free uninstall preserves that residual structure so it cannot delete
+  indistinguishable pre-existing empty configuration.
 - Moving or renaming the canonical product repository again. The v1.1 product repository
   is `clickety-clacks/agentd`; `leftspin/agentd` is not a canonical reference.
 
@@ -118,6 +125,19 @@ is invalid. Its user hook file is `hooks.json` and its user configuration and ho
 file is `config.toml` under that directory.
 
 The integration commands modify no project `.claude` or `.codex` directory.
+
+### Configuration baseline and conflict
+
+A **configuration baseline** records whether each target path exists and, when it
+exists, its exact bytes, mode, and owner after validation. A **configuration conflict**
+occurs when a target's existence, exact bytes, mode, or owner differ from that baseline
+before its conditional replacement commits.
+
+Each harness configuration directory is also the lock identity for Agentd integration
+commands. One command holds a non-blocking exclusive advisory lock on an open file
+descriptor for that directory from baseline read through its last replacement. Another
+Agentd integration command for that directory cannot enter the mutation interval at the
+same time.
 
 ### Agentd-owned hook declaration
 
@@ -352,11 +372,14 @@ absolute executable path it names. If its matcher group then
 contains no handler, uninstall removes that group. If its event array then contains no
 group, uninstall removes that event member.
 
-I5.8. Uninstall leaves a command with an unrecognized argument set in place and reports
+I5.8. Uninstall preserves the root `hooks` object and Claude user `settings.json`,
+including when install created them and the resulting `hooks` object is empty.
+
+I5.9. Uninstall leaves a command with an unrecognized argument set in place and reports
 its path and event as not removed. It does not treat a substring or executable basename
 as ownership proof.
 
-I5.9. A second uninstall changes no file bytes and exits 0.
+I5.10. A second uninstall changes no file bytes and exits 0.
 
 ### I6 — Codex integration preserves the native trust boundary
 
@@ -412,8 +435,12 @@ version `0.149.1`. A later Codex update does not block removal of the installed
 declarations or their current exact trust members.
 
 I6.14. Uninstall removes an Agentd-owned handler regardless of its absolute executable
-path. It removes an empty Agentd matcher group and event member under I5.7. A second
-uninstall changes no file bytes and exits 0.
+path. It removes an empty Agentd matcher group and event member under I5.7.
+
+I6.15. Uninstall preserves the root `hooks` object and Codex user `hooks.json`, including
+when install created them and the resulting `hooks` object is empty.
+
+I6.16. A second uninstall changes no file bytes and exits 0.
 
 ### I7 — Configuration changes fail closed and replace atomically
 
@@ -423,25 +450,38 @@ member, non-array target event, non-object `config.toml` hooks state, unsupporte
 version during install, unresolved executable path, or set relative harness
 configuration directory returns one named error and changes no path.
 
-I7.2. The command constructs the complete replacement privately. It writes a same-
-directory temporary file, applies the target's existing mode and ownership when the
-target exists, flushes the file, and atomically renames it over the target.
+I7.2. Before it reads a configuration baseline, the command acquires the exclusive lock
+for that harness configuration directory. If another Agentd integration command holds
+the lock, it returns `configuration_busy` and changes no target path.
 
-I7.3. The command creates a new configuration file with mode `0600`.
+I7.3. The command constructs each complete replacement privately. Before it commits its
+first replacement, it verifies that each target still equals its configuration
+baseline. A changed target returns `configuration_changed`, preserves the changed
+target, and commits no replacement.
 
-I7.4. Install and uninstall preserve each unrelated configuration value and the relative
+I7.4. After the preflight verification succeeds, the command writes each same-directory
+temporary file, applies the target's baseline mode and ownership when the target
+exists, and flushes the file. Immediately before each rename, the command conditionally
+verifies that target against its baseline and atomically renames only on equality. That
+verification and rename form one guarded mutation step. A later conflict returns
+`configuration_changed`, preserves that target, and retains any earlier replacement
+per I7.9.
+
+I7.5. The command creates a new configuration file with mode `0600`.
+
+I7.6. Install and uninstall preserve each unrelated configuration value and the relative
 order of unrelated array elements. A Codex trust edit preserves the bytes outside the
 removed `hooks.state` members, including comments.
 
-I7.5. Install and uninstall write no backup, receipt, cache, or integration registry.
+I7.7. Install and uninstall write no backup, receipt, cache, or integration registry.
 The closed command marker makes ownership detectable without a second source of truth.
 
-I7.6. Each command prints one result line that names the harness, action, changed or
+I7.8. Each command prints one result line that names the harness, action, changed or
 unchanged result, and each target path. A Codex install result also names the pending
 trust action. Usage or mutation failure exits 1 and writes one error line to stderr.
 Success exits 0.
 
-I7.7. Codex uninstall atomically removes owned trust members before it atomically removes
+I7.9. Codex uninstall atomically removes owned trust members before it atomically removes
 the corresponding hook declarations. If the second replacement fails, the declarations
 remain installed but non-runnable until the user trusts them again. A retry completes
 the removal.
@@ -551,10 +591,16 @@ replace unrelated hooks.
 Codex uninstall has two files because Codex owns trust separately from hook
 declarations. Deleting trust cleanup would leave integration-owned state behind.
 Accepting that residue would violate reversible removal. The implementation therefore
-uses I7.7's trust-first order; it adds no transaction journal or recovery service.
+uses I7.9's trust-first order; it adds no transaction journal or recovery service.
 Orphaned trust members from an earlier external reorder are accepted as the named
 Non-Goal because no current declaration identifies them, while pruning positional keys
 without that evidence could delete unrelated trust.
+
+The configuration mutation pattern is **conflict-detecting merge**. The directory lock
+makes two Agentd integration mutations mutually exclusive. A preflight comparison
+prevents mutation when a baseline is already stale. The conditional comparison at each
+rename protects a later target change during a multi-file operation. Conflict exits are
+named outcomes; the user can retry against the new bytes.
 
 The operating pattern taught to Tightbeam agents is **none**. This product amendment
 does not require a Tightbeam manual or guidance change.
@@ -674,6 +720,12 @@ unchanged.
 finds an exact declaration created for `0.149.1`, **then** it removes that declaration
 and its current exact trust member without version-gating the removal.
 
+**Given** the Claude user `settings.json` or Codex user `hooks.json` was absent, or an
+existing root object had no `hooks` member, **when** install succeeds and uninstall
+later removes its owned handlers, **then** the user file remains, its root object
+remains valid, and its root `hooks` object is empty. A file created by install retains
+mode `0600`. A second uninstall changes no bytes.
+
 ### A5 — Nested hook-parent mapping (G4; I1, I4)
 
 **Given** a captured real-shaped procfs fixture with a local Claude root, a non-harness
@@ -708,7 +760,7 @@ the socket.
 **then** it opens no daemon socket, writes `agentd hook: invalid_hook_event`, and exits
 1.
 
-### A7 — Atomic configuration replacement (G3; I7)
+### A7 — Conflict-detecting atomic replacement (G3; I7)
 
 **Given** existing user files with mode `0600`, **when** install or uninstall succeeds,
 **then** each replaced file retains its mode and owner, parses in its native format, and
@@ -719,6 +771,22 @@ contains the complete pre-change unrelated configuration plus the required chang
 **Given** an injected write, flush, chmod, chown, or rename failure, **when** the command
 returns, **then** the original target path contains either the complete old value or the
 complete new value. It contains no partial serialization.
+
+**Given** an integration command has read its baseline and an external writer changes a
+target's bytes, mode, or owner before the first guarded replacement step, **when** the
+command attempts to commit, **then** it returns `configuration_changed`, preserves the
+external target, and adds or removes no hook declaration or trust member.
+
+**Given** one Agentd integration command holds the harness configuration-directory
+lock, **when** another Agentd integration command targets that directory, **then** the
+second command returns `configuration_busy` and changes no target. A retry after lock
+release merges against the first command's committed bytes.
+
+**Given** Codex uninstall has removed its owned trust members and an external writer
+then changes `hooks.json` before the declaration replacement, **when** the conditional
+replacement runs, **then** it returns `configuration_changed`, preserves the external
+`hooks.json` bytes, and leaves the Agentd declarations installed but untrusted. A retry
+merges against those bytes and completes removal.
 
 ### A8 — Base regression and repository gate (G6; I1)
 
