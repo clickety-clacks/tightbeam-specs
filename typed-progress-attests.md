@@ -1,23 +1,25 @@
 # Typed progress attests
 
-Status: PROPOSAL amended after independent review. The amended bytes require
-fresh different-session review on the existing linked review assignment; this
-change does not open a second review card. This spec is targetless. It
-authorizes no product integration, release, deployment, live mutation,
-identity edit, or configuration change.
+Status: PROPOSAL amended after independent review and the owner query-recovery
+ruling. The amended bytes require fresh different-session review on one
+owner-opened review assignment. This spec is targetless. It authorizes no
+product integration, release, deployment, live mutation, identity edit, or
+configuration change.
 
 Authority: Mike ruling `art_e15670c9` (SHA-256
 `26a9ce6832c1e442ce18dddf0b00768a2b23158442072fe256ad29b9046ff3e3`) and
 spirit verdict `att_9c95b557-c4d2-4c73-be9f-6d24d3a22390` on work item
-`wi_990f7b7e-837b-4aba-8f2e-ac6617327d78`. This spec amends `attest-v1.md`,
+`wi_990f7b7e-837b-4aba-8f2e-ac6617327d78`, and owner query-recovery ruling
+`att_b7a1c929-bab6-449c-b3a5-72d78874446a`. This spec amends `attest-v1.md`,
 `effort-checkin-v2.md`, and the no-acknowledgment clauses in
 `coordination-fabric-v1.md` only where this change names a replacement. Their
 other clauses remain in force.
 
 Source evidence: Tightbeam `origin/main` commit
-`8e269e89c04b6b8569813142a12742f3325b8503`; tightbeam-specs `origin/main`
-commit `8e451fbd1291cb83f60d6d494649be482c932aac`. Code is evidence for the
-current seams. The ruling above is the behavior authority.
+`cba8d6c5e43e974e93890a901b83abd55f723500`; typed-progress candidate
+`a3268d1e3f8d69d82fc7a28c870844eee5024e7b`; tightbeam-specs `origin/main`
+commit `5f4b636d02aa8f1cd0670dd090d0af8c35894e88`. Code is evidence for the
+current seams. The rulings above are the behavior authority.
 
 ## Goal
 
@@ -57,6 +59,11 @@ note, judge the work, or infer intent.
 10. This proposal does not edit product or served identity. It specifies the
     guidance text that a later implementation change must land with the
     capability.
+11. This spec does not add durable history to `Firehose.Hub` or
+    `ChangeSocket`, a firehose replay service, a server-side subscription
+    cursor, or any other event-log architecture. Live change delivery remains
+    best effort and historyless. Missed-notice recovery reads the existing
+    durable attest rows.
 
 ## Terms
 
@@ -82,6 +89,18 @@ note, judge the work, or infer intent.
   term does not include the other three effect channels.
 - **Mismatch:** an explicit progress type that belongs to the enum but differs
   from the assignment effect kind.
+- **Canonical attest event identity:** the immutable attest id stored in
+  `attests.id`, carried by a live `attest.filed` notice as both
+  `refs.attestId` and `payload.id`, and returned by the `attests` read as
+  `attest.id`. A ChangeSocket `seq` is delivery order for one live connection;
+  it is not this identity and is not a durable cursor.
+- **Recovery cursor:** the last durably consumed attest id for one assignment.
+  The existing `attests --after <attestId>` read resolves it to that row's
+  immutable `(ts, id)` order key and returns rows strictly after it.
+- **Recovery scope:** one exact assignment id under the existing `attests`
+  read authorization. A work-item, session, origin, principal, or subscription
+  filter is not a durable replay scope; a consumer resolves and retains the
+  assignment ids it tracks, then reconciles each assignment separately.
 - **Targetless:** the spec and later candidate remain unbound to a product
   integration branch, release, deployment, or live-state destination.
 
@@ -107,6 +126,15 @@ note, judge the work, or infer intent.
    change before implementation.
 9. `completion-escalation-rail-v2.md` reserves the unqualified successor stamp
    `coordination-fabric-v1-phase1-v7` for a separate targetless candidate.
+10. At source commit `cba8d6c`, `attests` supports optional `after` and `limit`
+    inputs. `after` is an attest id scoped to the named assignment; pages are
+    ordered by immutable `(ts, id)` and return `nextAfter` and
+    `hasMoreAfter`.
+11. At source commit `cba8d6c`, `Firehose.Hub` and `ChangeSocket` are explicitly
+    live-only and retain no event history. ChangeSocket sequence numbers begin
+    and advance within one connection.
+12. At source commit `cba8d6c`, there is no supported attest deletion or
+    retention-compaction verb.
 
 ## Invariants
 
@@ -135,6 +163,14 @@ note, judge the work, or infer intent.
     as progress. Filing the row does not prove directive compliance.
 11. This work stays targetless through reviewed-clean code and green gates.
     The later delivery state is `DONE-AWAITING-TARGET`.
+12. Live notice loss does not lose the fact. While an attest row is retained,
+    an authorized consumer can recover its exact stored kind, `effectKind`,
+    and canonical identity through the existing assignment-scoped `attests`
+    read.
+13. One attest id denotes one fact across live delivery and durable readback.
+    A consumer suppresses a duplicate delivery of that id, but it never
+    collapses two different ids merely because their kind, note, timestamp, or
+    effect kind match.
 
 ## Architecture
 
@@ -302,22 +338,26 @@ progress attests, or holder work-item metadata updates.
 
 R18. The mutation response, `attests` query, work-item trace, work-state detail,
 and `attest.filed` firehose resource include the stored `effectKind`. An
-abbreviated attest row in a public projection also includes the field.
+abbreviated attest row in a public projection also includes the field. The
+live resource carries the canonical identity as
+`refs.attestId == payload.id == attests.id`; its ChangeSocket `seq` remains a
+connection-local delivery number.
 
 R19. Existing aggregate attest counts include acknowledgment under its stored
 kind. An aggregate that reports progress counts only `kind=progress`; it does
 not recast acknowledgment as progress.
 
-R20. The existing attest event, marker, author columns, timestamp, note, and
-parent relationship remain the audit record. The acknowledgment transcript
+R20. The existing attest id, event, marker, author columns, timestamp, note,
+and parent relationship remain the audit record. The acknowledgment transcript
 marker reads `[acknowledgment filed on <assignmentId>]`. The progress marker
-keeps its current text because the response and row carry the type.
+keeps its current text because the response and row carry the type. Recovery
+uses the attest id and stored row; it does not synthesize a replacement event.
 
 R21. This change adds no note to a projection that currently omits notes. It
 adds no cross-principal lookup. The effort evidence in R16 exposes counts, not
 note content.
 
-### 6. Authorization, replay, and races
+### 6. Authorization, recovery, and races
 
 R22. Only the holder session can file progress or acknowledgment. User,
 process, and non-holder session principals receive the current typed principal
@@ -337,10 +377,21 @@ The existing `invalid_note` code uses exact message
 over-limit acknowledgment note. Each refusal commits no domain row, marker,
 event, or firehose notice.
 
+The existing recovery read keeps its current typed failures and transport
+classes: `principal_required` and `process_denied` are HTTP 403;
+`unknown_assignment` is HTTP 404; `cursor_not_found` for a nonexistent cursor
+or a cursor belonging to another assignment is HTTP 400 with message
+`unknown attest cursor: <id>`; and an invalid `limit` is HTTP 400 `invalid`.
+The CLI exits nonzero and prints the returned error. REST returns the ordinary
+`{"error":{"code","message"}}` envelope. A consumer does not advance its
+durable cursor on any refusal or transport failure.
+
 R24. `attest` remains non-idempotent. Two accepted requests append two attest
 rows. A client that receives an unknown mutation outcome must read the
 assignment's attest trail before it elects another filing. This spec does not
-authorize an automatic retry.
+authorize an automatic retry. Those two accepted requests have different
+attest ids and are different facts. Delivery of one accepted row through both
+the live socket and query recovery has one attest id and is one fact.
 
 R25. Concurrent progress or acknowledgment versus a terminal assignment
 transition uses the current serialized transaction rule. The first committed
@@ -349,10 +400,58 @@ filing returns `assignment_closed` and writes no row. If the nonterminal filing
 commits first, its row remains and the later terminal transition may close the
 assignment.
 
-R26. Schema restart, gateway restart, effort-generation replay, and firehose
-replay read the stored `effectKind`. They do not derive a type for a historical
-null. Preserved rowids keep each existing effort watermark ordered across the
+R26. Schema restart, gateway restart, and effort-generation replay read the
+stored `effectKind`. They do not derive a type for a historical null.
+Preserved rowids keep each existing effort watermark ordered across the
 migration.
+
+`Firehose.Hub` and `ChangeSocket` remain live-only and historyless. A connected,
+authorized, subscribed consumer may receive the post-commit `attest.filed`
+notice, but delivery is best effort. The hub stores no recovery history, a
+ChangeSocket `seq` is not durable across reconnect, and this contract creates
+no firehose replay operation.
+
+The durable recovery source is the existing assignment-scoped `attests` read.
+For each tracked assignment, the consumer stores the last attest id it has
+durably consumed. It calls:
+
+```text
+tightbeam attests <assignmentId> --limit <n> [--after <lastAttestId>]
+```
+
+and follows `nextAfter` while `hasMoreAfter` is true. The equivalent agent REST
+call is authenticated `POST /agent/dispatch` with body:
+
+```json
+{"verb":"attests","params":{"assignmentId":"<assignmentId>","after":"<lastAttestId>","limit":<n>}}
+```
+
+The first reconciliation may omit `after`. The read returns the exact stored
+rows in immutable `(ts, id)` order. The consumer selects the progress and
+acknowledgment rows its typed-progress use requires, suppresses already-seen
+attest ids, processes each remaining id once, and advances the per-assignment
+cursor only after durable consumption. It does not use note equality,
+`effectKind`, `occurredAt`, or socket `seq` as identity.
+
+A consumer reconciles after its first subscription, every reconnect, its own
+restart, a gateway restart, a slow-consumer close, any observed in-connection
+sequence gap, and any other interval in which it cannot prove continuous live
+delivery. To close the subscribe/query race without server history, it first
+reaches `subscription_ready`, buffers subsequent matching live notices, walks
+the durable query from its prior cursor to exhaustion, then unions buffered
+notices and query rows by attest id before resuming ordinary live processing.
+An attest committed before subscription readiness is found by the query; one
+committed after readiness is found by the live buffer, the query, or both.
+
+Recovery scope is the exact assignment id. Existing live filters continue to
+govern best-effort notices, and the existing `attests` principal gate governs
+readback. This clause does not turn a subscription filter into a query, add a
+cross-assignment scan, or widen visibility. A missing or foreign cursor returns
+`cursor_not_found`; the consumer reports the assignment and cursor and does not
+silently reset its watermark. Current attest rows have no supported deletion
+or compaction path. Any future retention change must preserve every retained
+cursor's ordered successor rows or amend this contract with a replacement
+recovery seam before it ships.
 
 ### 7. Operating-manual seed and pattern
 
@@ -452,10 +551,11 @@ requirement ids they verify.
    assignment of each effect kind, when its holder files acknowledgment with a
    nonblank note, then each response contains the exact acknowledgment message,
    each row has null `effectKind`, each assignment remains open, each public
-   attest projection reports kind and null type, the firehose live notice and
-   replay report the same null type, the transcript carries the exact R20
-   marker, the acknowledgment aggregate increments without incrementing the
-   progress aggregate, and no progress-only transition runs.
+   attest projection reports kind and null type, a connected subscriber's live
+   notice reports the same id and null type, durable query recovery reports the
+   same id and null type, the transcript carries the exact R20 marker, the
+   acknowledgment aggregate increments without incrementing the progress
+   aggregate, and no progress-only transition runs.
 7. **A7 — acknowledgment note (R4, R6, R23).** Given an open assignment, when
    its holder files acknowledgment with an absent, blank, or over-limit note, then
    the handler returns `invalid_note` with the exact message in R23 and commits
@@ -475,7 +575,9 @@ requirement ids they verify.
    surrender, and verdict rows, when the schema migrates, then ids, field
    values, foreign keys, and rowids match their predecessor values; each row
    projects `effectKind: null`; a historical progress row after an armed
-   watermark increments `historicalUntypedProgress` and earns no effect.
+   watermark increments `historicalUntypedProgress` and earns no effect. An
+   `attests --after` cursor that names a preserved predecessor row returns its
+   exact ordered successor rows after migration and gateway restart.
 11. **A11 — migration restart and shape refusal (R13, R26).** Given the
     predecessor fixture, when a forced exception interrupts migration after
     copy and in a separate run after table replacement, then each transaction
@@ -498,10 +600,14 @@ requirement ids they verify.
     versus completion and acknowledgment versus revocation run on a barrier,
     then each race produces one of the two serialized outcomes in R25, with no
     orphan or partially written attest.
-14. **A14 — non-idempotent replay (R24).** Given an open assignment, when the
-    holder sends the same accepted progress request twice or the same accepted
-    acknowledgment request twice, then the server stores two ids and the
-    response does not claim idempotency.
+14. **A14 — non-idempotent mutation replay and delivery duplicate (R24,
+    R26).** Given an open assignment, when the holder sends the same accepted
+    progress request twice or the same accepted acknowledgment request twice,
+    then the server stores two ids and the response does not claim idempotency.
+    Given one accepted row observed once live and once through query recovery,
+    the consumer union contains that id once. The test proves that
+    deduplication keys on id and does not collapse the two accepted mutation
+    ids.
 15. **A15 — principal and privacy matrix (R21-R23).** Given an open assignment,
     when its holder, another session, a user, and a process each attempt both
     new forms, then only the holder succeeds. Existing authorized readers see
@@ -523,14 +629,49 @@ requirement ids they verify.
     candidate code and green required gates in the later build lane, when the
     producer reports delivery state, then it reports `DONE-AWAITING-TARGET`
     without an integration, release, deployment, or live-state mutation.
-19. **A19 — typed-progress projection matrix (R18, R20, R26).** Given one
-    newly filed typed progress row with a nonnull effect kind, when an
-    authorized reader obtains the mutation response, `attests` query,
-    work-item trace, work-state detail, and every abbreviated public attest
-    row, then each emits the same stored nonnull value. The live
-    `attest.filed` resource and a replay from before that event emit that same
-    value and event identity. Gateway restart does not change any emitted
-    value. No projection derives a different value from the parent.
+19. **A19 — live notice plus durable same-event recovery (R18, R20, R23-R26).**
+    The deterministic matrix uses one typed progress row with nonnull
+    `effectKind` and one acknowledgment row with null `effectKind` on the same
+    assignment. It proves all of these boundaries:
+
+    - **Connected live delivery.** With an authorized ChangeSocket consumer
+      authenticated and `subscription_ready` for `attest.filed`, filing both
+      rows emits post-commit live notices whose `refs.attestId`, `payload.id`,
+      kind, and stored `effectKind` equal the mutation response and durable
+      row. The socket `seq` is asserted only as connection-local delivery
+      order.
+    - **Disconnected recovery.** After the consumer durably records a prior
+      attest id and disconnects, both rows are filed. No live backlog is
+      expected. `attests --after <prior> --limit 1`, followed through
+      `nextAfter`/`hasMoreAfter`, returns both exact ids once in `(ts, id)`
+      order, including a fixture where the rows share one timestamp.
+    - **Reconnect race and duplicate suppression.** The consumer reconnects,
+      reaches `subscription_ready`, buffers live notices, and walks the query
+      while a barrier releases one filing. Both legal commit positions —
+      before and after the first query page — converge to the same id set.
+      A row delivered by both paths is processed once by id; two distinct ids
+      with byte-identical kind, note, timestamp, and effect kind remain two
+      facts.
+    - **Gateway and consumer restart.** With the database preserved and the
+      live hub replaced, a fresh gateway plus a fresh consumer holding only
+      the prior attest-id cursor recover the same rows, ids, kinds, and stored
+      types. The test asserts the new hub emits no historical notice.
+    - **Gap and cursor failures.** An in-connection `seq` gap triggers the same
+      query sweep. A nonexistent cursor and a cursor from another assignment
+      return byte-equivalent `cursor_not_found` shapes and do not advance the
+      consumer cursor; zero or malformed limits return `invalid`.
+    - **Authorization, filter scope, and privacy.** The existing permitted
+      session and user principals recover the same rows; a process and missing
+      principal receive the R23 403 failures; an unknown assignment receives
+      the R23 404 failure. Recovery is run per exact assignment id, never by
+      treating a work-item, session, origin, principal, or subscription filter
+      as a replay cursor. No read or notice gains a field, note, or assignment
+      outside its existing projection and authorization.
+    - **Projection identity.** Mutation response, paged and unpaged `attests`,
+      work-item trace, work-state detail, every abbreviated public attest row,
+      and connected live notice emit the same stored `effectKind`. No
+      projection derives a different value from the parent, and no recovery
+      path synthesizes a new event id.
 20. **A20 — guidance refractions (R9, R27).** Given the
     candidate product and served-identity tree, when a deterministic guidance
     scan runs, then the operating manual contains the exact seed and path
