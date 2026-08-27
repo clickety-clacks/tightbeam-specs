@@ -37,6 +37,11 @@ received changes-requested verdict `att_0fbd3443` and report `art_90040e95`.
 This successor resolves only its two CLI wording findings: non-complete ids
 fail locally, and exact-id reads retain every visible operator lifecycle state.
 
+F4 successor re-review: exact revision
+`4a467b2b0cb0cbcc4f9a59f62e61c1eb4a43e2bc` received changes-requested verdict
+`att_302bdd5b` and report `art_2fb4665d`. Its sole finding requires the existing
+agent/effort exact-read contract to adopt the same local non-complete-id refusal.
+
 This contract supersedes only the owner-scoped operator-request read projection,
 terminal-attribution, integrity, and raiser-delivery clauses of
 `escalation-substrate-v1.md` and any candidate client projection that omits the

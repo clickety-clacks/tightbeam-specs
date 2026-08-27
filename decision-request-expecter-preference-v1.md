@@ -127,11 +127,12 @@ statute visibility receives the same `not_found` result for a statute id as for
 an absent id.
 
 **INV-04 — Exact-id access is not discovery.** An authenticated agent session
-may fetch one `agent` or `effort` row by its complete canonical id. A missing
-id, shortened id, or non-visible statute id returns `not_found`. The direct
-read returns the existing full request projection so the agent can judge the
-question, context, current state, expecter, and prior terminal actor before it
-acts.
+may fetch one `agent` or `effort` row by its complete canonical id. The shared
+`decision-request --request` grammar in `cli-surface-v1.md` rejects a missing,
+blank, or non-complete value locally before dispatch. An unknown complete id or
+a non-visible statute id returns `not_found`. The direct read returns the
+existing full request projection so the agent can judge the question, context,
+current state, expecter, and prior terminal actor before it acts.
 
 **INV-05 — List discovery stays byte-compatible.** `decision-requests` uses the
 pinned list visibility predicates and projections. A bystander session does not
@@ -219,12 +220,16 @@ The response sequence is deterministic around one inference decision:
 
 - Add `tightbeam decision-request --request <decisionRequestId>` to the Rust
   CLI's enumerated surface. It sends wire verb `decision-request` with
-  `params.request`. It has no target flag.
+  `params.request`. It has no target flag. `agent` and `effort` are existing
+  consumers of the shared grammar in `cli-surface-v1.md`: it accepts exactly
+  one non-blank complete `dr_...` value and rejects a missing, blank, or
+  non-complete value, positional id, target flag, or duplicate request flag
+  locally before dispatch.
 - A successful exact read, answer, return, or effort ruling returns HTTP 200
   with the existing `{ "result": ... }` envelope. The CLI prints the result
   and exits 0.
-- `not_found` returns HTTP 404. The CLI prints
-  `not_found: decision request not found` and exits nonzero.
+- For a complete id that resolves no visible row, `not_found` returns HTTP 404.
+  The CLI prints `not_found: decision request not found` and exits nonzero.
 - `not_authorized` returns HTTP 403 for a principal class that retains an
   authorization boundary, including a non-expecter human attempting an effort
   ruling. The CLI prints the typed code and message and exits nonzero.
@@ -309,8 +314,9 @@ applies.
 question plus one open effort request, when the session lists open decision
 requests, then neither row appears through the bystander branch. When the
 session fetches either complete id through `decision-request`, then the matching
-row appears. A shortened id and a non-visible statute id each return the same
-404 `not_found` envelope as an absent id.
+row appears. A shortened id fails locally with no wire request. An unknown
+complete id and a non-visible statute id each return the same 404 `not_found`
+envelope.
 
 **A-07 — Human compatibility.** Given the stamped user expecter for an agent or
 effort request, when that user performs its existing response, then the call
@@ -365,9 +371,10 @@ an authenticated agent runs `decision-request`, `answer`, `return`, and
 `effort-rule` in their success and refusal cases, then captured HTTP status,
 whole JSON envelope, CLI exit status, and rendered typed error match the CLI
 and wire contract above. Parser tests prove the exact-id command accepts one
-non-blank `--request` and rejects target flags, positional ids, and blank ids.
-Gateway tests prove a non-exact prefix returns `not_found` without prefix
-resolution.
+non-blank complete `--request` and rejects missing, blank, or non-complete
+values, target flags, positional ids, and duplicate request flags locally with
+no wire request. Gateway tests prove an unknown complete id returns `not_found`
+without prefix resolution.
 
 **A-15 — Security falsification matrix.** Given complete ids for one `agent`,
 one `effort`, and one `statute` request, when an authenticated bystander session,

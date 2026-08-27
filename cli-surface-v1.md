@@ -33,9 +33,12 @@ Agent-facing (demanded by the shipped engineering-kungfu kernels/skills):
 - **decision-requests** — read the decision requests visible to the caller so
   an effort request can be selected for `effort-rule`
   (effort-without-effect-checkin-v1 §5).
-- **decision-request --request DECISION_REQUEST_ID** — read one complete,
-  visible operator decision request in every lifecycle state admitted by the
-  existing visibility predicate. Demand:
+- **decision-request --request DECISION_REQUEST_ID** — one shared exact-id
+  direct-read carrier. It reads a visible operator decision request in every
+  lifecycle state admitted by the existing visibility predicate, and it is also
+  the existing agent/effort exact-read consumer named in
+  `decision-request-expecter-preference-v1.md`. The latter contract owns those
+  kinds' visibility and response semantics. Demand:
   terminal-operator-decision-parity-v1 §Architecture 1 and its F4 surface
   matrix. The command accepts exactly one non-blank complete `dr_...` value
   through `--request`; it accepts no positional id, target flag, or duplicate
@@ -109,11 +112,12 @@ critical, adjudicate, producer-management commands, cli-side init.
    clean, and the repo's `mix` suite green.
 
 For `decision-request --request`, these general CLI rules compose with the
-terminal parity contract. The canonical REST/wire item and error definitions
-live in `rest-state-api-v1.md` and `rest-state-api-v1-wire-schema.md`; this
-surface defines command grammar and dispatch carriage only. The CLI does not
-derive terminal fields, retry an integrity refusal, or substitute a list read
-for the exact-id request.
+kind-specific terminal parity and expecter-preference contracts. This surface
+defines the one command grammar and dispatch carriage; the kind-specific
+contract defines visibility, projection, and error semantics. The canonical
+REST/wire item and error definitions live in `rest-state-api-v1.md` and
+`rest-state-api-v1-wire-schema.md`. The CLI does not derive terminal fields,
+retry an integrity refusal, or substitute a list read for the exact-id request.
 
 ## Identity resolution
 
