@@ -45,8 +45,12 @@ G2. A local Linux user can install Claude Code or Codex activity hooks that repo
 harness events to Agentd. Agentd uses no terminal text, screen scraping, model call, or
 behavioral inference to produce those claims.
 
-G3. The integration commands add and remove only Agentd-owned hook declarations. They
-preserve unrelated user settings, unrelated hooks, and unrelated Codex trust state.
+G3. Against each successfully validated configuration baseline, the integration
+commands change only Agentd-owned hook declarations and their exact Codex trust state.
+For an externally quiescent target, they preserve unrelated user settings, unrelated
+hooks, and unrelated Codex trust state. When a baseline comparison observes an
+unrelated concurrent change, they preserve it by refusing the replacement with
+`configuration_changed`.
 
 G4. A hook invocation updates the one roster record whose process identity Agentd
 already exposes, including when the hook's nearest harness ancestor is a nested helper
@@ -88,6 +92,11 @@ Codex processes on Linux and retains the full v1 acceptance contract.
   or in-memory boundaries.
 - Byte-for-byte preservation of JSON whitespace. Preservation means that unrelated JSON
   values and array order remain semantically equal.
+- Coordinating with a non-Agentd configuration writer that does not participate in
+  Agentd's advisory directory lock, or preserving such a writer's mutation when it
+  lands after the command's last baseline comparison and before its rename. The
+  supported contract requires external quiescence during that final interval; the
+  advisory lock serializes Agentd integration commands only.
 - Restoring pre-install absence of a user hook file or deleting an empty root `hooks`
   object. Receipt-free uninstall preserves that residual structure so it cannot delete
   indistinguishable pre-existing empty configuration.
@@ -131,13 +140,19 @@ The integration commands modify no project `.claude` or `.codex` directory.
 A **configuration baseline** records whether each target path exists and, when it
 exists, its exact bytes, mode, and owner after validation. A **configuration conflict**
 occurs when a target's existence, exact bytes, mode, or owner differ from that baseline
-before its conditional replacement commits.
+when the command compares them.
+
+An **externally quiescent target** is one that no non-Agentd process changes between
+the command's last successful comparison with its configuration baseline and the
+rename of its replacement. The comparison and rename are separate operations. Linux
+atomic rename prevents a partial target value; it does not condition the rename on the
+target still matching the baseline.
 
 Each harness configuration directory is also the lock identity for Agentd integration
 commands. One command holds a non-blocking exclusive advisory lock on an open file
 descriptor for that directory from baseline read through its last replacement. Another
 Agentd integration command for that directory cannot enter the mutation interval at the
-same time.
+same time. A non-Agentd writer need not honor this advisory lock.
 
 ### Agentd-owned hook declaration
 
@@ -442,7 +457,7 @@ when install created them and the resulting `hooks` object is empty.
 
 I6.16. A second uninstall changes no file bytes and exits 0.
 
-### I7 — Configuration changes fail closed and replace atomically
+### I7 — Observed configuration conflicts fail closed; replacement is atomic
 
 I7.1. Before install or uninstall writes a path, it reads and validates each target
 file it must change. A malformed JSON document, non-object root, non-object `hooks`
@@ -452,7 +467,8 @@ configuration directory returns one named error and changes no path.
 
 I7.2. Before it reads a configuration baseline, the command acquires the exclusive lock
 for that harness configuration directory. If another Agentd integration command holds
-the lock, it returns `configuration_busy` and changes no target path.
+the lock, it returns `configuration_busy` and changes no target path. This advisory
+lock does not exclude a non-Agentd writer.
 
 I7.3. The command constructs each complete replacement privately. Before it commits its
 first replacement, it verifies that each target still equals its configuration
@@ -461,17 +477,21 @@ target, and commits no replacement.
 
 I7.4. After the preflight verification succeeds, the command writes each same-directory
 temporary file, applies the target's baseline mode and ownership when the target
-exists, and flushes the file. Immediately before each rename, the command conditionally
-verifies that target against its baseline and atomically renames only on equality. That
-verification and rename form one guarded mutation step. A later conflict returns
+exists, and flushes the file. Immediately before each rename, the command performs one
+final comparison of that target with its baseline. An observed difference returns
 `configuration_changed`, preserves that target, and retains any earlier replacement
-per I7.9.
+per I7.9. After equality is observed, the command atomically renames the replacement.
+The comparison and rename are not indivisible against a non-Agentd writer. If such a
+writer changes the target between them, the rename can replace that change without
+detecting it; that schedule is outside G3's preservation guarantee.
 
 I7.5. The command creates a new configuration file with mode `0600`.
 
-I7.6. Install and uninstall preserve each unrelated configuration value and the relative
-order of unrelated array elements. A Codex trust edit preserves the bytes outside the
-removed `hooks.state` members, including comments.
+I7.6. On externally quiescent targets, install and uninstall preserve each unrelated
+configuration value and the relative order of unrelated array elements. A Codex trust
+edit preserves the bytes outside the removed `hooks.state` members, including comments.
+If a baseline comparison observes an external change, `configuration_changed` preserves
+the changed target instead.
 
 I7.7. Install and uninstall write no backup, receipt, cache, or integration registry.
 The closed command marker makes ownership detectable without a second source of truth.
@@ -485,6 +505,10 @@ I7.9. Codex uninstall atomically removes owned trust members before it atomicall
 the corresponding hook declarations. If the second replacement fails, the declarations
 remain installed but non-runnable until the user trusts them again. A retry completes
 the removal.
+
+I7.10. `agentd integrate --help` includes this warning: `Do not edit harness
+configuration while an integration command runs; concurrent non-Agentd edits can be
+overwritten.`
 
 ## Architecture
 
@@ -586,7 +610,7 @@ Each harness has one schema-aware JSON merge path. It validates first, identifie
 handlers by parsed exact command, appends missing entries, removes exact owned entries,
 and writes a complete value by atomic replacement. Codex uninstall also performs a
 field-scoped TOML edit for the owned trust keys. The commands do not normalize or
-replace unrelated hooks.
+replace unrelated hooks present in the validated baseline.
 
 Codex uninstall has two files because Codex owns trust separately from hook
 declarations. Deleting trust cleanup would leave integration-owned state behind.
@@ -596,11 +620,19 @@ Orphaned trust members from an earlier external reorder are accepted as the name
 Non-Goal because no current declaration identifies them, while pruning positional keys
 without that evidence could delete unrelated trust.
 
-The configuration mutation pattern is **conflict-detecting merge**. The directory lock
+The configuration mutation pattern is **observed-conflict merge**. The directory lock
 makes two Agentd integration mutations mutually exclusive. A preflight comparison
-prevents mutation when a baseline is already stale. The conditional comparison at each
-rename protects a later target change during a multi-file operation. Conflict exits are
-named outcomes; the user can retry against the new bytes.
+prevents mutation when a baseline is already stale. The comparison immediately before
+each rename catches a target change visible at that point during a multi-file operation.
+Conflict exits are named outcomes; the user can retry against the new bytes. The lock
+does not coordinate an editor, harness, or other non-Agentd writer, and the comparison
+plus rename is not a compare-and-swap. Users must not edit the target files concurrently
+with an integration command.
+
+Deleting configuration mutation would fail G2 and the non-concurrent part of G3. A new
+lock protocol cannot compel existing external writers to participate, and a journal
+cannot create an atomic compare-and-replace primitive for these files. Both mechanisms
+therefore lose to the explicit external-quiescence boundary above.
 
 The operating pattern taught to Tightbeam agents is **none**. This product amendment
 does not require a Tightbeam manual or guidance change.
@@ -682,18 +714,19 @@ payload contents.
 
 ### A4 — Idempotent merge and reversible removal (G3; I5, I6, I7)
 
-**Given** captured valid Claude `settings.json`, Codex `hooks.json`, and Codex
-`config.toml` fixtures with unrelated root values, multiple third-party matcher groups,
-multiple handlers in one group, and unrelated hook trust, **when** each install runs
-twice, **then** the second run changes no bytes and the parsed files contain one copy of
-each Agentd-owned handler.
+**Given** externally quiescent captured valid Claude `settings.json`, Codex
+`hooks.json`, and Codex `config.toml` fixtures with unrelated root values, multiple
+third-party matcher groups, multiple handlers in one group, and unrelated hook trust,
+**when** each install runs twice, **then** the second run changes no bytes and the
+parsed files contain one copy of each Agentd-owned handler.
 
-**Given** Codex has approved its installed Agentd handlers, **when** each harness
-uninstall runs once, **then** no exact Agentd-owned handler remains, the Codex trust
-members for those handlers are absent, and each unrelated parsed value and array order
-equals the pre-install fixture. The comments and bytes outside the removed owned
-`hooks.state` members equal the pre-uninstall Codex file. **When** uninstall runs again,
-**then** it changes no bytes and exits 0.
+**Given** the target files remain externally quiescent and Codex has approved its
+installed Agentd handlers, **when** each harness uninstall runs once, **then** no exact
+Agentd-owned handler remains, the Codex trust members for those handlers are absent,
+and each unrelated parsed value and array order equals the pre-install fixture. The
+comments and bytes outside the removed owned `hooks.state` members equal the
+pre-uninstall Codex file. **When** uninstall runs again, **then** it changes no bytes
+and exits 0.
 
 **Given** an unrelated command that contains the word `agentd`, an Agentd executable
 basename with different arguments, and a command with the Agentd marker plus an event
@@ -760,11 +793,12 @@ the socket.
 **then** it opens no daemon socket, writes `agentd hook: invalid_hook_event`, and exits
 1.
 
-### A7 — Conflict-detecting atomic replacement (G3; I7)
+### A7 — Observed-conflict refusal and atomic replacement (G3; I7)
 
-**Given** existing user files with mode `0600`, **when** install or uninstall succeeds,
-**then** each replaced file retains its mode and owner, parses in its native format, and
-contains the complete pre-change unrelated configuration plus the required change.
+**Given** externally quiescent existing user files with mode `0600`, **when** install or
+uninstall succeeds, **then** each replaced file retains its mode and owner, parses in
+its native format, and contains the complete pre-change unrelated configuration plus
+the required change.
 
 **Given** a new user hook file, **when** install creates it, **then** its mode is `0600`.
 
@@ -773,9 +807,10 @@ returns, **then** the original target path contains either the complete old valu
 complete new value. It contains no partial serialization.
 
 **Given** an integration command has read its baseline and an external writer changes a
-target's bytes, mode, or owner before the first guarded replacement step, **when** the
-command attempts to commit, **then** it returns `configuration_changed`, preserves the
-external target, and adds or removes no hook declaration or trust member.
+target's bytes, mode, or owner before the target's last baseline comparison, **when**
+the command attempts to commit, **then** it returns `configuration_changed`, preserves
+the external target, and adds or removes no hook declaration or trust member in that
+replacement or any later replacement.
 
 **Given** one Agentd integration command holds the harness configuration-directory
 lock, **when** another Agentd integration command targets that directory, **then** the
@@ -783,10 +818,18 @@ second command returns `configuration_busy` and changes no target. A retry after
 release merges against the first command's committed bytes.
 
 **Given** Codex uninstall has removed its owned trust members and an external writer
-then changes `hooks.json` before the declaration replacement, **when** the conditional
-replacement runs, **then** it returns `configuration_changed`, preserves the external
-`hooks.json` bytes, and leaves the Agentd declarations installed but untrusted. A retry
-merges against those bytes and completes removal.
+then changes `hooks.json` before that target's last baseline comparison, **when** the
+declaration replacement runs, **then** it returns `configuration_changed`, preserves
+the external `hooks.json` bytes, and leaves the Agentd declarations installed but
+untrusted. A retry merges against those bytes and completes removal.
+
+**Given** a controlled integration test pauses a command after its last successful
+baseline comparison and a non-Agentd writer that ignores the advisory lock writes a
+new complete value before the command's rename, **when** the command resumes, **then**
+the atomic rename replaces that external value with the command's complete
+baseline-derived replacement, and the command does not return `configuration_changed`
+for that write. **When** the user reads `agentd integrate --help`, **then** it includes
+the exact I7.10 warning.
 
 ### A8 — Base regression and repository gate (G6; I1)
 
