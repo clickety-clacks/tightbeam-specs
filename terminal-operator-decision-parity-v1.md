@@ -1,7 +1,7 @@
 # Terminal operator-decision parity and integrity — v1
 
-Status: SPEC-READY, TARGETLESS — exact-revision review findings F1-F3 applied;
-awaiting parent-opened independent re-review
+Status: SPEC-READY, TARGETLESS — exact-revision review findings F1-F4 applied;
+awaiting one parent-opened independent exact-revision review
 
 Authority: work item `wi_435301fa-dead-4a1a-8e78-4a594c0f8b0d`, assignment
 `asg_edf0c74c-65e3-4668-a208-002765c7304b`, diagnosed verdicts
@@ -24,6 +24,13 @@ Revision evidence: independent exact-revision review verdict
 `att_8a08d480-8aae-46b9-93c8-191a18dcd749` and report artifact
 `art_1dfda29c` against commit
 `a98b3cac7a0734c5ddf2c53201f7b8829815eeee`.
+
+F4 authority: exact owner decision request
+`dr_58669d4f-7c01-495c-bde4-db978b8251a7` ruled
+`open-reviewed-spec-update`, without a rationale field. Its independent
+0.1.9 exact-tip review `att_35abe6b7` and report `art_07a71efe` require this
+canonical CLI and REST/wire successor. F4 changes contract text only; it does
+not authorize product code, a target, a binding, or a review verdict.
 
 This contract supersedes only the owner-scoped operator-request read projection,
 terminal-attribution, integrity, and raiser-delivery clauses of
@@ -443,6 +450,14 @@ non-blank complete id and no target flag or positional id. An absent, shortened,
 or non-visible id follows the existing hidden-id `not_found` contract. The
 command prints the existing result envelope and exits 0 on success.
 
+The canonical CLI surface is `cli-surface-v1.md`; the canonical REST item,
+detail route, and error envelope are `rest-state-api-v1.md` and
+`rest-state-api-v1-wire-schema.md`; the narrower decision-row state amendment
+is `decision-request-client-observable-state-v1.md`. Their F4 clauses are part
+of this exact successor. They define only the public command and public bytes.
+The storage columns `ruledViaPrincipal` and `ruledViaSessionState` remain
+internal and never become CLI or REST fields.
+
 ### 2. Integrity contract
 
 A `ruled` operator row is valid only when all of these checks pass in one
@@ -501,7 +516,7 @@ an invalid row and returns the rest. The detail projector validates before it
 encodes the row. A consumer validates inside its transaction before its
 consumption compare-and-set or external effect.
 
-The typed wire refusal is HTTP 500 with the existing error envelope:
+The dispatch/wire refusal is HTTP 500 with the existing error envelope:
 
 ```json
 {
@@ -516,6 +531,15 @@ The typed wire refusal is HTTP 500 with the existing error envelope:
 The CLI prints the typed code and request id to stderr and exits nonzero. It
 prints no terminal fields. Because visibility precedes validation, returning the
 id does not disclose a hidden request.
+
+The canonical REST collection and detail routes retain their R4c outer
+envelope: they put this exact `error` object under `schemaVersion:1` and
+resource `decision requests`, as `rest-state-api-v1.md` specifies. The
+dispatch/wire and REST outer envelopes differ only by that established carrier;
+the code, message, request id, visibility order, and no-partial-result rule are
+the same. The evidence-conflict and evidence-unavailable errors use their
+existing simple dispatch/wire code envelope and the corresponding simple R4c
+REST variant; neither emits request fields.
 
 The additive relation `decision_request_integrity_evidence` has one row per
 `(requestId, shapeDigest)`. `shapeDigest` is SHA-256 over a versioned canonical
@@ -633,12 +657,13 @@ serialization or consumption is refused. This deletion wins over a repair
 workflow because the visibility-first per-row rail already prevents the lossy
 behavior, and a repair would violate the no-history-rewrite boundary.
 
-Wire compatibility is additive: the exact-id verb and `rulingAttribution` are
-new, while existing list envelopes and flat fields retain their names and
-meaning. The intentional behavior change is that a visible impossible terminal
-row now returns a typed failure instead of lossy JSON or consumption. A
-selected target that already exposes `decision-request` keeps its syntax and
-exact-id semantics; another target adds the syntax before advertising it.
+Wire compatibility is additive: the exact-id verb, `rulingFactId`,
+`ruledViaSessionKey`, and `rulingAttribution` are new for a ruled operator row,
+while existing list envelopes and flat fields retain their names and meaning.
+The intentional behavior change is that a visible impossible terminal row now
+returns a typed failure instead of lossy JSON or consumption. A selected target
+that already exposes `decision-request` keeps its syntax and exact-id semantics;
+another target adds the syntax before advertising it.
 
 The implementation shall update the applicable canonical CLI and REST/wire
 specs in the same source change. If
@@ -896,6 +921,29 @@ fixtures plus hidden and impossible-consumed fixtures, and runs the target's
 baseline and candidate gates, then the baseline is recorded, the candidate gate
 is green, and checked-in fixtures are captured from those real responses rather
 than hand-written. Existing non-operator decision-request tests remain green.
+
+**A-27a — F4 CLI and REST/wire surface matrix.** Given each elected
+implementation line, `0.2.0` and `0.1.9`, its unmodified elected base, a fresh
+owned candidate worktree, a real gateway, and that line's built CLI, when the
+implementation lane captures the following responses from the named command or
+route, then it checks in the exact response bytes and one provenance manifest
+for that line. The manifest names the base and candidate commits, the built CLI
+identity, the gateway invocation, the fixture setup path, and this spec file
+SHA-256. The matrix is:
+
+| Case | Invocation | Required observed result |
+|---|---|---|
+| predecessor nonterminal detail | exact-id read of visible `open`, `withdrawn`, and `superseded` operator fixtures | each candidate item has the same key set as the captured predecessor item; it contains neither `ruledViaPrincipal` nor `ruledViaSessionState` nor a terminal-only extension |
+| terminal list/detail parity | list and exact-id REST read of one visible valid ruled operator fixture | both success envelopes contain byte-equal terminal fields, including `rulingFactId`, `ruledViaSessionKey`, and `rulingAttribution` |
+| CLI carrier | `tightbeam decision-request --request <fullId>` for that ruled fixture | the captured wire request is verb `decision-request` with only `params.request`; stdout is the single success envelope and exit is 0 |
+| exact-id compatibility | blank, prefix, positional, duplicate-flag, target-flag, absent, and non-visible invocations | parser failures remain local; absent and non-visible complete ids retain the predecessor `not_found` envelope, stderr behavior, and nonzero exit |
+| visible impossible shape | list and exact-id reads of a fixture-only visible invalid ruled or consumed operator row | REST captures the R4c F4 error envelope; CLI captures the typed code and visible request id on stderr; neither surface emits item or partial collection bytes, and each records only privacy-safe evidence |
+
+The captures use the real predecessor and candidate responses for the same
+fixture state; a hand-authored expected JSON document does not satisfy this
+matrix. This matrix refines only the CLI and REST/wire proof portion of A-27.
+It does not close F2's remaining fixture classes or F3's concurrency, failure,
+and trace coverage.
 
 **A-28 — Trace completeness.** Given one known-attribution ruling, one legacy
 ruling, one delivered raiser wake, and one integrity refusal, when an authorized

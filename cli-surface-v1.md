@@ -33,6 +33,22 @@ Agent-facing (demanded by the shipped engineering-kungfu kernels/skills):
 - **decision-requests** — read the decision requests visible to the caller so
   an effort request can be selected for `effort-rule`
   (effort-without-effect-checkin-v1 §5).
+- **decision-request --request DECISION_REQUEST_ID** — read one complete,
+  visible operator decision after it is ruled. Demand:
+  terminal-operator-decision-parity-v1 §Architecture 1 and its F4 surface
+  matrix. The command accepts exactly one non-blank complete `dr_...` value
+  through `--request`; it accepts no positional id, target flag, or duplicate
+  request flag. It sends wire verb `decision-request` with only
+  `params.request`. On success it prints the existing single-result envelope
+  and exits 0. An absent or non-visible complete id retains `not_found` and
+  exits nonzero. A visible impossible terminal row returns the canonical
+  `decision_request_integrity_invalid` error. An evidence conflict or evidence
+  write failure returns, respectively,
+  `decision_request_integrity_evidence_conflict` or
+  `decision_request_integrity_evidence_unavailable`. Each F4 error prints no
+  result JSON and exits nonzero. The invalid-shape error prints its code and
+  visible request id to stderr; evidence errors print their code only. This
+  command does not expose storage-only attribution columns.
 - **work-item-create / work-item-get / work-item-trace** — the durable work
   thread and its pinned forensic query (kungfu: feature-cycle, work-tracking;
   job-trace-observability-v1).
@@ -88,6 +104,13 @@ critical, adjudicate, producer-management commands, cli-side init.
    enumerates exactly this surface.
 4. Gates: `cargo build --release`, `cargo test`, `cargo clippy -- -D warnings`
    clean, and the repo's `mix` suite green.
+
+For `decision-request --request`, these general CLI rules compose with the
+terminal parity contract. The canonical REST/wire item and error definitions
+live in `rest-state-api-v1.md` and `rest-state-api-v1-wire-schema.md`; this
+surface defines command grammar and dispatch carriage only. The CLI does not
+derive terminal fields, retry an integrity refusal, or substitute a list read
+for the exact-id request.
 
 ## Identity resolution
 

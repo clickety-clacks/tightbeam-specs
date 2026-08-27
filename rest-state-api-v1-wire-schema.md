@@ -6,6 +6,11 @@ response, closed error envelope, and dependency-entry schema. The durable
 Toplines schema below is unchanged. The coupled REST, firehose, and wire bytes
 landed at `0139d9a71180a7175965473fade9b183d2b57601`.
 
+Terminal operator-decision parity F4 successor, 2026-08-27: SPEC-READY for
+independent review. This successor adds only the ruled-operator item extension
+and its three closed decision-request error variants. It does not change an
+ExecutionMap byte, a firehose byte, a route family, or a storage schema.
+
 ## Spec homing
 
 The canonical wire spec lives only in the `tightbeam-specs` repository as
@@ -25,6 +30,12 @@ base `277bb5031a06270aabbc57e3c222cbd2ec89bc73`. REST, CLI wrappers, and
 `message.created` use this same item shape. This composition preserves the G4
 error and G8 authority-label contracts.
 
+The F4 coupled custody set is this file, `rest-state-api-v1.md`,
+`cli-surface-v1.md`, `terminal-operator-decision-parity-v1.md`, and
+`decision-request-client-observable-state-v1.md`.
+`event-firehose-v1.md` is not in that set because F4 adds no notice or
+firehose payload.
+
 ## Encoding rules
 
 JSON is UTF-8. Integers are signed JSON integers and never floating-point
@@ -40,14 +51,17 @@ version are positive JSON integers with the same numeric value.
 these three fields. `facts.id` is the sole numeric public field named `id` in
 v1.
 
-Every item contains exactly the keys listed by R7/R7a, in that listed order.
-Nested objects contain exactly the keys listed here, in their listed order.
+Every item contains exactly the keys listed by R7/R7a, in that listed order,
+except for the conditional transcript `messageType` key and the conditional
+terminal operator keys in R7td. Nested objects contain exactly the keys listed
+here, in their listed order.
 The encoder emits no insignificant whitespace. It escapes JSON strings by the
 same library path for REST, CLI, and firehose.
 
 For transcript messages, “exactly” applies after the conditional
-`messageType` rule below. `messageType` is the sole key that the encoder may
-omit conditionally.
+`messageType` rule below. For decision requests, “exactly” applies after the
+conditional terminal operator rule below. No other encoder may omit or add a
+key conditionally.
 
 Maps whose keys are product data encode keys in ascending Unicode code-point
 order. Set-like arrays sort by the tuple named below. Sequence arrays preserve
@@ -89,6 +103,14 @@ typed J below and still passes SR2/SR6 secret exclusion.
 - `Containment`: `{fs:S, network:S}`.
 - `SessionOverrides`: `{skillsAdd:A<S>, guidanceExtra:S|null}`.
 - `DecisionOption`: `{label:S}`.
+- `DecisionRulingPrincipal`: either `{state:"known", value:S}` or exactly
+  `{state:"legacy-unknown"}`.
+- `DecisionRulingSession`: either `{state:"known", key:S}`, exactly
+  `{state:"none"}`, or exactly `{state:"legacy-unknown"}`.
+- `DecisionRulingPerformer`: `{principal:O<DecisionRulingPrincipal>,
+  session:O<DecisionRulingSession>}`.
+- `DecisionRulingAttribution`: `{onBehalfOf:S,
+  performer:O<DecisionRulingPerformer>}`.
 - `ToplineMembership`: `{id:S, toplineId:S, workItemId:S,
   ownerUserId:S, linkReason:S, linkedActor:O<Actor>, linkedAt:I,
   unlinkReason:S|null, unlinkedActor:O<Actor>|null, unlinkedAt:I|null,
@@ -127,19 +149,26 @@ envelope; no other route or error-only resource literal is permitted.
 
 - `{code:S}`, where `code` is exactly one of `auth_failed`,
   `invalid_as_user`, `invalid_message`, `not_found`, `invalid_filter`,
-  `malformed_query`, `invalid_cursor`, or `projection_invalid`;
+  `malformed_query`, `invalid_cursor`, `projection_invalid`,
+  `decision_request_integrity_evidence_conflict`, or
+  `decision_request_integrity_evidence_unavailable`;
 - `{code:S, message:S}`, where `code` is exactly `identity_not_yours` and
   `message` is exactly `this session belongs to <session.owner_user_id>`, with
   `<session.owner_user_id>` replaced by the target session row's exact stored
   non-null owner user id;
+- `{code:"decision_request_integrity_invalid", message:"decision request
+  integrity check failed", requestId:S}`, where `requestId` is the complete
+  visible operator decision-request id that failed terminal validation;
 - `{code:S, candidateIds:A<S>}`, where `code` is exactly `ambiguous_id` and
   `candidateIds` contains the visible full typed ids in ascending order.
 
-`identity_not_yours` is the sole message-bearing variant. `ambiguous_id` is
-the sole `candidateIds`-bearing variant. The simple variant contains only
-`code`; no variant contains another key. The encoder emits no insignificant
-whitespace. R4c owns the status mapping, allowed route conditions, exact
-application headers, and evaluation precedence.
+`identity_not_yours` and `decision_request_integrity_invalid` are the only
+message-bearing variants. `decision_request_integrity_invalid` is the only
+variant with `requestId`; `ambiguous_id` is the sole `candidateIds`-bearing
+variant. The simple variant contains only `code`; no variant contains another
+key. The encoder emits no insignificant whitespace. R4c owns the status
+mapping, allowed route conditions, exact application headers, and evaluation
+precedence.
 
 ExecutionMap responses are closed top-level objects in this key order:
 
@@ -213,7 +242,7 @@ presence. It is optional and non-null when present.
 
 | Resource | Strings | Integers / numbers | Booleans | Arrays / objects | Nullable |
 |---|---|---|---|---|---|
-| decision requests | id, kind, raiserId, raiserSessionKey, ownerUserId, assignmentId, expecterSessionKey, expecterUserId, deadlineWakeId, statuteName, question, status, decision, rationale, ruledBy, withdrawnBy, withdrawnReason, askedOfRole, answer, answeredBy | lineageRung, effortGeneration, raisedAt, deadlineAt, ruledAt, consumedAt, withdrawnAt, answeredAt, rowVersion | — | options `A<O<DecisionOption>>`, context `J` | raiserId, raiserSessionKey, ownerUserId, assignmentId, expecterSessionKey, expecterUserId, deadlineWakeId, statuteName, decision, rationale, ruledBy, ruledAt, consumedAt, withdrawnBy, withdrawnReason, withdrawnAt, askedOfRole, answer, answeredBy, answeredAt, context |
+| decision requests | id, kind, raiserId, raiserSessionKey, ownerUserId, assignmentId, expecterSessionKey, expecterUserId, deadlineWakeId, statuteName, question, status, decision, rationale, ruledBy, withdrawnBy, withdrawnReason, askedOfRole, answer, answeredBy; ruled-operator only: ruledViaSessionKey | lineageRung, effortGeneration, raisedAt, deadlineAt, ruledAt, consumedAt, withdrawnAt, answeredAt, rowVersion; ruled-operator only: rulingFactId | — | options `A<O<DecisionOption>>`, context `J`; ruled-operator only: rulingAttribution `O<DecisionRulingAttribution>` | raiserId, raiserSessionKey, ownerUserId, assignmentId, expecterSessionKey, expecterUserId, deadlineWakeId, statuteName, decision, rationale, ruledBy, ruledAt, consumedAt, withdrawnBy, withdrawnReason, withdrawnAt, askedOfRole, answer, answeredBy, answeredAt, context; ruled-operator only: ruledViaSessionKey |
 | toplines | id, ownerUserId, title, state, dependencyVersion | createdAt, updatedAt, closedAt, activeWorkCount, openConcernCount | — | createdActor `O<Actor>`, workMemberships `A<O<ToplineMembership>>`, concerns `A<O<Concern>>` | closedAt |
 | execution map node | id, title, specRefName, specRefSha256, state, failReason | finishedAt, jobs, startedAt, openDecisionRequests, fanOut, sinceProgressMs | bracket1Armed | origin `O<ExecutionMapOrigin>`, creationContext `O<ExecutionMapCreationContext>`, parent `O<ExecutionMapParent>`, assignments `O<ExecutionMapAssignmentCounts>`, attests `O<ExecutionMapAttestCounts>`, closingAttests `A<O<ExecutionMapClosingAttest>>`, turns `O<ExecutionMapTurns>`, minds `A<O<ExecutionMapMind>>`, active `O<ExecutionMapActive>` | specRefName, specRefSha256, failReason, finishedAt, startedAt, fanOut, minds |
 | coordination share | sessionKey, dependencyVersion | from, to, turns, wakeTurns, classedTurns, coordinationTurns, summons, algedonic, share `N` | — | byClass `M<I>` | share |
@@ -239,7 +268,7 @@ presence. It is optional and non-null when present.
   `in-workspace|archived|released`; recordedTurnEvidence:
   `tool-call-observed|session-concurrent|none`.
 - device status: `allowlisted|pending|denied`.
-- decision kind: `statute|effort|agent`; decision status:
+- decision kind: `statute|effort|agent|operator`; decision status:
   `open|ruled|consumed|withdrawn|superseded|answered`.
 - topline state: `open|closed`; actor kind: `user|session`.
 - execution-map origin principal: `user|session`; parent status:

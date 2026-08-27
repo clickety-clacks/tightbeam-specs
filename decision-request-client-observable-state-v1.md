@@ -28,11 +28,15 @@ amendment does not add a REST namespace or change the REST envelope version.
 - This amendment does not define command inputs, authorization rules, deadlines, wake
   behavior, replacement policy, or assignment policy.
 - This amendment does not add a projected actor, reason, timestamp, or successor-id
-  field to the REST decision-request item.
+  field to a `statute`, `effort`, or `agent` REST decision-request item. The
+  more-specific terminal operator projection in
+  `terminal-operator-decision-parity-v1.md` controls its own ruled-operator
+  fields and typed refusal.
 - This amendment does not add `/api/v2` or change the REST envelope, route, field set,
-  field types, or behavior of `/api/decision-requests` and
-  `/api/decision-requests/:id`, except that it closes the existing decision-status
-  domain over all client-observable values.
+  field types, or behavior for `statute`, `effort`, and `agent` rows on
+  `/api/decision-requests` or `/api/decision-requests/:id`, except that it
+  closes the existing decision-status domain over all client-observable values.
+  The more-specific terminal operator contract is the stated exception.
 - This amendment does not change firehose recovery, visibility, or shared-serializer
   rules. It applies the existing widening rule to the decision-request row/event
   schema and fixes only the within-transaction handoff order in DR6.
@@ -83,7 +87,10 @@ amendment does not add a REST namespace or change the REST envelope version.
    last-version-wins client application.
 3. A successful public transition increments the item's `rowVersion` in the same
    commit as the item change.
-4. The public `kind` values remain `statute`, `effort`, and `agent`.
+4. The public `kind` values are `statute`, `effort`, `agent`, and `operator`.
+   This amendment owns the first three kinds. The more-specific terminal
+   operator contract owns the operator ruled projection, its exact-id read,
+   and its integrity behavior; it adds no decision-request firehose class here.
 5. The public row can expose a status without exposing the internal action that caused
    it. A client uses the status and the existing projected fields.
 

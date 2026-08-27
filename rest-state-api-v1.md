@@ -44,6 +44,16 @@ Product-owner disposition `att_e0a20ce9-3bcc-4a0c-800f-681a51cd85c4`
 preserves F1/F2 and requires unique current-canonical clause identifiers. This
 successor changes no G4 error or G8 authority-label behavior.
 
+Terminal operator-decision parity F4 successor, 2026-08-27: SPEC-READY for
+independent review. This amendment adds the public ruled-operator projection
+and its typed integrity refusal to the existing decision-request collection and
+detail surfaces. Its coupled custody set is this file,
+`rest-state-api-v1-wire-schema.md`, `cli-surface-v1.md`, and
+`terminal-operator-decision-parity-v1.md`, and
+`decision-request-client-observable-state-v1.md`. It adds no route family,
+identity input, authorization grant, storage-column projection, firehose class,
+target, or product-code authority.
+
 Revision history: r3 folded the REST-side adjudicated findings
 F1/F8/F9/F13/F14/F16/F21/F22 from
 `review-gate-observability-2026-08-21.md` and aligned with firehose r6. It
@@ -128,7 +138,9 @@ envelope, dependency entry, or firehose mapping. Its exact candidate set is
 therefore `rest-state-api-v1.md` and `rest-state-api-v1-wire-schema.md`.
 G1 changes the transcript-message projection and `message.created` mapping.
 Its exact candidate set is this file, `rest-state-api-v1-wire-schema.md`, and
-`event-firehose-v1.md`; all three land in one reviewed revision.
+`event-firehose-v1.md`; all three land in one reviewed revision. The F4
+operator-decision amendment changes no firehose payload or class, so
+`event-firehose-v1.md` is not part of its coupled custody set.
 `rest-state-api-r3-adjudication.md`, `rest-vs-cli-adjudication.md`, and
 `topline-map-v1.md` remain authority inputs, not custody companions for this
 contract. A worktree, artifact row, transcript, adjudication ledger, or review
@@ -546,6 +558,18 @@ error does not mint an error-only resource label.
 For example, an assignment detail miss encodes exactly
 `{"schemaVersion":1,"resource":"assignments","error":{"code":"not_found"}}`.
 
+R4c-F4 is the sole decision-request specialization. After the existing
+visibility predicate admits an operator row, a ruled-shape failure returns
+HTTP 500 with resource `decision requests` and exactly
+`{"schemaVersion":1,"resource":"decision requests","error":{"code":"decision_request_integrity_invalid","message":"decision request integrity check failed","requestId":"<visible full dr id>"}}`.
+An evidence uniqueness conflict returns HTTP 500 with exactly the simple code
+`decision_request_integrity_evidence_conflict`; an evidence write failure
+returns HTTP 500 with exactly the simple code
+`decision_request_integrity_evidence_unavailable`. These three variants apply
+only to the decision-request collection and detail routes after visibility.
+They do not alter the exact bytes of hidden, absent, malformed, authorization,
+or any other R4c response.
+
 Each canonical GET route template has exactly this `resource` value in every
 success and R4c error envelope. A query string does not change the value.
 
@@ -630,6 +654,9 @@ The closed status and code mapping is:
 | 403 | `identity_not_yours` | a session bearer supplies a present empty or nonmatching AU2 `asUser` value |
 | 404 | `not_found` | AU3, AU4, AU4a, the canonical nested-route part of AU5, or AU7 requires the same unknown-or-forbidden result |
 | 500 | `projection_invalid` | after input validation, the service cannot complete the visibility-filtered query, derive one complete result, or encode it against the closed schema |
+| 500 | `decision_request_integrity_invalid` | an admitted operator row claims `ruled` or `consumed` and fails terminal-shape validation; the response identifies only that visible request id |
+| 500 | `decision_request_integrity_evidence_conflict` | the required privacy-safe evidence key exists with different canonical evidence |
+| 500 | `decision_request_integrity_evidence_unavailable` | the required privacy-safe evidence cannot commit |
 
 No canonical read route emits another application error status or code. A
 route emits a listed code only when its named condition applies. In
@@ -638,10 +665,12 @@ ExecutionMap remains the exact specialization in R4a/R4b. Its encoded error
 bytes, candidate-id rule, message-bearing refusal, and A27 cases do not change.
 
 G4 declines a second generic error family, per-route error messages or detail
-objects, a transient/retryable code, and a new error-only resource label.
-After input validation, an in-handler failure uses `projection_invalid`.
-A failure that prevents the handler from returning an application response is
-outside R4c, and client retry policy remains a non-goal.
+objects, a transient/retryable code, and a new error-only resource label. The
+three F4 decision-request variants above are the narrow exception: they report
+the terminal rail's named refusal, not a generic handler failure. Outside that
+exception, an in-handler failure uses `projection_invalid`. A failure that
+prevents the handler from returning an application response is outside R4c,
+and client retry policy remains a non-goal.
 
 Each R4c error sets exactly these application headers:
 `Content-Type: application/json; charset=utf-8` and
@@ -875,7 +904,8 @@ displayName collision set and does not select an arbitrary match or return a
 collision error.
 
 R7. Projection fields are closed-world and normative. Every item contains
-exactly the keys in its row below. Nullable keys remain present with `null`;
+exactly the shared keys in its row below plus only the conditional keys named
+by a more-specific R7 clause. Nullable shared keys remain present with `null`;
 an adapter does not omit them. Every notice-backed stored-state item carries
 `rowVersion`, a monotonically increasing integer derived at the write seam.
 A composed item carries `dependencyVersion` as described in R9 instead. No
@@ -911,6 +941,61 @@ that an adapter conditionally omits.
 | coordination share | `sessionKey`, `from`, `to`, `turns`, `wakeTurns`, `classedTurns`, `coordinationTurns`, `summons`, `algedonic`, `byClass`, `share`, `dependencyVersion` |
 | digest members | `wakeId`, `prompt`, `class`, `classElection`, `createdAt`, `dependencyVersion` |
 | work-item trace | `workItem`, `assignments`, `causalChildren`, `attribution`, `dependencyVersion` |
+
+R7td. **Terminal operator decision projection.** This clause supersedes the
+generic decision-request field and kind clauses only for a visible
+`kind:"operator"`, `status:"ruled"` item. The existing visibility predicate
+runs before this clause. List and `GET /api/decision-requests/:id` then call
+the same terminal projector and produce the same item bytes for every terminal
+field when no mutation intervenes.
+
+The ruled operator item retains every R7 decision-request shared key and adds,
+in this order after `ruledAt` and before `consumedAt`, these terminal keys:
+
+```text
+rulingFactId, ruledViaSessionKey, rulingAttribution
+```
+
+`rulingFactId` is the canonical `escalation-ruled` condition-fact id.
+`ruledViaSessionKey` is the presenting-session key or null. `rulingAttribution`
+is the closed nested shape in the coupled wire schema. `ruledBy` and
+`rulingAttribution.onBehalfOf` are the accountable owner principal; the nested
+performer is execution provenance and never substitutes for that owner.
+The complete terminal field set is `id`, `kind`, `status`, `question`,
+`options`, `raiserId`, `raiserSessionKey`, `ownerUserId`, `assignmentId`,
+`raisedAt`, `deadlineAt`, `decision`, `rationale`, `ruledBy`,
+`ruledViaSessionKey`, `ruledAt`, `rulingFactId`, `consumedAt`, and
+`rulingAttribution`; shared R7 fields outside that set retain their existing
+meaning. `rationale` remains present and preserves a stored null. The three
+terminal extensions and the internal columns `ruledViaPrincipal` and
+`ruledViaSessionState` are absent from visible `open`, `withdrawn`, and
+`superseded` operator items, so their predecessor response key sets remain
+unchanged. A terminal extension is never projected from a storage column
+without the shared terminal validation.
+
+An exact decision-request path id is one complete canonical `dr_...` id; it
+does not accept a prefix, display label, or target resolution. An absent or
+non-visible id returns the existing same `not_found` response. It does not run
+terminal validation or write integrity evidence. The route and list preserve
+their existing success envelopes and `schemaVersion:1`.
+
+For an admitted operator row that claims `ruled` or `consumed`, the shared
+projector first validates the complete terminal shape in
+`terminal-operator-decision-parity-v1.md` Architecture §2. A `consumed`
+operator row is invalid. A valid ruled row encodes normally. An invalid row
+causes the admitting list or detail route to commit or reuse only the
+privacy-safe evidence defined there, then return HTTP 500 with the exact F4
+error variant. A list returns no partial collection. The detail route returns
+no item. Neither error response contains question, option, context, decision,
+rationale, owner id, or session key. If evidence conflicts or cannot commit,
+the route returns the corresponding F4 evidence error and still emits no item
+or partial collection.
+
+The selected implementation must capture real predecessor and candidate list,
+detail, CLI, hidden-id, and impossible-shape responses for both elected
+`0.2.0` and `0.1.9` lines under A-27a of the terminal contract. The captures
+and their provenance are acceptance evidence, not a new REST resource or a
+runtime compatibility branch.
 
 R7m. The transcript-message write seam assigns `messageType` without parsing
 message content. Current assignments are exact:
