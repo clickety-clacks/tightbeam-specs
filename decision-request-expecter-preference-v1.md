@@ -374,7 +374,9 @@ and wire contract above. Parser tests prove the exact-id command accepts one
 non-blank complete `--request` and rejects missing, blank, or non-complete
 values, target flags, positional ids, and duplicate request flags locally with
 no wire request. Gateway tests prove an unknown complete id returns `not_found`
-without prefix resolution.
+without prefix resolution. On a `terminal-operator-decision-parity-v1.md`
+A-27a REST-absent proof arm, these are gateway-wire captures only. They do not
+claim REST-route or R4c envelope coverage.
 
 **A-15 — Security falsification matrix.** Given complete ids for one `agent`,
 one `effort`, and one `statute` request, when an authenticated bystander session,

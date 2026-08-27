@@ -54,6 +54,10 @@ detail surfaces. Its coupled custody set is this file,
 `decision-request-expecter-preference-v1.md`. It adds no route family,
 identity input, authorization grant, storage-column projection, firehose class,
 target, or product-code authority.
+Its A-27a proof applies these REST clauses only to a line whose elected base
+already registers both canonical decision-request REST routes. A line without
+that plane proves deterministic route absence on base and candidate and uses
+the supported CLI and gateway-wire proof arm; it does not add a route family.
 
 Revision history: r3 folded the REST-side adjudicated findings
 F1/F8/F9/F13/F14/F16/F21/F22 from
@@ -992,11 +996,15 @@ rationale, owner id, or session key. If evidence conflicts or cannot commit,
 the route returns the corresponding F4 evidence error and still emits no item
 or partial collection.
 
-The selected implementation must capture real predecessor and candidate list,
-detail, CLI, hidden-id, and impossible-shape responses for both elected
-`0.2.0` and `0.1.9` lines under A-27a of the terminal contract. The captures
-and their provenance are acceptance evidence, not a new REST resource or a
-runtime compatibility branch.
+Under A-27a of the terminal contract, a selected line whose elected base
+registers both canonical decision-request REST routes captures real predecessor
+and candidate list, detail, hidden-id, and impossible-shape REST responses from
+those routes. A selected line whose base registers neither route captures
+deterministic base and candidate route-absence proof instead. Both proof arms
+capture real supported CLI and gateway-wire list and exact-id bytes. The
+captures and their provenance are acceptance evidence, not a new REST resource,
+a mapping of `/agent/dispatch` into the REST plane, or a runtime compatibility
+branch.
 
 R7m. The transcript-message write seam assigns `messageType` without parsing
 message content. Current assignments are exact:

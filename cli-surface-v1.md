@@ -118,6 +118,12 @@ contract defines visibility, projection, and error semantics. The canonical
 REST/wire item and error definitions live in `rest-state-api-v1.md` and
 `rest-state-api-v1-wire-schema.md`. The CLI does not derive terminal fields,
 retry an integrity refusal, or substitute a list read for the exact-id request.
+Under `terminal-operator-decision-parity-v1.md` A-27a, each elected line
+captures real gateway-wire list and exact-id bytes through this CLI surface.
+REST response capture applies only when the elected base already registers both
+canonical decision-request REST routes. A line without those routes proves
+their absence on base and candidate; the CLI dispatch carrier does not become a
+REST route or an R4c envelope.
 
 ## Identity resolution
 

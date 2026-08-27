@@ -1,6 +1,6 @@
 # Terminal operator-decision parity and integrity — v1
 
-Status: SPEC-READY, TARGETLESS — F4 exact-revision contradictions corrected;
+Status: SPEC-READY, TARGETLESS — F4 A-27a target-conditional proof corrected;
 awaiting one parent-opened independent exact-revision review
 
 Authority: work item `wi_435301fa-dead-4a1a-8e78-4a594c0f8b0d`, assignment
@@ -51,6 +51,16 @@ F4 successor re-review: exact revision
 `6f5a48c69b99ed2fdfc8bfa71f58d75d63a41c6a` received changes-requested verdict
 `att_c045d05a` and report `art_ee96bdbd`. Its sole finding requires AU4 to name
 the existing operator owner/raiser visibility predicate.
+
+A-27a target-conditional authority: exact owner decision request
+`dr_bbc86c31-b3be-438e-920a-67c855ee21d2` is durably ruled
+`amend-target-conditional` in the work-item trace. Blocker
+`att_9c85d7f9-4cca-48ff-8493-da7b2b066f59` proves that the preserved `0.1.9`
+line at `179f5647c43ad603248535f9e96290d3972fb216` has no canonical
+decision-request REST plane. This successor changes only the proof required
+from a line that lacks that plane. It does not authorize a REST route family,
+map REST proof to the gateway mutation carrier, change an elected target, or
+weaken the F4 projection.
 
 This contract supersedes only the owner-scoped operator-request read projection,
 terminal-attribution, integrity, and raiser-delivery clauses of
@@ -152,6 +162,18 @@ deciding the answer.
   checks happen before integrity inspection or projection.
 - **Exact-id read**: `decision-request` with one complete canonical `dr_...` id.
   It performs no prefix, substring, display-label, or target resolution.
+- **Canonical decision-request REST plane**: the pair of registered read routes
+  `GET /api/decision-requests` and `GET /api/decision-requests/:id` with the
+  R4c and R7td envelopes defined by `rest-state-api-v1.md`. A line has this
+  plane only when its elected base registers both routes. One route without
+  the other is not a proof arm.
+- **Gateway-wire read plane**: the existing gateway verbs `decision-requests`
+  and `decision-request`. The latter carries only `params.request`. This plane
+  is not a REST route or a substitute REST envelope.
+- **F4 proof arm**: one of two acceptance branches selected only from the
+  elected base's registered route inventory. The REST-present arm applies when
+  the inventory contains both canonical REST routes. The REST-absent arm
+  applies when it contains neither. The candidate retains the selected arm.
 - **Terminal decision projection**: the field set in Architecture §1. List and
   exact-id reads use one implementation seam to construct this set.
 - **On-behalf-of actor**: the accountable user represented as
@@ -374,6 +396,12 @@ trigger takes the database-refusal rung for attribution; the visibility-first
 read and consume refusal is the deterministic rail for cross-relation
 integrity.
 
+**INV-20 — Proof follows the elected surface.** A-27a selects its proof arm
+from the elected base before candidate behavior is measured. The candidate
+does not add or remove the canonical decision-request REST routes to change
+arms. Both arms prove the same terminal fields, visibility order, integrity
+refusals, and list/exact-id parity through the line's supported read plane.
+
 ## Architecture
 
 ### 1. Canonical read contract
@@ -477,9 +505,11 @@ detail route, and error envelope are `rest-state-api-v1.md` and
 `rest-state-api-v1-wire-schema.md`; the narrower decision-row state amendment
 is `decision-request-client-observable-state-v1.md`; the agent/effort exact-id
 companion is `decision-request-expecter-preference-v1.md`. Their F4 clauses are
-part of this exact successor. They define only the public command and public
-bytes. The storage columns `ruledViaPrincipal` and `ruledViaSessionState` remain
-internal and never become CLI or REST fields.
+part of this exact successor. They define only the public command and the bytes
+of a supported carrier. A REST-absent proof arm does not activate a REST clause
+or reinterpret gateway-wire bytes as REST bytes. The storage columns
+`ruledViaPrincipal` and `ruledViaSessionState` remain internal and never become
+CLI or REST fields.
 
 ### 2. Integrity contract
 
@@ -939,35 +969,61 @@ writer transaction rolls back.
 
 **A-27 — Real-response fixture and compatibility gate.** Given an unmodified
 selected source revision and the candidate implementation in fresh owned
-worktrees, when the implementation lane builds the release CLI, captures real
-gateway responses for valid open, ruled, withdrawn, superseded, and legacy
-fixtures plus hidden and impossible-consumed fixtures, and runs the target's
-baseline and candidate gates, then the baseline is recorded, the candidate gate
-is green, and checked-in fixtures are captured from those real responses rather
-than hand-written. Existing non-operator decision-request tests remain green.
+worktrees, when the implementation lane builds the release CLI, captures the
+real responses required by that line's A-27a proof arm for valid open, ruled,
+withdrawn, superseded, and legacy fixtures plus hidden and impossible-consumed
+fixtures, and runs the target's baseline and candidate gates, then the baseline
+is recorded, the candidate gate is green, and checked-in fixtures are captured
+from those real responses rather than hand-written. Existing non-operator
+decision-request tests remain green.
 
-**A-27a — F4 CLI and REST/wire surface matrix.** Given each elected
-implementation line, `0.2.0` and `0.1.9`, its unmodified elected base, a fresh
-owned candidate worktree, a real gateway, and that line's built CLI, when the
-implementation lane captures the following responses from the named command or
-route, then it checks in the exact response bytes and one provenance manifest
-for that line. The manifest names the base and candidate commits, the built CLI
-identity, the gateway invocation, the fixture setup path, and this spec file
-SHA-256. The matrix is:
+**A-27a — F4 target-conditional CLI, REST, and gateway-wire surface matrix.**
+Given each elected implementation line, `0.2.0` and `0.1.9`, its unmodified
+elected base, a fresh owned candidate worktree, a real gateway, and that line's
+built CLI, when the implementation lane enumerates the registered base routes,
+then exactly one F4 proof arm applies:
+
+- REST-present: the base registers both canonical decision-request REST routes.
+  The candidate registers the same pair.
+- REST-absent: the base registers neither canonical decision-request REST
+  route. The candidate also registers neither route.
+
+A base or candidate that registers only one route fails this acceptance clause.
+An HTTP `404` does not prove route absence. The checked-in route inventories
+for the base and candidate provide the deterministic presence or absence proof.
+
+For both proof arms, the implementation lane captures these real CLI and
+gateway-wire results:
 
 | Case | Invocation | Required observed result |
 |---|---|---|
-| predecessor nonterminal detail | exact-id read of visible `open`, `withdrawn`, and `superseded` operator fixtures | each candidate item has the same key set as the captured predecessor item; it contains neither `ruledViaPrincipal` nor `ruledViaSessionState` nor a terminal-only extension |
-| terminal list/detail parity | list and exact-id REST read of one visible valid ruled operator fixture | both success envelopes contain byte-equal terminal fields, including `rulingFactId`, `ruledViaSessionKey`, and `rulingAttribution` |
+| predecessor nonterminal detail | gateway-wire `decision-request` exact-id read of visible `open`, `withdrawn`, and `superseded` operator fixtures on the base and candidate | each candidate item has the same key set as its captured predecessor item; it contains neither `ruledViaPrincipal` nor `ruledViaSessionState` nor a terminal-only extension |
+| terminal list/detail parity | gateway-wire `decision-requests` list and `decision-request` exact-id read of one visible valid ruled operator fixture | both candidate success envelopes contain byte-equal terminal fields, including `rulingFactId`, `ruledViaSessionKey`, and `rulingAttribution` |
 | CLI carrier | `tightbeam decision-request --request <fullId>` for that ruled fixture | the captured wire request is verb `decision-request` with only `params.request`; stdout is the single success envelope and exit is 0 |
 | exact-id compatibility | missing or blank request value, prefix, positional, duplicate-flag, target-flag, unknown complete id, and non-visible complete id | parser failures remain local; complete ids absent from, or non-visible in, the caller's result set retain the predecessor `not_found` envelope, stderr behavior, and nonzero exit |
-| visible impossible shape | list and exact-id reads of a fixture-only visible invalid ruled or consumed operator row | REST captures the R4c F4 error envelope; CLI captures the typed code and visible request id on stderr; neither surface emits item or partial collection bytes, and each records only privacy-safe evidence |
+| visible impossible shape | gateway-wire list and exact-id reads of a fixture-only visible invalid ruled or consumed operator row | the list emits no partial collection; the exact-id CLI prints the typed code and visible request id on stderr; neither read emits item bytes, and each records only privacy-safe evidence |
 
-The captures use the real predecessor and candidate responses for the same
-fixture state; a hand-authored expected JSON document does not satisfy this
-matrix. This matrix refines only the CLI and REST/wire proof portion of A-27.
-It does not close F2's remaining fixture classes or F3's concurrency, failure,
-and trace coverage.
+For the REST-present arm, the lane also captures real base and candidate bytes
+from `GET /api/decision-requests` and `GET /api/decision-requests/:id` for the
+same nonterminal, ruled, hidden-id, and impossible-shape fixtures. Candidate
+list and detail contain byte-equal terminal fields. An admitted impossible row
+returns the exact R4c F4 error envelope and emits no item or partial collection.
+
+For the REST-absent arm, the route-inventory captures replace the REST response
+captures. The lane does not call `/agent/dispatch` a REST route, wrap its result
+in an R4c envelope, or add the missing route family. Its real gateway-wire list
+and exact-id captures above remain required.
+
+For each line, the checked-in provenance manifest names the selected proof arm,
+the base and candidate commits, both route-inventory commands and outputs, the
+built CLI identity, the gateway invocation, the fixture setup path, and this
+spec file SHA-256. Each response fixture contains real predecessor and candidate
+bytes for the same fixture state. A hand-authored expected JSON document does
+not satisfy this matrix. The two arms assert the same terminal field set,
+visibility order, integrity result, and list/exact-id equality; they differ only
+in the supported outer carrier. This matrix refines only the CLI, REST, and
+gateway-wire proof portion of A-27. It does not close F2's remaining fixture
+classes or F3's concurrency, failure, and trace coverage.
 
 **A-28 — Trace completeness.** Given one known-attribution ruling, one legacy
 ruling, one delivered raiser wake, and one integrity refusal, when an authorized

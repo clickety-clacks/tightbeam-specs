@@ -18,6 +18,12 @@ closed revision 1 enum, the decision-request row in REST R8 in
 
 REST R1 and the current `/api/decision-requests` routes remain in force. This
 amendment does not add a REST namespace or change the REST envelope version.
+That statement applies to a selected line whose elected base already registers
+both canonical decision-request REST routes.
+`terminal-operator-decision-parity-v1.md` A-27a requires a line without that
+pair to retain and prove route absence on base and candidate while it captures
+the supported CLI and gateway-wire read bytes. This file does not require that
+line to add the REST plane.
 
 ## Non-Goals
 

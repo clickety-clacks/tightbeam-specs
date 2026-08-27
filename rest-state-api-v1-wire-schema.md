@@ -10,6 +10,10 @@ Terminal operator-decision parity F4 successor, 2026-08-27: SPEC-READY for
 independent review. This successor adds only the ruled-operator item extension
 and its three closed decision-request error variants. It does not change an
 ExecutionMap byte, a firehose byte, a route family, or a storage schema.
+Its A-27a proof is target-conditional: a line whose elected base registers the
+canonical decision-request REST plane captures these REST bytes; a line without
+that plane proves route absence on base and candidate and captures its supported
+CLI and gateway-wire bytes instead. Gateway dispatch bytes are not REST bytes.
 
 ## Spec homing
 
