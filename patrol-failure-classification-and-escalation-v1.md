@@ -3,13 +3,17 @@
 **Status:** Proposal for independent review
 **Target:** Unset
 **Work item:** `wi_6d418db1-26b4-4ad0-9886-86e757e93342`
+**Canonical set:** The repository-root file
+`patrol-failure-classification-and-escalation-v1.md` alone. The D1 and cancellation
+specs named under Non-Goals are external authority inputs for excluded scopes, not
+custody companions. Artifact rows, review reports, and worktrees are evidence only.
 **Scope authority:** `att_4c58ec95-6eae-4c0d-953f-8c7178bbecb9`,
 `att_819bdf81-3c42-4cdd-9569-2c6ab70b1521`, and
 `att_b947ee66-5703-4438-9f1c-4d5e2e1fe172`
 **Product baseline:** `clickety-clacks/tightbeam` commit
-`cba8d6c5e43e974e93890a901b83abd55f723500`
+`c5a56f005edbd1648b7e0b9140f40f07922db9be`
 **Specs baseline:** `clickety-clacks/tightbeam-specs` commit
-`45a650e25f334827e8238bfff3ea58e7a32b4916`
+`61818e718d0b8be64094403b2357e68f6db02171`
 
 ## Goal
 
