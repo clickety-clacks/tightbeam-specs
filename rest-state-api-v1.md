@@ -394,6 +394,11 @@ name the same row returns the same `404 not_found` response under AU3/AU8.
 Serializer failure returns `500 projection_invalid` without a partial item.
 G7 adds no error code or body variant.
 
+Each G7 success and error response inherits the existing shared read-plane
+cache contract: it carries `Cache-Control: no-store`, carries no ETag, and
+implements no conditional request behavior. The G7 route adapter adds no
+cache mechanism or route-specific cache policy.
+
 `role.removed` does not create a historical detail read. Before deletion, the
 roles query and detail route expose the current item through the sole roles
 serializer. The delete commit applies that same serializer to the last
@@ -1429,10 +1434,14 @@ captured upsert version. A post-commit detail request returns the shared
 exists.
 
 A36. Given each R3c row, when the test repeats the detail request as each
-principal that its AU4 row allows and as one denied principal, then the allowed
-cases return the same R7/R7a bytes and the denied case equals an unknown-key
-response in status, body, application headers, statement count, and AU8 timing
-class. For a message, a visible session with a message id from another session
+principal that its AU4 row allows, then each case returns the same R7/R7a
+bytes. For each R3c resource whose AU4 row excludes at least one authenticated
+user or session principal, the test repeats the request as one such denied
+principal; that response equals an unknown-key response in status, body,
+application headers, statement count, and AU8 timing class. The roles resource
+has no denied authenticated-principal case because AU4 grants it to each
+authenticated user and session; A37 covers its absent and invalid bearer
+cases. For a message, a visible session with a message id from another session
 produces the same result. For an attest, the test denies the parent assignment.
 For facts and critical state, the test covers their exact AU4 principal sets.
 
@@ -1445,6 +1454,12 @@ the route returns respectively `401 auth_failed`, AU2's exact result,
 general error encoder and contains no partial item. A seam-identity test fails
 if route code adds SQL, a visibility predicate, an item map, a serializer, or
 an error encoder instead of calling the existing shared seams.
+
+Given each A35 success and each A37 error, when the shared response adapter
+encodes it, then the response carries `Cache-Control: no-store` and no ETag.
+Given the same visible-detail request with `If-None-Match` and
+`If-Modified-Since`, when the route runs, then it ignores those conditional
+headers and returns the same `200` item instead of `304`.
 
 ## Open questions — Spirit questions for Mike
 
