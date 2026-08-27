@@ -1,5 +1,10 @@
 # Event firehose v1 — state-change notifications over ws (product spec, r6)
 
+G1 amendment candidate, 2026-08-27: add the canonical transcript
+`messageType` discriminator to the shared transcript-message projection used
+by `message.created` and the matching REST rows. This amendment changes no
+notice envelope, class, filter, authorization rule, or message content.
+
 Amendment candidate, 2026-08-25: add source-invalidation notices for durable
 Topline mutations and independently committed subagent markers. These notices
 make the composed Toplines and ExecutionMap REST views refreshable from each
@@ -61,6 +66,13 @@ Authority and inputs:
   past. The recon proves a Clawline-class chat client stands on queries
   plus this subscription — its gaps are blocking findings against the
   query surface.
+- Firehose client-buildability recon verdict
+  `att_556f55ae-f1d2-4c83-b55d-9daf06aae929` and report `art_1d389e8e`
+  identify G1. Mike's 2026-08-27 remediation ruling adopts it as a slice-2
+  prerequisite. Prior product commit
+  `505b56aa29f151faab7cd9618ca1bba922cff357` supplies the reviewed additive
+  values and compatibility behavior; this amendment freezes them in the
+  current canonical query and firehose contract.
 - Superseded input: the archived focused design and draft (specs repo
   archive/) contributed the durable-row/cursor/pump replay machinery that
   r4 removes. observability-v1.md r4's doorbell contract ("frames are
@@ -120,6 +132,10 @@ P5. The adopted `rest-state-api-v1.md` companion owns how clients read state.
 Direct SQL against the db is not a product interface. The CLI makes common
 agent reads concise and does not re-create SQL. Clients build bulk models from
 the companion REST surface.
+
+P6. `messageType` is the sole public message-kind discriminator for transcript
+messages. `role` keeps authorship direction and `sender` keeps provenance. A
+firehose adapter does not add `messageKind`, `kind`, or another alias.
 
 ## Goal
 
@@ -194,6 +210,11 @@ durable commit that makes a composed REST view stale. It is a refetch trigger,
 not a rebuildable resource or a direct model upsert. Its R8b mapping fixes its
 class, source seam, refs, natural version, visibility, and payload.
 
+T7. **Message type** — the nullable classification stored at the message write
+seam and exposed as `messageType` in the canonical transcript-message
+projection. Current writers emit `assistant`, `substrate`, `marker`, or
+`agent`. A null or unrecognized value adds no classification beyond `role`.
+
 ## Architecture — the event vocabulary law
 
 V1. Every state-changing commit SHALL emit its notices as part of the
@@ -252,6 +273,13 @@ the query surface can rebuild.
 V5. Payload rows SHALL carry the same primary ids the query surface
 returns for the same rows, so a client can match a notice against fetched
 state (the correlation seam; recon wi_9fdc0c07 verifies it).
+
+V5a. The `message.created` payload is the exact shared R7 transcript-message
+item. Its `messageType` value comes from the stored discriminator; neither the
+firehose adapter nor the serializer derives it from `content`, `sender`, or a
+first-line convention. The notice carries `refs.messageId` equal to item `id`
+and `refs.sessionKey` equal to item `sessionKey`. The matching REST row and
+notice payload therefore expose the same `messageType` bytes for one message.
 
 ## The class registry (initial enumeration, derived from main tip)
 
@@ -312,6 +340,7 @@ correlation contract). A class without a row is a red build.
 |---|---|---|---|---|---|---|---|
 | `condition_fact.filed` | `condition facts` | `upsert` | `factId` | exact shared R7 condition-fact serializer | The condition fact `id` is its append-only natural version; its `rowVersion` equals `id`. Each successful insertion into `condition_facts` emits one notice after commit. An idempotent filing that returns the existing fact emits none. | `GET /api/facts` visibility. Consumers apply last-version-wins by `factId`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 | `critical_lease.updated` | `critical state` | `upsert` | `sessionKey` | exact shared R7 critical-state serializer | The item uses R7 critical-state `rowVersion`. Each committed change to the R7 item for one `sessionKey` emits one notice after commit. A replay or idempotent request that leaves the item and `rowVersion` unchanged emits none. | `GET /api/critical-state` admin-only visibility. Consumers apply last-version-wins by `sessionKey`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
+| `message.created` | `transcript messages` | `upsert` | `messageId`, `sessionKey` | exact shared R7 transcript-message serializer | The item uses its R7 `rowVersion`. Each newly committed transcript message emits one notice after commit; an idempotency replay that returns the existing row emits none. | `GET /api/sessions/:sessionKey/messages` visibility. Consumers correlate by `messageId` and apply last-version-wins by item `id`. | A1 covers the class and both refs. A6 verifies the complete item, including `messageType`, is byte-equivalent to the matching REST row. |
 
 R8b. Source invalidation classes are deliberately not R8 rebuildable-state
 rows. Each emits `op:"observe"`, omits `resource`, and carries exactly
@@ -564,6 +593,17 @@ serializer owns both (V3). Verified per class by a table-driven test that
 also names each class's resource, op, and primary-key mapping. And no
 public projection anywhere contains cliToken, a device token, an
 identityToken, or a secret host-env value.
+
+Given one newly committed message for each current `messageType` value and one
+historical message whose stored discriminator is null, when an authorized
+client fetches the rows and receives their `message.created` notices, then
+each notice payload is byte-equivalent to its matching fetched item. Each
+notice also has `refs.messageId == payload.id` and
+`refs.sessionKey == payload.sessionKey`.
+
+Given equal message content across those fixtures, when REST and firehose
+serialize them, then each surface preserves the stored discriminator. The test
+fails if either surface parses content or calls a route-local serializer.
 
 R8b source invalidations are outside A6 because they expose no rebuildable
 resource. A table-driven test instead requires their exact `op`, absent

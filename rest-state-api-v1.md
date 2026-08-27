@@ -83,6 +83,12 @@ Authority and inputs:
   `5db8aab3496747d008fb8c024a4f1617f92695d144c89481bca3a1f20842550a`:
   condition facts and critical leases enter firehose R8 with the exact R8 rows
   below; it supersedes the fact-only `art_5d8bacb2`.
+- Firehose client-buildability recon verdict
+  `att_556f55ae-f1d2-4c83-b55d-9daf06aae929` and report `art_1d389e8e`
+  identify the missing transcript discriminator as G1. Mike's 2026-08-27
+  remediation ruling adopts G1 as a slice-2 prerequisite. Prior product commit
+  `505b56aa29f151faab7cd9618ca1bba922cff357` supplies the reviewed additive
+  values and compatibility behavior.
 - ExecutionMap authority: `topline-map-v1.md` plus product source
   `Tightbeam.ExecutionMap` at `d00e06aea578d711e608637d38a97872487df15e`.
   Durable `Tightbeam.Toplines` at that revision remains a separate source.
@@ -113,6 +119,10 @@ Define a complete, authorized, deterministic REST read plane from which ATC,
 Clawline, and future clients can rebuild every admitted shared-state model and
 correlate later firehose notices without reading SQLite or replaying history.
 
+Subtraction ruling for G1: add one field to the existing projection. Deleting
+the transcript-message surface would remove required conversation history;
+accepting the gap would force clients to reproduce private content conventions.
+
 ## Non-goals
 
 - REST v1 does not create a general mutation API.
@@ -124,6 +134,9 @@ correlate later firehose notices without reading SQLite or replaying history.
 - REST v1 does not retire compatibility aliases before their clients migrate
   or decide future tailnet identity.
 - REST v1 does not authorize implementation, deployment, or client migration.
+- REST v1 does not add a second message projection, change the `role`,
+  `sender`, or `content` fields, or define marker-detail fields. G1 adds one
+  discriminator to the existing shared transcript-message item.
 - REST v1 does not alias ExecutionMap telemetry through `/api/toplines`, add an
   ExecutionMap firehose class, or change the six adopted shared serializer
   shapes from `art_b1995a26` / fact 1093. Exact source invalidation notices for
@@ -172,6 +185,11 @@ I7. Durable human intent and mechanical execution telemetry are distinct
 resources. `/api/toplines[/:id]` reads durable Topline rows and memberships.
 `/api/execution-map` reads a composed snapshot of execution rows. Neither name
 aliases, replaces, or widens the other.
+
+I8. `messageType` is the sole public message-kind discriminator on a
+transcript-message item. `role` retains authorship direction and `sender`
+retains provenance. No adapter emits `message_type`, `messageKind`, `kind`, or
+another message-kind alias.
 
 ## Architecture
 
@@ -252,6 +270,11 @@ adds no table, mutation, or `execution_map.*` notice. Its underlying source
 mutations retain their R8 mappings and the marker source has the ruled R8b
 mapping. Its REST home is
 `/api/execution-map` and the three nested routes in R3a.
+
+T6. **Message type** — the nullable `messageType` field on the canonical
+transcript-message item. Current message writers emit `assistant`,
+`substrate`, `marker`, or `agent`. A null or unrecognized value adds no
+classification beyond the existing `role` field.
 
 ## Requirements — surface
 
@@ -587,7 +610,7 @@ adapter may add a storage column or a caller-selected field.
 | harness catalog | `harness`, `provider`, `models`, `capabilities`, `dependencyVersion` |
 | hosts | `host`, `rowVersion` |
 | sessions | `sessionKey`, `displayName`, `kind`, `orderIndex`, `isBuiltIn`, `adopted`, `ownerUserId`, `origin`, `spawnedBy`, `handle`, `archetype`, `overrides`, `identityName`, `identityRevision`, `harness`, `provider`, `model`, `thinkingLevel`, `modelContext`, `host`, `clearedThroughSeq`, `state`, `createdAt`, `updatedAt`, `mechanicalStatus`, `rowVersion` |
-| transcript messages | `id`, `seq`, `sessionKey`, `role`, `content`, `at`, `sender`, `deviceId`, `clientMessageId`, `replyToMessageId`, `replyToClientMessageId`, `llmVisibleMessageId`, `attachments`, `attentionTier`, `turnSeq`, `assignmentId`, `jobRef`, `harness`, `provider`, `model`, `effort`, `context`, `rowVersion` |
+| transcript messages | `id`, `seq`, `sessionKey`, `role`, `messageType`, `content`, `at`, `sender`, `deviceId`, `clientMessageId`, `replyToMessageId`, `replyToClientMessageId`, `llmVisibleMessageId`, `attachments`, `attentionTier`, `turnSeq`, `assignmentId`, `jobRef`, `harness`, `provider`, `model`, `effort`, `context`, `rowVersion` |
 | work items | `id`, `title`, `specRefName`, `specRefSha256`, `isBug`, `ownerUserId`, `state`, `failReason`, `routingWakeId`, `slateWakeId`, `createdByUser`, `createdBySession`, `createdInTurnSeq`, `createdContextKnown`, `createdAt`, `rowVersion` |
 | assignments | `id`, `subject`, `holderKey`, `holderRole`, `holderFallback`, `openedByUser`, `openedBySession`, `openedAt`, `state`, `outcome`, `closedAt`, `closedByUser`, `closedBySession`, `closingAttestId`, `workItemId`, `reviewsAssignmentId`, `holderHarness`, `holderProvider`, `files`, `effectKind`, `derivedStatus`, `rowVersion` |
 | attests | `id`, `assignmentId`, `kind`, `verdictKind`, `note`, `bySession`, `byUser`, `producer`, `producerCommand`, `byHarness`, `byProvider`, `commitRefs`, `ts`, `rowVersion` |
@@ -626,11 +649,29 @@ environment names are sorted and their values never enter the projection.
 | host environment | `host`, `harness`, `name`, `value`, `valuePresent`, `updatedAt`, `rowVersion` |
 | harness processes | `id`, `sessionKey`, `host`, `harness`, `provider`, `model`, `pid`, `state`, `startedAt`, `endedAt`, `rowVersion` |
 
+R7m. The transcript-message write seam assigns `messageType` without parsing
+message content. Current assignments are exact:
+
+- `assistant`: the session model's own output;
+- `agent`: a message delivered from an `agent:<handle>` origin;
+- `substrate`: a message delivered from a `process:<name>` or
+  `remedy:<statute>` origin, including ordinary Tightbeam notices;
+- `marker`: a structural transcript boundary created through the marker write
+  seam.
+
+A human-authored message and a historical row without the discriminator use
+`null`. Current writers emit no other string. Readers accept an unrecognized
+future string and fall back to `role`; they do not reject the item or parse
+`content`. The R7 serializer copies the stored value, including null. REST,
+CLI wrappers, and `message.created` call that one serializer; an adapter does
+not construct another transcript-message map.
+
 R7c. `rest-state-api-v1-wire-schema.md` is normative. A route is not frozen
 under M1 until its R7/R7a field row and wire-schema row both exist. The wire
 schema fixes JSON types, nullability, nested object keys, enum domains, and
-array order. An unknown enum value fails serialization and emits no partial
-response.
+array order. An unknown closed-enum value fails serialization and emits no
+partial response. `messageType` is the one open discriminator defined by R7m;
+an unrecognized non-null value remains a valid string.
 
 R7b. `/download/:assetId` returns bytes, not a JSON projection. The asset row
 is its sole authorization metadata; no inferred artifact or work-item link
@@ -1346,7 +1387,27 @@ inline SQL, a second visibility predicate, a second item serializer, a
 caller-selected field/sort/join parameter, and a candidate-only session
 projection.
 
+A35. Given one visible message for each current `messageType` value, one
+human-authored message, and one historical row with no stored discriminator,
+when a caller fetches `GET /api/sessions/:sessionKey/messages`, then the items
+contain `assistant`, `agent`, `substrate`, `marker`, `null`, and `null`
+respectively. Each item contains the `messageType` key in the R7 position.
+
+A36. Given those messages and their matching `message.created` notices, when
+the contract suite removes the notice envelope, then each notice payload is
+byte-equivalent to the fetched item. For each pair,
+`refs.messageId == item.id` and `refs.sessionKey == item.sessionKey`. The suite
+fails if REST or firehose uses a route-local message map or a second serializer.
+
+A37. Given two rows with identical `role`, `sender`, and `content` but distinct
+stored discriminators, when the shared serializer runs, then it preserves each
+stored `messageType`. Given a decoder fixture with an unrecognized nonempty
+`messageType`, when a conforming client reads it, then the client accepts the
+item and uses `role` as the rendering fallback.
+
 ## Open questions — Spirit questions for Mike
+
+G1 adds no blocking or non-blocking open question.
 
 SQ1. **RULED 2026-08-25 — transport existing `asUser`.** Remove the
 prohibition on an `asUser` GET parameter. It only transports the CLI's
