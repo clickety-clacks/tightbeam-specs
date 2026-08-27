@@ -11,7 +11,10 @@ Authority: `wi_cd2bb06d-a736-451c-98c3-428129bbe246`, Mike brief
 `att_aa1111e0-ebbe-4452-a09d-92f5cf08c472`. Missing-Main advisory:
 `att_15fd37b3-5b07-4dfa-bdce-14047bbafa93` from source
 `att_114c9b72`. Completion compatibility receipt: `att_d6bbed39` against
-`art_ae962883`.
+`art_ae962883`. Lifecycle-correlation repair authority:
+`wi_708db495-1fe6-486a-933e-91f1216c4219`, changes-requested verdict
+`att_dd1ca4f0-8b58-4e00-a858-b122a4619982`, and report `art_eb59029e` at
+SHA-256 `2bcb2950762321c19a3ce4805deaf1196b48e85fad3adda15dc5911e97193ec6`.
 
 Target baselines: main/0.2.0 at `8e269e89c04b6b8569813142a12742f3325b8503`;
 0.1.9 at `6c0eacb337c1de086d8d7d76f1c1dc57cad9a3d5`.
@@ -30,6 +33,10 @@ A proposal that strengthens intent into a harder invariant requires its own ruli
 “Null parents default to Main” did not elect `NOT NULL`, stored self-roots, or bootstrap
 machinery that manufactures explicit parents.
 
+Close the existing terminal corollary's supervision-coverage ambiguity with one durable
+controller root link. Only the failed assigned turn and assignment named by that link can
+receive coverage or duplicate suppression from the controller.
+
 ## Non-Goals
 
 1. This spec does not implement, merge, release, deploy, restart, or mutate a live org.
@@ -45,6 +52,9 @@ machinery that manufactures explicit parents.
 7. This spec does not make the governance rule a prose-parsing runtime rail.
 8. This spec does not make 0.1.9 headless first-spawn legal and does not define or review
    the minimal add-user transaction on which that flow depends.
+9. This spec does not revive the lifecycle source store, candidate ladder, or Main marker
+   from `assignment-lifecycle-fallback-escalation-v1.md`. That file and closed
+   `wi_3d6d13a0-c4cf-4370-88a1-b407c41ff7c1` supply no separate implementation authority.
 
 ## Terms
 
@@ -58,6 +68,20 @@ machinery that manufactures explicit parents.
   or other parent-routed action.
 - **Session surface**: any CLI, wire, query, topline, listing, detail, support projection,
   or ATC payload that presents a session.
+- **Supervision controller**: a `supervision_liveness_sidecar` row whose `controllerOrigin`
+  is `scheduled` or `retirement_elevation`, together with the wake identified by its
+  `wakeId`. Its recorded recipient is that wake's `sessionKey`.
+- **Controller root link**: the immutable tuple `(wakeId, assignmentId, rootTurnSeq)` on a
+  supervision controller. `rootTurnSeq` identifies the terminal turn that caused the root
+  scheduled controller, and that turn's `assignmentId` equals the tuple's `assignmentId`.
+- **Exact supervision coverage**: a supervision controller whose controller root link
+  equals the evaluated source's `(assignmentId, turnSeq)`. A pending controller is pending
+  coverage. A delivered controller turn is `resolved_existing` coverage. A terminal
+  non-delivered controller is a prior attempt only for that exact source and its recorded
+  recipient. These are derived query results, not stored controller states or markers.
+- **Historical unknown correlation**: a migrated supervision controller, or a later
+  retirement elevation descended from it, whose `rootTurnSeq` is null. This is a named
+  stored value, not evidence for any source.
 - **main arm**: the main/0.2.0 constraint-relaxation release arm.
 - **0.1.9 arm**: the 0.1.9 clean-introduction release arm.
 
@@ -77,6 +101,12 @@ machinery that manufactures explicit parents.
    no fallback or migration logic.
 8. A 0.1.9 org can lack its canonical Main. Deriving a Main key does not prove that the row,
    first admin, credential, or admission receipt exists.
+9. On the main baseline, the supervision wake transaction already receives the causal
+   terminal sequence as `supervision_terminal_seq`. On the 0.1.9 baseline,
+   `Supervision.deliver_wake/5` has `pending.lastEvaluatedTerminal` but does not carry it into
+   the wake transaction.
+10. On both target baselines, the scheduled controller sidecar already stores the controller
+    `wakeId` and exact `assignmentId` in the wake transaction.
 
 ## Invariants
 
@@ -113,6 +143,22 @@ machinery that manufactures explicit parents.
 10. **INV-10 — Terminal fallback is a corollary.** The terminal-assignment owner-Main
     behavior bound to `wi_3d6d13a0` is a corollary of INV-02. It has no separate fallback
     path, candidate ladder, marker, or lifecycle store.
+11. **INV-11 — A controller names one root.** Each new scheduled supervision controller
+    carries one non-null controller root link. A retirement elevation copies the source
+    controller's link; only a retirement elevation descended from historical unknown
+    correlation may retain null. The wake, sidecar, and link commit in one transaction.
+    Settlement can change `controllerState`; no update or delete can change or remove the
+    link, its wake identity, its recorded recipient, its root turn, or a delivered controller
+    turn's attribution.
+12. **INV-12 — Suppression uses exact identity.** `resolved_existing`, pending-coverage
+    suppression, and prior-recipient suppression match both `rootTurnSeq` and
+    `assignmentId`. They do not match `chargedGeneration`,
+    `supervision_watermarks.lastEvaluatedTerminal`, pending watermark fields, or
+    `assignmentId` alone.
+13. **INV-13 — Missing identity fails safe.** Historical unknown correlation, a mismatched
+    link, or an absent link supplies no coverage and suppresses no parent action. The
+    consumer continues through its existing effective-parent path. This can produce a
+    duplicate for historical data; it cannot silently discard the evaluated source.
 
 ## Architecture
 
@@ -170,6 +216,69 @@ machinery that manufactures explicit parents.
    assignment opens. The main and 0.1.9 arms then receive separate producer cards,
    migrations, tests, reviews, landing decisions, and release gates. Evidence from one arm
    cannot satisfy the other.
+10. **ARC-10 — Embedded controller link.** Both arms add nullable
+    `supervision_liveness_sidecar.rootTurnSeq INTEGER REFERENCES turns(seq)` to the existing
+    sidecar; they add no link table or lifecycle store. The sidecar's existing
+    `assignmentId` and `wakeId` complete the controller root link. The scheduled-controller
+    insert validates that `rootTurnSeq` is non-null, that the named turn exists, and that the
+    turn's `assignmentId` equals the sidecar's `assignmentId`. On main, the Gateway wake seam
+    passes its existing `supervision_terminal_seq` into `Supervision.transition_in_txn/2`.
+    On 0.1.9, `Supervision.deliver_wake/5` adds
+    `supervision_terminal_seq: pending.lastEvaluatedTerminal` to its reserved-process wake
+    parameters, and the Gateway wake seam passes that value into the same transition. The
+    transition inserts the wake, sidecar, and link under the existing wake transaction. The
+    mutable watermark supplies the scheduling input once; no coverage or suppression query
+    reads it after the link commits. A retirement elevation inserts `rootTurnSeq` by selecting
+    it from the source-controller row identified by the existing accepted transfer's
+    `wakeId` and the same assignment; no caller supplies the copied value. An exact source
+    link therefore stays exact; a historical null stays null. A check or trigger refuses a
+    new scheduled controller without a link, and an elevation insert that does not select
+    exactly one same-assignment source controller refuses its transaction. Immutability
+    rails refuse an update to `wakeId`, `assignmentId`, `controllerOrigin`, `wakeKind`,
+    `rootTurnSeq`, or the linked wake's `sessionKey`; refuse deletion of the controller
+    sidecar, wake, or root turn; and preserve the root turn's `seq` and `assignmentId`. They
+    let only the existing controller-state transition settle the sidecar. Once a controller
+    turn exists, rails also preserve its `seq`, `sessionKey`, `wakeId`, and `assignmentId`.
+    The foreign keys preserve the linked wake and root turn.
+11. **ARC-11 — Exact coverage query.** The terminal corollary joins a controller sidecar to
+    its wake and, when present, the controller turn. It accepts coverage only when the
+    sidecar's `(assignmentId, rootTurnSeq)` equals the evaluated source's
+    `(assignmentId, turnSeq)`. A controller turn supplies delivery or prior-attempt evidence
+    only when its `(wakeId, assignmentId, sessionKey)` equals the linked wake's recorded
+    values. Queued or running exact coverage delays the existing parent action. Delivered
+    exact coverage yields `resolved_existing`. A terminal non-delivered exact controller
+    suppresses a duplicate only for its immutable recorded recipient and lets the consumer
+    continue through the resolver. A historical null or mismatched pair derives
+    `historical_unknown` or `different_root` and supplies no coverage. The query does not
+    read controller generation, terminal watermarks, pending watermark fields, or
+    assignment-only correlation.
+12. **ARC-12 — Correlation migration and compatibility.** Each arm includes the sidecar
+    change in its one successor shape migration. The migration preserves every existing
+    sidecar column value byte-for-byte and sets the new `rootTurnSeq` column to null. It does
+    not infer a root from `chargedGeneration`, terminal watermarks, pending watermark fields,
+    wake times, or the latest turn on the assignment. New scheduled controllers require the
+    link after the successor stamp commits. Fault injection leaves the complete predecessor
+    or complete successor shape. ARC-07's rollback rules apply to the link: an old binary
+    refuses the successor stamp before writes, and rollback never strips a link while
+    preserving later successor writes.
+13. **ARC-13 — Corollary boundary, races, and restart.** The link changes only how the
+    existing terminal corollary recognizes supervision coverage. Parent selection remains
+    INV-02's resolver, and the corollary gains no source store, candidate ladder, marker, or
+    mutation seam. The controller transaction and the parent-action transaction use the
+    existing database serializer. If the exact controller link commits first, the
+    parent-action check observes it and suppresses that action. If the parent action commits
+    first, a later controller does not erase the action or rewrite its result. That is the
+    valid pre-coverage ordering: a later evaluation sees the exact link and writes no
+    additional parent action. Restart reads the committed link; it does not reconstruct one
+    from mutable supervision state.
+
+Subtraction decision for the correlation repair: ADD one field to the row that already owns
+the controller. DELETE loses because exact supervision coverage remains an elected
+duplicate-suppression input. ACCEPT loses for new controllers because assignment-only
+matching can silently discard a later root; historical null rows remain the bounded named
+failure value.
+
+Agent operating pattern taught: none. This repair changes substrate correlation only.
 
 **Headline release note — Parent routing for existing 0.1.9 sessions changes on upgrade.**
 Every pre-feature session receives a null stored operational parent, so the shared resolver
@@ -235,6 +344,50 @@ knowledge rows can become stale.
     it and Mike records that he read the reviewed revision before either implementation arm
     opens. Each arm then supplies its own baseline proof, migration fixture, tests, review,
     and landing evidence.
+13. **AC-13 — Exact controller match.** Given failed assigned turns `T1` and `T2` on
+    assignment `A`, and delivered controller `W1` linked to `(A,T1)`, when the terminal
+    corollary evaluates `T1`, then it returns `resolved_existing` and writes no duplicate
+    parent action. When it evaluates `T2`, then `W1` returns `different_root`, suppresses
+    nothing, and the consumer follows the effective-parent path. Replacing the exact-link
+    predicate with assignment-only, generation, watermark, or pending-field correlation
+    makes this test fail. Given retirement elevation `W2` from `W1`, then `W2` retains
+    `(A,T1)` and its delivered turn resolves `T1`, not `T2`.
+14. **AC-14 — Atomic and immutable link.** Given a new scheduled controller, when fault
+    injection stops each write point in the wake transaction, then the database contains
+    the wake, sidecar, and valid controller root link together or contains none of them.
+    Given main's existing `supervision_terminal_seq` carrier and 0.1.9's new carrier from
+    `pending.lastEvaluatedTerminal`, when each arm schedules a controller for `(A,T1)`, then
+    each committed sidecar stores `(A,T1)`. Overwriting the watermark with `T2` after commit
+    changes neither link.
+    Given the committed row and its controller turn, when a writer changes `wakeId`,
+    `assignmentId`, `controllerOrigin`, `wakeKind`, `rootTurnSeq`, the wake's `sessionKey`,
+    the root turn's `seq` or `assignmentId`, or the controller turn's `seq`, `sessionKey`,
+    `wakeId`, or `assignmentId`, or deletes the controller sidecar, wake, root turn, or
+    controller turn, then the database refuses the write. Changing `controllerState` from
+    `pending` to `settled` preserves the link and attribution. Given a retirement elevation
+    from that controller, fault injection commits its wake, copied link, sidecar, and turn
+    together or commits none.
+15. **AC-15 — Historical compatibility.** Given a predecessor database containing a
+    scheduled controller for assignment `A`, when either arm migrates it, then the copied
+    row has `rootTurnSeq = null` and reports `historical_unknown`. When the corollary
+    evaluates a source on `A`, then that row does not produce `resolved_existing` and does
+    not suppress the parent action. Migration derives no root from generation, watermark,
+    pending fields, timestamps, or another turn. Ten restarts preserve the null and add no
+    inferred link. Given a later retirement elevation descended from that historical row,
+    then it copies null, remains `historical_unknown`, and suppresses nothing. The
+    predecessor binary refuses the successor stamp before writes.
+16. **AC-16 — Controller race and restart.** Given one source and its controller schedule
+    racing the parent-action transaction, when the controller link commits first, then the
+    parent action observes exact pending coverage and writes nothing. When the parent action
+    commits first, then a later controller does not delete or rewrite that action, and ten
+    later evaluations add no parent action. Given a crash before the controller transaction
+    commits, restart sees neither wake nor link and follows the effective-parent path. Given
+    a crash after commit but before controller delivery, restart sees the exact pending link
+    and does not create a duplicate parent action.
+17. **AC-17 — Corollary source closure.** Given both successor diffs, review finds one
+    controller-root field and its coherence and immutability rails on each line. It finds no
+    new lifecycle source store, candidate ladder, Main marker, parent selector, or mutation
+    verb. Each terminal parent action still obtains its target only from INV-02's resolver.
 
 ## Open Questions
 
