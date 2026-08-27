@@ -565,6 +565,31 @@ also names each class's resource, op, and primary-key mapping. And no
 public projection anywhere contains cliToken, a device token, an
 identityToken, or a secret host-env value.
 
+The G7 comparators for resources that previously had collection-only reads are
+exactly these addressable detail routes:
+
+| R8 resource | Detail comparator |
+|---|---|
+| attests | `GET /api/attests/{payload.id}` |
+| roles | `GET /api/roles/{payload.name}` |
+| transcript messages | `GET /api/sessions/{payload.sessionKey}/messages/{payload.id}` |
+| condition facts | `GET /api/facts/{payload.id}` |
+| critical state | `GET /api/critical-state/{payload.sessionKey}` |
+| host environment | `GET /api/host-env/{payload.host}/{payload.harness}/{payload.name}` |
+
+Each comparator invokes the same resource query, AU4 visibility predicate,
+and public serializer as its collection and R8 publisher. The REST adapter
+adds only the shared detail envelope. A REST-local projection or a second item
+shape fails A6.
+
+For an upsert class, A6 compares the live detail `item` with the notice
+payload. For `role.removed`, the delete commit invokes the same roles
+serializer on the last pre-delete projection with the new delete
+`rowVersion`; A6 compares that serializer output with the tombstone payload.
+After commit, `GET /api/roles/:name` returns the ordinary unknown
+`404 not_found`. The firehose does not create REST history or a second role
+shape.
+
 R8b source invalidations are outside A6 because they expose no rebuildable
 resource. A table-driven test instead requires their exact `op`, absent
 `resource`, refs, one-key payload, source version, commit cut, and visibility

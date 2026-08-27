@@ -6,6 +6,12 @@ amendment changes no durable Toplines field, mutation, or route. Its companion
 firehose amendment adds source invalidation notices for existing durable
 Topline and subagent-marker commits; it adds no ExecutionMap class.
 
+G7 detail-route candidate, 2026-08-27: make each collection-only R8 resource
+addressable by its canonical public key. The routes use the existing shared
+query, visibility, serializer, and outer-envelope seams. This amendment adds
+no R7/R7a field, R8 class, authorization grant, REST-local projection, or
+second wire shape.
+
 Review status, 2026-08-25: AMENDED AFTER exact review
 `att_90efe520-f84c-4d3b-bd09-9c36f8a0ff08` requested changes on exact
 `e4a27977477a25c3037bba164db2bc1d508bcd7a`; full report `art_bffa387b`
@@ -124,6 +130,9 @@ correlate later firehose notices without reading SQLite or replaying history.
 - REST v1 does not retire compatibility aliases before their clients migrate
   or decide future tailnet identity.
 - REST v1 does not authorize implementation, deployment, or client migration.
+- The G7 detail routes do not add filters, alternate identifiers, route-local
+  queries, route-local serializers, or a second error envelope. They do not
+  redefine firehose A6 against a collection page.
 - REST v1 does not alias ExecutionMap telemetry through `/api/toplines`, add an
   ExecutionMap firehose class, or change the six adopted shared serializer
   shapes from `art_b1995a26` / fact 1093. Exact source invalidation notices for
@@ -184,6 +193,11 @@ classes in R9 and use a dependency digest instead of a notice class.
 
 Operating-guidance impact: none. This amendment applies the existing REST
 resource/query/serializer pattern and creates no cross-repository agent rule.
+
+Subtraction ruling for G7: ADD wins because deleting these admitted R8
+resources or classes would remove approved shared state, while accepting
+collection-only access would leave A6 without an addressable comparator and
+would prevent single-row recovery.
 
 ## Spirit (read this before quizzing Mike)
 
@@ -269,18 +283,18 @@ R2. Core model resources:
 | GET /api/hosts[, /:host] | paged host registry and host detail; the underlying state resource for `host.registered` |
 | GET /api/sessions | paged sessions |
 | GET /api/sessions/:sessionKey | session detail + mechanical status |
-| GET /api/sessions/:sessionKey/messages | paged transcript projection |
+| GET /api/sessions/:sessionKey/messages[, /:messageId] | paged transcript projection and message detail |
 | GET /api/sessions/:sessionKey/coordination-share?from=&to= | pure bounded aggregate read |
 | GET /api/work-items[, /:id, /:id/trace] | paged collection, detail, composed trace |
 | GET /api/assignments[, /:id, /:id/attests] | paged collection (with derived status, advisory files, effect), detail, nested attests |
-| GET /api/attests | bulk paged attests across authorized work |
+| GET /api/attests[, /:attestId] | bulk paged attests across authorized work and attest detail |
 | GET /api/wakes[, /:wakeId, /:wakeId/digest-members] | paged wakes, detail, digest audit read |
 | GET /api/turns[, /:seq] | paged turns, detail |
 | GET /api/artifacts[, /:artifactId] | paged artifact metadata, detail (+ existing GET /download/:assetId for bytes) |
 | GET /api/assets[, /:assetId] | paged binary-asset metadata and detail; bytes remain on existing GET /download/:assetId |
 | GET /api/decision-requests[, /:id] | paged collection, detail |
 | GET /api/read-markers[, /:scopeKey] | caller's markers (write stays a verb, firehose RM2) |
-| GET /api/roles | paged role registry |
+| GET /api/roles[, /:name] | paged role registry and role detail |
 
 The bulk attests/wakes/turns collections are first-class on purpose:
 nested-only resources force ATC-class clients into one request per parent.
@@ -293,11 +307,13 @@ envelope; the compatibility alias preserves its legacy raw array until M8
 removes that alias.
 
 R3. Durable human-intent reads are GET `/api/toplines[/:id]`. Mechanical
-reads are GET `/api/execution-map` and its R3a nested routes, `/api/facts`,
-and `/api/critical-state`. Admin reads are GET /api/identity[, /:name],
+reads are GET `/api/execution-map` and its R3a nested routes,
+`/api/facts[/:factId]`, and `/api/critical-state[/:sessionKey]`. Admin reads are
+GET /api/identity[, /:name],
 /api/archetypes[, /:name], /api/kungfu[, /:name],
 /api/guidance[, /:name], /api/rails[, /:name], /api/config[, /:key],
-/api/host-env, /api/harness-processes, /api/users[, /:userId], and
+/api/host-env[, /:host/:harness/:name], /api/harness-processes,
+/api/users[, /:userId], and
 /api/devices[, /:deviceId]. SQ2 admits these routes. Every one is admin-only;
 SR2 and SR5 still exclude secrets. Mechanical and admin views are not part of
 a normal display-model bootstrap.
@@ -336,6 +352,55 @@ predicate. Neither predicate grants authority of its own.
 `Tightbeam.RestEnvelope` remain the one route, cursor, and outer-envelope
 adapters. Route code does not query rows, build a node, copy a visibility rule,
 or encode an envelope.
+
+R3c. These are the complete G7 detail routes. Each route addresses one
+existing R8 public item by the same canonical key carried in the notice and
+R7/R7a projection.
+
+| Detail route | Canonical public key | Exact success `resource` |
+|---|---|---|
+| `GET /api/attests/:attestId` | R7 attest `id`; equals R8 `refs.attestId` | `attests` |
+| `GET /api/roles/:name` | R7 role `name`; equals R8 `refs.role` | `roles` |
+| `GET /api/sessions/:sessionKey/messages/:messageId` | R7 message `(sessionKey,id)`; `id` equals R8 `refs.messageId` | `transcript messages` |
+| `GET /api/facts/:factId` | canonical positive base-10 R7 fact `id`; equals R8 `refs.factId` and `rowVersion` numerically | `condition facts` |
+| `GET /api/critical-state/:sessionKey` | R7 critical-state `sessionKey`; equals R8 `refs.sessionKey` | `critical state` |
+| `GET /api/host-env/:host/:harness/:name` | R7a host-environment `(host,harness,name)`; equals the three R8 primary refs | `host environment` |
+
+Each string placeholder uses the existing route identifier decoder and exact
+public-key comparison. It does not trim, case-fold, alias, or normalize the
+decoded value. `factId` is valid only when its path text matches
+`[1-9][0-9]*` and its parsed integer equals the stored R7 `id`; a sign,
+leading zero, whitespace, decimal point, exponent, or non-ASCII digit is not a
+second spelling of that id. The message route returns a row only when both
+path values equal that row's `sessionKey` and `id`. The host-environment route
+returns a row only when all three path values equal the same row's composite
+key.
+
+Each G7 route accepts only AU2's transport-only `asUser` query parameter. The
+route passes the resolved principal and canonical key to the resource's
+existing shared query seam. That seam applies the existing AU4 predicate
+before it exposes whether the key exists. The route then passes the returned
+row to the resource's sole R7/R7a public serializer and R4 detail-envelope
+adapter. Collection, detail, CLI, and firehose callers do not gain another
+query, visibility predicate, field selection, projection, or serializer.
+
+Each G7 route uses the read plane's single shared error encoder. An absent or
+invalid bearer returns `401 auth_failed`. AU2 `asUser` failures retain AU2's
+exact status and code. Malformed percent encoding returns
+`400 malformed_query`. An unsupported query key returns
+`400 invalid_filter`. An unknown key, a forbidden row, a noncanonical
+identifier spelling, or a message whose `sessionKey` and `messageId` do not
+name the same row returns the same `404 not_found` response under AU3/AU8.
+Serializer failure returns `500 projection_invalid` without a partial item.
+G7 adds no error code or body variant.
+
+`role.removed` does not create a historical detail read. Before deletion, the
+roles query and detail route expose the current item through the sole roles
+serializer. The delete commit applies that same serializer to the last
+pre-delete projection with the newly allocated delete `rowVersion`; the
+result is the R8 tombstone payload. After commit,
+`GET /api/roles/:name` returns the ordinary `404 not_found`. No route stores or
+returns a tombstone as a second role shape.
 
 R4. Envelopes. List:
 `{"schemaVersion":1,"resource":"assignments","items":[],"page":{"oldestCursor":null,"newestCursor":null,"hasMoreBefore":false,"hasMoreAfter":false}}`.
@@ -1346,7 +1411,46 @@ inline SQL, a second visibility predicate, a second item serializer, a
 caller-selected field/sort/join parameter, and a candidate-only session
 projection.
 
+A35. Given one visible stored row for each R3c route, when the allowed
+principal fetches its collection item, its detail item, and a matching R8
+upsert notice, then the detail response is `200`, its `resource` equals the
+R3c table value, and its `item` bytes equal both the collection item and
+notice payload.
+The test constructs each path only from the R7/R7a key and matching R8 refs.
+For a message, it uses both the payload `sessionKey` and `refs.messageId`. For
+host environment, it uses the payload `host`, `harness`, and `name`.
+
+Given a visible role and its next `role.removed` commit, when the test captures
+the detail item before deletion and inspects the tombstone afterward, then the
+tombstone contains the captured public fields from the sole roles serializer
+and the newly allocated delete `rowVersion`. That version exceeds the
+captured upsert version. A post-commit detail request returns the shared
+`404 not_found`; no historical row, tombstone route, or second role serializer
+exists.
+
+A36. Given each R3c row, when the test repeats the detail request as each
+principal that its AU4 row allows and as one denied principal, then the allowed
+cases return the same R7/R7a bytes and the denied case equals an unknown-key
+response in status, body, application headers, statement count, and AU8 timing
+class. For a message, a visible session with a message id from another session
+produces the same result. For an attest, the test denies the parent assignment.
+For facts and critical state, the test covers their exact AU4 principal sets.
+
+A37. Given each R3c route, when the test sends no bearer, each AU2 `asUser`
+failure, malformed percent encoding, an unsupported query key, a
+noncanonical fact id, an unknown key, and a forced serializer failure, then
+the route returns respectively `401 auth_failed`, AU2's exact result,
+`400 malformed_query`, `400 invalid_filter`, `404 not_found`,
+`404 not_found`, and `500 projection_invalid`. Each response uses the shared
+general error encoder and contains no partial item. A seam-identity test fails
+if route code adds SQL, a visibility predicate, an item map, a serializer, or
+an error encoder instead of calling the existing shared seams.
+
 ## Open questions — Spirit questions for Mike
+
+G7 has no open question. The G4 general error envelope is a delivery
+dependency, not an unruled behavior; no G7 route ships before that envelope is
+canonical.
 
 SQ1. **RULED 2026-08-25 — transport existing `asUser`.** Remove the
 prohibition on an `asUser` GET parameter. It only transports the CLI's
