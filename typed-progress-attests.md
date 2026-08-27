@@ -36,6 +36,37 @@ tightbeam-specs `origin/main` commit
 `dd88e71cd9ee616e53b3df671a0194c7c5ecd1cc`. Code is evidence for the current
 seams. The rulings above are the behavior authority.
 
+## Spec homing
+
+The canonical home is the `clickety-clacks/tightbeam-specs` repository. The
+complete canonical set for this proposal contains the repository-root files
+`typed-progress-attests.md` and `coordination-fabric-v1.md` at one pushed
+commit. A review or build that reads only one file does not read this proposal.
+A worktree, artifact row, transcript, review report, or message is evidence;
+it is not another canonical home.
+
+The authority order for overlapping clauses is:
+
+1. Mike's ruling `art_e15670c9`, spirit verdict
+   `att_9c95b557-c4d2-4c73-be9f-6d24d3a22390`, and owner query-recovery ruling
+   `att_b7a1c929-bab6-449c-b3a5-72d78874446a` control the authorized behavior.
+2. `typed-progress-attests.md` controls the typed progress, optional
+   acknowledgment, schema, mutation, projection, effort, and durable recovery
+   contracts that it names.
+3. `coordination-fabric-v1.md` controls the general attention-shaping and
+   no-required-acknowledgment law. Its amendment in this canonical set reflects
+   the optional non-effect acknowledgment contract. For an overlap limited to
+   that named contract, the more specific clauses in
+   `typed-progress-attests.md` control.
+4. `attest-v1.md` and `effort-checkin-v2.md` remain authority inputs for their
+   unchanged clauses. They are not custody companions in this proposal's
+   canonical set.
+
+The reviewer and builder read both canonical files at one exact commit. A new
+revision replaces this proposal only after one different-session exact-revision
+review returns `reviewed-clean`. The work item binds that reviewed content, not
+an unreviewed branch tip.
+
 ## Goal
 
 Give each newly filed progress attest the assignment's exact `effectKind`.
