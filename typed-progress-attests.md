@@ -1,16 +1,23 @@
 # Typed progress attests
 
-Status: PROPOSAL amended after independent review and the owner query-recovery
-ruling. The amended bytes require fresh different-session review on one
-owner-opened review assignment. This spec is targetless. It authorizes no
-product integration, release, deployment, live mutation, identity edit, or
-configuration change.
+Status: PROPOSAL amended after independent review, the owner query-recovery
+ruling, and current-main schema reconciliation. The amended bytes require
+fresh different-session review on one owner-opened review assignment. This
+spec is targetless. It authorizes no product integration, release, deployment,
+live mutation, identity edit, or configuration change.
 
 Review evidence: exact-tip review `att_00078fa7` / `art_34d5ff29` requested
 changes on commit `b226273db5707aa930cee26fd4f76a77800881fb` because `(ts,
 id)` is deterministic query order but not append-monotonic recovery order.
 This successor uses full assignment reconciliation plus durable seen-id
 deduplication; it does not add a server cursor or firehose history.
+
+The later exact-tip review `att_131946e0` / `art_03476a8d` found commit
+`b981c43a885a73907c924c22036ae11ece277fec` reviewed-clean. Coder surrender
+`att_e1099cee` / `art_1d4880f9` then found one source-composition conflict:
+current main already assigns the unqualified phase-1 v7 stamp to
+`messages.messageType`. This successor changes the schema composition clauses
+only. It preserves the reviewed typed-progress and query-recovery behavior.
 
 Authority: Mike ruling `art_e15670c9` (SHA-256
 `26a9ce6832c1e442ce18dddf0b00768a2b23158442072fe256ad29b9046ff3e3`) and
@@ -22,10 +29,12 @@ spirit verdict `att_9c95b557-c4d2-4c73-be9f-6d24d3a22390` on work item
 other clauses remain in force.
 
 Source evidence: Tightbeam `origin/main` commit
-`cba8d6c5e43e974e93890a901b83abd55f723500`; typed-progress candidate
-`a3268d1e3f8d69d82fc7a28c870844eee5024e7b`; tightbeam-specs `origin/main`
-commit `45a650e25f334827e8238bfff3ea58e7a32b4916`. Code is evidence for the
-current seams. The rulings above are the behavior authority.
+`31c91a7a79bf411791d8422bb220495a72dd8d0c`, including landed
+`messages.messageType` commit `258d122fded02f763ce7fe8e819479eea3f1b8ad`;
+typed-progress candidate `a3268d1e3f8d69d82fc7a28c870844eee5024e7b`;
+tightbeam-specs `origin/main` commit
+`dd88e71cd9ee616e53b3df671a0194c7c5ecd1cc`. Code is evidence for the current
+seams. The rulings above are the behavior authority.
 
 ## Goal
 
@@ -124,15 +133,18 @@ note, judge the work, or infer intent.
    accepted call appends a new attest row.
 5. At source commit `8e269e89`, an effort generation records
    `attestWatermark` as an `attests.rowid` cursor.
-6. At source commit `8e269e89`, the current database shape stamp is
-   `coordination-fabric-v1-phase1-v6`, and the schema layer accepts only named
-   predecessor migrations.
+6. At source commit `31c91a7a`, the current database shape stamp is
+   `coordination-fabric-v1-phase1-v7`. Its named
+   `coordination-fabric-v1-phase1-v6` predecessor migration adds nullable
+   `messages.messageType` and preserves a null value for each historical
+   message.
 7. At source commit `8e269e89`, the CLI prints the gateway's JSON success
    object without a second semantic rendering layer.
 8. A builder will stop and return to the spec-writer if the source facts above
    change before implementation.
-9. `completion-escalation-rail-v2.md` reserves the unqualified successor stamp
-   `coordination-fabric-v1-phase1-v7` for a separate targetless candidate.
+9. Current main owns the unqualified `coordination-fabric-v1-phase1-v7` stamp
+   for the landed `messages.messageType` shape. This proposal does not reuse,
+   replace, or reinterpret that stamp.
 10. At source commit `cba8d6c`, `attests` supports optional `after` and `limit`
     inputs. `after` is an attest id scoped to the named assignment; pages are
     ordered by immutable `(ts, id)` and return `nextAfter` and
@@ -186,6 +198,8 @@ note, judge the work, or infer intent.
 14. `(ts, id)` is presentation and page order, not append or causal order. A
     consumer never discards an unseen id because that row sorts at or before a
     previously seen row.
+15. The typed-progress migration preserves the landed nullable
+    `messages.messageType` column and each stored message value byte-for-byte.
 
 ## Architecture
 
@@ -281,13 +295,44 @@ changes `kind`, `assignmentId`, or `effectKind`. The handler maps its own
 pre-insert checks to the typed errors in R3 and R6. A trigger failure is an
 invariant breach, not a public mismatch path.
 
-R13. The targetless candidate shape is
-`coordination-fabric-v1-phase1-v7-typed-progress-attests`. It accepts
-`coordination-fabric-v1-phase1-v6` as the sole predecessor for this migration.
-This feature-qualified name does not claim the unqualified v7 stamp reserved by
-`completion-escalation-rail-v2.md`. A later integration-target ruling that
-composes schema candidates must amend this spec before source work continues.
-The migration uses the repository's foreign-key rebuild transaction to:
+R13. The targetless final shape is
+`coordination-fabric-v1-phase1-v8-typed-progress-attests`. Its fresh-database
+bootstrap stamp is
+`coordination-fabric-v1-phase1-v8-typed-progress-attests-bootstrapping`. The
+typed-progress migration accepts the landed
+`coordination-fabric-v1-phase1-v7` message-type shape as its sole direct
+predecessor. It does not accept v6 directly and does not reuse or overwrite
+the landed v7 stamp.
+
+Boot dispatch follows this exact order:
+
+1. A fresh unstamped database with no `sessions` table receives the bootstrap
+   stamp. Schema creation uses the final `messages` and `attests` definitions,
+   including the four R12 triggers. After schema creation, one transaction
+   validates the final inventory and replaces the bootstrap stamp with the
+   final stamp. A restart at the bootstrap stamp resumes missing final-shape
+   objects. Each object already present must match its final definition.
+2. A v4 database runs the existing operational-parent migration to v5, the
+   existing cold-start migration to v6, the existing message-type migration to
+   v7, and then the typed-progress migration to the final shape.
+3. A v5 database runs the existing cold-start migration to v6, the existing
+   message-type migration to v7, and then the typed-progress migration.
+4. A v6 database runs the existing message-type migration to v7 and then the
+   typed-progress migration.
+5. A v7 database runs only the typed-progress migration.
+6. A final-shape database validates the final inventory and performs no schema
+   or stamp write.
+
+Each step re-reads its expected stamp inside its write transaction. Concurrent
+boot calls serialize on the database. A call that acquires the write boundary
+after another call advanced the stamp dispatches again from the observed named
+shape. Concurrent calls from v4, v5, v6, v7, the bootstrap stamp, or the final
+stamp converge on one final inventory without a duplicate-object error. A
+second boot against the final inventory leaves the schema, rows, triggers,
+stamp, and `stampedAt` unchanged.
+
+The v7-to-final migration uses the repository's foreign-key rebuild transaction
+to:
 
 1. create the successor `attests` table;
 2. copy each old row with its explicit SQLite `rowid` and
@@ -295,23 +340,42 @@ The migration uses the repository's foreign-key rebuild transaction to:
 3. replace the old table;
 4. create the four named progress triggers;
 5. run `PRAGMA foreign_key_check`; and
-6. replace the shape stamp in the same transaction.
+6. replace v7 with the final stamp in the same transaction.
 
-A crash exposes the predecessor shape and table or the complete successor. It
-does not expose a mixed shape. A restart retries the named predecessor
-migration. The exact successor inventory is the successor stamp, one rebuilt
-`attests` table with R10-R11's column and constraints, and the four R12
-triggers. The migration creates no new index and preserves every other schema
-object. Shape recognition compares the stamp and this inventory. A predecessor
-stamp with any successor-only object, a successor stamp with a missing or
-nonconforming inventory object, or any other stamp refuses startup with
-`incompatible_typed_progress_attests_v1`. Its message is
+A crash inside the existing message-type migration exposes v6 or complete v7.
+A crash after that migration commits and before typed-progress migration begins
+exposes complete v7. A crash inside typed-progress migration exposes complete
+v7 or the complete final shape. A restart dispatches from the observed named
+shape and runs only the remaining steps. Replaying a committed step does not
+rewrite `messages.messageType`, an attest row, a trigger, or a stamp.
+
+The exact v6 inventory contains `messages` without `messageType`, the legacy
+`attests` table without `effectKind` or acknowledgment, and no R12 trigger. The
+exact v7 predecessor inventory adds `messages.messageType` as nullable `TEXT`
+and otherwise retains that legacy typed-progress inventory. The exact final
+inventory contains the final stamp, nullable `messages.messageType TEXT`, one
+rebuilt `attests` table with R10-R11's column and constraints, and the four R12
+triggers. The typed-progress migration creates no new index. It preserves each
+other schema object and each stored message value.
+
+Shape recognition compares the stamp and the inventory for that named step. A
+v6 stamp with a message-type or typed-progress successor object, a v7 stamp
+with a missing or nonconforming message-type object or with a typed-progress
+successor object, a final stamp with a missing or nonconforming final object, a
+bootstrap stamp with a nonconforming present object, or another stamp refuses
+startup. An existing message-type migration failure retains its
+`incompatible_message_type_v1` prefix. A typed-progress stamp or inventory
+failure uses `incompatible_typed_progress_attests_v1`. Its message is
 `database shape <observed-stamp> is incompatible with typed-progress-attests-v1: <mismatches>`,
-where `<observed-stamp>` is the stored value or `<missing>` when no stamp row
-exists. `<mismatches>` is a lexically sorted comma-separated list drawn from
-`shape_stamp`, `attests.effectKind`, `attests.kind_constraint`,
-`attests.row_shape_constraints`, and the four exact trigger names. The
-refusal changes no schema object, stamp, or domain row.
+where `<observed-stamp>` is the stored value for one row, `<missing>` for zero
+rows, or the lexically sorted values joined by `|` for two or more rows.
+`<mismatches>` is a lexically sorted comma-separated list drawn from
+`shape_stamp`, `messages.messageType`, `attests.effectKind`,
+`attests.kind_constraint`, `attests.row_shape_constraints`, and the four exact
+trigger names. A v6 or v7 inventory mismatch uses the typed-progress refusal;
+`incompatible_message_type_v1` remains the prefix only for a failure inside the
+existing migration after exact v6 preflight succeeds. A refusal changes no
+schema object, stamp, or domain row.
 
 ### 4. Effort check-in consumption
 
@@ -539,7 +603,9 @@ ADD wins: deleting progress credit would discard Mike's ruled typed signal;
 accepting the ambiguity would preserve regression `asg_3d219794` on
 `wi_ecd8cd9d`. The addition uses one existing mutation seam, one stored field,
 one new kind, and one equality predicate. It adds no content classifier or
-decision mechanism.
+decision mechanism. Composition also adds one v7-to-feature-qualified-v8
+migration because deleting the typed storage change cannot satisfy R1-R3 and
+accepting the v7 collision leaves the reviewed contract unbuildable.
 
 ## Acceptance
 
@@ -601,27 +667,52 @@ requirement ids they verify.
    acknowledgment after the watermark, then the channel reports
    `acknowledgments: 1`, `matchingTypedProgress: 0`, and the effort check-in
    takes the existing zero-effect holder-prod path.
-10. **A10 — historical rows (R10-R17, R26).** Given a stamped
-   `coordination-fabric-v1-phase1-v6` database with progress, completion,
-   surrender, and verdict rows, when the schema migrates, then ids, field
-   values, foreign keys, and rowids match their predecessor values; each row
-   projects `effectKind: null`; a historical progress row after an armed
-   watermark increments `historicalUntypedProgress` and earns no effect. An
-   unpaged `attests` reconciliation after migration and gateway restart returns
-   every preserved id for comparison with the consumer's durable seen-id set.
-11. **A11 — migration restart and shape refusal (R13, R26).** Given the
-    predecessor fixture, when a forced exception interrupts migration after
-    copy and in a separate run after table replacement, then each transaction
-    rolls back to the exact predecessor stamp and rows. When the gateway starts
-    again, one migration completes, foreign-key check returns empty, and the
-    exact successor inventory exists once. Separate startup fixtures cover: an
-    unknown stamp with a conforming successor inventory; a predecessor stamp
-    with each successor-only object; a successor stamp with the predecessor
-    table; each missing trigger; a wrong kind constraint; and a wrong row-shape
-    constraint. Each fixture returns
-    `incompatible_typed_progress_attests_v1` with the exact message and sorted
-    mismatch inventory in R13, and its before/after schema and data dumps are
-    byte-for-byte equal.
+10. **A10 — historical rows and composed predecessor chain (R10-R17, R26).**
+    Given a stamped v7 database with classified and null historical
+    `messages.messageType` values plus progress, completion, surrender, and
+    verdict rows, when the schema migrates, then message values, attest ids,
+    attest field values, foreign keys, and attest rowids match their predecessor
+    values. Each historical attest projects `effectKind: null`; a historical
+    progress row after an armed watermark increments
+    `historicalUntypedProgress` and earns no effect. An unpaged `attests`
+    reconciliation after migration and gateway restart returns each preserved
+    id for comparison with the consumer's durable seen-id set. A separate v6
+    fixture runs v6-to-v7 before v7-to-final and proves the same results plus
+    nullable `messages.messageType` on each historical message.
+11. **A11 — bootstrap, migration restart, concurrency, and shape refusal (R13,
+    R26).** Deterministic fixtures prove these boundaries:
+
+    - A fresh database receives the exact bootstrap stamp. One forced
+      interruption after `sessions` exists and before the last schema module
+      runs leaves that stamp and a partial set of conforming final objects.
+      Another forced interruption after final-inventory validation and before
+      stamp replacement rolls its transaction back to the bootstrap stamp.
+      Restart from either boundary completes the final inventory once and
+      changes the stamp once. A malformed present object under the bootstrap
+      stamp returns the typed-progress refusal without changing another object.
+    - Forced interruption after typed-attest copy and, in a separate v7 run,
+      after table replacement rolls back to exact v7. Restart migrates once,
+      `PRAGMA foreign_key_check` returns empty, and the final inventory exists
+      once.
+    - Forced interruption inside v6-to-v7 rolls back to exact v6. Interruption
+      after v7 commits but before typed migration leaves exact v7. Restart from
+      either state reaches the same final schema and rows.
+    - Two boot calls released on a barrier from each of v4, v5, v6, v7, the
+      bootstrap stamp, and the final stamp converge to one final inventory.
+      Neither call returns a raw SQLite error. Repeating boot after convergence
+      leaves the full schema dump, data dump, stamp, and `stampedAt`
+      byte-identical.
+    - Separate startup fixtures cover zero stamps with a preexisting `sessions`
+      table; two stamp rows; an unknown stamp with a conforming final inventory;
+      v6 with `messages.messageType` or one typed-progress object; v7 with
+      missing or malformed `messages.messageType`; v7 with each typed-progress
+      successor object; final shape with the predecessor table; final shape
+      with each missing trigger; a wrong kind constraint; and a wrong row-shape
+      constraint. Each in-transaction message-type failure has the named
+      `incompatible_message_type_v1` prefix. Each stamp or inventory failure
+      returns `incompatible_typed_progress_attests_v1` with the exact message
+      and sorted mismatch inventory in R13. Each refusal leaves its before and
+      after schema and data dumps byte-identical.
 12. **A12 — effort boundary race (R15).** Given one armed generation and one
     matching progress filing released on a barrier with the effort evaluation,
     when progress commits first, then the evaluation observes it. When the
