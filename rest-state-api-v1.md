@@ -558,6 +558,7 @@ success and R4c error envelope. A query string does not change the value.
 | `/api/sessions` | `sessions` |
 | `/api/sessions/:sessionKey` | `sessions` |
 | `/api/sessions/:sessionKey/messages` | `transcript messages` |
+| `/api/sessions/:sessionKey/messages/:messageId` | `transcript messages` |
 | `/api/sessions/:sessionKey/coordination-share` | `coordination share` |
 | `/api/work-items` | `work items` |
 | `/api/work-items/:id` | `work items` |
@@ -566,6 +567,7 @@ success and R4c error envelope. A query string does not change the value.
 | `/api/assignments/:id` | `assignments` |
 | `/api/assignments/:id/attests` | `attests` |
 | `/api/attests` | `attests` |
+| `/api/attests/:attestId` | `attests` |
 | `/api/wakes` | `wakes` |
 | `/api/wakes/:wakeId` | `wakes` |
 | `/api/wakes/:wakeId/digest-members` | `digest members` |
@@ -580,6 +582,7 @@ success and R4c error envelope. A query string does not change the value.
 | `/api/read-markers` | `read markers` |
 | `/api/read-markers/:scopeKey` | `read markers` |
 | `/api/roles` | `roles` |
+| `/api/roles/:name` | `roles` |
 | `/api/toplines` | `toplines` |
 | `/api/toplines/:id` | `toplines` |
 | `/api/execution-map` | `execution map` |
@@ -587,7 +590,9 @@ success and R4c error envelope. A query string does not change the value.
 | `/api/execution-map/subtrees/:workItemId` | `execution map` |
 | `/api/execution-map/assignments` | `execution map` |
 | `/api/facts` | `condition facts` |
+| `/api/facts/:factId` | `condition facts` |
 | `/api/critical-state` | `critical state` |
+| `/api/critical-state/:sessionKey` | `critical state` |
 | `/api/identity` | `identity` |
 | `/api/identity/:name` | `identity` |
 | `/api/archetypes` | `archetypes` |
@@ -601,6 +606,7 @@ success and R4c error envelope. A query string does not change the value.
 | `/api/config` | `config` |
 | `/api/config/:key` | `config` |
 | `/api/host-env` | `host environment` |
+| `/api/host-env/:host/:harness/:name` | `host environment` |
 | `/api/harness-processes` | `harness processes` |
 | `/api/users` | `users` |
 | `/api/users/:userId` | `users` |
