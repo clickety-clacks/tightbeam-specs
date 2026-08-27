@@ -28,11 +28,20 @@ Agent-facing (demanded by the shipped engineering-kungfu kernels/skills):
   reading, and revoking work when the existing assignment handler authorizes
   the caller (kungfu: 14 references; feature-cycle skill;
   effort-without-effect-checkin-v1 §5).
-- **effort-rule** — parent adjudication of an effort-without-effect request,
-  limited to `continue|dismiss` (effort-without-effect-checkin-v1 §5).
+- **effort-rule** — respond `continue|dismiss` to an effort-without-effect
+  request. Its current expecter remains the preferred responder. An
+  authenticated agent session that holds the complete request id may respond
+  when its judgment says it should; that standing grants no ordinary power
+  (effort-without-effect-checkin-v1 §5;
+  decision-request-expecter-preference-v1).
 - **decision-requests** — read the decision requests visible to the caller so
   an effort request can be selected for `effort-rule`
   (effort-without-effect-checkin-v1 §5).
+- **decision-request** — inspect one agent or effort request by its complete
+  id. This exact-reference read does not widen `decision-requests` discovery.
+  The named expecter is preferred, not an authorization gate for an agent
+  session, and reading the row is not an instruction to respond
+  (decision-request-expecter-preference-v1).
 - **work-item-create / work-item-get / work-item-trace** — the durable work
   thread and its pinned forensic query (kungfu: feature-cycle, work-tracking;
   job-trace-observability-v1).
