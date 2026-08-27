@@ -1,12 +1,11 @@
-# Event firehose v1 — state-change notifications over ws (product spec, r6)
+# Event firehose v1 — state-change notifications over ws (product spec)
 
-Amendment candidate, 2026-08-25: add source-invalidation notices for durable
-Topline mutations and independently committed subagent markers. These notices
-make the composed Toplines and ExecutionMap REST views refreshable from each
-matching committed source change.
-They add no ExecutionMap class and no rebuildable source resource.
-
-Status: DRAFT r6, 2026-08-22. r6 folds the adjudicated Sol review-gate
+Status: CANONICAL r6, 2026-08-25. r6 includes the landed source-invalidation
+notices for durable Topline mutations and independently committed subagent
+markers. These notices make the composed Toplines and ExecutionMap REST views
+refreshable from each matching committed source change. They add no
+ExecutionMap class and no rebuildable source resource. r6 also folds the
+adjudicated Sol review-gate
 findings (review-gate-observability-2026-08-21.md): row versions +
 always-upsert (F7), seq heartbeat (F6), revocation closes sockets (F12),
 visibility-change rebuild (F11), pre-delete authorization (F18), class
@@ -74,15 +73,14 @@ Authority and inputs:
 ## Spec homing
 
 The canonical firehose spec lives only in the `tightbeam-specs` repository as
-`event-firehose-v1.md`. This source-invalidation amendment's exact canonical
-set is `event-firehose-v1.md`, `rest-state-api-v1.md`, and
+`event-firehose-v1.md`. Canonical r6's coupled set is
+`event-firehose-v1.md`, `rest-state-api-v1.md`, and
 `rest-state-api-v1-wire-schema.md`; a change to an R8b mapping, its R9
 dependency, its filter value, or its wire type lands those coupled files in
 one reviewed revision. Recon documents, adjudication ledgers, artifact rows,
 transcripts, worktrees, and review reports are authority evidence, not
-canonical custody. This amendment remains a candidate until one exact
-revision of the three-file set passes independent review and lands in
-`tightbeam-specs`.
+canonical custody. The source-invalidation companion landed with REST r4 at
+`0139d9a71180a7175965473fade9b183d2b57601`.
 
 ## Assumptions
 
@@ -162,7 +160,7 @@ N7. No webhooks, SSE, or polling interface in v1.
 
 N8. This spec does not authorize implementation.
 
-Operating-guidance impact: none. This amendment extends the existing
+Operating-guidance impact: none. Canonical r6 extends the existing
 source-class registry and creates no cross-repository agent rule.
 
 ## Terms

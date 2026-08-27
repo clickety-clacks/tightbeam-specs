@@ -1,10 +1,19 @@
 # REST state API v1 — normative wire schema
 
-Status: normative companion to `rest-state-api-v1.md` r3 review draft.
+Status: CANONICAL r4, 2026-08-25. This file is the normative wire companion to
+`rest-state-api-v1.md` canonical r4. r4 adds the landed ExecutionMap composed
+response, closed error envelope, and dependency-entry schema. The durable
+Toplines schema below is unchanged. The coupled REST, firehose, and wire bytes
+landed at `0139d9a71180a7175965473fade9b183d2b57601`.
 
-Amendment candidate, 2026-08-25: add the ExecutionMap composed response,
-closed error envelope, and dependency-entry schema. The durable Toplines
-schema below is unchanged.
+## Spec homing
+
+The canonical wire spec lives only in the `tightbeam-specs` repository as
+`rest-state-api-v1-wire-schema.md` canonical r4. Its coupled custody set is
+this file, `rest-state-api-v1.md`, and `event-firehose-v1.md`. A projection,
+envelope, dependency-entry, or shared serializer change lands each affected
+file in one reviewed revision. A worktree, report, transcript, or artifact row
+is evidence, not canonical custody.
 
 ## Encoding rules
 

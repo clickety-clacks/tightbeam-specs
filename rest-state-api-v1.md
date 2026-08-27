@@ -1,44 +1,39 @@
-# REST state API v1 — the read plane (product spec, canonical r4)
+# REST state API v1 — the read plane (product spec)
 
-Amendment candidate, 2026-08-25: distinguish durable Toplines from the
-mechanical ExecutionMap and add the REST-only ExecutionMap contract. The
-amendment changes no durable Toplines field, mutation, or route. Its companion
-firehose amendment adds source invalidation notices for existing durable
-Topline and subagent-marker commits; it adds no ExecutionMap class.
+Status: CANONICAL r4, 2026-08-25. r4 incorporates the landed ExecutionMap,
+source-invalidation, Toplines/session lookup, and AU2 parity amendments. The
+ExecutionMap amendment distinguishes durable Toplines from the mechanical
+ExecutionMap and adds the REST-only ExecutionMap contract. Its firehose
+companion adds source invalidation notices for existing durable Topline and
+subagent-marker commits; it adds no ExecutionMap class. The Toplines/session
+amendment adds the durable `/api/toplines` `(createdAt,id)` cursor and closed
+`state` filter plus the exact sessions `displayName` lookup used by
+`transcript --name`. It leaves the ExecutionMap/firehose companion, R7 items,
+authorization, and public serializers unchanged.
 
-Review status, 2026-08-25: AMENDED AFTER exact review
+Review history: exact review
 `att_90efe520-f84c-4d3b-bd09-9c36f8a0ff08` requested changes on exact
 `e4a27977477a25c3037bba164db2bc1d508bcd7a`; full report `art_bffa387b`
-supplies findings F6-F7. Product-owner ruling
-`att_c0fee9c0-3489-4a57-b981-080fbcca4f66` preserves the existing
-message-bearing session-owner refusal and restores canonical R6 while keeping
-ExecutionMap-scoped R6a. Earlier F1-F5 and SQ6-SQ8 rulings remain incorporated.
-The resulting three-file successor requires a fresh independent review before
-M1, M2, specRef binding, or implementation. Separable r3 resources remain
-unaffected.
+supplied findings F6-F7. Product-owner ruling
+`att_c0fee9c0-3489-4a57-b981-080fbcca4f66` preserved the existing
+message-bearing session-owner refusal and restored R6 while keeping
+ExecutionMap-scoped R6a. Earlier F1-F5 and SQ6-SQ8 rulings remain
+incorporated.
 
-Toplines/session successor, 2026-08-25: PROPOSED. This amendment adds the
-durable `/api/toplines` `(createdAt,id)` cursor and closed `state` filter plus
-the exact sessions `displayName` lookup used by `transcript --name`. It leaves
-the canonical ExecutionMap/firehose companion, R7 items, authorization, and
-public serializers unchanged. It becomes canonical only after its own fresh
-independent exact-byte review is reviewed-clean.
-
-Status: CANONICAL r3, 2026-08-22. r3 folds the REST-side adjudicated
-findings F1/F8/F9/F13/F14/F16/F21/F22 from
-`review-gate-observability-2026-08-21.md` and aligns with firehose r6.
-This successor resolves changes-requested `att_71210c7b` against exact commit
+Revision history: r3 folded the REST-side adjudicated findings
+F1/F8/F9/F13/F14/F16/F21/F22 from
+`review-gate-observability-2026-08-21.md` and aligned with firehose r6. It
+resolved changes-requested `att_71210c7b` against exact commit
 `c8eb1d080890ad571c5319b2514230c71a021427`; its closure map is in the
-adjudication companion.
-It also consumes Mike's ruled SQ2: the admin read plane includes users,
-devices, ops metadata, and first-class archetype, kungfu, rail, and guidance
-content, all admin-only with secrets structurally excluded.
-r2 folds the reviewed mechanical amendment
+adjudication companion. r3 also consumed Mike's ruled SQ2: the admin read plane
+includes users, devices, ops metadata, and first-class archetype, kungfu, rail,
+and guidance content, all admin-only with secrets structurally excluded. r2
+folded the reviewed mechanical amendment
 `art_8e2d8444` (reviewed-clean `att_0b648694`): adopted route/filter
 inventory, interim/final CLI transport, firehose serializer scope, the
 R12-to-M5 repair, and the harness-catalog compatibility ruling. Written
 by tb02 and product-owner:rest-state-api. Untargeted (0.2.0 or
-later); when build work starts it branches from main tip. The current amendment
+later); when build work starts it branches from main tip. The current contract
 is owned by successor `product-owner:rest-state-api-v2`; the legacy PO session
 is revoked. Spirit questions route through the successor.
 
@@ -94,18 +89,19 @@ Authority and inputs:
 ## Spec homing
 
 The canonical spec lives only in the `tightbeam-specs` repository as
-`rest-state-api-v1.md`. This amendment's exact canonical set is
+`rest-state-api-v1.md`. Canonical r4's coupled set is
 `rest-state-api-v1.md`, `rest-state-api-v1-wire-schema.md`, and
 `event-firehose-v1.md`; a change to an ExecutionMap envelope, dependency
 entry, or R8b mapping lands those coupled files in one reviewed revision.
 `rest-state-api-r3-adjudication.md`, `rest-vs-cli-adjudication.md`, and
 `topline-map-v1.md` remain authority inputs, not custody companions for this
-amendment. A worktree, artifact row, transcript, adjudication ledger, or review
+contract. A worktree, artifact row, transcript, adjudication ledger, or review
 report is evidence, not canonical custody. Canonical r3 passed joint
-independent review at `att_45676d30` and landed on the canonical branch in
-merge `c84b1b8dc856861baeaa7b5ff781317ded568cb1`. This amendment remains a
-candidate until one exact revision of its three-file canonical set passes
-independent review and lands in `tightbeam-specs`.
+independent review at `att_45676d30` and landed in merge
+`c84b1b8dc856861baeaa7b5ff781317ded568cb1`. The r4 ExecutionMap companion set
+landed at `0139d9a71180a7175965473fade9b183d2b57601`; the Toplines/session lookup
+landed at `05d08b8af74a877d4dabe3dcba8250787d5d430e`; and the AU2 parity correction
+landed at `8133efdab14c5470937360a2e4be7fe595639a9d`.
 
 ## Goal
 
@@ -182,7 +178,7 @@ schema. An outer adapter places that item in a REST envelope, compatibility
 envelope, CLI result, or firehose notice. Composed views declare their source
 classes in R9 and use a dependency digest instead of a notice class.
 
-Operating-guidance impact: none. This amendment applies the existing REST
+Operating-guidance impact: none. Canonical r4 applies the existing REST
 resource/query/serializer pattern and creates no cross-repository agent rule.
 
 ## Spirit (read this before quizzing Mike)
@@ -1391,7 +1387,7 @@ topline-work-membership mutations. No snapshot-only or no-notice exclusion
 exists. Authority: `att_d5b0a440-bd51-498f-8b96-e6512fedf68f`.
 
 SQ8. **RULED 2026-08-25 — pre-build evidence boundary.** Deterministic spec
-lint and fresh independent exact-byte review are this amendment's pre-build
+lint and fresh independent exact-byte review are canonical r4's pre-build
 gate. Acceptance clauses remain executable and decidable. Product tests and a
 `tests-passed` receipt belong to the later implementation card; this spec-only
 assignment does not implement or claim them. Authority:
