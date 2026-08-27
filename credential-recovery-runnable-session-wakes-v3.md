@@ -8,11 +8,13 @@ Authority: Mike's product ruling
 Work item: `wi_82a81f78-5789-469e-863a-fb84d82781cd`.
 
 Reconciled baselines: Tightbeam product `main` at
-`8e269e89c04b6b8569813142a12742f3325b8503`; Tightbeam specs `main` at
-`5f4b636d02aa8f1cd0670dd090d0af8c35894e88`.
+`cba8d6c5e43e974e93890a901b83abd55f723500`; Tightbeam specs `main` at
+`45a650e25f334827e8238bfff3ea58e7a32b4916`.
 
 Review history: round 1 requested changes in
 `att_c16e2c1f-a419-4e68-b7c3-5ff4fa6acb63`, report `art_dfa9187a`.
+Round 2 requested changes in
+`att_15122e63-4105-4a61-838a-4f6f7f5c50a8`, report `art_189d4280`.
 
 Implementation target: UNSET. Review of this proposal does not select a release
 line, branch, merge, release, or deployment target.
@@ -92,6 +94,14 @@ not decide which assignment or wake a target must resume.
 - **Recovery carrier**: an ordinary immediate prompt wake for one recovery
   obligation. Its linked turn runs through the existing scheduler, ledger, and
   session lane.
+- **Reconciliation owner**: the current delivery-cycle attempt identity
+  `{targetIdentity, deliveryCycle, attemptNumber}`. It owns every pending
+  activation-membership reconciliation bound to that target and delivery cycle.
+  The identity can be reserved before a retry carrier is materialized. An
+  activation does not own or reset an attempt.
+- **Attempt reservation**: the durable current-attempt fields on the persistent
+  target before a carrier wake or turn exists. It becomes one carrier or reaches
+  typed `not_admitted_cycle_closed`; it cannot become both.
 - **Delivery cycle**: one carrier plus its finite retry attempts. A target starts
   a later delivery cycle only when its required generation remains later than
   the generation covered by its prior cycle.
@@ -217,44 +227,72 @@ release the lane.
 
 After that commit, the recovery component shall invoke
 `reconcile_ready_activation(ActivationID)`. This is the only actor that initiates
-prior-generation reconciliation. Credential finish invokes it synchronously
-after the ready transaction. Boot reconciliation invokes it for each ready or
-recovering activation with a due pending membership. It does not wait for an old
-adapter callback.
+prior-generation reconciliation. It shall resolve the activation's distinct
+persistent targets in ascending target-identity order and call
+`reconcile_target(targetIdentity)` for each one. Credential finish invokes this
+method synchronously after the ready transaction. Scheduler and boot invoke the
+same method for a due target. None waits for an old adapter callback.
 
-The component shall process pending memberships in ascending session-key order.
-For each membership, one transaction shall re-read the recorded turn and lane.
-When the exact turn remains running and prior-generation, the transaction shall
-call the ordinary run-terminal mutation and mark the membership reconciliation
-done. It shall terminalize the run exactly once as `could_not_run` when durable
-evidence proves inference was not admitted. It shall terminalize the run as
-`outcome_unknown` when admission occurred or cannot be disproved. It shall never
-mark that run delivered and shall never retry it.
+The current reconciliation owner shall process every pending membership bound
+to its target and delivery cycle. A membership created while that target is
+`retry_wait` shall bind to the same delivery cycle. The synchronous credential
+finish invocation shall observe the existing owner and due time; it shall not
+create or run the next attempt before that time. It shall return the existing
+retrying state and due time.
 
-When the recorded turn is already terminal, the transaction shall mark
-reconciliation done with that observed terminal row. When the lane no longer
-contains that turn, or the turn uses the activated adapter generation, the
-transaction shall record `reconciliation = not_required` without changing the
-turn. The reconciliation identity
-`{ActivationID, sessionKey, recordedTurnID}` is unique and replaying it has no
-second effect.
+When the target is not waiting for a future due time, one transaction shall lock
+the persistent target and its pending current-cycle memberships. That lock shall
+serialize the reconciliation set against a later ready-activation transaction.
+The transaction shall advance the owner's reconciliation generation to the
+then-current required generation, group memberships by recorded turn ID, and
+process groups in ascending `{recordedTurnID, ActivationID}` order. It shall call
+the ordinary run-terminal mutation at most once for one distinct turn and apply
+the observed result to every pending membership in that turn group. A later
+activation that records the same turn therefore adds no second terminal action.
+
+When an exact recorded turn remains running and prior-generation, the
+transaction shall call the ordinary run-terminal mutation and mark each
+membership in its group reconciliation done. It shall terminalize the run
+exactly once as `could_not_run` when durable evidence proves inference was not
+admitted. It shall terminalize the run as `outcome_unknown` when admission
+occurred or cannot be disproved. It shall never mark that run delivered and
+shall never retry its inference. I9 may replay only its idempotent terminal
+mutation.
+
+When a recorded turn is already terminal, the transaction shall mark every
+membership in that turn group reconciliation done with that observed terminal
+row. When the lane no longer contains that turn, or the turn uses the activated
+adapter generation, the transaction shall record
+`reconciliation = not_required` for the group without changing the turn. The
+membership reconciliation identity
+`{ActivationID, sessionKey, recordedTurnID}` remains unique. Replaying a target
+owner shall skip terminal membership reconciliations and have no second effect.
+
+Because one session lane has at most one running turn, at most one distinct turn
+group in a target-level pass can require a run-terminal mutation. Every other
+group is already terminal or no longer occupies the lane and shall reach `done`
+or `not_required` in the same ordered pass.
 
 A membership reconciliation is `not_required`, `pending`, `done`, or `failed`.
 Only the ready transaction creates `pending`. A successful invocation changes
-`pending` to `done` or `not_required`. When an invocation cannot complete the
-terminal transaction, the recovery component records typed `could_not_run` on
-the target's current pre-inference carrier attempt and leaves reconciliation
-`pending`. I9 schedules the next carrier attempt and due time. Credential finish
-invokes attempt `0`; the ordinary scheduler invokes each due retry before it
-admits that carrier; boot invokes a due attempt that survived a crash.
+`pending` to `done` or `not_required`. When one turn group cannot complete its
+terminal mutation, the transaction shall leave that group's reconciliations
+`pending`, record typed `could_not_run` once on the target's current
+reconciliation owner, and continue the ordered pass over later groups.
+Successfully processed groups remain terminal. I9 schedules one next carrier
+attempt reservation and due time for the target, not one per activation or turn.
+Attempt `0` exists with the initial carrier. At each later due time the ordinary
+scheduler or boot reserves the next owner identity under I6. Carrier
+materialization waits for reconciliation to become terminal.
 
-When attempt `3` cannot reconcile, the terminal transaction changes
-reconciliation to `failed`, resolves each still-open membership through the
-then-current required generation as `undeliverable`, and applies I9's
-generation-aware target transition. It admits no inference. A later activation
-may create a new membership and delivery cycle; the failed membership never
-reopens. One membership failure does not stop an invocation from processing
-later memberships.
+When attempt `3` leaves any current-cycle reconciliation pending, the same
+locked transaction shall change every remaining pending reconciliation bound to
+that target and cycle to `failed`, resolve every still-open membership through
+the owner's reconciliation generation as `undeliverable`, and apply I9's
+generation-aware target transition. Because a ready transaction takes the same
+target lock, an activation either joins this terminal attempt before it starts
+or observes the terminal target and opens a later cycle after it commits. It
+admits no inference. Failed membership reconciliations never reopen.
 
 A run claimed before this feature recorded adapter generations is a
 prior-generation run only when its durable claim time precedes the replacement
@@ -296,22 +334,44 @@ Each activation membership shall enforce this resolution machine:
 A membership resolution is terminal and never reopens. The transaction that
 resolves a carrier cycle shall resolve each open membership for that target whose
 activation generation is not later than the cycle's resolution generation.
+Each pending membership reconciliation shall record the delivery cycle whose
+current delivery-cycle attempt owns it. A later target cycle shall not process a
+terminal reconciliation from an earlier cycle.
+
+A target shall not leave one delivery cycle while a reconciliation bound to
+that cycle remains `pending`. In the transaction that makes a target cycle
+terminal, the recovery component shall first run I5's ordered group resolution,
+using the carrier's observed terminal row for every pending group for that exact
+turn and `done` or `not_required` for every other group. An eligibility
+disposition shall instead mark every remaining current-cycle reconciliation
+`not_required` with the disposition cause. Attempt-3 failure shall use I5's
+`failed` transition. The transaction shall refuse any other terminal-cycle
+transition that would leave a pending reconciliation behind.
 
 The persistent target shall enforce these cycle states:
 
 `pending -> admitted -> claimed -> handled`
 
-Typed `could_not_run` permits `pending -> retry_wait -> pending` for a
-pre-admission reconciliation attempt and `claimed -> retry_wait -> pending` for
-a claimed carrier attempt. Eligibility revalidation may change `pending`,
-`admitted`, or `retry_wait` to `retired` or `no_longer_affected`. A final
-reconciliation failure may change `pending` to `undeliverable`. A terminal
-carrier outcome may change `claimed` to `undeliverable` through the rules below.
+Typed `could_not_run` permits `pending -> retry_wait -> pending` or
+`admitted -> retry_wait -> pending` for a pre-claim reconciliation attempt and
+`claimed -> retry_wait -> pending` for a claimed carrier attempt. Eligibility
+revalidation may change `pending`, `admitted`, or `retry_wait` to `retired` or
+`no_longer_affected`. A final reconciliation failure may change `pending` to
+`undeliverable`. A terminal carrier outcome may change `claimed` to
+`undeliverable` through the rules below.
 
 At the recorded retry due time, one transaction shall change `retry_wait` to
-`pending` and create exactly one carrier attempt unique by
+`pending` and reserve exactly one attempt identity unique by
 `{targetIdentity, deliveryCycle, nextAttemptNumber}`. It shall not increment the
-delivery cycle. Scheduler and boot replays shall reuse that identity.
+delivery cycle. The new attempt shall become the reconciliation owner for every
+pending membership bound to that cycle and shall stamp its reconciliation
+generation from the then-current required generation. Scheduler and boot
+replays shall reuse that identity. If reconciliation remains pending, the
+transaction shall not materialize or admit that attempt's carrier. After
+reconciliation becomes terminal, the component shall materialize the carrier
+once only if the target remains in that delivery cycle. If reconciliation of a
+previously claimed carrier closes the old cycle, it shall record the reserved
+attempt as typed `not_admitted_cycle_closed` and create no old-cycle carrier.
 
 Only these two transitions may open a later cycle:
 
@@ -339,6 +399,26 @@ When a later activation in the same scope becomes ready, the transaction shall
 advance each affected target's required generation. It shall preserve an
 existing pending, admitted, claimed, retry-waiting, queued, or running carrier
 for that target instead of adding a second carrier.
+
+If that later activation records a pending stranded-turn reconciliation, the
+ready transaction shall bind it to the persistent target's current delivery
+cycle. In `retry_wait`, it shall preserve the current attempt number and next
+due time; the synchronous finish invocation shall not create or run an early
+attempt. In `pending`, `admitted`, or `claimed`, the current attempt owns the
+new reconciliation. Carrier admission and claim shall each require zero pending
+reconciliations for their current delivery cycle. The ready transaction and the
+target-level reconciliation transaction shall serialize on the persistent
+target row.
+
+When the target is `claimed`, its lane can record only that claimed carrier as
+the new activation's running prior-generation turn. The carrier-terminal
+transaction shall take the same target lock, apply its terminal row to all
+pending reconciliation groups for that turn, resolve only memberships through
+its covered generation, and then take the generation-aware target transition.
+If reconciliation must retry the terminal mutation, the retry shall only replay
+that idempotent mutation. It shall never re-admit the claimed carrier. A reserved
+retry attempt follows I6's `not_admitted_cycle_closed` rule when the successful
+terminal mutation opens a later cycle.
 
 When the session lane claims a carrier attempt, the claim transaction shall
 stamp its covered generation from the then-current required generation. A
@@ -368,7 +448,7 @@ Activations in different credential scopes shall not coalesce.
 Activation ID shall be unique. Activation membership shall be unique by
 `{ActivationID, sessionKey}`. The persistent target identity shall be unique by
 `{host, provider, sessionKey}`. Delivery cycle shall increase monotonically for
-one target. One carrier attempt shall be unique by
+one target. One delivery-cycle attempt identity shall be unique by
 `{targetIdentity, deliveryCycle, attemptNumber}`. Prior-generation
 reconciliation shall be unique by
 `{ActivationID, sessionKey, recordedTurnID}`.
@@ -378,10 +458,18 @@ scheduler passes, turn terminal callbacks, or boot reconciliation shall reuse
 those identities. A replay shall create no second membership, obligation,
 carrier attempt, reconciliation terminal, or final disposition.
 
+Replaying one reconciliation owner shall process only current-cycle membership
+reconciliations that remain pending. Multiple activation memberships for one
+recorded turn shall still produce at most one ordinary run-terminal mutation.
+A replay of a reserved attempt shall either materialize its one carrier or reuse
+its terminal `not_admitted_cycle_closed` record; it shall do neither twice.
+
 Boot reconciliation shall inspect nonterminal activation, membership, and target
 rows. It shall invoke `reconcile_ready_activation` for a pending reconciliation
 whose carrier attempt is due and continue the next deterministic carrier edge.
-It shall not retry a final failed reconciliation. It shall continue a
+Before the due time it shall preserve `retry_wait` without materializing or
+running the next attempt. It shall not retry a final failed reconciliation. It
+shall continue a
 credential-lifecycle edge only when matching onboarded metadata and adapter state
 prove that edge. It shall record `failed` when authoritative metadata proves that
 activation did not commit. It shall not infer success from credential-file
@@ -394,11 +482,27 @@ reconciliation and carrier run admission. Attempt `0` is the initial carrier. A
 carrier attempt that reaches typed `could_not_run` before inference admission
 shall permit attempts `1`, `2`, and `3` after 5,000 ms, 30,000 ms, and 120,000 ms
 respectively. Reconciliation success does not consume or reset the current
-attempt; the same carrier attempt proceeds to ordinary admission.
+attempt. If the target remains in that delivery cycle, the same materialized or
+reserved attempt proceeds to carrier materialization and ordinary admission.
+
+The current attempt is the sole reconciliation owner for its target and cycle.
+A target-level pass that leaves one or several turn groups pending records one
+`could_not_run` result and schedules one retry. A later activation cannot borrow
+the future attempt, bypass its due time, or create a parallel attempt. If it
+joins while the target is not `retry_wait`, the current owner may process its
+new pending membership under the locked I5 transaction without incrementing the
+attempt count.
+
+When the recorded turn is the current claimed carrier and inference admission
+occurred or cannot be disproved, reconciliation retries only its ordinary
+`outcome_unknown` terminal mutation. No retry identity may admit inference for
+that old cycle. A successful terminal mutation resolves the old cycle and either
+opens the required later cycle or leaves the target terminal under I7.
 
 The terminal transaction shall authorize the next attempt and record its due
-time. Attempt `3` reaching `could_not_run` shall resolve open memberships through
-its resolution generation as `undeliverable`. If required generation is later
+time. Attempt `3` reaching `could_not_run` shall apply I5's all-pending
+reconciliation terminalization and resolve open memberships through its stamped
+reconciliation generation as `undeliverable`. If required generation is later
 than that resolution generation, the transaction shall take I6 transition 2;
 otherwise it shall change the persistent target to `undeliverable`.
 
@@ -463,6 +567,12 @@ expose the last reconciliation failure, current attempt, and next due time while
 it is retryable. An agent can start a later credential ceremony to exit a failed
 activation. No database edit is required.
 
+A successful later activation that records pending reconciliation on an
+existing `retry_wait` target shall return
+`credential_recovery_reconciliation_retrying` with that target's unchanged
+delivery cycle, attempt number, and due time. Synchronous finish shall not report
+a new attempt for that activation.
+
 ### I12 — Completion does not claim semantic obedience
 
 An activation reaches `complete` when each of its immutable membership rows has
@@ -486,9 +596,11 @@ completion rows remain the evidence that stranded work resumed.
 The credential finish result and a persistent readback shall expose Activation
 ID, host, provider, credential kind, generation, aggregate state, the exact
 activation membership set, membership counts by resolution, reconciliation
-state, persistent-target cycle and state, attempt counts, next retry time, and
-typed failures. Activation aggregates and counts shall derive from membership
-rows for that Activation ID, not from the persistent target's latest state.
+state and cycle, reconciliation-owner identity and generation,
+persistent-target cycle and state, attempt counts, reserved-attempt state, next
+retry time, and typed failures. Activation aggregates and counts shall derive
+from membership rows for that Activation ID, not from the persistent target's
+latest state.
 
 An admin can read the activation aggregate and its targets. A target session can
 read its own target row. The owner of a target session can read that target row.
@@ -534,15 +646,17 @@ readback derives from activation memberships under I12 and I13.
 
 The activation-membership store records Activation ID, session key, persistent
 target identity, activation generation, immutable snapshot host and harness,
-resolution state, resolved cycle and turn, reconciliation state, recorded
-stranded turn, typed reconciliation failure, cause, and principal. It is the
-decision source for one activation's target list and aggregate.
+resolution state, resolved cycle and turn, reconciliation state, reconciliation
+cycle, recorded stranded turn, typed reconciliation failure, cause, and
+principal. It is the decision source for one activation's target list and
+aggregate.
 
 The persistent-target store records credential scope, session key, required
 generation, handled generation, covered generation, cycle state, delivery cycle,
-current carrier wake ID, attempt number, next retry time, latest linked turn,
-typed failure, cause, and principal. Existing wake and turn rows retain each
-cycle's attempts and terminal evidence.
+current carrier wake ID, attempt number, attempt-reservation state,
+reconciliation generation, next retry time, latest linked turn, typed failure,
+cause, and principal. Existing wake and turn rows retain each cycle's
+materialized attempts and terminal evidence.
 
 All three stores have the one recovery-component mutation seam required by I6.
 Lifecycle events are audit projections. They are not decision state.
@@ -561,21 +675,28 @@ carriers.
 
 After this transaction commits, credential finish invokes
 `reconcile_ready_activation`. The finish response returns the typed result of
-that synchronous pass. Carrier delivery remains asynchronous and visible through
-readback.
+that synchronous pass. If a target already waits for a future retry, the pass
+returns its unchanged owner and due time without an early attempt. Carrier
+delivery remains asynchronous and visible through readback.
 
 ### C. Carrier lifecycle
 
-The recovery component, invoked by credential finish and boot under I5, consumes
-pending membership reconciliations before it nudges carrier delivery. Its
-transaction calls the existing run-terminal mutation and records reconciliation
-completion under one replay identity. The existing terminal publisher releases
-the lane. No old-adapter callback is required.
+The recovery component, invoked by credential finish, scheduler, and boot under
+I5, consumes pending current-cycle membership reconciliations through the
+target's one reconciliation owner before it nudges carrier delivery. Its locked
+transaction groups equal recorded turns, calls the existing run-terminal
+mutation once per distinct turn, and records each membership reconciliation
+under its replay identity. The existing terminal publisher releases the lane.
+No old-adapter callback is required.
 
 If reconciliation reaches `could_not_run`, the component leaves the carrier
-pre-inference and uses its I9 attempt and due-time contract. At each due time the
-ordinary scheduler calls the recovery component before carrier admission. It
-admits the carrier only after reconciliation is `done` or `not_required`.
+pre-inference and uses its one I9 target-level attempt and due-time contract. A
+later activation attaches its pending reconciliation to that cycle and cannot
+advance the due time. At each due time the ordinary scheduler calls the recovery
+component before carrier admission. A due retry first reserves its unique
+attempt identity. It materializes that attempt's carrier only after no
+current-cycle reconciliation remains pending and the target remains in that
+cycle. It admits or claims the carrier only after the same check.
 
 The ordinary scheduler then admits a recovery carrier through the active-session
 gate. The admission and claim transactions revalidate the session scope. The
@@ -583,9 +704,12 @@ session lane runs the linked recovery turn in FIFO order. The turn terminal
 transaction updates membership resolution and persistent-target cycle state
 through the recovery component.
 
-Only a typed pre-inference `could_not_run` result schedules a retry. Final
-failures enter the existing capable-parent fault-bubble path with the target
-identity and Activation ID. The recovery ledger remains the source for status.
+Only typed `could_not_run` from a pre-inference carrier edge or from the
+idempotent reconciliation of a previously claimed carrier may schedule a retry.
+The latter retries only the terminal mutation and cannot admit the old carrier.
+Final failures enter the existing capable-parent fault-bubble path with the
+target identity and Activation ID. The recovery ledger remains the source for
+status.
 
 ### D. Main-only ruling
 
@@ -738,6 +862,47 @@ Given the lane then claims that carrier at required generation 5, when its
 delivered terminal transaction commits, then the target's handled generation
 becomes 5.
 
+Given activation 4's reconciliation attempt 0 for turn X reaches
+`could_not_run` and leaves the target in `retry_wait` for attempt 1, when
+activation 5 in the same scope becomes ready before attempt 1 is due and records
+turn X, then activation 5's membership binds to the same delivery cycle. The
+attempt remains 0, the due time remains unchanged, and credential finish returns
+`credential_recovery_reconciliation_retrying`. It creates no carrier, attempt,
+or run-terminal mutation for activation 5.
+
+Given the retry clock then reaches that due time, when scheduler runs, then one
+attempt 1 stamps reconciliation generation 5 and processes both pending
+memberships as one turn-X group. It calls the ordinary run-terminal mutation at
+most once, terminalizes both reconciliations, and proceeds toward one carrier.
+The test fails on an early attempt, duplicate attempt, duplicate turn terminal,
+or either activation membership left pending after the pass succeeds.
+
+Given pending current-cycle memberships reference turn X more than once and
+turn Y once, when the reconciliation owner runs, then it processes distinct
+turns in ascending turn-ID order, calls the terminal mutation at most once for X
+and once for Y, and applies X's result to every X membership.
+
+Given activation 5 commits a pending reconciliation after generation 4's
+carrier is admitted but before claim, when claim races credential finish, then
+the shared target lock admits exactly one order. If the ready transaction wins,
+claim observes the pending reconciliation and admits no inference. If claim wins,
+the ready transaction observes `claimed` and records that exact carrier turn.
+
+Given generation 4's carrier was claimed with covered generation 4 before
+activation 5 became ready, when activation 5 records that carrier as its running
+prior-generation turn and the carrier terminal callback wins the target lock,
+then the terminal transaction marks activation 5's reconciliation done from the
+observed terminal row before it closes cycle 4. It resolves only generation-4
+memberships and opens one later cycle for generation 5. No pending
+reconciliation remains bound to cycle 4.
+
+Given the same claimed carrier admitted inference and its `outcome_unknown`
+terminal mutation first reaches typed `could_not_run`, when the due retry later
+commits that terminal mutation, then it never re-admits the generation-4
+carrier. It records any reserved old-cycle attempt as
+`not_admitted_cycle_closed` and creates exactly one attempt-0 carrier in the new
+generation-5 cycle.
+
 Given generation 4 was handled before generation 5 became ready, when generation
 5 becomes ready, then the ready transaction preserves generation 4's handled
 membership, increments the persistent target's delivery cycle, changes target
@@ -772,10 +937,19 @@ target reaches `undeliverable` without another attempt.
 Given reconciliation attempts 0, 1, and 2 each reach typed `could_not_run`, when
 the recorded due times arrive, then the ordinary scheduler invokes attempts 1,
 2, and 3 before carrier admission at 5,000 ms, 30,000 ms, and 120,000 ms. Given
-attempt 3 also cannot reconcile, then the membership reconciliation reaches
-final `failed`, its open memberships reach `undeliverable`, the target follows
-the generation-aware I9 transition, and inference is never admitted for that
-carrier cycle.
+attempt 3 also cannot reconcile, then every remaining current-cycle membership
+reconciliation reaches final `failed`, its open memberships reach
+`undeliverable`, the target follows the generation-aware I9 transition, and
+inference is never admitted for that carrier cycle.
+
+Given activation 4 and activation 5 both have pending reconciliations bound to
+one target cycle before attempt 3 is due, when attempt 3 cannot reconcile one or
+both remaining turn groups, then the locked terminal transaction marks every
+remaining current-cycle reconciliation `failed` and resolves every open
+membership through its stamped reconciliation generation as `undeliverable`.
+Both activation aggregates become terminal `credential_recovery_incomplete`,
+and no scheduler or boot pass creates attempt 4 or leaves an earlier membership
+pending.
 
 ### A8 — Crash and replay
 
@@ -793,10 +967,20 @@ runs, then it invokes the same reconciliation identity, terminalizes the exact
 old turn at most once, marks the membership reconciliation done, and releases the
 lane without an old-adapter callback.
 
+Given activation 4 is `retry_wait` for attempt 1 and activation 5 commits a
+pending reconciliation to that cycle before the due time, when Tightbeam crashes
+and boot runs before the due time, then boot preserves the original attempt and
+due time and runs no reconciliation. When boot or scheduler runs at or after the
+due time, it creates or reuses exactly one attempt 1, processes every pending
+current-cycle reconciliation under that owner, and creates no duplicate carrier
+or run-terminal mutation.
+
 Given repeated ready, scheduler, terminal, and boot callbacks, when the database
 settles, then unique identities leave one run, one target per session and scope,
-one membership per activation and session, one reconciliation per recorded old
-turn, and one row per delivery-cycle and attempt-number pair.
+one membership reconciliation per activation, session, and recorded old turn,
+at most one run-terminal mutation per distinct turn group, and one durable
+attempt identity in reserved, materialized, or `not_admitted_cycle_closed` state
+per delivery-cycle and attempt-number pair.
 
 ### A9 — Partial success and readback
 
@@ -810,6 +994,12 @@ Given the target plan commits but synchronous stranded-turn reconciliation
 reaches typed `could_not_run`, when finish returns, then it reports
 `credential_recovery_reconciliation_retrying`, the current attempt, the next due
 time, and `recoveryStarted = true`.
+
+Given activation 5 joins activation 4's reconciliation `retry_wait`, when an
+authorized caller reads either activation and the persistent target, then the
+readback exposes both immutable membership rows, their shared reconciliation
+cycle, the one owner identity and generation, the unchanged due time, and no
+parallel attempt.
 
 Given a recovery with one handled target and one undeliverable target, when an
 authorized caller reads it, then the aggregate reports
@@ -865,7 +1055,9 @@ Given the repository verification gates, focused deterministic lifecycle tests,
 and A11 smoke, when each runs from a clean target baseline, then each reports a
 passing result with baseline and final counts. A test suite that leaves one
 affected runnable target dark or one stranded-turn reconciliation pending after
-the lane can run fails acceptance.
+the lane can run fails acceptance. A test also fails if a target cycle becomes
+terminal with a pending reconciliation or if a previously claimed carrier is
+re-admitted by a reconciliation-only retry.
 
 ## Open Questions
 
