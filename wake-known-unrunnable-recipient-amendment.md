@@ -1,6 +1,6 @@
 # Bug A amendment: known-unrunnable wake recipients
 
-Status: V7 COMPOSITION REVIEW CANDIDATE — IMPLEMENTATION BLOCKED ON NAMED R2 FACT BASE
+Status: V7 COMPOSITION REVIEW CANDIDATE — IMPLEMENTATION BLOCKED ON COMMISSIONED R2 FACT BASE
 
 Date: 2026-08-27 PT
 
@@ -93,8 +93,12 @@ Controlling sequencing: `att_a034fbd6-2542-4404-8fa5-f22a3ffa7be5`.
 Historical partial implementation pointer `art_7409e650` remains integrity and custody
 evidence only. Its missing bytes are not current source authority.
 
-This successor changes design only. It is not implementation-ready while the R2 base
-question in Open Questions is blocking. It authorizes no implementation, source edit,
+Operator request `dr_99628605-cb7a-44b4-a509-d46b8e7f4ffd` is ruled
+`commission_r2_fact_base`. The ruling selects the missing-base path; it does not define
+the base. This successor remains non-buildable until that commissioned authority exists,
+passes independent review, and is incorporated here.
+
+This successor changes design only. It authorizes no implementation, source edit,
 release-line work, provider probe, credential access, wake experiment, deployment,
 runtime mutation, or work-item disposition. R1-R7 and A1-A6 from reviewed F7 remain
 unchanged. R8, the schema paragraph in Architecture, and A7 supersede only F7's stale
@@ -238,8 +242,9 @@ durable conflict instead of inventing a sender.
 5. Current main v7 has no durable R2 fact-and-revision base. The Gateway can read
    session state, but no reviewed authority defines the hold, circuit, adapter, catalog,
    credential, or quota objects and writer transitions required to construct every R2
-   key. R1-R7 remain controlling intent, but implementation is blocked until the owner
-   selects or supplies the missing base named in Open Questions.
+   key. Operator ruling `dr_99628605-cb7a-44b4-a509-d46b8e7f4ffd` commissions that
+   base. R1-R7 remain controlling intent, but implementation is blocked until the
+   commissioned authority is reviewed and incorporated here.
 6. The 2026-08-18 specimen records session `s_f63d31e5`, twelve failed turns, and lost
    wakes `w_45faa8a8` and `w_a2a13028`. The specimen motivates this amendment. It does
    not authorize a live replay or provider probe.
@@ -423,10 +428,12 @@ typed failure classes, evidence reference, and trigger provenance to that same s
 
 Current main v7 also has no Missing R2 fact base. This amendment does not authorize an
 implementer to choose its tables, in-memory state, token encodings, revision sources, or
-writers. No v8 implementation assignment may open until a reviewed authority answers
-the BLOCKING Open Question and this canonical file incorporates that answer. The final
-authority must make each R2 source and revision constructible in one checking
-transaction; an unspecified phrase such as “R2 fact material” is not a base.
+writers. Operator ruling `dr_99628605-cb7a-44b4-a509-d46b8e7f4ffd` commissions a
+separate R2 fact-base authority. No v8 implementation assignment may open until that
+authority passes independent review and this canonical file incorporates its exact
+objects, owners, and transitions. It must make each R2 source and revision constructible
+in one checking transaction; an unspecified phrase such as “R2 fact material” is not a
+base.
 
 This table remains normative:
 
@@ -618,9 +625,10 @@ would leave new accepted wake failures invisible. ACCEPT untrusted legacy routin
 durable per-wake conflict because inventing a sender is forbidden. DELETE the earlier
 boot-wide conflict hold because one historical ambiguity must not stop unrelated work.
 Do not ADD an R2 registry in this amendment: its state owners and revision transitions
-are missing authority, so the BLOCKING Open Question must be answered first. The sibling
-registry loses because current main has no such mechanism and its non-null carrier
-boundary cannot represent R4 or legacy null-carrier results.
+are missing authority, and `dr_99628605-cb7a-44b4-a509-d46b8e7f4ffd` commissions that
+authority separately. The sibling registry loses because current main has no such
+mechanism and its non-null carrier boundary cannot represent R4 or legacy null-carrier
+results.
 
 ## Architecture
 
@@ -817,8 +825,9 @@ remain byte-for-byte equal. No new notice, terminal, or carrier appears.
 ### A7. Null-carrier integration and recovery
 
 Every A7 v8 fixture includes the exact R2 base objects and writers from the future
-reviewed authority incorporated into this file. Until that blocking authority exists,
-A7 is a composition contract and no implementation gate may claim it passed.
+commissioned authority incorporated into this file. Until that authority passes review
+and is incorporated, A7 is a composition contract and no implementation gate may claim
+it passed.
 
 Given a v7 fixture that does not include the proposed sibling `wake_delivery_outcomes`
 table, when migration and the next clean boot run, then the v8 product still satisfies
@@ -927,16 +936,10 @@ restart creates no duplicate conflict and does not block another wake or carrier
 
 ## Open Questions
 
-1. **BLOCKING — R2 fact base ownership.** Which reviewed authority supplies the durable
-   authoritative-fact object, the hold, circuit, adapter, catalog, credential, and quota
-   registry tokens, each sole writer, and every revision transition required by R2?
-   Current main v7, Bug A, F7, `ConditionFacts`, `HarnessHealth`, and the sibling proposal
-   do not supply that base. Operator request
-   `dr_99628605-cb7a-44b4-a509-d46b8e7f4ffd` asks the owner to commission that base,
-   issue a new ruling that narrows the reviewed R2 surface, or stop the feature. The
-   chosen authority must be incorporated here. No producer, exact-tip code review, v8
-   implementation, or implementation handoff may start while this question is open.
+None. The owner answered the only blocking choice through
+`dr_99628605-cb7a-44b4-a509-d46b8e7f4ffd=commission_r2_fact_base`. Production remains
+blocked on that commissioned, reviewed, and incorporated dependency; the dependency is
+not an unanswered spec choice.
 
-No other question is open. A new precondition, external health probe, alternate
-recipient, automatic retry, conflict repair, or rerouting rule requires a separate
-reviewed amendment.
+A new precondition, external health probe, alternate recipient, automatic retry,
+conflict repair, or rerouting rule requires a separate reviewed amendment.
