@@ -4,6 +4,11 @@ Status: SPEC READY FOR ONE PARENT-OPENED INDEPENDENT EXACT-SUCCESSOR RE-REVIEW. 
 item remains targetless. This revision authorizes no implementation, merge, release,
 deployment, live selection, credential change, account change, or spec-ref binding.
 
+Canonical spec home: repository `github.com/clickety-clacks/tightbeam-specs`,
+repository-relative path `codex-named-account-selection-v1.md`. A review or handoff
+identifies one exact revision by repository commit and file SHA-256. Artifacts and
+workspace copies are evidence; they are not alternate canonical homes.
+
 Authority: `wi_008ad6d7-d976-4120-9e90-8557a24f7602`, recon verdict
 `att_ae78b652-70ad-484e-b2ac-ed3062ab58ce`, and report `art_f245e870` at SHA-256
 `09e57edcd8102141f269359004b1effd4e9c1bf3874ea2b6a533a93a48ebeba3`.
@@ -16,6 +21,9 @@ report `art_415178b8` at SHA-256
 It also answers third independent changes-requested verdict `att_2cbb5bcd` and report
 `art_e7a71cfa` at SHA-256
 `86e50680ff6b54760c57c6621d7b1bbddd33fadfd23be0223ddd03a97f178e14`.
+This revision answers fourth independent changes-requested verdict
+`att_69f2b5c6-15e8-4b5d-8c3e-662a71f62d82` and report `art_2e4c22ac` at SHA-256
+`7f83ebcb89183f9859611ab94c081adafd34a26028f17ecd3f714b00e5dcd769`.
 
 This spec introduces the **Named harness-account binding** pattern. It applies to one
 Tightbeam harness on one registered host and names a non-secret account identity held
