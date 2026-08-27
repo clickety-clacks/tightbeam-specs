@@ -1,10 +1,23 @@
 # Standing accountability lifecycle
 
-Status: canonical MVP spec for `wi_0552815b-e5b5-4c56-90ed-c40825c3b9ad`.
+Status: canonical amended MVP spec for
+`wi_0552815b-e5b5-4c56-90ed-c40825c3b9ad`; pending exact-tip re-review.
 
-This spec adds one assignment lifecycle type. It amends the assignment fields in
-`rest-state-api-v1-wire-schema.md` and the `assign` and `dispatch` families in
-`cli-surface-v1.md`. Those documents remain authoritative outside this delta.
+This spec is the authoritative bounded amendment for these clauses:
+
+| Existing authority | Clause amended by this spec |
+|---|---|
+| `accountability-constitution-v1.md` | Section 1 guarantee 3: a standing assignment satisfies Patrol through AR3's standing-accountability production, not a completion prod. |
+| `supervision-v1.md` | The invariant, stall predicate, prod lifecycle items 1-3, and the “no standing reminders” paragraph: AR3 supplies the standing lifecycle's distinct receipt, prompt, and due production. |
+| `supervision-impl-v1.md` | The `:prod_ladder` turn-end slot, Goals 1-3, the periodic-sweep non-goal, and Self-driving liveness: AR3 adds no sweep and specializes the existing per-assignment entitlement by stored lifecycle kind. |
+| `effort-checkin-v2.md` | Design item 1 and Acceptance items 1-3: `dispatch` arms effort check-in only for a discrete assignment. |
+| `work-item-brackets-v1.md` | Bracket 1 and Bracket 2 assignment-cancellation clauses: a standing assignment is custody, and its cancellation receipt uses T4. |
+| `attest-v1.md` | The closed kind vocabulary, non-terminal filing behavior, response shape, CLI usage, and tests: T6 adds holder-filed `reaffirmation`. |
+| `rest-state-api-v1-wire-schema.md` and `cli-surface-v1.md` | The assignment field set and the `assign`, `dispatch`, and `attest` families gain the fields and values in AR5. |
+| `event-firehose-v1.md` | V3's shared public projection and R1's assignment and attest state classes carry AR5's additive lifecycle and reaffirmation values. |
+
+Those documents remain authoritative outside the named clauses. This table resolves a
+conflict in favor of this spec; it does not authorize another behavior change.
 
 ## Goal
 
@@ -14,17 +27,22 @@ that has no completion target or deadline.
 G2. Tightbeam distinguishes a standing assignment from a discrete assignment in
 stored state, gateway responses, REST state, Firehose state, and CLI input and output.
 
-G3. Tightbeam excludes a standing assignment from the two existing mechanisms that
-ask whether an assignment filed progress or completed lately: supervision's turn-end
-prod ladder and the effort-without-effect check-in.
+G3. Tightbeam excludes a standing assignment from the two mechanisms that ask whether
+an assignment produced effect or moved toward completion: the discrete supervision
+prod branch and the effort-without-effect check-in.
 
-G4. Tightbeam keeps a standing assignment open until its holder surrenders it or an
+G4. Tightbeam supervises a standing assignment through an assignment-scoped
+reaffirmation receipt and a standing-accountability prod that asks no completion
+question.
+
+G5. Tightbeam keeps a standing assignment open until its holder surrenders it or an
 authorized principal revokes it.
 
 ## Non-Goals
 
-NG1. This MVP does not add a heartbeat, reaffirmation cadence, due date, completion
-target, scheduler, reminder, or new escalation ladder for standing assignments.
+NG1. This MVP does not add a completion target, completion deadline, scheduler, or
+escalation ladder. Standing accountability reuses the existing supervision entitlement
+interval, wake delivery, counter, and escalation ladder.
 
 NG2. This MVP does not change the thresholds, receipts, prompts, counters, or
 escalation order for discrete assignments.
@@ -86,8 +104,29 @@ clock and does not arm a monitor.
 
 A completion-oriented monitor is either:
 
-1. a `supervision_entitlements` generation that can reach a prod or escalation; or
+1. the discrete-assignment branch of a `supervision_entitlements` generation that can
+   reach a completion prod or escalation; or
 2. an `effort_checkin_generations` generation that can reach an effort check-in.
+
+A standing-accountability production uses a `supervision_entitlements` row, but it is
+not completion-oriented because its prompt and receipts do not ask whether work moved
+toward completion.
+
+### T6 — Standing reaffirmation
+
+A standing reaffirmation is an `attests` row with `kind = reaffirmation`. Only the
+current holder of an open standing assignment can file it. It states that the holder
+retains accountable custody; it claims no progress, effect, verdict, or completion.
+
+The gateway wire value and CLI value are `reaffirmation`.
+
+### T7 — Standing-accountability production
+
+A standing-accountability production is the lifecycle-specific branch of the existing
+supervision entitlement and prod ladder. Its production kind is
+`standing_accountability`. Its horizon is the entitlement's stored
+`supervisionIntervalMs`; that horizon is an accountability cadence, not a completion
+deadline.
 
 ## Assumptions
 
@@ -102,12 +141,23 @@ an `effectKind`, each assignment open or reopen arms supervision, `dispatch` als
 arms effort check-in, and the turn-end production falls back to the oldest open
 assignment.
 
-A3. Existing assignment, attest, wake-cancellation, REST, Firehose, and CLI
-projections remain available to carry one new enum field and one new liveness-trigger
-enum value.
+A3. Existing assignment, attest, wake-cancellation, supervision, REST, Firehose, and
+CLI projections remain available to carry the lifecycle field, reaffirmation kind,
+and standing-accountability production and trigger values.
 
 A4. Holder retirement already disposes each open assignment through the recorded
 revocation path. This feature relies on that existing exit.
+
+A5. Product-owner evidence `att_6c6b3c37-56b0-40ef-be55-00abc95d27f8`
+requires standing liveness to use periodic reaffirmation instead of completion.
+Evidence `att_50f7e16b-dfaf-4e3a-b142-abbb8c7dc0b5` requires the primitive to be
+assignment-scoped and holder-usable. This spec treats those rulings as the F1 product
+decision requested by review `att_73566dd9-48e4-443e-a9c9-cc3e9094b8bd`.
+
+A6. The existing supervision entitlement stores a positive
+`supervisionIntervalMs`, a due time, cause, and principal. The existing prod ladder
+provides durable wake delivery, counters, and escalation. AR3 specializes those seams
+by immutable lifecycle kind.
 
 ## Invariants
 
@@ -121,9 +171,9 @@ assignment preserves its original kind.
 I3. A standing assignment has no completion target, completion deadline, completion
 attest, or `completed` outcome.
 
-I4. A standing assignment accepts progress and verdict attests under their existing
-authority rules. The presence or absence of either attest kind does not arm a
-completion-oriented monitor.
+I4. A standing assignment accepts progress, reaffirmation, and verdict attests under
+AR3 and their existing authority rules. The presence or absence of those attest kinds
+does not arm a completion-oriented monitor.
 
 I5. A standing assignment can close only through the existing surrender or revocation
 seam. Each close retains its existing principal, cause, and papertrail.
@@ -131,23 +181,35 @@ seam. Each close retains its existing principal, cause, and papertrail.
 I6. A review assignment is discrete. The gateway refuses a request that combines
 `reviewsAssignmentId` with `lifecycleKind = standing`.
 
-I7. A standing assignment creates no row in `supervision_entitlements` and no row in
-`effort_checkin_generations`. Reopening it creates neither row.
+I7. A standing assignment creates one lifecycle-specialized row in
+`supervision_entitlements` and no row in `effort_checkin_generations`. Reopening it
+re-arms the standing supervision entitlement and creates no effort generation.
 
-I8. The turn-end supervision production selects the oldest open discrete assignment
-for the holder. An older standing assignment does not hide a newer discrete
-assignment. If the holder has only standing assignments, the production records no
-claim, prod, escalation, completion rail action, or decision request.
+I8. A holder-filed progress or reaffirmation attest against an open standing
+assignment is a valid standing-accountability receipt. A holder-created pending
+continuation wake accepted by the existing liveness-receipt seam is also valid. A
+verdict, artifact, message, turn, or work-item update is not a standing-accountability
+receipt.
 
-I9. A wake-cancellation receipt can use `standing_accountability` only when its id
+I9. The completion-prod production selects the oldest eligible open discrete
+assignment for the holder. An older standing assignment does not hide a newer
+discrete assignment.
+
+I10. A due standing assignment with no valid receipt, pending continuation, queued or
+running turn, current blocking fact, or terminal disposition produces one
+standing-accountability prod. Its empty answer advances the existing counter and
+escalation ladder. Its prompt offers reaffirmation, continuation, or surrender and
+does not offer completion.
+
+I11. A wake-cancellation receipt can use `standing_accountability` only when its id
 names an open standing assignment whose holder is active and the receipt's primary
 work is that assignment or its linked work item. The receipt retains the existing
 cause and requester principal fields.
 
-I10. Each canonical assignment projection exposes `lifecycleKind`. A consumer never
+I12. Each canonical assignment projection exposes `lifecycleKind`. A consumer never
 infers it from `effectKind`, subject text, attests, age, or monitor rows.
 
-I11. Omission preserves existing behavior. An `assign` or `dispatch` request without
+I13. Omission preserves existing behavior. An `assign` or `dispatch` request without
 `lifecycleKind` creates a discrete assignment and produces the monitor rows that its
 verb produces at the A2 baseline.
 
@@ -163,12 +225,13 @@ The gateway returns `invalid_lifecycle_kind` for another value. It returns
 `standing_review_conflict` when a review request asks for the standing lifecycle.
 Both refusals create no assignment, monitor, wake, message, or Firehose state event.
 
-### AR2 — Standing accountability without a clock
+### AR2 — Targetless standing accountability
 
 Assignment creation and reopening branch on the stored lifecycle kind in the same
 transaction as the lifecycle action. The discrete branch keeps the existing
-supervision entitlement. The standing branch uses T4 as the liveness trigger and
-does not create a supervision entitlement.
+supervision and effort behavior. The standing branch creates or re-arms one
+supervision entitlement specialized by the stored standing kind. It uses T4 as the
+work-item liveness trigger and creates no effort generation.
 
 Work-item bracket cancellation accepts `standing_accountability` as a liveness
 trigger. Its validator reads the assignment type, open state, current holder state,
@@ -181,10 +244,51 @@ The effort check-in arm, rearm, and transfer queries admit discrete assignments 
 The supervision turn-end candidate query admits discrete assignments only and orders
 those candidates by `(openedAt, id)` as it does now.
 
-When a holder has no open discrete assignment, supervision returns the deterministic
-no-match reason `standing_only` if that holder has an open standing
-assignment. The no-match path writes no watermark or completion-oriented lifecycle
-row.
+The standing-accountability candidate query admits open standing assignments only. It
+orders eligible candidates by `(openedAt, id)`. A standing candidate becomes due when
+its stored entitlement `dueAt` is at or before the evaluator time and the existing
+pending-turn, pending-wake, blocking-fact, and terminal guards admit it. The evaluator
+returns `standing_not_due` without a claim when a holder has standing custody but no
+due candidate.
+
+The discrete production has priority when a turn-end evaluation finds both a discrete
+candidate and a due standing candidate. Otherwise, the evaluator claims one due
+standing candidate with production kind `standing_accountability` and sends this
+prompt through the existing supervision wake seam:
+
+```text
+Standing assignment <assignmentId> needs accountability reaffirmation. File reaffirmation, schedule a continuation, or file surrender. This is accountability prod <k> of <N>; a reply without a row escalates to your spawner.
+```
+
+The `attest` transaction accepts `kind = reaffirmation` only when the caller is the
+current holder and the assignment is open and standing. It stores the non-terminal
+attest, resets the standing assignment's existing prod counter, and re-arms its
+entitlement at `attest.ts + supervisionIntervalMs` in one transaction. A holder-filed
+progress attest performs the same standing-accountability reset after it stores the
+progress row. An accepted holder-created continuation uses the existing pending-wake
+gate. Empty prod answers advance the existing counter and escalation ladder.
+
+The reaffirmation re-arm records `basisKind = standing_reaffirmation`,
+`basisId = <attestId>`, `cause = standing_reaffirmation`, and
+`principal = session:<holderKey>` on the entitlement transition and its lifecycle
+event. The standing-progress re-arm records `basisKind = progress`, the progress attest
+id, `cause = progress`, and the same holder principal. The schema widens the closed
+entitlement basis and cause vocabularies by `standing_reaffirmation`.
+
+The gateway returns `reaffirmation_requires_standing` when the holder files
+reaffirmation against a discrete assignment with this message:
+
+```text
+assignment <assignmentId> is discrete; reaffirmation is only valid for standing assignments; file progress, completion, or surrender
+```
+
+The refusal writes no attest, assignment transition, entitlement transition, wake,
+counter, or Firehose state event.
+
+This design adds no periodic sweep. It reuses the existing per-assignment entitlement
+due time, evaluator, wake delivery, counter, and escalation machinery. Each standing
+claim, receipt absorption, re-arm, prod, and escalation retains its existing cause and
+principal fields.
 
 The lifecycle read and the decision to arm a monitor occur in the same transaction as
 assignment creation or reopening. The immutable lifecycle kind governs later monitor
@@ -209,7 +313,9 @@ or state event. Existing surrender and revocation authority applies unchanged.
 
 The CLI accepts `--lifecycle-kind discrete|standing` on `assign` and `dispatch`. Its
 help names both values and states that omission selects `discrete`. The CLI sends the
-camel-case `lifecycleKind` gateway parameter and performs no local inference.
+camel-case `lifecycleKind` gateway parameter and performs no local inference. The
+`attest` CLI and gateway accept `reaffirmation` as an additional non-terminal,
+non-verdict kind and expose that exact value in the returned attest object.
 
 The gateway's `assign`, `dispatch`, `assignment-get`, `assignments`,
 `work-item-get`, and `work-item-trace` assignment objects include non-null
@@ -221,6 +327,10 @@ follows `effectKind` and precedes `derivedStatus`. Wake-cancellation trace objec
 expose `livenessTriggerKind = standing_accountability` and
 `livenessTriggerId = <assignmentId>`.
 
+Gateway, CLI, REST, and Firehose attest projections expose `kind = reaffirmation` as
+they expose another non-terminal attest kind. No projection labels reaffirmation as
+progress, completion, or verdict.
+
 Existing creation callers remain input-compatible because omitted input defaults to
 `discrete`. The new output member is additive.
 
@@ -228,17 +338,19 @@ Existing creation callers remain input-compatible because omitted input defaults
 
 ADD wins because deleting assignment custody would leave standing intent unowned,
 while accepting completion prods would make supervision report a known falsehood.
-The design adds no scheduler or parallel work object.
+The standing-accountability branch preserves constitutional patrol without a
+completion claim. The design adds no scheduler or parallel work object.
 
-Reusing `supervision_entitlement` as the standing trigger would falsely represent an
-armed completion monitor, so T4 uses the open assignment row itself.
+T4 uses the open assignment row as the work-item liveness trigger. The standing
+supervision entitlement remains a patrol controller, not the proof that linked work is
+owned.
 
 Operating pattern: the CLI help is the instruction surface for selecting this type.
 This MVP requires no operating-manual or Kung Fu amendment.
 
 ## Acceptance
 
-### AC1 — Explicit standing creation and projection (G1, G2; I1, I10; AR1, AR5)
+### AC1 — Explicit standing creation and projection (G1, G2; I1, I12; AR1, AR5)
 
 **Given** a fresh database and an active holder, **when** a caller runs
 `tightbeam assign --subject "own release health" --session <holder> --lifecycle-kind standing`,
@@ -253,7 +365,7 @@ that type, and the command result includes `"lifecycleKind":"standing"`.
 declared field order places `lifecycleKind` after `effectKind` and before
 `derivedStatus`.
 
-### AC2 — Compatible default and input refusal (G2; I6, I11; AR1, AR5)
+### AC2 — Compatible default and input refusal (G2; I6, I13; AR1, AR5)
 
 **Given** the same holder, **when** a caller runs `assign` without
 `--lifecycle-kind`, **then** the stored and projected lifecycle kind is `discrete`
@@ -280,24 +392,52 @@ Firehose state event.
 `standing_review_conflict` and creates no assignment, monitor, wake, message, or
 Firehose state event.
 
-### AC3 — Deterministic no-prod regression (G3; I7, I8; AR2, AR3)
+### AC3 — Deterministic monitor separation and standing patrol (G3, G4; I7-I10; AR2, AR3)
 
-**Given** one standing assignment created by `dispatch` and one committed terminal
-turn for its holder, **when** the test invokes the turn-end supervision evaluator
-directly, **then** the evaluator returns `standing_only` and the assignment has zero
-effort generations, zero supervision entitlements, zero supervision controller
-wakes, zero `prod_fired` events, zero effort decision requests, and zero
-completion-rail actions. The evaluator writes no supervision watermark.
+**Given** one standing assignment created by `dispatch`, **when** the creation
+transaction commits, **then** the assignment has one armed supervision entitlement,
+zero effort generations, and zero effort decision requests. Its entitlement stores
+the assignment's positive `supervisionIntervalMs` and a due time equal to
+`openedAt + supervisionIntervalMs`.
 
-The test uses direct evaluator calls and committed fixture rows. It does not sleep or
-wait for a scheduler.
+**Given** that entitlement is not due, **when** the test invokes the supervision
+evaluator directly, **then** the evaluator returns `standing_not_due` and writes no
+claim, prod, escalation, completion-rail action, decision request, or watermark.
 
-**Given** an older standing assignment and a newer discrete assignment for one
-holder, **when** the same turn-end evaluator runs, **then** it selects the discrete
-assignment, produces one tier-1 prod for that discrete assignment, and creates no
-monitor row for the standing assignment.
+**Given** committed fixture rows make that entitlement due and leave its active holder
+without a pending wake, queued or running turn, current blocking fact, or receipt,
+**when** the test invokes the evaluator directly, **then** it returns
+`standing_accountability`, writes one tier-1 prod whose production kind is
+`standing_accountability`, and uses the exact AR3 prompt. The transaction writes no
+effort generation, effort decision request, or completion-rail action.
 
-### AC4 — Completion is impossible; custody has exits (G4; I2-I5; AR4)
+**When** the holder files `tightbeam attest <assignmentId> --kind reaffirmation`,
+**then** the gateway stores one non-terminal reaffirmation attest, leaves the assignment
+open, resets its standing prod counter, and re-arms its entitlement at
+`attest.ts + supervisionIntervalMs`. The matching gateway, CLI, REST, and Firehose
+attest projections report `kind = reaffirmation`. The entitlement and lifecycle event
+report the exact reaffirmation basis, cause, id, and principal from AR3.
+
+**When** the same holder instead files progress, **then** the gateway stores progress
+and performs the same counter reset and entitlement re-arm. **When** a non-holder
+tries reaffirmation, **then** the gateway returns `not_holder`. **When** the holder of
+a discrete assignment tries it, **then** the gateway returns
+`reaffirmation_requires_standing`. **When** the holder tries after close, **then** the
+gateway returns `assignment_closed`. Each refusal writes no attest, assignment
+transition, entitlement transition, wake, counter, or Firehose state event.
+
+**Given** a due standing assignment with prod limit 2, **when** two delivered
+standing-accountability prod turns end without a progress attest, reaffirmation attest,
+pending continuation, blocking fact, or terminal disposition, **then** direct evaluator
+calls produce tier 1, tier 2, and one escalation to the existing spawner rung. Each
+claim uses committed fixture rows; the test does not sleep or wait for a scheduler.
+
+**Given** an older due standing assignment and a newer eligible discrete assignment
+for one holder, **when** the turn-end evaluator runs, **then** it selects the discrete
+assignment and produces one tier-1 discrete prod. It writes no standing claim in that
+evaluation and creates no effort generation for the standing assignment.
+
+### AC4 — Completion is impossible; custody has exits (G5; I2-I5; AR4)
 
 **Given** an open standing assignment, **when** its holder files a completion attest,
 **then** the gateway returns `standing_has_no_completion` with the exact AR4 message,
@@ -307,10 +447,12 @@ the assignment remains open, and no completion attest or secondary state row exi
 `outcome = completed`, **then** the database constraint refuses the transaction.
 
 **When** its holder files a progress attest, **then** the gateway stores that attest
-and creates no supervision entitlement or effort generation.
+and re-arms the existing standing supervision entitlement under AC3. It creates no
+second supervision entitlement or effort generation.
 
 **When** an authorized caller files a verdict attest, **then** the gateway stores that
-attest and creates no supervision entitlement or effort generation.
+attest and leaves the standing supervision entitlement unchanged. It creates no second
+supervision entitlement or effort generation.
 
 **When** its holder files surrender instead, **then** the assignment closes with
 `outcome = surrendered` through the existing papertrail.
@@ -323,7 +465,7 @@ it, **then** it closes with `outcome = revoked` through the existing papertrail.
 The corresponding Firehose `assignment.closed` and `assignment.reopened` state
 events hydrate `lifecycleKind = standing`.
 
-### AC5 — Typed work-item liveness (G1, G2; I9; AR2, AR5)
+### AC5 — Typed work-item liveness (G1, G2; I11; AR2, AR5)
 
 **Given** one open work item with a pending routing wake and a second open work item
 with a pending slate wake, **when** a standing assignment takes custody of each item,
@@ -337,6 +479,15 @@ each cancellation receipt through `work-item-trace`, **then** it reports
 **Given** a closed, discrete, foreign-work-item, or retired-holder assignment,
 **when** a cancellation attempts to cite it as `standing_accountability`, **then** the
 transaction refuses the trigger and writes no cancellation receipt.
+
+### AC6 — Canonical authority closure (G3, G4; AR2, AR3, AR5)
+
+**Given** the canonical spec set named in the opening authority table, **when** the
+implementation change updates its touched authority text, **then** each named clause
+points to this spec for the standing lifecycle and retains its prior rule for the
+discrete lifecycle. A repository search reports no live clause that requires a standing
+assignment to arm effort check-in, receive a completion prod, or remain without
+standing-accountability patrol.
 
 ## Open Questions
 
