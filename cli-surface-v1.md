@@ -34,14 +34,17 @@ Agent-facing (demanded by the shipped engineering-kungfu kernels/skills):
   an effort request can be selected for `effort-rule`
   (effort-without-effect-checkin-v1 §5).
 - **decision-request --request DECISION_REQUEST_ID** — read one complete,
-  visible operator decision after it is ruled. Demand:
+  visible operator decision request in every lifecycle state admitted by the
+  existing visibility predicate. Demand:
   terminal-operator-decision-parity-v1 §Architecture 1 and its F4 surface
   matrix. The command accepts exactly one non-blank complete `dr_...` value
   through `--request`; it accepts no positional id, target flag, or duplicate
   request flag. It sends wire verb `decision-request` with only
   `params.request`. On success it prints the existing single-result envelope
-  and exits 0. An absent or non-visible complete id retains `not_found` and
-  exits nonzero. A visible impossible terminal row returns the canonical
+  and exits 0. A missing, blank, or non-complete `--request` value fails locally
+  before any wire request. A complete id absent from, or non-visible in, the caller's
+  result set retains `not_found` and exits nonzero. A visible impossible
+  terminal row returns the canonical
   `decision_request_integrity_invalid` error. An evidence conflict or evidence
   write failure returns, respectively,
   `decision_request_integrity_evidence_conflict` or

@@ -1,6 +1,6 @@
 # Terminal operator-decision parity and integrity — v1
 
-Status: SPEC-READY, TARGETLESS — exact-revision review findings F1-F4 applied;
+Status: SPEC-READY, TARGETLESS — F4 exact-revision contradictions corrected;
 awaiting one parent-opened independent exact-revision review
 
 Authority: work item `wi_435301fa-dead-4a1a-8e78-4a594c0f8b0d`, assignment
@@ -31,6 +31,11 @@ F4 authority: exact owner decision request
 0.1.9 exact-tip review `att_35abe6b7` and report `art_07a71efe` require this
 canonical CLI and REST/wire successor. F4 changes contract text only; it does
 not authorize product code, a target, a binding, or a review verdict.
+
+F4 successor review: exact revision `93efbd92cc74e2fb02e3f197692e7f6c4b5e7097`
+received changes-requested verdict `att_0fbd3443` and report `art_90040e95`.
+This successor resolves only its two CLI wording findings: non-complete ids
+fail locally, and exact-id reads retain every visible operator lifecycle state.
 
 This contract supersedes only the owner-scoped operator-request read projection,
 terminal-attribution, integrity, and raiser-delivery clauses of
@@ -446,9 +451,11 @@ tightbeam decision-request --request <decisionRequestId>
 This syntax supersedes the positional `decision-request <id>` notation in
 `escalation-substrate-v1.md` for any target that implements this contract.
 It sends wire verb `decision-request` with `params.request`. It accepts one
-non-blank complete id and no target flag or positional id. An absent, shortened,
-or non-visible id follows the existing hidden-id `not_found` contract. The
-command prints the existing result envelope and exits 0 on success.
+non-blank complete id and no target flag or positional id. A missing, blank, or
+non-complete `--request` value fails locally before any wire request. A complete id
+absent from, or non-visible in, the caller's result set follows the existing hidden-id
+`not_found` contract. The command prints the existing result envelope and exits 0 on
+success.
 
 The canonical CLI surface is `cli-surface-v1.md`; the canonical REST item,
 detail route, and error envelope are `rest-state-api-v1.md` and
@@ -735,9 +742,10 @@ omits one of them.
 **A-04 — Exact-id CLI and wire.** Given the real gateway and built Rust CLI,
 when an authorized caller runs `tightbeam decision-request --request <fullId>`,
 then the wire request is verb `decision-request` with `params.request`, the CLI
-prints the single result envelope, and exits 0. Blank ids, prefixes, positional
-ids, duplicate request flags, and target flags fail. An absent or non-visible id
-returns the existing `not_found` status, envelope, stderr, and nonzero exit.
+prints the single result envelope, and exits 0. A missing or blank `--request` value,
+prefix, positional id, duplicate request flag, or target flag fails locally. A complete
+id absent from, or non-visible in, the caller's result set returns the existing
+`not_found` status, envelope, stderr, and nonzero exit.
 
 **A-05 — Lifecycle and consumption state.** Given valid open, ruled, withdrawn,
 and superseded operator fixtures plus a deliberately impossible stored
@@ -936,7 +944,7 @@ SHA-256. The matrix is:
 | predecessor nonterminal detail | exact-id read of visible `open`, `withdrawn`, and `superseded` operator fixtures | each candidate item has the same key set as the captured predecessor item; it contains neither `ruledViaPrincipal` nor `ruledViaSessionState` nor a terminal-only extension |
 | terminal list/detail parity | list and exact-id REST read of one visible valid ruled operator fixture | both success envelopes contain byte-equal terminal fields, including `rulingFactId`, `ruledViaSessionKey`, and `rulingAttribution` |
 | CLI carrier | `tightbeam decision-request --request <fullId>` for that ruled fixture | the captured wire request is verb `decision-request` with only `params.request`; stdout is the single success envelope and exit is 0 |
-| exact-id compatibility | blank, prefix, positional, duplicate-flag, target-flag, absent, and non-visible invocations | parser failures remain local; absent and non-visible complete ids retain the predecessor `not_found` envelope, stderr behavior, and nonzero exit |
+| exact-id compatibility | missing or blank request value, prefix, positional, duplicate-flag, target-flag, unknown complete id, and non-visible complete id | parser failures remain local; complete ids absent from, or non-visible in, the caller's result set retain the predecessor `not_found` envelope, stderr behavior, and nonzero exit |
 | visible impossible shape | list and exact-id reads of a fixture-only visible invalid ruled or consumed operator row | REST captures the R4c F4 error envelope; CLI captures the typed code and visible request id on stderr; neither surface emits item or partial collection bytes, and each records only privacy-safe evidence |
 
 The captures use the real predecessor and candidate responses for the same
