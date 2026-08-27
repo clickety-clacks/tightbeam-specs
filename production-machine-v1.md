@@ -287,11 +287,13 @@ assignment.
 **EGR-8 — History and adjudication.** Retirement never deletes or rewrites a
 fired check-in wake, prompt message, turn, closed or ruled decision request,
 decision ruling, generation outside the retirement set, supervision row, or
-cancellation row. On either line it supersedes only an open effort decision
-request and cancels only that request's pending owned deadline and notification
-wakes. Active 0.1.9 may create the request; main applies the disposition only
-to a migrated legacy request. Existing `continue` and `dismiss` semantics are
-unchanged for a request that remains open on either line.
+cancellation row. On either line it changes a decision-request row only by
+superseding an open effort decision request. EGR-2 independently cancels each
+pending effort-owned wake for the assignment, including a pending notification
+whose request is open, superseded, or ruled. Active 0.1.9 may create the
+request; main applies the request disposition only to a migrated legacy
+request. Existing `continue` and `dismiss` semantics are unchanged for a
+request that remains open on either line.
 
 **EGR-9 — Compatibility boundary.** Each elected line migrates only from its
 exact predecessor stamp: main from `coordination-fabric-v1-phase1-v7`, and
@@ -389,9 +391,14 @@ its applicable checks against its exact predecessor migration fixture.
    holder-checkin, parent-escalation, decision-deadline, and
    decision-notification wakes; open sibling B with the same roles; and
    pending ordinary scheduled, condition, and supervision wakes attributed to
-   A, when A closes, then only A's five owned wakes change to canceled. B's
-   generator and every unowned wake remain byte-for-byte unchanged. Run the
-   line-applicable subset where a role does not exist.
+   A, when each line's real scheduling seams create the line-applicable owned
+   wakes, then each seam commits its wake and one ownership row together with
+   the exact assignment, generation, and role. When the fixture forces the
+   ownership insert to fail at each seam, that seam commits no wake,
+   generation change, decision-request insert or advance, or prompt. Given the
+   successfully created rows, when A closes, then only A's owned wakes in the
+   line-applicable role set change to canceled. B's generator and each unowned
+   wake remain byte-for-byte unchanged.
 3. **EGR-A3 — Delivery race.** Given two identical pending owned prompt wakes,
    when close commits before delivery for the first and delivery commits
    before close for the second, then the first has one typed cancellation and
@@ -411,8 +418,10 @@ its applicable checks against its exact predecessor migration fixture.
    requests at notification, deadline, and `continue` ruling boundaries, when
    close wins each race, then the request is superseded, its pending owned
    wakes are canceled, and the losing action creates no replacement. When
-   each action wins first, close cancels every pending replacement and retires
-   any new current generation. A ruled request and its ruling remain byte-for-
+   each action wins first, close cancels each pending owned replacement and
+   retires each new current generation. Given a ruled request whose owned
+   notification remains pending, when the assignment closes, then the
+   notification is canceled while the request row and ruling remain byte-for-
    byte unchanged. The main fixture starts from a migrated legacy open effort
    request; the 0.1.9 fixture also exercises new request creation.
 6. **EGR-A6 — Restart, replay, and reopen.** Given a retired generator with
