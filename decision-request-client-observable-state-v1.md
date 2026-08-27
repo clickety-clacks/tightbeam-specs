@@ -7,11 +7,14 @@ file carries no implementation, target, merge, deploy, or release authority.
 
 Close firehose reconstruction gap G6 for a cold client. Freeze the public
 decision-request status values, the public item transitions, the firehose class for
-each transition, and the identifiers that correlate each notice to one REST row.
+each transition, the wire version, and the identifiers that correlate each notice to
+one REST row.
 
 This amendment supersedes only these existing clauses:
 
 - the decision-request status enum in `rest-state-api-v1-wire-schema.md`;
+- the decision-request instance of the REST R4 envelope version in
+  `rest-state-api-v1.md`;
 - the decision-request row in REST R8 in `rest-state-api-v1.md`; and
 - the decision-request class list in firehose R2 in `event-firehose-v1.md`.
 
@@ -27,8 +30,9 @@ The other clauses in those files remain in force.
   behavior, replacement policy, or assignment policy.
 - This amendment does not add a projected actor, reason, timestamp, or successor-id
   field to the REST decision-request item.
-- This amendment does not change firehose recovery, ordering, visibility, envelope,
-  versioning, or shared-serializer rules.
+- This amendment does not change firehose recovery, ordering, visibility, or
+  shared-serializer rules. It applies the existing widening rule to the
+  decision-request envelope and notice version.
 - This amendment does not authorize product code, a product target, a merge, a deploy,
   or a release.
 - Operating pattern taught to agents: none.
@@ -45,6 +49,10 @@ The other clauses in those files remain in force.
   post-transition decision-request item as its payload.
 - **Resource token**: the exact string `decision-requests` in the REST envelope and
   state notice.
+- **Decision-request schema version**: integer `2` in a decision-request REST envelope
+  and in each DR2 state notice. Other resources keep their existing schema versions.
+- **Spec revision**: `v1` in this filename identifies the first revision of this
+  amendment. It does not identify the decision-request wire schema version.
 - **Row identifier**: the decision-request item's `id`.
 - **Correlation identifier**: `refs.decisionRequestId` in a state notice.
 - **Replacement request**: a distinct decision-request item whose creation makes an
@@ -98,6 +106,7 @@ DR4. Each DR2 class has this exact mapping:
 
 | Property | Value |
 |---|---|
+| `schemaVersion` | `2` |
 | `resource` | `decision-requests` |
 | `op` | `upsert` |
 | primary ref key | `decisionRequestId` |
@@ -106,21 +115,28 @@ DR4. Each DR2 class has this exact mapping:
 
 The payload `id`, `status`, and `rowVersion` equal the values returned by an authorized
 detail read for the correlation identifier after the transition. The REST list and
-detail envelopes use the same `decision-requests` resource token. [AC3]
+detail envelopes use `schemaVersion:2` and the same `decision-requests` resource token.
+A producer does not emit a DR2 class or the widened status domain with
+`schemaVersion:1`. [AC3]
 
-DR5. One committed DR2 transition produces one state notice for each active
-subscription whose filters match and whose principal can read the post-transition
-item. A retry that leaves the item unchanged produces no new state notice. [AC4, AC5]
+DR5. While a connection stays healthy through the existing post-commit handoff, one
+committed DR2 transition produces one state notice for each active subscription whose
+filters match and whose principal can read the post-transition item. A retry that
+leaves the item unchanged produces no new state notice. A failed post-commit handoff
+keeps the existing best-effort recovery contract. [AC4, AC5]
 
 DR6. Creation of a replacement request produces its own
 `decision_request.opened` notice. Superseding the prior effort request produces a
 separate `decision_request.superseded` notice whose correlation identifier names the
 prior row. [AC6]
 
-DR7. A client applies a state notice by the pair `(payload.id,payload.rowVersion)`.
-After a reconnect or an unknown class/schema/version, the client discards affected
-cached decision-request state and rebuilds it from REST under the existing firehose
-recovery rules. [AC7]
+DR7. A schema-version-2 client applies a state notice by the pair
+`(payload.id,payload.rowVersion)`. After a reconnect or an unknown decision-request
+class with a supported schema version, the client discards cached decision-request
+state and rebuilds it from REST under the existing firehose recovery rules. A client
+that does not support the received `schemaVersion` discards cached decision-request
+state, reports the unsupported version, and waits for a compatible decoder before it
+applies another decision-request snapshot or notice. [AC7]
 
 DR8. The amendment does not require a client to infer a transition from timestamps,
 actor fields, reasons, wake events, assignment events, or elapsed time. The class and
@@ -129,8 +145,9 @@ post-transition payload report the observable event directly. [AC8]
 ## Architecture
 
 The decision-request public-state mapping is one closed registry seam. Each DR2 row
-selects the class, fixed resource, fixed operation, primary ref key, and existing R7
-serializer. REST list/detail responses and firehose payloads call that same serializer.
+selects the class, fixed schema version, fixed resource, fixed operation, primary ref
+key, and existing R7 serializer. REST list/detail responses and firehose payloads call
+that same serializer.
 
 The public item transition is the event. The implementation compares the prior and
 resulting R7 items. It selects the DR2 class from that difference, not from a timer,
@@ -142,6 +159,11 @@ states, internal actions, and same-status changes that leave the R7 item byte-eq
 outside this amendment. A future public status or public edge requires a reviewed
 amendment to DR1 and DR2 before a producer emits it.
 
+Schema version 2 owns the seven-value decision-request status domain and the eight DR2
+classes. Schema version 1 keeps its prior meaning. This is a versioned compatibility
+break for decision-request consumers, not a silent widening. No negotiation mechanism
+is added.
+
 One mutation seam owns the public item transition: the decision-request transition
 function that validates DR2, increments `rowVersion`, and hands the committed item and
 selected class to the existing post-commit publisher.
@@ -152,7 +174,8 @@ AC1 — Public enum closure (DR1)
 
 - Given seven authorized detail fixtures whose statuses cover `open`, `answered`,
   `returned`, `ruled`, `consumed`, `withdrawn`, and `superseded`, when a client decodes
-  each response, then each response contains one accepted public status.
+  each response, then each envelope has `schemaVersion:2` and each response contains
+  one accepted public status.
 - Given a stored fixture with status `paused`, when REST or the firehose serializer
   reads it, then serialization fails and no partial item or state notice is emitted.
 
@@ -174,17 +197,18 @@ AC3 — Event-to-row correlation (DR4)
 - Given a committed `open` to `returned` transition for `dr_123` at row version 9,
   when an authorized client receives the notice and fetches
   `GET /api/decision-requests/dr_123`, then the notice has class
-  `decision_request.returned`, resource `decision-requests`, op `upsert`,
-  `refs.decisionRequestId:"dr_123"`, and a payload byte-equal to the detail item with
-  `id:"dr_123"`, `status:"returned"`, and `rowVersion:9`; the detail envelope also has
-  resource `decision-requests`.
+  `decision_request.returned`, `schemaVersion:2`, resource `decision-requests`, op
+  `upsert`, `refs.decisionRequestId:"dr_123"`, and a payload byte-equal to the detail
+  item with `id:"dr_123"`, `status:"returned"`, and `rowVersion:9`; the detail envelope
+  also has `schemaVersion:2` and resource `decision-requests`.
 
 AC4 — Visibility (DR5)
 
-- Given two matching subscriptions where one principal can read `dr_123` and the other
-  cannot, when `dr_123` moves from `open` to `withdrawn`, then the authorized
-  subscription receives one correlated notice and the other subscription receives no
-  frame that identifies the row.
+- Given a connection that stays healthy through post-commit handoff and two matching
+  subscriptions where one principal can read `dr_123` and the other cannot, when
+  `dr_123` moves from `open` to `withdrawn`, then the authorized subscription receives
+  one correlated notice and the other subscription receives no frame that identifies
+  the row.
 
 AC5 — Idempotent retry (DR5)
 
@@ -194,17 +218,22 @@ AC5 — Idempotent retry (DR5)
 
 AC6 — Replacement rows (DR6)
 
-- Given open effort request `dr_old`, when creation of `dr_new` supersedes it, then the
-  client receives one `decision_request.superseded` notice correlated to `dr_old` and
-  one `decision_request.opened` notice correlated to `dr_new`; each payload equals its
-  own REST detail item.
+- Given open effort request `dr_old` and a matching subscription whose connection stays
+  healthy through post-commit handoff, when creation of `dr_new` supersedes it, then
+  the client receives one `decision_request.superseded` notice correlated to `dr_old`
+  and one `decision_request.opened` notice correlated to `dr_new`; each payload equals
+  its own REST detail item.
 
 AC7 — Rebuild convergence (DR7)
 
-- Given a client misses, duplicates, or reorders decision-request notices, when it
-  follows the existing recovery rule and rebuilds from REST, then its map keyed by
-  decision-request `id` equals a fresh REST snapshot and subsequent higher
+- Given a schema-version-2 client misses, duplicates, or reorders decision-request
+  notices, when it follows the existing recovery rule and rebuilds from REST, then its
+  map keyed by decision-request `id` equals a fresh REST snapshot and subsequent higher
   `rowVersion` notices converge by last-version-wins.
+- Given a schema-version-1 client receives a decision-request frame with
+  `schemaVersion:2`, when it cannot decode version 2, then it discards its cached
+  decision-request map, reports schema version 2 as unsupported, and applies no
+  decision-request snapshot or notice until it has a version-2 decoder.
 
 AC8 — Direct event detection (DR8)
 
