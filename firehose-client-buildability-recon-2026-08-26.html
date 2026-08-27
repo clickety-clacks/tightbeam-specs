@@ -40,11 +40,11 @@
       <div class="badge bad">VERDICT: NO — INSUFFICIENT</div>
       <h1>Firehose client buildability recon</h1>
       <p>A Clawline-class client cannot cold-build and then maintain the specified model from the current contract without choosing between contradictory authorities or importing private wire knowledge.</p>
-      <p><strong>Confidence: high.</strong> The decisive defects are explicit field and mutation omissions in the canonical files, independently confirmed by current product mutation and route inventories. The missing short-form kin cards reduce confidence only in their historical detail, not in this verdict.</p>
+      <p><strong>Confidence: high.</strong> The decisive defects are explicit field and mutation omissions in the canonical files, independently confirmed by current product mutation and route inventories. Durable evidence from all four named closed kin was reconciled before this verdict.</p>
     </div>
     <div class="meta">
       <div>Question fixed: can a client use only public query contracts for state and the firehose only for freshness?</div>
-      <div>Evidence cut: 2026-08-26 21:27 PT</div>
+      <div>Evidence cut: 2026-08-26 21:43 PT</div>
       <div>Specs: <code>45a650e25f334827e8238bfff3ea58e7a32b4916</code></div>
       <div>Product: <code>cba8d6c5e43e974e93890a901b83abd55f723500</code></div>
     </div>
@@ -75,10 +75,11 @@
 
   <section class="card finding">
     <h3><code>G1</code> Transcript rows have no public message-kind discriminator</h3>
-    <p>The REST row freezes <code>role</code>, <code>sender</code>, and content/correlation fields but no <code>messageType</code>. The normative wire schema restricts role to <code>user|assistant</code>. Current product guidance distinguishes model speech, substrate deliveries, and marker messages by an internal sender-plus-first-line convention. A cold client must parse content and reproduce that private convention, directly violating the no-internal-serializer condition.</p>
-    <p><strong>Exact repair needed:</strong> add one closed public field (the named kin proposal is <code>messageType</code>) to the REST R7 row, wire schema, shared message serializer, and <code>message.created</code> payload. It must distinguish at least assistant, substrate, and marker without content parsing.</p>
+    <p>The current canonical REST row freezes <code>role</code>, <code>sender</code>, and content/correlation fields but no <code>messageType</code>. The current normative wire schema restricts role to <code>user|assistant</code>, and current product main has no <code>messageType</code> field. Product guidance distinguishes model speech, substrate deliveries, and marker messages by an internal sender-plus-first-line convention. A cold client must parse content and reproduce that private convention, directly violating the no-internal-serializer condition.</p>
+    <p>The closed kin <code>wi_22c7cfa9-6141-41f6-b971-040d6a7dea8a</code> proves this historical defect was real and identifies the already-reviewed additive shape: nullable/open <code>message_type</code> at storage and conditional <code>messageType</code> at the public boundary, with distinct substrate and marker writers. That repair landed on a prior product line at <code>505b56aa29f151faab7cd9618ca1bba922cff357</code>, but the field is absent from the current canonical contract and the current product-main evidence cut. This is a present-line adoption/port and contract-freeze gap, not a claim that the problem was never solved.</p>
+    <p><strong>Exact repair needed:</strong> adopt and freeze that reviewed <code>messageType</code> shape in the current REST R7 row, wire schema, shared message serializer, and <code>message.created</code> payload. It must distinguish at least assistant, substrate, and marker without content parsing.</p>
     <p><strong>Blocks:</strong> correct bubble/divider/error rendering and preservation of marker semantics.</p>
-    <p class="cite">Evidence: <code>rest-state-api-v1.md:577-590</code>; <code>rest-state-api-v1-wire-schema.md:147-165,178-196</code>; product <code>wire/payloads.ex:10-66</code>.</p>
+    <p class="cite">Evidence: <code>rest-state-api-v1.md:577-590</code>; <code>rest-state-api-v1-wire-schema.md:147-165,178-196</code>; product <code>wire/payloads.ex:10-66</code>; kin finding <code>att_13a12d08-dfeb-4b0d-a282-69d6bf9ff55b</code> and landed commit <code>505b56aa29f151faab7cd9618ca1bba922cff357</code>.</p>
   </section>
 
   <section class="card finding">
@@ -155,13 +156,24 @@
     <div class="card"><h3>“Pagination itself is missing” — disproved</h3><p>REST fixes tail default, exclusive before/after, oldest-to-newest pages, signed immutable tuples, filter binding, deleted-boundary behavior, and cap 500. The remaining defect is authority/barrier reconciliation, not basic paging.</p></div>
     <div class="card"><h3>“Events must replay history” — disproved</h3><p>Subscribe-first plus buffered LWW notices and a full re-snapshot on any doubt is coherent. Heartbeat seq detects a lost trailing notice. Replay is unnecessary if every displayed state mutation has a mapping.</p></div>
     <div class="card"><h3>“Core work/message ids cannot correlate” — disproved in the spec</h3><p>V5 and REST R8 bind messageId, workItemId, assignmentId, and attestId to the public projection ids. R10 defines version lifetime through delete/recreate. Current-main deviations remain implementation findings.</p></div>
-    <div class="card"><h3>“Stream assembly must glue chunks” — disproved</h3><p>The planned model uses finalized message rows and <code>message.created</code>; current public chat payloads declare <code>streaming:false</code>. One stored message is one model row. The closed historical assembly defect does not justify client chunk assembly.</p></div>
+    <div class="card"><h3>“Stream assembly must glue chunks” — disproved</h3><p>The planned model uses finalized message rows and <code>message.created</code>; current public chat payloads declare <code>streaming:false</code>. Kin <code>wi_a987bcc1-f354-4bde-bf43-39d6763cb6ab</code> proves the historical server defect and its repair: public ACP <code>messageId</code>, separate stored message records, atomic multi-row commit, ordered publication, and one terminal frame. The repair landed at <code>f157c19444e22c4a69e5ab773b8b54f4744f3c34</code> and integrated at <code>41cceaae52b205ddb8a725c224b8fe3ba6b2549d</code>. One stored message is one model row; a client must not concatenate chunks.</p></div>
   </div>
+
+  <h2>Named kin disposition</h2>
+  <table>
+    <thead><tr><th>Closed kin</th><th>Durable result</th><th>Effect on this verdict</th></tr></thead>
+    <tbody>
+      <tr><td><code>wi_ef8401df-da1c-493e-99c6-7310291ea8c9</code><br>HTTP facade parity</td><td>Diagnosis found no facade-only liveness gap. Failed wake specimens put <code>target</code> in params instead of the required top level. Reviewed clean at <code>att_98810c3e-e07a-4269-a5eb-fee770cbbce5</code>; producer completion <code>att_90106394-80c7-4997-b792-2a6bb687f9f6</code>.</td><td>Disproves HTTP facade parity as a current blocker. No gap is charged here.</td></tr>
+      <tr><td><code>wi_e2d94af7-a4b2-405e-af39-5ed94d7d5124</code><br><code>ws://</code> CLI scheme</td><td>Session-file <code>ws/wss</code> normalization to <code>http/https</code> landed at <code>69d2af9</code>; reviewed clean at <code>att_4e9bf40d-6156-46a5-a5f6-3a0a3d86707c</code>; completion <code>att_c6dabe20-a5c6-458c-bb24-1d6d3931c3e0</code>.</td><td>Disproves CLI transport normalization as a current contract blocker. No gap is charged here.</td></tr>
+      <tr><td><code>wi_22c7cfa9-6141-41f6-b971-040d6a7dea8a</code><br>MARKER/SUBSTRATE wire types</td><td>The missing structured class was confirmed, an additive public <code>messageType</code> repair was reviewed, and it landed on a prior line at <code>505b56aa29f151faab7cd9618ca1bba922cff357</code>.</td><td>Sharpens G1. The exact repair is known, but it is not present in the current canonical query contract or current product-main evidence cut.</td></tr>
+      <tr><td><code>wi_a987bcc1-f354-4bde-bf43-39d6763cb6ab</code><br>server stream assembly</td><td>The server-side coalescing defect was fixed and reviewed clean at <code>att_b75635de-0466-40d3-bf04-ce7b4b49bbdd</code>; producer completion <code>att_4167d841-5f9d-40a7-9fb7-cb97894a40f5</code>; merge receipt <code>att_c5873c90-e2bc-4fc3-9204-ec82ab569ce6</code>.</td><td>Disproves client-side chunk assembly as a requirement. The public model remains finalized message rows.</td></tr>
+    </tbody>
+  </table>
 
   <h2>Minimum decision this report supports</h2>
   <div class="card">
     <p>Do not dispatch slice-2 client implementation from the present query/firehose contract. First repair G1-G5 and G8, then re-run this matrix against one exact reviewed three-file revision. G6-G7 and I2-I4 must close before claiming the broader “every admitted shared-state model” goal. I1 can proceed as implementation only after that spec revision is fixed; it is not evidence that the intended REST architecture is wrong.</p>
-    <p>The evidence strength is high for the negative verdict and for G1-G5. It is medium-high for the exhaustive mutation inventory because the assignment supplied four kin ids in short form and the live substrate refused each; repository evidence independently establishes the named Clawline message-type and transport defects.</p>
+    <p>The evidence strength is high for the negative verdict and for G1-G5. It is medium-high for the exhaustive mutation inventory because that claim spans every admitted public mutation. All four exact named kin were read from their durable closed records; they remove HTTP-facade, CLI-scheme, and client-side stream assembly from the active blockers and validate the exact prior-line repair shape for G1.</p>
   </div>
 
   <h2>Source and method</h2>
@@ -170,6 +182,8 @@
     <div>event-firehose-v1.md; rest-state-api-v1.md; rest-state-api-v1-wire-schema.md; rest-state-api-r3-adjudication.md; rest-vs-cli-adjudication.md; cli-surface-v1.md; transcript-verb-v1.md; 0.2 program/handoff/build-ledger authorities.</div>
     <div style="margin-top:8px">Product evidence examined at commit cba8d6c5e43e974e93890a901b83abd55f723500:</div>
     <div>wire/router.ex; wire/socket.ex; wire/payloads.ex; firehose/registry.ex; gateway.ex; org.ex; escalation.ex; artifacts.ex; assets.ex; devices.ex.</div>
+    <div style="margin-top:8px">Closed kin evidence consumed from durable work-item and attest rows:</div>
+    <div><code>wi_ef8401df-da1c-493e-99c6-7310291ea8c9</code>; <code>wi_e2d94af7-a4b2-405e-af39-5ed94d7d5124</code>; <code>wi_22c7cfa9-6141-41f6-b971-040d6a7dea8a</code>; <code>wi_a987bcc1-f354-4bde-bf43-39d6763cb6ab</code>.</div>
     <div style="margin-top:8px">Method: enumerate cold-client needs and competing sufficiency explanations; derive one client algorithm from specs only; falsify it at each contract seam; then compare current main solely to distinguish missing implementation from missing authority. No product code, spec behavior, target, merge, deploy, release, or client implementation changed.</div>
   </div>
 </main>
