@@ -38,8 +38,9 @@ The transcript-message `messageType` key is always present. Its value is a
 string or null. Current writers emit exactly `assistant`, `substrate`,
 `marker`, or `agent`; human-authored and historical unclassified rows emit
 null. The string domain is open for additive compatibility: a reader accepts
-an unrecognized string and falls back to the item's `role`. An encoder does
-not derive this field from `content`, `sender`, or another public field.
+an unrecognized string without changing the item's `role`, and the client
+keeps its existing role-based rendering behavior. An encoder does not derive
+this field from `content`, `sender`, or another public field.
 
 Notation: `S` string, `I` integer, `B` boolean, `N` JSON number, `O<T>` closed
 object shape T, `M<T>` string-keyed map of T, and `A<T>` array of T.

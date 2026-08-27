@@ -90,7 +90,10 @@ The canonical firehose spec lives only in the `tightbeam-specs` repository as
 set is `event-firehose-v1.md`, `rest-state-api-v1.md`, and
 `rest-state-api-v1-wire-schema.md`; a change to an R8b mapping, its R9
 dependency, its filter value, or its wire type lands those coupled files in
-one reviewed revision. Recon documents, adjudication ledgers, artifact rows,
+one reviewed revision. G1 uses the same exact canonical set; a change to the
+transcript-message projection, the `message.created` mapping, or the
+`messageType` wire contract lands all three files in one reviewed revision.
+Recon documents, adjudication ledgers, artifact rows,
 transcripts, worktrees, and review reports are authority evidence, not
 canonical custody. This amendment remains a candidate until one exact
 revision of the three-file set passes independent review and lands in
@@ -135,7 +138,8 @@ the companion REST surface.
 
 P6. `messageType` is the sole public message-kind discriminator for transcript
 messages. `role` keeps authorship direction and `sender` keeps provenance. A
-firehose adapter does not add `messageKind`, `kind`, or another alias.
+firehose adapter does not add a top-level `messageKind`, `kind`, or another
+message-kind alias.
 
 ## Goal
 
@@ -213,7 +217,8 @@ class, source seam, refs, natural version, visibility, and payload.
 T7. **Message type** — the nullable classification stored at the message write
 seam and exposed as `messageType` in the canonical transcript-message
 projection. Current writers emit `assistant`, `substrate`, `marker`, or
-`agent`. A null or unrecognized value adds no classification beyond `role`.
+`agent`. A null or unrecognized value does not override `role`; the client
+keeps its existing role-based rendering behavior.
 
 ## Architecture — the event vocabulary law
 
@@ -340,7 +345,7 @@ correlation contract). A class without a row is a red build.
 |---|---|---|---|---|---|---|---|
 | `condition_fact.filed` | `condition facts` | `upsert` | `factId` | exact shared R7 condition-fact serializer | The condition fact `id` is its append-only natural version; its `rowVersion` equals `id`. Each successful insertion into `condition_facts` emits one notice after commit. An idempotent filing that returns the existing fact emits none. | `GET /api/facts` visibility. Consumers apply last-version-wins by `factId`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 | `critical_lease.updated` | `critical state` | `upsert` | `sessionKey` | exact shared R7 critical-state serializer | The item uses R7 critical-state `rowVersion`. Each committed change to the R7 item for one `sessionKey` emits one notice after commit. A replay or idempotent request that leaves the item and `rowVersion` unchanged emits none. | `GET /api/critical-state` admin-only visibility. Consumers apply last-version-wins by `sessionKey`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
-| `message.created` | `transcript messages` | `upsert` | `messageId`, `sessionKey` | exact shared R7 transcript-message serializer | The item uses its R7 `rowVersion`. Each newly committed transcript message emits one notice after commit; an idempotency replay that returns the existing row emits none. | `GET /api/sessions/:sessionKey/messages` visibility. Consumers correlate by `messageId` and apply last-version-wins by item `id`. | A1 covers the class and both refs. A6 verifies the complete item, including `messageType`, is byte-equivalent to the matching REST row. |
+| `message.created` | `transcript messages` | `upsert` | `messageId`, `sessionKey` | exact shared R7 transcript-message serializer | The item uses its R7 `rowVersion`. Each newly committed transcript message emits one notice after commit; an idempotency replay that returns the existing row emits none. | `GET /api/sessions/:sessionKey/messages` visibility. Consumers correlate by `messageId` and apply last-version-wins by `(payload.id, payload.rowVersion)`. | A1 covers the class and both refs. A6 verifies the complete item, including `messageType`, is byte-equivalent to the matching REST row. |
 
 R8b. Source invalidation classes are deliberately not R8 rebuildable-state
 rows. Each emits `op:"observe"`, omits `resource`, and carries exactly

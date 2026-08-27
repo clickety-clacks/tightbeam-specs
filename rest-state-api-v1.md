@@ -1,5 +1,9 @@
 # REST state API v1 — the read plane (product spec, canonical r4)
 
+G1 amendment candidate, 2026-08-27: add one nullable, open `messageType`
+discriminator to the canonical transcript-message item shared by REST, CLI
+wrappers, and `message.created`. This amendment adds no second item shape.
+
 Amendment candidate, 2026-08-25: distinguish durable Toplines from the
 mechanical ExecutionMap and add the REST-only ExecutionMap contract. The
 amendment changes no durable Toplines field, mutation, or route. Its companion
@@ -104,6 +108,9 @@ The canonical spec lives only in the `tightbeam-specs` repository as
 `rest-state-api-v1.md`, `rest-state-api-v1-wire-schema.md`, and
 `event-firehose-v1.md`; a change to an ExecutionMap envelope, dependency
 entry, or R8b mapping lands those coupled files in one reviewed revision.
+G1 uses this same exact canonical set; a change to the transcript-message
+projection, the `message.created` mapping, or the `messageType` wire contract
+lands all three files in one reviewed revision.
 `rest-state-api-r3-adjudication.md`, `rest-vs-cli-adjudication.md`, and
 `topline-map-v1.md` remain authority inputs, not custody companions for this
 amendment. A worktree, artifact row, transcript, adjudication ledger, or review
@@ -188,8 +195,8 @@ aliases, replaces, or widens the other.
 
 I8. `messageType` is the sole public message-kind discriminator on a
 transcript-message item. `role` retains authorship direction and `sender`
-retains provenance. No adapter emits `message_type`, `messageKind`, `kind`, or
-another message-kind alias.
+retains provenance. No adapter emits a top-level `message_type`, `messageKind`,
+`kind`, or another message-kind alias.
 
 ## Architecture
 
@@ -273,8 +280,8 @@ mapping. Its REST home is
 
 T6. **Message type** — the nullable `messageType` field on the canonical
 transcript-message item. Current message writers emit `assistant`,
-`substrate`, `marker`, or `agent`. A null or unrecognized value adds no
-classification beyond the existing `role` field.
+`substrate`, `marker`, or `agent`. A null or unrecognized value does not
+override `role`; the client keeps its existing role-based rendering behavior.
 
 ## Requirements — surface
 
@@ -661,7 +668,8 @@ message content. Current assignments are exact:
 
 A human-authored message and a historical row without the discriminator use
 `null`. Current writers emit no other string. Readers accept an unrecognized
-future string and fall back to `role`; they do not reject the item or parse
+future string without changing `role`; the client keeps its existing
+role-based rendering behavior. Readers do not reject the item or parse
 `content`. The R7 serializer copies the stored value, including null. REST,
 CLI wrappers, and `message.created` call that one serializer; an adapter does
 not construct another transcript-message map.
@@ -1387,10 +1395,11 @@ inline SQL, a second visibility predicate, a second item serializer, a
 caller-selected field/sort/join parameter, and a candidate-only session
 projection.
 
-A35. Given one visible message for each current `messageType` value, one
-human-authored message, and one historical row with no stored discriminator,
-when a caller fetches `GET /api/sessions/:sessionKey/messages`, then the items
-contain `assistant`, `agent`, `substrate`, `marker`, `null`, and `null`
+A35. Given visible messages whose stored `messageType` values are
+`assistant`, `substrate`, `marker`, and `agent`, plus one human-authored
+message and one historical row with no stored discriminator, when a caller
+fetches `GET /api/sessions/:sessionKey/messages`, then their `messageType`
+values are `assistant`, `substrate`, `marker`, `agent`, `null`, and `null`,
 respectively. Each item contains the `messageType` key in the R7 position.
 
 A36. Given those messages and their matching `message.created` notices, when
