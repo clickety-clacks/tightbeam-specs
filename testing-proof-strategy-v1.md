@@ -98,7 +98,7 @@ observable path for a public-journey claim.
 | A3 filtered delivery | Partial | `test/change_socket_test.exs` proves selected filters and visibility ordering. | Drive every R8/R8b registry row through a closed filter matrix. Prove hidden rows never enter filter matching. Add one real-client representative journey, not one network test per row. |
 | A4 M1 convergence | Partial | `test/firehose_smoke_test.exs`; `test/admin_projection_test.exs`; `test/firehose_publisher_test.exs` | Add a registry-driven client model test for create/update/delete, duplicate and older notices, delete/recreate versions, and R8b refetch notices. Use the existing real-client smoke for representative wire journeys. |
 | A5 kill-gateway rebuild | Partial | Unit 1012/4008 coverage in `test/change_socket_test.exs`; manual `scripts/firehose_restart_smoke.exs`. | Port the subprocess journey into ExUnit/CI. In the same fixture, prove real kill/1012/reconnect/rebuild and deterministic slow-consumer 4008/reconnect/rebuild. |
-| A6 byte-equivalent payloads | Partial | Selected projection and notice comparisons in `test/firehose_publisher_test.exs` and `test/admin_projection_test.exs`. | One table compares every rebuildable R8/R8b class with the canonical REST detail serializer after envelope removal, including secret exclusion and special comparator rules. Final proof waits for the canonical REST detail route; the REST owner owns that route, while this card owns the shared comparator. |
+| A6 byte-equivalent payloads | Partial | Selected projection and notice comparisons in `test/firehose_publisher_test.exs` and `test/admin_projection_test.exs`. | One table compares every rebuildable R8 class with the canonical REST detail serializer after envelope removal, including secret exclusion and special comparator rules. Final proof waits for the canonical REST detail route; the REST owner owns that route, while this card owns the shared comparator. |
 | A7 real external consumer smoke | Manual-only | `scripts/firehose_restart_smoke.exs` has historical manual proof; `test/firehose_smoke_test.exs` has a real CI client but does not restart the gateway. | Make the real subprocess client journey an ordinary CI test. Assert subscribe, notice, exact gateway death, 1012, reconnect, snapshot/rebuild, and final convergence. |
 
 The five partials do not require five bespoke harnesses. They require one shared fixture,
@@ -121,10 +121,13 @@ and REST A1-A43 to exact complete, partial, and missing evidence.
 REST A1-A43 implementation roadmap. This card must not duplicate those cards. The only
 shared acceptance seam is A6:
 
-- this strategy supplies the all-class byte comparator and reusable fixtures;
+- this strategy supplies the byte comparator for all rebuildable R8 classes and reusable fixtures;
 - the REST slice supplies the canonical detail route and serializer entry point; and
 - A6 moves to proven only when the comparison runs through that production REST detail
   seam on the same exact product commit.
+
+R8b stays in the A1 and A3 registry coverage and the A4 observe/refetch coverage. It
+stays outside A6 because it has no rebuildable resource.
 
 Until then, a green shared serializer table is useful component evidence, not full A6
 acceptance.
@@ -187,7 +190,7 @@ open port. A5 and the script-consumer A7 proof become automated.
 
 ### 5. Close A6 with the REST delivery slice
 
-Add the all-class serializer comparator now, but land its final acceptance disposition
+Add the serializer comparator for all rebuildable R8 classes now, but land its final acceptance disposition
 with the REST owner's canonical detail route. Compare response bodies after the exact
 allowed envelope removal. Include secret exclusion, stable identifiers, null/absent
 rules, and every special comparator named by the spec.
