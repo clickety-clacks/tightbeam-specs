@@ -23,9 +23,9 @@ The standing detection question is:
 
 > What changed on the deliverable since the last look?
 
-For this card, the deliverable is one of A1-A7 moving from partial or manual-only to
-automated proof. Test counts, audits, and green unrelated suites do not substitute for
-that movement.
+For this card, the deliverable is one named gap within A1-A7 moving from partial or
+manual-only evidence to automated proof. Test counts, audits, fixture extraction, and
+green unrelated suites do not substitute for that movement.
 
 ## Corrected facts
 
@@ -137,18 +137,22 @@ acceptance.
 Each card must update the existing acceptance map in the same change. Do not open a
 separate audit or ledger project before the tests. The test is the deliverable.
 
-### 1. Factor the Firehose acceptance fixture and deterministic overflow seam
+### 1. Factor the Firehose acceptance fixture and automate A5 slow-consumer recovery
 
 Extract only the reusable client, gateway, isolated-state, port, barrier, and teardown
 code from the two existing smoke paths. Add an injectable Hub queue limit with default
 1,000 and a test-only pre-ack delivery barrier with production default disabled.
+Use that seam in the same card through the real WebSocket client: force the production
+overflow branch, observe 4008, reconnect, rebuild, and converge.
 
 Acceptance:
 
 - existing `test/firehose_smoke_test.exs` still passes through the real WebSocket;
 - parallel fixture instances share no database, directory, port, process, or queue;
-- a held first delivery plus a small queue deterministically reaches the production
-  overflow branch; and
+- a held first delivery plus a small queue makes the real client observe 4008,
+  reconnect, rebuild, and converge through the production overflow branch;
+- the acceptance map records the A5 slow-consumer gap as automated proof, while A5
+  remains partial only for the gateway-kill path; and
 - teardown proves exact PID exit and port closure without touching another process.
 
 ### 2. Close A1 and A3 with closed tables
@@ -174,15 +178,12 @@ Acceptance: disabling dedupe, accepting an older version, losing a delete/recrea
 ordering edge, or treating an R8b refetch notice as a full projection fails. A4 moves to
 proven.
 
-### 4. Close A5 and automate A7 in one subprocess CI test
+### 4. Close A5 gateway-kill recovery and automate A7 in one subprocess CI test
 
 Convert `scripts/firehose_restart_smoke.exs` into an ExUnit test that uses the shared
-fixture. Run two scenarios with one real client and one disposable gateway subprocess:
-
-1. subscribe, receive a notice, kill the exact gateway, observe 1012, restart, reconnect,
-   rebuild, and converge; and
-2. hold delivery, overflow the small queue, observe 4008, reconnect, rebuild, and
-   converge.
+fixture. With one real client and one disposable gateway subprocess, subscribe,
+receive a notice, kill the exact gateway, observe 1012, restart, reconnect, rebuild,
+and converge. Regress the Card 1 slow-consumer journey without reimplementing it.
 
 Acceptance: the test runs in the normal Linux and macOS CI path, uses no shared port or
 state, identifies the exact process before signaling it, and fails on leaked PID or
@@ -202,10 +203,11 @@ route and Firehose notice comparison run on the same commit.
 ## Delivery order and sizing
 
 Cards 1 and 2 are the first weekly slice. Card 1 creates no general framework; it
-factors code already used twice and adds two bounded controls. Card 2 immediately turns
-that support into A1/A3 movement. Card 3 follows without a new process harness. Card 4
-then promotes the existing manual proof into CI and adds the only new fault case. Card
-5 lands with the corresponding REST slice.
+factors code already used twice, adds two bounded controls, and immediately automates
+the A5 4008/reconnect/rebuild gap. Card 2 closes A1/A3. Card 3 follows without a new
+process harness. Card 4 promotes the existing manual restart proof into CI, closes the
+remaining A5 gateway-kill gap, and automates A7. Card 5 lands with the corresponding
+REST slice.
 
 Do not start with another runner audit, broad acceptance ledger, live provider test, or
 all-product framework. Those paths cost more and do not close the named Firehose gaps.
