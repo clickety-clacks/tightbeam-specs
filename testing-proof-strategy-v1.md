@@ -1,9 +1,9 @@
-# Tightbeam testing proof strategy v1
+# Tightbeam testing proof strategy v2
 
 Status: PROPOSED, 2026-08-28. Target unset.
 
-Product evidence baseline: `tightbeam` main
-`de135169a34c134861bfaa59267b2e3e6706faa3`.
+Product evidence baseline: corrected authoritative main proof at
+`01c52e16` and the current Firehose acceptance audit in `art_8daabc76`.
 Specification baseline: `tightbeam-specs` main
 `307210c542701b714df88a4ca778cab434dca35d`.
 
@@ -11,282 +11,213 @@ Specification baseline: `tightbeam-specs` main
 
 The test system must answer one question: **which user-visible claim is proven, by
 which executable evidence, on which exact bytes?** A green aggregate is useful, but it
-is not a product proof. An activity report is not a product proof either.
+is not an acceptance map. Activity is not proof.
 
-Tightbeam will make the smallest real journey the normal unit of acceptance. The
-default journey uses one external client, one gateway/controller, an isolated database,
-an ephemeral port, and the public protocol. It proves one claim and fails near its
-cause. Larger suites then prove composition. Live tests remain only for seams that a
-local process cannot represent.
+For Firehose, use the smallest real system that can prove each claim. Reuse the real
+WebSocket client and gateway setup that already runs in CI. Add a subprocess only when
+process death or restart is the claim. Use tables for closed registries, filter
+matrices, and byte identity. Do not make a network journey carry a proof that a table
+can express more cheaply and completely.
 
 The standing detection question is:
 
 > What changed on the deliverable since the last look?
 
-For testing, the deliverable is a named acceptance claim moving from unproven to proven.
-Test count, runtime, retries, audit rows, and green unrelated suites are supporting data.
-They do not substitute for that movement.
+For this card, the deliverable is one of A1-A7 moving from partial or manual-only to
+automated proof. Test counts, audits, and green unrelated suites do not substitute for
+that movement.
 
-## Decision
+## Corrected facts
 
-Adopt the one-client/one-controller hermetic micro-system test as the center of the
-strategy. Do not use it as the only kind of test.
+This strategy does not plan around the two superseded premises in the original card.
 
-The hypothesis is right because the most costly current gaps cross a public boundary:
-HTTP or WebSocket framing, authentication, visibility, commit publication, reconnect,
-and rebuild. Pure module tests can make every component green while those seams remain
-broken. A full live-org or all-feature journey reaches the seams, but it is slow,
-failure-coupled, expensive, and difficult to diagnose. The existing
-`test/firehose_smoke_test.exs` already demonstrates the useful shape: a real TCP
-WebSocket client, a real in-process Bandit gateway, an isolated database, an ephemeral
-port, and no provider credential.
+- Authoritative `scripts/verify_mix.sh` was green at product `01c52e16`: 9 doctests,
+  1,895 tests, 0 failures, and 11 skipped. The six failures from bare `mix test` used a
+  different and unsupported invocation. Runner remediation is not a Firehose
+  prerequisite.
+- `test/firehose_smoke_test.exs` is real end-to-end CI coverage. It uses the real
+  `Tightbeam.ClientE2E.WS` TCP client through authentication, subscribe, notice,
+  disconnect, reconnect, rebuild, and convergence against an isolated gateway.
+- `scripts/firehose_restart_smoke.exs` uses a real client and gateway subprocess, but
+  no CI workflow invokes it. Its restart proof remains manual-only.
+- The exhaustive audit in `art_8daabc76` establishes the current acceptance status:
+  A2 is proven; A1, A3, A4, A5, and A6 are partial; A7 is manual-only.
 
-Use three complementary forms:
+A later unrelated suite observation must not displace this Firehose work. The
+authoritative suite command remains `scripts/verify_mix.sh`; any new baseline failure
+is a separate maintenance finding unless it invalidates a Firehose proof directly.
 
-1. Use table and property tests for closed sets, ordering, serializer identity, cursor
-   algebra, and authorization matrices.
-2. Use one-client/one-controller micro-system tests for ordinary public journeys.
-3. Use a real subprocess only when process death, restart, port handoff, or boot order is
-   the claim. Use a live provider or client only when that external boundary is the
-   claim.
+## Decision: extend the existing harness
 
-A micro-system test is not end-to-end if it calls the handler or publisher directly. It
-must enter through the public HTTP/WebSocket surface, use the production serializer and
-authorization path, commit through the production state seam, and observe the result as
-a client would.
+Mike's one-client/one-controller hypothesis is right for ordinary public journeys, but
+it is not the cheapest oracle for every missing clause.
 
-## Proof tiers and allowed assumptions
+Use one small shared support module, factored from the existing smoke tests, to provide:
 
-| Tier | Purpose | Allowed assumptions | Forbidden shortcut | CI target |
-|---|---|---|---|---|
-| T0 runner contract | Prove the test artifact and prerequisites are the intended ones. | Pinned OTP/Elixir and Rust can be installed by the runner. | Pre-existing CLI binary, undisclosed PATH repair, a non-distributed direct `mix test`, or turning a required prerequisite into a skip. | Every job, before tests. |
-| T1 contract/property | Prove closed tables, serializers, visibility matrices, filtering, cursors, ordering, and exact bytes. | In-process modules, isolated database, deterministic clock/data. | Claiming a transport or client journey. | Every change; focused inner loop. |
-| T2 hermetic micro-system | Prove one ordinary journey through a real public boundary. | One real client, one in-process gateway/controller, temp database and directory, ephemeral port, fixture credential, no external network. | Direct handler calls, mocked wire, shared ports/state, sleeps as synchronization. | Every pull request and push. |
-| T3 hermetic process/fault | Prove boot, shutdown, restart, overflow, disconnect, and rebuild. | One real client and one real disposable gateway subprocess; bounded fault injection. | Signaling an unverified process, shared live state, wall-clock starvation as the oracle. | Every affected change; all main builds. |
-| T4 full regression | Prove product-wide composition on supported operating systems. | T0 has built the exact release CLI and started the distributed test node. | Treating aggregate green as proof of an unmapped acceptance clause. | Linux and macOS on every pull request. |
-| T5 live boundary | Prove a real provider, harness, satellite, ATC, or Clawline boundary. | Fresh disposable state, sanctioned credential, minimal paid turns, explicit cleanup and receipts. | Using a live test for behavior already representable hermetically, or silently omitting an unavailable credential leg. | Scheduled, release, and touched-boundary gates. |
+- one real `Tightbeam.ClientE2E.WS` client;
+- one in-process Bandit gateway for fast public-boundary cases;
+- one disposable gateway subprocess for restart cases;
+- an isolated database and temporary state directory;
+- an operating-system-assigned port with exact ownership and teardown checks;
+- deterministic commit, registration, delivery, and restart barriers;
+- a configurable Firehose queue limit whose production default remains 1,000; and
+- a test-only delivery barrier whose production behavior remains immediate delivery.
 
-Initial time budgets are guardrails, not coverage reductions: a T2 test should finish in
-10 seconds and its lane in 2 minutes; a T3 journey should finish in 90 seconds and its
-lane in 5 minutes; T4 should stay below 10 minutes. Crossing a budget opens a performance
-or decomposition finding. It does not authorize deleting the assertion.
+The queue limit and delivery barrier are necessary. Today `ChangeSocket` acknowledges
+the first notice to `Hub` before the client has consumed the frame. A client that merely
+stops reading cannot deterministically fill the Hub queue. Kernel buffering, sleeps,
+or 1,001 timed mutations would produce a slow and flaky test. The barrier holds the
+first delivery before acknowledgment, and the small queue limit reaches the same
+production overflow branch in a few mutations. The public WebSocket client must still
+observe close code 4008 and rebuild normally after reconnect.
 
-## Runner honesty
+Do not build a second client, gateway, database fixture, or general test framework.
+The support module exists only to remove duplication between the current CI smoke and
+the restart smoke.
 
-The environment is runnable. On Gibson the known tool paths are
-`~/.local/opt/elixir-1.19.5/bin` and `~/.cargo/bin`. The product suite requires the exact
-release CLI to be built before Elixir tests:
+## Proof shapes
 
-```text
-cargo build --release --manifest-path cli/Cargo.toml
-scripts/verify_mix.sh
-```
-
-The earlier six-failure result and the canonical runner result describe different
-contracts, not an unrunnable host:
-
-- `scripts/verify_mix.sh` already creates a unique distributed node and verifies its
-  marker. The five Cursor signing failures occur under direct, non-distributed
-  `mix test`.
-- The sixth failure is a RailScript backstop timing test. Its 30-second sleeper and
-  wall-time assertion are a scheduling oracle, so machine load can decide the result.
-- CI builds `cli/target/release/tightbeam` before the Elixir gate. The canonical local
-  script does not own that build, while RailScript has compile-time binary-exists
-  branches that can turn missing required evidence into skips.
-
-Fresh-clone verification on 2026-08-28 at exact product commit `de135169` first proved
-two caller-owned prerequisites: the release CLI build and `mix deps.get`. After those
-steps, the authoritative distributed gate completed in 362.5 seconds with **9 doctests,
-1,895 tests, 1 failure, and 11 skipped**. The sole failure was RailScript's starvation
-case: it expected `script_timeout/timeout` and received `script_error/unreported`. Thus
-current main is runnable and not green. The non-distributed path adds the five Cursor
-signing failures; it is not the authoritative runner.
-
-Make one command own the complete local and CI contract. It must add the two known tool
-directories, print tool versions, build the release CLI from the checked-out source,
-verify its source identity, start the unique distributed node, and run the suite. CI and
-humans must call that same command. A missing tool, stale binary, wrong node, required
-skip, or failed cleanup must exit non-zero with the corrective command in the message.
-
-Replace the RailScript timing oracle with an explicit child-start barrier and a
-controllable deadline or process signal. The test should prove that the wrapper kills a
-known-running child after the deadline. It should not infer that claim from host elapsed
-time.
-
-Required acceptance evidence never skips. A platform-specific or credential-dependent
-test belongs in a named lane whose absence makes that lane incomplete. It does not count
-as green proof elsewhere.
-
-## Current CI truth
-
-Current `.github/workflows/ci.yml` does the following on Linux and macOS:
-
-- installs pinned OTP 28, Elixir 1.19.5, and Rust;
-- builds the release Rust CLI;
-- runs formatting and `scripts/verify_mix.sh` on a distributed node;
-- runs Rust formatting/tests and package checks.
-
-`test/firehose_smoke_test.exs` is part of ordinary ExUnit and therefore runs in that
-lane. `scripts/firehose_restart_smoke.exs` is manual. No current workflow invokes it.
-`client_e2e/ws.ex` contains no firehose subscription journey. The conformance manifest
-still carries pending P6/P7 coverage, so those entries prove nothing.
-
-The required CI shape is:
-
-1. T0 is one canonical command used locally and by every operating-system job.
-2. T1 and T2 run on every pull request. Their names identify the acceptance clauses they
-   prove.
-3. T3 runs on every main build and on a pull request that changes the gateway, socket,
-   lifecycle, queue, or restart seam. The firehose restart journey moves here.
-4. T4 remains the Linux/macOS regression matrix.
-5. T5 runs on a schedule, before release, and when a touched external seam requires it.
-6. CI validates a machine-readable acceptance ledger. A clause cannot say `proven`
-   unless the named test exists and its named job ran on the exact commit.
-
-## Firehose acceptance map
-
-The status below is for full `event-firehose-v1` acceptance on product main
-`de135169`. `Partial` means useful component evidence exists but the complete acceptance
-oracle does not. The independent REST-owner coverage contribution
-`art_8daabc76` / `att_79edc555` reaches the same disposition from its exhaustive
-item-by-item audit at product `01c52e16`; the later `de135169` restart-smoke repair does
-not add a CI invocation or close another acceptance item.
-
-| Item | Status | Existing evidence | Missing proof and required tier |
+| Shape | Use it for | Concrete Firehose work | CI |
 |---|---|---|---|
-| A1 registry both-ways diff | Partial | `test/change_socket_test.exs`; `test/admin_projection_test.exs` | One table must diff every main-tip state mutation and source invalidation both ways against R8/R8b. T1. |
-| A2 registration cut | Proven | `test/change_socket_test.exs` | Keep the post-registration commit cut as a named T2 assertion. |
-| A3 filtered delivery | Partial | `test/change_socket_test.exs` proves class/ref multiplex filters and visibility ordering. | Complete every R8/R8b filter value and absent-ref case through one real subscriber. T1 table plus T2 journey. |
-| A4 M1 convergence | Partial | `test/firehose_smoke_test.exs`, `test/admin_projection_test.exs`, `test/firehose_publisher_test.exs` | Prove the full multi-resource create/update/delete model, duplicate/older notice handling, and restart-safe delete/recreate version ordering. T1 plus T2/T3. |
-| A5 kill-gateway rebuild | Partial | `test/change_socket_test.exs` proves 1012 and 4008 units; `scripts/firehose_restart_smoke.exs` proves a manual restart/rebuild journey. | Put real gateway kill/restart and slow-consumer 4008 reconnect/rebuild in automated T3. |
-| A6 byte-equivalent payloads | Partial | `test/firehose_publisher_test.exs` and `test/admin_projection_test.exs` compare several projections and notice bytes. | Table every R8 class against its canonical REST detail serializer and reject extra/secret fields. T1. |
-| A7 real external consumer smoke | Partial | `scripts/firehose_restart_smoke.exs` has historical manual evidence with a real script client. | Run a real external consumer in CI, including subscribe, notice, disconnect, restart, rebuild, and convergence. T3. A real ATC/Clawline proof remains T5 when that client surface lands. |
+| Closed table | Complete inventories, filters, visibility order, version algebra, and exact bytes. | A1, the closed portion of A3, reducer rules for A4, and A6. | Every change. |
+| In-process micro-system | Ordinary behavior through a real public WebSocket boundary. | A3 delivery and A4 convergence using the existing smoke shape. | Every pull request and push. |
+| Subprocess fault micro-system | Gateway death, 1012, 4008, reconnect, rebuild, and port/process lifecycle. | A5 and A7. | Every affected pull request and every main build. |
+| Live external boundary | Only a client or provider that cannot be represented locally. | A later real ATC/Clawline consumer, if its own acceptance requires it. | Scheduled or release lane. |
 
-No existing automated test proves the whole A1-A7 set. A real client has subscribed,
-received notices, survived a restart, and rebuilt in the manual restart smoke. That
-script is not currently a CI proof.
+An in-process micro-system test must enter through the public WebSocket surface. It
+must use production authentication, visibility, serializer, commit publication, and
+rebuild paths. Direct publisher calls may prepare a mutation but cannot be the only
+observable path for a public-journey claim.
 
-## REST acceptance map and coordination boundary
+## Firehose acceptance closure
 
-The canonical `rest-state-api-v1` defines A1-A43, plus A8a and A13a. The canonical REST
-surface is not implemented on current product main. Current routes are legacy/partial
-surfaces such as `/api/work`, `/api/work-items`, `/api/streams`, and
-`/api/trackable-sessions`. Therefore **no canonical REST acceptance item is fully proven
-end-to-end on current main**. The component evidence is still valuable and must be
-reused rather than rewritten.
-
-| Acceptance group | Full status | Reusable component evidence | Owner boundary |
+| Item | Current status | Existing proof | Cheapest missing proof |
 |---|---|---|---|
-| A1-A4 registry, REST/notice identity, closed projections, convergence | Unproven | `test/firehose_publisher_test.exs`, `test/admin_projection_test.exs`, `test/firehose_smoke_test.exs` | REST owner supplies canonical routes/serializers; testing card supplies ledger and common test kit. |
-| A5-A6 pagination and indistinguishable authorization | Unproven | `test/work_state_test.exs` covers current ordering/filter/recovery; router tests cover current authorization. | REST implementation cards own R5/AU7/AU8 behavior. |
-| A7-A8a real clients, CLI parity, and `asUser` | Unproven | Existing client-e2e and CLI tests prove older surfaces only. | REST owner maps migrations and parity cases. T5 owns the final real-client proof. |
-| A9-A18 read markers, visibility, nested/download, safe values, aliases, composed views, admin, schema, facts | Unproven | `test/admin_projection_test.exs`, `test/router_test.exs`, and current domain tests cover parts. | Implement by REST slice; use T1 matrices and T2 route journeys. |
-| A19-A29 Toplines/ExecutionMap shape, filtering, trees, provenance, markers, errors, and R8b notices | Unproven | `test/execution_map_test.exs`, `test/toplines_test.exs`, and publisher tests cover domain composition. | The REST owner owns route slices; firehose card owns only shared R8b registry/parity assertions. |
-| A30-A37 Topline pagination, normalized filters, selectors, route seams, closed errors and precedence | Unproven | Current topline/domain and router tests are partial. | REST owner supplies route/error adapters; the shared kit supplies deterministic cursor/auth matrices. |
-| A38-A43 message type, transcript/open-reader/detail routes, principals, auth and errors | Unproven | Existing transcript/message projection and router tests are partial. | REST owner owns R3c delivery; shared tests reuse the canonical serializer. |
+| A1 registry both-ways diff | Partial | `test/change_socket_test.exs`; `test/admin_projection_test.exs` | One canonical mutation/invalidation inventory that includes the missing R8b Topline, membership, and subagent-marker classes. Diff it both ways against production registry inputs. Fail on any missing or extra row. |
+| A2 registration cut | Proven | `test/change_socket_test.exs`, “publication before registration cut is never delivered” | Preserve it. Do not rewrite it. |
+| A3 filtered delivery | Partial | `test/change_socket_test.exs` proves selected filters and visibility ordering. | Drive every R8/R8b registry row through a closed filter matrix. Prove hidden rows never enter filter matching. Add one real-client representative journey, not one network test per row. |
+| A4 M1 convergence | Partial | `test/firehose_smoke_test.exs`; `test/admin_projection_test.exs`; `test/firehose_publisher_test.exs` | Add a registry-driven client model test for create/update/delete, duplicate and older notices, delete/recreate versions, and R8b refetch notices. Use the existing real-client smoke for representative wire journeys. |
+| A5 kill-gateway rebuild | Partial | Unit 1012/4008 coverage in `test/change_socket_test.exs`; manual `scripts/firehose_restart_smoke.exs`. | Port the subprocess journey into ExUnit/CI. In the same fixture, prove real kill/1012/reconnect/rebuild and deterministic slow-consumer 4008/reconnect/rebuild. |
+| A6 byte-equivalent payloads | Partial | Selected projection and notice comparisons in `test/firehose_publisher_test.exs` and `test/admin_projection_test.exs`. | One table compares every rebuildable R8/R8b class with the canonical REST detail serializer after envelope removal, including secret exclusion and special comparator rules. Final proof waits for the canonical REST detail route; the REST owner owns that route, while this card owns the shared comparator. |
+| A7 real external consumer smoke | Manual-only | `scripts/firehose_restart_smoke.exs` has historical manual proof; `test/firehose_smoke_test.exs` has a real CI client but does not restart the gateway. | Make the real subprocess client journey an ordinary CI test. Assert subscribe, notice, exact gateway death, 1012, reconnect, snapshot/rebuild, and final convergence. |
 
-Coordination rule: `product-owner:rest-state-api` owns the canonical A1-A43 implementation
-map, route slices, and their product cards. This testing strategy owns the proof tiers,
-acceptance-ledger schema, runner contract, and reusable harness. A REST implementation
-card references the shared harness and updates its own acceptance rows; this card does
-not create duplicate REST feature work.
+The five partials do not require five bespoke harnesses. They require one shared fixture,
+two test processes, and three test files:
 
-The coordinated evidence is durable as `art_8daabc76`, progress `att_79edc555`, and
-completion `att_3b6cc07c`. It confirms that Firehose A2 alone has direct automated proof,
-Firehose A7 is manual-only, and no REST A1-A43 item has complete current-main proof.
+1. Keep closed inventory and filter tables with `test/change_socket_test.exs` or one
+   focused registry test file.
+2. Extend `test/firehose_smoke_test.exs` for fast public convergence.
+3. Replace the manual-only restart proof with
+   `test/firehose_restart_smoke_test.exs` using the shared fixture.
 
-## Acceptance ledger
+## REST coordination boundary
 
-Add a machine-readable ledger in the product repository for each canonical acceptance
-set. Each row records:
+The canonical REST audit is durable as `art_8daabc76`, SHA-256
+`bf00acfc4591fb0cbfd5ac00867c77d48748b5a689590487aad333399d97257b`,
+with progress `att_79edc555` and completion `att_3b6cc07c`. It maps Firehose A1-A7
+and REST A1-A43 to exact complete, partial, and missing evidence.
 
-- specification file and SHA-256;
-- acceptance id;
-- `proven`, `partial`, `unproven`, or `external`;
-- exact test file and test name;
-- proof tier and CI job;
-- the product commit on which the latest proof ran.
+`product-owner:rest-state-api` owns canonical REST routes, delivery order, and the
+REST A1-A43 implementation roadmap. This card must not duplicate those cards. The only
+shared acceptance seam is A6:
 
-CI rejects a missing acceptance id, an unknown extra id, a `proven` row whose test or
-job is absent, and a changed canonical spec hash without a ledger review. `Partial` and
-`external` remain visible; they do not count as proven. This ledger makes the answer to
-“does firehose A5 pass?” a lookup followed by an executable test, not a two-week audit.
+- this strategy supplies the all-class byte comparator and reusable fixtures;
+- the REST slice supplies the canonical detail route and serializer entry point; and
+- A6 moves to proven only when the comparison runs through that production REST detail
+  seam on the same exact product commit.
 
-## Ordered delivery cards
+Until then, a green shared serializer table is useful component evidence, not full A6
+acceptance.
 
-The order is deliberate. Do not start broad acceptance work on an ambiguous runner.
+## Ordered implementation cards
 
-### 1. Make one runner truthful — first card, sized for this week
+Each card must update the existing acceptance map in the same change. Do not open a
+separate audit or ledger project before the tests. The test is the deliverable.
 
-Make one supported command own PATH, release CLI build, source identity, distributed
-node, exact suite invocation, and cleanup. Use it in CI and local guidance. Delete
-RailScript's required-binary skip paths and fail loud on prerequisites. Acceptance: a
-clean checkout runs without operator folklore; removing cargo, Elixir, the binary, or
-distributed mode causes one actionable non-zero refusal; CI calls the same command.
+### 1. Factor the Firehose acceptance fixture and deterministic overflow seam
 
-### 2. Remove the RailScript timing oracle
+Extract only the reusable client, gateway, isolated-state, port, barrier, and teardown
+code from the two existing smoke paths. Add an injectable Hub queue limit with default
+1,000 and a test-only pre-ack delivery barrier with production default disabled.
 
-Replace starvation and wall-time inference with a child-start barrier plus deterministic
-deadline/process observation. Prove the wrapper kills the intended child and closes its
-resources under load. Acceptance: 100 repeated focused runs on a loaded host have zero
-flake, and the test fails when kill/backstop behavior is disabled.
+Acceptance:
 
-### 3. Install the acceptance ledger rail
+- existing `test/firehose_smoke_test.exs` still passes through the real WebSocket;
+- parallel fixture instances share no database, directory, port, process, or queue;
+- a held first delivery plus a small queue deterministically reaches the production
+  overflow branch; and
+- teardown proves exact PID exit and port closure without touching another process.
 
-Add the machine-readable Firehose A1-A7 and REST A1-A43 inventories with current honest
-statuses. Add CI validation for completeness, test existence, job execution, and spec
-hash changes. Acceptance: deleting an id, naming a nonexistent test, or claiming proof
-from a job that did not run fails CI.
+### 2. Close A1 and A3 with closed tables
 
-### 4. Extract the hermetic one-client/one-controller kit
+Create one canonical R8/R8b registry inventory. Include Topline, membership, and
+subagent-marker mutations and invalidations. Diff the inventory both ways against the
+production registration sources. Drive the same rows through type/ref filters,
+present/absent/different refs, principal/origin cases, and visibility-first checks.
 
-Turn the proven setup in `test/firehose_smoke_test.exs` into reusable support for one
-real HTTP/WebSocket client, one in-process gateway, temp database/directory, ephemeral
-port, deterministic barriers, and strict teardown. Acceptance: a representative REST
-journey and firehose journey use it; parallel runs do not share state or ports; leaked
-processes fail the test.
+Acceptance: deleting or adding one mapping, matching an absent ref, or invoking the
+filter matcher for a hidden row fails a named test. A1 and A3 move to proven without a
+network test for every table row.
 
-### 5. Close Firehose A1-A4 and A6
+### 3. Close A4 with a model-based client journey
 
-Add the registry both-ways diff, complete filter/visibility matrix, multi-resource M1
-convergence journey, and REST/notice byte-identity table. Reuse the shared kit and
-canonical serializers. Acceptance: A1-A4 and A6 ledger rows become proven on named T1/T2
-tests; injected missing/extra mappings, stale versions, visibility leaks, or serializer
-drift fail.
+Extend the current CI smoke with one client-side reference reducer. Generate a bounded,
+deterministic sequence across every rebuildable class: create, update, delete,
+duplicate, older notice, delete/recreate, and R8b observe/refetch. Compare the client
+model with an authoritative rebuild after each sequence. Keep a small fixed set of
+public WebSocket journeys as wire witnesses.
 
-### 6. Automate Firehose restart and slow-consumer recovery
+Acceptance: disabling dedupe, accepting an older version, losing a delete/recreate
+ordering edge, or treating an R8b refetch notice as a full projection fails. A4 moves to
+proven.
 
-Port `scripts/firehose_restart_smoke.exs` into the T3 CI lane and add the 4008
-slow-consumer reconnect/rebuild journey. Keep one client and one disposable gateway
-process. Acceptance: A5 and the script-consumer portion of A7 become automated proof;
-PID identity, port closure, 1012/4008, resubscription, rebuild, and final model
-convergence are asserted.
+### 4. Close A5 and automate A7 in one subprocess CI test
 
-### 7. Apply the kit to each REST delivery slice
+Convert `scripts/firehose_restart_smoke.exs` into an ExUnit test that uses the shared
+fixture. Run two scenarios with one real client and one disposable gateway subprocess:
 
-Coordinate with `product-owner:rest-state-api`. For each product slice, require its T1
-closed tables, T2 public-route journeys, acceptance-ledger changes, and exact error-byte
-tests in the same review. Start with the smallest rebuildable state slice needed by the
-firehose; do not create a second REST roadmap here. Acceptance: no REST clause moves to
-proven before its canonical route and public client journey exist.
+1. subscribe, receive a notice, kill the exact gateway, observe 1012, restart, reconnect,
+   rebuild, and converge; and
+2. hold delivery, overflow the small queue, observe 4008, reconnect, rebuild, and
+   converge.
 
-### 8. Finish P6/P7 and real-client proof
+Acceptance: the test runs in the normal Linux and macOS CI path, uses no shared port or
+state, identifies the exact process before signaling it, and fails on leaked PID or
+open port. A5 and the script-consumer A7 proof become automated.
 
-Implement or explicitly block the pending conformance mechanisms; a pending manifest
-entry remains unproven. Add the minimal T5 ATC/Clawline and provider/harness journeys
-needed for external seams, with sanctioned disposable state and exact receipts.
-Acceptance: P6/P7 are green or carry one explicit product dependency; Firehose A7 and
-REST A7 name the real client, exact commit, and repeatable lane.
+### 5. Close A6 with the REST delivery slice
+
+Add the all-class serializer comparator now, but land its final acceptance disposition
+with the REST owner's canonical detail route. Compare response bodies after the exact
+allowed envelope removal. Include secret exclusion, stable identifiers, null/absent
+rules, and every special comparator named by the spec.
+
+Acceptance: one-byte drift, an extra secret field, an omitted rebuild field, or a route
+using a second serializer fails. A6 moves to proven only when the canonical REST detail
+route and Firehose notice comparison run on the same commit.
+
+## Delivery order and sizing
+
+Cards 1 and 2 are the first weekly slice. Card 1 creates no general framework; it
+factors code already used twice and adds two bounded controls. Card 2 immediately turns
+that support into A1/A3 movement. Card 3 follows without a new process harness. Card 4
+then promotes the existing manual proof into CI and adds the only new fault case. Card
+5 lands with the corresponding REST slice.
+
+Do not start with another runner audit, broad acceptance ledger, live provider test, or
+all-product framework. Those paths cost more and do not close the named Firehose gaps.
 
 ## Exit criteria
 
-This strategy is working when all of the following are true:
+This strategy is complete when:
 
-- a clean checkout has one truthful command and no required skip;
-- every canonical acceptance id has one ledger row;
-- every `proven` row names an executable test and CI job on exact bytes;
-- ordinary public journeys use hermetic one-client/one-controller tests;
-- restart claims use a real disposable subprocess;
-- live tests are few, explicit, and limited to genuinely external seams;
-- a product owner can answer “what remains unproven?” from the ledger without another
-  evidence audit.
+- A1-A7 each name an automated test and CI job on exact product bytes;
+- A2's existing proof remains unchanged;
+- the R8/R8b inventory has no unclassified production mutation or invalidation;
+- a real client proves ordinary filtered delivery and model convergence;
+- a real client proves both 1012 restart recovery and 4008 slow-consumer recovery in
+  CI;
+- every Firehose payload matches its canonical REST detail representation where the
+  spec requires equivalence; and
+- no acceptance claim depends on a manual script, sleep-based timing, shared state, or
+  an unverified process signal.
