@@ -147,7 +147,10 @@ The required CI shape is:
 
 The status below is for full `event-firehose-v1` acceptance on product main
 `de135169`. `Partial` means useful component evidence exists but the complete acceptance
-oracle does not.
+oracle does not. The independent REST-owner coverage contribution
+`art_8daabc76` / `att_79edc555` reaches the same disposition from its exhaustive
+item-by-item audit at product `01c52e16`; the later `de135169` restart-smoke repair does
+not add a CI invocation or close another acceptance item.
 
 | Item | Status | Existing evidence | Missing proof and required tier |
 |---|---|---|---|
@@ -187,6 +190,10 @@ map, route slices, and their product cards. This testing strategy owns the proof
 acceptance-ledger schema, runner contract, and reusable harness. A REST implementation
 card references the shared harness and updates its own acceptance rows; this card does
 not create duplicate REST feature work.
+
+The coordinated evidence is durable as `art_8daabc76`, progress `att_79edc555`, and
+completion `att_3b6cc07c`. It confirms that Firehose A2 alone has direct automated proof,
+Firehose A7 is manual-only, and no REST A1-A43 item has complete current-main proof.
 
 ## Acceptance ledger
 
