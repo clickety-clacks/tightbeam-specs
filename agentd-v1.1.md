@@ -13,6 +13,10 @@ Canonical product repository: `https://github.com/clickety-clacks/agentd`
 Authority and evidence:
 
 - Owner Spirit gate: `att_e27a7ee6-63b6-4346-b293-15c204d58542`.
+- Release-documentation and already-running-session addendum authority: work item
+  `wi_70fd5c90-cd17-46e6-9e3f-b3600a4afef8`, producer assignment
+  `asg_4828b4f0-70c9-45b7-b68d-78b53d8dce20`, and Spirit approval
+  `att_4fb3ab62-1a8e-429b-b5f6-b188873b317d`.
 - The canonical spec home is `https://github.com/clickety-clacks/tightbeam-specs`.
   The complete Agentd v1.1 canonical set is the repository-root paths
   `/agentd-v1.md` and `/agentd-v1.1.md` at one pushed commit. A checkout or artifact
@@ -63,6 +67,11 @@ trust check.
 G6. The v1.1 acceptance run proves the installed hooks against real Claude Code and
 Codex processes on Linux and retains the full v1 acceptance contract.
 
+G7. At the v1.1 release cut, the product README gives a local Linux user one truthful,
+end-to-end procedure for installing, activating, verifying, and uninstalling each
+implemented Claude and Codex integration, including the already-running-session
+boundary.
+
 ## Non-Goals
 
 - Replacing procfs as the authority for process existence, process identity, harness
@@ -106,6 +115,13 @@ Codex processes on Linux and retains the full v1 acceptance contract.
   indistinguishable pre-existing empty configuration.
 - Moving or renaming the canonical product repository again. The v1.1 product repository
   is `clickety-clacks/agentd`; `leftspin/agentd` is not a canonical reference.
+- Publishing README instructions for an integration command before that command exists
+  in the same accepted product release.
+- Making hook installation change procfs roster membership or synthesize an activity
+  claim for an already-running harness process.
+- Activating new or changed hook configuration inside an already-running Claude or
+  Codex process. Claude `/hooks` is read-only. Neither verified harness version exposes
+  a signal, file watch, flag, or in-session reload method.
 
 ## Terms
 
@@ -220,6 +236,30 @@ resolved executable, `codex --version`, `codex features list`, the exact user ho
 the hook event names returned by the matching source or app-server schema, and the
 persisted trust transition observed through `hooks/list` plus `config.toml`.
 
+### Already-running harness session and activation
+
+An **already-running harness session** is a Claude or Codex agent root whose process
+identity exists before its integration install command commits. A tmux pane is only a
+carrier for that process; procfs presence, not tmux state, decides whether the session
+appears in the Agentd roster.
+
+**Hook activation** is the harness startup after installation when the new process can
+invoke the newly installed declaration. Claude Code `2.1.247` reads hooks only at
+process startup. Its `/hooks` surface is read-only and does not apply configuration
+edits. An already-running Claude conversation reaches activation only after its process
+restarts; `claude --continue` or `claude --resume` starts a new process while preserving
+access to the conversation. Codex `0.149.1` reads hooks and trust only at process
+startup and exposes no reload method. `codex resume` starts a new interactive process
+for the conversation and presents new or changed hooks for trust review. Hook activation
+alone does not set activity; the first later accepted mapped hook event does.
+
+### v1.1 release cut
+
+The **v1.1 release cut** is the accepted product commit from which the v1.1 release is
+built. That commit contains the implemented integration commands and the matching
+product README procedure. A pre-release spec or planned command is not an implemented
+README surface.
+
 ## Assumptions
 
 - The base contract's assumptions remain true.
@@ -243,6 +283,12 @@ persisted trust transition observed through `hooks/list` plus `config.toml`.
   Agentd does not need any payload field to apply the fixed event mapping.
 - A same-directory temporary file can be atomically renamed over each user configuration
   file on the target filesystem.
+- Claude Code `2.1.247` reads user hook declarations only at process startup. Its
+  `/hooks` surface is read-only. It has no signal, file watch, flag, or in-session hook
+  reload method.
+- Codex CLI `0.149.1` reads user hook declarations and persisted trust only at process
+  startup. It performs the unmanaged-hook trust review during interactive startup and
+  has no hook reload method.
 
 ## Invariants
 
@@ -529,6 +575,87 @@ I7.10. `agentd integrate --help` includes this warning: `Do not edit harness
 configuration while an integration command runs; concurrent non-Agentd edits can be
 overwritten, and Codex hook trust can be revoked.`
 
+### I8 — Installation preserves roster truth and names the activation boundary
+
+I8.1. An integration install changes only the configuration targets that I5-I7 name.
+It does not rescan procfs, add or remove a roster record, or submit an activity request.
+
+I8.2. An already-running Claude or Codex process remains eligible for roster membership
+under I1.2. Therefore an existing session carried by tmux appears in the roster when
+procfs proves its agent root, even when the process has not activated newly installed
+hooks.
+
+I8.3. An already-running Claude Code `2.1.247` process does not begin using a newly
+installed Agentd declaration merely because install committed it. Its `/hooks` surface
+is read-only and does not apply an edit. The process must exit. The user starts a new
+process with `claude --continue` or `claude --resume` to preserve access to the
+conversation and load the installed declaration.
+
+I8.4. An already-running Codex `0.149.1` process does not receive the startup trust
+review merely because install committed a declaration. It exposes no reload method.
+The process must exit. The user runs `codex resume` to preserve access to the
+conversation and start the next interactive process. That startup presents the new or
+changed Agentd hooks for review under I6.8. The hooks remain non-runnable until the user
+trusts them.
+
+I8.5. When an already-running session has `activity.state=unknown` at install, install
+leaves it `unknown` for the life of that harness process. Only a harness process
+restart loads the new declaration; restarting the Agentd daemon does not activate a
+harness hook. Procfs removes the old identity and admits the new identity under I1; the
+new record starts at `unknown`. It remains `unknown` through Codex trust review until
+the daemon accepts the first mapped hook event for that new exact present identity.
+Install never converts the absence of an event into `active`, `idle`, or
+`needs_attention`.
+
+I8.6. The one successful install result line required by I7.8 includes harness-specific
+guidance for already-running sessions. The Claude line says the existing process cannot
+reload hooks, remains `unknown`, and must restart with `claude --continue` or
+`claude --resume`. The Codex line says the existing process cannot reload hooks,
+remains `unknown`, and must restart with `codex resume`; that new interactive startup
+presents trust review. Each line says activity remains `unknown` until the restarted
+harness emits a mapped hook event that the daemon accepts. The Codex line also says the
+user must trust the hooks before Codex can emit that event from them.
+
+### I9 — The release README is truthful and complete
+
+I9.1. Before the product commit that implements and accepts the v1.1 integration
+commands, the product README contains no instruction or example that tells a user to
+run `agentd integrate install` or `agentd integrate uninstall`. The v1.1 release cut
+adds the procedure in I9.2-I9.6 in the same release change set as the implemented
+commands. A spec, placeholder, or forecast does not satisfy this clause.
+
+I9.2. The v1.1 release README gives separate end-to-end Claude and Codex procedures.
+Each procedure names the supported harness version, user configuration target, exact
+install command, restart-only activation action and conversation-preserving command,
+observable verification, exact uninstall command, and successful teardown check. The
+Claude procedure names `claude --continue` and `claude --resume`. The Codex procedure
+names `codex resume`.
+
+I9.3. The release README reproduces both complete I3 event-to-state tables and defines
+`needs_attention` as the latest accepted hook claim that the harness emitted an event
+mapped to user attention. It states that the claim does not prove the need still
+exists.
+
+I9.4. The Codex procedure states that install supports exactly `codex-cli 0.149.1`,
+that another version makes install exit 1 with one stderr line containing
+`unsupported_codex_hooks`, and that this refusal changes no target file. It states
+that the next interactive Codex startup reviews each new or changed Agentd hook, that
+continue-without-trusting leaves it non-runnable, and that trust approval makes only
+the approved current definition runnable.
+
+I9.5. The uninstall procedure states the guarantees from I5.7-I5.10, I6.11-I6.16, and
+I7.6-I7.9 in operator terms: uninstall removes each exact Agentd-owned declaration even
+after the Agentd executable moves; Codex uninstall removes the current exact owned
+trust members; each harness preserves unrelated configuration; user hook files and
+their root `hooks` objects remain; a repeated uninstall is byte-idempotent; and a
+configuration conflict refuses or names a partial Codex trust removal instead of
+claiming complete teardown.
+
+I9.6. Each README command and recovery action names a command or harness surface that
+exists in the v1.1 release cut. The README does not advertise a future Agentd command,
+an in-session hook reload method for either harness, automatic Codex trust, or inferred
+activity.
+
 ## Architecture
 
 ### A. One event-to-activity adapter
@@ -659,6 +786,30 @@ named trust-revocation outcome above.
 The operating pattern taught to Tightbeam agents is **none**. This product amendment
 does not require a Tightbeam manual or guidance change.
 
+### F. Presence, activation, and claim are separate events
+
+Procfs observation determines whether an already-running harness process appears in
+the roster. Integration install changes declarations on disk. The harness process must
+restart before those declarations become eligible to run. A mapped hook event then
+submits the first claim. Keeping these events separate preserves I1.2 and prevents
+installation from inventing activity.
+
+Claude loads hooks only when the user starts the replacement process with
+`claude --continue` or `claude --resume`. Codex loads hooks and trust only when the user
+starts the replacement process with `codex resume`, then applies its interactive-startup
+trust review. The release README and install result line name these different
+conversation-preserving restart paths. Neither path projects an in-session reload
+mechanism that the harness does not expose.
+
+### G. Release documentation lands with the surface
+
+The product README is the operator procedure under test, but it becomes truthful only
+when its commands exist. The v1.1 release change set therefore lands the procedure with
+the implemented and accepted command surface. Deleting the procedure would leave the
+activation and safe-uninstall boundary undiscoverable; accepting undocumented behavior
+would make a successful install look broken for already-running sessions. Publishing
+the procedure earlier loses because it directs users to commands that cannot run.
+
 ## Acceptance
 
 Each case names the goals and invariants it verifies. Captured hook fixtures come from
@@ -689,11 +840,12 @@ claim. An activity value outside the amended closed set returns `invalid_activit
 
 ### A2 — Real Claude event mapping (G2, G6; I3, I4, I5)
 
-**Given** Claude Code `2.1.247`, a dedicated real Claude process, a running Agentd
-daemon, and `agentd integrate install claude`, **when** real harness actions emit
-`UserPromptSubmit`, `PreToolUse`, `Notification`, and `Stop`, **then** retained hook
-captures prove those exact event names and the Agentd subscription reports, in event
-order, `active`, `active`, `needs_attention`, and `idle` for the one Claude root.
+**Given** Claude Code `2.1.247`, a running Agentd daemon, and a successful
+`agentd integrate install claude`, **when** the test starts a dedicated real Claude
+process and real harness actions emit `UserPromptSubmit`, `PreToolUse`, `Notification`,
+and `Stop`, **then** retained hook captures prove those exact event names and the Agentd
+subscription reports, in event order, `active`, `active`, `needs_attention`, and `idle`
+for the one Claude root.
 
 **Given** those captures, **when** automated tests replay each payload through the
 installed command entry, **then** the hook drains the payload and sends only the fixed
@@ -712,8 +864,9 @@ the four exact I3.2 Agentd groups in the native Architecture C shape after the u
 groups. The install changes no feature or trust value in `config.toml`.
 
 **Given** the new hooks and raw Codex `0.149.1` without the trust-bypass option, **when**
-the Codex `hooks/list` surface evaluates them, **then** it returns their source as the
-user `hooks.json`, their status as `untrusted`, and no Agentd hook executes.
+the test starts the next interactive Codex process and its `hooks/list` surface
+evaluates them, **then** it returns their source as the user `hooks.json`, their status
+as `untrusted`, and no Agentd hook executes.
 
 **When** an interactive user chooses continue-without-trusting, **then** the handlers
 remain non-runnable. **When** the user later approves the Agentd hooks, **then** Codex
@@ -721,9 +874,9 @@ writes each current hash under its exact `hooks.state` key, `hooks/list` reports
 `trusted`, and real `UserPromptSubmit`, `PermissionRequest`, and `Stop` events produce
 `active`, `needs_attention`, and `idle` claims for the Codex root.
 
-**Given** one trusted Agentd entry whose command changes, **when** Codex reloads hooks,
-**then** `hooks/list` reports `modified` and that handler does not execute until the
-user approves its new hash.
+**Given** one trusted Agentd entry whose command changes, **when** the next interactive
+Codex process starts, **then** `hooks/list` reports `modified` and that handler does not
+execute until the user approves its new hash.
 
 **Given** unchanged trusted Agentd entries, **when** Codex install runs again, **then**
 it changes no file bytes and `hooks/list` continues to report those entries as
@@ -803,9 +956,10 @@ writes one typed diagnostic.
 
 ### A6 — Hook failure cannot block the harness (G2; I3.6, I3.7)
 
-**Given** each installed harness configuration and an absent Agentd socket, **when** a
-real Claude or Codex event invokes its handler, **then** the handler exits 0 within 750
-ms, the harness operation continues, and one diagnostic names the socket failure.
+**Given** each installed harness configuration, a harness process started after that
+installation, and an absent Agentd socket, **when** a real Claude or Codex event invokes
+its handler, **then** the handler exits 0 within 750 ms, the harness operation
+continues, and one diagnostic names the socket failure.
 
 **Given** a running daemon and present mapped identity, **when** the same event fires,
 **then** the hook exits 0, writes no output, and the changed claim is observable through
@@ -868,6 +1022,78 @@ The gate report records the exact product commit, base and amendment hashes, com
 exit results, installed harness versions, real process identities, hook event captures,
 socket path, daemon instance IDs, configuration before-and-after hashes, trust
 transitions, and teardown result.
+
+### A9 — Already-running Claude activation (G2, G7; I1, I3, I5, I8)
+
+**Given** a real Claude Code `2.1.247` session already running inside tmux, a running
+Agentd daemon, no installed Agentd Claude hooks, and that root's activity
+`unknown`, **when** the user runs `agentd integrate install claude`, **then** the
+existing process remains in `agentd list --json` with the same exact process identity
+and `activity.state=unknown`. The install result line says that the existing process
+cannot reload hooks, remains `unknown`, and must restart with `claude --continue` or
+`claude --resume` to preserve access to the conversation. It also states that activity
+remains `unknown` until the restarted harness emits a mapped hook event that the daemon
+accepts.
+
+**Given** the same still-running Claude process, **when** the user inspects `/hooks` or
+causes an action that would emit one I3.1 event under a startup-loaded configuration,
+**then** `/hooks` applies no edit, Agentd accepts no claim from the newly installed
+declaration, and the roster activity remains `unknown`.
+
+**When** the user exits that process and runs `claude --continue` or selects the
+conversation with `claude --resume`, **then** the replacement process loads the
+installed declarations and appears in the roster only when procfs proves its new exact
+identity. **When** that process later emits each real I3.1 event, **then** Agentd reports
+the exact I3.1 state sequence for the new identity. The new identity does not carry the
+old identity's claim.
+
+### A10 — Already-running Codex activation and refusal (G2, G5, G7; I1, I3, I6, I8)
+
+**Given** a real Codex `0.149.1` session already running inside tmux, a running Agentd
+daemon, no installed Agentd Codex hooks, and that root's activity `unknown`, **when**
+the user runs `agentd integrate install codex`, **then** the existing process remains
+in `agentd list --json` with the same exact process identity and
+`activity.state=unknown`. The install result line says that the existing process cannot
+reload hooks, remains `unknown`, and must restart with `codex resume` to preserve access
+to the conversation. It says that the replacement process presents trust review at
+interactive startup and that activity remains `unknown` until the user trusts the hooks
+and the restarted harness emits a mapped hook event that the daemon accepts.
+
+**Given** that already-running Codex process, **when** no new interactive startup has
+performed trust review, **then** no newly installed Agentd hook runs, no reload method
+can apply it to that process, and the roster activity remains `unknown`.
+
+**When** the user exits that process, runs `codex resume` without the bypass option,
+and chooses continue-without-trusting, **then** each Agentd hook remains non-runnable
+and the replacement roster identity remains `unknown`. **When** the user instead trusts
+the Agentd hooks and the replacement process later emits each real I3.2 event, **then**
+Agentd reports the exact I3.2 state sequence for the new identity.
+
+**Given** the same setup with a resolved Codex version other than `codex-cli 0.149.1`,
+**when** the user runs `agentd integrate install codex`, **then** the command exits 1,
+writes one stderr line containing `unsupported_codex_hooks`, changes no target file,
+and leaves the already-running process present with `activity.state=unknown`.
+
+### A11 — Release README is the end-to-end integration procedure (G7; I3, I5-I9)
+
+**Given** the product commit immediately before the accepted integration commands
+exist, **when** a reviewer reads its product README, **then** it contains no instruction
+or example for `agentd integrate install` or `agentd integrate uninstall`.
+
+**Given** the v1.1 release candidate, **when** a reviewer checks the product README,
+**then** it contains separate Claude and Codex procedures with each field required by
+I9.2, both exact I3 mapping tables, the I9.3 `needs_attention` meaning, the Codex
+version/refusal/trust behavior in I9.4, and the uninstall guarantees in I9.5. Each
+documented command and harness action resolves to a surface present in that candidate.
+
+**Given** clean isolated user configuration and real supported Claude and Codex
+processes, **when** a new user follows each README procedure verbatim from install
+through activation, mapped-event verification, uninstall, and teardown check, **then**
+each documented command produces its stated result, each real event produces its exact
+I3 claim after activation, no event changes activity before activation, and teardown
+satisfies I9.5. The retained run records the README commit and line references, command
+outputs, before-and-after configuration hashes, process identities, hook captures, and
+Codex trust statuses.
 
 ## Open Questions
 
