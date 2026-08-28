@@ -44,6 +44,11 @@ Authority and evidence:
   contract. The documented and accepted remedy is process restart. Lifecycle ruling
   `att_ef51d940-1a05-4b18-a34f-ddee24b48c1d` requires one fresh independent review of
   the corrected exact revision.
+- Successor review `att_09e6937c-8a19-45fe-8415-d9edb9be7298` and report
+  `art_9877a0d5` require pre-mutation refusal when Codex declaration removal would shift
+  an unrelated positional trust key, plus secure temporary-file creation and explicit
+  cleanup outcomes. Review assignment `asg_53cbf6cd-5f27-4fd8-8023-8c0e7423afbd`
+  remains open for the corrected exact revision.
 - An independent spec review must clear one exact v1.1 content hash before
   implementation starts.
 
@@ -99,6 +104,9 @@ boundary.
 - Automatically accepting a permission prompt or changing a harness permission mode.
 - Automatically trusting Codex hooks, writing a fabricated Codex trust hash, or passing
   `--dangerously-bypass-hook-trust`.
+- Migrating, copying, or fabricating trust state for an unrelated Codex hook whose
+  positional key would change when an Agentd-owned declaration is removed. Uninstall
+  refuses that baseline before mutation instead.
 - Pruning orphaned Codex `hooks.state` members whose positional key no longer identifies
   a current Agentd-owned handler after an external reorder or edit.
 - Supporting a Codex hook schema other than the verified `0.149.1` user schema in this
@@ -243,6 +251,12 @@ Codex runs an unmanaged hook only when it is enabled and `trusted`, unless its c
 uses the dangerous per-invocation bypass. The interactive startup review offers review,
 trust-and-continue, or continue-without-trusting. Trusting writes the current hash to
 `hooks.state` in the user `config.toml`.
+
+A **Codex positional trust conflict** exists when simulating removal of every exact
+Agentd-owned handler would change the event, matcher-group index, or handler index in
+the positional key of any surviving unrelated handler. Agentd does not inspect whether
+that unrelated handler is currently trusted; it refuses every baseline with such a
+shift rather than mutate or infer unrelated trust state.
 
 ### Installed-version evidence
 
@@ -502,28 +516,38 @@ the new current hash. Agentd does not compute, copy, or fabricate that hash.
 I6.10. A second install against unchanged canonical Agentd entries changes no file bytes,
 keeps their positional keys stable, and preserves their Codex trust status.
 
-I6.11. Before it removes a handler, uninstall derives that handler's current Codex
+I6.11. Before it removes trust or a declaration, uninstall simulates exact removal of
+all Agentd-owned handlers against the validated `hooks.json` baseline. A Codex
+positional trust conflict returns `codex_positional_trust_conflict`, exits 1, names the
+event plus each affected handler's current and resulting matcher-group and handler
+indexes, and changes neither `hooks.json` nor `config.toml`. The error tells the user
+that unrelated hooks must precede the Agentd-owned entries before retry and that the
+user must reapprove any unrelated hook whose key or definition the user's rearrangement
+changes. Agentd does not migrate an unrelated `hooks.state` member.
+
+I6.12. Before it removes a handler, uninstall derives that handler's current Codex
 `0.149.1` positional key from the absolute `hooks.json` path, snake-case event label,
 matcher-group index, and handler index. With an externally quiescent configuration set,
 it removes the `hooks.state` member for that exact key and preserves unrelated
-hook-state members and each other `config.toml` value. I7.9 governs an external change
+hook-state members and each other `config.toml` value. I7.10 governs an external change
 during the two-target mutation interval.
 
-I6.12. If an Agentd command has changed so ownership is not exact, uninstall leaves the
+I6.13. If an Agentd command has changed so ownership is not exact, uninstall leaves the
 handler and its trust state in place and reports them as not removed.
 
-I6.13. Uninstall applies the verified Codex `0.149.1` positional-key rule to declared
+I6.14. Uninstall applies the verified Codex `0.149.1` positional-key rule to declared
 Agentd handlers without requiring the currently resolved Codex executable to remain at
 version `0.149.1`. A later Codex update does not block removal of the installed
 declarations or their current exact trust members.
 
-I6.14. Uninstall removes an Agentd-owned handler regardless of its absolute executable
-path. It removes an empty Agentd matcher group and event member under I5.7.
+I6.15. When I6.11 permits mutation, uninstall removes an Agentd-owned handler regardless
+of its absolute executable path. It removes an empty Agentd matcher group and event
+member under I5.7.
 
-I6.15. Uninstall preserves the root `hooks` object and Codex user `hooks.json`, including
+I6.16. Uninstall preserves the root `hooks` object and Codex user `hooks.json`, including
 when install created them and the resulting `hooks` object is empty.
 
-I6.16. A second uninstall changes no file bytes and exits 0.
+I6.17. A second uninstall changes no file bytes and exits 0.
 
 ### I7 — Observed configuration conflicts refuse further mutation; replacement is atomic
 
@@ -549,37 +573,49 @@ first replacement, it verifies that each target still equals its configuration
 baseline. A changed target returns `configuration_changed`, preserves the changed
 target, and commits no replacement.
 
-I7.4. After the preflight verification succeeds, the command writes each same-directory
-temporary file, applies the baseline regular file's mode and ownership when the target
-exists, and flushes the file. Immediately before each rename, the command performs one
-final no-follow comparison of that target with its baseline. A type change, symlink
+I7.4. After the preflight verification succeeds, the command creates each uniquely
+named same-directory temporary path with exclusive no-follow creation, mode `0600`, and
+owner UID equal to the invoking local user's effective UID. It never opens or truncates
+an existing temporary path. It writes and flushes the complete replacement while that
+temporary file remains mode `0600`. Immediately before each rename, the command performs
+one final no-follow comparison of the target with its baseline. A type change, symlink
 substitution, or other observed difference returns
 `configuration_changed` when no earlier target was replaced, or
 `configuration_changed_after_partial` when an earlier replacement committed. It
-preserves the changed target and retains any earlier replacement per I7.9. After
-equality is observed, the command atomically renames the replacement. The comparison
-and rename are not indivisible against a non-Agentd writer. If such a writer changes
-the target between them, the rename can replace that change without detecting it; that
-schedule is outside G3's preservation guarantee.
+preserves the changed target and retains any earlier replacement per I7.10. After
+equality is observed, the command atomically renames the mode-`0600` replacement. When
+the baseline target existed, it then applies the baseline mode and ownership to the
+renamed target; a successful command preserves them. The comparison and rename are not
+indivisible against a non-Agentd writer. If such a writer changes the target between
+them, the rename can replace that change without detecting it; that schedule is outside
+G3's preservation guarantee.
 
 I7.5. The command creates a new configuration file with mode `0600` and owner UID equal
 to the invoking local user's effective UID.
 
-I7.6. With an externally quiescent configuration set, install and uninstall preserve
+I7.6. On every exit before a temporary path's successful rename, the command closes and
+unlinks that path before returning. A successful cleanup leaves no temporary entry. If
+the unlink itself fails, the command returns `temporary_cleanup_failed` when no target
+was replaced or `temporary_cleanup_failed_after_partial` after an earlier replacement,
+exits 1, and names the exact residual path. That residue remains an invoking-user-owned
+regular file with mode `0600`; the command never leaves a permissively created or
+unnamed temporary file.
+
+I7.7. With an externally quiescent configuration set, install and uninstall preserve
 each unrelated configuration value and the relative order of unrelated array elements.
 A Codex trust edit preserves the bytes outside the removed `hooks.state` members,
 including comments. A preflight conflict preserves every target. A later conflict
 preserves its changed target but does not roll back an earlier replacement.
 
-I7.7. Install and uninstall write no backup, receipt, cache, or integration registry.
+I7.8. Install and uninstall write no backup, receipt, cache, or integration registry.
 The closed command marker makes ownership detectable without a second source of truth.
 
-I7.8. Each command prints one result line that names the harness, action, changed or
+I7.9. Each command prints one result line that names the harness, action, changed or
 unchanged result, and each target path. A Codex install result also names the pending
 trust action. Usage or mutation failure exits 1 and writes one error line to stderr.
 Success exits 0.
 
-I7.9. Codex uninstall atomically removes the `hooks.state` members whose configuration-
+I7.10. Codex uninstall atomically removes the `hooks.state` members whose configuration-
 baseline positional keys identify Agentd-owned declarations before it atomically
 removes those declarations. These replacements are not one cross-file transaction. If
 the hook-declaration replacement fails without an external `hooks.json` change, the
@@ -593,7 +629,7 @@ status from its current key and hash; Agentd grants no trust. A retry merges aga
 the new bytes and completes declaration removal; the user reapproves any unrelated hook
 whose trust was lost.
 
-I7.10. `agentd integrate --help` includes this warning: `Do not edit harness
+I7.11. `agentd integrate --help` includes this warning: `Do not edit harness
 configuration while an integration command runs; concurrent non-Agentd edits can be
 overwritten, and Codex hook trust can be revoked.`
 
@@ -632,7 +668,7 @@ loaded a new or changed declaration can submit from that declaration only after 
 I8.3 or I8.4 replacement-process startup. A replacement identity enters the procfs
 roster at `unknown` and does not inherit the old identity's claim.
 
-I8.6. The one successful install result line required by I7.8 includes harness-specific
+I8.6. The one successful install result line required by I7.9 includes harness-specific
 guidance for already-running sessions. Every line says procfs keeps the existing process
 in the roster, install does not change its current activity, and the next accepted
 mapped hook event changes activity. The Claude line names no in-session activation
@@ -669,13 +705,18 @@ that the next interactive Codex startup reviews each new or changed Agentd hook,
 continue-without-trusting leaves it non-runnable, and that trust approval makes only
 the approved current definition runnable.
 
-I9.5. The uninstall procedure states the guarantees from I5.7-I5.10, I6.11-I6.16, and
-I7.6-I7.9 in operator terms: uninstall removes each exact Agentd-owned declaration even
-after the Agentd executable moves; Codex uninstall removes the current exact owned
-trust members; each harness preserves unrelated configuration; user hook files and
-their root `hooks` objects remain; a repeated uninstall is byte-idempotent; and a
-configuration conflict refuses or names a partial Codex trust removal instead of
-claiming complete teardown.
+I9.5. The uninstall procedure states the guarantees from I5.7-I5.10, I6.11-I6.17, and
+I7.6-I7.10 in operator terms: a successful uninstall removes each exact Agentd-owned
+declaration even after the Agentd executable moves; Codex uninstall removes the current
+exact owned trust members; each harness preserves unrelated configuration; user hook
+files and their root `hooks` objects remain; a repeated uninstall is
+byte-idempotent; and a configuration conflict refuses or names a partial Codex trust
+removal instead of claiming complete teardown. It states that
+`codex_positional_trust_conflict` refuses
+before mutation when declaration removal would shift an unrelated hook's key, names the
+required user reorder and reapproval boundary, and changes no file. It also states that
+pre-rename failure removes secure temporary files and that a cleanup failure names the
+exact mode-`0600` residue instead of silently leaving it.
 
 I9.6. Each README command and recovery action names a command or harness surface that
 exists in the v1.1 release cut. The README does not advertise a future Agentd command,
@@ -785,13 +826,26 @@ and writes a complete value by atomic replacement. Codex uninstall also performs
 field-scoped TOML edit for the owned trust keys. The commands do not normalize or
 replace unrelated hooks present in the validated baseline.
 
+Before Codex uninstall mutates either file, it simulates removal against the baseline.
+If any surviving unrelated handler would move to another positional key, the command
+returns `codex_positional_trust_conflict` without removing trust or declarations.
+Agentd refuses because copying or recomputing an unrelated handler's trust would cross
+the native trust boundary. The user can place unrelated handlers before Agentd-owned
+entries, reapprove any hook affected by that user edit, and retry.
+
 Codex uninstall has two files because Codex owns trust separately from hook
 declarations. Deleting trust cleanup would leave integration-owned state behind.
 Accepting that residue would violate reversible removal. The implementation therefore
-uses I7.9's trust-first order; it adds no transaction journal or recovery service.
+uses I7.10's trust-first order; it adds no transaction journal or recovery service.
 Orphaned trust members from an earlier external reorder are accepted as the named
 Non-Goal because no current declaration identifies them, while pruning positional keys
 without that evidence could delete unrelated trust.
+
+Atomic replacement uses an exclusive no-follow same-directory temporary file created
+as invoking-user-owned mode `0600`. Replacement bytes remain protected by that mode
+until rename. Every pre-rename exit unlinks the temporary path; an unlink failure names
+the exact secure residue and whether earlier targets committed. This bounds the extra
+filesystem effect without a backup, journal, or cleanup service.
 
 The configuration mutation pattern is **observed-conflict merge**. The directory lock
 makes two Agentd integration mutations mutually exclusive. A preflight comparison
@@ -931,6 +985,16 @@ comments and bytes outside the removed owned `hooks.state` members equal the
 pre-uninstall Codex file. **When** uninstall runs again, **then** it changes no bytes
 and exits 0.
 
+**Given** Codex has unrelated group U before an installed and trusted Agentd group A,
+the user later adds and trusts unrelated group B after A, and the complete configuration
+set is quiescent for uninstall, **when** Codex uninstall simulates removing A, **then**
+it returns `codex_positional_trust_conflict`, exits 1, names B's current and resulting
+indexes, and leaves `hooks.json`, `config.toml`, A, and B byte-unchanged. `hooks/list`
+continues to report B as `trusted`. **When** the user moves B before A, reviews and
+reapproves B if that edit changed its key or definition, and retries uninstall, **then**
+uninstall removes A and A's exact trust member while B remains at its user-approved key
+and `trusted` status.
+
 **Given** an unrelated command that contains the word `agentd`, an Agentd executable
 basename with different arguments, and a command with the Agentd marker plus an event
 outside I3, **when** uninstall runs, **then** it removes none of them and names the
@@ -1007,6 +1071,14 @@ unrelated configuration plus the required change.
 **Given** a new user hook file, **when** install creates it, **then** its mode is `0600`
 and its owner UID equals the invoking local user's effective UID.
 
+**Given** a controlled integration test pauses after same-directory temporary creation
+and before writing replacement bytes, **when** it inspects that path without following
+links, **then** the path is a new invoking-user-owned regular file with mode `0600`.
+No pre-existing path was opened or truncated.
+
+**Given** install or uninstall succeeds, **when** the test enumerates the harness
+configuration directory, **then** no integration temporary path remains.
+
 **Given** any target path is an existing regular file not owned by the invoking local
 user, symlink, directory, FIFO, socket, device, or other non-regular type, **when**
 install or uninstall runs, **then** it exits 1 with
@@ -1017,6 +1089,14 @@ no replacement to any target in that command.
 **Given** an injected write, flush, chmod, chown, or rename failure, **when** the command
 returns, **then** the original target path contains either the complete old value or the
 complete new value. It contains no partial serialization.
+
+**Given** an injected write, flush, final-comparison, or rename failure before one
+temporary path is renamed, **when** cleanup succeeds, **then** that temporary path is
+absent before the command returns. **Given** injected unlink failure during that
+cleanup, **when** the command returns, **then** it exits 1 with
+`temporary_cleanup_failed` or `temporary_cleanup_failed_after_partial`, names the exact
+residual path and whether an earlier target committed, and the residue remains an
+invoking-user-owned regular file with mode `0600`.
 
 **Given** an integration command has read its baselines and an external writer changes
 a target's type, bytes, mode, or owner before preflight completes, **when** the command
@@ -1045,7 +1125,7 @@ new complete value before the command's rename, **when** the command resumes, **
 the atomic rename replaces that external value with the command's complete
 baseline-derived replacement, and the command does not return `configuration_changed`
 for that write. **When** the user reads `agentd integrate --help`, **then** it includes
-the exact I7.10 warning.
+the exact I7.11 warning.
 
 ### A8 — Base regression and repository gate (G6; I1)
 
