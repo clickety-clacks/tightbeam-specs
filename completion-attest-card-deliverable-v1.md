@@ -1,14 +1,25 @@
 # Completion attest card-deliverable contract — v1
 
-Status: HOMING AMENDMENT PROPOSAL after reviewed-clean verdict
-`att_c3ed922e-045e-4b0c-8f8f-1cfb1885ed4a` and review report
-`art_b70137b1`, with implementation-base and schema-shape decision
-`att_0a4bf7f9-0516-4077-a497-72766cf22ae1`, for one owner-routed independent
-exact-tip review. No landing target is elected. This proposal derives from work item
+Status: A5 PRODUCTION-RAIL PROOF AMENDMENT PROPOSAL to reviewed homing revision
+`dbb649978b6a484aaff0f01b1f2e6aecdf27bd8d`. That revision received
+reviewed-clean verdict `att_c3ed922e-045e-4b0c-8f8f-1cfb1885ed4a` and review
+report `art_b70137b1`. This successor retains implementation-base and schema-shape
+decision `att_0a4bf7f9-0516-4077-a497-72766cf22ae1`, for one owner-routed
+independent exact-tip review. No landing target is elected. This proposal derives from
+work item
 `wi_f46d2e83-e152-429f-93c7-3c51989bd391`, spirit verdict
 `att_df4251d6-87e9-4e60-8c7d-e9916a933ba9`, correction
 `att_c15df88b-e936-4f03-9b46-93733767b4b8`, and split disposition
 `att_b6934754-9b78-4f56-be6d-d27fbf0aeaaf`.
+
+A5 production-rail proof amendment: independent exact-tip review
+`att_dab930ff-a550-40f3-8bad-6527a72e5db5` found that the candidate's tests
+fabricated a completion-escalation producer that does not exist on the fixed product
+base. A5 now requires proof through each real production rail installed on that base
+and defers proof for a reviewed but uninstalled rail until a candidate actually installs
+its reviewed producer. Old-base draft
+`8e7d7e708084e29304bb31a12ae258a092d880d6` is unreviewed evidence only. This
+proposal does not authorize its code, schema, producer, or tests for import or reuse.
 
 The proven regression is work item
 `wi_113442f5-22ae-457b-a971-1b620069d490`, titled “REST read plane D3 — CLI
@@ -206,6 +217,11 @@ each applicable completion-escalation record, parent-notification wake, parent-n
 membership, report-to wake, report-to membership, open-request deadline wake, deadline
 membership, and named parent-unavailable lifecycle failure. Applicability follows that
 installed contract; this contract does not collapse the set into a generic “first wake.”
+For I4 and A5, “installed” means that the exact product revision under test contains and
+reaches the reviewed production producer through the ordinary completion entry point. A
+spec file, test-authored DDL or trigger, fake callback, unreviewed branch, or unlanded
+draft is not an installed rail. A5 defines the immediate proof and the deferred
+composition gate when a reviewed rail has no installed producer on the fixed base.
 Failure before any applicable authoritative write leaves no attest, claim, assignment
 close, bracket mutation, transition, cancellation, escalation record, lifecycle failure,
 wake, or wake membership from that attempt.
@@ -882,7 +898,7 @@ Given a card-bound assignment for `D`, when its holder files completion with not
 unchanged in audit readback. Given a subordinate assignment for `S` files note
 “delivered D,” then its claim still names `S`. No note creates or changes a deliverable.
 
-### A5 — Wrong holder and missing binding commit nothing
+### A5 — Wrong holder, missing binding, and rail failure commit nothing
 
 Given session B does not hold assignment A, when B files completion, then the existing
 `not_holder` error wins and no attest or claim appears. Given a fault-injected runtime
@@ -893,24 +909,50 @@ returns `deliverable_contract_inconsistent` with detail
 `assignment_deliverable_missing` or `assignment_deliverable_ambiguous`; it does not
 choose one or serve commands.
 
-For a keyed completion, install every optional completion rail and configure an active
-exact parent, a distinct report-to recipient, and an open completion request. Inject one
-deterministic database failure immediately before each applicable authoritative write:
-completion attest, completion claim, guarded assignment-state update, each work-item
-bracket row and slate wake, supervision transition, effort cancellation,
-completion-escalation record, parent-notification wake, parent-notice membership,
-report-to wake, report-to membership, open-request deadline wake, deadline membership,
-and keyed idempotency receipt. At each probe, the call fails and the before/after
-database snapshots for all these rows and states are byte-identical; the assignment
-remains open. The test has a distinct probe for each wake and each membership insert.
+For a keyed completion, start from exact product base
+`724e5c96f9513b37e937dc52eb014ba1ef2d1b5e` and enumerate the authoritative
+completion writes and optional completion rails reachable through that revision's
+production completion path. Record the production module or handler seam that produces
+each write. The immediate matrix exercises the real fixed-base producers for each
+work-item bracket row and slate wake, supervision transition, and effort cancellation,
+plus this contract's completion-attest, completion-claim, guarded assignment-state, and
+keyed-idempotency writes. If the fixed base installs another optional completion rail,
+the matrix must enable it through its production installation seam and exercise its real
+producer. Test-authored DDL or triggers, a fake callback or module, and a producer copied
+from another revision do not count as a rail or as acceptance evidence.
+An empty optional-rail set passes this enumeration only when exact-source evidence shows
+that the fixed base registers or reaches no optional completion-rail producer through
+the production completion path. The absence of optional-rail setup in a test is not
+that evidence.
 
-In a separate parent-unavailable fixture, inject immediately before the applicable
-completion-escalation record and named lifecycle-failure writes. Each probe rolls back
-the complete I4 transaction, and the route creates no parent, report-to, or deadline
-wake or membership that the installed contract excludes. Then inject failure only in
-each post-commit transcript or assignment-marker callback. Completion still commits
-exactly once, the failed marker may be absent, and every read derives the same completed
-state, claim, and retry response from authoritative rows.
+Inject one deterministic database failure immediately before each applicable
+authoritative write produced by each exercised production path. At each probe, the call
+fails, the assignment remains open, and before/after database snapshots for the attest,
+claim, assignment state, idempotency receipt, and every row, wake, membership,
+transition, or cancellation owned by the exercised rails are byte-identical. Use a
+distinct probe for each independently written row, wake, and membership. Then inject
+failure only in each post-commit transcript or assignment-marker callback. Completion
+still commits exactly once, the failed marker may be absent, and every read derives the
+same completed state, claim, and retry response from authoritative rows.
+
+The fixed base contains no production CompletionEscalation producer. Therefore the
+immediate matrix neither installs nor simulates the completion-escalation record,
+parent-notification, report-to, deadline, membership, or parent-unavailable writes named
+conditionally in I4. It records production-source evidence for that absence. Draft
+`8e7d7e708084e29304bb31a12ae258a092d880d6` is based on another product revision,
+has no independent reviewed-clean verdict, and must not be imported, copied, executed,
+or cited as proof by this implementation.
+
+When a later candidate first combines this contract with an independently reviewed
+completion rail that was absent from the fixed base, acceptance of that combined
+candidate is gated on extending this matrix. The extension must install the exact
+reviewed rail revision through its production seam; configure each applicable route,
+including unavailable routes; invoke completion through the ordinary production entry
+point; and probe rollback immediately before each authoritative write owned by that
+rail's real producer. Until such a combined candidate exists, this is a deferred
+integration obligation. It does not block targetless implementation or review of this
+contract against the fixed base, and it does not waive proof for any rail that is
+actually installed in the revision under test.
 
 ### A6 — Different-card completion is refused
 
