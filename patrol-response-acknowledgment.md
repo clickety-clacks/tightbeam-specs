@@ -1,9 +1,10 @@
 # Patrol response acknowledgment
 
-Status: cold-digested amended spec; artifact `art_023f8032` is historical
-superseded evidence and no longer implementation authority; pending replacement
-artifact, superseding spec approval, and one fresh linked independent review;
-not cleared for implementation
+Status: cold-digested reviewed-correction candidate; artifacts `art_023f8032`
+and `art_db0395b7` are historical superseded evidence and no longer
+implementation authority; not cleared for implementation until this exact
+candidate is recorded and exactly one fresh linked independent review returns
+clean
 
 Authority:
 
@@ -22,6 +23,12 @@ Authority:
   `att_ca24fb5c-cd50-425d-8ea3-db95d6b8625e`.
 - Recon report `art_d0634d61`, SHA-256
   `2c49e74eb77c7706b14801f77e6a556d47d53a20ab1815922683774f3a080a29`.
+- Reviewed artifact `art_db0395b7`, SHA-256
+  `f6e6890295af291bbae6fce4b7537750d8dc7bf78cb1ebd565936221d1c9d6b4`.
+- Independent review report `art_007adca3` and changes-requested verdict
+  `att_7b5c1177-b7a0-404c-8439-87d85bed379b`.
+- Successor producer assignment
+  `asg_16043d4d-aeb8-4966-b12e-7d83753dd44f`.
 - Source baseline `ac8651dcb104f312da1c67e0cb7b1abebc640b2b`.
 
 This spec is a bounded amendment to `production-machine-v1.md`,
@@ -300,6 +307,21 @@ for kind `work-blocked` and the frozen holder session, when no later
 `work-unblocked` row exists for that scope. Its row id is the exact recognition
 source. A block on another session or a superseded block is not current.
 
+### Schema comparison image
+
+A **schema comparison image** is the ordered SQLite SQL token sequence produced
+from `sqlite_schema.sql` that the running SQLite library persists after
+executing the exact table or trigger statement from R1 or R25 in an empty
+reference schema. The running SQLite tokenizer shall produce the sequence and
+discard whitespace and comment tokens. The comparison applies SQLite's own
+case-insensitive rules to SQL keywords and unquoted identifiers. It compares
+quoted identifiers, literals, operators, and punctuation exactly. For a table,
+the comparison also requires
+the ordered `PRAGMA table_xinfo` and `PRAGMA foreign_key_list` rows, plus each
+unique index's ordered `PRAGMA index_xinfo` rows and uniqueness flag, to equal
+the reference schema. Generated `sqlite_autoindex_*` names do not participate;
+their indexed columns and uniqueness do.
+
 ## Assumptions
 
 1. The source baseline writes one terminal transition through
@@ -424,8 +446,8 @@ same stopped outcome. A tombstone never reopens or transfers the output.
 ### I14 — Successor isolation
 
 A predecessor source can read and change only rows joined to its exact
-assignment and wake chain. It cannot wake a successor holder, consume or refund
-a successor counter, cancel a successor wake, settle a successor request, or
+assignment and wake chain. It cannot wake a successor holder, change a
+successor counter, cancel a successor wake, settle a successor request, or
 create evidence attributed to a successor lane.
 
 ### I15 — Admission defines the race
@@ -601,10 +623,9 @@ BEGIN
 END;
 ```
 
-R2. Startup shall compare the existing table and four triggers with the exact
-normalized column, constraint, foreign-key, primary-key, unique-index, and
-trigger definitions in R1. A missing object shall be created only when no object
-from this closed set exists. An incomplete or unequal set shall raise
+R2. Startup shall compare the existing table and four triggers with the R1
+schema comparison images. A missing object shall be created only when no object
+from this closed set exists. An incomplete or unequal image shall raise
 `incompatible_patrol_response_acknowledgment_v1` and shall not start
 supervision or the wake scheduler. Startup shall not repair, rename, rebuild, or
 choose rows from an unequal table.
@@ -644,9 +665,9 @@ that schedule transaction. Invalid typed input shall return
 `invalid_patrol_response_episode` and roll back the wake, sidecar, episode, and
 output-source writes together.
 
-R8. A `terminus` claim, ordinary wake, user wake, agent wake, condition wake,
-checkpoint wake, routing wake, and escalation-decision notice shall create no
-episode row.
+R8. A `terminus` claim, `retirement_elevation` escalation wake, ordinary wake,
+user wake, agent wake, condition wake, checkpoint wake, routing wake, and
+escalation-decision notice shall create no episode row.
 
 ### 3. Acknowledgment transition
 
@@ -795,8 +816,8 @@ END;
 ```
 
 R26. Startup shall compare `patrol_output_sources` and both triggers with the
-exact normalized definitions in R25. A missing closed set shall be created. An
-incomplete or unequal set shall raise `incompatible_patrol_output_sources_v1`
+R25 schema comparison images. A missing closed set shall be created. An
+incomplete or unequal image shall raise `incompatible_patrol_output_sources_v1`
 and shall not start supervision, effort check-in, or the wake scheduler.
 Startup shall not repair, rename, rebuild, or choose rows from an unequal set.
 
@@ -860,15 +881,16 @@ to effort decision notifications even when their existing generic wake gate is
 zero.
 
 R33. Turn admission shall re-read R31's source, chain, assignment, holder,
-holder-session, destination-session, and applicable block predicates for the
-queued turn's exact `wakeId`, `assignmentId`, and destination. The prompt wake
-shall be `fired`, shall be the last member of its chain, and shall join exactly
-one queued turn. If all facts match, the transaction may claim that turn.
+holder-session, and destination-session predicates plus R38's applicable block
+predicate for the queued turn's exact `wakeId`, `assignmentId`, and
+destination. The prompt wake shall be `fired`, shall be the last member of its
+chain, and shall join exactly one queued turn. If all facts match, the
+transaction may claim that turn.
 Otherwise it shall compare-and-set `queued` to `canceled`, set the terminal
 time to the exact lifecycle or condition-fact timestamp that caused the stop,
 and record the exact stop evidence under R44. When no durable stop fact exists
 because the source itself is malformed, it shall use the admission transaction
-clock and name `patrol_output_source_mismatch` as cause. It shall not start the
+clock and name `patrol_source_mismatch` as cause. It shall not start the
 harness, retarget the turn, or enqueue a replacement.
 
 R34. Completion, surrender, revoke, and holder retirement shall, in their
@@ -916,8 +938,9 @@ existing `:work_blocked` no-match result. A branch claimed before the fact shall
 clear without dispatch. A wake created before the fact shall be canceled with
 reason `production_unmatched`, causal source `condition_fact` and the exact
 fact id, and no replacement. A queued patrol turn shall follow R33. Any charged
-prod rung shall be refunded exactly once; no entitlement generation or future
-terminal shall be consumed.
+prod rung and every counter shall remain equal to their values at the start of
+the block-recognition transaction. No entitlement generation or future terminal
+shall be consumed.
 
 R40. When an armed effort probe sees a current work-blocked fact, its
 transaction shall mark that generation `probed` and record evidence outcome
@@ -936,8 +959,8 @@ the request.
 
 R42. A patrol output queued before `work-blocked` and delivered or admitted
 after it shall stop under R38-R41. Replaying its probe, wake, notification,
-deadline, cancellation, or queued-turn admission shall create no additional
-output, request, fact, refund, or cancellation effect.
+deadline, cancellation, or queued-turn admission shall leave counters unchanged
+and create no additional output, request, fact, or cancellation effect.
 
 R43. A later authorized `work-unblocked` fact makes the next internal effort
 probe and the next supervision evaluation use ordinary open-lane behavior.
@@ -1012,6 +1035,14 @@ Then no episode has `answerTerminalId = T2`, the F1 acknowledgment is not
 reused, and T2 follows the existing receipt, due, claim, counter, branch, and
 dispatch behavior.
 
+Given the baseline retirement-elevation seam selects an escalation wake,
+
+When the real seam schedules its wake and settled sidecar,
+
+Then the wake and sidecar retain their existing behavior, no patrol response
+episode or `supervision_episode` output source is created, and a resulting
+terminal remains ineligible for acknowledgment suppression.
+
 Trace: R8, R19–R20, I4, I8, I10.
 
 ### F3 — Effects are preserved
@@ -1073,9 +1104,9 @@ transaction and creates no wake, sidecar, episode, or output source:
 | branch outside `prod` or `escalation` | `invalid_patrol_response_episode` |
 | rung zero, negative, or unequal to the claimed pending value | `invalid_patrol_response_episode` |
 | wake id belongs to another assignment | `invalid_patrol_response_episode` |
-| source terminal belongs to another holder | constructor refusal; no episode |
-| escalation wake has another lineage rung | constructor refusal; no episode |
-| prod wake carries lineage fields | constructor refusal |
+| source terminal belongs to another holder | `invalid_patrol_response_episode` |
+| escalation wake has another lineage rung | `invalid_patrol_response_episode` |
+| prod wake carries lineage fields | `invalid_patrol_response_episode` |
 
 Given a real answer terminal and a stored episode candidate that differs from
 the truthful wake-to-turn join in one dimension,
@@ -1310,7 +1341,8 @@ exercise the named later edge. Run item 9 after each stopped edge:
 9. five replays of every stopped edge.
 
 Then supervision returns or preserves `:work_blocked`, clears the claimed
-branch, cancels the pending wake or queued turn, and refunds a charged rung once.
+branch, cancels the pending wake or queued turn, and leaves each counter and
+prod rung unchanged by block recognition.
 Each effort probe records only outcome `work_blocked` with F and arms one later
 internal probe. The holder receives no prod and no request to complete or
 surrender. No stalled-work request or notification is created or advanced; an
@@ -1374,9 +1406,10 @@ Trace: R25-R36, R44-R46, I12-I14, I17-I18.
 
 ## Open Questions
 
-None. Artifact `art_023f8032` and its spec-approved verdict remain immutable
-historical evidence for the superseded hash; they are not implementation
+None. Artifacts `art_023f8032` and `art_db0395b7`, their producer approvals,
+and review evidence `art_007adca3` plus `att_7b5c1177` remain immutable
+historical evidence for superseded hashes; they are not implementation
 authority. The implementation scope remains blocked until this amended file is
 cold-digested, recorded as one replacement artifact, receives one superseding
-`spec-approved` verdict for its exact hash, and one fresh linked independent
-review returns `reviewed-clean` for that hash.
+`spec-approved` verdict for its exact hash, and exactly one fresh linked
+independent review returns `reviewed-clean` for that hash.
