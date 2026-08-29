@@ -1,9 +1,10 @@
 # Completion attest card-deliverable contract — v1
 
-Status: REVISED PROPOSAL after changes-requested verdict
-`att_5de64b3e-640b-4e8b-8eab-b1998c6f8969` and review report
-`art_81dbecca`, for one owner-routed independent re-review. No product target is
-elected. This proposal derives from work item
+Status: REVISED PROPOSAL after changes-requested verdicts
+`att_5de64b3e-640b-4e8b-8eab-b1998c6f8969` and
+`att_ee3763d0-89d3-4f1e-a101-a99cc7e8d061`, with review reports
+`art_81dbecca` and `art_2b2dbd76`, for one owner-routed independent re-review. No
+product target is elected. This proposal derives from work item
 `wi_f46d2e83-e152-429f-93c7-3c51989bd391`, spirit verdict
 `att_df4251d6-87e9-4e60-8c7d-e9916a933ba9`, correction
 `att_c15df88b-e936-4f03-9b46-93733767b4b8`, and split disposition
@@ -152,9 +153,9 @@ to close without a product-owner narrowing ruling.
    rows and fail closed on corruption.
 8. Current product evidence was reconciled against
    `clickety-clacks/tightbeam` `origin/main` commit
-   `cba8d6c5e43e974e93890a901b83abd55f723500`. Current spec evidence was reconciled
+   `724e5c96f9513b37e937dc52eb014ba1ef2d1b5e`. Current spec evidence was reconciled
    against `clickety-clacks/tightbeam-specs` `origin/main` commit
-   `45a650e25f334827e8238bfff3ea58e7a32b4916`.
+   `b20194fe464f5792788bb5b7033245e4d0696889`.
 
 ## Invariants
 
@@ -195,11 +196,19 @@ The note remains audit prose and cannot change the claim.
 ### I4 — A completion is structurally complete or commits nothing
 
 The completion attest, completion claim whose `claimedAt` equals the attest timestamp,
-guarded assignment close, work-item bracket update, supervision transition, effort
-cancellation, and any installed completion-escalation domain record and first durable
-wake commit in one transaction. A missing or inconsistent obligation binding aborts that
-transaction. No attest, claim, assignment close, bracket mutation, transition,
-cancellation, escalation record, or durable wake from that attempt remains.
+guarded assignment close, each authoritative work-item bracket row or wake, supervision
+transition, effort cancellation, and each authoritative row, wake, or wake-membership
+write required by an installed completion rail commit in one transaction. A missing or
+inconsistent obligation binding aborts that transaction.
+
+When `completion-escalation-rail-v2.md` is installed, that same transaction includes
+each applicable completion-escalation record, parent-notification wake, parent-notice
+membership, report-to wake, report-to membership, open-request deadline wake, deadline
+membership, and named parent-unavailable lifecycle failure. Applicability follows that
+installed contract; this contract does not collapse the set into a generic “first wake.”
+Failure before any applicable authoritative write leaves no attest, claim, assignment
+close, bracket mutation, transition, cancellation, escalation record, lifecycle failure,
+wake, or wake membership from that attempt.
 
 Transcript and assignment markers are best-effort projections after that authoritative
 transaction. Their failure does not roll back a committed completion, and no completion,
@@ -265,22 +274,32 @@ row. The card remains in its prior state.
 
 ### I10 — Retries are row-idempotent
 
-`work-item-create`, `assign`, and `dispatch` preserve their existing idempotency key
-scope and original-row replay. After the minimum authentication, owner-scope, and key-
-syntax checks needed to locate that receipt, a hit wins before validation or resolution
-of a newly supplied title, subject, work-item reference, holder, files, or
-`deliversWorkItem` value. It returns the original row with its original deliverable
-projection and creates no deliverable, link, assignment, or wake for the replay.
-The new payload cannot conflict with or rebind the original identity. A miss validates
-the full request and commits the existing mutation, its deliverable rows and links, and
-its idempotency receipt in one transaction.
+`work-item-create`, `assign`, and `dispatch` preserve their existing idempotency-key
+scope, predecessor validation order, and original-row replay. Each verb performs its
+existing pre-lookup validation before it reads a receipt. `work-item-create` validates
+principal authority, title, spec-reference pair, bug flag, key format, and owner
+resolution. `assign` and `dispatch` validate principal authority, subject, key format,
+effect kind, and each predecessor-supported files field through their shared dispatch
+chokepoint. They also validate that a supplied `deliversWorkItem` value is boolean.
+
+After those validations pass, a hit returns the original row and its original
+deliverable projection. It wins before work-item existence or state resolution,
+statutes, terminal guards, rumination, and any new deliverable-binding side effect. A
+valid changed title, subject, linked work-item reference, holder, files list, or
+`deliversWorkItem` value does not conflict with or rebind the original identity. An
+invalid title, subject, spec reference, bug flag, key, effect kind, files value, or
+`deliversWorkItem` type returns its predecessor error or
+`invalid_delivers_work_item` even when the key names an existing receipt. A hit creates
+no deliverable, link, assignment,
+delivery, or wake. A miss completes the remaining predecessor validation and commits
+the existing mutation, its deliverable rows and links, and its idempotency receipt in
+one transaction.
 
 `attest kind=completion` accepts optional `--key <idempotencyKey>`. Other attest kinds
 reject that parameter. The first successful keyed completion stores its fingerprint and
 canonical response in the deliverable-contract idempotency table in the same transaction
 as I4. The same acting principal, operation, key, and fingerprint returns the original
-response, including
-after restart. The same scoped key with another fingerprint returns
+response, including after restart. The same scoped key with another fingerprint returns
 `idempotency_conflict`. A different key after the assignment closes returns the existing
 `assignment_closed` result and creates no second attest or claim.
 
@@ -535,13 +554,16 @@ each `spawnedBy` edge adds one. Only ancestors whose captured session row has bo
 `kind='custom'` and `archetype='product-owner'` enter the ancestry table; Main is never
 made a product owner by fallback or by archetype text alone.
 
-All three seams apply I10's inherited replay ordering. A keyed `work-item-create` replay
-returns the originally created card and immutable deliverable even if the retry supplies
-a different or now-invalid title. A keyed `assign` or `dispatch` replay returns the
-original assignment and binding even if the retry changes the subject, linked card,
-holder, files, or `deliversWorkItem`. A replay never checks the new card state, opens a
-second obligation, creates a second deliverable, changes subordinate to card-bound (or
-the reverse), schedules a second delivery, or evaluates a rail for the new payload.
+All three seams apply I10's inherited replay ordering. A keyed `work-item-create` retry
+first passes the predecessor title, spec-reference, bug-flag, key, authority, and owner
+validations; a hit then returns the originally created card and immutable deliverable
+even when those supplied values differ validly. A keyed `assign` or `dispatch` retry
+first passes the predecessor pre-lookup validations and the new boolean-type check; a
+hit then returns the original assignment and binding even when valid supplied values
+change the subject, linked card, holder, supported files list, or
+`deliversWorkItem`. A replay never checks the new card state, opens a second obligation,
+creates a second deliverable, changes subordinate to card-bound (or the reverse),
+schedules a second delivery, or evaluates a rail for the new payload.
 
 The shape upgrade backfills:
 
@@ -598,7 +620,8 @@ revoked and replaced. These existing exits avoid a mutable scope history.
 
 - `assign` and `dispatch` add optional boolean `params.deliversWorkItem`, exposed as
   `--delivers-work-item`. It defaults to `false`. `true` without `workItemId` returns
-  `deliverable_work_item_required` and creates nothing.
+  `deliverable_work_item_required` and creates nothing. A non-boolean wire value returns
+  `invalid_delivers_work_item` before keyed replay lookup and creates nothing.
 - `attest` adds optional `params.idempotencyKey`, exposed as `--key` only when
   `kind=completion`. No deliverable parameter exists. Other kinds supplied with a key
   return `idempotency_key_not_applicable` and write nothing.
@@ -655,6 +678,7 @@ as a product-membership oracle.
 
 | Code | Condition | Remedy |
 |---|---|---|
+| `invalid_delivers_work_item` | `params.deliversWorkItem` is present and is not boolean. | Send boolean `true` or `false`, or omit the field. |
 | `deliverable_work_item_required` | `--delivers-work-item` names no linked card. | Link the assignment to a work item or omit the flag. |
 | `product_owner_lineage_invalid` | Live linked-assignment open finds a missing session row, spawn cycle, cross-human-owner edge, or ambiguous distance while capturing lineage. | Preserve the card and repair the session registry through its supported path before assigning. |
 | `assignment_deliverable_missing` | An open assignment has no binding after activation. | Stop and repair the incompatible database through the supported shape path. |
@@ -744,8 +768,7 @@ For `sourceKind='work_item'`, `sourceWorkItemId` is the linked work-item id. Eac
 ancestor list is in ascending numeric distance and can be empty. An unlinked assignment
 projects `productLineage:null`. A legacy terminal assignment linked to a v1 card keeps
 `deliverableContract:'legacy'` and `deliverable:null`, but projects the activation
-lineage capture used for product-owner authority. Each
-completion attest adds:
+lineage capture used for product-owner authority. Each completion attest adds:
 
 ```json
 {
@@ -775,10 +798,12 @@ mutation. On a v1 card already closed under this contract, that old close reques
 returns `work_item_closed`; legacy closed cards keep the predecessor same-state no-op.
 Read additions are additive.
 
-Existing keyed creation replay remains compatible: a replay returns the original card
-or assignment and its original deliverable binding even when a newer client sends a
-different `deliversWorkItem` value or other creation payload. The server does not apply
-new binding validation to that replay.
+Existing keyed creation replay remains compatible: after the predecessor pre-lookup
+validations pass, a replay returns the original card or assignment and its original
+deliverable binding even when a newer client sends a different valid
+`deliversWorkItem` value or other valid creation payload. The server validates the new
+field's boolean wire type but does not apply new binding or card-state validation to the
+replay.
 
 After the capability ships, CLI help and the operating manual must teach one
 pattern: completion claims the stored assignment deliverable; use
@@ -865,16 +890,24 @@ returns `deliverable_contract_inconsistent` with detail
 `assignment_deliverable_missing` or `assignment_deliverable_ambiguous`; it does not
 choose one or serve commands.
 
-For a keyed completion with all optional installed completion rails active, inject one
+For a keyed completion, install every optional completion rail and configure an active
+exact parent, a distinct report-to recipient, and an open completion request. Inject one
 deterministic database failure immediately before each applicable authoritative write:
-completion attest, completion claim, guarded assignment-state update, work-item bracket
-mutation, supervision transition, effort cancellation, completion-escalation record,
-first durable escalation wake, and keyed idempotency receipt. At every probe, the call
-fails and the before/after database snapshots for all these rows and states are
-byte-identical; the assignment remains open. Then inject failure only in each
-post-commit transcript or assignment-marker callback. Completion still commits exactly
-once, the failed marker may be absent, and every read derives the same completed state,
-claim, and retry response from authoritative rows.
+completion attest, completion claim, guarded assignment-state update, each work-item
+bracket row and slate wake, supervision transition, effort cancellation,
+completion-escalation record, parent-notification wake, parent-notice membership,
+report-to wake, report-to membership, open-request deadline wake, deadline membership,
+and keyed idempotency receipt. At each probe, the call fails and the before/after
+database snapshots for all these rows and states are byte-identical; the assignment
+remains open. The test has a distinct probe for each wake and each membership insert.
+
+In a separate parent-unavailable fixture, inject immediately before the applicable
+completion-escalation record and named lifecycle-failure writes. Each probe rolls back
+the complete I4 transaction, and the route creates no parent, report-to, or deadline
+wake or membership that the installed contract excludes. Then inject failure only in
+each post-commit transcript or assignment-marker callback. Completion still commits
+exactly once, the failed marker may be absent, and every read derives the same completed
+state, claim, and retry response from authoritative rows.
 
 ### A6 — Different-card completion is refused
 
@@ -1064,32 +1097,48 @@ product owner records A7's explicit narrowing ruling.
 
 ### A17 — Creation replay preserves the original binding
 
-Create card A with key K, then repeat K with a different and independently invalid title.
-The replay returns card A and its original deliverable projection; row counts for cards,
-deliverables, links, and routing wakes remain one. Restart and repeat to obtain the same
-result.
+Create card A with key K. Repeat K with a different valid title, valid spec-reference
+pair, and changed valid bug flag. The replay returns card A and its original deliverable
+projection; row counts for cards, deliverables, links, and routing wakes remain one.
+Restart and repeat to obtain the same result. Independently repeat with K and an invalid
+title, invalid spec-reference pair, or invalid bug flag. Then replace K with a malformed
+key. Each request returns its predecessor validation error before receipt lookup; the
+original receipt and all row counts remain unchanged.
 
 For both `assign` and `dispatch`, first create a keyed subordinate assignment. Repeat its
-key while changing the subject, linked card, holder, files, and
-`deliversWorkItem=true`. The replay returns the original assignment with its original
-subordinate deliverable and original card link; no card-bound link, second deliverable,
-assignment, product-lineage capture, ancestry set, delivery, or wake appears. The
-original capture and ancestry bytes remain unchanged. Repeat the inverse fixture: first
-create a keyed card-bound assignment, then retry as subordinate and against a different
-card. The
-original card deliverable remains bound. Run both directions after restart and after
-the newly supplied card becomes terminal. The existing receipt wins in every case. A
-different key follows normal validation and open-card guards and cannot mutate the first
-binding.
+key with a different valid subject, linked card, holder, each files field the verb
+supports, and `deliversWorkItem=true`. The replay returns the original assignment with
+its original subordinate deliverable and original card link; no card-bound link, second
+deliverable, assignment, product-lineage capture, ancestry set, delivery, or wake
+appears. The original capture and ancestry bytes remain unchanged. For each verb,
+independently repeat with an invalid subject, malformed key, invalid effect kind, and
+non-boolean `deliversWorkItem`; the last case returns
+`invalid_delivers_work_item`. For `assign`, also repeat with an invalid files value.
+Each request returns its pre-lookup validation error, does not read through to a replay
+response, and leaves the original receipt and rows unchanged.
+
+Repeat the valid inverse fixture: first create a keyed card-bound assignment, then retry
+as subordinate and against a different card. The original card deliverable remains
+bound. Run both valid directions after restart and after the newly supplied card becomes
+terminal. The existing receipt wins after the named pre-lookup validations in every
+case. A different key follows normal validation and open-card guards and cannot mutate
+the first binding.
 
 ## Open Questions
 
 1. **BLOCKING FOR IMPLEMENTATION, NON-BLOCKING FOR THIS PROPOSAL — schema predecessor
-   and target:** no product integration target is elected. Before any code assignment,
-   the owner must select the exact Tightbeam base, allocate the successor shape stamp
-   without colliding with another reviewed schema lane, and amend this canonical file
-   with that base commit and stamp. The behavioral contract and independent spec review
-   do not depend on that target choice.
+   and implementation base:** before any code assignment, the product owner must select
+   the exact Tightbeam base commit, allocate the successor shape stamp without colliding
+   with another reviewed schema lane, and amend this canonical file with that base and
+   stamp. This selection identifies the bytes and predecessor shape the implementation
+   changes. It is not an integration-target election and grants no landing authority.
+2. **BLOCKING FOR LANDING ONLY, NON-BLOCKING FOR THIS PROPOSAL OR TARGETLESS
+   IMPLEMENTATION — integration target:** this work item has no elected integration
+   target. Targetless implementation and review can proceed after question 1 closes.
+   Any managed landing requires a separate durable election under
+   `integration-target-election.md` by Mike or an active scoped delegate. Product-owner,
+   work-item-owner, spec-author, reviewer, branch, commit, and `specRef` status confer no
+   election authority. This proposal does not open or resolve that election.
 
 No other questions are open. The proposal decides the MVP behavior, identity model,
 authorization, transaction boundaries, replay, compatibility, projections, errors, and
