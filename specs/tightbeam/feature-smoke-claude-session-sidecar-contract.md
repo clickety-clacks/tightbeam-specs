@@ -154,7 +154,9 @@ unexpected-path refusal.
   assignment `asg_17a50f66-c32d-42f2-aba5-dd39e072203e`, and facts 373, 384, 387,
   and 390 remain unchanged until a later explicit release.
 - I-12. The validator refuses a mismatch without mutating an observed runtime path.
-  It records evidence before the existing lifecycle cleanup can remove that path.
+  When evidence append and sync succeed, it records the refusal before lifecycle
+  cleanup can remove that path. An evidence-sink failure follows the console-only
+  boundary in C-10.
 
 ## Architecture
 
@@ -216,8 +218,8 @@ sixth runtime path, a missing listed path, a nested child, a symlink, and a spec
 filesystem type.
 
 Acceptance example: Given the five listed entries plus `sessions/nested/2.json`, when
-the validator evaluates the whole delta, then it refuses with `FX_PATH_SET` and names
-the nested relative path without reading it as an admitted sidecar.
+the validator evaluates the whole delta, then it refuses with `FX_PATH_SET`, emits
+`path=-`, and does not read the nested entry as an admitted sidecar.
 
 ### C-03 — Canonical sidecar filename and internal PID binding
 
@@ -337,17 +339,21 @@ The validator evaluates categories in this order:
 14. `FX_FRESHNESS` for C-05 mismatch.
 15. `FX_IDENTITY_DRIFT` for C-06 cross-phase mismatch.
 
-Within one category, the validator sorts relative paths by raw byte order. If one path
-fails more than one predicate in that category, the validator selects the first failed
-predicate in the C-10 `checks` order. The refusal line's `clause` field names that
-predicate's mapped C-clause. This category, path, then predicate order is the complete
-first-failure tie-break. One refusal line has this shape:
+`FX_PHASE`, `FX_FIXTURE_STATE`, `FX_CLOCK`, `FX_BASELINE`, and `FX_PATH_SET` are
+set-level categories. Their refusal lines emit `path=-`, and the validator performs no
+path sort for them. For `FX_PATH_SET`, the validator does not construct a candidate for
+a missing expected path. Within each other category, the validator sorts observed
+relative paths by raw byte order. If one observed path fails more than one predicate in
+that category, the validator selects the first failed predicate in the C-10 `checks`
+order. The refusal line's `clause` field names that predicate's mapped C-clause. This
+category, observed path, then predicate order is the complete first-failure tie-break
+for path-specific categories. One refusal line has this shape:
 
 `feature-smoke fixture HOME REFUSED code=<code> harness=<harness-or-all> phase=<phase> principal=<evidence-token> path=<evidence-token-or-dash> clause=<clause-id>`
 
 Acceptance example: Given both a missing `sessions` directory and a wrong-mode
 `.claude.json`, when the validator evaluates the delta, then it returns `FX_PATH_SET`
-before `FX_MODE` on repeated runs.
+with `path=-` before `FX_MODE` on repeated runs.
 
 Acceptance example: Given one sidecar whose internal `pid` differs from its filename
 and whose `cwd` differs from the expected workdir, when semantic validation runs, then
@@ -368,18 +374,24 @@ path:
 This pre-record refusal creates no evidence record. It precedes the C-09 category
 order because no valid evidence file exists in which to record a check.
 
-Each phase appends exactly one evidence record and requires
-`:file.sync(evidence_io_device)` to return `:ok` before that phase returns, sends a
-wake, writes a sentinel, or enters cleanup. If append or sync fails, the fixture emits
-the C-09 refusal-line shape with `code=FX_EVIDENCE`, the current harness, phase, and
-principal, `path=feature-smoke-home-evidence.jsonl`, and `clause=C-10`; it starts no
-later admission, spawn, wake, or sentinel action and does not attempt a second evidence
-append. If the current leg reached spawn, its existing cleanup still runs. A passing
-full matrix contains exactly seven records in this sequence: run-start; Claude
-pre-spawn, pre-wake, and post-turn; Codex pre-spawn, pre-wake, and post-turn. A refusal
-after evidence-file creation contains one record for each completed phase plus one
-`refused` record for the failing phase; it contains no record for a later phase or
-harness leg.
+For each phase, the fixture makes one evidence-record append attempt. If that append
+succeeds, the fixture requires `:file.sync(evidence_io_device)` to return `:ok` before
+that phase returns, sends a wake, writes a sentinel, or enters cleanup. If append or
+sync fails, the fixture emits the C-09 refusal-line shape with `code=FX_EVIDENCE`, the
+current harness, phase, and principal, `path=feature-smoke-home-evidence.jsonl`, and
+`clause=C-10`; it starts no later admission, spawn, wake, or sentinel action and does
+not attempt a second evidence append. The console refusal is the only guaranteed
+evidence for this sink failure. The evidence file may omit the current phase's complete
+JSON object and LF, or the current record may remain unsynced. The fixture does not
+retry the append, use a fallback sink, or claim a durable current-phase record. If the
+current leg reached spawn, its existing cleanup still runs. A passing full matrix
+contains exactly seven records in this sequence: run-start; Claude pre-spawn, pre-wake,
+and post-turn; Codex pre-spawn,
+pre-wake, and post-turn. For a validator refusal other than an evidence-sink failure,
+the evidence file contains one record for each completed phase plus one synced
+`refused` record for the failing phase. It contains no record for a later phase or
+harness leg. This refusal-cardinality rule does not apply when append or sync itself
+fails.
 
 Each record is one JSON object with keys in this exact order and no insignificant
 whitespace:
@@ -529,7 +541,7 @@ The Given/When/Then examples in C-01 through C-12 are part of this acceptance co
 | AC-03 | One harness leg has its exact owned baseline | That leg's pre-spawn validation runs | Its baseline passes, no runtime exception is used, and the validator does not inspect the other harness's home | C-01, I-02 |
 | AC-04 | The exact five-path Claude runtime set exists in the Claude leg | That leg's pre-wake validation runs | The set passes without a launcher PID read | C-02-C-05, I-04 |
 | AC-05 | Canonical filename and equal internal `pid` | Sidecar semantics run | Filename-PID binding passes | C-03 |
-| AC-06 | `sessions/0123.json` with internal `pid=123` | Whole-set path validation runs | `FX_PATH_SET` refuses the noncanonical name before sidecar semantics | C-02, C-03, C-09 |
+| AC-06 | `sessions/0123.json` with internal `pid=123` | Whole-set path validation runs | `FX_PATH_SET` refuses with `path=-` before sidecar semantics | C-02, C-03, C-09 |
 | AC-07 | `sessions/123.json` has internal `pid=124` | Sidecar semantics run | `FX_SIDECAR_SEMANTIC` refuses the unequal binding | C-03, C-09 |
 | AC-08 | One runtime JSON file contains invalid UTF-8 | JSON validation runs | `FX_JSON` refuses it | C-02, C-04, C-09 |
 | AC-09 | One runtime JSON file contains malformed JSON | JSON validation runs | `FX_JSON` refuses it | C-02, C-04, C-09 |
@@ -539,10 +551,10 @@ The Given/When/Then examples in C-01 through C-12 are part of this acceptance co
 | AC-13 | Sidecar has one member with the wrong JSON type | Schema validation runs | `FX_SIDECAR_SCHEMA` refuses it | C-04, C-09 |
 | AC-14 | Sidecar `cwd` differs from the spawned Tightbeam workdir | Semantic validation runs | `FX_SIDECAR_SEMANTIC` refuses it without logging either value | C-04, C-10 |
 | AC-15 | Backup timestamp or `startedAt` lies outside the spawn interval | Freshness validation runs | `FX_FRESHNESS` refuses it | C-05 |
-| AC-16 | Two sidecars or two backups exist | Whole-set validation runs | `FX_PATH_SET` refuses the set | C-02, C-06 |
+| AC-16 | Two sidecars or two backups exist | Whole-set validation runs | `FX_PATH_SET` refuses the set with `path=-` | C-02, C-06 |
 | AC-17 | The post-turn backup has a new canonical name and satisfies C-02 and C-05 | Post-turn validation runs | The backup passes without requiring pre-wake filename equality | C-05, C-06 |
 | AC-18 | Post-turn sidecar identity differs from pre-wake identity | Continuity validation runs | `FX_IDENTITY_DRIFT` refuses it | C-06 |
-| AC-19 | One unexpected Claude nested path exists | Whole-set validation runs | `FX_PATH_SET` refuses it | C-02, C-08 |
+| AC-19 | One unexpected Claude nested path exists | Whole-set validation runs | `FX_PATH_SET` refuses with `path=-` | C-02, C-08-C-09 |
 | AC-20 | One symlink occupies an admitted name | Metadata validation runs | `FX_TYPE` refuses it without following the link | C-02, C-08 |
 | AC-21 | `.claude.json` has mode `0644` | Mode validation runs | `FX_MODE` refuses it | C-02, C-09 |
 | AC-22 | Sidecar has 4097 bytes | Size validation runs | `FX_SIZE` refuses it before JSON decoding | C-02, C-09 |
@@ -557,13 +569,14 @@ The Given/When/Then examples in C-01 through C-12 are part of this acceptance co
 | AC-31 | Parent commit, product assignment, and facts are read after this contract | Contract production ends | Their identifiers and state match I-11 | I-11 |
 | AC-32 | The Claude pre-wake sidecar has a wrong `cwd` | Claude pre-wake validation runs | The current evidence record is `refused` with `cause="C-04"`, `expected_cwd_equal` is evaluated and false, no later-phase or Codex-leg record exists, and the evidence file remains through cleanup | C-04, C-09-C-10 |
 | AC-33 | The evidence path already exists | Exclusive creation runs | `FX_EVIDENCE` refuses before run-start validation, writes no evidence record, and does not delete, replace, or change the existing path | C-10 |
-| AC-34 | An evidence append or `:file.sync/1` fails after spawn | The current phase writes evidence | `FX_EVIDENCE` refuses; no later admission, wake, or sentinel action and no secondary append occurs; existing cleanup still runs | C-10 |
+| AC-34 | An evidence append or `:file.sync/1` fails after spawn | The current phase writes evidence | The console `FX_EVIDENCE` line is the only guaranteed evidence; the fixture makes no completeness or durability claim for the current-phase record, performs no retry, fallback sink, or secondary append, starts no later admission, wake, or sentinel action, and still runs existing cleanup | I-12, C-10 |
+| AC-35 | One required Claude path is missing and one unexpected path exists | Whole-set validation runs repeatedly | Each run returns `FX_PATH_SET` with `path=-`; the validator neither constructs a missing-path candidate nor sorts the unexpected path for this category | C-02, C-09 |
 
 ## Open Questions
 
-None. Findings F1-F4 in `att_db09d91a-e208-4806-acd2-700088124228` are closed under
-`dr_5fd346df-75ab-4a1a-a78c-54de593fec12`. One fresh linked successor review decides
-whether the exact amended artifact is reviewed-clean.
+None. Findings F5-F6 in `att_daa01a05-41c1-4e41-995b-7e5db6afc63c` are closed under
+`dr_fb80acd4-8634-47be-a9ca-b576b43412b4`. One fresh linked review decides whether
+the exact reamended artifact is reviewed-clean.
 
 The following resolved boundaries remain gates, not open questions:
 
