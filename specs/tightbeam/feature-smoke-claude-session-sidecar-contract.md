@@ -95,6 +95,9 @@ unexpected-path refusal.
 - **Permission mode**: the `lstat` mode's permission and special-bit portion. An exact
   mode such as `0644` requires those nine permission bits and requires set-user-ID,
   set-group-ID, and sticky bits to be zero. File type is checked separately.
+- **Regular-object identity**: the three-integer tuple `major_device`, `minor_device`,
+  and `inode` returned in OTP file information. The validator compares this tuple only
+  while one file handle remains open. It does not record the integers in evidence.
 - **Claude sidecar**: the sole regular file at
   `sessions/<canonical-positive-numeric-stem>.json` in the Claude runtime delta.
 - **Sidecar identity**: the tuple `pid`, `sessionId`, `cwd`, `startedAt`, and
@@ -139,6 +142,11 @@ unexpected-path refusal.
   observation that falsifies this assumption fails the smoke and returns for ruling.
 - AS-09. One future full-parity fixture remains subject to a separate explicit release
   after this exact contract passes review.
+- AS-10. The authorized Gibson runtime uses Unix OTP 28.5. Its documented
+  `:file.read_link_info/1` and `:file.read_file_info/1` results expose integer
+  `major_device`, `minor_device`, and `inode` fields for a regular file, and the latter
+  function accepts an open raw file handle. A future implementer confirms this seam on
+  the synchronized implementation base before editing. A mismatch returns for ruling.
 
 ## Invariants
 
@@ -149,10 +157,10 @@ unexpected-path refusal.
 - I-04. The validator does not read, compare, or report a Tightbeam launcher `osPid`
   while deciding sidecar admission.
 - I-05. After a runtime snapshot succeeds, the validator derives each admission
-  decision from paths, `lstat` metadata, opened-object type metadata, captured file
-  bytes, the spawned Tightbeam session key, and explicit phase timestamps. On
-  acquisition failure, it derives the refusal from the phase, C-08 walk order, and
-  first failing observed path.
+  decision from paths, initial and final `lstat` metadata, opened-object type and
+  regular-object identity, captured file bytes, the spawned Tightbeam session key, and
+  explicit phase timestamps. On acquisition failure, it derives the refusal from the
+  phase, C-08 operation order, and first failing observed path.
 - I-06. The validator admits no runtime delta for Codex.
 - I-07. The fixture does not delete, preseed, rename, repair, or synthesize a harness
   runtime path.
@@ -327,18 +335,45 @@ spawned session through the existing fixture lifecycle after evidence capture.
 At pre-spawn, pre-wake, and post-turn, the validator makes exactly one runtime snapshot
 attempt. It enumerates the projected home once without following symlinks. For each
 successfully enumerated directory, it sorts direct-child names by raw filename bytes
-and processes them depth-first. For each observed relative path, it calls `lstat` once.
-For each regular file whose bytes the phase requires, it opens the path once without
-following a symlink, verifies from the opened object that its type remains regular,
-and reads that one object to EOF once. It does not retry an operation, restart the
-walk, use a fallback reader, or take a second snapshot.
+and processes them depth-first. For each observed relative path, it obtains initial
+`lstat` metadata once with `:file.read_link_info/1`. It does not descend through an
+entry whose initial type is not `directory`.
+
+For each entry whose initial type is `regular` and whose bytes the phase requires, the
+validator performs these operations in order:
+
+1. It captures the initial regular-object identity from the `lstat` metadata.
+2. It opens the path once with documented OTP modes `[:read, :binary, :raw]`.
+3. Before a read, it calls `:file.read_file_info/1` on that open handle. It requires
+   the opened type to be `regular`. It requires the opened regular-object identity to
+   equal the initial identity.
+4. It reads that one handle to EOF once and computes the required byte size and
+   SHA-256 from those bytes.
+5. While the handle remains open, it obtains final `lstat` metadata once with
+   `:file.read_link_info/1`. It requires the final type to be `regular`. It requires
+   the final regular-object identity to equal both earlier identities.
+
+Each identity acquisition requires three integer fields. A missing, noninteger, or
+unequal field is an identity acquisition failure.
+
+A replacement symlink or rename that resolves to a different regular-object identity
+returns `FX_SNAPSHOT` instead of supplying admitted bytes. The validator does not
+claim to observe an intermediate path state that resolves to the same still-open
+object. Such an unobserved state cannot change the captured object's identity or
+bytes.
+
+The validator does not pass an undocumented open mode. It does not retry an operation,
+restart the walk, use a fallback reader, invoke a helper or native dependency, or take
+a second snapshot.
 
 If projected-home enumeration fails, the validator refuses with `FX_SNAPSHOT`,
-`path=-`, and `clause=C-08`. If directory enumeration, `lstat`, open, type-stability,
-or read fails for an observed relative path, it refuses with `FX_SNAPSHOT`, that path's
-evidence token, and `clause=C-08`. A disappearance is the corresponding `lstat` or open
-failure. The validator emits no operating-system error text. C-10 records exactly the
-metadata and bytes captured before this refusal.
+`path=-`, and `clause=C-08`. If directory enumeration, initial `lstat`, open,
+opened-handle information, opened type, opened identity, read, final `lstat`, final
+type, or final identity fails for an observed relative path, it refuses with
+`FX_SNAPSHOT`, that path's evidence token, and `clause=C-08`. A disappearance is the
+corresponding initial or final `lstat` or open failure. The validator emits no
+operating-system error text. C-10 records exactly the metadata and bytes captured
+before this refusal.
 
 Acceptance example: Given a sidecar symlink whose target is a schema-valid JSON file,
 when the validator reads `lstat` metadata, then it refuses with `FX_TYPE` before it
@@ -348,6 +383,11 @@ Acceptance example: Given `.claude.json` has captured regular-file metadata but 
 single open fails, when snapshot acquisition runs, then the validator refuses with
 `FX_SNAPSHOT`, `path=.claude.json`, and `clause=C-08`; its evidence entry has
 `sha256=null`, and the validator does not retry or evaluate `FX_MODE`.
+
+Acceptance example: Given initial `lstat` reports regular-object identity A for a
+sidecar and the opened handle reports regular-object identity B, when snapshot
+acquisition compares the identities, then it refuses with `FX_SNAPSHOT`, does not read
+the handle, and does not retry with another reader.
 
 ### C-09 — Deterministic error mapping
 
@@ -518,15 +558,18 @@ later applicable check is `applicable=true`, `evaluated=false`, and `passed=null
 at Claude post-turn. For an entry whose type is not `regular`, `size` and `sha256` are
 `null`; the validator never follows a symlink to populate them.
 
-On `FX_SNAPSHOT`, the record's `entries` array contains each entry whose `lstat`
-metadata and required bytes were captured before the failure, plus the failing observed
-path. It omits unprocessed paths and does not claim to be a complete runtime delta. If
-projected-home enumeration fails, `entries` is empty. If `lstat` fails, the failing
-entry has `type=null`, `mode=null`, `size=null`, and `sha256=null`. If open,
-type-stability, or read fails, the failing entry retains its captured `lstat` fields and
-has `sha256=null`. Check `snapshot_acquired` is `evaluated=true` and `passed=false`;
-each later applicable check is unevaluated. The record has `result="refused"` and
-`cause="C-08"`. No record field contains the raw operating-system error.
+On `FX_SNAPSHOT`, the record's `entries` array contains each entry whose initial
+`lstat` metadata and required bytes were captured before the failure, plus the failing
+observed path. It omits unprocessed paths and does not claim to be a complete runtime
+delta. If projected-home enumeration fails, `entries` is empty. If initial `lstat`
+fails, the failing entry has `type=null`, `mode=null`, `size=null`, and
+`sha256=null`. If open, opened-handle information, opened type, opened identity, or
+read fails, the failing entry retains its initial `lstat` fields and has
+`sha256=null`. If final `lstat`, final type, or final identity fails after the read
+completed, the entry retains its initial `lstat` fields and the captured SHA-256.
+Check `snapshot_acquired` is `evaluated=true` and `passed=false`; each later applicable
+check is unevaluated. The record has `result="refused"` and `cause="C-08"`. No record
+field contains a regular-object identity or raw operating-system error.
 
 The fixture writes JSON strings using their stated ASCII tokens, appends one LF byte,
 and emits no other byte to the evidence file. It does not record JSON bytes, decoded
@@ -624,12 +667,14 @@ The Given/When/Then examples in C-01 through C-12 are part of this acceptance co
 | AC-37 | `lstat` returns an error for observed path `sessions/2.json` | The single snapshot attempt reaches that path | `FX_SNAPSHOT` refuses with `path=sessions/2.json`; the failing entry has null type, mode, size, and hash | C-08-C-10 |
 | AC-38 | `.claude.json` has captured regular-file metadata and its single open returns an error | The snapshot attempts byte capture | `FX_SNAPSHOT` refuses with `path=.claude.json`; its captured metadata remains, `sha256=null`, and `FX_MODE` is not evaluated | C-08-C-10 |
 | AC-39 | A regular sidecar read returns an error before EOF | The snapshot attempts byte capture | `FX_SNAPSHOT` refuses with the sidecar path, `sha256=null`, and no second read or snapshot | C-08-C-10 |
-| AC-40 | The opened object is not regular after `lstat` reported a regular path | The snapshot verifies the opened type | `FX_SNAPSHOT` refuses with that path and no fallback reader | C-08-C-10 |
+| AC-40 | The opened object is not regular after initial `lstat` reported a regular path | The snapshot verifies the opened type | `FX_SNAPSHOT` refuses with that path, `sha256=null`, and no fallback reader | C-08-C-10 |
+| AC-41 | Initial `lstat` reports regular-object identity A and the opened handle reports regular-object identity B | The snapshot compares identities before reading | `FX_SNAPSHOT` refuses with that path, `sha256=null`, and no read, fallback, or retry | C-08-C-10 |
+| AC-42 | Initial `lstat` and the opened handle report regular-object identity A, the read completes, and final `lstat` reports a symlink or identity B | The snapshot performs its final identity check while the handle remains open | `FX_SNAPSHOT` refuses with that path, retains the captured SHA-256, and does not take another snapshot | C-08-C-10 |
 
 ## Open Questions
 
-None. Finding F7 in `att_af1b4ab8-55d6-4f74-b5b4-1c753668d05b` is closed under
-`dr_7262873b-27b3-4d35-8a15-15bcd7e277e1`. One fresh linked review decides whether
+None. Finding F8 in `att_101f8af2-6694-4389-8dc0-b39883077f48` is closed under
+`dr_9a179914-0d23-440b-9a3b-4577e0d0c707`. One fresh linked review decides whether
 the exact amended artifact is reviewed-clean.
 
 The following resolved boundaries remain gates, not open questions:

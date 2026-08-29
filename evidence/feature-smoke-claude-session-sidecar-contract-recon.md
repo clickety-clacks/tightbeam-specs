@@ -34,13 +34,23 @@ Post-review readback on 2026-08-29 UTC, before the amended-artifact seal:
   `att_db09d91a-e208-4806-acd2-700088124228` and completion
   `att_6aa0bffe-a742-4df5-9535-bb6b9cc9489b`.
 
+F8-amendment readback on 2026-08-29 UTC, before the new seal:
+
+- Work item remains open with 50 assignment rows and 1,821 timeline events, including
+  850 attest events.
+- Canonical key-sorted compact full work-item trace SHA-256:
+  `04adae376bb46bddb3fdfa34e358d355f9801dce34eec103bb35b1ecfbb22fc8`.
+- The newest controlling row is decision request
+  `dr_9a179914-0d23-440b-9a3b-4577e0d0c707`, ruled
+  `authorize-f8-object-identity-rework-and-review`.
+
 ## Authority and preserved state
 
 | Source | Material ruling or fact |
 | --- | --- |
 | `att_d0b6affe-af19-44f5-9d6e-ca24292d9743` | Class 12: final fixture is consumed; future release needs a strict fixture-only `sessions/<positive-numeric>.json` contract independent of launcher `osPid`, then one fresh same smoke. |
 | `att_a134b512-0dd2-4f24-b1d7-7d56e6dca9bf` | Fact 390 blocks the parent holder. Facts 373, 384, and 387, parent commit, surrendered history, and custody remain frozen. |
-| `att_d694b965-8471-46df-842d-5ef915372aa8` | The initial assignment boundary allowed contract and recon artifacts plus a ready-or-blocked verdict. Later Mike rulings `dr_5fd346df`, `dr_fb80acd4`, and `dr_7262873b` add only their three bounded amendments, seals, and reviews. Fixture, smoke, implementation, integration, and live mutation remain forbidden. |
+| `att_d694b965-8471-46df-842d-5ef915372aa8` | The initial assignment boundary allowed contract and recon artifacts plus a ready-or-blocked verdict. Later Mike rulings `dr_5fd346df`, `dr_fb80acd4`, `dr_7262873b`, and `dr_9a179914` add only their four bounded amendments, seals, and reviews. Fixture, smoke, implementation, integration, and live mutation remain forbidden. |
 | `att_15121266-f5e8-4cbc-bd4b-22dae1ca2bbd` | Claude-only `.claude.json`, one bounded backup, and the `sessions` runtime namespace are fixture surfaces. Evidence excludes file contents. |
 | `att_32e44600-c470-4b16-b9a9-54381992ce9a` | A sidecar is present after successful spawn and tuning, before the first wake. The earlier empty-pre-turn assumption is false. |
 | `att_3db588ec-91b1-4af8-a3af-84eb98186fa7` | The last authorized replacement fixture was one-shot. A new mismatch had to stop without another live attempt. |
@@ -53,6 +63,8 @@ Post-review readback on 2026-08-29 UTC, before the amended-artifact seal:
 | `dr_fb80acd4-8634-47be-a9ca-b576b43412b4` | Mike authorized one further bounded contract-and-recon amendment for F5-F6, a new seal, and one fresh linked review. |
 | `att_af1b4ab8-55d6-4f74-b5b4-1c753668d05b` | The final review accepted F1-F6 and found F7: snapshot enumeration, metadata, open, read, disappearance, and type-change failures had no representable outcome. |
 | `dr_7262873b-27b3-4d35-8a15-15bcd7e277e1` | Mike authorized one bounded contract-and-recon amendment for F7, a new seal, and one fresh linked review. |
+| `att_101f8af2-6694-4389-8dc0-b39883077f48` | The F7 review accepted F1-F6 and the F7 refusal shape. It found F8: OTP 28.5 has no supported no-follow open mode under one-file custody. |
+| `dr_9a179914-0d23-440b-9a3b-4577e0d0c707` | Mike authorized one bounded contract-and-recon amendment for F8, a new exact seal, and one fresh linked review. |
 | Parent commit `5f4341130419c4bae21bdd6c2278185dcd0f89a5` | Frozen execution-start observability implementation. Five files, 1,375 added lines. This contract does not modify it. |
 | Product assignment `asg_17a50f66-c32d-42f2-aba5-dd39e072203e` | Frozen original base-synchronization product lane. This contract does not resume it. |
 
@@ -100,6 +112,29 @@ remained exact `9ddcb07a779ee9f73285f5bfa54898651e781f13`, which is already an a
 reviewed commit `aad893964b0bbf08c99dfec54f64801611e85eca` through merge
 `a3b1e249250b14daafe40e217f59e0e047144411`. No merge or contract edit was required
 to synchronize the base.
+
+Before the F8 amendment, the owned branch fetched `origin/main` again. Remote `main`
+remained exact `9ddcb07a779ee9f73285f5bfa54898651e781f13`, which is already an ancestor of
+reviewed commit `cf6653ede091b5ef20d0474c312e0bf611020814`. No merge or contract edit was
+required to synchronize the base.
+
+## Read-only F8 mechanism validation
+
+Installed OTP 28.5 source documents both selected calls. `:file.read_link_info/1`
+returns link metadata instead of target metadata. `:file.read_file_info/1` accepts an
+I/O device and dispatches raw file descriptors to `read_handle_info`. The documented
+file-information record exposes `type`, `major_device`, `minor_device`, and `inode`.
+
+A read-only Gibson specimen opened `/etc/hosts` once with documented modes
+`[:read, :binary, :raw]`. Initial path information, opened-handle information, and
+final path information each returned type `regular` and the same
+`{major_device, minor_device, inode}` tuple. The specimen changed no file. A separate
+read-only specimen confirmed the rejected alternative: passing undocumented atom
+`:no_follow` still opened symlink `/etc/mtab` and read its target.
+
+The supported contract property is identity continuity for the one captured object.
+It is not a claim that OTP supplies `O_NOFOLLOW`, and it is not a claim about an
+unobserved intermediate path state that resolves to that same still-open object.
 
 ## Preserved final-fixture evidence
 
@@ -217,6 +252,9 @@ fixture neither retries nor claims that the current JSONL record is complete or 
 If runtime snapshot acquisition fails, one `FX_SNAPSHOT` record carries the captured
 partial entry set, null unavailable fields, and failed `snapshot_acquired` check. It
 records no operating-system error text and starts no retry or second snapshot.
+For a required regular file, acquisition compares the initial path identity, opened
+handle identity, and final path identity while that one handle remains open. Evidence
+records only the predicate outcome, not the device or inode integers.
 
 ### D-05 — Codex remains outside the exception
 
@@ -281,6 +319,27 @@ The amendment closes only finding F7 in
 The amendment adds no retry, fallback reader, second snapshot, new evidence file,
 admitted runtime path, implementation file, fixture attempt, or live authority.
 
+### D-10 — F7-review closure is bounded to F8
+
+The amendment closes only finding F8 in
+`att_101f8af2-6694-4389-8dc0-b39883077f48`:
+
+1. Terms define regular-object identity as the OTP file-information tuple
+   `major_device`, `minor_device`, and `inode`.
+2. C-08 replaces the unsupported no-follow open claim with documented OTP 28
+   operations: initial `:file.read_link_info/1`, one documented read-only raw open,
+   `:file.read_file_info/1` on the open handle, one read to EOF, and final
+   `:file.read_link_info/1` while the handle remains open.
+3. C-08 requires the opened object and final path to remain regular and to retain the
+   initial regular-object identity. A different identity observed after open or after
+   read therefore returns `FX_SNAPSHOT` before admission.
+4. C-10 defines the hash boundary for an identity failure before or after the read.
+   AC-41 and AC-42 cover both identity-check positions.
+
+The amendment adds no undocumented open mode, helper, subprocess, native dependency,
+retry, fallback reader, second snapshot, path admission, implementation file, fixture
+attempt, or live authority.
+
 ## Declined alternatives
 
 | Alternative | Decision |
@@ -296,6 +355,9 @@ admitted runtime path, implementation file, fixture attempt, or live authority.
 | Retry a failed evidence append or use a fallback sink | Declined. It adds a second mechanism and cannot prove that the original sink is durable. The deterministic console refusal is sufficient. |
 | Retry a failed snapshot operation or use a fallback reader | Declined. It changes the observation after failure and makes the one-shot result depend on another filesystem race. |
 | Take a second runtime snapshot after acquisition failure | Declined. It can observe a different path set and hides the first acquisition failure. |
+| Pass `:no_follow` to `:file.open/2` | Declined. OTP 28.5 does not document or implement that mode; it accepts the atom and follows a symlink. |
+| Add an external helper, subprocess, NIF, or native dependency for `O_NOFOLLOW` | Declined. Mike authorized the supported one-file object-identity amendment, not a new dependency or custody surface. |
+| Rely on opened-object type without identity continuity | Declined. A replacement symlink can resolve to a different regular object. |
 | Validate both harness homes in one shared phase | Declined. It makes the sequential lifecycle and failure boundary undecidable. |
 | Use a wildcard 0.1 implementation-branch placeholder | Declined. Mike designated `origin/0.1.9` as the sole 0.1 branch. |
 | Leave same-path predicate order implicit | Declined. Error category and raw-path order alone do not decide which clause wins on one multiply-invalid entry. |
@@ -321,13 +383,13 @@ with deterministic cases and one real fresh matrix.
 | C-05 | Backup ruling; sidecar samples; mtime contradiction | Spawn-to-snapshot interval tests; no mtime or duration decision. |
 | C-06 | `att_3db588ec`; `att_d0b6affe`; one-shot fixture history | Exact phase-local backup cardinality, cross-phase sidecar identity, and no-reuse cases. |
 | C-07 | Parent `att_cbdc7419`; assignment scope | Empty Codex delta and a plugin-cache negative case. |
-| C-08-C-09 | Engineering tenet to report dirt; law wisdom 4-5; first-review F4; successor F6; final-review F7 | Emit set-level `FX_PATH_SET` with `path=-`; emit ordered `FX_SNAPSHOT` for the single acquisition attempt; otherwise select first failure by category, observed raw path, then fixed predicate order. |
-| C-10 | `att_15121266`; assignment evidence boundary; first-review F2; successor F5; final-review F7 | Exact retained mode-0600 JSONL path, seven-record passing cardinality, validator-refusal truncation, 29 fixed checks, hashes and booleans, null uncaptured snapshot fields, and no decoded values, bytes, or OS error text. |
+| C-08-C-09 | Engineering tenet to report dirt; law wisdom 4-5; first-review F4; successor F6; final-review F7; F7-review F8 | Emit set-level `FX_PATH_SET` with `path=-`; use documented OTP operations and three-way regular-object identity continuity during one read; emit ordered `FX_SNAPSHOT` for the single acquisition attempt; otherwise select first failure by category, observed raw path, then fixed predicate order. |
+| C-10 | `att_15121266`; assignment evidence boundary; first-review F2; successor F5; final-review F7; F7-review F8 | Exact retained mode-0600 JSONL path, seven-record passing cardinality, validator-refusal truncation, 29 fixed checks, hashes and booleans, identity-failure hash boundary, null uncaptured snapshot fields, and no identity values, decoded values, bytes, or OS error text. |
 | C-11 | Assignment custody; Mike branch correction; first-review F3 | One-file diff from synchronized `origin/0.1.9` and custody check. |
 | C-12 | `att_d694b965`; `spec-handoff`; `AGENTS.md` live-smoke law | Reviewed hash, explicit release, deterministic gates, one fresh matrix, linked exact-commit review. |
 | AC-29 | Reviewed base-sync AC-56; `AGENTS.md`; first-review F1-F2 | One sequential Claude-plus-Codex matrix after repository gates, with separate leg observations and seven retained records. |
 | AC-34-AC-35 | Successor-review F5-F6; `dr_fb80acd4` | Console-only sink-failure evidence and deterministic `path=-` for missing-plus-extra set refusal. |
-| AC-36-AC-40 | Final-review F7; `dr_7262873b` | Deterministic single-attempt snapshot refusal for enumeration, metadata, open, read, and type-change failure. |
+| AC-36-AC-42 | Final-review F7; F7-review F8; `dr_7262873b`; `dr_9a179914` | Deterministic single-attempt snapshot refusal for enumeration, metadata, open, read, opened-type, and regular-object identity failure. |
 | I-11, AC-31 | Facts 373/384/387/390; parent and product cards | Readback proves frozen identifiers unchanged before handoff. |
 
 Reverse trace check:
@@ -381,6 +443,16 @@ digest added one representable acquisition refusal and partial content-free evid
 It added no retry, fallback reader, second observation, path admission, implementation
 file, fixture attempt, or live authority. A fresh review must decide the new hashes.
 
+The F7 review read exact commit `cf6653ede091b5ef20d0474c312e0bf611020814`.
+Verdict `att_101f8af2` and corrected report `art_5233e4ba`, SHA-256
+`3198440e9d2e7285d89145f15ad82f49a457029b153a086b267ff66e850fe426`, accepted
+F1-F6 and the F7 refusal shape and found F8. Mike ruling `dr_9a179914` authorized the
+narrow amendment. The digest replaced the unsupported no-follow open claim with
+documented OTP initial-path, open-handle, and final-path identity checks while the one
+handle remains open. It added no helper, dependency, retry, fallback reader, second
+snapshot, admitted path, implementation file, fixture attempt, or live authority. A
+fresh review must decide the new exact hashes.
+
 During digest scheduling, the liveness monitor issued three false no-continuation
 prods although wake `w_31ff3a98-8ed9-4ae0-844c-994145a6deb6` was scheduled. The exact
 specimen receipts are `att_175f30de-6940-423c-bc35-cbd47a00712e`,
@@ -403,7 +475,10 @@ all prior reviews and rework rulings, and the cited attests, and decide:
 8. whether F1-F4 remain closed;
 9. whether F5-F6 remain closed;
 10. whether F7 now gives each acquisition failure one ordered, content-free,
-    non-retrying result without introducing another interpretation.
+    non-retrying result without introducing another interpretation;
+11. whether F8 uses only supported OTP 28 operations and requires the same observed
+    regular-object identity before open, on the open handle, and after the read without
+    widening one-file custody.
 
 The reviewer records `reviewed-clean` or precise `changes-requested`. The reviewer does
 not edit, implement, run a fixture, resume the parent, or mutate facts.
