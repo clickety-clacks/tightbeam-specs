@@ -11,6 +11,12 @@ amendment adds the durable `/api/toplines` `(createdAt,id)` cursor and closed
 `transcript --name`. It leaves the ExecutionMap/firehose companion, R7 items,
 authorization, and public serializers unchanged.
 
+G2 session-freshness landing, 2026-08-27: adds the complete session mutation
+mapping shared with `event-firehose-v1.md`. It adds `session.updated` and fixes
+session versioning, correlation, cold-start, reconnect, and gap recovery. It
+changes no R7 session field, route, visibility grant, write surface, target, or
+release authority.
+
 G7 detail-route candidate, 2026-08-27: make each collection-only R8 resource
 addressable by its canonical public key. The routes use the existing shared
 query, visibility, serializer, and outer-envelope seams. This amendment adds
@@ -76,6 +82,11 @@ Authority and inputs:
   events; SQL against state.db is not a product interface; the CLI makes
   common things easy and never re-creates SQL; auth is the existing
   gateway credential, no API keys; deployment is localhost/tailscale.
+- Mike's firehose gap remediation ruling, message
+  `s_fe001c27-c509-4cf6-8866-47defe5eaa21` (2026-08-27), accepts recon verdict
+  `att_556f55ae-f1d2-4c83-b55d-9daf06aae929` and report `art_1d389e8e`.
+  It makes G2 session freshness a read-side firehose prerequisite and leaves
+  G1 and G3-G8 outside this amendment.
 - Mike's rulings, 2026-08-25: remove the `asUser` GET prohibition. The
   parameter only transports the CLI's existing principal selection and adds
   no credential, binding, authorization, or tailnet-identity behavior. After
@@ -122,7 +133,7 @@ The canonical spec lives only in the `tightbeam-specs` repository as
 `rest-state-api-v1.md`. Canonical r4's coupled set is
 `rest-state-api-v1.md`, `rest-state-api-v1-wire-schema.md`, and
 `event-firehose-v1.md`; a change to an ExecutionMap envelope, dependency
-entry, or R8b mapping lands those coupled files in one reviewed revision.
+entry, or R8/R8b mapping lands those coupled files in one reviewed revision.
 G4 changes the shared error type without changing an encoded ExecutionMap
 envelope, dependency entry, or firehose mapping. Its exact candidate set is
 therefore `rest-state-api-v1.md` and `rest-state-api-v1-wire-schema.md`.
@@ -176,6 +187,9 @@ message-kind discriminator through one shared transcript-message serializer.
   unsupported-method, compatibility-alias, `/version`, or successful binary
   download behavior. It does not prescribe a client's retry or presentation
   policy.
+- G2 does not change session field meanings or add a session write
+  route. It only makes changes to the existing R7 session item observable and
+  recoverable.
 - REST v1 does not alias ExecutionMap telemetry through `/api/toplines`, add an
   ExecutionMap firehose class, or change the six adopted shared serializer
   shapes from `art_b1995a26` / fact 1093. Exact source invalidation notices for
@@ -239,6 +253,27 @@ transcript-message item. `role` retains authorship direction and `sender`
 retains provenance. No adapter emits `message_type`, `messageKind`, `kind`, or
 another message-kind alias.
 
+I10. One session projection mutation seam owns each mutable input to the R7
+session item. The seam detects a change from the complete canonical item with
+`rowVersion` excluded, advances its version in the same transaction, and
+selects one session class. A verb declaration, elapsed time, or later read is
+not the detector.
+
+I11. `mechanicalStatus` preserves the existing
+`Tightbeam.Gateway.session_status/2` `run.state` meaning. It is the string
+`idle` exactly when this session has zero committed turn rows whose `status` is
+`queued` or `running`; it is `running` exactly when that count is positive.
+These are its only values and the qualifying-turn count is its only mutable
+input. The field is not the full legacy session-status payload.
+
+I12. Every turn transaction that can change membership in the
+`queued`/`running` set invokes the session projection mutation seam before
+commit. A zero-to-positive count transition stores `running`; a
+positive-to-zero transition stores `idle`. A positive-to-positive transition,
+including `queued` to `running`, changes no session bytes. The transaction
+stores any changed `mechanicalStatus` and the next session `rowVersion`
+atomically; its post-commit session notice uses that version.
+
 ## Architecture
 
 The read plane has four seams. A principal resolver produces one authenticated
@@ -250,6 +285,13 @@ classes in R9 and use a dependency digest instead of a notice class.
 `Tightbeam.RestEnvelope` is the sole encoder for R4c error bytes. A route
 adapter selects a closed variant; it does not build an error object or add a
 field or application header.
+
+The session item is a direct R8 resource, not a composed R9 view. Its
+`mechanicalStatus` value is materialized in the versioned R7 item under I11-I12.
+The serializer does not count turns or derive the field at read time from
+unversioned adapter memory, wakes, or another mutable source. This rule closes
+freshness without adding a second session status resource or changing the
+existing `idle`/`running` meaning.
 
 Operating-guidance impact: none. Canonical r4 applies the existing REST
 resource/query/serializer pattern and creates no cross-repository agent rule.
@@ -1033,7 +1075,7 @@ remain outside this table.
 | `wake.scheduled`, `wake.fired`, `wake.canceled` | wakes | upsert | `wakeId` |
 | `prod.fired`, `turn.started`, `turn.ended` | turns | upsert | `turnSeq` |
 | `decision_request.opened`, `decision_request.ruled`, `decision_request.withdrawn` | decision requests | upsert | `decisionRequestId` |
-| `session.spawned`, `session.retired` | sessions | upsert | `sessionKey` |
+| `session.spawned`, `session.updated`, `session.retired` | sessions | upsert | `sessionKey` |
 | `role.created`, `role.bound` | roles | upsert | `role` |
 | `role.removed` | roles | delete | `role` |
 | `user.added`, `user.promoted` | users | upsert | `userId` |
@@ -1059,6 +1101,17 @@ integers with the same positive numeric value; `rowVersion` equals `id`.
 once after a committed lease change and uses the R7 version. An idempotent
 no-change replay emits no state notice. Both use the same AU4 visibility and
 exact R7 serializer as their REST resources, per `art_4a1cce6e`.
+
+The session projection mutation seam uses one class per committed item change.
+First materialization selects `session.spawned`. An `active` to `retired`
+transition selects `session.retired`. Each other change to an R7 item field
+other than `rowVersion` selects `session.updated`. The seam stores the changed
+item and its next durable `rowVersion` atomically. Post-commit publication
+carries that exact version.
+A request whose complete serialized item, excluding `rowVersion`, is unchanged
+leaves `updatedAt` and `rowVersion` unchanged and emits no session state notice.
+`refs.sessionKey`, `payload.sessionKey`, and the REST item `sessionKey` are
+equal. Sessions soft-retire and therefore use no delete operation.
 
 SQ2 admits every admin row above. They enter the REST/firehose A6 overlap and
 use the same admin-only visibility function. Archetypes, guidance, and rails
@@ -1783,6 +1836,52 @@ encodes it, then the response carries `Cache-Control: no-store` and no ETag.
 Given the same visible-detail request with `If-None-Match` and
 `If-Modified-Since`, when the route runs, then it ignores those conditional
 headers and returns the same `200` item instead of `304`.
+
+A44. Given first materialization, a non-retirement item change, and an
+`active` to `retired` transition for one session, when each transaction
+commits, then the mapping selects exactly `session.spawned`, `session.updated`,
+and `session.retired`, respectively. Each notice uses resource `sessions`, op
+`upsert`, primary ref `sessionKey`, and the R7 session serializer.
+
+A45. Given a change to a session item field other than `rowVersion`, when REST
+detail and its notice payload are encoded, then their item bytes are equal and
+their `sessionKey` values equal `refs.sessionKey`. The transaction stores a
+greater `rowVersion` before the post-commit notice becomes eligible for
+publication.
+
+A45a. Given a request whose session item fields other than `rowVersion` do not
+change, then `updatedAt` and `rowVersion` remain unchanged and no session state
+notice exists.
+
+A46. Given a client that receives `subscription_ready` for `session.`, when it
+pages `GET /api/sessions` while the target session changes, then applying the
+buffered notice and snapshot items by `(sessionKey,rowVersion)` yields the same
+collection as a fresh quiescent read. Reversing the arrival order yields the
+same bytes.
+
+A47. Given a session change during a disconnected interval, when the client
+reconnects, then it resubscribes before paging the visible sessions collection
+and converges from that snapshot plus live notices.
+
+A48. Given one suppressed session notice, when the next sequence or heartbeat
+exposes the gap, then the client runs the same resubscribe-and-snapshot path and
+converges to a fresh quiescent sessions read.
+
+A49. A table drives every mutable input to the R7 session item through the
+session projection mutation seam and verifies A44-A45. For I11, it begins with
+zero qualifying turns and `mechanicalStatus:"idle"`, then tests these committed
+qualifying-count transitions: zero to one, one to zero, one to two, and two to
+one. The first two cases produce `running` and `idle`, respectively, advance
+the session `rowVersion`, and emit one `session.updated`; the latter two leave
+the session item and its version unchanged and emit no session state notice.
+
+A49a. Given one qualifying turn, changing its status from `queued` to `running`
+leaves `mechanicalStatus:"running"` unchanged. Given a turn whose old and new
+statuses are both outside `queued` and `running`, changing that status leaves
+`mechanicalStatus` unchanged. Each case emits no session state notice from this
+input. The table fails on a direct session writer, a turn writer that bypasses
+I12, another input to `mechanicalStatus`, a value outside `idle` and `running`,
+or any read-time derivation of the field.
 
 ## Open questions — Spirit questions for Mike
 

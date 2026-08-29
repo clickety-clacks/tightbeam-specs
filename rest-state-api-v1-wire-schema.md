@@ -25,6 +25,11 @@ base `277bb5031a06270aabbc57e3c222cbd2ec89bc73`. REST, CLI wrappers, and
 `message.created` use this same item shape. This composition preserves the G4
 error and G8 authority-label contracts.
 
+G2 session-freshness amendment candidate, 2026-08-27: session item keys and
+types remain unchanged. The complete item, including materialized
+`mechanicalStatus`, is the versioned value shared by REST and the three
+`session.*` firehose classes.
+
 ## Encoding rules
 
 JSON is UTF-8. Integers are signed JSON integers and never floating-point
@@ -33,6 +38,17 @@ all digests are strings. ExecutionMap's non-resource dependency-vector primary
 keys use the exact types defined under “Canonical array and map order.”
 `rowVersion` is a positive integer. `dependencyVersion` is a lowercase
 64-character SHA-256 hex string.
+
+For a sessions item, `rowVersion` changes if and only if at least one other
+serialized R7 field changes. The transaction stores the greater version with
+the changed item before its post-commit session notice becomes eligible for
+publication. `mechanicalStatus` is exactly `idle` when the committed count of
+this session's turns with `status` equal to `queued` or `running` is zero, and
+exactly `running` when that count is positive. No other value or mutable input
+is valid. A turn transaction that crosses the zero/positive boundary stores
+the new `mechanicalStatus` and session `rowVersion` atomically. The serializer
+reads that stored value; it does not count turns or compute the field from
+another mutable input.
 
 The condition-fact projection `id`, firehose notice `refs.factId`, and natural
 version are positive JSON integers with the same numeric value.
