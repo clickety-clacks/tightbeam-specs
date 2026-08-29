@@ -1829,11 +1829,13 @@ session status, a session-control response, and a matching session R8 notice,
 then each current representation has the exact R7e shape and every extracted
 `setHarness` value is semantically equal. A pre-amendment fixture that omits the
 field remains accepted by a current reader. Given a committed changed-harness
-mutation, the row change, higher
-`rowVersion`, and one `session.harness_changed` notice are observable after the
-same activation boundary; a boot missing any G9 registry, encoder, serializer,
-or publisher member routes no G9 firehose upgrade, `tune set_harness` request,
-or current G9 session representation.
+mutation whose publisher and fan-out remain healthy through handoff, the row
+change and higher `rowVersion` are observable and fan-out accepts one
+`session.harness_changed` notice after the same activation boundary. A crash
+after commit can lose that notice; the next authorized REST rebuild returns the
+committed row. A boot missing any G9 registry, encoder, serializer, or publisher
+member routes no G9 firehose upgrade, `tune set_harness` request, or current G9
+session representation.
 
 ## Open questions — Spirit questions for Mike
 
