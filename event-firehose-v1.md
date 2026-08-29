@@ -43,6 +43,12 @@ passed the G1 behavior review; verdict `att_adea7aeb` and report
 disposition `att_e0a20ce9` preserves F1/F2. This successor changes no notice
 envelope, source-invalidation mapping, G4 error, or G8 authority label.
 
+G9 setHarness capability successor, 2026-08-28: PROPOSED under Mike ruling
+`dr_7f4b03d9-d37f-4889-a118-8be67e9eae45` option A. Add
+`session.harness_changed`, session capability payloads, notice schema 2, and
+firehose protocol 2. The exact behavior contract is
+`session-status-set-harness-capability-v1.md`.
+
 Revision history: r3.1 multiplexed subscriptions; r3 freshness-not-truth +
 retention; r2.1 client workflows; r2 the nine r1 review comments; r1 the
 firehose rescope of the archived focused design. Their carried-forward
@@ -100,6 +106,11 @@ canonical custody. The source-invalidation companion landed with REST r4 at
 G1 uses the same exact canonical set. A change to the transcript-message
 projection, `message.created` mapping, or `messageType` wire contract lands all
 three files in one reviewed revision.
+
+G9's exact candidate set is this file, `rest-state-api-v1.md`,
+`rest-state-api-v1-wire-schema.md`, `cli-surface-v1.md`, and
+`session-status-set-harness-capability-v1.md`. All five land in one reviewed
+revision.
 
 ## Assumptions
 
@@ -253,7 +264,7 @@ V4. Notice shape:
 ```json
 {
   "type": "change",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "subscriptionId": "chat-s_775f",
   "seq": 4213,
   "class": "attest.filed",
@@ -279,6 +290,11 @@ schemaVersion keeps one meaning; widening bumps it. Observational classes
 a closed-world composed-view refetch trigger; it never masquerades as a row
 the query surface can rebuild.
 
+A pre-G9 protocol-1 producer emits notice `schemaVersion:1`. A G9 current
+producer accepts only protocol 2 and emits notice `schemaVersion:2` for every
+class. The protocol gate in E1 prevents a protocol-1 reader from receiving a
+schema-2 frame.
+
 V5. Payload rows SHALL carry the same primary ids the query surface
 returns for the same rows, so a client can match a notice against fetched
 state (the correlation seam; recon wi_9fdc0c07 verifies it).
@@ -290,6 +306,15 @@ first-line convention. A null stored discriminator omits the key from both
 surfaces. The notice carries `refs.messageId` equal to payload `id` and
 `refs.sessionKey` equal to payload `sessionKey`. The matching REST row and
 notice payload expose the same present or omitted `messageType` bytes.
+
+V6. The G9 session serializer, protocol-2/schema-2 encoder,
+`session.harness_changed` registry entry, post-commit publisher, and
+`tune set_harness` mutation handler become routable in one server activation
+boundary. If any member is unavailable, that server instance accepts no
+G9 firehose upgrade or `tune set_harness` request and serves no current-producer
+session shape.
+There is no interval in which a changed-harness commit can succeed without its
+registered publisher.
 
 ## The class registry (initial enumeration, derived from main tip)
 
@@ -305,7 +330,7 @@ R2. Attention and escalation:
 `decision_request.ruled`, `decision_request.withdrawn`.
 
 R3. Org shape:
-`session.spawned`, `session.retired`, `role.created`, `role.bound`,
+`session.spawned`, `session.harness_changed`, `session.retired`, `role.created`, `role.bound`,
 `role.removed`, `user.added`, `device.approved`, `device.denied`,
 `device.revoked`.
 
@@ -348,6 +373,9 @@ correlation contract). A class without a row is a red build.
 
 | Class | Resource | Op | Primary notice ref | Serializer | Version and emission | Visibility and convergence | A1/A6 coverage |
 |---|---|---|---|---|---|---|---|
+| `session.spawned` | `sessions` | `upsert` | `sessionKey` | exact shared R7 session serializer | The committed created item carries its R7 `rowVersion`; one notice follows one successful creation commit. | `GET /api/sessions` visibility. Consumers apply last-version-wins by `sessionKey`. | A1 covers the class and ref. A6 compares the complete session item. |
+| `session.harness_changed` | `sessions` | `upsert` | `sessionKey` | exact shared R7 session serializer | A successful `tune set_harness` commit whose prior and resulting harnesses differ emits one committed item with the higher R7 `rowVersion`; a refusal, rollback, or effective no-op emits none. | `GET /api/sessions` visibility. Consumers apply last-version-wins by `sessionKey`. | A1 covers the class and ref. A6 compares `harness`, `capabilities`, and the complete committed item. |
+| `session.retired` | `sessions` | `upsert` | `sessionKey` | exact shared R7 session serializer | One notice follows one successful retirement commit and carries the retired item and its higher R7 `rowVersion`; a refusal or effective no-op emits none. | `GET /api/sessions` visibility. Consumers apply last-version-wins by `sessionKey`. | A1 covers the class and ref. A6 compares the complete session item. |
 | `condition_fact.filed` | `condition facts` | `upsert` | `factId` | exact shared R7 condition-fact serializer | The condition fact `id` is its append-only natural version; its `rowVersion` equals `id`. Each successful insertion into `condition_facts` emits one notice after commit. An idempotent filing that returns the existing fact emits none. | `GET /api/facts` visibility. Consumers apply last-version-wins by `factId`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 | `critical_lease.updated` | `critical state` | `upsert` | `sessionKey` | exact shared R7 critical-state serializer | The item uses R7 critical-state `rowVersion`. Each committed change to the R7 item for one `sessionKey` emits one notice after commit. A replay or idempotent request that leaves the item and `rowVersion` unchanged emits none. | `GET /api/critical-state` admin-only visibility. Consumers apply last-version-wins by `sessionKey`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 | `message.created` | `transcript messages` | `upsert` | `messageId`, `sessionKey` | exact shared R7 transcript-message serializer | The item uses its R7 `rowVersion`. Each newly committed transcript message emits one notice after commit; an idempotency replay that returns the existing row emits none. | `GET /api/sessions/:sessionKey/messages` visibility. Consumers correlate by `messageId` and apply last-version-wins by `(payload.id, payload.rowVersion)`. | A1 covers the class and both refs. A6 verifies the complete item, including conditional `messageType` omission, is byte-equivalent to the matching REST row. |
@@ -430,7 +458,6 @@ one connection:
 ```json
 {
   "type": "subscribe",
-  "protocolVersion": 1,
   "subscriptionId": "chat-s_775f",
   "filters": {
     "classes": ["attest.", "work_item."],
@@ -441,6 +468,9 @@ one connection:
   }
 }
 ```
+
+The protocol version appears only as the WebSocket upgrade query parameter in
+E1. A subscribe frame does not repeat it.
 
 S2. `filters` and every field in it are optional; `classes` match by
 prefix; multiple given fields are conjunctive; no filters means
@@ -541,10 +571,23 @@ exists to lose.
 
 ## Errors and close codes
 
-E1. The client states `protocolVersion` in the upgrade request itself
-(query parameter on the ws path); an unsupported version is refused `426`
-before the upgrade completes. Auth failures happen in-band after upgrade
-(C2), not at the HTTP layer.
+E1. The client states `protocolVersion` in the upgrade request itself as a
+query parameter on the ws path. A pre-G9 producer accepts only `1`; a G9
+current producer accepts only `2`. A missing or other value receives HTTP `426`
+with an empty body before upgrade. The refusal creates no WebSocket, subscription,
+close frame, or sequence and applies no notice. T4 defines no resume cursor or
+replay token, so no cursor can advance. The reader immediately rebuilds its
+session slice with one authorized `GET /api/sessions` request and makes no further
+WebSocket upgrade request until it supports the producer's protocol and notice schema.
+It then upgrades, subscribes first, receives `subscription_ready`, takes a
+fresh authorized REST snapshot, and starts the new connection's sequence.
+Auth failures happen in-band after a successful upgrade (C2), not at the HTTP
+layer.
+
+E1a. A protocol-2 reader accepts only notice `schemaVersion:2`. On another
+value it applies neither that notice nor a later notice on the connection,
+closes with standard code `1002`, performs M2's REST rebuild, and reconnects
+only when it can decode the producer's negotiated schema.
 
 E2. After upgrade, one error frame shape
 `{"type":"error","code":"...","message":"..."}` with the single code
@@ -661,6 +704,26 @@ the R7 item: condition facts use equal integer `id`, `refs.factId`, and
 A7. The feature-smoke drives one real external consumer (ATC or a script)
 end to end: cold build from queries, live updates via subscription,
 forced reconnect, rebuild, convergence.
+
+A8. Given a protocol-1-only reader and a G9 producer, when the reader requests
+protocol 1, then it receives HTTP `426` with an empty body and observes no
+socket, close frame, subscription, sequence, cursor, or notice. It takes a
+fresh authorized session snapshot through one `GET /api/sessions` request and
+makes no further WebSocket upgrade request until it supports protocol 2 and
+schema 2. Given that compatible reader,
+when it upgrades with protocol 2, subscribes, receives ready, and snapshots,
+then its first applied notice uses schema 2 and the new connection's sequence.
+
+Given a protocol-2 connection and a notice whose schema version is not 2,
+when the reader receives it, then it applies no part of that or a later notice,
+closes with `1002`, and performs a REST rebuild before a compatible reconnect.
+
+Given any missing V6 member, when the server activation gate runs, then no G9
+firehose upgrade, `tune set_harness` request, or current G9 session representation
+becomes routable. Given all members, when one changed-harness mutation commits,
+then exactly one
+`session.harness_changed` notice with the committed R7 session payload follows;
+no activation interval admits the commit without that publisher.
 
 ## Open questions for Mike
 

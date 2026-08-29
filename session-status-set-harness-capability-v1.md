@@ -1,21 +1,22 @@
 # Session-status `setHarness` capability amendment v1
 
-Status: candidate for one independent exact-revision review. Mike authorized
+Status: successor candidate after changes-requested verdict
+`att_f2aca806-2762-4c77-a56c-b92373fc069e`. Mike authorized
 the firehose schema amendment through decision
 `dr_7f4b03d9-d37f-4889-a118-8be67e9eae45`, option A. This file carries no
 implementation, target, specRef binding, merge, release, deployment, or live-state
 authority.
 
-This amendment supersedes only these parts of the current contracts:
+The canonical amendment set is this file plus these four canonical owners in the
+same reviewed revision:
 
-- the `sessions` R7 row, its wire-schema row, and the session part of R8 in
-  `rest-state-api-v1.md`;
+- the `sessions` R7 row, session part of R8, and M5
+  `/api/session-status` compatibility behavior in `rest-state-api-v1.md`;
 - the matching session types and optional-field rule in
   `rest-state-api-v1-wire-schema.md`;
 - the session class list and session rows in the R8 registry in
   `event-firehose-v1.md`;
-- the `list` session-result row in `cli-surface-v1.md`; and
-- the `/api/session-status` compatibility behavior in REST M5.
+- the `list` session-result contract in `cli-surface-v1.md`.
 
 The unchanged clauses in those specs remain in force. In particular,
 `rest-state-api-v1.md` I2, I4, R7, C1, M5, AU4, and SR1, plus firehose V1 through
@@ -84,10 +85,13 @@ Let an authorized client distinguish these three wire cases:
 - **Current producer**: a server revision that activates SH1 through SH10 as one
   deployment boundary.
 - **Session row/event schema revision 2**: the canonical session item with the
-  optional `capabilities` field defined by SH1. Session firehose frames for this
-  revision carry `schemaVersion:2`. REST keeps its existing
+  optional `capabilities` field defined by SH1. Every firehose notice from a
+  current producer carries `schemaVersion:2`. REST keeps its existing
   `schemaVersion:1` envelope; that number identifies the REST API, not the nested
   session row/event revision.
+- **Firehose protocol version 2**: the upgrade protocol that admits notice
+  `schemaVersion:2`. It has no resume cursor or replay token. A pre-amendment
+  protocol-1 reader cannot establish this connection.
 - **Semantically equal capability**: two values have the same capability form, the
   same exact reason when unsupported, or the same ordered option objects when
   supported. Envelope fields outside `setHarness` do not affect this comparison.
@@ -101,7 +105,7 @@ Let an authorized client distinguish these three wire cases:
    harness catalog. A serializer test falsifies this if a current producer can emit a
    session item whose resident harness is absent from the catalog.
 3. A client replaces its session map from a fresh authorized REST snapshot after
-   connection loss or an unsupported firehose schema version, as required by the
+   connection loss or a refused firehose protocol version, as required by the
    existing firehose recovery contract.
 4. Current JSON clients tolerate an additive optional session-item key after their
    decoder has passed the compatibility gate in SH8. The gate falsifies this
@@ -188,35 +192,49 @@ commit therefore publishes `session.harness_changed` whose `harness`, model fiel
 item. The old resident option becomes enabled and the new resident option becomes
 disabled in that committed payload. [AC6]
 
-SH8. Session firehose frames emitted by a current producer use
-`schemaVersion:2`. Their envelope, resource, operation, refs, visibility, sequence,
-and recovery behavior otherwise remain unchanged. REST collection and detail
-envelopes keep `schemaVersion:1`. The M5 compatibility route keeps its current
-unversioned response shape. The CLI request body for `list` remains unchanged.
-[AC3, AC8]
+SH8. A current producer accepts only firehose `protocolVersion=2` at the HTTP
+upgrade and emits only notice `schemaVersion:2`. A protocol-1 request receives
+HTTP `426` before upgrade with no WebSocket, response body, subscription,
+sequence allocation, close frame, cursor, or applied notice. Tightbeam has
+no firehose resume cursor or replay token. The reader immediately rebuilds its
+session slice with one authorized `GET /api/sessions` request and makes no further
+WebSocket upgrade request until it has a protocol-2/schema-2 decoder. That decoder
+opens protocol 2, subscribes first, receives `subscription_ready`, takes a fresh
+authorized REST snapshot, and then applies notices with the new connection's
+per-connection sequence. [AC3, AC8]
 
-A session-row/event-revision-2 reader accepts an item with absent `capabilities` as a
-pre-amendment item, accepts each SH1 capability form, and rejects an object that mixes
-`reason` and `options`, omits the selected form's required key, adds a capability key,
-or changes an option key or type. A firehose reader that does not support
-`schemaVersion:2` applies no part of that notice and follows the existing REST rebuild
-path after it gains a compatible decoder.
+If a protocol-2 client receives a notice whose `schemaVersion` is not `2`, it
+applies neither that notice nor a later notice on the connection, closes the
+socket with standard code `1002`, and performs the same REST rebuild. It reconnects
+only when it can decode the producer's negotiated schema. REST collection and
+detail envelopes keep `schemaVersion:1`. The M5 compatibility route keeps its
+current unversioned response shape. The CLI request body for `list` remains
+unchanged.
+
+A current reader accepts an item with absent `capabilities` as a pre-amendment
+item, accepts each SH1 capability form, and rejects an object that mixes `reason`
+and `options`, omits the selected form's required key, adds a capability key, or
+changes an option key or type.
 
 SH9. Migration order is normative:
 
-1. Ship and verify readers that accept the absent, unsupported, and supported forms.
-2. Activate the shared session serializer, canonical REST collection and detail,
-   CLI `list` projection, M5 adapter, session-control adapter, SH6 registry, and
-   revision-2 session notice encoder in one server boundary.
-3. Activate `session.harness_changed` publication at the existing successful
-   `tune set_harness` commit seam.
+1. Ship and verify readers that accept the absent, unsupported, and supported
+   forms and implement SH8's protocol-2/schema-2 decoder and refusal recovery.
+2. In one server activation boundary, install the shared session serializer,
+   canonical REST collection and detail, CLI `list` projection, M5 adapter,
+   session-control adapter, SH6 registry, protocol-2/schema-2 encoder, and
+   `session.harness_changed` publisher before the server admits any
+   `tune set_harness` request or serves a current session representation. If any
+   member is unavailable, no G9 firehose upgrade, `tune set_harness` request,
+   or current G9 session representation becomes routable.
 
 No database migration, backfill, capability cache, or row-schema stamp is introduced.
 A server rollback restores each surface's pre-amendment output: canonical session and
 CLI/firehose items omit the new field, while an older M5 or session-control adapter may
 retain its legacy `setHarness` value. Compatible readers accept either legacy case and
-retain their pre-amendment behavior. A restart recomputes byte-identical capabilities
-from the same session row and registry.
+retain their pre-amendment behavior. The rollback producer accepts protocol 1 and
+emits schema 1. A restart recomputes byte-identical capabilities from the same
+session row and registry.
 [AC3, AC6, AC9]
 
 SH10. This amendment does not select a product release number. The implementation
@@ -302,9 +320,15 @@ AC3 — Absent-form and version compatibility (SH1, SH8, SH9)
   session item with SH1's optional field, then it either accepts and ignores the field
   or reads the closed capability; no existing display, session selection, or control
   action changes.
-- Given a firehose frame with `schemaVersion:2` and a reader that supports only
-  version 1, when the reader receives it, then it applies no partial payload and enters
-  the existing compatible-decoder plus REST-rebuild path.
+- Given a current producer and a reader that supports only protocol 1, when the
+  reader requests `protocolVersion=1`, then the server returns HTTP
+  `426` before upgrade with no body, socket, subscription, sequence, close frame,
+  cursor, or applied notice. The reader makes one authorized `GET /api/sessions`
+  rebuild request and makes no further WebSocket upgrade request until it supports
+  protocol 2 and schema 2.
+- Given a protocol-2 connection and a notice whose `schemaVersion` is not `2`,
+  when the reader receives it, then it applies no part of that or a later notice,
+  closes with `1002`, and rebuilds from REST before a compatible reconnect.
 
 AC4 — Representation equality (SH4, SH5)
 
@@ -368,8 +392,8 @@ AC8 — Wire and CLI compatibility decision (SH8, SH10)
   session capability required by SH1 and any canonical-session fields already required
   by REST C1.
 - Given current session REST and firehose outputs, when their version fields are
-  inspected, then the REST envelope remains `schemaVersion:1` and each session notice
-  uses `schemaVersion:2`.
+  inspected, then the REST envelope remains `schemaVersion:1`, the firehose upgrade
+  uses `protocolVersion=2`, and each notice uses `schemaVersion:2`.
 - Given the implementation release record, when the release gate checks it, then it
   states the CLI/gateway compatibility decision and retains the existing pre-1.0 exact
   version-match rule.
@@ -382,8 +406,13 @@ AC9 — Migration and rollback (SH9)
 - Given compatible readers have not completed SH9 step 1, when the server activation
   gate is evaluated, then SH9 step 2 does not start and server outputs retain their
   pre-amendment shapes.
-- Given step 2 is active, when any SH5 surface is read, then the current producer emits
-  one current capability form; no surface emits the absent form.
+- Given any SH9 step-2 member is unavailable, when the server activation gate runs,
+  then the current producer admits no `tune set_harness` request and serves no
+  current session representation.
+- Given step 2 is active, when a `tune set_harness` commit changes the resident
+  harness, then the current representation and exactly one
+  `session.harness_changed` notice become observable; no activation interval permits
+  the representation or commit without its publisher.
 - Given a rollback to the pre-amendment server after compatible readers ship, when the
   readers rebuild, then they accept the absent canonical form and any legacy M5
   supported form, preserve existing behavior, and require no database rollback or row
