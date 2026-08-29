@@ -16,8 +16,9 @@ Blocked parent: `asg_6f2a530d-19b4-417b-91f8-fafa4e5257cc`, frozen commit
 Surrendered predecessor: `asg_0ec88f61-ba03-44d2-bb87-5b92ab04fc8f`, terminal
 receipt `att_9e2e0562-f7ce-4d12-bce8-136f88ded9be`
 
-Source line: `origin/0.1.x` at
-`be61cfc98df6b18c0cc280adeca42cba3fbf14b5`
+Authorized implementation branch: `origin/0.1.9`
+
+Historical source read: `be61cfc98df6b18c0cc280adeca42cba3fbf14b5`
 
 ## Goal
 
@@ -66,20 +67,24 @@ unexpected-path refusal.
 - **Evidence token**: a single-line rendering of a relative runtime path or principal.
   Bytes in `A-Z`, `a-z`, `0-9`, `.`, `_`, `/`, and `-` render literally. Every other
   byte renders as `%HH` with uppercase hexadecimal digits.
+- **Harness leg**: one sequential `check_local_deployment` execution for exactly one
+  harness. The fixture completes that leg's cleanup before it starts the other leg.
+  The full matrix runs exactly one Claude leg first and exactly one Codex leg second.
+  Neither leg reads the other harness's home.
 - **Spawn interval**: the inclusive wall-clock interval whose start is captured before
-  the fixture sends the Claude spawn request and whose end is captured after the
-  validator reads the complete runtime-delta metadata and file bytes.
+  the fixture sends the Claude-leg spawn request and whose end is captured after the
+  validator reads the complete Claude runtime-delta metadata and file bytes.
 - **Run-start phase**: after fixture gateway connection and before the first credential
   preflight. This phase occurs once for the full Claude-plus-Codex run.
-- **Pre-spawn phase**: after native reconciliation and before the fixture sends the
-  harness spawn request.
-- **Pre-wake phase**: after spawn and deployment tuning return successfully and before
-  the fixture sends its first wake.
-- **Post-turn phase**: after the fixture observes the wake turn boundary and before it
-  writes the durable-redelivery sentinel.
-- **Cleanup phase**: the existing `after` block that retires the spawned session and
-  removes the fixture sentinel. Cleanup follows validation and is not an admission
-  phase.
+- **Pre-spawn phase**: the per-leg phase after native reconciliation of that harness's
+  projected home and before the fixture sends that leg's spawn request.
+- **Pre-wake phase**: the per-leg phase after that leg's spawn and deployment tuning
+  return successfully and before the fixture sends that leg's first wake.
+- **Post-turn phase**: the per-leg phase after the fixture observes that leg's wake turn
+  boundary and before it writes that leg's durable-redelivery sentinel.
+- **Cleanup phase**: the per-leg existing `after` block that retires that leg's spawned
+  session and removes its fixture sentinel. Cleanup follows that leg's validation and
+  is not an admission phase.
 - **Canonical positive numeric stem**: a nonempty decimal string that matches
   `[1-9][0-9]*`. It contains no sign, prefix, leading zero, exponent, decimal point, or
   whitespace.
@@ -90,15 +95,22 @@ unexpected-path refusal.
   `sessions/<canonical-positive-numeric-stem>.json` in the Claude runtime delta.
 - **Sidecar identity**: the tuple `pid`, `sessionId`, `cwd`, `startedAt`, and
   `procStart` decoded from a valid Claude sidecar.
-- **Evidence record**: the content-free observation defined by C-10. It records file
-  metadata, hashes, predicate outcomes, cause, and principal. It does not record JSON
-  member values or file bytes.
+- **Evidence file**: the non-symlink regular mode-0600 file
+  `<fixture-base>/feature-smoke-home-evidence.jsonl`. The fixture creates it with
+  exclusive-create semantics before run-start validation and retains it with the
+  consumed fixture base through cleanup. A preexisting path refuses the fixture before
+  credential preflight.
+- **Evidence record**: one UTF-8 JSON object and one trailing LF byte in the evidence
+  file, serialized exactly as C-10 defines. It records file metadata, hashes,
+  predicate outcomes, result, cause, and principal. It does not record a decoded JSON
+  member value or observed file bytes.
 
 ## Assumptions
 
-- AS-01. `origin/0.1.x` commit
-  `be61cfc98df6b18c0cc280adeca42cba3fbf14b5` is the current maintenance-line source
-  read for this contract.
+- AS-01. `origin/0.1.9` is the authorized implementation branch for 0.1 maintenance.
+  Commit `be61cfc98df6b18c0cc280adeca42cba3fbf14b5` is the historical source read that
+  informed this contract. A future implementer synchronizes the then-current
+  `origin/0.1.9` before editing and confirms that each cited seam remains present.
 - AS-02. `Tightbeam.Homes.owned_entries/1` designates Tightbeam-owned home leaves. The
   harness owns runtime additions outside that projection, but `feature_smoke` decides
   which additions satisfy this fixture acceptance gate.
@@ -151,28 +163,41 @@ The pattern is **fixture runtime sidecar admission**. It applies only to the
 live home reconciliation, credential handling, harness process supervision, product
 sessions, or another smoke group.
 
-The implementation uses one validation seam for the runtime delta. That seam validates
-both harnesses at pre-spawn, pre-wake, and post-turn. Parallel allow lists are out of
-contract.
+The implementation uses one validation seam for a harness leg's runtime delta. The
+fixture invokes that seam separately for the Claude leg and the Codex leg at each
+per-leg phase. One leg never validates the other harness's projected home. Parallel
+allow lists and concurrent harness sessions are out of contract.
 
 ### C-01 — Phase boundaries
 
 The fixture captures and validates these states in order:
 
-1. In the run-start phase, the selected harness set is exactly Claude and Codex; the
-   fixture has exactly one user, that user is an admin, and it has zero sessions, work
-   items, and turns.
-2. In the pre-spawn phase, each projected home's leaf set equals its owned baseline.
-3. In the pre-wake phase, the Claude runtime delta satisfies C-02 through C-06 and the
-   Codex runtime delta satisfies C-07.
-4. In the post-turn phase, the Claude runtime delta satisfies C-02 through C-06 and
-   the Codex runtime delta satisfies C-07.
-5. In cleanup, the existing retirement path runs after the final evidence record. The
-   validator performs no post-retirement admission check.
+1. In the sole run-start phase, the selected harness set is exactly Claude and Codex;
+   the fixture has exactly one user, that user is an admin, and it has zero sessions,
+   work items, and turns.
+2. For the Claude leg, pre-spawn validation requires the Claude projected home's leaf
+   set to equal its owned baseline. Pre-wake and post-turn validation require that
+   leg's Claude runtime delta to satisfy C-02 through C-06. Claude cleanup runs after
+   the Claude post-turn evidence record and before the next harness leg starts.
+3. For the Codex leg, pre-spawn validation requires the Codex projected home's leaf set
+   to equal its owned baseline. Pre-wake and post-turn validation require that leg's
+   Codex runtime delta to satisfy C-07. Codex cleanup runs after the Codex post-turn
+   evidence record.
+4. A refusal writes the current phase's evidence record and stops the full matrix. If
+   the current leg reached spawn, its existing cleanup runs before the matrix stops.
+   The fixture does not start a later harness leg.
+5. The validator performs no post-retirement admission check and does not observe the
+   other harness's home during one leg.
 
 Acceptance example: Given a native-reconciled fixture with exact owned baselines, when
-Claude spawn and tuning return and no wake has been sent, then the validator labels the
-observation `pre-wake` and evaluates it before the wake call.
+Claude spawn and tuning return and no Claude wake has been sent, then the validator
+labels the Claude observation `pre-wake`, evaluates C-02 through C-06 before the wake
+call, and does not inspect the Codex home.
+
+Acceptance example: Given completed Claude cleanup and a native-reconciled Codex home,
+when Codex spawn and tuning return and no Codex wake has been sent, then the validator
+labels the Codex observation `pre-wake`, evaluates C-07 before the wake call, and does
+not require the removed Claude sidecar.
 
 ### C-02 — Complete admitted Claude path set
 
@@ -273,8 +298,9 @@ with `FX_IDENTITY_DRIFT`.
 
 ### C-07 — Codex separation
 
-The Codex runtime delta is empty at pre-wake and post-turn. The Claude exception does
-not classify a Codex path.
+The Codex leg's runtime delta is empty at its pre-wake and post-turn phases. The Claude
+exception does not classify a Codex path. The Codex leg does not inspect the Claude
+projected home.
 
 Acceptance example: Given a Codex runtime delta containing one plugin-cache file, when
 the Codex validator runs, then it refuses with `FX_CODEX_RUNTIME_PATH` and does not
@@ -311,8 +337,11 @@ The validator evaluates categories in this order:
 14. `FX_FRESHNESS` for C-05 mismatch.
 15. `FX_IDENTITY_DRIFT` for C-06 cross-phase mismatch.
 
-Within one category, the validator sorts relative paths by raw byte order. One
-refusal line has this shape:
+Within one category, the validator sorts relative paths by raw byte order. If one path
+fails more than one predicate in that category, the validator selects the first failed
+predicate in the C-10 `checks` order. The refusal line's `clause` field names that
+predicate's mapped C-clause. This category, path, then predicate order is the complete
+first-failure tie-break. One refusal line has this shape:
 
 `feature-smoke fixture HOME REFUSED code=<code> harness=<harness-or-all> phase=<phase> principal=<evidence-token> path=<evidence-token-or-dash> clause=<clause-id>`
 
@@ -320,30 +349,144 @@ Acceptance example: Given both a missing `sessions` directory and a wrong-mode
 `.claude.json`, when the validator evaluates the delta, then it returns `FX_PATH_SET`
 before `FX_MODE` on repeated runs.
 
+Acceptance example: Given one sidecar whose internal `pid` differs from its filename
+and whose `cwd` differs from the expected workdir, when semantic validation runs, then
+the validator returns `FX_SIDECAR_SEMANTIC` with `clause=C-03` because
+`filename_pid_equal` precedes `expected_cwd_equal`.
+
 ### C-10 — Evidence and cleanup boundary
 
-For each observed runtime entry, the fixture records harness, phase, path as an evidence token,
-`lstat` type, permission mode, byte size, and SHA-256 for a regular file. It records
-these predicate results for the sidecar: exact member set, member types, filename-PID
-equality, expected-CWD equality, UUID shape, start-interval membership, `procStart`
-shape, SemVer shape, constant-field equality, and cross-phase identity equality.
+Before run-start validation, the fixture creates the evidence file defined in Terms.
+It requests exclusive creation with mode `0600` and verifies by `lstat` that the new
+path is a non-symlink regular file with exact permission mode `0600`. If the path
+exists, creation fails, or that verification fails, the fixture emits this one line
+and stops before run-start validation without deleting, replacing, or changing the
+path:
 
-Each record names the Tightbeam session key as principal after spawn and names
-`pre-spawn` before a session exists. Each refusal names its C-clause as cause.
+`feature-smoke fixture HOME REFUSED code=FX_EVIDENCE harness=all phase=run-start principal=run-start path=feature-smoke-home-evidence.jsonl clause=C-10`
 
-The fixture does not record JSON bytes, decoded member values, credential material,
-stdout, or stderr. It records evidence before retirement because harness cleanup may
-remove the sidecar. The fixture does not delete the used fixture base; the existing
-harness lifecycle may remove its own transient sidecar during retirement.
+This pre-record refusal creates no evidence record. It precedes the C-09 category
+order because no valid evidence file exists in which to record a check.
+
+Each phase appends exactly one evidence record and requires
+`:file.sync(evidence_io_device)` to return `:ok` before that phase returns, sends a
+wake, writes a sentinel, or enters cleanup. If append or sync fails, the fixture emits
+the C-09 refusal-line shape with `code=FX_EVIDENCE`, the current harness, phase, and
+principal, `path=feature-smoke-home-evidence.jsonl`, and `clause=C-10`; it starts no
+later admission, spawn, wake, or sentinel action and does not attempt a second evidence
+append. If the current leg reached spawn, its existing cleanup still runs. A passing
+full matrix contains exactly seven records in this sequence: run-start; Claude
+pre-spawn, pre-wake, and post-turn; Codex pre-spawn, pre-wake, and post-turn. A refusal
+after evidence-file creation contains one record for each completed phase plus one
+`refused` record for the failing phase; it contains no record for a later phase or
+harness leg.
+
+Each record is one JSON object with keys in this exact order and no insignificant
+whitespace:
+
+`schema`, `sequence`, `harness`, `phase`, `principal`, `result`, `cause`, `entries`,
+`checks`
+
+The fields have these contracts:
+
+- `schema` is string `tightbeam.feature_smoke.home_evidence.v1`.
+- `sequence` is an integer that starts at `1` and increments by one per appended line.
+- `harness` is string `all` for run-start or the current leg's lowercase harness name.
+- `phase` is one of `run-start`, `pre-spawn`, `pre-wake`, or `post-turn`.
+- `principal` is string `run-start`, string `pre-spawn`, or the spawned Tightbeam
+  session key rendered as an evidence token.
+- `result` is string `pass` or `refused`.
+- `cause` is string `validated` for a passing record. For a refused record, it is the
+  mapped C-clause of the first failed predicate selected by C-09.
+- `entries` is an array sorted by each entry's raw relative-path bytes. Each entry has
+  keys `path`, `type`, `mode`, `size`, and `sha256` in that order. `path` is an evidence
+  token string. `type` is string `directory`, `regular`, `symlink`, or `other`. `mode`
+  is a string of exactly four digits matching `[0-7]{4}` for the permission and special
+  bits. `size` is the regular file's nonnegative integer byte size or JSON `null`. In a
+  pre-wake or post-turn record, `sha256` is the regular file's lowercase SHA-256 string
+  matching `[0-9a-f]{64}`; for run-start, pre-spawn, and a non-regular entry it is JSON
+  `null`.
+- `checks` is an array that contains exactly the following objects in the listed order.
+  Each object has keys `id`, `applicable`, `evaluated`, and `passed` in that order. The
+  two state fields are booleans. `passed` is a boolean when `evaluated=true` and is JSON
+  `null` when `evaluated=false`. `applicable=false` requires `evaluated=false`.
+
+The fixed check order is:
+
+1. `phase_order`
+2. `fixture_state`
+3. `clock_order`
+4. `baseline_equal`
+5. `path_set_equal`
+6. `codex_delta_empty`
+7. `entry_type_equal`
+8. `entry_mode_equal`
+9. `sidecar_size_bounded`
+10. `json_utf8_valid`
+11. `json_syntax_valid`
+12. `json_unique_members`
+13. `claude_json_object`
+14. `sidecar_member_set_equal`
+15. `sidecar_member_types_equal`
+16. `filename_pid_equal`
+17. `session_id_shape`
+18. `expected_cwd_equal`
+19. `proc_start_shape`
+20. `version_shape`
+21. `peer_protocol_equal`
+22. `kind_equal`
+23. `entrypoint_equal`
+24. `name_nonempty`
+25. `name_source_equal`
+26. `backup_epoch_in_interval`
+27. `started_at_in_interval`
+28. `identity_matches_pre_wake`
+
+The validator maps checks 1, 2, and 4 to C-01; check 3 to C-05; checks 5, 7-9, and 13
+to C-02; check 6 to C-07; checks 10-12 to C-02 for `.claude.json` or the backup and to
+C-04 for the sidecar; checks 14 and 15 to C-04; check 16 to C-03; checks 17-25 to
+C-04; checks 26 and 27 to C-05; and check 28 to C-06.
+
+Each record uses these exact entry and applicability rules. A listed range includes
+both endpoints. Every unlisted check is `applicable=false`, `evaluated=false`, and
+`passed=null`.
+
+| Record | `entries` content | Applicable checks |
+| --- | --- | --- |
+| Run-start | Empty array | 1-2 |
+| Claude pre-spawn | Complete recursive projected-home path set after subtracting only baseline ancestor directories | 1, 4 |
+| Codex pre-spawn | Complete recursive projected-home path set after subtracting only baseline ancestor directories | 1, 4 |
+| Claude pre-wake | Complete Claude runtime delta | 1, 3, 5, 7-27 |
+| Claude post-turn | Complete Claude runtime delta | 1, 3, 5, 7-28 |
+| Codex pre-wake | Complete Codex runtime delta | 1, 6 |
+| Codex post-turn | Complete Codex runtime delta | 1, 6 |
+
+A validator evaluates applicable checks in fixed numeric order. If one fails, each
+later applicable check is `applicable=true`, `evaluated=false`, and `passed=null`.
+`identity_matches_pre_wake` is therefore inapplicable at Claude pre-wake and applicable
+at Claude post-turn. For an entry whose type is not `regular`, `size` and `sha256` are
+`null`; the validator never follows a symlink to populate them.
+
+The fixture writes JSON strings using their stated ASCII tokens, appends one LF byte,
+and emits no other byte to the evidence file. It does not record JSON bytes, decoded
+member values, credential material, stdout, or stderr. It records and syncs evidence
+before retirement because harness cleanup may remove the sidecar. The fixture does not
+delete the used fixture base or evidence file; the existing harness lifecycle may
+remove its own transient sidecar during retirement.
 
 Acceptance example: Given a sidecar whose `cwd` is wrong, when the validator refuses,
-then the evidence says `expected_cwd_equal=false` and omits both the observed and
-expected path values.
+then the current phase record has `result="refused"`, `cause="C-04"`, and
+`expected_cwd_equal` with `evaluated=true` and `passed=false`; the record omits both the
+observed and expected path values.
+
+Acceptance example: Given a passing full matrix, when both per-leg cleanup blocks
+complete, then the retained evidence file has seven LF-terminated records with
+contiguous `sequence` values and each passing record has `cause="validated"`.
 
 ### C-11 — One-file implementation custody
 
 A future implementation assignment owns only `scripts/feature_smoke.exs`. It starts
-from the then-current `origin/0.1.x`, names this reviewed artifact and SHA, and keeps
+from the then-current `origin/0.1.9`, names this reviewed artifact and SHA, and keeps
 the existing exact-home proof.
 
 The builder may read the surrendered one-file diff as evidence. The builder derives
@@ -383,8 +526,8 @@ The Given/When/Then examples in C-01 through C-12 are part of this acceptance co
 | --- | --- | --- | --- | --- |
 | AC-01 | Exactly Claude and Codex are selected; the fixture has one user who is an admin and zero sessions, work items, and turns | Run-start validation runs | The fixture passes once before the first credential preflight | C-01, C-06 |
 | AC-02 | A prior spawn left one session row in the base | Run-start validation runs | `FX_FIXTURE_STATE` refuses the reused fixture before credential preflight | C-01, C-06, C-09 |
-| AC-03 | Exact Claude and Codex owned baselines | Pre-spawn validation runs | Both baselines pass and no runtime exception is used | C-01, I-02 |
-| AC-04 | The exact five-path Claude runtime set | Pre-wake validation runs | The set passes without a launcher PID read | C-02-C-05, I-04 |
+| AC-03 | One harness leg has its exact owned baseline | That leg's pre-spawn validation runs | Its baseline passes, no runtime exception is used, and the validator does not inspect the other harness's home | C-01, I-02 |
+| AC-04 | The exact five-path Claude runtime set exists in the Claude leg | That leg's pre-wake validation runs | The set passes without a launcher PID read | C-02-C-05, I-04 |
 | AC-05 | Canonical filename and equal internal `pid` | Sidecar semantics run | Filename-PID binding passes | C-03 |
 | AC-06 | `sessions/0123.json` with internal `pid=123` | Whole-set path validation runs | `FX_PATH_SET` refuses the noncanonical name before sidecar semantics | C-02, C-03, C-09 |
 | AC-07 | `sessions/123.json` has internal `pid=124` | Sidecar semantics run | `FX_SIDECAR_SEMANTIC` refuses the unequal binding | C-03, C-09 |
@@ -404,18 +547,23 @@ The Given/When/Then examples in C-01 through C-12 are part of this acceptance co
 | AC-21 | `.claude.json` has mode `0644` | Mode validation runs | `FX_MODE` refuses it | C-02, C-09 |
 | AC-22 | Sidecar has 4097 bytes | Size validation runs | `FX_SIZE` refuses it before JSON decoding | C-02, C-09 |
 | AC-23 | `.claude.json` contains the valid JSON value `[]` | JSON-shape validation runs | `FX_JSON_SHAPE` refuses it | C-02, C-09 |
-| AC-24 | Codex writes one runtime path | Codex validation runs | `FX_CODEX_RUNTIME_PATH` refuses it | C-07 |
-| AC-25 | One mismatch satisfies more than one error category | The case runs repeatedly | Each run returns the same first code, phase, and path evidence token | C-09 |
-| AC-26 | One valid sidecar observation | Evidence is written | Metadata, hashes, booleans, cause, and principal are present; JSON values and bytes are absent | C-10 |
+| AC-24 | The Codex leg writes one runtime path | That leg's validation runs | `FX_CODEX_RUNTIME_PATH` refuses it without inspecting the Claude home | C-07 |
+| AC-25 | One path fails multiple predicates and another path fails in the same or a later error category | The case runs repeatedly | Each run returns the same first code, phase, path evidence token, and clause selected by category, raw path, then C-10 predicate order | C-09-C-10 |
+| AC-26 | One full matrix passes | Both per-leg cleanup blocks complete | The retained mode-0600 evidence file contains exactly seven synced LF-terminated canonical JSON records with contiguous sequence values, `cause="validated"`, exact `entries` and `checks`, and no decoded JSON values or observed file bytes | C-10 |
 | AC-27 | One fixture reaches harness spawn and refuses | Cleanup completes | The fixture base remains, no observed runtime path is fixture-mutated before lifecycle cleanup, and no second fixture starts | C-06, C-08, C-10 |
-| AC-28 | Reviewed-clean contract and explicit release exist | One-file implementation begins | Only `scripts/feature_smoke.exs` changes from current `origin/0.1.x` | C-11-C-12 |
-| AC-29 | Deterministic cases and repository gates pass | One fresh full matrix runs | Claude and Codex credential preflights pass; both full legs complete; Claude passes both sidecar phases; Codex has empty deltas | C-01-C-12 |
+| AC-28 | Reviewed-clean contract and explicit release exist | One-file implementation begins | Only `scripts/feature_smoke.exs` changes from current `origin/0.1.9` | C-11-C-12 |
+| AC-29 | Deterministic cases and repository gates pass | One fresh full matrix runs | One Claude leg completes first and one Codex leg completes second; Claude passes its own pre-wake and post-turn sidecar records; Codex passes its own empty-delta pre-wake and post-turn records; neither leg inspects the other home; the evidence file contains seven records | C-01-C-12 |
 | AC-30 | The full matrix encounters a new runtime path or schema | The validator refuses | The implementer files the exact blocker and does not retry | C-06-C-10, C-12 |
 | AC-31 | Parent commit, product assignment, and facts are read after this contract | Contract production ends | Their identifiers and state match I-11 | I-11 |
+| AC-32 | The Claude pre-wake sidecar has a wrong `cwd` | Claude pre-wake validation runs | The current evidence record is `refused` with `cause="C-04"`, `expected_cwd_equal` is evaluated and false, no later-phase or Codex-leg record exists, and the evidence file remains through cleanup | C-04, C-09-C-10 |
+| AC-33 | The evidence path already exists | Exclusive creation runs | `FX_EVIDENCE` refuses before run-start validation, writes no evidence record, and does not delete, replace, or change the existing path | C-10 |
+| AC-34 | An evidence append or `:file.sync/1` fails after spawn | The current phase writes evidence | `FX_EVIDENCE` refuses; no later admission, wake, or sentinel action and no secondary append occurs; existing cleanup still runs | C-10 |
 
 ## Open Questions
 
-None. The contract is ready for independent review.
+None. Findings F1-F4 in `att_db09d91a-e208-4806-acd2-700088124228` are closed under
+`dr_5fd346df-75ab-4a1a-a78c-54de593fec12`. One fresh linked successor review decides
+whether the exact amended artifact is reviewed-clean.
 
 The following resolved boundaries remain gates, not open questions:
 

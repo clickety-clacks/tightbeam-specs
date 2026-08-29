@@ -21,24 +21,40 @@ Read on 2026-08-14 UTC:
 - Producer assignment had no prior attests before recon. Recon receipt:
   `att_fe41e651-f77a-4df4-b1d4-efc3e6c05b44`.
 
+Post-review readback on 2026-08-29 UTC, before the amended-artifact seal:
+
+- Work item remains open with 47 assignments and 1,801 timeline events, including 833
+  progress, completion, surrender, or verdict attests.
+- Canonical sorted full work-item trace SHA-256:
+  `0054b4937e636244480badba55f861596b9640156f684f61e3f0a88edea00a5e`.
+- `specRefName` and `specRefSha256` remain null. Mike's ruling
+  `dr_e649588d-317c-4c0a-aae3-ea95683495e3` authorizes a pushed Git commit plus
+  hash-bearing attest as the binding substitute.
+- The first linked review is closed at changes-requested verdict
+  `att_db09d91a-e208-4806-acd2-700088124228` and completion
+  `att_6aa0bffe-a742-4df5-9535-bb6b9cc9489b`.
+
 ## Authority and preserved state
 
 | Source | Material ruling or fact |
 | --- | --- |
 | `att_d0b6affe-af19-44f5-9d6e-ca24292d9743` | Class 12: final fixture is consumed; future release needs a strict fixture-only `sessions/<positive-numeric>.json` contract independent of launcher `osPid`, then one fresh same smoke. |
 | `att_a134b512-0dd2-4f24-b1d7-7d56e6dca9bf` | Fact 390 blocks the parent holder. Facts 373, 384, and 387, parent commit, surrendered history, and custody remain frozen. |
-| `att_d694b965-8471-46df-842d-5ef915372aa8` | This assignment may produce contract and recon artifacts plus a ready-or-blocked verdict. It may not edit, run, review, integrate, or live-mutate. |
+| `att_d694b965-8471-46df-842d-5ef915372aa8` | The initial assignment boundary allowed contract and recon artifacts plus a ready-or-blocked verdict; the later Mike ruling in `dr_5fd346df` adds only the bounded amendment and successor review. Fixture, smoke, implementation, integration, and live mutation remain forbidden. |
 | `att_15121266-f5e8-4cbc-bd4b-22dae1ca2bbd` | Claude-only `.claude.json`, one bounded backup, and the `sessions` runtime namespace are fixture surfaces. Evidence excludes file contents. |
 | `att_32e44600-c470-4b16-b9a9-54381992ce9a` | A sidecar is present after successful spawn and tuning, before the first wake. The earlier empty-pre-turn assumption is false. |
 | `att_3db588ec-91b1-4af8-a3af-84eb98186fa7` | The last authorized replacement fixture was one-shot. A new mismatch had to stop without another live attempt. |
 | `att_9e2e0562-f7ce-4d12-bce8-136f88ded9be` | Final fixture sidecar metadata: `sessions/1907971.json`, regular, mode 0644, 352 bytes, SHA-256 `f1fbd8a2629838cf2f244ff72b5859b1a5b1141d03c2d17e1990ed3e9fe68fff`. Launcher `osPid` was 1907930. |
 | `att_f6acfc37-6ad2-4bfc-80c4-67cb5b6189e6` | The parent cannot proceed under the discarded launcher-PID predicate. |
+| `att_3a08e484-b2b9-48c8-915f-904610eaa3d0` | Mike made `0.1.9` the sole base and integration branch for 0.1 work and preserved this card as post-merge contract, seal, and live-smoke custody. |
+| `att_db09d91a-e208-4806-acd2-700088124228` | The first linked review requested four changes: per-leg phase topology, exact retained evidence serialization, the `0.1.9` branch name, and a same-path predicate tie-break. |
+| `dr_5fd346df-75ab-4a1a-a78c-54de593fec12` | Mike authorized one bounded contract-and-recon amendment for those four findings, a new exact seal, and one fresh linked successor review. |
 | Parent commit `5f4341130419c4bae21bdd6c2278185dcd0f89a5` | Frozen execution-start observability implementation. Five files, 1,375 added lines. This contract does not modify it. |
 | Product assignment `asg_17a50f66-c32d-42f2-aba5-dd39e072203e` | Frozen original base-synchronization product lane. This contract does not resume it. |
 
-## Current source and product-law evidence
+## Historical source and current product-law evidence
 
-- Maintenance source: `origin/0.1.x` at
+- Authorized implementation branch: `origin/0.1.9`. Historical source read:
   `be61cfc98df6b18c0cc280adeca42cba3fbf14b5`.
 - `scripts/feature_smoke.exs` blob:
   `b2a50cafd2fc69c9db7a766be72b25b7500874c2`.
@@ -60,6 +76,11 @@ Read on 2026-08-14 UTC:
 - Current `feature_smoke` captures a spawned session key, derives its local workdir
   without DB access, validates the projected home, wakes once, observes the turn
   boundary, proves durable redelivery, and retires in an `after` block.
+
+Before this post-review amendment, the owned specs branch fetched `origin/main` and
+fast-forwarded cleanly. Its parent and the then-current remote `main` were both
+`b20194fe464f5792788bb5b7033245e4d0696889`. The pre-amendment producer commit was
+`0d422d33632eb13e63a5129f7f34890628cb06a6`; no source repository was edited or run.
 
 ## Preserved final-fixture evidence
 
@@ -156,14 +177,22 @@ The validator evaluates the complete delta and one exact five-path Claude set.
 ### D-03 — Lifecycle events, not time thresholds
 
 The validator keys on native reconcile completion, spawn-and-tune return, first-wake
-dispatch, observed turn boundary, and cleanup. Epoch values only bracket freshness;
-they do not decide whether a lifecycle event occurred.
+dispatch, observed turn boundary, and cleanup. Run-start occurs once. Pre-spawn,
+pre-wake, post-turn, and cleanup occur separately for one Claude leg and one Codex
+leg. The Claude leg runs first and finishes cleanup before the Codex leg starts. A leg
+never reads the other harness's home. Epoch values only bracket freshness; they do not
+decide whether a lifecycle event occurred.
 
-### D-04 — Content-free evidence
+### D-04 — Content-free, mechanically replayable evidence
 
-The validator may decode bytes to decide. Durable evidence contains hashes and
-predicate outcomes, not JSON values. This preserves the earlier content boundary while
-making review decidable.
+The validator may decode bytes to decide. It exclusive-creates one retained mode-0600
+JSONL file under the fixture base. A passing matrix writes exactly seven synced,
+LF-terminated records: one run-start record and pre-spawn, pre-wake, and post-turn
+records for each harness leg. Each record uses the contract's exact key order, entry
+shape, 28-check order, result, cause, and phase-specific applicability. Durable
+evidence contains metadata, hashes, and predicate outcomes, not decoded JSON values or
+observed bytes. This preserves the earlier content boundary while making a pass or
+refusal mechanically replayable.
 
 ### D-05 — Codex remains outside the exception
 
@@ -177,6 +206,22 @@ not require the same filename across phases. A backup may rotate between pre-wak
 post-turn when each observed name, type, mode, JSON syntax, and freshness predicate
 passes independently.
 
+### D-07 — First-review closure is bounded to F1-F4
+
+The amendment closes only the four findings in
+`att_db09d91a-e208-4806-acd2-700088124228`:
+
+1. F1: C-01 now gives each harness its own baseline, pre-wake, post-turn, and cleanup
+   observations. It forbids cross-harness home validation.
+2. F2: C-10 now fixes the evidence path, creation mode, record cardinality, byte
+   framing, field order and semantics, check order, pass cause, refusal truncation, and
+   retention boundary.
+3. F3: AS-01 and C-11 name `origin/0.1.9`; the old commit remains historical evidence.
+4. F4: C-09 now selects a failure by error category, raw relative-path bytes, then the
+   fixed C-10 predicate order. The refusal includes the mapped clause.
+
+No other admission surface or implementation custody changed.
+
 ## Declined alternatives
 
 | Alternative | Decision |
@@ -188,6 +233,10 @@ passes independently.
 | Admit `sessions/**` by prefix | Declined. It admits nesting, wrong names, multiple files, and wrong types. |
 | Delete or preseed `sessions` | Declined. It destroys or manufactures harness state and violates the one-shot evidence boundary. |
 | Persist decoded JSON values | Declined. Predicate booleans and hashes prove the contract without carrying runtime contents. |
+| Use console output or an unspecified report as evidence | Declined. It does not fix destination, cardinality, framing, pass cause, or cleanup retention. |
+| Validate both harness homes in one shared phase | Declined. It makes the sequential lifecycle and failure boundary undecidable. |
+| Use a wildcard 0.1 implementation-branch placeholder | Declined. Mike designated `origin/0.1.9` as the sole 0.1 branch. |
+| Leave same-path predicate order implicit | Declined. Error category and raw-path order alone do not decide which clause wins on one multiply-invalid entry. |
 | Admit the Codex plugin cache | Declined. No ruling authorizes that separate surface. |
 | Delete the exact-home smoke assertion | Declined. Reviewed product law and repository policy require the live two-harness proof. |
 | Accept permanent smoke failure | Declined. It leaves frozen parent work unable to reach its required live gate. |
@@ -203,17 +252,17 @@ with deterministic cases and one real fresh matrix.
 | Contract clause | Upstream source | Future implementation and verification |
 | --- | --- | --- |
 | Goal, I-04, C-03 | `att_d0b6affe`, `att_9e2e0562`, `att_f6acfc37` | Remove launcher-PID input from admission; case proves filename/internal-PID equality without launcher read. |
-| C-01 | `att_32e44600`; current `feature_smoke` call order; one-shot fixture history | Validate run-start freshness once, then pre-spawn, pre-wake, post-turn, and existing cleanup. |
+| C-01 | `att_32e44600`; current `feature_smoke` call order; first-review F1 | Validate run-start once; validate separate Claude and Codex pre-spawn, pre-wake, post-turn, and cleanup phases without cross-home reads. |
 | C-02 | `att_15121266`; final fixture metadata; preserved stopped fixture tree | Exact five-path whole-set predicate plus negative nesting/type/mode cases. |
 | C-04 | Two read-only Claude 2.1.232 sidecars; installed binary | Exact eleven-member schema and semantic cases. |
 | C-05 | Backup ruling; sidecar samples; mtime contradiction | Spawn-to-snapshot interval tests; no mtime or duration decision. |
 | C-06 | `att_3db588ec`; `att_d0b6affe`; one-shot fixture history | Exact phase-local backup cardinality, cross-phase sidecar identity, and no-reuse cases. |
 | C-07 | Parent `att_cbdc7419`; assignment scope | Empty Codex delta and a plugin-cache negative case. |
-| C-08-C-09 | Engineering tenet to report dirt; law wisdom 4-5 | Ordered stable error codes with cause and session principal. |
-| C-10 | `att_15121266`; assignment evidence boundary | Metadata/hash/boolean report; no raw JSON values. |
-| C-11 | Assignment custody; surrendered one-file worktree | One-file diff and custody check. |
+| C-08-C-09 | Engineering tenet to report dirt; law wisdom 4-5; first-review F4 | Select first failure by category, raw path, then fixed predicate order; report stable code, phase, path, clause, and principal. |
+| C-10 | `att_15121266`; assignment evidence boundary; first-review F2 | Exact retained mode-0600 JSONL path, seven-record passing cardinality, refusal truncation, fixed fields and checks, hashes and booleans, and no decoded values or bytes. |
+| C-11 | Assignment custody; Mike branch correction; first-review F3 | One-file diff from synchronized `origin/0.1.9` and custody check. |
 | C-12 | `att_d694b965`; `spec-handoff`; `AGENTS.md` live-smoke law | Reviewed hash, explicit release, deterministic gates, one fresh matrix, linked exact-commit review. |
-| AC-29 | Reviewed base-sync AC-56; `AGENTS.md` | One full real Claude-plus-Codex matrix after repository gates. |
+| AC-29 | Reviewed base-sync AC-56; `AGENTS.md`; first-review F1-F2 | One sequential Claude-plus-Codex matrix after repository gates, with separate leg observations and seven retained records. |
 | I-11, AC-31 | Facts 373/384/387/390; parent and product cards | Readback proves frozen identifiers unchanged before handoff. |
 
 Reverse trace check:
@@ -239,6 +288,16 @@ The digest did not change the five-path set, sidecar self-binding, exact eleven-
 schema, spawn-bracket freshness, sidecar identity continuity, Codex refusal, one-file
 custody, one-shot fixture rule, or release sequence.
 
+The 2026-08-29 post-review digest read the complete changes-requested report at
+`art_2fb7d6fb`, SHA-256
+`c986d5cd8a03eb59104de9b2974a4fdc0a53de7a278c54afa8ede21ed1c72880`, and its remote
+report commit `8b99a0f882ce094168fedbcf83c17b3edf765d08`. Mike's
+`authorize-bounded-rework-and-successor-review` ruling limited the amendment to F1-F4.
+The amendment made phases per-leg, made evidence byte- and record-decidable, replaced
+the branch placeholder with `origin/0.1.9`, and completed the first-failure order. It
+did not widen the path set, custody, live authority, or one-shot release. A successor
+review must decide the new exact hashes.
+
 During digest scheduling, the liveness monitor issued three false no-continuation
 prods although wake `w_31ff3a98-8ed9-4ae0-844c-994145a6deb6` was scheduled. The exact
 specimen receipts are `att_175f30de-6940-423c-bc35-cbd47a00712e`,
@@ -248,8 +307,8 @@ contract authority.
 
 ## Review target
 
-One fresh linked independent reviewer should hash both artifacts, read the full work
-item and the cited attests, and decide:
+One fresh linked successor reviewer should hash both amended artifacts, read the full
+work item, the first review, Mike's rework ruling, and the cited attests, and decide:
 
 1. whether the normative schema is supported without claiming deleted final bytes;
 2. whether each admitted path, type, mode, cardinality, and phase is exact;
@@ -257,7 +316,8 @@ item and the cited attests, and decide:
 4. whether error ordering and evidence are deterministic and content-free;
 5. whether one-file custody and no-reuse remain intact;
 6. whether the Codex boundary remains a refusal;
-7. whether each implementation element traces back to the contract.
+7. whether each implementation element traces back to the contract;
+8. whether F1-F4 are closed without introducing another interpretation.
 
 The reviewer records `reviewed-clean` or precise `changes-requested`. The reviewer does
 not edit, implement, run a fixture, resume the parent, or mutate facts.
