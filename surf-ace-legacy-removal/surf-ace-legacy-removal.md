@@ -25,6 +25,10 @@ Source basis:
   removal implementation consumes the exact remote branch revision that its
   owner files as review-ready. This spec does not authorize a competing source
   branch.
+- Prior exact-revision review: commit
+  `8c9083be9e8c5f6616cd084bba49b1195b47d412` received `changes-requested` in
+  `att_e98cdcff-f9e6-4089-97b9-e929d4471d2d`. This revision absorbs its three
+  findings. The prior revision is not implementation authority.
 
 ## Goal
 
@@ -38,9 +42,9 @@ preserve two conflicting models and can block a valid lockless surface.
 Deliver one deletion-only, lockless-only Surf Ace product. Delete the legacy
 compatibility surface from product code, wire contracts, schemas, commands,
 persisted schemas, tests, documentation, integration instructions, and operator
-procedures. The product must neither read nor repair old development state. A
-separately authorized operator deletes that state before the reviewed package
-starts validation.
+procedures. The product applies only the current strict schema to existing state.
+It must neither recognize legacy concepts in nor repair old development state. A
+separately authorized operator deletes that state before fleet validation starts.
 
 The subtraction ruling is DELETE. ADD loses because any product cleanup,
 adapter, tombstone, receipt, migration, or conversion seam preserves the model
@@ -75,7 +79,8 @@ keep conflicting authority live.
 ### Declined decisions
 
 - **DECLINED — product startup cleanup:** the superseding ruling assigns deletion
-  to the operator before validation. Product code does not recognize old state.
+  to the operator before validation. Product code neither recognizes legacy
+  concepts nor decides their disposition.
 - **DECLINED — migration or conversion:** there is no production material to
   preserve and no second supported mode to convert from or to.
 - **DECLINED — compatibility refusal keyed to former field names:** current
@@ -95,7 +100,8 @@ keep conflicting authority live.
   lockless state to provider-owned state.
 - **Deletion-only product**: a product whose current source and generated
   material contain the lockless model and no compatibility implementation. It
-  does not understand old state well enough to clean, migrate, or convert it.
+  contains no legacy-specific knowledge that could clean, migrate, or convert
+  old state.
 - **Old development state**: any Surf Ace state root or application store created
   by a package before the reviewed legacy-removal package. Its contents are
   disposable under Mike's ruling.
@@ -160,8 +166,8 @@ A-01, A-02, A-10.
 `pair.request` has no migration material. Pair responses have no migration
 acceptance or migration receipt. The wire has no surface-mode conversion
 operation. The CLI has no conversion or cleanup command. Startup has no reader,
-projection, transformer, or receipt for old state. Acceptance: A-01, A-02, A-03,
-A-09.
+projection, transformer, or receipt that is specific to legacy state. Acceptance:
+A-01, A-02, A-03, A-09.
 
 ### I-04 — Fresh state only
 
@@ -180,10 +186,12 @@ A-06.
 ### I-06 — Deletion has no recovery lane
 
 Operational deletion leaves no backup, archive, quarantine, compatibility
-snapshot, or restore command. If deletion or fresh startup fails, the operator
-finishes deletion and retries the reviewed current package from absent state.
-The workflow does not reinstall an older package against the deleted roots.
-Acceptance: A-05, A-06, A-07.
+snapshot, or restore command. If operational deletion is interrupted, the
+operator uses the sealed pre-delete evidence to finish deletion. If that evidence
+is missing or corrupt, the run is Red and product validation remains blocked. A
+later fresh-start failure is a product/package Red; it does not reopen old-state
+deletion or recovery. The workflow does not reinstall an older package against
+the deleted roots. Acceptance: A-05, A-06, A-07.
 
 ### I-07 — Concurrency cannot recreate old state
 
@@ -275,8 +283,9 @@ Delete or rewrite:
 - Wire operation `surface.mode.convert`, CLI command
   `surface-mode-convert`, command parsing/routing, request vectors, response and
   error contracts, docs, and tests.
-- Any proposed startup cleaner, old-state reader, compatibility schema,
-  deletion receipt, obsolete-key registry, or product-owned state deletion.
+- Any proposed startup cleaner, legacy-specific old-state reader, compatibility
+  schema, deletion receipt, obsolete-key registry, or product-owned state
+  deletion.
 
 The ordinary lockless pair path keeps its existing controller identity,
 capability, cursor, receipt-resolution, and admission-attempt behavior.
@@ -342,16 +351,37 @@ performs this order:
    control path.
 4. Prove no matching process, listener, scheduled launcher, or open writer handle
    remains.
-5. Build a metadata-only manifest containing each exact root, entry count,
-   aggregate byte count, and tree SHA-256. Do not copy file contents.
-6. Delete only the approved roots. Do not archive or quarantine them.
-7. Prove each root is absent and no writer/listener reappeared.
-8. File the bounded operational report. Only then release the reviewed package
+5. Build one metadata-only manifest row for each exact approved root. A present
+   root row records `present`, entry count, aggregate byte count, and tree
+   SHA-256. An absent root row records `absent-before-deletion`. Do not copy file
+   contents.
+6. Before deleting any root, compute the manifest SHA-256, atomically write the
+   manifest to a run-owned evidence path outside every approved root,
+   synchronize the file and its containing directory through the host's
+   durable-write primitives, close and reopen it, and require its readback
+   SHA-256 to equal the pre-write SHA-256. Record that exact path and digest as
+   an artifact on the operational assignment, query the artifact row, rehash the
+   path, and require the row digest, pre-write digest, and new readback digest to
+   match. Do not mutate the manifest after that check. The sealed manifest is
+   the sole source of pre-delete proof.
+7. Delete only approved roots whose sealed row says `present`. Do not archive or
+   quarantine them. Do not delete an unlisted root.
+8. Prove each approved root is absent and no writer/listener reappeared.
+9. Finalize the bounded operational report with the sealed manifest SHA-256 and
+   per-root deletion result. Only then release the reviewed package
    installation/startup assignment.
 
-If interruption occurs before step 7 passes, product startup remains blocked.
-The executor repeats steps 2 through 7 against the exact approved roots. This is
-retry of host deletion, not product cleanup or migration.
+If interruption occurs after step 6, product startup remains blocked. On resume,
+the executor reopens and rehashes the exact sealed manifest before any action. A
+missing, unreadable, or hash-mismatched manifest produces the named Red result
+`operational_proof_lost`; the executor does not reconstruct proof from remaining
+roots or release product startup. For a sealed `present` row, an absent root is
+already deleted; a present root must still equal its sealed tree SHA-256 before
+the executor deletes it. A different tree produces the named Red result
+`operational_root_changed`. For a sealed `absent-before-deletion` row, a present
+root is a reappearance and stops the run. With intact proof and unchanged
+remaining roots, the executor repeats writer checks and steps 7 through 9. This
+is retry of host deletion, not product cleanup or migration.
 
 ### 5. Static closure
 
@@ -396,10 +426,9 @@ prior stage.
    ancestry, tree equality, current-main readback, and full gates. Do not
    direct-push, amend reviewed bytes, or change repository policy.
 6. **Exact packages**: build the CLI and each Surf Ace runtime package required
-   by the Eezo fixture from the exact integrated Surf Ace commit. Build twice in
-   clean directories. Require byte-identical output, a complete manifest, native
-   architecture, source/tree provenance, and independent package review. Do not
-   install before review.
+   by the Eezo fixture from the exact integrated Surf Ace commit in a clean owned
+   directory. Require a complete manifest, native architecture, source/tree
+   provenance, and independent package review. Do not install before review.
 7. **Operational state deletion**: under separate destructive/live-state
    authority, execute Architecture section 4 and file its report. Do not run a
    Surf Ace command against the old roots.
@@ -453,24 +482,38 @@ field, and admits an ordinary lockless controller without a mode record.
 
 **Given** separate destructive authority naming each explicit old Eezo state
 root and writer, **when** the executor performs Architecture section 4, **then**
-the report proves writer/listener absence before deletion, metadata-manifest
-hashes before deletion, absence of each exact root after deletion, no
-backup/archive/quarantine, and no product command execution.
+the report proves writer/listener absence before deletion, durable sealing and
+artifact readback of the metadata-manifest hash before the first deletion,
+absence of each exact root after deletion, no backup/archive/quarantine, and no
+product command execution.
 
 ### A-06 — Concurrent writer blocks deletion release
 
 **Given** an approved root whose writer, listener, scheduled launcher, or open
-write handle remains or reappears, **when** the executor reaches the quiescence
-or absence checks, **then** it stops before package startup, records the exact
-writer evidence, and does not broaden or guess the deletion target.
+write handle remains or reappears, or a sealed `absent-before-deletion` root that
+reappears, **when** the executor reaches the quiescence or absence checks,
+**then** it stops before package startup, records the exact writer or root
+evidence, and does not broaden or guess the deletion target.
 
 ### A-07 — Interrupted deletion retries without product recovery
 
 **Given** an interruption after one approved root is deleted and before each
-root passes absence, **when** work resumes, **then** product startup remains
-blocked and the executor repeats operational deletion on the same explicit
-approved set until each root is absent. It does not restore old state, install
-an older package, or invoke a Surf Ace cleanup/migration path.
+root passes absence, **when** work resumes with the intact sealed manifest,
+**then** product startup remains blocked, the executor accepts a sealed-present
+but now-absent root as already deleted, rehashes each remaining present root
+against its sealed tree SHA-256, and completes deletion on the same explicit set.
+It does not restore old state, install an older package, or invoke a Surf Ace
+cleanup/migration path.
+
+**Given** the same interruption with a missing, unreadable, or hash-mismatched
+sealed manifest, **when** work resumes, **then** the run records
+`operational_proof_lost`, leaves product startup blocked, and does not reconstruct
+pre-delete proof from the partial state.
+
+**Given** the same interruption with an intact sealed manifest and a remaining
+present root whose current tree SHA-256 differs from its sealed value, **when**
+work resumes, **then** the run records `operational_root_changed`, leaves product
+startup blocked, and does not delete the changed root.
 
 ### A-08 — Deletion evidence is bounded and private
 
