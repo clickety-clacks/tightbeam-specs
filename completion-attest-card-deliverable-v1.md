@@ -1,10 +1,10 @@
 # Completion attest card-deliverable contract — v1
 
-Status: REVISED PROPOSAL after changes-requested verdicts
-`att_5de64b3e-640b-4e8b-8eab-b1998c6f8969` and
-`att_ee3763d0-89d3-4f1e-a101-a99cc7e8d061`, with review reports
-`art_81dbecca` and `art_2b2dbd76`, for one owner-routed independent re-review. No
-product target is elected. This proposal derives from work item
+Status: HOMING AMENDMENT PROPOSAL after reviewed-clean verdict
+`att_c3ed922e-045e-4b0c-8f8f-1cfb1885ed4a` and review report
+`art_b70137b1`, with implementation-base and schema-shape decision
+`att_0a4bf7f9-0516-4077-a497-72766cf22ae1`, for one owner-routed independent
+exact-tip review. No landing target is elected. This proposal derives from work item
 `wi_f46d2e83-e152-429f-93c7-3c51989bd391`, spirit verdict
 `att_df4251d6-87e9-4e60-8c7d-e9916a933ba9`, correction
 `att_c15df88b-e936-4f03-9b46-93733767b4b8`, and split disposition
@@ -364,12 +364,15 @@ and wisdom 9.
 
 ### I16 — The contract survives restart and rejects downgrade
 
-The elected implementation records a new schema shape. Its upgrade creates and validates
-the new tables, backfills non-terminal rows, and advances the shape stamp in one database
-transaction. An interruption leaves the old shape and no committed partial backfill, or
-the new shape and the complete validated contract. Restart repeats the old-shape upgrade
-or validates the new shape. A binary that lacks this contract refuses the new stamp
-instead of accepting an unguarded close.
+The implementation starts from exact Tightbeam `origin/main` commit
+`724e5c96f9513b37e937dc52eb014ba1ef2d1b5e`. That base's authoritative predecessor
+shape is `coordination-fabric-v1-phase1-v9`. This contract records successor shape
+`coordination-fabric-v1-phase1-v10`. Its upgrade creates and validates the new tables,
+backfills non-terminal rows, and advances the shape stamp in one database transaction.
+An interruption leaves the predecessor shape and no committed partial backfill, or the
+successor shape and the complete validated contract. Restart repeats the predecessor-
+shape upgrade or validates the successor shape. A binary that lacks this contract
+refuses the successor stamp instead of accepting an unguarded close.
 
 ## Architecture
 
@@ -1126,16 +1129,15 @@ the first binding.
 
 ## Open Questions
 
-1. **BLOCKING FOR IMPLEMENTATION, NON-BLOCKING FOR THIS PROPOSAL — schema predecessor
-   and implementation base:** before any code assignment, the product owner must select
-   the exact Tightbeam base commit, allocate the successor shape stamp without colliding
-   with another reviewed schema lane, and amend this canonical file with that base and
-   stamp. This selection identifies the bytes and predecessor shape the implementation
-   changes. It is not an integration-target election and grants no landing authority.
-2. **BLOCKING FOR LANDING ONLY, NON-BLOCKING FOR THIS PROPOSAL OR TARGETLESS
-   IMPLEMENTATION — integration target:** this work item has no elected integration
-   target. Targetless implementation and review can proceed after question 1 closes.
-   Any managed landing requires a separate durable election under
+1. **BLOCKING FOR LANDING ONLY, NON-BLOCKING FOR THIS PROPOSAL OR TARGETLESS
+   IMPLEMENTATION — integration target:** product-owner decision
+   `att_0a4bf7f9-0516-4077-a497-72766cf22ae1` selects exact Tightbeam implementation
+   base `724e5c96f9513b37e937dc52eb014ba1ef2d1b5e`, confirms predecessor shape
+   `coordination-fabric-v1-phase1-v9`, and allocates successor shape
+   `coordination-fabric-v1-phase1-v10`. After an independent review clears this
+   amendment, those values authorize targetless implementation. They do not elect a
+   landing target or grant landing authority. This work item has no elected integration
+   target. Any managed landing requires a separate durable election under
    `integration-target-election.md` by Mike or an active scoped delegate. Product-owner,
    work-item-owner, spec-author, reviewer, branch, commit, and `specRef` status confer no
    election authority. This proposal does not open or resolve that election.
