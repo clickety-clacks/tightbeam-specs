@@ -55,6 +55,15 @@ Creation-mode amendment readback on 2026-08-29 UTC, before this seal:
 - Decision request `dr_16de6d11-492c-4ec4-aaa2-6cb1a03d4d7d` is ruled exact
   `contract-amendment`.
 
+F9 successor readback on 2026-08-29 UTC, before this seal:
+
+- Work item remains open with 58 assignment rows and 1,948 timeline events, including
+  917 attest events.
+- Canonical key-sorted compact full work-item trace SHA-256:
+  `ef5b68dcfe8d1cda3f8c927a13e962b6675eb6b1fa3afe23c052c70c7ec20af0`.
+- Review `asg_52f8eeb7-c65b-4985-9b9f-a66bb4127c61` closed changes-requested at exact
+  verdict `att_5456488a-1187-44e4-983a-02d920586d8d`.
+
 ## Authority and preserved state
 
 | Source | Material ruling or fact |
@@ -79,6 +88,7 @@ Creation-mode amendment readback on 2026-08-29 UTC, before this seal:
 | `att_e167466a-8063-4d59-8d92-67750584cf7a` | Exact product commit `08e55de896106aa7fcc2ea7f60f1357e5d6cf772` is changes-requested because OTP requests `0666` and a later descriptor chmod leaves a creation-time mode window. The full clause report is `art_cdbca6e1`, SHA-256 `caa8b4f85ea9285b41520a8df2ddb7e73990c5ed084774a837ab6989df9ec358`. |
 | `att_619caef0-d33a-49ce-966e-242b919e985e` | The coder proved that OTP 28.5 exposes no create-permission option in the settled one-file boundary. The mechanism report is `art_b1641827`, SHA-256 `9f7dce8804fa1e3b96865594b58c4fbbd4b885ea789dd489c30a06886656c76f`. |
 | `dr_16de6d11-492c-4ec4-aaa2-6cb1a03d4d7d` | Mike selected `contract-amendment`: replace the unsupported literal request-mode requirement with an exact effective-0600 launch-umask contract, reseal, and re-review before code changes. |
+| `att_5456488a-1187-44e4-983a-02d920586d8d` | The creation-mode review closed F1-F8 and found blocking F9: the contract did not state or prove that the client `0077` umask stays outside the pre-existing gateway and its harness descendants. Full report `art_b56ae0fc`, SHA-256 `11e3b55693c18b956bf851108b25e5f5236e15b91664b5e1218932bfaa3b3ad1`, is pushed at report commit `304e9d94c2d8900d0adbffded8c0cf9496fff15b`. |
 | Parent commit `5f4341130419c4bae21bdd6c2278185dcd0f89a5` | Frozen execution-start observability implementation. Five files, 1,375 added lines. This contract does not modify it. |
 | Product assignment `asg_17a50f66-c32d-42f2-aba5-dd39e072203e` | Frozen original base-synchronization product lane. This contract does not resume it. |
 
@@ -138,6 +148,26 @@ already an ancestor of reviewed commit
 `7717ec827a7448b9b99518d2518383c43c8bd82a`. The worktree was clean, and no merge or
 artifact edit was required to synchronize the base. Product commit
 `08e55de896106aa7fcc2ea7f60f1357e5d6cf772` remains preserved and unmodified.
+
+Before the F9 correction, the owned branch fetched `origin/main` again. Remote `main`
+remained exact `9ddcb07a779ee9f73285f5bfa54898651e781f13`, which is already an ancestor of
+reviewed commit `6e8b72a4abad1d272e5dbe21c10d73491b08e5be`. The worktree was clean and no merge
+was required.
+
+## Read-only feature-smoke gateway-boundary validation
+
+Exact preserved product commit `08e55de896106aa7fcc2ea7f60f1357e5d6cf772` has
+`scripts/feature_smoke.exs` blob `6d9e236a34d99f710d330af0b0dc794063565709`.
+Its header invokes `mix run --no-start` against a running gateway. `FeatureSmoke.run/0`
+reads `<fixture-base>/gateway.json` to obtain the existing port and token. Its `spawn`
+operation reaches `http://127.0.0.1:<port>/agent/dispatch` through `curl`.
+
+The zsh subshell sets `0077` after the gateway is already serving and before it execs
+the Mix client. Unix umask inheritance flows from parent to later child. An existing
+gateway cannot inherit a later state change made inside the new client subshell. The
+gateway receives the HTTP spawn request and creates the harness process under gateway
+process state. The client umask therefore governs the evidence-file create without
+changing the modes created by the gateway or its harness descendants.
 
 ## Read-only F8 mechanism validation
 
@@ -394,6 +424,27 @@ product file, linked library, fixture subprocess, native dependency, admitted ru
 path, evidence path, retry, fixture attempt, or live authority. Implementation custody
 remains `scripts/feature_smoke.exs` only.
 
+### D-12 — F9 closes at the pre-existing gateway process boundary
+
+The F9 verdict correctly required an explicit, verified boundary between the client
+umask and harness-created paths. The preserved source supplies that boundary:
+
+1. The exact command uses `mix run --no-start`, so the Mix client does not boot the
+   Tightbeam application.
+2. `FeatureSmoke.run/0` reads the existing gateway's port and token from
+   `<fixture-base>/gateway.json`.
+3. The client sends `spawn` to the recorded gateway over loopback HTTP.
+4. The gateway was already serving before the client subshell set `0077`; it cannot
+   inherit a later state change inside that subshell.
+5. The gateway creates Claude and Codex processes under gateway process state. C-02
+   observes and validates their exact path modes without a repair.
+6. C-12 adds a source-topology gate and AC-45-AC-46 decide the serving-gateway and
+   absent-gateway branches.
+
+This correction adds no process, product file, helper, dependency, harness mutation,
+path admission, fixture attempt, or live authority. It makes the already-shipped HTTP
+client/gateway process boundary normative and testable.
+
 ## Declined alternatives
 
 | Alternative | Decision |
@@ -415,6 +466,8 @@ remains `scripts/feature_smoke.exs` only.
 | Create under an ambient umask and chmod the retained descriptor to `0600` | Declined. Ambient launch provenance is unbound, and chmod cannot remove the broader creation-time interval. |
 | Add a native create primitive after `dr_16de6d11` | Declined for this lane. Mike selected the contract-amendment option, not the native-primitive option. |
 | Treat the exact zsh launch envelope as a product helper | Declined. It is the release launcher that establishes inherited process state before Mix starts; product code neither invokes nor owns it. |
+| Treat gateway and harness processes as descendants of the later feature-smoke client | Declined. The exact client runs `--no-start` and sends spawn over HTTP to a gateway that was already serving before the client subshell changed its umask. |
+| Change the required `backups` or sidecar modes because of the client umask | Declined. The pre-existing gateway boundary prevents that umask from reaching harness path creation; C-02 remains exact. |
 | Rely on opened-object type without identity continuity | Declined. A replacement symlink can resolve to a different regular object. |
 | Validate both harness homes in one shared phase | Declined. It makes the sequential lifecycle and failure boundary undecidable. |
 | Use a wildcard 0.1 implementation-branch placeholder | Declined. Mike designated `origin/0.1.9` as the sole 0.1 branch. |
@@ -442,13 +495,14 @@ with deterministic cases and one real fresh matrix.
 | C-06 | `att_3db588ec`; `att_d0b6affe`; one-shot fixture history | Exact phase-local backup cardinality, cross-phase sidecar identity, and no-reuse cases. |
 | C-07 | Parent `att_cbdc7419`; assignment scope | Empty Codex delta and a plugin-cache negative case. |
 | C-08-C-09 | Engineering tenet to report dirt; law wisdom 4-5; first-review F4; successor F6; final-review F7; F7-review F8 | Emit set-level `FX_PATH_SET` with `path=-`; use documented OTP operations and three-way regular-object identity continuity during one read; emit ordered `FX_SNAPSHOT` for the single acquisition attempt; otherwise select first failure by category, observed raw path, then fixed predicate order. |
-| C-10 | `att_15121266`; assignment evidence boundary; first-review F2; successor F5; final-review F7; F7-review F8; implementation review `att_e167466a`; `dr_16de6d11` | Exact retained mode-0600 JSONL path born from OTP `0666` exclusive create under exact inherited umask `0077`; same-handle type, mode, and identity proof; no chmod repair; seven-record passing cardinality; validator-refusal truncation; 29 fixed checks; hashes and booleans; identity-failure hash boundary; null uncaptured snapshot fields; and no identity values, decoded values, bytes, or OS error text. |
+| C-10 | `att_15121266`; assignment evidence boundary; first-review F2; successor F5; final-review F7; F7-review F8; implementation review `att_e167466a`; `dr_16de6d11`; successor F9 | Exact retained mode-0600 JSONL path born from OTP `0666` exclusive create under exact client umask `0077`; same-handle type, mode, and identity proof; pre-existing HTTP gateway boundary; no chmod repair; seven-record passing cardinality; validator-refusal truncation; 29 fixed checks; hashes and booleans; identity-failure hash boundary; null uncaptured snapshot fields; and no identity values, decoded values, bytes, or OS error text. |
 | C-11 | Assignment custody; Mike branch correction; first-review F3 | One-file diff from synchronized `origin/0.1.9` and custody check. |
-| C-12 | `att_d694b965`; `spec-handoff`; `AGENTS.md` live-smoke law; `dr_16de6d11` | Reviewed hash, explicit release, synchronized green product base, exact umask launch envelopes, hash-bearing syscall trace, deterministic gates, one fresh matrix, and linked exact-commit review. |
+| C-12 | `att_d694b965`; `spec-handoff`; `AGENTS.md` live-smoke law; `dr_16de6d11`; successor F9 | Reviewed hash, explicit release, synchronized green product base, exact umask launch envelopes, hash-bearing syscall trace, source-topology gate for the pre-existing HTTP gateway, deterministic gates, one fresh matrix, and linked exact-commit review. |
 | AC-29 | Reviewed base-sync AC-56; `AGENTS.md`; first-review F1-F2 | One sequential Claude-plus-Codex matrix after repository gates, with separate leg observations and seven retained records. |
 | AC-34-AC-35 | Successor-review F5-F6; `dr_fb80acd4` | Console-only sink-failure evidence and deterministic `path=-` for missing-plus-extra set refusal. |
 | AC-36-AC-42 | Final-review F7; F7-review F8; `dr_7262873b`; `dr_9a179914` | Deterministic single-attempt snapshot refusal for enumeration, metadata, open, read, opened-type, and regular-object identity failure. |
 | AC-43-AC-44 | Implementation review `att_e167466a`; mechanism report `art_b1641827`; `dr_16de6d11` | Prove exact umask-before-exec provenance, OTP request mode `0666`, effective creation mode `0600`, and rejection of an untraced ambient-umask run. |
+| AC-45-AC-46 | Successor-review F9; preserved product commit `08e55de8` | Prove that a pre-existing HTTP gateway creates harness processes outside the client tree and that an unreachable recorded service reaches the client's curl-failure path without a harness spawn result. |
 | I-11, AC-31 | Facts 373/384/387/390; parent and product cards | Readback proves frozen identifiers unchanged before handoff. |
 
 Reverse trace check:
@@ -525,6 +579,20 @@ effective mode, same-handle verification, and a hash-bearing system-call trace. 
 added no product file, runtime helper, dependency, fixture attempt, or live authority.
 A fresh review must decide the new exact hashes before any product correction.
 
+The creation-mode review read exact contract commit
+`6e8b72a4abad1d272e5dbe21c10d73491b08e5be`. Verdict `att_5456488a` and report
+`art_b56ae0fc`, SHA-256
+`11e3b55693c18b956bf851108b25e5f5236e15b91664b5e1218932bfaa3b3ad1`, accepted
+F1-F8 and found F9. The digest then read exact product commit
+`08e55de896106aa7fcc2ea7f60f1357e5d6cf772` and its feature-smoke blob
+`6d9e236a34d99f710d330af0b0dc794063565709`. That source runs the feature smoke as a
+`--no-start` client, reads an existing gateway record, and sends spawn over loopback
+HTTP. The gateway therefore exists before the client sets `0077` and is outside the
+client process tree. The correction adds AS-12, I-14, the C-10 process boundary, the
+C-12 source-topology gate, and AC-45-AC-46. It does not change a required runtime mode,
+path, product file, helper, dependency, fixture attempt, or live authority. A fresh
+review must decide the new exact hashes before the bounded product correction resumes.
+
 During digest scheduling, the liveness monitor issued three false no-continuation
 prods although wake `w_31ff3a98-8ed9-4ae0-844c-994145a6deb6` was scheduled. The exact
 specimen receipts are `att_175f30de-6940-423c-bc35-cbd47a00712e`,
@@ -554,6 +622,10 @@ all prior reviews and rework rulings, and the cited attests, and decide:
 12. whether the creation-mode amendment states OTP's `0666` request truthfully, binds
     exact umask `0077` before exec, proves effective mode `0600` without chmod repair,
     and keeps the launch trace outside product custody and runtime dependencies.
+13. whether F9 is closed by the exact `--no-start`, `gateway.json`, loopback HTTP, and
+    curl-failure source seams, which place the already-serving gateway and its harness
+    children outside the later feature-smoke client process tree while C-02 preserves
+    their required modes.
 
 The reviewer records `reviewed-clean` or precise `changes-requested`. The reviewer does
 not edit, implement, run a fixture, resume the parent, or mutate facts.

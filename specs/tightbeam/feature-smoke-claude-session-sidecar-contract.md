@@ -107,7 +107,14 @@ unexpected-path refusal.
   invocation. The exact live form is
   `(umask 077 && exec mix run --no-start scripts/feature_smoke.exs)`. The parent shell
   exports every required live-run environment variable before it starts this envelope.
-  No fixture code reads or changes the process umask.
+  The `--no-start` Mix client reads the existing fixture gateway's `gateway.json` and
+  sends requests to that gateway over HTTP. No fixture code reads or changes the
+  process umask.
+- **Gateway process boundary**: the Tightbeam gateway process that is already serving
+  the fixture before the feature-smoke launch envelope starts. The gateway is not a
+  descendant of the envelope's zsh or Mix process. It receives spawn requests over
+  HTTP and creates the Claude and Codex harness processes. Those harness processes
+  inherit gateway process state, not the later feature-smoke client's umask.
 - **Effective creation mode**: the permission bits assigned when the kernel creates an
   inode. For the evidence file, OTP 28.5 requests `0666` and the inherited exact umask
   `0077` removes group and other bits, so the effective creation mode is exact `0600`.
@@ -166,6 +173,13 @@ unexpected-path refusal.
   process umask before the new inode becomes observable. The implementer confirms both
   facts on the synchronized base with the C-12 trace gate. A mismatch returns for
   ruling.
+- AS-12. Exact product commit `08e55de896106aa7fcc2ea7f60f1357e5d6cf772`, blob
+  `6d9e236a34d99f710d330af0b0dc794063565709`, documents the feature-smoke command as
+  `mix run --no-start`, reads `<fixture-base>/gateway.json`, and sends the `spawn`
+  request to `http://127.0.0.1:<gateway-port>/agent/dispatch` through `curl`. A
+  nonzero `curl` result calls the fixture failure path. A future implementer confirms
+  these seams on the synchronized implementation base before editing. A mismatch
+  returns for ruling.
 
 ## Invariants
 
@@ -196,6 +210,9 @@ unexpected-path refusal.
 - I-13. Every accepted deterministic case-only run and live matrix uses the exact
   feature-smoke launch envelope. The fixture does not chmod, replace, or reopen the
   evidence path to obtain mode `0600` after creation.
+- I-14. The exact `0077` umask belongs to the feature-smoke zsh and Mix client process
+  tree. The already-serving gateway remains outside that process tree. The gateway
+  creates each harness process under the gateway's process state.
 
 ## Architecture
 
@@ -485,6 +502,12 @@ ambient umask happens to produce mode `0600`. C-12 binds launch provenance to a
 system-call trace. The trace is release evidence outside product code; it is not a
 fixture helper, runtime dependency, or additional implementation file.
 
+The launch envelope does not start the Tightbeam gateway or either harness process.
+The Mix client reads the gateway process boundary's existing connection record and
+sends each spawn request over HTTP. Therefore the client `0077` umask applies to the
+evidence-file open but does not alter the gateway umask that governs its later Claude
+and Codex descendants. C-02 validates the modes that those descendants produce.
+
 For each phase, the fixture makes one evidence-record append attempt. If that append
 succeeds, the fixture requires `:file.sync(evidence_io_device)` to return `:ok` before
 that phase returns, sends a wake, writes a sentinel, or enters cleanup. If append or
@@ -686,6 +709,19 @@ contents. Before recording the artifact, the implementer verifies that it contai
 credential value. If the installed tracer cannot select or decode those supported host
 events, the implementer stops before step 5 and returns the exact blocker for ruling.
 
+Before step 5, the implementer also records a source-topology gate for the exact
+product commit. The gate proves these predicates in source order:
+
+1. The documented command is `mix run --no-start scripts/feature_smoke.exs`.
+2. `FeatureSmoke.run/0` binds `gw` by reading and decoding
+   `<fixture-base>/gateway.json` before it begins a leg.
+3. `post/3` builds `http://127.0.0.1:<gateway-port>/agent/dispatch` from `gw`, then
+   invokes `curl` for `spawn` and the other verbs.
+4. A nonzero `curl` result calls `fail/2` instead of returning a spawn result.
+
+If a predicate fails, the implementer stops before step 5 and returns the exact blocker
+for ruling.
+
 Acceptance example: Given a reviewed-clean contract but no opener release, when a
 worker proposes a fixture run, then the worker remains blocked and does not create the
 fixture.
@@ -741,14 +777,18 @@ The Given/When/Then examples in C-01 through C-12 are part of this acceptance co
 | AC-42 | Initial `lstat` and the opened handle report regular-object identity A, the read completes, and final `lstat` reports a symlink or identity B | The snapshot performs its final identity check while the handle remains open | `FX_SNAPSHOT` refuses with that path, retains the captured SHA-256, and does not take another snapshot | C-08-C-10 |
 | AC-43 | The caller has ambient umask `000` and the case-only launch envelope starts under a descendant-following system-call trace | The deterministic case creates the evidence path | The traced umask call sets `0077` and returns prior mask `000`; the trace then orders Mix/BEAM exec and one exclusive create request with mode `0666`; the first handle and path metadata observations report exact mode `0600`; the trace contains no chmod-family call or second evidence-path open | AS-11, I-13, C-10-C-12 |
 | AC-44 | Ambient umask would independently yield mode `0600`, but the exact launch envelope or its trace is absent | Release evidence is evaluated | The run is nonconforming and cannot authorize the live matrix or parent lane | I-13, C-10-C-12 |
+| AC-45 | A Tightbeam gateway is already serving the fixture before the exact feature-smoke envelope starts | The Mix client sends the Claude and Codex spawn requests | The client uses the recorded gateway port over HTTP; the gateway creates both harness processes outside the client process tree; the client `0077` umask cannot change the gateway or harness umask | AS-12, I-14, C-10-C-12 |
+| AC-46 | `gateway.json` names a loopback port with no serving Tightbeam gateway | The exact `mix run --no-start` client reaches its first HTTP request | `curl` returns nonzero, the client calls its failure path, and no harness spawn result exists | AS-12, I-14, C-10-C-12 |
 
 ## Open Questions
 
 None. Finding F8 in `att_101f8af2-6694-4389-8dc0-b39883077f48` is closed under
 `dr_9a179914-0d23-440b-9a3b-4577e0d0c707`. The implementation-review create-mode
 finding in `att_e167466a-8063-4d59-8d92-67750584cf7a` is resolved normatively by Mike's
-`contract-amendment` ruling in `dr_16de6d11-492c-4ec4-aaa2-6cb1a03d4d7d`. One fresh
-linked review decides whether the exact amended artifact is reviewed-clean.
+`contract-amendment` ruling in `dr_16de6d11-492c-4ec4-aaa2-6cb1a03d4d7d`. F9 in
+`att_5456488a-1187-44e4-983a-02d920586d8d` is resolved by the explicit pre-existing
+gateway process boundary and its source-topology gate. One fresh linked review decides
+whether the exact successor artifact is reviewed-clean.
 
 The following resolved boundaries remain gates, not open questions:
 
