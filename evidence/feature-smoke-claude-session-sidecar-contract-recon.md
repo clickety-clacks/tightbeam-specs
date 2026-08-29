@@ -40,7 +40,7 @@ Post-review readback on 2026-08-29 UTC, before the amended-artifact seal:
 | --- | --- |
 | `att_d0b6affe-af19-44f5-9d6e-ca24292d9743` | Class 12: final fixture is consumed; future release needs a strict fixture-only `sessions/<positive-numeric>.json` contract independent of launcher `osPid`, then one fresh same smoke. |
 | `att_a134b512-0dd2-4f24-b1d7-7d56e6dca9bf` | Fact 390 blocks the parent holder. Facts 373, 384, and 387, parent commit, surrendered history, and custody remain frozen. |
-| `att_d694b965-8471-46df-842d-5ef915372aa8` | The initial assignment boundary allowed contract and recon artifacts plus a ready-or-blocked verdict. Later Mike rulings `dr_5fd346df` and `dr_fb80acd4` add only their two bounded amendments, seals, and reviews. Fixture, smoke, implementation, integration, and live mutation remain forbidden. |
+| `att_d694b965-8471-46df-842d-5ef915372aa8` | The initial assignment boundary allowed contract and recon artifacts plus a ready-or-blocked verdict. Later Mike rulings `dr_5fd346df`, `dr_fb80acd4`, and `dr_7262873b` add only their three bounded amendments, seals, and reviews. Fixture, smoke, implementation, integration, and live mutation remain forbidden. |
 | `att_15121266-f5e8-4cbc-bd4b-22dae1ca2bbd` | Claude-only `.claude.json`, one bounded backup, and the `sessions` runtime namespace are fixture surfaces. Evidence excludes file contents. |
 | `att_32e44600-c470-4b16-b9a9-54381992ce9a` | A sidecar is present after successful spawn and tuning, before the first wake. The earlier empty-pre-turn assumption is false. |
 | `att_3db588ec-91b1-4af8-a3af-84eb98186fa7` | The last authorized replacement fixture was one-shot. A new mismatch had to stop without another live attempt. |
@@ -51,6 +51,8 @@ Post-review readback on 2026-08-29 UTC, before the amended-artifact seal:
 | `dr_5fd346df-75ab-4a1a-a78c-54de593fec12` | Mike authorized one bounded contract-and-recon amendment for those four findings, a new exact seal, and one fresh linked successor review. |
 | `att_daa01a05-41c1-4e41-995b-7e5db6afc63c` | The successor review accepted F1, F3, and F4; it found F5's evidence-sink/cardinality contradiction and F6's undecidable absent-path output. |
 | `dr_fb80acd4-8634-47be-a9ca-b576b43412b4` | Mike authorized one further bounded contract-and-recon amendment for F5-F6, a new seal, and one fresh linked review. |
+| `att_af1b4ab8-55d6-4f74-b5b4-1c753668d05b` | The final review accepted F1-F6 and found F7: snapshot enumeration, metadata, open, read, disappearance, and type-change failures had no representable outcome. |
+| `dr_7262873b-27b3-4d35-8a15-15bcd7e277e1` | Mike authorized one bounded contract-and-recon amendment for F7, a new seal, and one fresh linked review. |
 | Parent commit `5f4341130419c4bae21bdd6c2278185dcd0f89a5` | Frozen execution-start observability implementation. Five files, 1,375 added lines. This contract does not modify it. |
 | Product assignment `asg_17a50f66-c32d-42f2-aba5-dd39e072203e` | Frozen original base-synchronization product lane. This contract does not resume it. |
 
@@ -92,6 +94,12 @@ fast-forward-only gate refused because reviewed commit
 `a3b1e249250b14daafe40e217f59e0e047144411` then preserved both parents without a
 conflict. Its second parent is exact current `main`; its first parent preserves the
 reviewed artifact. No contract or recon edit preceded this sync.
+
+Before the F7 amendment, the owned branch fetched `origin/main` again. Remote `main`
+remained exact `9ddcb07a779ee9f73285f5bfa54898651e781f13`, which is already an ancestor of
+reviewed commit `aad893964b0bbf08c99dfec54f64801611e85eca` through merge
+`a3b1e249250b14daafe40e217f59e0e047144411`. No merge or contract edit was required
+to synchronize the base.
 
 ## Preserved final-fixture evidence
 
@@ -200,12 +208,15 @@ The validator may decode bytes to decide. It exclusive-creates one retained mode
 JSONL file under the fixture base. A passing matrix writes exactly seven synced,
 LF-terminated records: one run-start record and pre-spawn, pre-wake, and post-turn
 records for each harness leg. Each record uses the contract's exact key order, entry
-shape, 28-check order, result, cause, and phase-specific applicability. Durable
+shape, 29-check order, result, cause, and phase-specific applicability. Durable
 evidence contains metadata, hashes, and predicate outcomes, not decoded JSON values or
 observed bytes. This preserves the earlier content boundary while making a pass or
 validator refusal mechanically replayable. If evidence append or sync itself fails,
 the deterministic console `FX_EVIDENCE` line is the sole guaranteed evidence. The
 fixture neither retries nor claims that the current JSONL record is complete or durable.
+If runtime snapshot acquisition fails, one `FX_SNAPSHOT` record carries the captured
+partial entry set, null unavailable fields, and failed `snapshot_acquired` check. It
+records no operating-system error text and starts no retry or second snapshot.
 
 ### D-05 — Codex remains outside the exception
 
@@ -251,6 +262,25 @@ The amendment closes only the two findings in
 I-12 and AC-34 now carry the F5 exception. C-02 examples and AC-06, AC-16, AC-19, and
 AC-35 carry the F6 output. No other admission surface or implementation custody changed.
 
+### D-09 — Final-review closure is bounded to F7
+
+The amendment closes only finding F7 in
+`att_af1b4ab8-55d6-4f74-b5b4-1c753668d05b`:
+
+1. Terms and I-03 distinguish a successful complete runtime delta from one failed
+   snapshot attempt.
+2. C-08 defines one non-retrying raw-byte-ordered walk and maps projected-home
+   enumeration or path-specific metadata, open, type-stability, and read failure to
+   `FX_SNAPSHOT`.
+3. C-09 orders `FX_SNAPSHOT` before baseline and path-set validation and fixes
+   `path=-` only for projected-home enumeration failure.
+4. C-10 adds `snapshot_acquired` to the fixed check order and permits null metadata or
+   hash fields only where the single attempt did not capture them.
+5. AC-36 through AC-40 cover enumeration, `lstat`, open, read, and type-change cases.
+
+The amendment adds no retry, fallback reader, second snapshot, new evidence file,
+admitted runtime path, implementation file, fixture attempt, or live authority.
+
 ## Declined alternatives
 
 | Alternative | Decision |
@@ -264,6 +294,8 @@ AC-35 carry the F6 output. No other admission surface or implementation custody 
 | Persist decoded JSON values | Declined. Predicate booleans and hashes prove the contract without carrying runtime contents. |
 | Use console output or an unspecified report as evidence | Declined. It does not fix destination, cardinality, framing, pass cause, or cleanup retention. |
 | Retry a failed evidence append or use a fallback sink | Declined. It adds a second mechanism and cannot prove that the original sink is durable. The deterministic console refusal is sufficient. |
+| Retry a failed snapshot operation or use a fallback reader | Declined. It changes the observation after failure and makes the one-shot result depend on another filesystem race. |
+| Take a second runtime snapshot after acquisition failure | Declined. It can observe a different path set and hides the first acquisition failure. |
 | Validate both harness homes in one shared phase | Declined. It makes the sequential lifecycle and failure boundary undecidable. |
 | Use a wildcard 0.1 implementation-branch placeholder | Declined. Mike designated `origin/0.1.9` as the sole 0.1 branch. |
 | Leave same-path predicate order implicit | Declined. Error category and raw-path order alone do not decide which clause wins on one multiply-invalid entry. |
@@ -289,12 +321,13 @@ with deterministic cases and one real fresh matrix.
 | C-05 | Backup ruling; sidecar samples; mtime contradiction | Spawn-to-snapshot interval tests; no mtime or duration decision. |
 | C-06 | `att_3db588ec`; `att_d0b6affe`; one-shot fixture history | Exact phase-local backup cardinality, cross-phase sidecar identity, and no-reuse cases. |
 | C-07 | Parent `att_cbdc7419`; assignment scope | Empty Codex delta and a plugin-cache negative case. |
-| C-08-C-09 | Engineering tenet to report dirt; law wisdom 4-5; first-review F4; successor F6 | Emit set-level `FX_PATH_SET` with `path=-`; otherwise select first failure by category, observed raw path, then fixed predicate order; report stable code, phase, path, clause, and principal. |
-| C-10 | `att_15121266`; assignment evidence boundary; first-review F2; successor F5 | Exact retained mode-0600 JSONL path, seven-record passing cardinality, validator-refusal truncation, fixed fields and checks, hashes and booleans, and no decoded values or bytes; console-only guarantee if the sink fails. |
+| C-08-C-09 | Engineering tenet to report dirt; law wisdom 4-5; first-review F4; successor F6; final-review F7 | Emit set-level `FX_PATH_SET` with `path=-`; emit ordered `FX_SNAPSHOT` for the single acquisition attempt; otherwise select first failure by category, observed raw path, then fixed predicate order. |
+| C-10 | `att_15121266`; assignment evidence boundary; first-review F2; successor F5; final-review F7 | Exact retained mode-0600 JSONL path, seven-record passing cardinality, validator-refusal truncation, 29 fixed checks, hashes and booleans, null uncaptured snapshot fields, and no decoded values, bytes, or OS error text. |
 | C-11 | Assignment custody; Mike branch correction; first-review F3 | One-file diff from synchronized `origin/0.1.9` and custody check. |
 | C-12 | `att_d694b965`; `spec-handoff`; `AGENTS.md` live-smoke law | Reviewed hash, explicit release, deterministic gates, one fresh matrix, linked exact-commit review. |
 | AC-29 | Reviewed base-sync AC-56; `AGENTS.md`; first-review F1-F2 | One sequential Claude-plus-Codex matrix after repository gates, with separate leg observations and seven retained records. |
 | AC-34-AC-35 | Successor-review F5-F6; `dr_fb80acd4` | Console-only sink-failure evidence and deterministic `path=-` for missing-plus-extra set refusal. |
+| AC-36-AC-40 | Final-review F7; `dr_7262873b` | Deterministic single-attempt snapshot refusal for enumeration, metadata, open, read, and type-change failure. |
 | I-11, AC-31 | Facts 373/384/387/390; parent and product cards | Readback proves frozen identifiers unchanged before handoff. |
 
 Reverse trace check:
@@ -340,6 +373,14 @@ missing-path candidate ordering. It added no retry, fallback sink, admitted path
 implementation file, live authority, or fixture attempt. A fresh review must decide
 the new exact hashes.
 
+The final review read exact commit `aad893964b0bbf08c99dfec54f64801611e85eca`.
+Verdict `att_af1b4ab8` and report `art_2bb013c0`, SHA-256
+`1fe2b651f0857d915dc9f08a56049c8db4147c8c87819047de0f0981c7785eef`, accepted
+F1-F6 and found F7. Mike ruling `dr_7262873b` authorized the narrow amendment. The
+digest added one representable acquisition refusal and partial content-free evidence.
+It added no retry, fallback reader, second observation, path admission, implementation
+file, fixture attempt, or live authority. A fresh review must decide the new hashes.
+
 During digest scheduling, the liveness monitor issued three false no-continuation
 prods although wake `w_31ff3a98-8ed9-4ae0-844c-994145a6deb6` was scheduled. The exact
 specimen receipts are `att_175f30de-6940-423c-bc35-cbd47a00712e`,
@@ -349,8 +390,8 @@ contract authority.
 
 ## Review target
 
-One fresh linked reviewer should hash both reamended artifacts, read the full work
-item, both prior reviews, both rework rulings, and the cited attests, and decide:
+One fresh linked reviewer should hash both amended artifacts, read the full work item,
+all prior reviews and rework rulings, and the cited attests, and decide:
 
 1. whether the normative schema is supported without claiming deleted final bytes;
 2. whether each admitted path, type, mode, cardinality, and phase is exact;
@@ -360,7 +401,9 @@ item, both prior reviews, both rework rulings, and the cited attests, and decide
 6. whether the Codex boundary remains a refusal;
 7. whether each implementation element traces back to the contract;
 8. whether F1-F4 remain closed;
-9. whether F5-F6 are closed without introducing another interpretation.
+9. whether F5-F6 remain closed;
+10. whether F7 now gives each acquisition failure one ordered, content-free,
+    non-retrying result without introducing another interpretation.
 
 The reviewer records `reviewed-clean` or precise `changes-requested`. The reviewer does
 not edit, implement, run a fixture, resume the parent, or mutate facts.

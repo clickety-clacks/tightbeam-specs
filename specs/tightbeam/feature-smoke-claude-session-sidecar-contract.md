@@ -58,8 +58,12 @@ unexpected-path refusal.
   `Tightbeam.Homes.home_path/3` inside the fresh fixture.
 - **Owned baseline**: the exact leaf-path set returned by
   `Tightbeam.Homes.owned_entries/1` after native reconciliation.
-- **Runtime delta**: the complete recursive path set in a projected home after the
-  validator subtracts the owned baseline and the baseline's ancestor directories.
+- **Runtime snapshot attempt**: one non-retrying filesystem walk for one projected-home
+  phase. It returns either the complete observed paths, metadata, and required bytes or
+  one acquisition failure under C-08.
+- **Runtime delta**: the complete recursive path set produced by a successful runtime
+  snapshot attempt after the validator subtracts the owned baseline and the baseline's
+  ancestor directories.
 - **Relative runtime path**: the raw filename-byte sequence from the projected home to
   one recursive entry, joined with byte `0x2f`. The set includes directories and does
   not follow symlinks. Admitted names are ASCII and contain no empty, `.` or `..`
@@ -73,7 +77,7 @@ unexpected-path refusal.
   Neither leg reads the other harness's home.
 - **Spawn interval**: the inclusive wall-clock interval whose start is captured before
   the fixture sends the Claude-leg spawn request and whose end is captured after the
-  validator reads the complete Claude runtime-delta metadata and file bytes.
+  single Claude runtime snapshot attempt returns success or failure.
 - **Run-start phase**: after fixture gateway connection and before the first credential
   preflight. This phase occurs once for the full Claude-plus-Codex run.
 - **Pre-spawn phase**: the per-leg phase after native reconciliation of that harness's
@@ -101,9 +105,10 @@ unexpected-path refusal.
   consumed fixture base through cleanup. A preexisting path refuses the fixture before
   credential preflight.
 - **Evidence record**: one UTF-8 JSON object and one trailing LF byte in the evidence
-  file, serialized exactly as C-10 defines. It records file metadata, hashes,
-  predicate outcomes, result, cause, and principal. It does not record a decoded JSON
-  member value or observed file bytes.
+  file, serialized exactly as C-10 defines. It records captured file metadata, hashes,
+  predicate outcomes, result, cause, and principal. A C-08 acquisition refusal records
+  the bounded partial entry set that C-10 defines. It does not record a decoded JSON
+  member value, observed file bytes, or operating-system error text.
 
 ## Assumptions
 
@@ -139,11 +144,15 @@ unexpected-path refusal.
 
 - I-01. The admission applies only to the Claude projected home in a fresh fixture.
 - I-02. The validator proves the owned baseline before it sends a spawn request.
-- I-03. The validator evaluates the complete runtime delta as one set.
+- I-03. After a runtime snapshot succeeds, the validator evaluates the complete runtime
+  delta as one set. C-08 decides the result when acquisition fails.
 - I-04. The validator does not read, compare, or report a Tightbeam launcher `osPid`
   while deciding sidecar admission.
-- I-05. The validator derives each decision from paths, `lstat` metadata, captured file
-  bytes, the spawned Tightbeam session key, and explicit phase timestamps.
+- I-05. After a runtime snapshot succeeds, the validator derives each admission
+  decision from paths, `lstat` metadata, opened-object type metadata, captured file
+  bytes, the spawned Tightbeam session key, and explicit phase timestamps. On
+  acquisition failure, it derives the refusal from the phase, C-08 walk order, and
+  first failing observed path.
 - I-06. The validator admits no runtime delta for Codex.
 - I-07. The fixture does not delete, preseed, rename, repair, or synthesize a harness
   runtime path.
@@ -203,7 +212,8 @@ not require the removed Claude sidecar.
 
 ### C-02 — Complete admitted Claude path set
 
-At pre-wake and post-turn, the Claude runtime delta contains exactly these five paths:
+After the C-08 snapshot attempt succeeds, the Claude runtime delta at pre-wake and
+post-turn contains exactly these five paths:
 
 | Path | Type | Permission mode | Additional condition |
 | --- | --- | --- | --- |
@@ -314,9 +324,30 @@ The validator refuses the smoke on the first failing ordered check. It does not 
 rename, rewrite, chmod, preseed, or ignore the observed entry. Cleanup may retire the
 spawned session through the existing fixture lifecycle after evidence capture.
 
+At pre-spawn, pre-wake, and post-turn, the validator makes exactly one runtime snapshot
+attempt. It enumerates the projected home once without following symlinks. For each
+successfully enumerated directory, it sorts direct-child names by raw filename bytes
+and processes them depth-first. For each observed relative path, it calls `lstat` once.
+For each regular file whose bytes the phase requires, it opens the path once without
+following a symlink, verifies from the opened object that its type remains regular,
+and reads that one object to EOF once. It does not retry an operation, restart the
+walk, use a fallback reader, or take a second snapshot.
+
+If projected-home enumeration fails, the validator refuses with `FX_SNAPSHOT`,
+`path=-`, and `clause=C-08`. If directory enumeration, `lstat`, open, type-stability,
+or read fails for an observed relative path, it refuses with `FX_SNAPSHOT`, that path's
+evidence token, and `clause=C-08`. A disappearance is the corresponding `lstat` or open
+failure. The validator emits no operating-system error text. C-10 records exactly the
+metadata and bytes captured before this refusal.
+
 Acceptance example: Given a sidecar symlink whose target is a schema-valid JSON file,
 when the validator reads `lstat` metadata, then it refuses with `FX_TYPE` before it
 opens the target.
+
+Acceptance example: Given `.claude.json` has captured regular-file metadata but its
+single open fails, when snapshot acquisition runs, then the validator refuses with
+`FX_SNAPSHOT`, `path=.claude.json`, and `clause=C-08`; its evidence entry has
+`sha256=null`, and the validator does not retry or evaluate `FX_MODE`.
 
 ### C-09 — Deterministic error mapping
 
@@ -325,24 +356,27 @@ The validator evaluates categories in this order:
 1. `FX_PHASE` for a missing or out-of-order phase input.
 2. `FX_FIXTURE_STATE` for a run-start harness-selection or fixture-count mismatch.
 3. `FX_CLOCK` for an inverted spawn interval.
-4. `FX_BASELINE` for a pre-spawn baseline mismatch.
-5. `FX_PATH_SET` for Claude path or cardinality mismatch.
-6. `FX_CODEX_RUNTIME_PATH` for a nonempty Codex runtime delta.
-7. `FX_TYPE` for symlink, wrong type, or special type.
-8. `FX_MODE` for a permission-mode mismatch.
-9. `FX_SIZE` for a sidecar outside the byte bound.
-10. `FX_JSON` for invalid UTF-8, invalid JSON, or duplicate member names.
-11. `FX_JSON_SHAPE` when `.claude.json` has a valid JSON top level other than an
+4. `FX_SNAPSHOT` for the C-08 runtime-snapshot acquisition failure.
+5. `FX_BASELINE` for a pre-spawn baseline mismatch.
+6. `FX_PATH_SET` for Claude path or cardinality mismatch.
+7. `FX_CODEX_RUNTIME_PATH` for a nonempty Codex runtime delta.
+8. `FX_TYPE` for symlink, wrong type, or special type.
+9. `FX_MODE` for a permission-mode mismatch.
+10. `FX_SIZE` for a sidecar outside the byte bound.
+11. `FX_JSON` for invalid UTF-8, invalid JSON, or duplicate member names.
+12. `FX_JSON_SHAPE` when `.claude.json` has a valid JSON top level other than an
     object.
-12. `FX_SIDECAR_SCHEMA` for a sidecar member-set or member-type mismatch.
-13. `FX_SIDECAR_SEMANTIC` for C-03 or C-04 value mismatch.
-14. `FX_FRESHNESS` for C-05 mismatch.
-15. `FX_IDENTITY_DRIFT` for C-06 cross-phase mismatch.
+13. `FX_SIDECAR_SCHEMA` for a sidecar member-set or member-type mismatch.
+14. `FX_SIDECAR_SEMANTIC` for C-03 or C-04 value mismatch.
+15. `FX_FRESHNESS` for C-05 mismatch.
+16. `FX_IDENTITY_DRIFT` for C-06 cross-phase mismatch.
 
 `FX_PHASE`, `FX_FIXTURE_STATE`, `FX_CLOCK`, `FX_BASELINE`, and `FX_PATH_SET` are
 set-level categories. Their refusal lines emit `path=-`, and the validator performs no
 path sort for them. For `FX_PATH_SET`, the validator does not construct a candidate for
-a missing expected path. Within each other category, the validator sorts observed
+a missing expected path. `FX_SNAPSHOT` uses the single-attempt operation and path order
+in C-08. It does not collect or sort failure candidates after the first acquisition
+failure. Within each other category, the validator sorts observed
 relative paths by raw byte order. If one observed path fails more than one predicate in
 that category, the validator selects the first failed predicate in the C-10 `checks`
 order. The refusal line's `clause` field names that predicate's mapped C-clause. This
@@ -412,12 +446,15 @@ The fields have these contracts:
   mapped C-clause of the first failed predicate selected by C-09.
 - `entries` is an array sorted by each entry's raw relative-path bytes. Each entry has
   keys `path`, `type`, `mode`, `size`, and `sha256` in that order. `path` is an evidence
-  token string. `type` is string `directory`, `regular`, `symlink`, or `other`. `mode`
-  is a string of exactly four digits matching `[0-7]{4}` for the permission and special
-  bits. `size` is the regular file's nonnegative integer byte size or JSON `null`. In a
-  pre-wake or post-turn record, `sha256` is the regular file's lowercase SHA-256 string
-  matching `[0-9a-f]{64}`; for run-start, pre-spawn, and a non-regular entry it is JSON
-  `null`.
+  token string. `type` is string `directory`, `regular`, `symlink`, or `other`, or JSON
+  `null` only for the failing path when `lstat` did not return metadata. `mode` is a
+  string of exactly four digits matching `[0-7]{4}` for the permission and special bits,
+  or JSON `null` when `lstat` did not return metadata. `size` is the regular file's
+  nonnegative integer byte size or JSON `null`. In a pre-wake or post-turn record,
+  `sha256` is the regular file's lowercase SHA-256 string matching `[0-9a-f]{64}` when
+  the one read completed. It is JSON `null` for run-start, pre-spawn, a non-regular
+  entry, a path without `lstat` metadata, or a regular entry whose bytes were not fully
+  captured because C-08 refused acquisition.
 - `checks` is an array that contains exactly the following objects in the listed order.
   Each object has keys `id`, `applicable`, `evaluated`, and `passed` in that order. The
   two state fields are booleans. `passed` is a boolean when `evaluated=true` and is JSON
@@ -428,56 +465,68 @@ The fixed check order is:
 1. `phase_order`
 2. `fixture_state`
 3. `clock_order`
-4. `baseline_equal`
-5. `path_set_equal`
-6. `codex_delta_empty`
-7. `entry_type_equal`
-8. `entry_mode_equal`
-9. `sidecar_size_bounded`
-10. `json_utf8_valid`
-11. `json_syntax_valid`
-12. `json_unique_members`
-13. `claude_json_object`
-14. `sidecar_member_set_equal`
-15. `sidecar_member_types_equal`
-16. `filename_pid_equal`
-17. `session_id_shape`
-18. `expected_cwd_equal`
-19. `proc_start_shape`
-20. `version_shape`
-21. `peer_protocol_equal`
-22. `kind_equal`
-23. `entrypoint_equal`
-24. `name_nonempty`
-25. `name_source_equal`
-26. `backup_epoch_in_interval`
-27. `started_at_in_interval`
-28. `identity_matches_pre_wake`
+4. `snapshot_acquired`
+5. `baseline_equal`
+6. `path_set_equal`
+7. `codex_delta_empty`
+8. `entry_type_equal`
+9. `entry_mode_equal`
+10. `sidecar_size_bounded`
+11. `json_utf8_valid`
+12. `json_syntax_valid`
+13. `json_unique_members`
+14. `claude_json_object`
+15. `sidecar_member_set_equal`
+16. `sidecar_member_types_equal`
+17. `filename_pid_equal`
+18. `session_id_shape`
+19. `expected_cwd_equal`
+20. `proc_start_shape`
+21. `version_shape`
+22. `peer_protocol_equal`
+23. `kind_equal`
+24. `entrypoint_equal`
+25. `name_nonempty`
+26. `name_source_equal`
+27. `backup_epoch_in_interval`
+28. `started_at_in_interval`
+29. `identity_matches_pre_wake`
 
-The validator maps checks 1, 2, and 4 to C-01; check 3 to C-05; checks 5, 7-9, and 13
-to C-02; check 6 to C-07; checks 10-12 to C-02 for `.claude.json` or the backup and to
-C-04 for the sidecar; checks 14 and 15 to C-04; check 16 to C-03; checks 17-25 to
-C-04; checks 26 and 27 to C-05; and check 28 to C-06.
+The validator maps checks 1, 2, and 5 to C-01; check 3 to C-05; check 4 to C-08;
+checks 6, 8-10, and 14 to C-02; check 7 to C-07; checks 11-13 to C-02 for
+`.claude.json` or the backup and to C-04 for the sidecar; checks 15 and 16 to C-04;
+check 17 to C-03; checks 18-26 to C-04; checks 27 and 28 to C-05; and check 29 to C-06.
 
-Each record uses these exact entry and applicability rules. A listed range includes
-both endpoints. Every unlisted check is `applicable=false`, `evaluated=false`, and
-`passed=null`.
+When `snapshot_acquired` passes, each record uses the exact entry rules in this table.
+On `FX_SNAPSHOT`, the partial-entry paragraph below replaces only the table's `entries`
+content; check applicability remains unchanged. A listed range includes both endpoints.
+Every unlisted check is `applicable=false`, `evaluated=false`, and `passed=null`.
 
 | Record | `entries` content | Applicable checks |
 | --- | --- | --- |
 | Run-start | Empty array | 1-2 |
-| Claude pre-spawn | Complete recursive projected-home path set after subtracting only baseline ancestor directories | 1, 4 |
-| Codex pre-spawn | Complete recursive projected-home path set after subtracting only baseline ancestor directories | 1, 4 |
-| Claude pre-wake | Complete Claude runtime delta | 1, 3, 5, 7-27 |
-| Claude post-turn | Complete Claude runtime delta | 1, 3, 5, 7-28 |
-| Codex pre-wake | Complete Codex runtime delta | 1, 6 |
-| Codex post-turn | Complete Codex runtime delta | 1, 6 |
+| Claude pre-spawn | Complete recursive projected-home path set after subtracting only baseline ancestor directories | 1, 4-5 |
+| Codex pre-spawn | Complete recursive projected-home path set after subtracting only baseline ancestor directories | 1, 4-5 |
+| Claude pre-wake | Complete Claude runtime delta | 1, 3-4, 6, 8-28 |
+| Claude post-turn | Complete Claude runtime delta | 1, 3-4, 6, 8-29 |
+| Codex pre-wake | Complete Codex runtime delta | 1, 4, 7 |
+| Codex post-turn | Complete Codex runtime delta | 1, 4, 7 |
 
 A validator evaluates applicable checks in fixed numeric order. If one fails, each
 later applicable check is `applicable=true`, `evaluated=false`, and `passed=null`.
 `identity_matches_pre_wake` is therefore inapplicable at Claude pre-wake and applicable
 at Claude post-turn. For an entry whose type is not `regular`, `size` and `sha256` are
 `null`; the validator never follows a symlink to populate them.
+
+On `FX_SNAPSHOT`, the record's `entries` array contains each entry whose `lstat`
+metadata and required bytes were captured before the failure, plus the failing observed
+path. It omits unprocessed paths and does not claim to be a complete runtime delta. If
+projected-home enumeration fails, `entries` is empty. If `lstat` fails, the failing
+entry has `type=null`, `mode=null`, `size=null`, and `sha256=null`. If open,
+type-stability, or read fails, the failing entry retains its captured `lstat` fields and
+has `sha256=null`. Check `snapshot_acquired` is `evaluated=true` and `passed=false`;
+each later applicable check is unevaluated. The record has `result="refused"` and
+`cause="C-08"`. No record field contains the raw operating-system error.
 
 The fixture writes JSON strings using their stated ASCII tokens, appends one LF byte,
 and emits no other byte to the evidence file. It does not record JSON bytes, decoded
@@ -560,7 +609,7 @@ The Given/When/Then examples in C-01 through C-12 are part of this acceptance co
 | AC-22 | Sidecar has 4097 bytes | Size validation runs | `FX_SIZE` refuses it before JSON decoding | C-02, C-09 |
 | AC-23 | `.claude.json` contains the valid JSON value `[]` | JSON-shape validation runs | `FX_JSON_SHAPE` refuses it | C-02, C-09 |
 | AC-24 | The Codex leg writes one runtime path | That leg's validation runs | `FX_CODEX_RUNTIME_PATH` refuses it without inspecting the Claude home | C-07 |
-| AC-25 | One path fails multiple predicates and another path fails in the same or a later error category | The case runs repeatedly | Each run returns the same first code, phase, path evidence token, and clause selected by category, raw path, then C-10 predicate order | C-09-C-10 |
+| AC-25 | Snapshot acquisition succeeds, one path fails multiple predicates, and another path fails in the same or a later error category | The case runs repeatedly | Each run returns the same first code, phase, path evidence token, and clause selected by category, raw path, then C-10 predicate order | C-09-C-10 |
 | AC-26 | One full matrix passes | Both per-leg cleanup blocks complete | The retained mode-0600 evidence file contains exactly seven synced LF-terminated canonical JSON records with contiguous sequence values, `cause="validated"`, exact `entries` and `checks`, and no decoded JSON values or observed file bytes | C-10 |
 | AC-27 | One fixture reaches harness spawn and refuses | Cleanup completes | The fixture base remains, no observed runtime path is fixture-mutated before lifecycle cleanup, and no second fixture starts | C-06, C-08, C-10 |
 | AC-28 | Reviewed-clean contract and explicit release exist | One-file implementation begins | Only `scripts/feature_smoke.exs` changes from current `origin/0.1.9` | C-11-C-12 |
@@ -571,12 +620,17 @@ The Given/When/Then examples in C-01 through C-12 are part of this acceptance co
 | AC-33 | The evidence path already exists | Exclusive creation runs | `FX_EVIDENCE` refuses before run-start validation, writes no evidence record, and does not delete, replace, or change the existing path | C-10 |
 | AC-34 | An evidence append or `:file.sync/1` fails after spawn | The current phase writes evidence | The console `FX_EVIDENCE` line is the only guaranteed evidence; the fixture makes no completeness or durability claim for the current-phase record, performs no retry, fallback sink, or secondary append, starts no later admission, wake, or sentinel action, and still runs existing cleanup | I-12, C-10 |
 | AC-35 | One required Claude path is missing and one unexpected path exists | Whole-set validation runs repeatedly | Each run returns `FX_PATH_SET` with `path=-`; the validator neither constructs a missing-path candidate nor sorts the unexpected path for this category | C-02, C-09 |
+| AC-36 | Projected-home enumeration returns an error | The single snapshot attempt runs | `FX_SNAPSHOT` refuses with `path=-`, an empty `entries` array, `snapshot_acquired` evaluated and false, and no retry | C-08-C-10 |
+| AC-37 | `lstat` returns an error for observed path `sessions/2.json` | The single snapshot attempt reaches that path | `FX_SNAPSHOT` refuses with `path=sessions/2.json`; the failing entry has null type, mode, size, and hash | C-08-C-10 |
+| AC-38 | `.claude.json` has captured regular-file metadata and its single open returns an error | The snapshot attempts byte capture | `FX_SNAPSHOT` refuses with `path=.claude.json`; its captured metadata remains, `sha256=null`, and `FX_MODE` is not evaluated | C-08-C-10 |
+| AC-39 | A regular sidecar read returns an error before EOF | The snapshot attempts byte capture | `FX_SNAPSHOT` refuses with the sidecar path, `sha256=null`, and no second read or snapshot | C-08-C-10 |
+| AC-40 | The opened object is not regular after `lstat` reported a regular path | The snapshot verifies the opened type | `FX_SNAPSHOT` refuses with that path and no fallback reader | C-08-C-10 |
 
 ## Open Questions
 
-None. Findings F5-F6 in `att_daa01a05-41c1-4e41-995b-7e5db6afc63c` are closed under
-`dr_fb80acd4-8634-47be-a9ca-b576b43412b4`. One fresh linked review decides whether
-the exact reamended artifact is reviewed-clean.
+None. Finding F7 in `att_af1b4ab8-55d6-4f74-b5b4-1c753668d05b` is closed under
+`dr_7262873b-27b3-4d35-8a15-15bcd7e277e1`. One fresh linked review decides whether
+the exact amended artifact is reviewed-clean.
 
 The following resolved boundaries remain gates, not open questions:
 
