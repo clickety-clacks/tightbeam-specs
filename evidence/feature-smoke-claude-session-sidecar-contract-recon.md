@@ -44,13 +44,24 @@ F8-amendment readback on 2026-08-29 UTC, before the new seal:
   `dr_9a179914-0d23-440b-9a3b-4577e0d0c707`, ruled
   `authorize-f8-object-identity-rework-and-review`.
 
+Creation-mode amendment readback on 2026-08-29 UTC, before this seal:
+
+- Work item remains open with 57 assignment rows and 1,942 timeline events, including
+  911 attest events.
+- Canonical key-sorted compact full work-item trace SHA-256:
+  `a81fa2c4635b493769c2330a2e45e4eb943332d5e3b7488beb8f0501b143b669`.
+- `specRefName` and `specRefSha256` remain null. The existing pushed-commit and
+  hash-bearing-attest binding authorized by `dr_e649588d` remains the supported seal.
+- Decision request `dr_16de6d11-492c-4ec4-aaa2-6cb1a03d4d7d` is ruled exact
+  `contract-amendment`.
+
 ## Authority and preserved state
 
 | Source | Material ruling or fact |
 | --- | --- |
 | `att_d0b6affe-af19-44f5-9d6e-ca24292d9743` | Class 12: final fixture is consumed; future release needs a strict fixture-only `sessions/<positive-numeric>.json` contract independent of launcher `osPid`, then one fresh same smoke. |
 | `att_a134b512-0dd2-4f24-b1d7-7d56e6dca9bf` | Fact 390 blocks the parent holder. Facts 373, 384, and 387, parent commit, surrendered history, and custody remain frozen. |
-| `att_d694b965-8471-46df-842d-5ef915372aa8` | The initial assignment boundary allowed contract and recon artifacts plus a ready-or-blocked verdict. Later Mike rulings `dr_5fd346df`, `dr_fb80acd4`, `dr_7262873b`, and `dr_9a179914` add only their four bounded amendments, seals, and reviews. Fixture, smoke, implementation, integration, and live mutation remain forbidden. |
+| `att_d694b965-8471-46df-842d-5ef915372aa8` | The initial assignment boundary allowed contract and recon artifacts plus a ready-or-blocked verdict. Later Mike rulings `dr_5fd346df`, `dr_fb80acd4`, `dr_7262873b`, `dr_9a179914`, and `dr_16de6d11` add only their five bounded amendments, seals, and reviews. Fixture, smoke, implementation, integration, and live mutation remain forbidden. |
 | `att_15121266-f5e8-4cbc-bd4b-22dae1ca2bbd` | Claude-only `.claude.json`, one bounded backup, and the `sessions` runtime namespace are fixture surfaces. Evidence excludes file contents. |
 | `att_32e44600-c470-4b16-b9a9-54381992ce9a` | A sidecar is present after successful spawn and tuning, before the first wake. The earlier empty-pre-turn assumption is false. |
 | `att_3db588ec-91b1-4af8-a3af-84eb98186fa7` | The last authorized replacement fixture was one-shot. A new mismatch had to stop without another live attempt. |
@@ -65,6 +76,9 @@ F8-amendment readback on 2026-08-29 UTC, before the new seal:
 | `dr_7262873b-27b3-4d35-8a15-15bcd7e277e1` | Mike authorized one bounded contract-and-recon amendment for F7, a new seal, and one fresh linked review. |
 | `att_101f8af2-6694-4389-8dc0-b39883077f48` | The F7 review accepted F1-F6 and the F7 refusal shape. It found F8: OTP 28.5 has no supported no-follow open mode under one-file custody. |
 | `dr_9a179914-0d23-440b-9a3b-4577e0d0c707` | Mike authorized one bounded contract-and-recon amendment for F8, a new exact seal, and one fresh linked review. |
+| `att_e167466a-8063-4d59-8d92-67750584cf7a` | Exact product commit `08e55de896106aa7fcc2ea7f60f1357e5d6cf772` is changes-requested because OTP requests `0666` and a later descriptor chmod leaves a creation-time mode window. The full clause report is `art_cdbca6e1`, SHA-256 `caa8b4f85ea9285b41520a8df2ddb7e73990c5ed084774a837ab6989df9ec358`. |
+| `att_619caef0-d33a-49ce-966e-242b919e985e` | The coder proved that OTP 28.5 exposes no create-permission option in the settled one-file boundary. The mechanism report is `art_b1641827`, SHA-256 `9f7dce8804fa1e3b96865594b58c4fbbd4b885ea789dd489c30a06886656c76f`. |
+| `dr_16de6d11-492c-4ec4-aaa2-6cb1a03d4d7d` | Mike selected `contract-amendment`: replace the unsupported literal request-mode requirement with an exact effective-0600 launch-umask contract, reseal, and re-review before code changes. |
 | Parent commit `5f4341130419c4bae21bdd6c2278185dcd0f89a5` | Frozen execution-start observability implementation. Five files, 1,375 added lines. This contract does not modify it. |
 | Product assignment `asg_17a50f66-c32d-42f2-aba5-dd39e072203e` | Frozen original base-synchronization product lane. This contract does not resume it. |
 
@@ -117,6 +131,13 @@ Before the F8 amendment, the owned branch fetched `origin/main` again. Remote `m
 remained exact `9ddcb07a779ee9f73285f5bfa54898651e781f13`, which is already an ancestor of
 reviewed commit `cf6653ede091b5ef20d0474c312e0bf611020814`. No merge or contract edit was
 required to synchronize the base.
+
+Before the creation-mode amendment, the owned branch fetched `origin/main` again.
+Remote `main` remained exact `9ddcb07a779ee9f73285f5bfa54898651e781f13`, which is
+already an ancestor of reviewed commit
+`7717ec827a7448b9b99518d2518383c43c8bd82a`. The worktree was clean, and no merge or
+artifact edit was required to synchronize the base. Product commit
+`08e55de896106aa7fcc2ea7f60f1357e5d6cf772` remains preserved and unmodified.
 
 ## Read-only F8 mechanism validation
 
@@ -239,8 +260,9 @@ decide whether a lifecycle event occurred.
 
 ### D-04 — Content-free, mechanically replayable evidence
 
-The validator may decode bytes to decide. It exclusive-creates one retained mode-0600
-JSONL file under the fixture base. A passing matrix writes exactly seven synced,
+The validator may decode bytes to decide. Under the exact C-12 launch envelope, it
+exclusive-creates one retained effective-mode-0600 JSONL file under the fixture base.
+A passing matrix writes exactly seven synced,
 LF-terminated records: one run-start record and pre-spawn, pre-wake, and post-turn
 records for each harness leg. Each record uses the contract's exact key order, entry
 shape, 29-check order, result, cause, and phase-specific applicability. Durable
@@ -340,6 +362,38 @@ The amendment adds no undocumented open mode, helper, subprocess, native depende
 retry, fallback reader, second snapshot, path admission, implementation file, fixture
 attempt, or live authority.
 
+### D-11 — The creation-mode amendment binds effective mode to launch provenance
+
+The exact product review at `att_e167466a-8063-4d59-8d92-67750584cf7a` proved that a
+post-create descriptor chmod cannot satisfy C-10's creation-time claim. Mechanism
+report `art_b1641827` proved that Unix OTP 28.5 requests `0666` for the documented
+exclusive raw open and exposes no supported create-permission option.
+
+Mike selected `contract-amendment` in
+`dr_16de6d11-492c-4ec4-aaa2-6cb1a03d4d7d`. The amendment therefore makes these exact
+changes:
+
+1. The release launcher uses a new Gibson zsh subshell, sets exact umask `0077`, and
+   execs the existing Mix command. Required environment variables are already
+   exported.
+2. C-10 states the supported mechanism: OTP requests `0666`; the kernel applies the
+   inherited `0077`; the new inode's effective creation mode is `0600`.
+3. The fixture retains the first exclusive-open handle and verifies handle type, path
+   type, exact mode, and regular-object identity. It does not chmod or reopen the path.
+4. From prior mask `000`, a descendant-following Gibson system-call trace proves the
+   exact `0077` launch umask, exec, create request mode, first metadata mode, and
+   absence of a chmod-family repair or second evidence-path open.
+5. An ambient umask is insufficient. A run without the exact envelope and trace is not
+   release evidence even when its resulting mode is `0600`.
+6. After reviewed-clean, the opener re-releases only the C-10 correction on already
+   open one-file assignment `asg_0c3a45b1`; it does not open a duplicate implementation
+   assignment.
+
+The zsh envelope and trace are release controls outside product code. They add no
+product file, linked library, fixture subprocess, native dependency, admitted runtime
+path, evidence path, retry, fixture attempt, or live authority. Implementation custody
+remains `scripts/feature_smoke.exs` only.
+
 ## Declined alternatives
 
 | Alternative | Decision |
@@ -357,6 +411,10 @@ attempt, or live authority.
 | Take a second runtime snapshot after acquisition failure | Declined. It can observe a different path set and hides the first acquisition failure. |
 | Pass `:no_follow` to `:file.open/2` | Declined. OTP 28.5 does not document or implement that mode; it accepts the atom and follows a symlink. |
 | Add an external helper, subprocess, NIF, or native dependency for `O_NOFOLLOW` | Declined. Mike authorized the supported one-file object-identity amendment, not a new dependency or custody surface. |
+| Claim that OTP requests creation mode `0600` | Declined. OTP 28.5 requests `0666`; the exact launch umask produces effective mode `0600`. |
+| Create under an ambient umask and chmod the retained descriptor to `0600` | Declined. Ambient launch provenance is unbound, and chmod cannot remove the broader creation-time interval. |
+| Add a native create primitive after `dr_16de6d11` | Declined for this lane. Mike selected the contract-amendment option, not the native-primitive option. |
+| Treat the exact zsh launch envelope as a product helper | Declined. It is the release launcher that establishes inherited process state before Mix starts; product code neither invokes nor owns it. |
 | Rely on opened-object type without identity continuity | Declined. A replacement symlink can resolve to a different regular object. |
 | Validate both harness homes in one shared phase | Declined. It makes the sequential lifecycle and failure boundary undecidable. |
 | Use a wildcard 0.1 implementation-branch placeholder | Declined. Mike designated `origin/0.1.9` as the sole 0.1 branch. |
@@ -384,12 +442,13 @@ with deterministic cases and one real fresh matrix.
 | C-06 | `att_3db588ec`; `att_d0b6affe`; one-shot fixture history | Exact phase-local backup cardinality, cross-phase sidecar identity, and no-reuse cases. |
 | C-07 | Parent `att_cbdc7419`; assignment scope | Empty Codex delta and a plugin-cache negative case. |
 | C-08-C-09 | Engineering tenet to report dirt; law wisdom 4-5; first-review F4; successor F6; final-review F7; F7-review F8 | Emit set-level `FX_PATH_SET` with `path=-`; use documented OTP operations and three-way regular-object identity continuity during one read; emit ordered `FX_SNAPSHOT` for the single acquisition attempt; otherwise select first failure by category, observed raw path, then fixed predicate order. |
-| C-10 | `att_15121266`; assignment evidence boundary; first-review F2; successor F5; final-review F7; F7-review F8 | Exact retained mode-0600 JSONL path, seven-record passing cardinality, validator-refusal truncation, 29 fixed checks, hashes and booleans, identity-failure hash boundary, null uncaptured snapshot fields, and no identity values, decoded values, bytes, or OS error text. |
+| C-10 | `att_15121266`; assignment evidence boundary; first-review F2; successor F5; final-review F7; F7-review F8; implementation review `att_e167466a`; `dr_16de6d11` | Exact retained mode-0600 JSONL path born from OTP `0666` exclusive create under exact inherited umask `0077`; same-handle type, mode, and identity proof; no chmod repair; seven-record passing cardinality; validator-refusal truncation; 29 fixed checks; hashes and booleans; identity-failure hash boundary; null uncaptured snapshot fields; and no identity values, decoded values, bytes, or OS error text. |
 | C-11 | Assignment custody; Mike branch correction; first-review F3 | One-file diff from synchronized `origin/0.1.9` and custody check. |
-| C-12 | `att_d694b965`; `spec-handoff`; `AGENTS.md` live-smoke law | Reviewed hash, explicit release, deterministic gates, one fresh matrix, linked exact-commit review. |
+| C-12 | `att_d694b965`; `spec-handoff`; `AGENTS.md` live-smoke law; `dr_16de6d11` | Reviewed hash, explicit release, synchronized green product base, exact umask launch envelopes, hash-bearing syscall trace, deterministic gates, one fresh matrix, and linked exact-commit review. |
 | AC-29 | Reviewed base-sync AC-56; `AGENTS.md`; first-review F1-F2 | One sequential Claude-plus-Codex matrix after repository gates, with separate leg observations and seven retained records. |
 | AC-34-AC-35 | Successor-review F5-F6; `dr_fb80acd4` | Console-only sink-failure evidence and deterministic `path=-` for missing-plus-extra set refusal. |
 | AC-36-AC-42 | Final-review F7; F7-review F8; `dr_7262873b`; `dr_9a179914` | Deterministic single-attempt snapshot refusal for enumeration, metadata, open, read, opened-type, and regular-object identity failure. |
+| AC-43-AC-44 | Implementation review `att_e167466a`; mechanism report `art_b1641827`; `dr_16de6d11` | Prove exact umask-before-exec provenance, OTP request mode `0666`, effective creation mode `0600`, and rejection of an untraced ambient-umask run. |
 | I-11, AC-31 | Facts 373/384/387/390; parent and product cards | Readback proves frozen identifiers unchanged before handoff. |
 
 Reverse trace check:
@@ -453,6 +512,19 @@ handle remains open. It added no helper, dependency, retry, fallback reader, sec
 snapshot, admitted path, implementation file, fixture attempt, or live authority. A
 fresh review must decide the new exact hashes.
 
+The clean F8 successor review accepted exact contract commit
+`7717ec827a7448b9b99518d2518383c43c8bd82a` at verdict `att_2bccd776` and report
+`art_9eb7b175`, SHA-256
+`f1ea876de2e6c1af0e7342397997074fbf6efcca057bd605c2a98c7a54b75a42`. Product
+implementation then reached exact commit
+`08e55de896106aa7fcc2ea7f60f1357e5d6cf772`. Its independent review found the
+creation-time mode defect at `att_e167466a`; the coder's `art_b1641827` proved the OTP
+mechanism boundary. Mike selected `contract-amendment` in `dr_16de6d11`. This digest
+replaced the false OTP request-mode claim with exact launch provenance, kernel-applied
+effective mode, same-handle verification, and a hash-bearing system-call trace. It
+added no product file, runtime helper, dependency, fixture attempt, or live authority.
+A fresh review must decide the new exact hashes before any product correction.
+
 During digest scheduling, the liveness monitor issued three false no-continuation
 prods although wake `w_31ff3a98-8ed9-4ae0-844c-994145a6deb6` was scheduled. The exact
 specimen receipts are `att_175f30de-6940-423c-bc35-cbd47a00712e`,
@@ -479,6 +551,9 @@ all prior reviews and rework rulings, and the cited attests, and decide:
 11. whether F8 uses only supported OTP 28 operations and requires the same observed
     regular-object identity before open, on the open handle, and after the read without
     widening one-file custody.
+12. whether the creation-mode amendment states OTP's `0666` request truthfully, binds
+    exact umask `0077` before exec, proves effective mode `0600` without chmod repair,
+    and keeps the launch trace outside product custody and runtime dependencies.
 
 The reviewer records `reviewed-clean` or precise `changes-requested`. The reviewer does
 not edit, implement, run a fixture, resume the parent, or mutate facts.

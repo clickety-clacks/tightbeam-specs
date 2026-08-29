@@ -10,6 +10,9 @@ Producer assignment: `asg_ee922fe3-3005-406b-af46-82cb4ffa2d10`
 
 Controlling ruling: `att_d0b6affe-af19-44f5-9d6e-ca24292d9743`
 
+Creation-mode amendment ruling: `dr_16de6d11-492c-4ec4-aaa2-6cb1a03d4d7d`,
+`contract-amendment`
+
 Blocked parent: `asg_6f2a530d-19b4-417b-91f8-fafa4e5257cc`, frozen commit
 `5f4341130419c4bae21bdd6c2278185dcd0f89a5`
 
@@ -92,21 +95,32 @@ unexpected-path refusal.
 - **Canonical positive numeric stem**: a nonempty decimal string that matches
   `[1-9][0-9]*`. It contains no sign, prefix, leading zero, exponent, decimal point, or
   whitespace.
-- **Permission mode**: the `lstat` mode's permission and special-bit portion. An exact
-  mode such as `0644` requires those nine permission bits and requires set-user-ID,
-  set-group-ID, and sticky bits to be zero. File type is checked separately.
+- **Permission mode**: the OTP file-information mode's permission and special-bit
+  portion. An exact mode such as `0644` requires those nine permission bits and
+  requires set-user-ID, set-group-ID, and sticky bits to be zero. File type is checked
+  separately.
 - **Regular-object identity**: the three-integer tuple `major_device`, `minor_device`,
   and `inode` returned in OTP file information. The validator compares this tuple only
   while one file handle remains open. It does not record the integers in evidence.
+- **Feature-smoke launch envelope**: a new Gibson zsh subshell that sets its process
+  umask to exact octal `0077` and then replaces itself with the existing Mix
+  invocation. The exact live form is
+  `(umask 077 && exec mix run --no-start scripts/feature_smoke.exs)`. The parent shell
+  exports every required live-run environment variable before it starts this envelope.
+  No fixture code reads or changes the process umask.
+- **Effective creation mode**: the permission bits assigned when the kernel creates an
+  inode. For the evidence file, OTP 28.5 requests `0666` and the inherited exact umask
+  `0077` removes group and other bits, so the effective creation mode is exact `0600`.
+  This term does not mean that OTP requests mode `0600`.
 - **Claude sidecar**: the sole regular file at
   `sessions/<canonical-positive-numeric-stem>.json` in the Claude runtime delta.
 - **Sidecar identity**: the tuple `pid`, `sessionId`, `cwd`, `startedAt`, and
   `procStart` decoded from a valid Claude sidecar.
 - **Evidence file**: the non-symlink regular mode-0600 file
-  `<fixture-base>/feature-smoke-home-evidence.jsonl`. The fixture creates it with
-  exclusive-create semantics before run-start validation and retains it with the
-  consumed fixture base through cleanup. A preexisting path refuses the fixture before
-  credential preflight.
+  `<fixture-base>/feature-smoke-home-evidence.jsonl`. The launch envelope and the
+  fixture's exclusive OTP open create it with effective mode `0600` before run-start
+  validation. The fixture retains the same open object with the consumed fixture base
+  through cleanup. A preexisting path refuses the fixture before credential preflight.
 - **Evidence record**: one UTF-8 JSON object and one trailing LF byte in the evidence
   file, serialized exactly as C-10 defines. It records captured file metadata, hashes,
   predicate outcomes, result, cause, and principal. A C-08 acquisition refusal records
@@ -147,6 +161,11 @@ unexpected-path refusal.
   `major_device`, `minor_device`, and `inode` fields for a regular file, and the latter
   function accepts an open raw file handle. A future implementer confirms this seam on
   the synchronized implementation base before editing. A mismatch returns for ruling.
+- AS-11. On the authorized Gibson runtime, Unix OTP 28.5 issues create mode `0666` for
+  the documented exclusive raw file open in C-10, and the kernel applies the inherited
+  process umask before the new inode becomes observable. The implementer confirms both
+  facts on the synchronized base with the C-12 trace gate. A mismatch returns for
+  ruling.
 
 ## Invariants
 
@@ -174,6 +193,9 @@ unexpected-path refusal.
   When evidence append and sync succeed, it records the refusal before lifecycle
   cleanup can remove that path. An evidence-sink failure follows the console-only
   boundary in C-10.
+- I-13. Every accepted deterministic case-only run and live matrix uses the exact
+  feature-smoke launch envelope. The fixture does not chmod, replace, or reopen the
+  evidence path to obtain mode `0600` after creation.
 
 ## Architecture
 
@@ -436,17 +458,32 @@ the validator returns `FX_SIDECAR_SEMANTIC` with `clause=C-03` because
 
 ### C-10 — Evidence and cleanup boundary
 
-Before run-start validation, the fixture creates the evidence file defined in Terms.
-It requests exclusive creation with mode `0600` and verifies by `lstat` that the new
-path is a non-symlink regular file with exact permission mode `0600`. If the path
-exists, creation fails, or that verification fails, the fixture emits this one line
-and stops before run-start validation without deleting, replacing, or changing the
-path:
+Before run-start validation, the C-12 launch envelope has set exact umask `0077` and
+replaced its subshell with the Mix process. The fixture opens the evidence path once
+with documented OTP modes `[:read, :write, :exclusive, :binary, :raw]`. On Unix OTP
+28.5 this exclusive create requests mode `0666`; the inherited `0077` umask makes the
+new inode's effective creation mode exact `0600`. The fixture does not request mode
+`0600` from OTP. It does not call `chmod`, `fchmod`, `:file.change_mode/2`, a helper,
+or a native dependency before or after the open.
+
+While the new handle remains open, the fixture obtains file information from that
+handle and obtains `lstat` information for the path. It requires both observations to
+be regular files with exact permission mode `0600`, and it requires their
+regular-object identities to be equal. The fixture retains that same handle as the
+sole evidence writer. If the path exists, creation fails, either information operation
+fails, either type or mode differs, or the identities differ, the fixture emits this
+one line and stops before run-start validation without deleting, replacing, chmodding,
+or reopening the path:
 
 `feature-smoke fixture HOME REFUSED code=FX_EVIDENCE harness=all phase=run-start principal=run-start path=feature-smoke-home-evidence.jsonl clause=C-10`
 
 This pre-record refusal creates no evidence record. It precedes the C-09 category
 order because no valid evidence file exists in which to record a check.
+
+An invocation outside the exact launch envelope is not release evidence, even when an
+ambient umask happens to produce mode `0600`. C-12 binds launch provenance to a
+system-call trace. The trace is release evidence outside product code; it is not a
+fixture helper, runtime dependency, or additional implementation file.
 
 For each phase, the fixture makes one evidence-record append attempt. If that append
 succeeds, the fixture requires `:file.sync(evidence_io_device)` to return `:ok` before
@@ -596,6 +633,10 @@ the existing exact-home proof.
 The builder may read the surrendered one-file diff as evidence. The builder derives
 behavior from this contract and does not treat the diff as authority.
 
+The C-12 zsh subshell and system-call trace do not add a product file, linked
+library, fixture subprocess, or runtime helper. The product implementation remains one
+file and uses only the documented OTP operations in C-08 and C-10.
+
 Acceptance example: Given an implementation proposal that also changes
 `lib/tightbeam/homes.ex`, when custody is checked, then implementation stops before an
 edit and reports the additional-file requirement to the opener.
@@ -609,13 +650,41 @@ The release sequence is:
    linked to this producer assignment.
 3. After `reviewed-clean`, the opener explicitly releases the Class 12 block and opens
    one one-file implementation assignment.
-4. The implementer proves deterministic allow and reject cases, format, syntax,
-   `git diff --check`, and the repository gate before a live fixture.
+4. Before coding or a post-review correction, the implementer synchronizes and
+   verifies a green `origin/0.1.9` in the owned product workspace. The implementer then
+   proves deterministic allow and reject cases, format, syntax, `git diff --check`, and
+   the repository gate before a live fixture. The case-only command runs in this exact
+   envelope:
+   `(export TIGHTBEAM_SMOKE_HOME_CASES_ONLY=1 && umask 077 && exec mix run --no-start scripts/feature_smoke.exs)`.
 5. The opener authorizes one new never-reused full Claude-plus-Codex fixture.
-6. The implementer runs the full matrix once and records pass evidence or the exact
-   first blocker.
+6. The implementer runs the full matrix once with
+   `(umask 077 && exec mix run --no-start scripts/feature_smoke.exs)` and records pass
+   evidence or the exact first blocker.
 7. A passing implementation returns for one fresh linked independent exact-commit
    review before the parent lane resumes.
+
+For this creation-mode amendment cycle, one-file implementation assignment
+`asg_0c3a45b1-d0ac-499d-b55e-2b7743a11c21` is already open. Step 3 means that the
+opener explicitly re-releases only the reviewed C-10 correction on that assignment.
+The opener does not create a second implementation assignment.
+
+Before step 5, the implementer records one Gibson system-call trace of the exact
+case-only envelope. The trace starts at the subshell, follows descendants, and proves
+this order: the traced subshell's umask call sets `0077` and returns prior mask `000`;
+it execs Mix; OTP exclusively creates the evidence path with request mode `0666`; the
+fixture's first handle and path metadata observations both report exact mode `0600`.
+The trace contains no `chmod`, `fchmod`,
+`fchmodat`, or second open of that evidence path. The implementer records the trace
+command, tool version, result, and SHA-256. The trace artifact is evidence only and is
+not copied into either repository.
+
+The system-call trace is one Gibson `strace -f -yy -s 4096` capture. Its selected
+system calls are exactly `umask`, `execve`, `open`, `openat`, `openat2`, `fstat`,
+`newfstatat`, `statx`, `chmod`, `fchmod`, `fchmodat`, and `fchmodat2`. It decodes
+file-status mode results. It does not request environment strings or file-buffer
+contents. Before recording the artifact, the implementer verifies that it contains no
+credential value. If the installed tracer cannot select or decode those supported host
+events, the implementer stops before step 5 and returns the exact blocker for ruling.
 
 Acceptance example: Given a reviewed-clean contract but no opener release, when a
 worker proposes a fixture run, then the worker remains blocked and does not create the
@@ -653,7 +722,7 @@ The Given/When/Then examples in C-01 through C-12 are part of this acceptance co
 | AC-23 | `.claude.json` contains the valid JSON value `[]` | JSON-shape validation runs | `FX_JSON_SHAPE` refuses it | C-02, C-09 |
 | AC-24 | The Codex leg writes one runtime path | That leg's validation runs | `FX_CODEX_RUNTIME_PATH` refuses it without inspecting the Claude home | C-07 |
 | AC-25 | Snapshot acquisition succeeds, one path fails multiple predicates, and another path fails in the same or a later error category | The case runs repeatedly | Each run returns the same first code, phase, path evidence token, and clause selected by category, raw path, then C-10 predicate order | C-09-C-10 |
-| AC-26 | One full matrix passes | Both per-leg cleanup blocks complete | The retained mode-0600 evidence file contains exactly seven synced LF-terminated canonical JSON records with contiguous sequence values, `cause="validated"`, exact `entries` and `checks`, and no decoded JSON values or observed file bytes | C-10 |
+| AC-26 | One full matrix uses the exact live launch envelope and passes | Both per-leg cleanup blocks complete | The evidence file was created with effective mode `0600` and the retained file contains exactly seven synced LF-terminated canonical JSON records with contiguous sequence values, `cause="validated"`, exact `entries` and `checks`, and no decoded JSON values or observed file bytes | C-10, C-12 |
 | AC-27 | One fixture reaches harness spawn and refuses | Cleanup completes | The fixture base remains, no observed runtime path is fixture-mutated before lifecycle cleanup, and no second fixture starts | C-06, C-08, C-10 |
 | AC-28 | Reviewed-clean contract and explicit release exist | One-file implementation begins | Only `scripts/feature_smoke.exs` changes from current `origin/0.1.9` | C-11-C-12 |
 | AC-29 | Deterministic cases and repository gates pass | One fresh full matrix runs | One Claude leg completes first and one Codex leg completes second; Claude passes its own pre-wake and post-turn sidecar records; Codex passes its own empty-delta pre-wake and post-turn records; neither leg inspects the other home; the evidence file contains seven records | C-01-C-12 |
@@ -670,12 +739,16 @@ The Given/When/Then examples in C-01 through C-12 are part of this acceptance co
 | AC-40 | The opened object is not regular after initial `lstat` reported a regular path | The snapshot verifies the opened type | `FX_SNAPSHOT` refuses with that path, `sha256=null`, and no fallback reader | C-08-C-10 |
 | AC-41 | Initial `lstat` reports regular-object identity A and the opened handle reports regular-object identity B | The snapshot compares identities before reading | `FX_SNAPSHOT` refuses with that path, `sha256=null`, and no read, fallback, or retry | C-08-C-10 |
 | AC-42 | Initial `lstat` and the opened handle report regular-object identity A, the read completes, and final `lstat` reports a symlink or identity B | The snapshot performs its final identity check while the handle remains open | `FX_SNAPSHOT` refuses with that path, retains the captured SHA-256, and does not take another snapshot | C-08-C-10 |
+| AC-43 | The caller has ambient umask `000` and the case-only launch envelope starts under a descendant-following system-call trace | The deterministic case creates the evidence path | The traced umask call sets `0077` and returns prior mask `000`; the trace then orders Mix/BEAM exec and one exclusive create request with mode `0666`; the first handle and path metadata observations report exact mode `0600`; the trace contains no chmod-family call or second evidence-path open | AS-11, I-13, C-10-C-12 |
+| AC-44 | Ambient umask would independently yield mode `0600`, but the exact launch envelope or its trace is absent | Release evidence is evaluated | The run is nonconforming and cannot authorize the live matrix or parent lane | I-13, C-10-C-12 |
 
 ## Open Questions
 
 None. Finding F8 in `att_101f8af2-6694-4389-8dc0-b39883077f48` is closed under
-`dr_9a179914-0d23-440b-9a3b-4577e0d0c707`. One fresh linked review decides whether
-the exact amended artifact is reviewed-clean.
+`dr_9a179914-0d23-440b-9a3b-4577e0d0c707`. The implementation-review create-mode
+finding in `att_e167466a-8063-4d59-8d92-67750584cf7a` is resolved normatively by Mike's
+`contract-amendment` ruling in `dr_16de6d11-492c-4ec4-aaa2-6cb1a03d4d7d`. One fresh
+linked review decides whether the exact amended artifact is reviewed-clean.
 
 The following resolved boundaries remain gates, not open questions:
 
