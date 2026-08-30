@@ -25,8 +25,8 @@ Agent-facing (demanded by the shipped engineering-kungfu kernels/skills):
   assignment's attest history (kungfu: 26 references; the flagship rail's
   vocabulary).
 - **assign / assignments / dispatch / revoke-assignment** — commissioning,
-  reading, and revoking work when the existing assignment handler authorizes
-  the caller (kungfu: 14 references; feature-cycle skill;
+  reading, and revoking work with `--reason "..."` when the existing
+  assignment handler authorizes the caller (kungfu: 14 references; feature-cycle skill;
   effort-without-effect-checkin-v1 §5).
 - **effort-rule** — parent adjudication of an effort-without-effect request,
   limited to `continue|dismiss` (effort-without-effect-checkin-v1 §5).
