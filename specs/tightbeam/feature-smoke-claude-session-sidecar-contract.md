@@ -1,4 +1,4 @@
-# Feature-smoke Claude session-sidecar contract
+# Feature-smoke Claude sidecar and Codex runtime contract
 
 Status: REVIEW CANDIDATE. This artifact is not implementation authority until one
 fresh linked independent review records `reviewed-clean` for its exact SHA-256 and the
@@ -13,6 +13,14 @@ Controlling ruling: `att_d0b6affe-af19-44f5-9d6e-ca24292d9743`
 Creation-mode amendment ruling: `dr_16de6d11-492c-4ec4-aaa2-6cb1a03d4d7d`,
 `contract-amendment`
 
+Codex-runtime amendment ruling: `dr_1c06d9c9-df96-4fb7-b49e-0752a9d9fe54`,
+`amend-after-recon`
+
+Named Claude-waiver authority: correction wake
+`s_1e05ddc2-e04f-47f3-8273-2964c38719c8`, the governing rationale on
+`dr_7383a755-820d-4f1e-b882-4f16b08a103f`, and waiver receipt
+`att_8548c286-d318-4293-9632-670af92b79fc`
+
 Blocked parent: `asg_6f2a530d-19b4-417b-91f8-fafa4e5257cc`, frozen commit
 `5f4341130419c4bae21bdd6c2278185dcd0f89a5`
 
@@ -26,12 +34,13 @@ Historical source read: `be61cfc98df6b18c0cc280adeca42cba3fbf14b5`
 ## Goal
 
 Define the fixture-only admission contract for the Claude runtime file
-`sessions/<positive-numeric>.json` so `scripts/feature_smoke.exs` can preserve its
-exact-home proof without equating the file name to Tightbeam's launcher `osPid`.
+`sessions/<positive-numeric>.json` and the Codex runtime image so
+`scripts/feature_smoke.exs` can preserve its exact-home proof without equating the
+Claude file name to Tightbeam's launcher `osPid`.
 
-The contract admits one mechanically verifiable Claude runtime set during one fresh
-full Claude-plus-Codex smoke. It leaves each unrelated path subject to the existing
-unexpected-path refusal.
+The contract admits one mechanically verifiable Claude runtime set and one exact
+normalized Codex runtime manifest during one newly released fresh smoke. It leaves
+each path outside those two sets subject to deterministic unexpected-path refusal.
 
 ## Non-Goals
 
@@ -39,12 +48,16 @@ unexpected-path refusal.
   harness behavior.
 - This contract does not establish a relationship between a Claude sidecar PID and a
   Tightbeam `harness_processes.osPid` value.
-- This contract does not admit a Codex runtime path.
+- This contract does not admit a Codex path outside the exact C-07 normalized
+  manifest.
+- This contract does not assign content semantics to a Codex runtime file. It records
+  content hashes and decides path, nesting, type, mode, cardinality, dynamic-name,
+  freshness, size, and cross-phase identity predicates.
 - This contract does not expand the ruled `.claude.json` or backup surfaces.
 - This contract does not authorize fixture creation, smoke execution, review,
   integration, deployment, restart, parent completion, or product work.
-- This contract does not authorize a second live fixture after the one future fixture
-  is consumed.
+- This contract does not authorize another live fixture after a released fixture is
+  consumed.
 - This contract does not make the surrendered uncommitted diff implementation
   authority.
 - This contract establishes no agent operating pattern and requires no manual or
@@ -76,13 +89,22 @@ unexpected-path refusal.
   byte renders as `%HH` with uppercase hexadecimal digits.
 - **Harness leg**: one sequential `check_local_deployment` execution for exactly one
   harness. The fixture completes that leg's cleanup before it starts the other leg.
-  The full matrix runs exactly one Claude leg first and exactly one Codex leg second.
-  Neither leg reads the other harness's home.
+  Without the active named Claude waiver, the full matrix runs exactly one Claude leg
+  first and exactly one Codex leg second. With the active named Claude waiver, the
+  matrix runs exactly one Codex leg and no Claude leg. A leg does not read the other
+  harness's home.
+- **Active named Claude waiver**: exact value
+  `dr_7383a755-820d-4f1e-b882-4f16b08a103f`, selected through
+  `TIGHTBEAM_SMOKE_CLAUDE_WAIVER`, while Gibson's org Anthropic credential is invalid.
+  The waiver expires immediately when that credential becomes valid. The fixture
+  validates the exact selected value; the step-5 release records whether the external
+  credential condition still holds. Another value or an absent value on a Codex-only
+  run makes the fixture input invalid.
 - **Spawn interval**: the inclusive wall-clock interval whose start is captured before
-  the fixture sends the Claude-leg spawn request and whose end is captured after the
-  single Claude runtime snapshot attempt returns success or failure.
+  the fixture sends the current leg's spawn request and whose end is captured after
+  that leg's single runtime snapshot attempt returns success or failure.
 - **Run-start phase**: after fixture gateway connection and before the first credential
-  preflight. This phase occurs once for the full Claude-plus-Codex run.
+  preflight. This phase occurs once for the selected full or named-waiver matrix.
 - **Pre-spawn phase**: the per-leg phase after native reconciliation of that harness's
   projected home and before the fixture sends that leg's spawn request.
 - **Pre-wake phase**: the per-leg phase after that leg's spawn and deployment tuning
@@ -121,6 +143,10 @@ unexpected-path refusal.
   This term does not mean that OTP requests mode `0600`.
 - **Claude sidecar**: the sole regular file at
   `sessions/<canonical-positive-numeric-stem>.json` in the Claude runtime delta.
+- **Normalized Codex manifest**: the C-07 canonical sequence of Codex runtime-delta
+  path, type, and mode tuples after the validator validates and substitutes the four
+  dynamic-name families. The sequence preserves one tuple per observed entry,
+  including duplicate normalized shell-snapshot tuples.
 - **Sidecar identity**: the tuple `pid`, `sessionId`, `cwd`, `startedAt`, and
   `procStart` decoded from a valid Claude sidecar.
 - **Evidence file**: the non-symlink regular mode-0600 file
@@ -161,8 +187,9 @@ unexpected-path refusal.
 - AS-08. The Claude sidecar `startedAt` member and backup filename timestamp use Unix
   epoch milliseconds compatible with `System.system_time(:millisecond)`. A future
   observation that falsifies this assumption fails the smoke and returns for ruling.
-- AS-09. One future full-parity fixture remains subject to a separate explicit release
-  after this exact contract passes review.
+- AS-09. One future fresh fixture remains subject to a separate explicit release after
+  this exact contract passes review. The release names either the full two-leg matrix
+  or the Codex-only matrix under the active named Claude waiver.
 - AS-10. The authorized Gibson runtime uses Unix OTP 28.5. Its documented
   `:file.read_link_info/1` and `:file.read_file_info/1` results expose integer
   `major_device`, `minor_device`, and `inode` fields for a regular file, and the latter
@@ -180,10 +207,28 @@ unexpected-path refusal.
   nonzero `curl` result calls the fixture failure path. A future implementer confirms
   these seams on the synchronized implementation base before editing. A mismatch
   returns for ruling.
+- AS-13. Mike's correction wake
+  `s_1e05ddc2-e04f-47f3-8273-2964c38719c8` makes the rationale on
+  `dr_7383a755-820d-4f1e-b882-4f16b08a103f` controlling. Receipt
+  `att_8548c286-d318-4293-9632-670af92b79fc` records the named Claude waiver and its
+  expiry. The consumed Codex-only run used exact product commit
+  `c6b6632788f06ea8c7e64e6e08a1a635e07f01f4`. It retained three-record evidence
+  `art_85f430fe`, SHA-256
+  `d92dcbc0577b96a19a87de67db681a31bd94673f5e5944b03bec15c7146d7d2f`, and report
+  `art_424f3eff`, SHA-256
+  `0593f4c8230d6bafd7c7cbac5db974bdc2af57f831ec76d688b133e502a1961c`.
+- AS-14. The retained Codex pre-wake record contains 300 entries: 113 directories, 183
+  regular files, and four symlinks. Its mode counts are two `0600`, 181 `0644`, one
+  `0700`, 112 `0755`, and four `0777`. Regular-file bytes total 31,826,506; the largest
+  regular file is 7,330,920 bytes. C-07 rounds those two observed maxima upward to the
+  next binary-megabyte bounds, 32 MiB total and 8 MiB per regular file. A later
+  observation that does not satisfy the exact normalized manifest or either bound
+  refuses and returns for a new ruling; it does not widen this contract.
 
 ## Invariants
 
-- I-01. The admission applies only to the Claude projected home in a fresh fixture.
+- I-01. The admission applies only to the current harness leg's projected home in a
+  fresh fixture. C-02 decides Claude paths. C-07 decides Codex paths.
 - I-02. The validator proves the owned baseline before it sends a spawn request.
 - I-03. After a runtime snapshot succeeds, the validator evaluates the complete runtime
   delta as one set. C-08 decides the result when acquisition fails.
@@ -194,7 +239,10 @@ unexpected-path refusal.
   regular-object identity, captured file bytes, the spawned Tightbeam session key, and
   explicit phase timestamps. On acquisition failure, it derives the refusal from the
   phase, C-08 operation order, and first failing observed path.
-- I-06. The validator admits no runtime delta for Codex.
+- I-06. The validator admits a Codex runtime delta only when its normalized path, type,
+  mode, cardinality, dynamic-name, freshness, size, and cross-phase predicates satisfy
+  C-07. A normalized-manifest mismatch does not create a prefix, subtree, or
+  best-effort exception.
 - I-07. The fixture does not delete, preseed, rename, repair, or synthesize a harness
   runtime path.
 - I-08. A fixture that reaches harness spawn is consumed after either pass or refusal.
@@ -216,7 +264,7 @@ unexpected-path refusal.
 
 ## Architecture
 
-The pattern is **fixture runtime sidecar admission**. It applies only to the
+The pattern is **fixture harness-runtime admission**. It applies only to the
 `check_local_deployment` group in `scripts/feature_smoke.exs`. It does not apply to
 live home reconciliation, credential handling, harness process supervision, product
 sessions, or another smoke group.
@@ -230,18 +278,20 @@ allow lists and concurrent harness sessions are out of contract.
 
 The fixture captures and validates these states in order:
 
-1. In the sole run-start phase, the selected harness set is exactly Claude and Codex;
-   the fixture has exactly one user, that user is an admin, and it has zero sessions,
-   work items, and turns.
-2. For the Claude leg, pre-spawn validation requires the Claude projected home's leaf
-   set to equal its owned baseline. Pre-wake and post-turn validation require that
+1. In the sole run-start phase, the selected harness set is exactly Claude and Codex,
+   or it is exactly Codex while the active named Claude waiver passes. The fixture has
+   exactly one user, that user is an admin, and it has zero sessions, work items, and
+   turns. A Codex-only selection without the active waiver refuses before credential
+   preflight.
+2. When Claude is selected, pre-spawn validation requires the Claude projected home's
+   leaf set to equal its owned baseline. Pre-wake and post-turn validation require that
    leg's Claude runtime delta to satisfy C-02 through C-06. Claude cleanup runs after
    the Claude post-turn evidence record and before the next harness leg starts.
 3. For the Codex leg, pre-spawn validation requires the Codex projected home's leaf set
    to equal its owned baseline. Pre-wake and post-turn validation require that leg's
-   Codex runtime delta to satisfy C-07. Codex cleanup runs after the Codex post-turn
-   evidence record.
-4. A refusal writes the current phase's evidence record and stops the full matrix. If
+   Codex runtime delta to satisfy C-07's exact normalized manifest. Codex cleanup runs
+   after the Codex post-turn evidence record.
+4. A refusal writes the current phase's evidence record and stops the selected matrix. If
    the current leg reached spawn, its existing cleanup runs before the matrix stops.
    The fixture does not start a later harness leg.
 5. The validator performs no post-retirement admission check and does not observe the
@@ -252,10 +302,10 @@ Claude spawn and tuning return and no Claude wake has been sent, then the valida
 labels the Claude observation `pre-wake`, evaluates C-02 through C-06 before the wake
 call, and does not inspect the Codex home.
 
-Acceptance example: Given completed Claude cleanup and a native-reconciled Codex home,
-when Codex spawn and tuning return and no Codex wake has been sent, then the validator
-labels the Codex observation `pre-wake`, evaluates C-07 before the wake call, and does
-not require the removed Claude sidecar.
+Acceptance example: Given completed Claude cleanup, or an active named Claude waiver,
+and a native-reconciled Codex home, when Codex spawn and tuning return and no Codex wake
+has been sent, then the validator labels the Codex observation `pre-wake`, evaluates
+C-07 before the wake call, and does not inspect the Claude projected home.
 
 ### C-02 — Complete admitted Claude path set
 
@@ -346,24 +396,97 @@ must independently satisfy C-04.
 The validator evaluates the post-turn backup name, type, mode, JSON syntax, and C-05
 freshness independently. The backup may have a different valid name at post-turn.
 
-The opener may authorize one fresh full-parity fixture after reviewed-clean contract
-and implementation evidence. C-01 run-start state makes prior harness use observable.
-A refusal after harness spawn consumes that fixture. A later attempt needs a new
-ruling.
+The opener may authorize one fresh fixture after reviewed-clean contract and
+implementation evidence. The release names the full or named-waiver matrix. C-01
+run-start state makes prior harness use observable. A refusal after harness spawn
+consumes that fixture. A later attempt needs a new ruling.
 
 Acceptance example: Given a passing pre-wake sidecar and a post-turn sidecar with a
 different `sessionId`, when the validator compares sidecar identity, then it refuses
 with `FX_IDENTITY_DRIFT`.
 
-### C-07 — Codex separation
+### C-07 — Exact Codex runtime manifest
 
-The Codex leg's runtime delta is empty at its pre-wake and post-turn phases. The Claude
-exception does not classify a Codex path. The Codex leg does not inspect the Claude
-projected home.
+After the C-08 snapshot attempt succeeds, the Codex pre-wake runtime delta contains
+exactly 300 entries. The entry counts are 113 directories, 183 regular files, and four
+symlinks. The mode counts are two `0600`, 181 `0644`, one `0700`, 112 `0755`, and four
+`0777`. No entry has another type or mode.
 
-Acceptance example: Given a Codex runtime delta containing one plugin-cache file, when
-the Codex validator runs, then it refuses with `FX_CODEX_RUNTIME_PATH` and does not
-classify the file under the Claude contract.
+Each raw Codex relative path contains only ASCII bytes from `A-Z`, `a-z`, `0-9`, `.`,
+`_`, `/`, and `-`. No component is empty, `.` or `..`. The raw path does not contain
+the reserved normalization bytes `<` or `>`.
+
+Exactly four dynamic-name families exist:
+
+1. `cache/codex_apps_server_info/<cache-key>.json` and
+   `cache/codex_apps_tools/<cache-key>.json` are the only dynamic cache paths.
+   `<cache-key>` matches `[0-9a-f]{40}` and is byte-equal in both paths.
+2. `sessions` has exactly one direct year directory, one direct month directory below
+   that year, one direct day directory below that month, and one rollout file below
+   that day. Their path is
+   `sessions/<yyyy>/<mm>/<dd>/rollout-<yyyy>-<mm>-<dd>T<hh>-<minute>-<ss>-<run-uuid>.jsonl`.
+   The repeated date fields are byte-equal. The complete date and time is a valid UTC
+   second named `rollout_s`. Integer division requires
+   `div(spawn_started_at, 1000) <= rollout_s <= div(snapshot_finished_at, 1000)`.
+   `<run-uuid>` is lowercase canonical UUID text.
+3. `shell_snapshots` has exactly two direct regular-file children. Each name matches
+   `<snapshot-uuid>.<epoch-ns>.sh`, where the UUID is lowercase canonical UUID text and
+   `<epoch-ns>` is exactly 19 decimal digits with a nonzero first digit. The two names
+   differ. Exactly one snapshot UUID equals `<run-uuid>`. The other snapshot UUID
+   differs from `<run-uuid>`. Integer division of each `<epoch-ns>` by `1_000_000`
+   yields a Unix epoch millisecond inside the current Codex spawn interval.
+4. `tmp/arg0` has exactly one direct directory named `codex-arg0<token>`, where
+   `<token>` matches `[0-9A-Za-z]{6}`. That directory has exactly five direct children:
+   regular file `.lock` and symlinks `apply_patch`, `applypatch`,
+   `codex-execve-wrapper`, and `codex-linux-sandbox`. No nested child exists below
+   those five entries.
+
+The validator produces the normalized Codex manifest with these substitutions:
+
+- It substitutes `<cache-key>` for the validated cache key in both cache paths.
+- It substitutes `<yyyy>`, `<mm>`, and `<dd>` in the three session ancestor paths. It
+  emits the normalized rollout path
+  `sessions/<yyyy>/<mm>/<dd>/rollout-<date>T<time>-<run-uuid>.jsonl`.
+- It emits `shell_snapshots/<snapshot-uuid>.<epoch-ns>.sh` for each validated shell
+  snapshot. The two observed files therefore produce two equal normalized path
+  strings, and both tuples remain in the manifest.
+- It substitutes `<token>` for the validated `codex-arg0` suffix in that directory and
+  its five children.
+- It leaves each other validated raw path byte unchanged.
+
+For each observed entry, the validator emits one ASCII manifest line containing the
+normalized path, one tab byte, the lowercase type token, one tab byte, the four-digit
+mode, and one LF byte. It sorts the 300 lines by normalized-path bytes, then type bytes,
+then mode bytes. The SHA-256 of the concatenated lines equals
+`2040e2080e389b9a59650e77c7ba246a2c97396ea79b514b2d61c98f7c23f4d0`.
+The two equal normalized shell-snapshot lines are present twice. Each other normalized
+path occurs once.
+
+Each regular-file size is an integer from zero through 8,388,608 bytes. The sum of the
+183 regular-file sizes is at most 33,554,432 bytes. C-08 captures a SHA-256 for each
+regular file but C-07 does not assign semantics to its bytes.
+
+At post-turn, the Codex runtime delta independently satisfies the same entry counts,
+type counts, mode counts, dynamic-name predicates, normalized manifest SHA-256, and
+size bounds. Its cache key, session date, rollout time, rollout UUID, two shell-snapshot
+names, and `codex-arg0` token are byte-equal to the pre-wake values. Regular-file sizes
+and SHA-256 values may change within the stated bounds. The Codex leg does not inspect
+the Claude projected home.
+
+A failed C-07 predicate returns `FX_CODEX_RUNTIME_PATH`, `path=-`, and `clause=C-07`.
+It does not convert the observed path into a Claude exception.
+
+Acceptance example: Given the exact retained 300-entry path, type, and mode image with
+fresh dynamic names, when the Codex pre-wake validator normalizes it, then the manifest
+SHA-256 and size predicates pass.
+
+Acceptance example: Given the passing image plus `plugins/cache/extra`, when the Codex
+validator runs, then it refuses with `FX_CODEX_RUNTIME_PATH`, `path=-`, and
+`clause=C-07`.
+
+Acceptance example: Given a passing pre-wake image and a post-turn image whose
+`codex-arg0` token differs, when cross-phase validation runs, then it refuses with
+`FX_CODEX_RUNTIME_PATH`, `path=-`, and `clause=C-07`.
 
 ### C-08 — Refusal behavior
 
@@ -438,7 +561,8 @@ The validator evaluates categories in this order:
 4. `FX_SNAPSHOT` for the C-08 runtime-snapshot acquisition failure.
 5. `FX_BASELINE` for a pre-spawn baseline mismatch.
 6. `FX_PATH_SET` for Claude path or cardinality mismatch.
-7. `FX_CODEX_RUNTIME_PATH` for a nonempty Codex runtime delta.
+7. `FX_CODEX_RUNTIME_PATH` for a C-07 dynamic-name, normalized-manifest,
+   cardinality, type, mode, size, freshness, or cross-phase mismatch.
 8. `FX_TYPE` for symlink, wrong type, or special type.
 9. `FX_MODE` for a permission-mode mismatch.
 10. `FX_SIZE` for a sidecar outside the byte bound.
@@ -450,10 +574,11 @@ The validator evaluates categories in this order:
 15. `FX_FRESHNESS` for C-05 mismatch.
 16. `FX_IDENTITY_DRIFT` for C-06 cross-phase mismatch.
 
-`FX_PHASE`, `FX_FIXTURE_STATE`, `FX_CLOCK`, `FX_BASELINE`, and `FX_PATH_SET` are
-set-level categories. Their refusal lines emit `path=-`, and the validator performs no
-path sort for them. For `FX_PATH_SET`, the validator does not construct a candidate for
-a missing expected path. `FX_SNAPSHOT` uses the single-attempt operation and path order
+`FX_PHASE`, `FX_FIXTURE_STATE`, `FX_CLOCK`, `FX_BASELINE`, `FX_PATH_SET`, and
+`FX_CODEX_RUNTIME_PATH` are set-level categories. Their refusal lines emit `path=-`,
+and the validator performs no path sort for them. For `FX_PATH_SET`, the validator does
+not construct a candidate for a missing expected path. `FX_SNAPSHOT` uses the
+single-attempt operation and path order
 in C-08. It does not collect or sort failure candidates after the first acquisition
 failure. Within each other category, the validator sorts observed
 relative paths by raw byte order. If one observed path fails more than one predicate in
@@ -520,8 +645,10 @@ JSON object and LF, or the current record may remain unsynced. The fixture does 
 retry the append, use a fallback sink, or claim a durable current-phase record. If the
 current leg reached spawn, its existing cleanup still runs. A passing full matrix
 contains exactly seven records in this sequence: run-start; Claude pre-spawn, pre-wake,
-and post-turn; Codex pre-spawn,
-pre-wake, and post-turn. For a validator refusal other than an evidence-sink failure,
+and post-turn; Codex pre-spawn, pre-wake, and post-turn. A passing Codex-only matrix
+under the active named Claude waiver contains exactly four records: run-start; Codex
+pre-spawn, pre-wake, and post-turn. For a validator refusal other than an
+evidence-sink failure,
 the evidence file contains one record for each completed phase plus one synced
 `refused` record for the failing phase. It contains no record for a later phase or
 harness leg. This refusal-cardinality rule does not apply when append or sync itself
@@ -530,17 +657,20 @@ fails.
 Each record is one JSON object with keys in this exact order and no insignificant
 whitespace:
 
-`schema`, `sequence`, `harness`, `phase`, `principal`, `result`, `cause`, `entries`,
-`checks`
+`schema`, `sequence`, `harness`, `phase`, `principal`, `waiver`, `result`, `cause`,
+`entries`, `checks`
 
 The fields have these contracts:
 
-- `schema` is string `tightbeam.feature_smoke.home_evidence.v1`.
+- `schema` is string `tightbeam.feature_smoke.home_evidence.v2`.
 - `sequence` is an integer that starts at `1` and increments by one per appended line.
 - `harness` is string `all` for run-start or the current leg's lowercase harness name.
 - `phase` is one of `run-start`, `pre-spawn`, `pre-wake`, or `post-turn`.
 - `principal` is string `run-start`, string `pre-spawn`, or the spawned Tightbeam
   session key rendered as an evidence token.
+- `waiver` is string `dr_7383a755-820d-4f1e-b882-4f16b08a103f` in each record of a
+  Codex-only matrix admitted under the active named Claude waiver. It is JSON `null` in
+  each record of a full two-leg matrix.
 - `result` is string `pass` or `refused`.
 - `cause` is string `validated` for a passing record. For a refused record, it is the
   mapped C-clause of the first failed predicate selected by C-09.
@@ -568,34 +698,38 @@ The fixed check order is:
 4. `snapshot_acquired`
 5. `baseline_equal`
 6. `path_set_equal`
-7. `codex_delta_empty`
-8. `entry_type_equal`
-9. `entry_mode_equal`
-10. `sidecar_size_bounded`
-11. `json_utf8_valid`
-12. `json_syntax_valid`
-13. `json_unique_members`
-14. `claude_json_object`
-15. `sidecar_member_set_equal`
-16. `sidecar_member_types_equal`
-17. `filename_pid_equal`
-18. `session_id_shape`
-19. `expected_cwd_equal`
-20. `proc_start_shape`
-21. `version_shape`
-22. `peer_protocol_equal`
-23. `kind_equal`
-24. `entrypoint_equal`
-25. `name_nonempty`
-26. `name_source_equal`
-27. `backup_epoch_in_interval`
-28. `started_at_in_interval`
-29. `identity_matches_pre_wake`
+7. `codex_dynamic_names_valid`
+8. `codex_manifest_equal`
+9. `codex_size_bounded`
+10. `codex_identity_matches_pre_wake`
+11. `entry_type_equal`
+12. `entry_mode_equal`
+13. `sidecar_size_bounded`
+14. `json_utf8_valid`
+15. `json_syntax_valid`
+16. `json_unique_members`
+17. `claude_json_object`
+18. `sidecar_member_set_equal`
+19. `sidecar_member_types_equal`
+20. `filename_pid_equal`
+21. `session_id_shape`
+22. `expected_cwd_equal`
+23. `proc_start_shape`
+24. `version_shape`
+25. `peer_protocol_equal`
+26. `kind_equal`
+27. `entrypoint_equal`
+28. `name_nonempty`
+29. `name_source_equal`
+30. `backup_epoch_in_interval`
+31. `started_at_in_interval`
+32. `identity_matches_pre_wake`
 
 The validator maps checks 1, 2, and 5 to C-01; check 3 to C-05; check 4 to C-08;
-checks 6, 8-10, and 14 to C-02; check 7 to C-07; checks 11-13 to C-02 for
-`.claude.json` or the backup and to C-04 for the sidecar; checks 15 and 16 to C-04;
-check 17 to C-03; checks 18-26 to C-04; checks 27 and 28 to C-05; and check 29 to C-06.
+checks 6, 11-13, and 17 to C-02; checks 7-10 to C-07; checks 14-16 to C-02 for
+`.claude.json` or the backup and to C-04 for the sidecar; checks 18 and 19 to C-04;
+check 20 to C-03; checks 21-29 to C-04; checks 30 and 31 to C-05; and check 32 to C-06.
+For a Codex record, check 3 maps to C-07 instead of C-05.
 
 When `snapshot_acquired` passes, each record uses the exact entry rules in this table.
 On `FX_SNAPSHOT`, the partial-entry paragraph below replaces only the table's `entries`
@@ -607,10 +741,10 @@ Every unlisted check is `applicable=false`, `evaluated=false`, and `passed=null`
 | Run-start | Empty array | 1-2 |
 | Claude pre-spawn | Complete recursive projected-home path set after subtracting only baseline ancestor directories | 1, 4-5 |
 | Codex pre-spawn | Complete recursive projected-home path set after subtracting only baseline ancestor directories | 1, 4-5 |
-| Claude pre-wake | Complete Claude runtime delta | 1, 3-4, 6, 8-28 |
-| Claude post-turn | Complete Claude runtime delta | 1, 3-4, 6, 8-29 |
-| Codex pre-wake | Complete Codex runtime delta | 1, 4, 7 |
-| Codex post-turn | Complete Codex runtime delta | 1, 4, 7 |
+| Claude pre-wake | Complete Claude runtime delta | 1, 3-4, 6, 11-31 |
+| Claude post-turn | Complete Claude runtime delta | 1, 3-4, 6, 11-32 |
+| Codex pre-wake | Complete Codex runtime delta | 1, 3-4, 7-9 |
+| Codex post-turn | Complete Codex runtime delta | 1, 3-4, 7-10 |
 
 A validator evaluates applicable checks in fixed numeric order. If one fails, each
 later applicable check is `applicable=true`, `evaluated=false`, and `passed=null`.
@@ -647,6 +781,10 @@ Acceptance example: Given a passing full matrix, when both per-leg cleanup block
 complete, then the retained evidence file has seven LF-terminated records with
 contiguous `sequence` values and each passing record has `cause="validated"`.
 
+Acceptance example: Given a passing Codex-only matrix under the active named Claude
+waiver, when Codex cleanup completes, then the retained evidence file has four
+LF-terminated records and contains no Claude phase record.
+
 ### C-11 — One-file implementation custody
 
 A future implementation assignment owns only `scripts/feature_smoke.exs`. It starts
@@ -671,25 +809,31 @@ The release sequence is:
 1. One fresh linked independent reviewer reads the exact contract and recon hashes.
 2. The reviewer records `reviewed-clean` or `changes-requested` on a review assignment
    linked to this producer assignment.
-3. After `reviewed-clean`, the opener explicitly releases the Class 12 block and opens
-   one one-file implementation assignment.
+3. After `reviewed-clean`, the opener explicitly releases one one-file implementation
+   correction. The correction preserves the named-waiver behavior from exact commit
+   `c6b6632788f06ea8c7e64e6e08a1a635e07f01f4` and replaces its empty Codex-delta
+   predicate with C-07 and the C-10 v2 evidence checks.
 4. Before coding or a post-review correction, the implementer synchronizes and
    verifies a green `origin/0.1.9` in the owned product workspace. The implementer then
    proves deterministic allow and reject cases, format, syntax, `git diff --check`, and
    the repository gate before a live fixture. The case-only command runs in this exact
    envelope:
    `(export TIGHTBEAM_SMOKE_HOME_CASES_ONLY=1 && umask 077 && exec mix run --no-start scripts/feature_smoke.exs)`.
-5. The opener authorizes one new never-reused full Claude-plus-Codex fixture.
-6. The implementer runs the full matrix once with
+5. The opener authorizes one new never-reused fixture and names the selected harness
+   set. If Gibson's org Anthropic credential is valid, it selects Claude then Codex and
+   the named waiver is inactive. If that credential remains invalid, it may select
+   Codex only under the active named Claude waiver.
+6. The implementer runs the selected matrix once with
    `(umask 077 && exec mix run --no-start scripts/feature_smoke.exs)` and records pass
-   evidence or the exact first blocker.
+   evidence or the exact first blocker. A refusal consumes that fixture. The
+   implementer does not retry or reuse it.
 7. A passing implementation returns for one fresh linked independent exact-commit
    review before the parent lane resumes.
 
-For this creation-mode amendment cycle, one-file implementation assignment
-`asg_0c3a45b1-d0ac-499d-b55e-2b7743a11c21` is already open. Step 3 means that the
-opener explicitly re-releases only the reviewed C-10 correction on that assignment.
-The opener does not create a second implementation assignment.
+Closed implementation assignment `asg_0c3a45b1-d0ac-499d-b55e-2b7743a11c21` and its
+reviewed-clean commit `ec2b28b8eaf47e3ef85318524752a827c23bd0af` remain historical
+evidence. The named-waiver correction commit remains evidence until step 3 creates the
+new bounded implementation obligation. Neither commit is live-fixture authority.
 
 Before step 5, the implementer records one Gibson system-call trace of the exact
 case-only envelope. The trace starts at the subshell, follows descendants, and proves
@@ -733,7 +877,7 @@ The Given/When/Then examples in C-01 through C-12 are part of this acceptance co
 
 | ID | Given | When | Then | Trace |
 | --- | --- | --- | --- | --- |
-| AC-01 | Exactly Claude and Codex are selected; the fixture has one user who is an admin and zero sessions, work items, and turns | Run-start validation runs | The fixture passes once before the first credential preflight | C-01, C-06 |
+| AC-01 | Exactly Claude and Codex are selected without the named waiver; the fixture has one user who is an admin and zero sessions, work items, and turns | Run-start validation runs | The fixture passes once before the first credential preflight | C-01, C-06 |
 | AC-02 | A prior spawn left one session row in the base | Run-start validation runs | `FX_FIXTURE_STATE` refuses the reused fixture before credential preflight | C-01, C-06, C-09 |
 | AC-03 | One harness leg has its exact owned baseline | That leg's pre-spawn validation runs | Its baseline passes, no runtime exception is used, and the validator does not inspect the other harness's home | C-01, I-02 |
 | AC-04 | The exact five-path Claude runtime set exists in the Claude leg | That leg's pre-wake validation runs | The set passes without a launcher PID read | C-02-C-05, I-04 |
@@ -756,13 +900,13 @@ The Given/When/Then examples in C-01 through C-12 are part of this acceptance co
 | AC-21 | `.claude.json` has mode `0644` | Mode validation runs | `FX_MODE` refuses it | C-02, C-09 |
 | AC-22 | Sidecar has 4097 bytes | Size validation runs | `FX_SIZE` refuses it before JSON decoding | C-02, C-09 |
 | AC-23 | `.claude.json` contains the valid JSON value `[]` | JSON-shape validation runs | `FX_JSON_SHAPE` refuses it | C-02, C-09 |
-| AC-24 | The Codex leg writes one runtime path | That leg's validation runs | `FX_CODEX_RUNTIME_PATH` refuses it without inspecting the Claude home | C-07 |
+| AC-24 | The Codex leg has the passing normalized manifest plus one runtime path | That leg's validation runs | `FX_CODEX_RUNTIME_PATH` refuses with `path=-` without inspecting the Claude home | C-07 |
 | AC-25 | Snapshot acquisition succeeds, one path fails multiple predicates, and another path fails in the same or a later error category | The case runs repeatedly | Each run returns the same first code, phase, path evidence token, and clause selected by category, raw path, then C-10 predicate order | C-09-C-10 |
-| AC-26 | One full matrix uses the exact live launch envelope and passes | Both per-leg cleanup blocks complete | The evidence file was created with effective mode `0600` and the retained file contains exactly seven synced LF-terminated canonical JSON records with contiguous sequence values, `cause="validated"`, exact `entries` and `checks`, and no decoded JSON values or observed file bytes | C-10, C-12 |
+| AC-26 | One full matrix uses the exact live launch envelope and passes | Both per-leg cleanup blocks complete | The v2 evidence file was created with effective mode `0600` and the retained file contains exactly seven synced LF-terminated canonical JSON records with contiguous sequence values, `cause="validated"`, exact `entries` and `checks`, and no decoded JSON values or observed file bytes | C-10, C-12 |
 | AC-27 | One fixture reaches harness spawn and refuses | Cleanup completes | The fixture base remains, no observed runtime path is fixture-mutated before lifecycle cleanup, and no second fixture starts | C-06, C-08, C-10 |
 | AC-28 | Reviewed-clean contract and explicit release exist | One-file implementation begins | Only `scripts/feature_smoke.exs` changes from current `origin/0.1.9` | C-11-C-12 |
-| AC-29 | Deterministic cases and repository gates pass | One fresh full matrix runs | One Claude leg completes first and one Codex leg completes second; Claude passes its own pre-wake and post-turn sidecar records; Codex passes its own empty-delta pre-wake and post-turn records; neither leg inspects the other home; the evidence file contains seven records | C-01-C-12 |
-| AC-30 | The full matrix encounters a new runtime path or schema | The validator refuses | The implementer files the exact blocker and does not retry | C-06-C-10, C-12 |
+| AC-29 | Deterministic cases and repository gates pass | One fresh full matrix runs | One Claude leg completes first and one Codex leg completes second; Claude passes its own pre-wake and post-turn sidecar records; Codex passes its exact normalized-manifest pre-wake and post-turn records; neither leg inspects the other home; the evidence file contains seven records | C-01-C-12 |
+| AC-30 | The selected matrix encounters a new runtime path or schema | The validator refuses | The implementer files the exact blocker and does not retry | C-06-C-10, C-12 |
 | AC-31 | Parent commit, product assignment, and facts are read after this contract | Contract production ends | Their identifiers and state match I-11 | I-11 |
 | AC-32 | The Claude pre-wake sidecar has a wrong `cwd` | Claude pre-wake validation runs | The current evidence record is `refused` with `cause="C-04"`, `expected_cwd_equal` is evaluated and false, no later-phase or Codex-leg record exists, and the evidence file remains through cleanup | C-04, C-09-C-10 |
 | AC-33 | The evidence path already exists | Exclusive creation runs | `FX_EVIDENCE` refuses before run-start validation, writes no evidence record, and does not delete, replace, or change the existing path | C-10 |
@@ -779,6 +923,15 @@ The Given/When/Then examples in C-01 through C-12 are part of this acceptance co
 | AC-44 | Ambient umask would independently yield mode `0600`, but the exact launch envelope or its trace is absent | Release evidence is evaluated | The run is nonconforming and cannot authorize the live matrix or parent lane | I-13, C-10-C-12 |
 | AC-45 | A Tightbeam gateway is already serving the fixture before the exact feature-smoke envelope starts | The Mix client sends the Claude and Codex spawn requests | The client uses the recorded gateway port over HTTP; the gateway creates both harness processes outside the client process tree; the client `0077` umask cannot change the gateway or harness umask | AS-12, I-14, C-10-C-12 |
 | AC-46 | `gateway.json` names a loopback port with no serving Tightbeam gateway | The exact `mix run --no-start` client reaches its first HTTP request | `curl` returns nonzero, the client calls its failure path, and no harness spawn result exists | AS-12, I-14, C-10-C-12 |
+| AC-47 | Gibson's org Anthropic credential is invalid, `TIGHTBEAM_SMOKE_CLAUDE_WAIVER` equals the exact waiver ID, and only Codex is selected | Run-start validation runs | The fixture records the named waiver, admits the Codex-only selection, and starts no Claude phase | AS-13, C-01, C-10 |
+| AC-48 | Only Codex is selected and the exact named waiver is absent or wrong | Run-start validation runs | `FX_FIXTURE_STATE` refuses before credential preflight or spawn | C-01, C-09 |
+| AC-49 | The retained 300-entry Codex image is supplied with fresh valid dynamic tokens and bounded sizes | Codex pre-wake validation runs | Dynamic-name checks pass and the normalized manifest SHA-256 equals the C-07 value | AS-14, C-07 |
+| AC-50 | One Codex path is added, removed, renamed, or nested differently | Codex manifest validation runs | `FX_CODEX_RUNTIME_PATH` refuses with `path=-` and `clause=C-07` | C-07, C-09 |
+| AC-51 | One Codex entry has a different type or mode | Codex manifest validation runs | `FX_CODEX_RUNTIME_PATH` refuses with `path=-` and `clause=C-07` | C-07, C-09 |
+| AC-52 | One Codex regular file exceeds 8,388,608 bytes or the regular-file sum exceeds 33,554,432 bytes | Codex size validation runs | `FX_CODEX_RUNTIME_PATH` refuses with `path=-` and `clause=C-07` | C-07, C-09 |
+| AC-53 | Codex pre-wake passes and one post-turn dynamic token differs | Codex post-turn validation runs | `FX_CODEX_RUNTIME_PATH` refuses the cross-phase mismatch with `path=-` | C-07, C-09-C-10 |
+| AC-54 | The active named Claude waiver admits a passing Codex-only matrix | Codex cleanup completes | The v2 evidence file contains exactly four records in run-start, Codex pre-spawn, Codex pre-wake, Codex post-turn order | C-01, C-10-C-12 |
+| AC-55 | A valid Gibson org Anthropic credential exists | The opener prepares step 5 | The named waiver is expired, the opener selects the full Claude-then-Codex matrix, and no Codex-only fixture is released | AS-13, C-12 |
 
 ## Open Questions
 
@@ -788,14 +941,18 @@ finding in `att_e167466a-8063-4d59-8d92-67750584cf7a` is resolved normatively by
 `contract-amendment` ruling in `dr_16de6d11-492c-4ec4-aaa2-6cb1a03d4d7d`. F9 in
 `att_5456488a-1187-44e4-983a-02d920586d8d` is resolved by the explicit pre-existing
 gateway process boundary and its source-topology gate. One fresh linked review decides
-whether the exact successor artifact is reviewed-clean.
+whether the exact successor artifact is reviewed-clean. The C-07 empty-delta defect is
+resolved normatively by `amend-after-recon` in
+`dr_1c06d9c9-df96-4fb7-b49e-0752a9d9fe54`; that decision does not authorize a live
+fixture.
 
 The following resolved boundaries remain gates, not open questions:
 
 - The contract does not infer the schema of the deleted final-fixture bytes. A future
   fixture validates its own captured bytes and refuses a mismatch.
-- A future Codex runtime path, including the previously observed plugin-cache path,
-  blocks parent verification under C-07. This contract does not admit or repair it.
+- A future Codex path, dynamic name, type, mode, size, or cross-phase state that differs
+  from C-07 blocks parent verification. The validator does not infer a broader prefix
+  or subtree exception from the retained observation.
 - Implementation and fixture execution remain blocked until one linked independent
   review records `reviewed-clean` for the exact artifact hashes and the opener issues
   an explicit release.

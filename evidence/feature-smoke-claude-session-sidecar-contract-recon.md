@@ -1,4 +1,4 @@
-# Feature-smoke Claude session-sidecar contract — recon and clause map
+# Feature-smoke Claude sidecar and Codex runtime contract — recon and clause map
 
 Status: supporting evidence for producer assignment
 `asg_ee922fe3-3005-406b-af46-82cb4ffa2d10`.
@@ -64,6 +64,30 @@ F9 successor readback on 2026-08-29 UTC, before this seal:
 - Review `asg_52f8eeb7-c65b-4985-9b9f-a66bb4127c61` closed changes-requested at exact
   verdict `att_5456488a-1187-44e4-983a-02d920586d8d`.
 
+Codex-runtime amendment readback on 2026-08-30 UTC, before this seal:
+
+- Mike correction wake `s_1e05ddc2-e04f-47f3-8273-2964c38719c8` makes the rationale
+  on `dr_7383a755-820d-4f1e-b882-4f16b08a103f` controlling. Named Claude-waiver
+  receipt `att_8548c286-d318-4293-9632-670af92b79fc` expires when a valid Gibson org
+  Anthropic credential exists.
+- Exact product commit `c6b6632788f06ea8c7e64e6e08a1a635e07f01f4` ran one newly
+  released Codex-only fixture once. The run stopped at Codex pre-wake on C-07 before a
+  wake or turn. It did not retry or reuse the consumed fixture.
+- Retained evidence `art_85f430fe`, SHA-256
+  `d92dcbc0577b96a19a87de67db681a31bd94673f5e5944b03bec15c7146d7d2f`, contains
+  three synced v1 records. Report `art_424f3eff`, SHA-256
+  `0593f4c8230d6bafd7c7cbac5db974bdc2af57f831ec76d688b133e502a1961c`, records
+  the first refusal as `FX_CODEX_RUNTIME_PATH`, path `.personality_migration`.
+- Decision request `dr_1c06d9c9-df96-4fb7-b49e-0752a9d9fe54` is ruled exact
+  `amend-after-recon`. It authorizes the deterministic Codex-runtime amendment and one
+  independent review before any product or new-fixture authority.
+- The owned specs clone fetched remote `main` at
+  `446dc0e9cc6e9cc124809322512483a48adbe1f7`. Merge commit
+  `cfe3c1a7b6f00570de671fd0e06c451964fade8f` preserves exact canonical parent
+  `beb7c222c908486a774ded9656a5ababe596bd02` and that remote base. Remote `main`
+  contained neither canonical artifact, so the merge changed no contract or recon
+  byte.
+
 ## Authority and preserved state
 
 | Source | Material ruling or fact |
@@ -89,6 +113,9 @@ F9 successor readback on 2026-08-29 UTC, before this seal:
 | `att_619caef0-d33a-49ce-966e-242b919e985e` | The coder proved that OTP 28.5 exposes no create-permission option in the settled one-file boundary. The mechanism report is `art_b1641827`, SHA-256 `9f7dce8804fa1e3b96865594b58c4fbbd4b885ea789dd489c30a06886656c76f`. |
 | `dr_16de6d11-492c-4ec4-aaa2-6cb1a03d4d7d` | Mike selected `contract-amendment`: replace the unsupported literal request-mode requirement with an exact effective-0600 launch-umask contract, reseal, and re-review before code changes. |
 | `att_5456488a-1187-44e4-983a-02d920586d8d` | The creation-mode review closed F1-F8 and found blocking F9: the contract did not state or prove that the client `0077` umask stays outside the pre-existing gateway and its harness descendants. Full report `art_b56ae0fc`, SHA-256 `11e3b55693c18b956bf851108b25e5f5236e15b91664b5e1218932bfaa3b3ad1`, is pushed at report commit `304e9d94c2d8900d0adbffded8c0cf9496fff15b`. |
+| `s_1e05ddc2-e04f-47f3-8273-2964c38719c8`, `att_8548c286-d318-4293-9632-670af92b79fc` | Mike corrected the intermediary's erroneous `hold` label, made the rationale on `dr_7383a755` controlling, authorized one Codex leg, and named the Claude credential waiver. The waiver expires when a valid Gibson org Anthropic credential exists. |
+| `art_85f430fe`, `art_424f3eff` | The consumed Codex-only fixture retained the exact three-record evidence and report. Codex produced 300 runtime-delta entries at pre-wake; C-07's former empty-delta check refused before a wake or turn. |
+| `dr_1c06d9c9-df96-4fb7-b49e-0752a9d9fe54` | Mike selected `amend-after-recon`: consume only the retained evidence, author and independently review a strict deterministic Codex-runtime amendment, and seek new-fixture authority only after reviewed-clean. |
 | Parent commit `5f4341130419c4bae21bdd6c2278185dcd0f89a5` | Frozen execution-start observability implementation. Five files, 1,375 added lines. This contract does not modify it. |
 | Product assignment `asg_17a50f66-c32d-42f2-aba5-dd39e072203e` | Frozen original base-synchronization product lane. This contract does not resume it. |
 
@@ -204,6 +231,78 @@ The final mismatch proves this negative fact:
 
 It does not prove a positive process relationship.
 
+## Retained consumed Codex runtime evidence
+
+The only Codex runtime input for this amendment is retained artifact `art_85f430fe` at
+`/home/mike/.tightbeam/work/e1e389e9dc1a/feature-smoke-sidecar-codex-waiver.1F2cFp/feature-smoke-home-evidence.jsonl`.
+It is a non-symlink regular mode-0600 file, 65,431 bytes, with SHA-256
+`d92dcbc0577b96a19a87de67db681a31bd94673f5e5944b03bec15c7146d7d2f`. Its three
+LF-terminated v1 records are run-start pass, Codex pre-spawn pass, and Codex pre-wake
+C-07 refusal. The consumed fixture made no wake and created no turn.
+
+The Codex pre-spawn record contains 12 Tightbeam-owned baseline leaves. The pre-wake
+record contains the 300-entry runtime delta after the existing baseline subtraction.
+Its top-level families are `.personality_migration`, `cache`, three `goals_1.sqlite`
+objects, `installation_id`, three `logs_2.sqlite` objects, three
+`memories_1.sqlite` objects, `models_cache.json`, `plugins`, `sessions`,
+`shell_snapshots`, `skills`, three `state_5.sqlite` objects, and `tmp`.
+
+The pre-wake counts are exact:
+
+| Property | Observed value |
+| --- | --- |
+| Entry count | 300 |
+| Directories | 113 |
+| Regular files | 183 |
+| Symlinks | 4 |
+| Mode `0600` | 2 |
+| Mode `0644` | 181 |
+| Mode `0700` | 1 |
+| Mode `0755` | 112 |
+| Mode `0777` | 4 |
+| Regular-file byte sum | 31,826,506 |
+| Largest regular file | 7,330,920 bytes |
+
+Four observed name families vary by invocation: one 40-lowercase-hex cache key used in
+two files; one calendar/time and lowercase UUID used by the sole rollout path; two
+lowercase UUID plus 19-decimal-digit shell-snapshot names; and one six-alphanumeric
+`codex-arg0` token used by one directory and its five children. C-07 validates the
+family cardinalities and relations before substituting placeholders. No other raw path
+receives a substitution.
+
+This exact read-only reduction of record 3 produces the normative path/type/mode
+manifest SHA-256. It emits one line per entry, so the two normalized shell-snapshot
+tuples remain present twice.
+
+```sh
+jq -r -s '
+  def norm:
+    sub("^cache/codex_apps_server_info/[0-9a-f]{40}\\.json$"; "cache/codex_apps_server_info/<cache-key>.json")
+    | sub("^cache/codex_apps_tools/[0-9a-f]{40}\\.json$"; "cache/codex_apps_tools/<cache-key>.json")
+    | sub("^sessions/[0-9]{4}$"; "sessions/<yyyy>")
+    | sub("^sessions/[0-9]{4}/[0-9]{2}$"; "sessions/<yyyy>/<mm>")
+    | sub("^sessions/[0-9]{4}/[0-9]{2}/[0-9]{2}$"; "sessions/<yyyy>/<mm>/<dd>")
+    | sub("^sessions/[0-9]{4}/[0-9]{2}/[0-9]{2}/rollout-[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.jsonl$"; "sessions/<yyyy>/<mm>/<dd>/rollout-<date>T<time>-<run-uuid>.jsonl")
+    | sub("^shell_snapshots/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.[0-9]{19}\\.sh$"; "shell_snapshots/<snapshot-uuid>.<epoch-ns>.sh")
+    | sub("^tmp/arg0/codex-arg0[A-Za-z0-9]{6}"; "tmp/arg0/codex-arg0<token>");
+  .[2].entries
+  | map([(.path|norm), .type, .mode])
+  | sort_by(.[0], .[1], .[2])
+  | .[]
+  | @tsv
+' feature-smoke-home-evidence.jsonl | sha256sum
+```
+
+The result is
+`2040e2080e389b9a59650e77c7ba246a2c97396ea79b514b2d61c98f7c23f4d0  -`.
+The recon repeated the reduction from the retained file and obtained the same digest.
+
+The evidence records metadata and SHA-256 values but no observed file byte, decoded
+runtime value, symlink target, credential, stdout, or stderr. The amendment therefore
+binds path, nesting, type, mode, dynamic-name relations, freshness, size bounds, and
+cross-phase identity. It does not invent file-content or symlink-target semantics that
+the retained observation cannot support.
+
 ## Read-only sidecar schema observation
 
 At 2026-08-14T03:23:27Z, the same host retained two current Claude Code 2.1.232
@@ -283,19 +382,21 @@ The validator evaluates the complete delta and one exact five-path Claude set.
 
 The validator keys on native reconcile completion, spawn-and-tune return, first-wake
 dispatch, observed turn boundary, and cleanup. Run-start occurs once. Pre-spawn,
-pre-wake, post-turn, and cleanup occur separately for one Claude leg and one Codex
-leg. The Claude leg runs first and finishes cleanup before the Codex leg starts. A leg
-never reads the other harness's home. Epoch values only bracket freshness; they do not
-decide whether a lifecycle event occurred.
+pre-wake, post-turn, and cleanup occur separately for each selected harness leg. The
+full matrix runs Claude first and finishes Claude cleanup before Codex starts. The
+active named Claude waiver selects Codex only and creates no Claude phase. A leg never
+reads the other harness's home. Epoch values only bracket freshness; they do not decide
+whether a lifecycle event occurred.
 
 ### D-04 — Content-free, mechanically replayable evidence
 
 The validator may decode bytes to decide. Under the exact C-12 launch envelope, it
 exclusive-creates one retained effective-mode-0600 JSONL file under the fixture base.
-A passing matrix writes exactly seven synced,
-LF-terminated records: one run-start record and pre-spawn, pre-wake, and post-turn
-records for each harness leg. Each record uses the contract's exact key order, entry
-shape, 29-check order, result, cause, and phase-specific applicability. Durable
+A passing full matrix writes exactly seven synced, LF-terminated records: one
+run-start record and pre-spawn, pre-wake, and post-turn records for each harness leg.
+A passing Codex-only matrix under the active named Claude waiver writes exactly four.
+Each record uses the contract's exact key order, entry shape, 32-check order, result,
+cause, waiver, and phase-specific applicability. Durable
 evidence contains metadata, hashes, and predicate outcomes, not decoded JSON values or
 observed bytes. This preserves the earlier content boundary while making a pass or
 validator refusal mechanically replayable. If evidence append or sync itself fails,
@@ -308,10 +409,13 @@ For a required regular file, acquisition compares the initial path identity, ope
 handle identity, and final path identity while that one handle remains open. Evidence
 records only the predicate outcome, not the device or inode integers.
 
-### D-05 — Codex remains outside the exception
+### D-05 — The original Codex boundary failed closed
 
-The known Codex plugin-cache path is not part of the Class 12 sidecar ruling. A future
-repeat is a new exact blocker, not a reason to widen this contract.
+Before a retained Codex runtime image existed, the contract admitted no Codex runtime
+delta. That boundary correctly converted the first observed runtime path into an exact
+C-07 blocker instead of inventing a prefix exception. D-13 supersedes the empty-delta
+predicate under the later `amend-after-recon` ruling. It preserves the fail-closed
+method through one content-addressed normalized manifest.
 
 ### D-06 — Backup identity is phase-local
 
@@ -415,9 +519,9 @@ changes:
    absence of a chmod-family repair or second evidence-path open.
 5. An ambient umask is insufficient. A run without the exact envelope and trace is not
    release evidence even when its resulting mode is `0600`.
-6. After reviewed-clean, the opener re-releases only the C-10 correction on already
-   open one-file assignment `asg_0c3a45b1`; it does not open a duplicate implementation
-   assignment.
+6. At that amendment cycle, after reviewed-clean, the opener re-released only the C-10
+   correction on then-open one-file assignment `asg_0c3a45b1`; it did not open a
+   duplicate implementation assignment. That assignment later closed.
 
 The zsh envelope and trace are release controls outside product code. They add no
 product file, linked library, fixture subprocess, native dependency, admitted runtime
@@ -444,6 +548,43 @@ umask and harness-created paths. The preserved source supplies that boundary:
 This correction adds no process, product file, helper, dependency, harness mutation,
 path admission, fixture attempt, or live authority. It makes the already-shipped HTTP
 client/gateway process boundary normative and testable.
+
+### D-13 — The retained Codex image becomes one exact normalized manifest
+
+The consumed Codex-only run disproved C-07's empty-delta assumption with a complete,
+content-free pre-wake snapshot. Mike selected `amend-after-recon` in
+`dr_1c06d9c9-df96-4fb7-b49e-0752a9d9fe54`. The amendment makes these bounded changes:
+
+1. C-07 admits exactly the observed 300-entry path, type, and mode image after four
+   dynamic-name families pass their cardinality, grammar, equality, freshness, and
+   cross-family binding predicates.
+2. The validator substitutes reserved placeholders only after those predicates pass.
+   It serializes one normalized path/type/mode line per entry and requires SHA-256
+   `2040e2080e389b9a59650e77c7ba246a2c97396ea79b514b2d61c98f7c23f4d0`.
+   This makes addition, removal, renaming, nesting, type, mode, and cardinality changes
+   mechanically decidable without embedding 300 prose rows.
+3. Per-file and aggregate byte bounds are the next binary-megabyte ceilings above the
+   retained maxima: 8 MiB and 32 MiB. Evidence retains each regular-file SHA-256, but
+   the contract assigns no meaning to Codex file contents.
+4. Post-turn repeats the manifest and size checks and binds each raw dynamic token to
+   its pre-wake value. It permits bounded content and size changes without admitting a
+   new path or token.
+5. C-10 advances the evidence schema to v2. It replaces `codex_delta_empty` with four
+   ordered C-07 checks and adds the exact named-waiver field. A passing full matrix has
+   seven records. A passing Codex-only named-waiver matrix has four.
+6. C-01 and C-12 carry Mike's named Claude-waiver ruling into canonical text. The
+   waiver applies only while the Gibson org Anthropic credential is invalid and
+   expires when that credential becomes valid. The contract does not perform the
+   attended credential ceremony or authorize a new fixture.
+
+The manifest is not a subtree allowlist. A path outside the exact normalized digest,
+an invalid dynamic token, a wrong type or mode, an over-bound size, or a post-turn
+identity change returns set-level `FX_CODEX_RUNTIME_PATH`, `path=-`, and `clause=C-07`.
+
+The amendment adds no product file, runtime helper, external dependency, symlink-target
+claim, file-content semantic, retry, fixture reuse, fixture attempt, implementation
+authority, or live authority. One fresh independent review must decide the exact
+contract and recon seal before the producer seeks another release.
 
 ## Declined alternatives
 
@@ -473,32 +614,33 @@ client/gateway process boundary normative and testable.
 | Use a wildcard 0.1 implementation-branch placeholder | Declined. Mike designated `origin/0.1.9` as the sole 0.1 branch. |
 | Leave same-path predicate order implicit | Declined. Error category and raw-path order alone do not decide which clause wins on one multiply-invalid entry. |
 | Sort missing and extra path candidates for `FX_PATH_SET` | Declined. A missing expected path is not an observed relative path. The set-level result emits `path=-`. |
-| Admit the Codex plugin cache | Declined. No ruling authorizes that separate surface. |
-| Delete the exact-home smoke assertion | Declined. Reviewed product law and repository policy require the live two-harness proof. |
+| Admit the Codex plugin cache by prefix | Declined. It admits unobserved descendants. C-07 binds one exact normalized full manifest instead. |
+| Embed 300 prose path rows | Declined. A content-addressed canonical line sequence is equally decidable, preserves duplicate normalized tuples, and avoids a second hand-maintained list. |
+| Delete the exact-home smoke assertion | Declined. Reviewed product law and repository policy require the live selected-matrix proof. |
 | Accept permanent smoke failure | Declined. It leaves frozen parent work unable to reach its required live gate. |
 | Require one backup filename across both phases | Declined. No ruling or observation establishes cross-phase backup identity; exact phase-local cardinality and freshness provide the required rail. |
 
 Subtraction result: ADD the one narrow fixture validator. DELETE loses because it
-removes required exact-home and two-harness evidence. ACCEPT loses because it leaves
-the required smoke permanently blocked. The enforcement rung is a one-file code rail
-with deterministic cases and one real fresh matrix.
+removes required exact-home evidence. ACCEPT loses because it leaves the required
+smoke permanently blocked. The enforcement rung is a one-file code rail with
+deterministic cases and one newly released fresh matrix.
 
 ## Clause map
 
 | Contract clause | Upstream source | Future implementation and verification |
 | --- | --- | --- |
 | Goal, I-04, C-03 | `att_d0b6affe`, `att_9e2e0562`, `att_f6acfc37` | Remove launcher-PID input from admission; case proves filename/internal-PID equality without launcher read. |
-| C-01 | `att_32e44600`; current `feature_smoke` call order; first-review F1 | Validate run-start once; validate separate Claude and Codex pre-spawn, pre-wake, post-turn, and cleanup phases without cross-home reads. |
+| C-01 | `att_32e44600`; current `feature_smoke` call order; first-review F1; named-waiver wake `s_1e05ddc2` | Validate run-start once; select Claude then Codex or exact named-waiver Codex only; validate per-leg pre-spawn, pre-wake, post-turn, and cleanup phases without cross-home reads. |
 | C-02 | `att_15121266`; final fixture metadata; preserved stopped fixture tree | Exact five-path whole-set predicate plus negative nesting/type/mode cases. |
 | C-04 | Two read-only Claude 2.1.232 sidecars; installed binary | Exact eleven-member schema and semantic cases. |
 | C-05 | Backup ruling; sidecar samples; mtime contradiction | Spawn-to-snapshot interval tests; no mtime or duration decision. |
 | C-06 | `att_3db588ec`; `att_d0b6affe`; one-shot fixture history | Exact phase-local backup cardinality, cross-phase sidecar identity, and no-reuse cases. |
-| C-07 | Parent `att_cbdc7419`; assignment scope | Empty Codex delta and a plugin-cache negative case. |
+| C-07 | Consumed evidence `art_85f430fe`; report `art_424f3eff`; `dr_1c06d9c9`; D-05 and D-13 | Validate four dynamic-name families, exact 300-entry counts, normalized path/type/mode SHA-256, binary-megabyte size bounds, and post-turn token identity; refuse each mismatch at set level. |
 | C-08-C-09 | Engineering tenet to report dirt; law wisdom 4-5; first-review F4; successor F6; final-review F7; F7-review F8 | Emit set-level `FX_PATH_SET` with `path=-`; use documented OTP operations and three-way regular-object identity continuity during one read; emit ordered `FX_SNAPSHOT` for the single acquisition attempt; otherwise select first failure by category, observed raw path, then fixed predicate order. |
-| C-10 | `att_15121266`; assignment evidence boundary; first-review F2; successor F5; final-review F7; F7-review F8; implementation review `att_e167466a`; `dr_16de6d11`; successor F9 | Exact retained mode-0600 JSONL path born from OTP `0666` exclusive create under exact client umask `0077`; same-handle type, mode, and identity proof; pre-existing HTTP gateway boundary; no chmod repair; seven-record passing cardinality; validator-refusal truncation; 29 fixed checks; hashes and booleans; identity-failure hash boundary; null uncaptured snapshot fields; and no identity values, decoded values, bytes, or OS error text. |
+| C-10 | `att_15121266`; assignment evidence boundary; first-review F2; successor F5; final-review F7; F7-review F8; implementation review `att_e167466a`; `dr_16de6d11`; successor F9; D-13 | Exact retained mode-0600 JSONL path born from OTP `0666` exclusive create under exact client umask `0077`; same-handle type, mode, and identity proof; pre-existing HTTP gateway boundary; no chmod repair; seven-record full or four-record named-waiver passing cardinality; validator-refusal truncation; 32 fixed v2 checks; exact waiver field; hashes and booleans; identity-failure hash boundary; null uncaptured snapshot fields; and no identity values, decoded values, bytes, or OS error text. |
 | C-11 | Assignment custody; Mike branch correction; first-review F3 | One-file diff from synchronized `origin/0.1.9` and custody check. |
-| C-12 | `att_d694b965`; `spec-handoff`; `AGENTS.md` live-smoke law; `dr_16de6d11`; successor F9 | Reviewed hash, explicit release, synchronized green product base, exact umask launch envelopes, hash-bearing syscall trace, source-topology gate for the pre-existing HTTP gateway, deterministic gates, one fresh matrix, and linked exact-commit review. |
-| AC-29 | Reviewed base-sync AC-56; `AGENTS.md`; first-review F1-F2 | One sequential Claude-plus-Codex matrix after repository gates, with separate leg observations and seven retained records. |
+| C-12 | `att_d694b965`; `spec-handoff`; `AGENTS.md` live-smoke law; `dr_16de6d11`; successor F9; `dr_1c06d9c9` | Reviewed hash, explicit selected-matrix release, synchronized green product base, exact umask launch envelopes, hash-bearing syscall trace, source-topology gate for the pre-existing HTTP gateway, deterministic gates, one new fresh fixture, and linked exact-commit review. |
+| AC-29, AC-47-AC-55 | Reviewed base-sync AC-56; `AGENTS.md`; first-review F1-F2; named-waiver authority; retained Codex evidence | Decide the full and named-waiver branches, exact Codex manifest allow/refuse cases, size and cross-phase cases, and seven- versus four-record v2 evidence. |
 | AC-34-AC-35 | Successor-review F5-F6; `dr_fb80acd4` | Console-only sink-failure evidence and deterministic `path=-` for missing-plus-extra set refusal. |
 | AC-36-AC-42 | Final-review F7; F7-review F8; `dr_7262873b`; `dr_9a179914` | Deterministic single-attempt snapshot refusal for enumeration, metadata, open, read, opened-type, and regular-object identity failure. |
 | AC-43-AC-44 | Implementation review `att_e167466a`; mechanism report `art_b1641827`; `dr_16de6d11` | Prove exact umask-before-exec provenance, OTP request mode `0666`, effective creation mode `0600`, and rejection of an untraced ambient-umask run. |
@@ -600,6 +742,19 @@ specimen receipts are `att_175f30de-6940-423c-bc35-cbd47a00712e`,
 `att_02748200-3c4d-48ab-b226-f5df031b704f`. This is a substrate incident record, not
 contract authority.
 
+The 2026-08-30 Codex-runtime digest re-read the complete contract and recon twice after
+the owned branch merged remote `main` at `446dc0e9cc6e9cc124809322512483a48adbe1f7`.
+It recalculated the retained 300-line normalized manifest from `art_85f430fe` and
+obtained SHA-256
+`2040e2080e389b9a59650e77c7ba246a2c97396ea79b514b2d61c98f7c23f4d0` again. The
+second reading made the named-waiver phase topology, four-record waived cardinality,
+32-check v2 evidence order, dynamic-name freshness, size limits, and pre-wake to
+post-turn token binding explicit. It found and removed the stale 29-check and
+unconditional full-matrix wording in this recon. No unmarked hole or blocking contract
+question remains. This digest does not authorize a product edit, fixture retry,
+consumed-fixture reuse, new fixture, integration, release, deployment, restart, or live
+mutation. One fresh linked independent review must decide the exact sealed artifacts.
+
 ## Review target
 
 One fresh linked reviewer should hash both amended artifacts, read the full work item,
@@ -610,7 +765,9 @@ all prior reviews and rework rulings, and the cited attests, and decide:
 3. whether any clause reintroduces launcher inference or topology;
 4. whether error ordering and evidence are deterministic and content-free;
 5. whether one-file custody and no-reuse remain intact;
-6. whether the Codex boundary remains a refusal;
+6. whether C-07 admits only the content-addressed normalized Codex manifest and refuses
+   each other path, nesting, type, mode, name, cardinality, size, freshness, or
+   cross-phase state;
 7. whether each implementation element traces back to the contract;
 8. whether F1-F4 remain closed;
 9. whether F5-F6 remain closed;
@@ -626,6 +783,16 @@ all prior reviews and rework rulings, and the cited attests, and decide:
     curl-failure source seams, which place the already-serving gateway and its harness
     children outside the later feature-smoke client process tree while C-02 preserves
     their required modes.
+14. whether the recon command reproduces exact normalized manifest SHA-256
+    `2040e2080e389b9a59650e77c7ba246a2c97396ea79b514b2d61c98f7c23f4d0` from
+    retained evidence `art_85f430fe` without collapsing either shell-snapshot tuple;
+15. whether the four dynamic-name families have complete grammar, cardinality,
+    equality, freshness, and pre-wake/post-turn bindings before normalization;
+16. whether the 8 MiB per-file and 32 MiB aggregate bounds follow the retained maxima
+    and fail closed without assigning Codex file-content semantics; and
+17. whether the v2 evidence schema makes the named-waiver selection observable, keeps
+    the full seven-record and waived four-record branches exact, and grants no product
+    or new-fixture authority.
 
 The reviewer records `reviewed-clean` or precise `changes-requested`. The reviewer does
 not edit, implement, run a fixture, resume the parent, or mutate facts.
