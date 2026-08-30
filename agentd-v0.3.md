@@ -10,25 +10,32 @@ Producer assignment: `asg_9f929c6d-ec1c-4c76-9e3f-9150496d6317`
 
 Canonical product repository: `https://github.com/clickety-clacks/agentd`
 
+Canonical specification repository: `https://github.com/clickety-clacks/tightbeam-specs`
+
 Authority and baseline:
 
 - Mike's work-item ruling requires enough snapshot identity for a UI to distinguish
   agents without screen scraping.
-- The specification base is `agentd-v1.md` at SHA-256
+- The complete Agentd v0.3 canonical set is the specification repository's root paths
+  `/agentd-v1.md`, `/agentd-v1.1.md`, and `/agentd-v0.3.md` at one pushed commit. A
+  checkout, product document, review report, or artifact pointer is evidence of that
+  set, not another specification home.
+- The pinned specification base is `/agentd-v1.md` at SHA-256
   `03445f45652b9e517a3fc1f158510ee053e66454124480fa0202ed879af68248` and
-  `agentd-v1.1.md` at SHA-256
+  `/agentd-v1.1.md` at SHA-256
   `4a5804c2ed4401eb91b449630742a40e7b2206b56f675c3b83feabd2c0e3b0f8`.
 - The reviewed release baseline is Agentd tag `v0.2.0` at product commit
   `17f1482e139e20554cee32cb5ae41993b71c2da5`. Its `README.md` has SHA-256
   `b00dbfbc6a9787dc5a8fcd3ba65cbb1da406013cba155e198977395f9aee7331`.
   Its `docs/verification.md` has SHA-256
   `207cb11ec645674b4852d0769627f6432b7723bf2dafa52cf2fb9faeed1aead4`.
-- This file is the v0.3 amendment. A v0.3 implementation satisfies the two
-  specification-base files as corrected by the reviewed v0.2.0 release contract. The
-  reviewed v0.2.0 behavior takes precedence where the earlier v1.1 draft differs from
-  the shipped release, including Codex feature/version handling, trust ownership,
-  configuration concurrency, and restart-only activation. This file takes precedence
-  only where it explicitly changes that corrected base.
+- The reviewed product files above are implementation evidence, not additional
+  specification authority. The closed correction in Terms, **Reviewed v0.2 integration
+  correction**, is the specification authority for the shipped integration differences.
+- This file is the v0.3 amendment. A v0.3 implementation satisfies the complete
+  canonical set. It applies the closed v0.2 integration correction only to the exact
+  v1.1 clauses enumerated in Terms. It otherwise takes precedence only where it
+  explicitly changes the pinned base.
 - The product version for this delivery is exactly `0.3.0`. The delivery cuts one
   release, `v0.3.0`, after exact-commit code review and acceptance. This spec does not
   authorize that release.
@@ -91,9 +98,72 @@ agents without collecting terminal, prompt, command, or transcript content.
 
 ### Base contract and amendment
 
-The **base contract** is the authority and baseline set named in the preamble. This
-file is the **v0.3 amendment**. A clause not changed here retains its reviewed v0.2.0
-meaning.
+The **base contract** is the pinned `/agentd-v1.md` and `/agentd-v1.1.md` in the
+complete canonical set named in the preamble. This file is the **v0.3 amendment**. A
+base clause remains governing unless the closed correction below or another numbered
+v0.3 requirement names that clause.
+
+### Reviewed v0.2 integration correction
+
+The reviewed v0.2.0 release supersedes no clause in `/agentd-v1.md` beyond the explicit
+v1.1 amendments already recorded by `/agentd-v1.1.md`. It supersedes this closed set of
+`/agentd-v1.1.md` clauses:
+
+- G3 and G5;
+- the Non-Goals bullets beginning `Supporting a Codex hook schema` and `Coordinating
+  with a non-Agentd configuration writer`;
+- Terms subsections **Configuration baseline, conflict, and quiescence** and
+  **Installed-version evidence**;
+- I6.2, I6.11, and I6.13; the `non-object config.toml hooks state` and `unsupported
+  Codex version during install` members of I7.1; I7.2 through I7.4; the I7.6
+  sentences beginning `A Codex trust edit`, `A preflight conflict`, and `A later
+  conflict`; plus I7.9 and I7.10;
+- Architecture D's sentence beginning `Agentd reads enough hook metadata`, plus the
+  four Architecture E paragraphs beginning `Each harness has one schema-aware`,
+  `Codex uninstall has two files`, `The configuration mutation pattern`, and `Deleting
+  configuration mutation`;
+- the first two Acceptance A4 paragraphs, the `malformed target Codex trust state`
+  member of the later malformed-input paragraph, the A4 paragraph beginning `Given an
+  unsupported Codex version`, and the complete Acceptance A7 case.
+
+The following requirements replace that closed set:
+
+1. Codex install resolves `codex`, runs `codex --version`, and runs
+   `codex features list` before it changes the target. A missing or disabled stable
+   `hooks` feature returns `unsupported_codex_hooks` and changes no target. Exact
+   version `codex-cli 0.149.1` proceeds without a version warning. Any other reported
+   version with an enabled stable `hooks` feature proceeds with
+   `warning=unverified_codex_version`; the warning makes no compatibility claim.
+2. Codex install and uninstall target only the Codex user `hooks.json`. Agentd does not
+   read or write `config.toml`, `hooks.state`, or a trust hash. Codex computes, reviews,
+   and stores its own trust state. Codex uninstall resolves no Codex executable and
+   applies no feature or version gate. It removes only exact Agentd-owned declarations
+   and preserves Codex-owned trust state unchanged.
+3. One integration command validates its target as a regular, non-symlink file owned
+   by the invoking user before mutation. It reads one baseline and builds one complete
+   schema-aware replacement. If its pre-replacement comparison observes one target
+   change, it validates the new bytes and rebuilds once from them. If a later
+   comparison observes another target change, it returns `configuration_changed` and
+   leaves that later value in place.
+4. A changed integration target is written through one exclusively created
+   same-directory temporary regular file with initial mode `0600`, flushed, and
+   atomically renamed. A replacement of an existing file preserves its validated mode
+   and owner. An integration command creates no lock, journal, backup, receipt, cache,
+   trust cleanup, or integration registry.
+5. Install preserves the current roster and current activity. A new or changed hook
+   declaration activates only after the user exits the existing harness process and
+   starts a replacement. A process that already loaded and trusted the same unchanged
+   declaration can report a later mapped event without another restart. A replacement
+   process enters the roster with activity `unknown`.
+6. Installed-version evidence records the resolved Codex executable, the exact outputs
+   of `codex --version` and `codex features list`, the selected user `hooks.json` path,
+   and the emitted version warning or its absence. Evidence can record Codex's own
+   later trust transition. It attributes no trust mutation to Agentd.
+7. Install and uninstall preserve unrelated root values, hook events, matcher groups,
+   handlers, and array order. Install replaces only exact Agentd-owned declarations
+   and appends missing groups. Uninstall removes only declarations with the complete
+   Agentd ownership marker and supported harness/event shape. A second install or
+   uninstall against the first result changes no bytes.
 
 ### Exact process identity
 
@@ -130,17 +200,27 @@ the rules above. Agentd does not read a process file descriptor to guess a termi
 
 A **tmux observation** is the output of at most one direct, no-shell invocation of
 `tmux list-panes -a -F <format>` during one procfs scan. Agentd invokes tmux as the
-daemon's effective user and sets `<format>` to these five fields separated by the
-ASCII Unit Separator byte `0x1f`:
+daemon's effective user and sets `<format>` to five consecutive byte-length frames:
 
 ```text
-#{pane_tty}\u001f#{session_name}\u001f#{window_index}\u001f#{window_name}\u001f#{pane_id}
+#{n:pane_tty}:#{pane_tty}#{n:session_name}:#{session_name}#{n:window_index}:#{window_index}#{n:window_name}:#{window_name}#{n:pane_id}:#{pane_id}
 ```
 
-LF separates pane rows. Agentd accepts a row only when it has five fields, valid UTF-8,
-no embedded LF or Unit Separator, a nonempty session name, a decimal `window_index`
-that fits an unsigned 32-bit integer, a nonempty window name, and a pane ID matching
-`%[0-9]+`. A session or window name containing a Unicode control character is invalid.
+Tmux's `n` format modifier emits the decimal byte length returned by `strlen` for its
+expanded value. One frame is `<length>:<value>`, where `<length>` is `0` or a decimal
+integer without a leading zero and `<value>` is exactly that many bytes. Tmux appends
+one LF after the fifth frame for each pane. Agentd validates the complete output as
+UTF-8, then parses frames by byte count rather than splitting on LF or another field
+byte. An LF, Unit Separator, colon, or decimal digit inside a value therefore cannot
+create a field or row boundary.
+
+Agentd accepts a row only when it has five complete frames followed by one LF, a
+nonempty session name, a decimal `window_index` that fits an unsigned 32-bit integer, a
+nonempty window name, and a pane ID matching `%[0-9]+`. A session or window name
+containing a Unicode control character is invalid after framing. An invalid length
+prefix, a length larger than the remaining bounded output, an incomplete frame, a
+missing row LF, or bytes between the fifth frame and its row LF make the complete tmux
+index empty. Agentd does not seek a later apparent row boundary after a framing error.
 
 Agentd normalizes `pane_tty` to a canonical tty. `/dev/pts/<decimal-index>` becomes
 `pts/<index>`. Another absolute `/dev` character-device path becomes
@@ -209,6 +289,8 @@ for the new name request.
 - The daemon user can execute its own tmux client when tmux metadata is available.
 - The tmux server, when present, belongs to the daemon user. `tmux list-panes -a` reports
   panes visible to that user's default tmux client environment.
+- The target tmux supports the `n` format modifier whose result is the byte length of
+  the expanded value, as documented and implemented by tmux 3.4.
 - A tmux pane terminal can move or disappear between `list-panes` and snapshot commit.
   Linux and tmux expose no indivisible cross-process snapshot for this MVP.
 - `XDG_STATE_HOME`, or its `$HOME/.local/state` fallback, is on a filesystem that can
@@ -304,8 +386,9 @@ I4.3. A missing executable, spawn failure, timeout, nonzero exit, signal, stdout
 breach, or non-UTF-8 output produces an empty index. The procfs scan still commits.
 Each agent has `tmux=null`. The scan state and scan issues do not report a tmux failure.
 
-I4.4. One malformed row invalidates only that row when row boundaries remain known.
-An invalid whole output encoding or size invalidates the complete index.
+I4.4. A semantically invalid row with valid framing invalidates only that row. A
+framing error, invalid whole-output encoding, or size breach invalidates the complete
+index.
 
 I4.5. Zero matching rows produces null. More than one accepted row for a canonical tty
 is ambiguous and produces null. Agentd does not choose a first or last row.
@@ -476,17 +559,19 @@ I9.1. The snapshot header and scan-issue lines retain their v0.2.0 formats and o
 I9.2. Each human agent line uses this exact field order:
 
 ```text
-agent name=<json-string|null> tmux=<json-string|null> cwdBase=<json-string|null> pid=<pid> startTimeTicks=<ticks> startedAtUnixMs=<integer|null> tty=<json-string|null> harness=<harness> presence=<presence> cwd=<json-string|null> activity=<activity>
+agent name=<json-string|null> tmux=<json-string|null> cwdBase=<json-string|null> pid=<pid> startTimeTicks=<ticks> startedAtUnixMs=<integer|null> tty=<json-string|null> harness=<harness> presence=<presence> cwd=<raw-known-path|unknown> activity=<activity>
 ```
 
 I9.3. A non-null tmux display string is
 `<session>:<windowIndex>.<windowName>:<paneId>`. Agentd JSON-encodes each complete
-`name`, tmux display string, cwd basename, tty, and full cwd value, including the
-surrounding double quotes and escapes. Null prints as the literal `null`.
+`name`, tmux display string, cwd basename, and tty, including the surrounding double
+quotes and escapes. Null for one of those new leading fields prints as the literal
+`null`.
 
 I9.4. `cwdBase` is the final lexical component of a known absolute cwd. Root `/`
 prints as the JSON string `"/"`. An unknown cwd prints null. The later `cwd` field
-retains the full known path or null, so the v0.2.0 information remains available.
+retains the exact v0.2.0 rendering: a known cwd prints as its raw full path without JSON
+quotes or escaping, and an unknown cwd prints the literal `unknown`.
 
 I9.5. `agentd watch` uses the same human header, issue, and agent-line formats for each
 received snapshot.
@@ -620,9 +705,16 @@ window name, and pane ID. Nonmatching records contain null.
 **Given** two accepted rows with the same canonical tty, **when** the index builds,
 **then** that tty is absent from the index and the record's tmux value is null.
 
-**Given** one malformed row among valid bounded UTF-8 rows, **when** the index builds,
-**then** only that row is discarded. **Given** invalid UTF-8, output above 1,048,576
-bytes, timeout, nonzero exit, signal, spawn failure, or an absent tmux executable,
+**Given** length-framed window names containing a colon, the multibyte scalar `é`, LF,
+or Unit Separator, **when** the parser reads each response, **then** it consumes the
+declared byte count inside that one field. The colon-bearing and multibyte names remain
+eligible. The control-character-bearing names make only their semantically invalid
+rows ineligible, and no suffix becomes a synthetic row.
+
+**Given** an invalid decimal length, a declared length beyond the remaining output, an
+incomplete fifth frame, or a missing final row LF, **when** the index builds, **then**
+the complete index is empty. **Given** invalid UTF-8, output above 1,048,576 bytes,
+timeout, nonzero exit, signal, spawn failure, or an absent tmux executable,
 **when** the scan completes, **then** each tmux value is null, the snapshot still
 commits, and no tmux scan issue appears.
 
@@ -696,13 +788,13 @@ exact four activity mappings and ownership behavior remain unchanged and no
 **Given** a named tmux agent with cwd `/home/mike/work/agentd`, **when** the user runs
 `agentd list`, **then** its line begins
 `agent name="Agentd spec" tmux="agents:2.spec:%7" cwdBase="agentd"` and later includes
-the exact PID, ticks, started-at value, tty, harness, presence, full cwd, and activity
-in I9.2 order.
+the exact PID, ticks, started-at value, tty, harness, presence,
+`cwd=/home/mike/work/agentd`, and activity in I9.2 order.
 
 **Given** null name, tmux, tty, started-at, and unknown cwd, **when** the user runs
 `agentd list`, **then** the line begins `agent name=null tmux=null cwdBase=null` and
-prints each other null fallback exactly. Header, issue lines, degraded-snapshot exit
-behavior, and zero-agent behavior remain unchanged.
+later prints `startedAtUnixMs=null tty=null` and `cwd=unknown`. Header, issue lines,
+degraded-snapshot exit behavior, and zero-agent behavior remain unchanged.
 
 ### A8 — Real Gibson and Osanwe matrix (G6; I1-I10)
 
@@ -744,6 +836,24 @@ and removes its temporary state after recording teardown.
 Linux checkout runs the reviewed v0.2.0 format, clippy, library, integration, base real
 smoke, and real harness-integration commands plus the v0.3 tests above, **then** each
 command exits 0 and the report records baseline and after counts.
+
+**Given** captured Codex command fixtures for `codex-cli 0.149.1`, another version with
+an enabled stable `hooks` feature, and a missing or disabled feature, **when** Codex
+install runs against each fixture, **then** the first proceeds without a version
+warning, the second proceeds with `warning=unverified_codex_version`, and the third
+returns `unsupported_codex_hooks` without changing `hooks.json`.
+
+**Given** an exact owned Codex declaration, an unavailable Codex executable, and
+sentinel bytes in `config.toml`, **when** Codex uninstall runs, **then** it removes the
+declaration without resolving Codex and preserves `config.toml` byte-for-byte.
+
+**Given** a valid hook file changes once after the integration command's baseline
+read, **when** the command compares the target, **then** it validates the new bytes,
+merges once from them, and preserves the unrelated change. **Given** the target changes
+again after that rebuild, **when** the command performs its later comparison, **then**
+it returns `configuration_changed` and preserves the second changed value. The test
+observes no Agentd-created lock, journal, backup, receipt, cache, trust edit, or
+integration registry.
 
 **Given** the unchanged reviewed code commit and successful Gibson and Osanwe matrix,
 **when** the release owner builds v0.3.0 assets, **then** one `v0.3.0` release identifies
