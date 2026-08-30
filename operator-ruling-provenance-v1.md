@@ -30,7 +30,9 @@ The canonical resolution text is this file:
 \`operator-ruling-provenance-census-2026-08-30.md\` at SHA-256
 \`db48b63856e3baa7df68378be2ee9bccb3d8b97c5229df716fbd849cb6151d21\` and
 \`operator-ruling-provenance-diagnosis-2026-08-30.md\` at SHA-256
-\`28d42cf96ed56fa5282d166e13b46184887a39a3330545e64c695f79a35b6022\`.
+\`28d42cf96ed56fa5282d166e13b46184887a39a3330545e64c695f79a35b6022\`, plus
+\`fixtures/operator-ruling-provenance-migration-2026-08-30/rows.jsonl\` at SHA-256
+\`0c3c3c1101db77f4557a9c1de2c2a6d7f76ae8d244730674847ce0fc805ecb7e\`.
 
 This file supersedes the parked discussion
 \`user-alerted-decision-request-escalation.md\`. Its **ratification successor** is the next
@@ -148,6 +150,7 @@ P1. One immutable \`operator_ruling_submissions\` row stores these fields:
 | \`decision\` | exact submitted option label or response text |
 | \`rationale\` | exact submitted rationale, nullable |
 | \`submittedAt\` | ingress time in epoch milliseconds |
+| \`requestSequence\` | positive integer, atomically increasing only within \`requestId\` |
 | \`delegationId\` | nullable; used only if Open Question option A is selected |
 
 The table permits no update or delete. The decision-request row gains nullable
@@ -193,6 +196,12 @@ Migration emits no direct-user classification and creates no source text. A term
 the epoch without a valid binding submission refuses as
 \`decision_request_provenance_invalid\`.
 
+The migration acceptance fixture is
+\`fixtures/operator-ruling-provenance-migration-2026-08-30/rows.jsonl\` at SHA-256
+\`0c3c3c1101db77f4557a9c1de2c2a6d7f76ae8d244730674847ce0fc805ecb7e\`. Its README
+defines the live read-only source and deterministic redaction transform. Migration consumes
+only its five JSON keys; it does not infer omitted actor, source, or timestamp fields.
+
 P9. The provenance resource applies this reader matrix before it discloses a row or event:
 
 | Reader | Authorization source | List and detail disclosure | Firehose disclosure |
@@ -208,10 +217,27 @@ it. List labels are exactly \`Mike confirmed\`, \`session recommendation\`,
 
 P10. Existing REST decision-request routes and Firehose
 \`decision_request.opened|ruled|consumed|withdrawn|superseded\` frames remain byte-compatible.
-The versioned \`operator ruling submissions\` resource exposes owner-visible submissions. Its
-Firehose classes are \`operator_ruling_submission.recommended\` and
-\`operator_ruling_submission.bound\`, with \`schemaVersion:1\`, \`op:\"upsert\"\`, request id,
-and submission id. REST and Firehose use one authorized serializer.
+The versioned \`operator ruling submissions\` resource exposes owner-visible submissions at
+\`GET /state/operator-ruling-submissions?requestId=<id>&afterRequestSequence=<n>&throughRequestSequence=<n>&limit=<n>\`.
+The endpoint requires \`requestId\`, orders items by increasing \`requestSequence\`, and uses
+P9 authorization. It returns \`items\`, \`snapshotThroughRequestSequence\`,
+\`nextAfterRequestSequence\`, and \`hasMore\`. An omitted
+\`throughRequestSequence\` makes the server read the request's current maximum sequence in the
+same snapshot that serves the first page. A supplied through value bounds each page to that
+sequence. Each response has at most \`limit\` items; the client repeats with
+\`afterRequestSequence=nextAfterRequestSequence\` while \`hasMore\` is true.
+
+The transaction that inserts a submission assigns its next request sequence. Its Firehose class
+is \`operator_ruling_submission.recommended\` or \`operator_ruling_submission.bound\`, with
+\`schemaVersion:1\`, \`op:\"upsert\"\`, request id, submission id, and request sequence. REST
+and Firehose use one authorized serializer.
+
+A client stores its highest contiguous request sequence for each request. It applies an event
+with the next sequence. It ignores an event at or below that stored sequence. On an event above
+the next sequence, it reads pages after the stored sequence through the event sequence, applies
+the returned rows in sequence order, and then reprocesses the event. An initial client performs
+the same read from sequence zero. This is the only recovery action for missed, duplicate, or
+reordered submission events.
 
 P11. Audit and refusal output contains only ids, enums, digests, and cause codes. It contains
 no decision, rationale, message, attachment, or source text. The gateway authorizes provenance
@@ -334,10 +360,12 @@ check, and ordinary decision request.
 
 ## Acceptance
 
-T1 — Given the frozen August 20 through August 30 fixture, when migration classifies the 294
-Mike-attributed rulings, then 3 are session-mediated legacy, 291 are legacy attribution
-unknown, and 0 are direct-user. Any input order produces identical classification and epoch
-bytes.
+T1 — Given
+\`fixtures/operator-ruling-provenance-migration-2026-08-30/rows.jsonl\` at SHA-256
+\`0c3c3c1101db77f4557a9c1de2c2a6d7f76ae8d244730674847ce0fc805ecb7e\`, when migration
+classifies its 294 rows, then 3 are session-mediated legacy, 291 are legacy attribution
+unknown, and 0 are direct-user. Given any input enumeration order, then classification and
+epoch bytes are identical.
 
 T2 — Given a session credential and \`--as-user mike\`, when the real CLI and HTTP router reach
 the seam, then actor remains that session, session state is known, transport is session-cli,
@@ -367,8 +395,12 @@ contain no candidate, rationale, message, attachment, or source text.
 
 T7 — Given pre-change exact-key fixtures, when an open request receives a recommendation and
 later binds, then existing REST decision-request responses and existing Firehose frames remain
-byte-equal. A new client reconstructs the new submission resource after missed, duplicate, or
-reordered version-1 events.
+byte-equal. Given request R has submission sequences 1, 2, and 3, when a client at sequence 0
+receives only event 3, then it reads
+\`/state/operator-ruling-submissions?requestId=R&afterRequestSequence=0&throughRequestSequence=3\`,
+pages through sequence 3, and stores rows 1, 2, and 3 in that order. When delayed duplicate
+events 1 and 2 arrive, then it ignores them. Given a client at sequence 1 receives event 3,
+then it performs the same bounded read after sequence 1 and stores row 2 before row 3.
 
 T8 — Given process loss before commit, when service restarts, then no submission, terminal
 change, fact, wake, or event exists. Given loss after commit, then one submission and terminal
