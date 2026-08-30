@@ -520,7 +520,7 @@ integrityConflictAt?
 integrityConflictFactId?
 ```
 
-Terminal `integrity_conflict` requires both integrity fields and forbids all lease fields and `nextAttemptAt`. `actionId` is required only for an actionable `terminal_owner_alert` and references the associated `failure_action`. Every other delivery has `actionId=null`.
+Terminal `integrity_conflict` requires both integrity fields, retains `leaseEpoch` and `attemptCount` as fence history, and requires `leaseOwner`, `leaseToken`, `leaseUntil`, and `nextAttemptAt` to be null. `actionId` is required only for an actionable `terminal_owner_alert` and references the associated `failure_action`. Every other delivery has `actionId=null`.
 
 The unique key is `(failureId, surface, destinationKind, destinationId)`. Parentless uses destination `none:none`. `deliveryId` is `fd_` plus lowercase SHA-256 hex of RFC 8785 canonical bytes for the four-element JSON array `[failureId, surface, destinationKind, destinationId]`. `notApplicableReason`, when present, is one of `parentless`, `parent_unavailable`, `no_human_action`, `destination_retired`, or `destination_missing`.
 
