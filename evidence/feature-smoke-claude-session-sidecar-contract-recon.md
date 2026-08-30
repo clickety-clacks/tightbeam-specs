@@ -88,6 +88,20 @@ Codex-runtime amendment readback on 2026-08-30 UTC, before this seal:
   contained neither canonical artifact, so the merge changed no contract or recon
   byte.
 
+R1-R3 successor-review readback on 2026-08-30 UTC, before this seal:
+
+- Independent review `asg_81abcdb3-43e9-40d7-b923-5febef82c511` read exact commit
+  `16e3b37033e54fc7db493d6a57eb2c2b236f0bd0` and closed changes-requested at verdict
+  `att_5ec4d759-138f-4775-9332-1ea11b9e38fa`.
+- Full report `art_b4753931`, SHA-256
+  `61107f11f44f8f62485b1769d894053007e360652aa0b20ee20b285ff9ee1261`, records R1
+  waiver-observation binding, R2 refused-record waiver value, and R3 calendar byte
+  widths. The report is pushed at commit
+  `962684870762ec0db02feeeb56dfa0e6dfd0017f`.
+- The owned specs branch fetched remote `main` again. It remains exact
+  `446dc0e9cc6e9cc124809322512483a48adbe1f7` and is an ancestor of the producer
+  branch. No merge or artifact edit was required before R1-R3 work.
+
 ## Authority and preserved state
 
 | Source | Material ruling or fact |
@@ -116,6 +130,7 @@ Codex-runtime amendment readback on 2026-08-30 UTC, before this seal:
 | `s_1e05ddc2-e04f-47f3-8273-2964c38719c8`, `att_8548c286-d318-4293-9632-670af92b79fc` | Mike corrected the intermediary's erroneous `hold` label, made the rationale on `dr_7383a755` controlling, authorized one Codex leg, and named the Claude credential waiver. The waiver expires when a valid Gibson org Anthropic credential exists. |
 | `art_85f430fe`, `art_424f3eff` | The consumed Codex-only fixture retained the exact three-record evidence and report. Codex produced 300 runtime-delta entries at pre-wake; C-07's former empty-delta check refused before a wake or turn. |
 | `dr_1c06d9c9-df96-4fb7-b49e-0752a9d9fe54` | Mike selected `amend-after-recon`: consume only the retained evidence, author and independently review a strict deterministic Codex-runtime amendment, and seek new-fixture authority only after reviewed-clean. |
+| `att_5ec4d759-138f-4775-9332-1ea11b9e38fa`, `art_b4753931` | The exact-`16e3b37` review preserved F1-F9 and found three important ambiguities: no run-start waiver observation, no `waiver` value for a refused Codex-only record, and no exact calendar byte widths. |
 | Parent commit `5f4341130419c4bae21bdd6c2278185dcd0f89a5` | Frozen execution-start observability implementation. Five files, 1,375 added lines. This contract does not modify it. |
 | Product assignment `asg_17a50f66-c32d-42f2-aba5-dd39e072203e` | Frozen original base-synchronization product lane. This contract does not resume it. |
 
@@ -129,6 +144,13 @@ Codex-runtime amendment readback on 2026-08-30 UTC, before this seal:
   `682331d702871b191382107fec40550f40f1b634`.
 - `docs/SMOKE.md` blob:
   `729384db77bc506ccc7a3ae46a58eadea457cea3`.
+- Current read-only waiver-observation source: `origin/0.1.9` commit
+  `2e918768556ef16a4412f9e0844bb388b6fb1051`,
+  `lib/tightbeam/client_e2e.ex` blob
+  `402c822cfdc71b10d04a85f8cf076a57c0894f5d`. `preflight/2` maps `:live` to pass,
+  `{:dead, reason}` to fail with note prefix `credential rejected: `, and
+  `{:unknown, reason}` to incomplete. The fixture can consume that row without
+  recording its note or reason.
 - Reviewed base-synchronization successor:
   `base-synchronization-gate-v2.md`, SHA-256
   `16cb6348093d25bc46af05121b087eb8dd3663c98f510cca4895a40106dc4ceb`.
@@ -586,6 +608,39 @@ claim, file-content semantic, retry, fixture reuse, fixture attempt, implementat
 authority, or live authority. One fresh independent review must decide the exact
 contract and recon seal before the producer seeks another release.
 
+### D-14 — R1-R3 close through one bound observation and exact bytes
+
+The exact-`16e3b37` review preserved F1-F9 and requested three narrow corrections.
+This successor amendment resolves them without changing the admitted static manifest
+or implementation custody:
+
+1. For an exact-waiver Codex-only candidate, C-01 invokes the existing
+   `Tightbeam.ClientE2E.preflight("claude", fixture_base)` seam once after C-10 creates
+   the evidence writer and immediately before run-start. Only exact step `P-claude`,
+   status `:fail`, and note prefix `credential rejected: ` designate the expired
+   credential that activates the waiver. Pass makes the waiver inactive because the
+   credential is live. Incomplete or another fail makes liveness unknown and also
+   leaves the waiver inactive. The fixture records none of the note.
+2. The same invocation retains the scorecard row in memory and consumes it in the next
+   admission action. This chooses the run-start observation over the opener's earlier
+   candidate selection without adding a duration, environment assertion, credential
+   refresh, helper, or cross-process state.
+3. C-10 writes the exact waiver ID only after run-start admits the named-waiver matrix.
+   A full matrix or non-admitted run-start refusal writes JSON `null`. The record never
+   copies an absent, wrong, inactive, or otherwise non-admitted supplied value. The
+   successful evidence-file creation consumes the released fixture even when this
+   run-start refusal occurs before a harness spawn.
+4. C-07 fixes year to four ASCII decimal digits and month, day, hour, minute, and second
+   to two each. It checks Gregorian date ranges and `00`-through-`59` minute and second
+   ranges before normalization. An alternate raw spelling therefore cannot reach the
+   retained manifest digest.
+
+AC-47-AC-60 decide the rejected-credential allow case, absent/wrong/live/unknown waiver
+refusals, refused evidence value, exact calendar allow, and alternate-width refusal.
+The correction adds no credential ceremony, decoded credential evidence, product file,
+runtime helper, dependency, fixture attempt, retry, fixture reuse, implementation
+authority, or live authority.
+
 ## Declined alternatives
 
 | Alternative | Decision |
@@ -616,6 +671,9 @@ contract and recon seal before the producer seeks another release.
 | Sort missing and extra path candidates for `FX_PATH_SET` | Declined. A missing expected path is not an observed relative path. The set-level result emits `path=-`. |
 | Admit the Codex plugin cache by prefix | Declined. It admits unobserved descendants. C-07 binds one exact normalized full manifest instead. |
 | Embed 300 prose path rows | Declined. A content-addressed canonical line sequence is equally decidable, preserves duplicate normalized tuples, and avoids a second hand-maintained list. |
+| Trust only the opener's waiver observation through fixture execution | Declined. Credential state can change before run-start. The same invocation captures and immediately consumes one existing preflight row. |
+| Record a wrong supplied waiver value in refused evidence | Declined. It widens the evidence-content surface and is unnecessary. A non-admitted run-start record uses JSON `null`. |
+| Treat a calendar value as valid without fixing its raw byte widths | Declined. Normalization would collapse alternate spellings. C-07 validates exact 4/2/2/2/2/2 bytes first. |
 | Delete the exact-home smoke assertion | Declined. Reviewed product law and repository policy require the live selected-matrix proof. |
 | Accept permanent smoke failure | Declined. It leaves frozen parent work unable to reach its required live gate. |
 | Require one backup filename across both phases | Declined. No ruling or observation establishes cross-phase backup identity; exact phase-local cardinality and freshness provide the required rail. |
@@ -630,17 +688,17 @@ deterministic cases and one newly released fresh matrix.
 | Contract clause | Upstream source | Future implementation and verification |
 | --- | --- | --- |
 | Goal, I-04, C-03 | `att_d0b6affe`, `att_9e2e0562`, `att_f6acfc37` | Remove launcher-PID input from admission; case proves filename/internal-PID equality without launcher read. |
-| C-01 | `att_32e44600`; current `feature_smoke` call order; first-review F1; named-waiver wake `s_1e05ddc2` | Validate run-start once; select Claude then Codex or exact named-waiver Codex only; validate per-leg pre-spawn, pre-wake, post-turn, and cleanup phases without cross-home reads. |
+| C-01 | `att_32e44600`; current `feature_smoke` call order; first-review F1; named-waiver wake `s_1e05ddc2`; R1 in `att_5ec4d759`; D-14 | Validate run-start once; admit exact-waiver Codex only from the immediately preceding rejected-credential preflight row; refuse live or unknown state; validate per-leg phases without cross-home reads. |
 | C-02 | `att_15121266`; final fixture metadata; preserved stopped fixture tree | Exact five-path whole-set predicate plus negative nesting/type/mode cases. |
 | C-04 | Two read-only Claude 2.1.232 sidecars; installed binary | Exact eleven-member schema and semantic cases. |
 | C-05 | Backup ruling; sidecar samples; mtime contradiction | Spawn-to-snapshot interval tests; no mtime or duration decision. |
-| C-06 | `att_3db588ec`; `att_d0b6affe`; one-shot fixture history | Exact phase-local backup cardinality, cross-phase sidecar identity, and no-reuse cases. |
-| C-07 | Consumed evidence `art_85f430fe`; report `art_424f3eff`; `dr_1c06d9c9`; D-05 and D-13 | Validate four dynamic-name families, exact 300-entry counts, normalized path/type/mode SHA-256, binary-megabyte size bounds, and post-turn token identity; refuse each mismatch at set level. |
+| C-06 | `att_3db588ec`; `att_d0b6affe`; one-shot fixture history | Exact phase-local backup cardinality, cross-phase sidecar identity, and no reuse after harness spawn or successful evidence-file creation. |
+| C-07 | Consumed evidence `art_85f430fe`; report `art_424f3eff`; `dr_1c06d9c9`; R3 in `att_5ec4d759`; D-05, D-13, and D-14 | Validate four dynamic-name families, exact 4/2/2/2/2/2 calendar bytes, exact 300-entry counts, normalized path/type/mode SHA-256, size bounds, and post-turn token identity; refuse each mismatch at set level. |
 | C-08-C-09 | Engineering tenet to report dirt; law wisdom 4-5; first-review F4; successor F6; final-review F7; F7-review F8 | Emit set-level `FX_PATH_SET` with `path=-`; use documented OTP operations and three-way regular-object identity continuity during one read; emit ordered `FX_SNAPSHOT` for the single acquisition attempt; otherwise select first failure by category, observed raw path, then fixed predicate order. |
-| C-10 | `att_15121266`; assignment evidence boundary; first-review F2; successor F5; final-review F7; F7-review F8; implementation review `att_e167466a`; `dr_16de6d11`; successor F9; D-13 | Exact retained mode-0600 JSONL path born from OTP `0666` exclusive create under exact client umask `0077`; same-handle type, mode, and identity proof; pre-existing HTTP gateway boundary; no chmod repair; seven-record full or four-record named-waiver passing cardinality; validator-refusal truncation; 32 fixed v2 checks; exact waiver field; hashes and booleans; identity-failure hash boundary; null uncaptured snapshot fields; and no identity values, decoded values, bytes, or OS error text. |
+| C-10 | `att_15121266`; assignment evidence boundary; prior F2/F5/F7/F8/F9; R2 in `att_5ec4d759`; D-13-D-14 | Preserve the exact mode-0600 one-writer JSONL boundary, seven/four passing cardinality, refusal truncation, and 32 v2 checks; record the exact waiver only for an admitted waived matrix and JSON `null` for each other branch without copying a rejected supplied value. |
 | C-11 | Assignment custody; Mike branch correction; first-review F3 | One-file diff from synchronized `origin/0.1.9` and custody check. |
-| C-12 | `att_d694b965`; `spec-handoff`; `AGENTS.md` live-smoke law; `dr_16de6d11`; successor F9; `dr_1c06d9c9` | Reviewed hash, explicit selected-matrix release, synchronized green product base, exact umask launch envelopes, hash-bearing syscall trace, source-topology gate for the pre-existing HTTP gateway, deterministic gates, one new fresh fixture, and linked exact-commit review. |
-| AC-29, AC-47-AC-55 | Reviewed base-sync AC-56; `AGENTS.md`; first-review F1-F2; named-waiver authority; retained Codex evidence | Decide the full and named-waiver branches, exact Codex manifest allow/refuse cases, size and cross-phase cases, and seven- versus four-record v2 evidence. |
+| C-12 | `att_d694b965`; `spec-handoff`; `AGENTS.md` live-smoke law; `dr_16de6d11`; prior F9; `dr_1c06d9c9`; R1 in `att_5ec4d759` | Preserve the reviewed release sequence and bind the opener's candidate selection to one same-invocation run-start liveness observation before any selected-leg preflight or spawn. |
+| AC-29, AC-47-AC-60 | Reviewed base-sync AC-56; `AGENTS.md`; first-review F1-F2; named-waiver authority; retained Codex evidence; `att_5ec4d759` | Decide full and named-waiver branches, rejected/live/unknown/malformed waiver inputs, refused evidence value, exact calendar bytes, exact manifest allow/refuse cases, size and cross-phase cases, and seven/four v2 records. |
 | AC-34-AC-35 | Successor-review F5-F6; `dr_fb80acd4` | Console-only sink-failure evidence and deterministic `path=-` for missing-plus-extra set refusal. |
 | AC-36-AC-42 | Final-review F7; F7-review F8; `dr_7262873b`; `dr_9a179914` | Deterministic single-attempt snapshot refusal for enumeration, metadata, open, read, opened-type, and regular-object identity failure. |
 | AC-43-AC-44 | Implementation review `att_e167466a`; mechanism report `art_b1641827`; `dr_16de6d11` | Prove exact umask-before-exec provenance, OTP request mode `0666`, effective creation mode `0600`, and rejection of an untraced ambient-umask run. |
@@ -755,6 +813,15 @@ question remains. This digest does not authorize a product edit, fixture retry,
 consumed-fixture reuse, new fixture, integration, release, deployment, restart, or live
 mutation. One fresh linked independent review must decide the exact sealed artifacts.
 
+The 2026-08-30 R1-R3 digest read verdict `att_5ec4d759` and report `art_b4753931` in
+full, then re-read the amended contract and recon from the beginning. It checked the
+current `ClientE2E.preflight/2` source seam at exact `origin/0.1.9` commit
+`2e918768556ef16a4412f9e0844bb388b6fb1051`. The amendment now gives the run-start
+validator one immediate credential observation, gives each refused branch one bounded
+`waiver` value, and rejects each alternate calendar byte spelling before normalization.
+The digest found no second interpretation in those three boundaries and no new
+authority. One successor review must decide the new exact hashes.
+
 ## Review target
 
 One fresh linked reviewer should hash both amended artifacts, read the full work item,
@@ -792,7 +859,14 @@ all prior reviews and rework rulings, and the cited attests, and decide:
     and fail closed without assigning Codex file-content semantics; and
 17. whether the v2 evidence schema makes the named-waiver selection observable, keeps
     the full seven-record and waived four-record branches exact, and grants no product
-    or new-fixture authority.
+    or new-fixture authority;
+18. whether R1 closes through one existing preflight row whose exact rejected, live,
+    and unknown outcomes are consumed immediately at run-start without recording the
+    note or inventing a duration;
+19. whether R2 assigns JSON `null` to each non-admitted run-start refusal and prevents a
+    wrong supplied waiver value from entering evidence; and
+20. whether R3 fixes the raw session calendar spelling to 4/2/2/2/2/2 digits and valid
+    UTC ranges before the manifest normalization can substitute placeholders.
 
 The reviewer records `reviewed-clean` or precise `changes-requested`. The reviewer does
 not edit, implement, run a fixture, resume the parent, or mutate facts.

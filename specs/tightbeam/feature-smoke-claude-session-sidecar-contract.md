@@ -68,8 +68,9 @@ each path outside those two sets subject to deterministic unexpected-path refusa
 - **Fresh fixture**: a newly created isolated Tightbeam base that has exactly one user,
   that user is an admin, zero sessions, zero work items, zero turns, copied
   authentication stores, clean identity input, and one native home reconciliation for
-  each selected harness. A fixture stops being fresh when either harness process is
-  spawned.
+  each selected harness. A released fixture stops being fresh when the invocation
+  successfully creates its C-10 evidence file or spawns a harness process, whichever
+  occurs first.
 - **Projected home**: the harness-and-host directory returned by
   `Tightbeam.Homes.home_path/3` inside the fresh fixture.
 - **Owned baseline**: the exact leaf-path set returned by
@@ -93,18 +94,30 @@ each path outside those two sets subject to deterministic unexpected-path refusa
   first and exactly one Codex leg second. With the active named Claude waiver, the
   matrix runs exactly one Codex leg and no Claude leg. A leg does not read the other
   harness's home.
+- **Claude waiver observation**: the one scorecard row returned by
+  `Tightbeam.ClientE2E.preflight("claude", fixture_base)` after C-10 establishes the
+  evidence writer and immediately before run-start validation when the selected set is
+  exactly Codex and `TIGHTBEAM_SMOKE_CLAUDE_WAIVER` has the exact named-waiver value.
+  The row is a rejected-credential observation only when `step` is exact
+  string `P-claude`, `status` is atom `:fail`, and `note` begins with exact ASCII bytes
+  `credential rejected: `. A row with `status=:pass` is a live-credential observation.
+  Another row is an unknown-credential observation. The fixture retains the row in
+  memory through the next run-start action and does not record its `note`.
 - **Active named Claude waiver**: exact value
   `dr_7383a755-820d-4f1e-b882-4f16b08a103f`, selected through
-  `TIGHTBEAM_SMOKE_CLAUDE_WAIVER`, while Gibson's org Anthropic credential is invalid.
-  The waiver expires immediately when that credential becomes valid. The fixture
-  validates the exact selected value; the step-5 release records whether the external
-  credential condition still holds. Another value or an absent value on a Codex-only
-  run makes the fixture input invalid.
+  `TIGHTBEAM_SMOKE_CLAUDE_WAIVER`, together with a rejected-credential Claude waiver
+  observation from the same invocation. A live-credential or unknown-credential
+  observation makes the waiver inactive. The observation is authoritative for that
+  invocation because run-start consumes it in the next admission action. A later
+  invocation repeats the observation. Another selected value or an absent value on a
+  Codex-only run makes the fixture input invalid.
 - **Spawn interval**: the inclusive wall-clock interval whose start is captured before
   the fixture sends the current leg's spawn request and whose end is captured after
   that leg's single runtime snapshot attempt returns success or failure.
-- **Run-start phase**: after fixture gateway connection and before the first credential
-  preflight. This phase occurs once for the selected full or named-waiver matrix.
+- **Run-start phase**: after fixture gateway connection and C-10 evidence-writer setup.
+  For a Codex-only candidate, it follows the same-invocation Claude waiver observation.
+  It precedes the selected harness leg's credential preflight. This phase occurs once
+  for the selected full or named-waiver matrix.
 - **Pre-spawn phase**: the per-leg phase after native reconciliation of that harness's
   projected home and before the fixture sends that leg's spawn request.
 - **Pre-wake phase**: the per-leg phase after that leg's spawn and deployment tuning
@@ -224,6 +237,13 @@ each path outside those two sets subject to deterministic unexpected-path refusa
   next binary-megabyte bounds, 32 MiB total and 8 MiB per regular file. A later
   observation that does not satisfy the exact normalized manifest or either bound
   refuses and returns for a new ruling; it does not widen this contract.
+- AS-15. Current `origin/0.1.9` commit
+  `2e918768556ef16a4412f9e0844bb388b6fb1051`, `lib/tightbeam/client_e2e.ex` blob
+  `402c822cfdc71b10d04a85f8cf076a57c0894f5d`, maps a harness credential callback's
+  `:live` result to a passing preflight row, `{:dead, reason}` to a failing row whose
+  note begins `credential rejected: `, and `{:unknown, reason}` to an incomplete row.
+  A future implementer confirms that seam on the synchronized implementation base. A
+  mismatch returns for ruling.
 
 ## Invariants
 
@@ -245,7 +265,8 @@ each path outside those two sets subject to deterministic unexpected-path refusa
   best-effort exception.
 - I-07. The fixture does not delete, preseed, rename, repair, or synthesize a harness
   runtime path.
-- I-08. A fixture that reaches harness spawn is consumed after either pass or refusal.
+- I-08. A released fixture invocation that successfully creates the C-10 evidence file
+  is consumed after either pass or refusal, including a run-start refusal before spawn.
 - I-09. Evidence excludes raw sidecar bytes and decoded JSON member values.
 - I-10. Future implementation custody contains only `scripts/feature_smoke.exs`.
 - I-11. Parent commit `5f4341130419c4bae21bdd6c2278185dcd0f89a5`, product
@@ -266,8 +287,9 @@ each path outside those two sets subject to deterministic unexpected-path refusa
 
 The pattern is **fixture harness-runtime admission**. It applies only to the
 `check_local_deployment` group in `scripts/feature_smoke.exs`. It does not apply to
-live home reconciliation, credential handling, harness process supervision, product
-sessions, or another smoke group.
+live home reconciliation, credential-store mutation, onboarding, harness process
+supervision, product sessions, or another smoke group. It uses the existing read-only
+Claude credential-liveness preflight only to decide the named-waiver input at run-start.
 
 The implementation uses one validation seam for a harness leg's runtime delta. The
 fixture invokes that seam separately for the Claude leg and the Codex leg at each
@@ -278,23 +300,28 @@ allow lists and concurrent harness sessions are out of contract.
 
 The fixture captures and validates these states in order:
 
-1. In the sole run-start phase, the selected harness set is exactly Claude and Codex,
+1. C-10 establishes the evidence writer. When the selected harness set is exactly
+   Codex and the selected waiver value is exact, the fixture captures one Claude waiver
+   observation and performs no other credential operation before run-start validation.
+2. In the sole run-start phase, the selected harness set is exactly Claude and Codex,
    or it is exactly Codex while the active named Claude waiver passes. The fixture has
    exactly one user, that user is an admin, and it has zero sessions, work items, and
-   turns. A Codex-only selection without the active waiver refuses before credential
-   preflight.
-2. When Claude is selected, pre-spawn validation requires the Claude projected home's
+   turns. A missing or wrong selected waiver returns `FX_FIXTURE_STATE` before any
+   credential preflight or spawn. An inactive exact waiver returns
+   `FX_FIXTURE_STATE` after the Claude waiver observation and before the selected leg's
+   credential preflight or spawn. C-10 records `waiver=null` for either refusal.
+3. When Claude is selected, pre-spawn validation requires the Claude projected home's
    leaf set to equal its owned baseline. Pre-wake and post-turn validation require that
    leg's Claude runtime delta to satisfy C-02 through C-06. Claude cleanup runs after
    the Claude post-turn evidence record and before the next harness leg starts.
-3. For the Codex leg, pre-spawn validation requires the Codex projected home's leaf set
+4. For the Codex leg, pre-spawn validation requires the Codex projected home's leaf set
    to equal its owned baseline. Pre-wake and post-turn validation require that leg's
    Codex runtime delta to satisfy C-07's exact normalized manifest. Codex cleanup runs
    after the Codex post-turn evidence record.
-4. A refusal writes the current phase's evidence record and stops the selected matrix. If
+5. A refusal writes the current phase's evidence record and stops the selected matrix. If
    the current leg reached spawn, its existing cleanup runs before the matrix stops.
    The fixture does not start a later harness leg.
-5. The validator performs no post-retirement admission check and does not observe the
+6. The validator performs no post-retirement admission check and does not observe the
    other harness's home during one leg.
 
 Acceptance example: Given a native-reconciled fixture with exact owned baselines, when
@@ -306,6 +333,11 @@ Acceptance example: Given completed Claude cleanup, or an active named Claude wa
 and a native-reconciled Codex home, when Codex spawn and tuning return and no Codex wake
 has been sent, then the validator labels the Codex observation `pre-wake`, evaluates
 C-07 before the wake call, and does not inspect the Claude projected home.
+
+Acceptance example: Given a Codex-only candidate with the exact selected waiver value,
+when its same-invocation Claude waiver observation has `status=:pass`, then run-start
+returns `FX_FIXTURE_STATE`, records `waiver=null`, and sends no selected-leg credential
+preflight or spawn.
 
 ### C-02 — Complete admitted Claude path set
 
@@ -399,7 +431,9 @@ freshness independently. The backup may have a different valid name at post-turn
 The opener may authorize one fresh fixture after reviewed-clean contract and
 implementation evidence. The release names the full or named-waiver matrix. C-01
 run-start state makes prior harness use observable. A refusal after harness spawn
-consumes that fixture. A later attempt needs a new ruling.
+consumes that fixture. Successful C-10 evidence-file creation also consumes the
+released fixture when run-start later refuses before spawn. A later attempt needs a
+new ruling.
 
 Acceptance example: Given a passing pre-wake sidecar and a post-turn sidecar with a
 different `sessionId`, when the validator compares sidecar identity, then it refuses
@@ -425,10 +459,17 @@ Exactly four dynamic-name families exist:
    that year, one direct day directory below that month, and one rollout file below
    that day. Their path is
    `sessions/<yyyy>/<mm>/<dd>/rollout-<yyyy>-<mm>-<dd>T<hh>-<minute>-<ss>-<run-uuid>.jsonl`.
-   The repeated date fields are byte-equal. The complete date and time is a valid UTC
-   second named `rollout_s`. Integer division requires
+   `<yyyy>` is exactly four ASCII decimal digits. Each of `<mm>`, `<dd>`, `<hh>`,
+   `<minute>`, and `<ss>` is exactly two ASCII decimal digits. The repeated date fields
+   are byte-equal. Month is `01` through `12`; day is `01` through the Gregorian number
+   of days in that year and month; hour is `00` through `23`; minute and second are
+   `00` through `59`. The fields encode one UTC second with no offset, fractional
+   second, or leap-second spelling. Its Unix epoch second is `rollout_s`. Integer
+   division requires
    `div(spawn_started_at, 1000) <= rollout_s <= div(snapshot_finished_at, 1000)`.
-   `<run-uuid>` is lowercase canonical UUID text.
+   `<run-uuid>` is lowercase canonical UUID text. The validator rejects a shorter,
+   longer, signed, space-padded, or otherwise alternate field spelling before
+   normalization.
 3. `shell_snapshots` has exactly two direct regular-file children. Each name matches
    `<snapshot-uuid>.<epoch-ns>.sh`, where the UUID is lowercase canonical UUID text and
    `<epoch-ns>` is exactly 19 decimal digits with a nonzero first digit. The two names
@@ -556,7 +597,8 @@ the handle, and does not retry with another reader.
 The validator evaluates categories in this order:
 
 1. `FX_PHASE` for a missing or out-of-order phase input.
-2. `FX_FIXTURE_STATE` for a run-start harness-selection or fixture-count mismatch.
+2. `FX_FIXTURE_STATE` for a run-start harness-selection, named-waiver input,
+   named-waiver observation, or fixture-count mismatch.
 3. `FX_CLOCK` for an inverted spawn interval.
 4. `FX_SNAPSHOT` for the C-08 runtime-snapshot acquisition failure.
 5. `FX_BASELINE` for a pre-spawn baseline mismatch.
@@ -670,7 +712,9 @@ The fields have these contracts:
   session key rendered as an evidence token.
 - `waiver` is string `dr_7383a755-820d-4f1e-b882-4f16b08a103f` in each record of a
   Codex-only matrix admitted under the active named Claude waiver. It is JSON `null` in
-  each record of a full two-leg matrix.
+  each record of a full two-leg matrix and in a run-start refusal that did not admit a
+  named-waiver matrix. The fixture does not serialize an absent, wrong, inactive, or
+  otherwise non-admitted supplied waiver value.
 - `result` is string `pass` or `refused`.
 - `cause` is string `validated` for a passing record. For a refused record, it is the
   mapped C-clause of the first failed predicate selected by C-09.
@@ -822,10 +866,15 @@ The release sequence is:
 5. The opener authorizes one new never-reused fixture and names the selected harness
    set. If Gibson's org Anthropic credential is valid, it selects Claude then Codex and
    the named waiver is inactive. If that credential remains invalid, it may select
-   Codex only under the active named Claude waiver.
+   Codex only with the exact named-waiver input. This opener observation selects the
+   candidate matrix; it does not replace the fixture's run-start observation.
 6. The implementer runs the selected matrix once with
    `(umask 077 && exec mix run --no-start scripts/feature_smoke.exs)` and records pass
-   evidence or the exact first blocker. A refusal consumes that fixture. The
+   evidence or the exact first blocker. For a Codex-only candidate, the fixture captures
+   the Claude waiver observation after evidence setup and immediately before run-start.
+   Only a rejected-credential observation activates the waiver. A live-credential or
+   unknown-credential observation returns `FX_FIXTURE_STATE` with `waiver=null` before
+   the selected-leg credential preflight or spawn. A refusal consumes that fixture. The
    implementer does not retry or reuse it.
 7. A passing implementation returns for one fresh linked independent exact-commit
    review before the parent lane resumes.
@@ -923,15 +972,20 @@ The Given/When/Then examples in C-01 through C-12 are part of this acceptance co
 | AC-44 | Ambient umask would independently yield mode `0600`, but the exact launch envelope or its trace is absent | Release evidence is evaluated | The run is nonconforming and cannot authorize the live matrix or parent lane | I-13, C-10-C-12 |
 | AC-45 | A Tightbeam gateway is already serving the fixture before the exact feature-smoke envelope starts | The Mix client sends the Claude and Codex spawn requests | The client uses the recorded gateway port over HTTP; the gateway creates both harness processes outside the client process tree; the client `0077` umask cannot change the gateway or harness umask | AS-12, I-14, C-10-C-12 |
 | AC-46 | `gateway.json` names a loopback port with no serving Tightbeam gateway | The exact `mix run --no-start` client reaches its first HTTP request | `curl` returns nonzero, the client calls its failure path, and no harness spawn result exists | AS-12, I-14, C-10-C-12 |
-| AC-47 | Gibson's org Anthropic credential is invalid, `TIGHTBEAM_SMOKE_CLAUDE_WAIVER` equals the exact waiver ID, and only Codex is selected | Run-start validation runs | The fixture records the named waiver, admits the Codex-only selection, and starts no Claude phase | AS-13, C-01, C-10 |
-| AC-48 | Only Codex is selected and the exact named waiver is absent or wrong | Run-start validation runs | `FX_FIXTURE_STATE` refuses before credential preflight or spawn | C-01, C-09 |
-| AC-49 | The retained 300-entry Codex image is supplied with fresh valid dynamic tokens and bounded sizes | Codex pre-wake validation runs | Dynamic-name checks pass and the normalized manifest SHA-256 equals the C-07 value | AS-14, C-07 |
+| AC-47 | `TIGHTBEAM_SMOKE_CLAUDE_WAIVER` equals the exact waiver ID, only Codex is selected, and the same-invocation Claude waiver observation has exact step `P-claude`, status `:fail`, and note prefix `credential rejected: ` | Run-start validation runs | The fixture records the named waiver, admits the Codex-only selection, and starts no Claude phase | AS-13, AS-15, C-01, C-10 |
+| AC-48 | Only Codex is selected and the exact named waiver is absent | Run-start validation runs | `FX_FIXTURE_STATE` refuses before any credential preflight or spawn; the synced run-start record has `waiver=null` | C-01, C-09-C-10 |
+| AC-49 | The retained 300-entry Codex image is supplied with exact-width valid calendar fields, fresh valid dynamic tokens, and bounded sizes | Codex pre-wake validation runs | Dynamic-name checks pass and the normalized manifest SHA-256 equals the C-07 value | AS-14, C-07 |
 | AC-50 | One Codex path is added, removed, renamed, or nested differently | Codex manifest validation runs | `FX_CODEX_RUNTIME_PATH` refuses with `path=-` and `clause=C-07` | C-07, C-09 |
 | AC-51 | One Codex entry has a different type or mode | Codex manifest validation runs | `FX_CODEX_RUNTIME_PATH` refuses with `path=-` and `clause=C-07` | C-07, C-09 |
 | AC-52 | One Codex regular file exceeds 8,388,608 bytes or the regular-file sum exceeds 33,554,432 bytes | Codex size validation runs | `FX_CODEX_RUNTIME_PATH` refuses with `path=-` and `clause=C-07` | C-07, C-09 |
 | AC-53 | Codex pre-wake passes and one post-turn dynamic token differs | Codex post-turn validation runs | `FX_CODEX_RUNTIME_PATH` refuses the cross-phase mismatch with `path=-` | C-07, C-09-C-10 |
 | AC-54 | The active named Claude waiver admits a passing Codex-only matrix | Codex cleanup completes | The v2 evidence file contains exactly four records in run-start, Codex pre-spawn, Codex pre-wake, Codex post-turn order | C-01, C-10-C-12 |
 | AC-55 | A valid Gibson org Anthropic credential exists | The opener prepares step 5 | The named waiver is expired, the opener selects the full Claude-then-Codex matrix, and no Codex-only fixture is released | AS-13, C-12 |
+| AC-56 | Only Codex is selected and `TIGHTBEAM_SMOKE_CLAUDE_WAIVER` contains a wrong string | Run-start validation runs | `FX_FIXTURE_STATE` refuses before any credential preflight or spawn; the synced run-start record has `waiver=null` and does not contain the supplied string | C-01, C-09-C-10 |
+| AC-57 | Step 5 selected a Codex-only candidate, the exact waiver input remains set, and its same-invocation Claude waiver observation has `status=:pass` | Run-start validation runs | The waiver is inactive; `FX_FIXTURE_STATE` refuses with `waiver=null` before selected-leg preflight or spawn | AS-15, C-01, C-10, C-12 |
+| AC-58 | A Codex-only candidate has the exact waiver input and its Claude waiver observation has `status=:incomplete` | Run-start validation runs | The waiver is inactive; `FX_FIXTURE_STATE` refuses with `waiver=null` before selected-leg preflight or spawn | AS-15, C-01, C-10, C-12 |
+| AC-59 | A Codex-only candidate has the exact waiver input and its Claude waiver observation has `status=:fail` without the exact `credential rejected: ` prefix | Run-start validation runs | The waiver is inactive; `FX_FIXTURE_STATE` refuses with `waiver=null` before selected-leg preflight or spawn | AS-15, C-01, C-10, C-12 |
+| AC-60 | The Codex runtime uses month directory `sessions/2026/8` with an otherwise matching rollout family | C-07 dynamic-name validation runs | `FX_CODEX_RUNTIME_PATH` refuses with `path=-` before manifest normalization | C-07, C-09 |
 
 ## Open Questions
 
@@ -945,6 +999,13 @@ whether the exact successor artifact is reviewed-clean. The C-07 empty-delta def
 resolved normatively by `amend-after-recon` in
 `dr_1c06d9c9-df96-4fb7-b49e-0752a9d9fe54`; that decision does not authorize a live
 fixture.
+
+The bounded successor amendment resolves R1-R3 in
+`att_5ec4d759-138f-4775-9332-1ea11b9e38fa`: the same-invocation Claude waiver
+observation decides expiry at run-start, a non-admitted run-start record uses
+`waiver=null`, and C-07 fixes the calendar byte widths and UTC ranges before
+normalization. These details implement the existing named-waiver and fail-closed
+Codex-runtime intent; they add no product or fixture authority.
 
 The following resolved boundaries remain gates, not open questions:
 
