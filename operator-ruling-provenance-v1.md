@@ -238,7 +238,8 @@ request only when the row still has a null retraction fact id. The idempotency k
 \`persistent-alert:<episode-id>\`. A retracted episode produces no request even when a later
 episode has the same kind and scope.
 
-A4. The policy creates an owner-addressed decision record with this exact question:
+A4. The policy creates one existing operator decision-request row addressed to the owner user.
+The owner can query that row by its decision-request id. It has this exact question:
 
 > Tightbeam has been unable to reach an agent for 15 minutes. Choose re-staff, park, or acknowledge.
 
@@ -249,9 +250,10 @@ failure text and performs none of the three actions. The substrate creates no hu
 delivery message, wake, retry, or delivery
 receipt for this policy. A separately authorized consumer can render the owner-addressed record.
 
-A5. Supersession retains the original decision record unchanged. Its question, options,
-context, and original raise date remain owner-readable through the \`supersedes\` chain. A
-successor can add its own record but cannot overwrite those fields.
+A5. Each supersession retains the original decision record unchanged. The owner can query each
+record in the \`supersedes\` chain. The original question, options, context, and original raise
+date remain exact and owner-readable across that chain. A successor can add its own record but
+cannot overwrite those fields.
 
 A6. Recovery reads the episode's retraction fact id, appends that fact to the record's
 observable basis, and changes its derived display status to \`recovered\`. It does not
