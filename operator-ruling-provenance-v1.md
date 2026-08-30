@@ -33,11 +33,11 @@ The canonical resolution text is this file:
 \`28d42cf96ed56fa5282d166e13b46184887a39a3330545e64c695f79a35b6022\`.
 
 This file supersedes the parked discussion
-\`user-alerted-decision-request-escalation.md\`. It carries no product-change authority until
-the product owner binds this path and content SHA-256 to a work item. A later amendment edits
-this file, names the superseded content SHA-256 and applicable review findings in its handoff
-receipt, and re-binds the work item. A builder reads the work-item binding; an unbound candidate
-authorizes no product change.
+\`user-alerted-decision-request-escalation.md\`. Its **ratification successor** is the next
+amendment at this same path that records Mike's Q1 ruling and is bound by the product owner to a
+work item with its content SHA-256. That successor cites this candidate's content SHA-256,
+these frozen evidence artifacts, and applicable review findings in its handoff receipt. A
+builder reads the work-item binding; an unbound candidate authorizes no product change.
 
 ## Goal
 
