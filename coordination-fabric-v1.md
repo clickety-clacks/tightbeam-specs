@@ -1,8 +1,8 @@
 # Coordination fabric — bones and cartilage — v1
 
-Status: r10 MVP REVIEW CANDIDATE (2026-08-26; folds Mike's typed
-cannot-proceed and outcome-accountability rulings onto current canonical
-main; pending independent spec review after this producer delivery).
+Status: r10.1 FOUR-DEFECT SUCCESSOR REVIEW CANDIDATE (2026-08-30; amends
+only the four blocking findings in `att_e002c98c` / `art_7812de81` against
+the exact r10 candidate at `01f6d050`; pending fresh independent review).
 Prior: r5 FOLDED (2026-08-13; executes the AUTHORIZED change requests
 `0.2-change-request-001.md` §C and `0.2-change-request-002.md` D1–D9 —
 both authorized by Mike, 2026-08-13 — in one fold sitting per their
@@ -14,7 +14,7 @@ without answering it; the typed return is terminal, reasoned, and auditable
 Amended 2026-08-26 for wi_ecd8cd9d: the 0.2 typed cannot-proceed MVP
 replaces holder-initiated obligation exit with a non-terminal report to the
 card opener. The amendment defines the boundary, horizon, and done rails;
-fixture and RE-ARM remain deferred (§4a, §11 acceptance 6–10).
+fixture and RE-ARM remain deferred (§4a, §11 acceptance 6–11).
 Prior: r4 READY (2026-08-13; declared after the cross-vendor delta
 re-check + its prescribed fix round — see `review-gate-findings-2026-08-13.md`).
 Folded from the 2026-08-13 review gate
@@ -40,9 +40,9 @@ expensive minds think, cheap desks coordinate, and the wiring between desks
 — grown by hiring, never assembled — is the org's nervous system (§4).
 The 0.2 cannot-proceed fold also keeps an obligation visible when its holder
 proves that the current plan cannot finish: the holder reports the cause,
-the opener owns one decision, and the card remains open until the opener
-revokes, re-scopes, or restaffs it, or until the releasing fact makes the
-current plan executable again (§4a).
+the current disposer owns one decision, and the card remains open until that
+disposer revokes, re-scopes, or restaffs it, or until an exact releasing fact
+named on the report clears the condition (§4a).
 
 ## Non-Goals
 
@@ -100,6 +100,19 @@ a RE-ARM verb. Both remain deferred until a later Mike-authorized purchase.
   supervision production, and routes a decision obligation to the card's
   durable opener (§4a). It never dissolves the assignment and never asks the
   substrate to judge the reason.
+- **Releasing fact** — an optional future condition fact identified on a
+  CANNOT-PROCEED report by exact `releaseFactKind`, `releaseFactScope`, and
+  `releaseFactPrincipalRef`. The fact is effective only when the named
+  principal records it through the existing `condition` verb after the
+  standing condition was created. `releaseFactPrincipalRef` uses the canonical
+  actor reference already stored on condition facts. The substrate compares
+  actor, kind, scope, and row order and never judges whether the fact is true
+  (§4a).
+- **Current disposer** — the actor structurally authorized to execute the
+  decision linked to one standing CANNOT-PROCEED condition. It is the durable
+  opener until existing fault bubbling records a transfer; after a transfer,
+  it is the accountable actor on the latest transfer row. The causal lineage,
+  not prose or a mutable flag, determines the actor (§4a).
 - **Effect kind** — the opener-chosen, immutable classification of the
   observable effect for which one assignment is accountable. The complete
   MVP set is `code`, `policy`, `release`, `live_mutation`, `evidence`,
@@ -219,7 +232,8 @@ a RE-ARM verb. Both remain deferred until a later Mike-authorized purchase.
 5. **Obligations do not evaporate from below.** A holder may report that the
    current plan cannot finish. The report leaves the assignment open. The
    opener or an ancestor reached by existing fault bubbling owns the next
-   plan (§4a).
+   plan. Only that current disposer or a structurally matching releasing fact
+   can clear the standing condition (§4a).
 
 ## Architecture
 
@@ -314,11 +328,17 @@ because nothing lived only in the desk (§6, D4).
 lifecycle exit (ruled 2026-08-19; 0.2.0 only).** An agent may stop work that
 it cannot lawfully or factually complete, but it may not make its obligation
 disappear. The holder files one typed `cannot-proceed` lifecycle attest on the
-exact assignment with a non-empty human-readable reason. The substrate derives
-the authenticated holder and the durable opener from rows; it refuses a
-missing, terminal, wrong-holder, or ambiguous target. The attest records the
-cause and its provenance, but the substrate never parses the reason or judges
-whether the holder is right.
+exact assignment with a non-empty human-readable reason. The filing may also
+name one future releasing fact through `releaseFactKind`, `releaseFactScope`,
+and `releaseFactPrincipalRef`; it supplies all three non-empty fields or none.
+The substrate accepts only a principal reference it can round-trip through
+the existing condition-fact actor field. It derives the authenticated holder
+and the durable opener from rows;
+it refuses a missing, terminal, wrong-holder, ambiguous, or half-specified
+target. The attest records the cause, its provenance, and the release tuple.
+The matching fact settlement records the authenticated fact producer. The
+substrate never parses the reason or judges whether the holder or fact
+producer is right.
 
 The filing is non-terminal and has four mechanical effects:
 
@@ -334,22 +354,41 @@ The filing is non-terminal and has four mechanical effects:
    A failed parent turn climbs the durable lineage. The terminal user alert
    remains the existing tokenless path.
 
-Target validation, the non-terminal attest, the standing condition, the
-exact-card prodder exclusion, and the linked decision obligation commit in one
-transaction. Decision delivery derives after that commit from the durable
-obligation. A failed validation commits none of those rows.
+Target and release-tuple validation, the non-terminal attest, the standing
+condition, the exact-card prodder exclusion, and the linked decision obligation
+commit in one transaction. Decision delivery derives after that commit from
+the durable obligation. A failed validation commits none of those rows.
 
 One assignment may have at most one standing `cannot-proceed` condition.
 Another filing while it stands returns the existing condition and linked
 opener decision. The holder may append progress evidence without changing the
-condition. Only a durable opener disposition clears or supersedes it.
+condition. Exactly two structural events can settle it:
 
-The opener mind owns the new plan. It may revoke the card, re-scope it, or
-restaff it. The substrate resumes or ends the exact card only from the durable
-execution row for that disposition; condition clearing and disposition
-execution commit together. A prose answer alone changes nothing. Stop-and-
-report remains the agent's lawful "no". Only the holder's power to close its
-own obligation is removed.
+1. **The named releasing fact arrives.** The named principal uses the existing
+   `condition` verb to record a fact whose kind and scope equal the stored
+   release tuple and whose row is later than the standing condition. A fact by
+   another actor has no effect. In the matching fact's transaction, the
+   substrate records the authenticated fact producer, clears the exact
+   condition, returns only that card to prod matching, and terminally disposes
+   the linked decision as `released-by-fact`. One holder notice derives after
+   commit. A fact with another kind, scope, or earlier row has no effect.
+2. **The current disposer executes the new plan.** The current disposer is the
+   durable opener until a proof-driven fault-bubbling transfer row names the
+   next accountable actor. Only the actor on the latest transfer row may then
+   execute revoke, re-scope, or restaff; the prior actor is no longer
+   authorized. A replay of the same climb returns the existing transfer row and
+   does not create another disposer. The substrate records the typed execution
+   row and clears the condition in the same transaction that applies that
+   disposition.
+
+An exact replay returns the settled rows without another notice, decision, or
+card transition. A releasing fact racing a disposition uses one compare-and-
+swap over the standing condition: the first transaction commits, and the
+loser reads the terminal settlement without side effects. A prose answer alone
+changes nothing. Stop-and-report remains the agent's lawful "no". Only the
+holder's power to close its own obligation is removed. Fact release is not
+RE-ARM: the report pre-binds an observable event and principal; no later mind
+chooses to restart the same plan without that event.
 
 **Assignment effects are opener law, not holder self-description (ruled
 2026-08-21; 0.2.0 only).** The substrate admits exactly these effect kinds:
@@ -381,9 +420,18 @@ only these three structurally verifiable shapes:
 
 The substrate validates the referenced rows, their ownership, and the
 instrument shape without parsing prose. An `in-org-row` condition scope must
-equal `boundaryRef`; an `external-system` wake must bind to this outcome and
-holder; a `human-decision` request must name this outcome in its `about`
-field. It keys one standing boundary by
+equal `boundaryRef`; a `human-decision` request must name this outcome in its
+`about` field. An external recheck wake carries immutable nullable foreign key
+`aboutOutcomeAssignmentId -> assignments.id`; terminal wake and outcome rows
+retain the reference for audit. The holder creates it through
+`tightbeam wake --session <holder-session> (--after <duration> | --at
+<epoch-ms>) --about-outcome <outcome-assignment-id> --prompt <probe>`. The command accepts
+the request only when the authenticated caller is the open outcome's holder
+and the target is that exact holder session. An `external-system`
+`instrumentRef` is valid only when it names a pending scheduled wake whose
+`aboutOutcomeAssignmentId` equals this outcome; an unbound wake or a wake
+bound to another outcome is refused with the boundary rule named. It keys one
+standing boundary by
 `(outcomeAssignmentId, boundaryKind, boundaryRef)`. A replay returns that row.
 A new boundary may supersede it only when `boundaryKind` or `boundaryRef`
 changes. A repeated note, replacement timer, or new percentage cannot disguise
@@ -393,11 +441,13 @@ boundary report.
 
 A matched in-org fact or an answered decision request ends that boundary
 mechanically. An external recheck wake firing does not end its boundary: the
-holder records the probe result and either changes the boundary or attaches
-the next lawful recheck. New `evidenceRef` and `instrumentRef` values on the
-same external boundary preserve its original row identity, creation time, and
-horizon. Canceling an instrument without a valid replacement does not end the
-boundary or reset its horizon. Existing external-probe guidance still requires
+holder records the probe result and either changes the boundary or creates the
+next wake through the same `--about-outcome` path. Updating the same external
+boundary validates the new wake, then atomically replaces `evidenceRef` and
+`instrumentRef` while preserving the boundary row identity, creation time,
+and horizon. A wake cannot be rebound; replacement creates a new bound wake.
+Canceling an instrument without a valid replacement does not end the boundary
+or reset its horizon. Existing external-probe guidance still requires
 the holder to stop after three unchanged probes and report to the opener; that
 report reuses an existing overdue-boundary escalation, and this rail adds no
 second counter.
@@ -972,7 +1022,15 @@ Acceptance (evidence, not vibes; each clause decidable):
    opener. When the holder replays the filing, then the same condition and
    decision return. When opener delivery fails, then existing fault-bubbling
    advances the same decision while the second assignment remains prod
-   eligible.
+   eligible. When the same climb replays, then the same transfer row and current
+   disposer return. Given that transfer, when the prior opener executes a
+   disposition, then the substrate refuses it; when the current disposer
+   executes one, then its execution and condition clearing commit together.
+   Given a stored release
+   tuple, when another actor files the same kind and scope, then the condition
+   remains standing. When the named principal's later matching fact races that
+   disposition, then one transaction settles the condition, the other returns
+   the same settlement, and exactly one holder notice exists.
 7. **Effect classification is immutable:** Given each admitted effect kind,
    an omitted kind, and a linked review, when an opener creates the cards and
    a holder attempts an effect change, then the cards read their requested
@@ -988,13 +1046,29 @@ Acceptance (evidence, not vibes; each clause decidable):
    kinds, when the holder cites the required instrument from §4a, then one
    boundary row admits. Given an in-org boundary with only a timed wake or a
    human boundary with a scheduled wake, when the holder files the report,
-   then the substrate refuses it with the boundary rule named.
+   then the substrate refuses it with the boundary rule named. Given an external
+   wake without `aboutOutcomeAssignmentId` or bound to another outcome, when
+   the holder cites it, then the substrate refuses it. Given a role target or
+   another actor, when that caller tries to create the bound wake, then wake
+   creation refuses before recording a row. Given a pending wake created by the outcome holder
+   for its exact session through `--about-outcome`, when the holder cites it and
+   later replaces it through the same path, then the same boundary accepts both
+   instruments without changing its identity, creation time, or horizon.
 10. **Outcome horizon rail cannot be reset:** Given one current boundary and
     its future horizon, when the horizon passes unchanged, then exactly one
     opener escalation exists. When the holder replays the report or supplies a
     replacement timer for the same boundary, then the original horizon and
     escalation remain unchanged. The escalation neither closes the outcome nor
     creates another human decision request.
+11. **Historical surrender is readable but not writable:** Given an old-shape
+    database containing surrender attests and surrendered assignments, when the
+    stamped 0.2 migration succeeds, then list, trace, and forensic reads return
+    each legacy row with its original kind, outcome, actor, reason, and time.
+    Given the fresh or upgraded 0.2 write surface, when a caller requests a new
+    surrender, then admission refuses it before any lifecycle row changes.
+    Given an injected migration failure before the stamp swap, when the
+    transaction rolls back, then the old stamp, row counts, values, and old
+    reader behavior remain unchanged.
 
 Generalize to worker archetypes only after the pilot (Phase 4 entry is a
 RULING on this acceptance, not just the evidence).
@@ -1028,12 +1102,12 @@ Marked blocking (B: blocks the phase named) or non-blocking (NB).
 9. (NB) Tier-2 deadline seed value (§8b): every promotion request must
    state its own deadline; whether the seed also ships a default duration
    is workstream 2-3 authoring.
-10. (NB) Typed specimen attests and typed blocker rows
-    (precondition + expected releasing fact — the "correctly blocked"
-    first-class state, candidates items 1 and 3): NEXT-iteration seam
-    candidates per CR-001 §B, deliberately not in the current build. Until
-    then specimens are a filing discipline and correctly-blocked is the
-    nurse's verdict (§5b).
+10. (NB) Reusable typed specimen attests and general typed blocker rows beyond
+    §4a's assignment-scoped release tuple (precondition + expected releasing
+    fact — the "correctly blocked" first-class state, candidates items 1 and
+    3): NEXT-iteration seam candidates per CR-001 §B, deliberately not in the
+    current build. Until then specimens are a filing discipline and correctly-
+    blocked is the nurse's verdict (§5b).
 11. (NB) Spirit-interview protocol details (question set, STE style
     guide): the PO playbook's business (workstream 3), not this spec's.
 12. (NB: deferred second-occurrence purchase; default no) Should the opener's
@@ -1068,22 +1142,35 @@ atomically:
    unexpected shape. Add the one-open-outcome-per-work-item constraint and the
    immutable `principalRef`. Admit only `user:<id>` and `role:<name>`. Refuse
    a principal that resolves to the holder at open or verdict time. Preserve
-   the `code` default and forced linked-review `review` behavior.
+   the `code` default and forced linked-review `review` behavior. Keep
+   `surrender` and `surrendered` in the storage/read domain solely for legacy
+   rows while removing surrender from the current write enum and every public
+   lifecycle command. The stamped migration copies each historical surrender
+   attest and surrendered assignment without reinterpretation; list, trace,
+   and forensic reads preserve its kind, outcome, actor, reason, and time.
+   Fresh and upgraded databases expose the same current write law. A failure
+   before the table-and-stamp swap rolls back the full transaction, leaving the
+   old stamp and rows readable by the old shape; this MVP defines no lossy down-
+   migration.
 2. **Lifecycle and evidence rails.** Remove holder-initiated obligation exit
-   and add the non-terminal `cannot-proceed` route. Add the three typed outcome
-   boundary shapes, immutable same-boundary horizon, one overdue-boundary
-   escalation, subordinate-terminal linkage, and atomic principal-verdict
-   closure. Each refusal names its rule. Replays reuse the same condition,
-   boundary, escalation, verdict, or outcome row.
+   and add the non-terminal `cannot-proceed` route, optional exact release tuple,
+   row-derived current disposer, atomic releasing-fact/disposition race, and
+   legacy surrender read compatibility. Add the three typed outcome boundary
+   shapes, immutable same-boundary horizon, structurally bound external wake,
+   one overdue-boundary escalation, subordinate-terminal linkage, and atomic
+   principal-verdict closure. Each refusal names its rule. Replays reuse the
+   same condition, boundary, escalation, verdict, or outcome row.
 3. **CLI, projections, and opener guidance.** Expose `outcome` through
-   assign and dispatch. Project boundary state and principal verdict without
-   inference. Land the outcome line plus the `unspecified` default in the
-   manual card-opening section and PO/orchestrator guidance only. Do not add
+   assign and dispatch. Add `wake --about-outcome` for holder-to-self scheduled
+   external rechecks; store and project the immutable binding. Project boundary
+   state and principal verdict without inference. Land the outcome line plus
+   the `unspecified` default in the manual card-opening section and
+   PO/orchestrator guidance only. Do not add
    it to worker guidance. Update help, conformance fixtures, migration tests,
    replay and concurrency tests, and package membership in the same landing.
 
 Exit evidence: old-shape upgrade and fresh-database fixtures converge on the
-same new stamp; acceptance 6–10 passes; the manual and opener guidance contain
+same new stamp; acceptance 6–11 passes; the manual and opener guidance contain
 the exact two-row table; worker guidance does not; one independent exact-tip
 review is clean. Versions 0.1.8 and 0.1.9 remain unchanged by this landing.
 
@@ -1235,6 +1322,22 @@ never cross); `wake-on-fact-v1.md` (consumed primitive); `tightbeam.md`
 three-work-item system grouping and 0.2.0 co-shipment constraint).
 
 ## Revision trail
+
+2026-08-30 r10.1 four-defect successor: exact response to changes-requested
+`att_e002c98c` / report `art_7812de81` against r10 commit `01f6d050`.
+§4a now closes F1 with an optional exact release tuple and one transactional,
+replay-safe releasing-fact path; F2 with a causal-lineage-derived current
+disposer and a single-winner disposition/fact race; and F4 with immutable
+`aboutOutcomeAssignmentId`, the `wake --about-outcome` creation path, and
+structural replacement validation. Acceptance 6 and 9 trace those repairs.
+§13 and acceptance 11 close F3 by separating legacy storage/read vocabulary
+from current write admission, preserving historical surrender rows, refusing
+new surrender, and proving transactional rollback. Deletion lost the ruled
+recovery, bubbling, history, or structural rail in each case; accepting the
+failure left an unbuildable or data-losing contract, so the four minimal
+mechanisms remain. No other r10 behavior changed. `fixture` and RE-ARM remain
+deferred; 0.1.8 and 0.1.9 remain historical; the three-work-item/four-part
+0.2.0 grouping remains intact.
 
 2026-08-26 typed cannot-proceed MVP fold: Mike's 2026-08-19 ruling and
 wi_ecd8cd9d now replace holder-initiated obligation exit with a typed,
