@@ -38,9 +38,10 @@ Agent-facing (demanded by the shipped engineering-kungfu kernels/skills):
   job-trace-observability-v1).
 - **transcript** — read a session's client-visible conversation from the
   substrate's own rows, by `--session <key>` (retrieval) or `--name
-  <displayName>` (lookup returning candidates to choose from, never content),
-  with tail-by-default and `--before`/`--after` cursors the previous response
-  handed the caller (transcript-verb-v1).
+  <displayName>` (exact-name REST lookup returning full session candidates to
+  choose from, never content), with tail-by-default and opaque REST
+  `--before`/`--after` cursors the previous response handed the caller
+  (`transcript-verb-v1.md`; REST R5/R5d).
 - **spawn / retire / list** — session lifecycle and orientation (kungfu:
   operating manual, recon-lifecycle).
 - **skill (list / put / rm)** — org skill management (kungfu: operating manual).

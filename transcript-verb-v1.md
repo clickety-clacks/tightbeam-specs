@@ -1,378 +1,334 @@
-# Transcript verb — v1
+# Transcript CLI wrapper — v1
 
-Status: DRAFT r5 (2026-07-26). Flynn-directed: "tightbeam transcript
-'session-id' from startmessageid to endmessageid … maybe [reading] from the chat
-database instead of having to surface the claude or codex one", with two design
-rulings: (1) SEPARATE flags for session key vs display name — a name resolves to a
-CHOICE, never to content; (2) BEFORE/AFTER cursors with tail-by-default, never
-absolute from/to — every cursor a caller passes is an id a previous response handed
-it.
+Status: G5 reconciliation candidate, 2026-08-27. Mike's firehose gap
+remediation ruling makes REST/transcript authority reconciliation a read-side
+firehose prerequisite. When this exact candidate passes independent review and
+lands, it supersedes the prior `transcript-verb-v1.md` lookup, projection,
+history-floor, response-envelope, and message-id cursor clauses. Git history
+retains those clauses as implementation history; they do not remain a second
+public contract. It does not supersede the existing dispatch audit-elision or
+router non-target safeguards. This revision restates both safeguards for the
+M4 migration window.
 
-## Why the substrate's own rows, not the harness transcript file
+Authority: `rest-state-api-v1.md` owns the conversation query, item,
+authorization, visibility-floor, page, and cursor semantics.
+`event-firehose-v1.md` owns freshness and gap detection. This file owns only
+the `tightbeam transcript` CLI mapping and its presentation.
 
-The conversation is ALREADY substrate truth: an accepted prompt is one transaction
-committing its `messages` echo AND its `turns` row together, and only an
-`{:appended}` echo enqueues a turn (gateway.ex:833-847). Each assistant reply is a
-`messages` row linked to its prompt by `replyToMessageId`
-(gateway.ex:1245-1252) — the same rows the client renders. Reading them is a QUERY
-over existing durable state (Law 0: no new recordkeeping). The harness transcript
-file is rejected as the source for four reasons, any one sufficient:
+The exact G5 candidate is the five-file set `transcript-verb-v1.md`,
+`rest-state-api-v1.md`, `event-firehose-v1.md`,
+`rest-vs-cli-adjudication.md`, and `cli-surface-v1.md` at one git commit.
 
-- **Format churn** — harness CLIs auto-update under us; a verb built on their
-  private layout inherits that churn.
-- **Satellite locality** — a satellite session's harness file lives on the REMOTE
-  host; a local path is useless exactly when placement did its job. The rows are
-  already on the gateway.
-- **Authorization granularity** — a file path grants whatever the whole file holds;
-  rows are filtered per session against owner/admin.
-- **T-PARITY cost** — reading harness files means a harness callback with manifest
-  vectors. Not worth it for a need the substrate's own rows already serve.
+## Goal
 
-SCOPE, stated honestly: this returns the CLIENT-VISIBLE CONVERSATION (prompts +
-replies + their linkage), NOT the agent's internal tool calls or thinking — the
-persisted message shape contains conversation fields, not either of those
-(projection.ex:33-46). "What did the agent actually DO" is answered by
-`work-item-trace` plus forensics. A future harness-file pointer (metadata only,
-local sessions only) is NAMED and DEFERRED — build it only when something concrete
-needs it.
+Provide one CLI command that reads the canonical REST conversation resources
+without defining another lookup, message projection, history boundary, cursor,
+or recovery rule. A client can use the same REST pages for cold start, backward
+history, and recovery after a firehose gap.
 
-## The history barrier and page flags
+## Non-Goals
 
-`sessions.clearedThroughSeq` (org.ex:64-89, default 0) is the per-session visibility
-floor: rows at or below it are RETAINED but never served — replay already floors its
-scan at `min_seq` (projection.ex:162-191), fed from the session row
-(wire/socket.ex:310-320). The substrate advances it at two sites today: a harness
-change sets it to the current MAX(seq) so the new engine gets a fresh visible slate
-(gateway.ex:2700-2712), and turn-failure recovery sets the old session's barrier to
-the failed prompt's seq (gateway.ex:3742-3758).
+- This wrapper adds no route, row, message field, query, serializer, mutation,
+  notice class, event storage, replay, or stream cursor.
+- This wrapper does not expose messages at or below the session's
+  `clearedThroughSeq`.
+- This wrapper does not specify physical deletion of durable message rows.
+- This wrapper does not preserve the superseded case-insensitive substring
+  lookup, five-field candidate projection, message-id cursor, or 12-field
+  message projection.
+- This wrapper does not remove the dispatch audit-elision or router non-target
+  safeguards before the legacy dispatch adapter passes M4 parity and is
+  removed.
+- This wrapper does not use firehose notices as history. Firehose r6 stores no
+  notice history and defines no retention horizon.
 
-Let `V` be the target session's messages with `seq > clearedThroughSeq`, ordered by
-`seq` ascending. Every mode selects only from `V`:
+## Terms
 
-- tail selects the last `limit` rows of `V`;
-- `--before C` selects the last `limit` rows of `V` whose seq is below C's resolved
-  seq;
-- `--after C` selects the first `limit` rows of `V` whose seq is above C's resolved
-  seq.
+T1. **REST history authority** — `GET /api/sessions/:sessionKey/messages`
+under REST R4, R5, R5a, R5d, R7, AU4, and AU7.
 
-Every non-empty page is returned oldest-first. Its `hasMoreBefore` is true exactly
-when a row of `V` exists below the returned `oldestId`; its `hasMoreAfter` is true
-exactly when a row of `V` exists above the returned `newestId`. Therefore:
+T2. **Visible history** — the target session's R7 transcript-message rows whose
+`seq` is greater than the session's current `clearedThroughSeq`, ordered by
+`(seq,id)`.
 
-- a tail page always has `hasMoreAfter: false`: it already contains the newest
-  visible end;
-- a `--before` page has `hasMoreAfter: true` whenever newer visible rows exist above
-  that page, including the visible cursor row itself;
-- an `--after` page has `hasMoreAfter: true` only while visible rows remain above
-  its returned `newestId`;
-- an empty tail has both flags false; an empty `--before` page has
-  `hasMoreBefore: false` and `hasMoreAfter: (V is non-empty)`; an empty `--after`
-  page has `hasMoreBefore: (V is non-empty)` and `hasMoreAfter: false`.
+T3. **History boundary** — `clearedThroughSeq`, the logical visibility floor
+for one session. The boundary hides retained rows. It is not firehose
+retention and is not a request filter.
 
-This makes both flags barrier-relative. Cleared rows never make either flag true.
-In particular, when only cleared rows remain below a page, `hasMoreBefore` is false;
-reporting otherwise would advertise history the caller can never page to.
-`--name` candidates likewise compute `lastActivityAt` from visible rows only.
+T4. **Page cursor** — an opaque signed REST cursor returned as
+`page.oldestCursor` or `page.newestCursor`. The cursor encodes the immutable
+`(seq,id)` boundary plus REST request binding. It is not a message id.
 
-Returning cleared rows would expose durable history the client itself no longer
-shows. An admin-only `--include-cleared` is NAMED AND DEFERRED — the forensic value
-is real, but it is a second authorization question and v1 does not open it.
+T5. **Cold build** — subscribe first, then construct the displayed
+conversation slice from REST while buffering post-subscription notices.
 
-## The two entry points (Flynn ruling 1: never guess)
+T6. **Gap recovery** — rebuild the displayed conversation slice from REST
+after reconnect, a skipped firehose sequence, a session history-boundary
+change, or a gateway restart reported by the connection.
 
-**`transcript --session <key>`** — retrieval. Exact key, goes straight to the rows.
-Session STATE never gates retrieval: `Org.get/2` fetches by key without a state
-predicate (org.ex:270-278), and this verb retains that property. An authorized
-caller can read a retired session through `--session`.
+## Assumptions
 
-**`transcript --name <display-name>`** — LOOKUP, never content. Returns the
-candidate set `[{sessionKey, displayName, state, ownerUserId, lastActivityAt}]`
-over `sessions.displayName` (org.ex:64-89), filtered by the SAME visibility rule as
-retrieval, so lookup cannot enumerate sessions the caller may not read. Match is
-CASE-INSENSITIVE SUBSTRING with `%` and `_` treated LITERALLY (escaped, never as
-wildcards). RETIRED sessions participate and carry their `state`; retirement is a
-soft state flip that retains history (org.ex:486-505). Candidates are ordered by
-`lastActivityAt` DESC then `sessionKey` ASC, where `lastActivityAt` is the timestamp
-of the session's highest visible message seq, or the session's own `createdAt` when
-it has none (`createdAt` is durable session data at org.ex:64-89). Zero matches →
-empty list, not an error. Multiple matches → all of them. EXACT SINGLE MATCH →
-still the candidate list, one row: **a name always resolves to a CHOICE, never to
-content**, so no caller transcripts the wrong session on a near-match. The caller
-re-calls with the key it now holds. The flags are mutually exclusive; supplying
-both, or neither, is a usage error.
+AS1. REST R7 exposes `seq` on each transcript-message item and
+`clearedThroughSeq` on each session item.
 
-Candidate ordering is BEST-EFFORT DISPLAY DATA, not conversation ordering:
-`lastActivityAt` is a stored timestamp and therefore can tie or regress even though
-the message chosen for it is the highest visible seq. The seq-only discipline below
-governs transcript entries, not this candidate ranking.
+AS2. REST R5 compares a decoded cursor tuple directly. Cursor validity does
+not require the boundary row to remain present.
 
-## Cursors (Flynn ruling 2: BEFORE/AFTER, tail by default)
+AS3. The separate session-freshness prerequisite from recon finding G2
+supplies `session.spawned`, `session.updated`, and `session.retired` under the
+`session.` subscription prefix. That prerequisite owns their mutation mapping;
+this spec does not duplicate it.
 
-Absolute from/to leaves a caller guessing ids it has never seen — a caller cannot
-ask for the end of a conversation whose last id it does not know. Therefore:
+AS4. Firehose M1 and M2 supply subscribe-first buffering, version comparison,
+gap detection, and full displayed-slice rebuild. A history-boundary change is
+a rebuild trigger under I7; it is not an ordinary last-version-wins merge.
 
-- **No cursor → the TAIL**: the newest `limit` visible messages, returned
-  oldest-first for reading. This is the zero-cursor common case.
-- **`--before <messageId>`** → the page immediately OLDER than that id.
-- **`--after <messageId>`** → messages NEWER than that id.
-- `--limit N`, default 50, hard cap 500: a request above the cap is CLAMPED, not
-  refused, and the clamp is observable in the returned count.
-- Cursors are mutually exclusive. Every cursor is an id a PREVIOUS response handed
-  the caller — the verb never requires an id the caller must invent.
-- ORDERING: the stable monotonic key is `messages.seq`, an `INTEGER PRIMARY KEY
-  AUTOINCREMENT` (projection.ex:33-35). `id` is a random string
-  (`"s_" <> uuid4`, projection.ex:103), and `timestamp` can tie or regress;
-  neither may order results.
+## Invariants
 
-Cursor resolution is EXISTENCE-based, not visibility-based. The implementation
-looks up the retained `messages` row by id without a barrier predicate — the
-existing projection lookup has exactly that shape (projection.ex:141-159) — then
-requires that row's `sessionKey` equal the requested session. A same-session id
-resolves to its seq even when `seq <= clearedThroughSeq`; only after resolution does
-the visibility floor constrain the RANGE:
+I1. REST is the sole public data authority for transcript lookup and
+retrieval. The CLI does not query SQLite or call a second public query seam.
 
-- `--before <id-at-or-below-barrier>` returns an empty page with null cursors and
-  `hasMoreBefore: false`; nothing older is visible. Its `hasMoreAfter` follows the
-  empty-page rule above.
-- `--after <id-at-or-below-barrier>` returns visible rows above the barrier. A
-  caller whose history is cleared between pages catches up from the id it already
-  holds instead of becoming stranded.
+I2. `transcript --name <displayName>` performs the REST sessions collection's
+exact Unicode-code-point `displayName` filter. It returns visible full R7
+session items in `(createdAt,sessionKey)` order. It returns no message content.
 
-After an empty `--before <id-at-or-below-barrier>` page, the way forward is
-`--after <that same id>`; existence-based resolution accepts the retained id and
-applies the barrier only to the returned range.
+I3. `transcript --session <sessionKey>` performs the REST transcript-message
+collection read. Each returned item has the R7 transcript-message shape.
 
-Refusal remains correct only when the id does not exist at all or belongs to another
-session. Those two cases return the same byte-identical `not_found` body, containing
-neither the supplied id nor any indication of which case occurred. They are never
-silently treated as the tail. `before` selects by `seq < cursor_seq`,
-descending-with-limit and then reverses for display; `after` selects by
-`seq > cursor_seq`, ascending-with-limit; both ranges are floored at the barrier.
-The response closes the loop: tail → `--before oldestId` walks back,
-`--after newestId` catches up.
+I4. The wrapper passes `before`, `after`, and `limit` to REST without decoding,
+rewriting, or translating a cursor. It returns the REST R4 page object without
+rewriting either cursor. A prior message id passed as a cursor receives REST's
+`400 invalid_cursor`; the wrapper does not provide a compatibility alias.
 
-## Response shape (pinned)
+I5. REST evaluates the history boundary on each message-page request. A page
+contains only items whose `seq` is greater than the boundary used for that
+request. The service reads the boundary, selects the items, and computes the
+page flags as one indivisible read. A returned page reflects one boundary
+value.
 
-`{sessionKey, displayName, messages: [entry], oldestId|null, newestId|null,
-hasMoreBefore, hasMoreAfter}`. `oldestId` and `newestId` are the first and last
-returned ids; every empty page has `messages: []` and both cursors null. The flags
-still follow the mode-specific empty-page rules above. In particular, an empty
-`--after` response means the caller is caught up, so it MUST retain the prior
-`newestId` it passed and use that same id for the next catch-up request; replacing
-it with the response's null cursor would strand continuation.
+I6. `clearedThroughSeq` does not enter a cursor fingerprint because it is
+server-owned state, not caller selection. A boundary advance does not make an
+otherwise valid cursor malformed.
 
-Each entry has this EXACT key set; missing or extra keys fail the schema test:
+I6a. The observable `clearedThroughSeq` for one `sessionKey` is
+non-decreasing. A session mutation cannot make a cleared message visible
+again. REST R5d owns the sole transition seam and its closed caller inventory.
 
-`{id, at, role, sender|null, content, attachments, replyToMessageId|null,
-turnSeq|null, model|null, harness|null, assignmentId|null, jobRef|null}`
+I7. A client uses `page.oldestCursor` as the next `before` value to walk
+backward. It uses `page.newestCursor` as an `after` value only while the same
+subscription connection remains established and its received sequence is
+contiguous. Gap recovery starts from a fresh tail read.
 
-- `role` is the row's mandatory column, values exactly `user` | `assistant`;
-  `content` is the row's content column (projection.ex:33-46) and the same key the
-  client wire emits (wire/payloads.ex:95-107); `attachments` is the stored list
-  (projection.ex:45-46, 270-283). A transcript omitting any of these would not be
-  the conversation.
-- `sender` is NULLABLE and VERBATIM from the row: device prompts store none,
-  substrate deliveries store their origin, assistant replies store `"tightbeam"`
-  (gateway.ex:1245-1251). No canonical agent handle is derivable for every session,
-  so the verb reports what the row holds rather than inventing an encoding.
-- `at` is the row's `timestamp`; it is display data, never an ordering key
-  (projection.ex:33-46).
-- Turn attribution join, pinned: a `user` entry joins on
-  `turns.messageId = entry.id`; an `assistant` entry joins on
-  `turns.messageId = entry.replyToMessageId`, and has no turn when that link is
-  null. `turns.messageId` has no UNIQUE constraint (ledger.ex:37-50); the 0-or-1
-  relationship is grounded instead in the production write invariant:
-  `Gateway.deliver_prompt_in_txn/5` is the sole turn-bearing enqueue path and
-  enqueues exactly once only after `Projection.append_in_txn/2` returns
-  `{:appended}` (gateway.ex:776-810, 833-847). The production source has
-  exactly one qualified `Ledger.enqueue_in_txn/2` call site, that Gateway call, and
-  no `Ledger.enqueue/2` call site under `lib/` (gateway.ex:837; ledger.ex:136-139).
-  No other production path may enqueue a turn for a message id. A source-structure
-  test MUST assert those call-site counts so a second enqueue path cannot silently
-  invalidate the 0-or-1 join.
-- From the joined turn: `turnSeq`; `assignmentId` and `jobRef`, stamped at enqueue
-  (ledger.ex:110-129); and `model` and `harness`, stamped at claim
-  (ledger.ex:209-221). All attribution fields are null where no turn exists.
-  Assistant/context/failure/recovery markers are message-only writes
-  (gateway.ex:3760-3767, 4212-4263), and credential-transition messages are also
-  message-only writes (gateway.ex:2985-3000), so they yield null attribution.
-  Turns created before the attribution columns were added have null
-  `assignmentId`/`jobRef`; the migration adds nullable columns without a backfill
-  (ledger.ex:75-81). This mapping makes a transcript join straight into
-  `work-item-trace` using the same stored turn attribution.
-- Deliberately EXCLUDED: `deviceId`, `clientMessageId`, `replyToClientMessageId`,
-  `llmVisibleMessageId` — client/harness correlation internals present in the
-  message store (projection.ex:40-45), not conversation.
+I8. A successful machine-readable CLI response preserves the REST R4 envelope
+and R7 items. A human renderer may select fields, add labels, or summarize
+counts. It does not add a data field or cursor meaning.
 
-## Audit without duplication
+I9. The wrapper preserves REST authorization, unknown-versus-forbidden
+indistinguishability, error precedence, bearer credential, and `asUser`
+principal selection. It does not implement a second visibility decision.
 
-Dispatch appends every successfully returned verb result into `events.payload`
-(dispatch.ex:152-160; event_log.ex:101-119). That column holds `inspect/1` TEXT,
-not JSON (`event_log.ex` `encode/1`), so a proof over it reads the inspected
-string rather than decoding it. Today `events.payload` is write-only
-observability at the application seam, while agents on the gateway host can read the
-SQLite database directly (event_log.ex:19-28, 124-147; application.ex:43-49;
-client_e2e/substrate.ex:1-12, 30-34). Elision therefore does not protect a secret
-from an agent. It prevents UNBOUNDED STORAGE GROWTH — a second copy of every
-transcript on every read, plus content in crash rows — and keeps the audit trail to
-WHAT was read rather than WHAT was returned. Contract:
+I10. While the legacy dispatch adapter exists, a successful or crashed
+`transcript` call cannot copy returned transcript or candidate content into a
+durable audit payload. A denial remains unelided because it contains no
+transcript result.
 
-- `transcript` is registered in a RESULT-ELIDED verb set at the Dispatch seam — a
-  closed set, like the handler table; any future read verb whose result must not be
-  duplicated into observability joins it.
-- For an elided verb, the successfully returned `"verb"` event's payload is
-  `%{elided: true, params: <the call's params>, count: N}` — N is the returned
-  entry/candidate count. The params ARE the access trail (which session or name,
-  which cursor, which limit); no message content and no candidate rows appear in
-  the payload.
-- A denial event is NOT elided: its error map is useful audit and contains no
-  transcript (dispatch.ex:147-156).
-- A raised handler is distinct from both success and denial. Dispatch builds its
-  kind-`"verb"` crash payload with
-  `%{code: "server_error", message: Exception.message(exception)}`
-  (dispatch.ex:162-165). For an elided verb, the crash event is ALSO elided: its
-  payload is exactly
-  `%{elided: true, params: <the call's params>, crash: true, code: "server_error"}`.
-  That PAYLOAD never carries `Exception.message/1`. An exception message is an
-  uncontrolled channel for whatever the handler was holding, so an elided verb
-  cannot let one into durable storage. Implementers must classify the handler
-  outcome, not key elision on event kind alone.
-- SCOPE OF ELISION, stated exactly so the guarantee is not read wider than it is:
-  it governs the AUDIT ROW only. Dispatch still builds the CALLER's returned error
-  with `Exception.message/1`, so that error can carry the term the handler held.
-  That is deliberate and unchanged — the caller has just passed authorization for
-  exactly those rows, so it is content they were entitled to read, and narrowing
-  the caller's error is a behavior change this spec does not authorize. A proof
-  must therefore assert the payload's exact elided shape and the absence of
-  content from it, and must not imply the returned error is content-free.
+I11. While the legacy dispatch adapter exists, `transcript` is a non-target
+verb. The router refuses every top-level typed-target field before it resolves
+that field. The retrieval key travels only in the ordinary verb parameters.
 
-Rails still evaluate normally before the handler (dispatch.ex:95-124). The verb is
-read-only in ITS OWN effects, and that is what "pure read" means here.
+## Architecture
 
-## Authorization and the non-target wire declaration
+The final M4 wrapper has two modes:
 
-Session OWNER, via `sessions.ownerUserId`, or admin. Session and user principals
-resolve by the same ownership/admin rules as `work-item-trace`
-(work_items.ex:593-618). Every other principal and an unknown session key return
-`not_found` with BYTE-IDENTICAL bodies; the handler owns both answers. `--name`
-candidates are filtered by the identical visibility rule before returning.
+| CLI request | Canonical read | Result |
+|---|---|---|
+| `transcript --name <displayName> [--before C | --after C] [--limit N]` | `GET /api/sessions?displayName=<exact>&before=C&after=C&limit=N` with absent options omitted | REST R4 sessions page containing full R7 session items and no messages |
+| `transcript --session <sessionKey> [--before C | --after C] [--limit N]` | `GET /api/sessions/:sessionKey/messages?before=C&after=C&limit=N` with absent options omitted | REST R4 transcript-messages page |
 
-`transcript` is a NON-TARGET agent verb. This is a LOCAL declaration about this verb:
-it has no legitimate top-level typed-target use. It does not depend on, preempt, or
-prejudge `router-existence-oracle-v1`'s general question of whether point-addressed
-existence is org-visible.
+The two selection flags remain mutually exclusive. The wrapper rejects a call
+that supplies both or neither. `before` and `after` remain mutually exclusive.
+REST supplies the default limit, cap, page order, cursor binding, and error.
 
-The declaration belongs in the ROUTER, not the handler. `/agent/dispatch` is the
-sole generic agent-verb entry point, and it runs `typed_target` for every agent verb
-before it constructs the handler call (wire/router.ex:110-127). `typed_target`
-resolves a volunteered `sessionKey` through `Org.get/2`, returning an identifying
-404 for an unknown key; it also has earlier generic refusals for the retired
-`target` field and for multiple typed target fields (wire/router.ex:513-548). A
-handler-side rejection is too late: the router can answer first. For a known key,
-that resolution becomes `call.session_key` (dispatch.ex:61-69), which Dispatch
-writes to `events.sessionKey` (dispatch.ex:152-165; event_log.ex:101-119).
+REST emits `page.oldestCursor` for use only as `before` and
+`page.newestCursor` for use only as `after`. A nonempty page sets
+`hasMoreBefore` exactly when a visible row exists below its first item and
+sets `hasMoreAfter` exactly when a visible row exists above its last item. A
+cursorless tail sets `hasMoreAfter:false`. An empty cursorless tail sets both
+flags false. An empty caught-up `after` page sets
+`hasMoreBefore:(visible history is nonempty)` and `hasMoreAfter:false`.
 
-The router therefore recognizes `transcript` as non-target BEFORE any typed-target
-lookup or generic target-shape refusal. Supplying any top-level targeting field
-(`sessionKey`, `role`, `userId`, or the retired `target`), alone or in combination,
-to `transcript` returns HTTP 400 with error code `invalid_message` and message
-`transcript takes no typed target`. The router map-encodes that error pair
-(wire/router.ex:832-843); JSON object key order is not part of the contract. The
-transcript-specific non-target refusal wins over both the generic retired-field
-refusal and the generic multiple-target-fields refusal. Response bytes are identical
-for an unknown key, an existing session the caller may read, an existing session the
-caller may not read, retired `target` syntax, and multiple targeting fields; the
-router never queries the volunteered target's existence. The legitimate retrieval
-key travels only as the ordinary body param `params.session_key`, exactly as
-`work-item-trace` carries `work_item_id`; the CLI maps `--session` to params.
-Consequently `call.session_key` and the events row's `sessionKey` column are nil for
-this verb; the audited session lives in the elided params.
+For a valid message cursor whose tuple is at or below a newly advanced history
+boundary:
 
-## Non-goals
+- `before=<cursor>` returns an empty item list with
+  `hasMoreBefore:false`; `hasMoreAfter` is true exactly when visible history
+  exists above the boundary;
+- `after=<cursor>` returns the first visible page above the boundary; and
+- neither request resolves the cursor through a live message row.
 
-No harness transcript files. No tool-call or thinking capture. No new tables,
-columns, or emission — a pure read over `messages`/`turns`/`sessions`. No full-text
-search. No mutation of any kind.
+REST R5d defines the only production transition of `clearedThroughSeq`. This
+wrapper consumes the resulting session item and does not write the boundary.
 
-## Required proofs
+Cold build uses this closed snapshot-to-buffer handoff:
 
-All automated; each must fail when the behavior it names is broken.
+1. Resolve or choose one `sessionKey`. Name lookup selects a key but builds no
+   conversation state.
+2. Establish a firehose subscription filtered to that `sessionKey`. The
+   subscription includes `message.created` and the `session.` prefix supplied
+   by recon finding G2. Receive `subscription_ready`.
+3. Fetch the selected R7 session item as `S0`. Record its
+   `clearedThroughSeq` as `F0` and its `rowVersion` as `V0`.
+4. Fetch the transcript tail. Page backward with `oldestCursor` only until the
+   displayed slice is complete.
+5. Fetch the session item again as `S1` and record `F1` and `V1`. Accept the
+   session snapshot only if both `F1 = F0` and `V1 = V0`. Otherwise discard the
+   candidate slice and repeat from step 3.
+6. Enter one client-state critical section. Capture the current buffer-tail
+   position as `Q` and detach the finite buffered prefix through `Q`. If the
+   connection has entered doubt through `Q`, reject the candidate and restart
+   from step 2 on a healthy subscription.
+7. In the same critical section, drain the detached prefix one notice at a time
+   in connection order. For a session notice, discard a
+   `rowVersion <= V1` as covered by `S1`, even when it carries an older
+   boundary. Compare a higher version with the current accepted session item,
+   starting with `S1`. A higher version with boundary `F1` advances that item.
+   A higher version with any other boundary rejects the candidate before
+   publication; mark the entire detached prefix as covered by the next REST
+   rebuild, leave notices after `Q` buffered, and repeat from step 3. For a
+   message notice, apply `(id,rowVersion)` last-version-wins and omit the
+   message when its `seq <= F1`. After the ordered drain, mark the prefix
+   through `Q` consumed and publish the candidate. Drain, consumption, and
+   publication form one client-state transition; no notice can enter the
+   accepted slice between the buffer cut and publication.
+8. Process each later notice in connection-sequence order. A session notice at
+   or below the accepted session `rowVersion` is a no-op. A newer session notice
+   with the same boundary is an ordinary last-version-wins update. A newer
+   session notice with a different boundary invalidates the displayed slice
+   before the next repaint and starts a cursorless cold build. A gap also
+   invalidates the slice and starts that build.
 
-1. Tail default: no cursor returns the newest `limit` visible rows, oldest-first,
-   with correct `oldestId`/`newestId`, `hasMoreBefore: true` on a longer session,
-   and `hasMoreAfter: false`.
-2. Paging: `--before` walks strictly older and `--after` strictly newer. Paging the
-   whole session with `--before oldestId` visits every visible message exactly once
-   and terminates with `hasMoreBefore: false`; every before page with newer visible
-   rows has `hasMoreAfter: true`. After pages assert `hasMoreAfter: true` while rows
-   remain and false when caught up. An empty caught-up `--after` response has
-   `messages: []`, null `oldestId`/`newestId`, and `hasMoreAfter: false`; the test
-   retains the previously passed `newestId`, appends a row, and proves that reusing
-   that retained id returns the new row.
-3. Seq ordering under hostile timestamps: rows written directly with EQUAL
-   timestamps and a REGRESSED timestamp order by `seq` in every mode, and paging
-   across them neither skips nor duplicates. An implementation ordering by
-   `timestamp` or `id` fails this proof.
-4. Cursor refusal: an id from another session and a nonexistent id receive
-   byte-identical `not_found` bodies containing neither id; neither is silently
-   treated as the tail.
-5. Barrier: after advancing `clearedThroughSeq` mid-history, tail/`--before`/
-   `--after` never return a row at or below it; both flags ignore cleared rows;
-   `hasMoreBefore` is false when only cleared rows remain below the page; a row
-   committed above the barrier is served; `--name`'s `lastActivityAt` reflects only
-   visible rows. The proof first receives a page and holds its `oldestId` and
-   `newestId`, advances the barrier through those rows, commits newer rows, then
-   re-pages with the held cursors: `--before heldOldestId` returns an empty page
-   with null cursors and `hasMoreBefore: false` (and `hasMoreAfter: true` while the
-   newer visible rows exist), while `--after heldNewestId` returns the rows above
-   the barrier and computes `hasMoreAfter` from any rows still above that page.
-6. `--name`: exact single match returns a ONE-ROW candidate list, never content;
-   partial and zero matches; a stored name containing `%` is found by literal
-   match while `%` in the query does not wildcard; retired sessions appear with
-   `state`; ordering is `lastActivityAt` DESC and then `sessionKey` ASC when
-   timestamps tie; a regressed highest-visible-seq timestamp demonstrates that this
-   is best-effort display ordering, not seq ordering; both flags together, and
-   neither, are usage errors.
-7. Authorization and wire non-targeting: owner and admin read, including a retired
-   session through `--session`; a non-owner principal and an unknown params key
-   receive byte-identical `not_found`; `--name` candidates exclude sessions the
-   caller cannot read. The legitimate wire call carries the key in body params,
-   has no typed target, and its `events.sessionKey` is nil. Three volunteered
-   top-level `sessionKey` calls — unknown, existing-and-visible, and
-   existing-but-forbidden — plus retired `target` syntax and a multiple-target-field
-   call all receive the `invalid_message` / `transcript takes no typed target` pair
-   before dispatch. Their raw response bodies are byte-identical, and none emits a
-   verb event.
-8. Schema and attribution: entries match the pinned key set exactly; missing or
-   extra fails. A `user` entry carries its turn's
-   `turnSeq`/`model`/`harness`/`assignmentId`/`jobRef`; an `assistant` entry carries
-   its prompt's turn attribution via `replyToMessageId`; a message with no turn
-   carries nulls throughout. Marker and credential-transition messages have null
-   attribution, and a pre-attribution-column turn has null `assignmentId`/`jobRef`.
-   A source-structure assertion proves the only qualified
-   `Ledger.enqueue_in_txn/2` call under `lib/` is gateway.ex:837 and that no
-   `Ledger.enqueue/2` call exists under `lib/`; adding either second production
-   enqueue path fails the proof.
-9. Limit: default 50; a request above 500 is clamped, observable in the returned
-   count.
-10. Elision: after a successful read, the `events` row for the call carries
-    `elided: true`, the call params, and the count, while its `sessionKey` is nil. A
-    distinctive message body present in the response appears NOWHERE in the
-    payload; this is fail-before/pass-after against un-elided Dispatch. A denied
-    call's event remains un-elided. Force the transcript handler to raise while it
-    holds a row containing a different distinctive body string: the kind-`"verb"`
-    crash event has exactly `elided: true`, the call params, `crash: true`, and
-    `code: "server_error"`, with no `message` key, and the distinctive body appears
-    NOWHERE in its payload. The crash assertion is fail-before/pass-after against
-    the un-elided `%{code: "server_error", message: Exception.message(exception)}`
-    row.
+During M4 migration, the legacy dispatch adapter preserves two safeguards:
 
-## Component touches
+- `transcript` remains in the closed result-elided verb set. Its successful
+  audit payload is exactly
+  `%{elided: true, params: <call params>, count: N}`, where `N` is the returned
+  entry or candidate count. Its denial audit payload remains the ordinary error
+  map. Its raised-handler audit payload is exactly
+  `%{elided: true, params: <call params>, crash: true, code: "server_error"}`
+  and never contains `Exception.message/1`. Elision governs the audit row only;
+  the caller-facing error remains unchanged. Dispatch rails still run before
+  the handler. Result elision changes no rail and "read-only" describes only
+  the verb's own effects.
+- The router classifies `transcript` as non-target before typed-target parsing
+  or lookup. Any top-level `sessionKey`, `role`, `userId`, or retired `target`,
+  alone or in combination, returns HTTP 400 with code `invalid_message` and
+  message `transcript takes no typed target`. The response is identical for
+  unknown, readable, and unreadable volunteered targets. The router performs no
+  target lookup. This transcript-specific refusal precedes the generic retired
+  `target` and multiple-typed-target refusals. JSON object key order is not part
+  of this error contract. The legitimate key is `params.session_key`;
+  consequently the dispatch call and audit row have a null top-level
+  `sessionKey`.
 
-`Tightbeam.Transcript` (new read module over `messages`/`turns`/`sessions`),
-gateway verb registration, the verb added to the router's agent-verb set and local
-non-target declaration (wire/router.ex:46-48, 110-127, 515-548), the result-elided
-verb set at the Dispatch seam (dispatch.ex:145-168), CLI command +
-`cli-surface-v1` row, tests. NO schema, NO migration, NO emission, NO harness
-surface. Depends on job-trace v1 (merged) for the turn attribution columns the
-entries carry.
+The safeguards end only when independently reviewed M4 parity passes and the
+legacy dispatch adapter is removed in the same migration. They do not add a
+second history contract to the final REST wrapper.
+
+Operating-guidance impact: none. This product contract creates no agent
+procedure outside the existing spec handoff.
+
+Gap recovery repeats the cold-build sequence for the displayed slice. It does
+not request firehose replay and does not treat an `after` page as proof that no
+notice was lost.
+
+Subtraction ruling: this revision deletes the duplicate transcript data
+contract. Accepting both authorities keeps slice 2 blocked. Adding a cursor or
+projection translation layer would create a third authority.
+
+## Acceptance
+
+A1 (I2). Given two readable sessions with one exact display name, a readable
+case-only variant, a readable substring variant, and an unreadable exact
+collision, when the caller runs `transcript --name` with the exact name, then
+the CLI returns only the two readable exact-match full R7 items in
+`(createdAt,sessionKey)` order. It returns no message item.
+
+A2 (I3, I4, I5, I7). Given 1,205 visible messages with tied and regressed timestamps, when the
+caller reads the tail and repeatedly passes each `page.oldestCursor` as
+`before`, then the pages visit each visible `(seq,id)` once in ascending order
+within each page and stop with `hasMoreBefore:false`. No request or response
+uses a message id as a cursor.
+
+A3 (I4, I6). Given a cursor returned before its boundary message is deleted, when the
+caller requests the next page, then the server compares the decoded
+`(seq,id)` tuple and returns the same page it would have returned while the
+boundary row existed.
+
+A4 (I5, I6, I7). Given a client that holds a tail page and its cursors, when
+`clearedThroughSeq` advances through the held page and newer messages commit,
+then `before=<held-oldest-cursor>` returns an empty item list with
+`hasMoreBefore:false`, and `after=<held-newest-cursor>` returns only rows above
+the new boundary. The before page sets `hasMoreAfter:true`. A cold rebuild
+removes the held rows whose `seq` is at or below the new boundary.
+
+A4a (I5, I7). Given nonempty visible history and a caught-up `after` cursor,
+when the caller requests the next page, then the page is empty and sets
+`hasMoreBefore:true` and `hasMoreAfter:false`. Given an `oldestCursor` used as
+`after` or a `newestCursor` used as `before`, REST returns
+`400 invalid_cursor`.
+
+A4b (I6a). Given REST R5d's closed boundary-transition inventory, when the
+harness-change caller and the turn-failure-recovery caller each submit a
+candidate below the stored value through the sole transition seam, then the
+next session read returns the stored value and no cleared message becomes
+visible. The source-structure proof in REST A51c finds no other initializer,
+writer, or caller.
+
+A5 (I5, I6, I6a). Given buffered session versions with boundaries `F=5` then
+`F=10`, when `S0` and `S1` are the later version with `F=10`, then step 7
+discards both covered notices and does not livelock. Given any session mutation
+between `S0` and `S1`, including one that retains the boundary, then the
+`rowVersion` comparison rejects the candidate. Given a boundary advance between
+the last message page and `S1`, then the boundary comparison also rejects the
+candidate. Given a newer different-boundary notice at or before cut `Q`, then
+the critical section rejects the candidate before publication. Given that
+notice after `Q`, then step 8 invalidates the published slice before its next
+repaint and performs a cursorless rebuild. Every accepted slice contains no row
+with `seq <=` its accepted boundary.
+
+A6 (I7). Given a firehose sequence skip after the client has paged three history
+pages, when gap recovery runs, then the client subscribes first, refetches the
+session and displayed message slice from a fresh tail, and converges after
+buffered notices. The proof supplies no replay endpoint and no stream cursor.
+
+A7 (I1, I3, I8, I9). Given the same principal and selection, when direct REST
+and the CLI wrapper run successfully, then their R4 envelopes, R7 items, and
+page cursors are equal. Given a REST refusal, the wrapper returns the same REST
+error code without choosing a second authorization or cursor outcome. A source
+check rejects SQL, a second serializer, a second visibility predicate,
+message-id cursor conversion, and fallback to the legacy dispatch read after
+M4 parity passes.
+
+A8 (I4). Given a prior transcript message id in `--before`, when the M4 wrapper
+runs, then REST returns `400 invalid_cursor`. The wrapper does not retry with a
+legacy handler and does not convert the id.
+
+A9 (I10). While the legacy dispatch adapter exists, given a successful
+transcript result containing message content, a denial, and a raised handler
+whose exception text contains message content, when Dispatch writes each audit
+row, then success and crash have the exact elided shapes above, denial retains
+its ordinary error map, and neither elided payload contains the content. The
+test also proves that the caller-facing raised-handler error is unchanged and
+that elision does not bypass or change a rail outcome.
+
+A10 (I11). While the legacy dispatch adapter exists, given each top-level
+typed-target field alone and every multi-field combination with unknown,
+readable, and unreadable values, when the router receives `transcript`, then it
+returns the same transcript-specific 400 error bytes before any target lookup
+and before the generic retired-target or multi-target refusal. Given
+`params.session_key`, then the handler receives that parameter while the
+dispatch call and audit row top-level `sessionKey` remain null.
+
+## Open Questions
+
+None. Mike's 2026-08-27 G5 ruling fixes the authority boundary and scope.
