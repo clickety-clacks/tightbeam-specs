@@ -29,6 +29,19 @@ with 3 distinct pseudonymized slots.
 
 ## Consumer contract
 
-T1 reads \`rows.jsonl\` as JSON Lines. Each row must have the exact five keys described above.
+T1 reads \`rows.jsonl\` as JSON Lines. Each row has exactly this schema:
+
+| Key | Value |
+| --- | --- |
+| \`ordinal\` | one-based positive integer unique within this file |
+| \`kind\` | literal \`operator\` |
+| \`authority\` | literal \`user:mike\` |
+| \`sessionState\` | \`legacy-unknown\` or \`known\` |
+| \`sessionSlot\` | null for \`legacy-unknown\`; otherwise \`retained-session-01\`, \`retained-session-02\`, or \`retained-session-03\` |
+
+The known labels are dense ranks of the three distinct retained raw session keys. They label
+session-mediated legacy rows only. A null slot labels a legacy-unknown row; neither label proves
+direct-user authorship.
+
 The fixture's SHA-256 is declared by P8 and T1 in the canonical proposal. A replacement capture
 uses this same transform and updates both declarations in one amendment.

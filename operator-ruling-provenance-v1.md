@@ -32,7 +32,7 @@ The canonical resolution text is this file:
 \`operator-ruling-provenance-diagnosis-2026-08-30.md\` at SHA-256
 \`28d42cf96ed56fa5282d166e13b46184887a39a3330545e64c695f79a35b6022\`, plus
 \`fixtures/operator-ruling-provenance-migration-2026-08-30/rows.jsonl\` at SHA-256
-\`0c3c3c1101db77f4557a9c1de2c2a6d7f76ae8d244730674847ce0fc805ecb7e\`.
+\`5755b83e36caca22f0f0103eb171c5c53f839ca4e1521e9453b8481fa7fd3dc1\`.
 
 This file supersedes the parked discussion
 \`user-alerted-decision-request-escalation.md\`. Its **ratification successor** is the next
@@ -150,7 +150,7 @@ P1. One immutable \`operator_ruling_submissions\` row stores these fields:
 | \`decision\` | exact submitted option label or response text |
 | \`rationale\` | exact submitted rationale, nullable |
 | \`submittedAt\` | ingress time in epoch milliseconds |
-| \`requestSequence\` | positive integer, atomically increasing only within \`requestId\` |
+| \`requestSequence\` | positive integer, atomically increasing without gaps only within \`requestId\` |
 | \`delegationId\` | nullable; used only if Open Question option A is selected |
 
 The table permits no update or delete. The decision-request row gains nullable
@@ -198,7 +198,7 @@ the epoch without a valid binding submission refuses as
 
 The migration acceptance fixture is
 \`fixtures/operator-ruling-provenance-migration-2026-08-30/rows.jsonl\` at SHA-256
-\`0c3c3c1101db77f4557a9c1de2c2a6d7f76ae8d244730674847ce0fc805ecb7e\`. Its README
+\`5755b83e36caca22f0f0103eb171c5c53f839ca4e1521e9453b8481fa7fd3dc1\`. Its README
 defines the live read-only source and deterministic redaction transform. Migration consumes
 only its five JSON keys; it does not infer omitted actor, source, or timestamp fields.
 
@@ -219,25 +219,43 @@ P10. Existing REST decision-request routes and Firehose
 \`decision_request.opened|ruled|consumed|withdrawn|superseded\` frames remain byte-compatible.
 The versioned \`operator ruling submissions\` resource exposes owner-visible submissions at
 \`GET /state/operator-ruling-submissions?requestId=<id>&afterRequestSequence=<n>&throughRequestSequence=<n>&limit=<n>\`.
-The endpoint requires \`requestId\`, orders items by increasing \`requestSequence\`, and uses
-P9 authorization. It returns \`items\`, \`snapshotThroughRequestSequence\`,
-\`nextAfterRequestSequence\`, and \`hasMore\`. An omitted
-\`throughRequestSequence\` makes the server read the request's current maximum sequence in the
-same snapshot that serves the first page. A supplied through value bounds each page to that
-sequence. Each response has at most \`limit\` items; the client repeats with
-\`afterRequestSequence=nextAfterRequestSequence\` while \`hasMore\` is true.
+The endpoint requires \`requestId\` and P9 authorization before request existence. \`afterRequestSequence\`
+defaults to 0 and otherwise accepts only a non-negative integer. \`limit\` defaults to 100 and
+accepts only an integer from 1 through 100. An omitted \`throughRequestSequence\` makes the server atomically select the request's current maximum
+sequence, including zero, as the immutable \`snapshotThroughRequestSequence\` for that enumeration.
+Every later page in that enumeration supplies that exact returned value as
+\`throughRequestSequence\`. A supplied through value is that snapshot version and must be an
+non-negative integer no less than after and no greater than the request's current maximum; otherwise the endpoint
+returns \`operator_ruling_submission_cursor_invalid\` with no item, count, or existence disclosure.
+
+For one valid cursor tuple \`(requestId, afterRequestSequence, snapshotThroughRequestSequence)\`,
+the endpoint returns only sequences greater than \`afterRequestSequence\` and no greater than
+\`snapshotThroughRequestSequence\`, in strictly increasing \`requestSequence\` order. It returns
+at most \`limit\` items, \`snapshotThroughRequestSequence\`,
+\`nextAfterRequestSequence\`, and \`hasMore\`. \`nextAfterRequestSequence\` equals the final
+returned sequence, or the supplied after value for an empty page. \`hasMore\` is true exactly
+when a later matching sequence exists within the same snapshot. A client continues only while
+\`hasMore\` is true, with the returned next-after value and the original snapshot version. A
+concurrent append receives a sequence above that version and cannot alter those pages.
 
 The transaction that inserts a submission assigns its next request sequence. Its Firehose class
 is \`operator_ruling_submission.recommended\` or \`operator_ruling_submission.bound\`, with
 \`schemaVersion:1\`, \`op:\"upsert\"\`, request id, submission id, and request sequence. REST
 and Firehose use one authorized serializer.
 
-A client stores its highest contiguous request sequence for each request. It applies an event
-with the next sequence. It ignores an event at or below that stored sequence. On an event above
-the next sequence, it reads pages after the stored sequence through the event sequence, applies
-the returned rows in sequence order, and then reprocesses the event. An initial client performs
-the same read from sequence zero. This is the only recovery action for missed, duplicate, or
-reordered submission events.
+A client durably stores its highest contiguous sequence and the immutable submission id and digest
+for each applied \`(requestId, requestSequence)\`. It applies an event at the next sequence. It
+ignores an event at or below that stored sequence when its id and digest equal the durable entry.
+An equal sequence with a different id or digest triggers a full request resync from zero; it never
+overwrites the durable entry. On an event above the next sequence, the client enumerates from its
+stored sequence through the event sequence using P10's pinned snapshot version, verifies no gap
+or mismatched duplicate, applies each page in increasing sequence order, and then reprocesses the
+event. An initial client and a restarted client perform the same enumeration from their durable
+highest contiguous sequence. If a page is missing the next expected sequence, repeats a sequence
+with a different id or digest, or P10 refuses a stored cursor, the client discards its local
+per-request projection and performs one full request resync from zero against a newly selected
+snapshot. This is the sole recovery action for missed, duplicate, reordered, and replayed
+submission events.
 
 P11. Audit and refusal output contains only ids, enums, digests, and cause codes. It contains
 no decision, rationale, message, attachment, or source text. The gateway authorizes provenance
@@ -362,7 +380,7 @@ check, and ordinary decision request.
 
 T1 — Given
 \`fixtures/operator-ruling-provenance-migration-2026-08-30/rows.jsonl\` at SHA-256
-\`0c3c3c1101db77f4557a9c1de2c2a6d7f76ae8d244730674847ce0fc805ecb7e\`, when migration
+\`5755b83e36caca22f0f0103eb171c5c53f839ca4e1521e9453b8481fa7fd3dc1\`, when migration
 classifies its 294 rows, then 3 are session-mediated legacy, 291 are legacy attribution
 unknown, and 0 are direct-user. Given any input enumeration order, then classification and
 epoch bytes are identical.
@@ -395,12 +413,20 @@ contain no candidate, rationale, message, attachment, or source text.
 
 T7 — Given pre-change exact-key fixtures, when an open request receives a recommendation and
 later binds, then existing REST decision-request responses and existing Firehose frames remain
-byte-equal. Given request R has submission sequences 1, 2, and 3, when a client at sequence 0
-receives only event 3, then it reads
-\`/state/operator-ruling-submissions?requestId=R&afterRequestSequence=0&throughRequestSequence=3\`,
-pages through sequence 3, and stores rows 1, 2, and 3 in that order. When delayed duplicate
-events 1 and 2 arrive, then it ignores them. Given a client at sequence 1 receives event 3,
-then it performs the same bounded read after sequence 1 and stores row 2 before row 3.
+byte-equal. Given request R has submission sequences 1, 2, and 3, a client at sequence 0 receives
+only event 3, and the client uses \`limit=1\`, when its first read omits through then the response
+sets \`snapshotThroughRequestSequence=3\`, returns row 1, \`nextAfterRequestSequence=1\`, and
+\`hasMore=true\`. When sequence 4 commits before the second page, then the client requests
+\`afterRequestSequence=1&throughRequestSequence=3&limit=1\`, receives row 2, then makes the
+same pinned-snapshot request after 2 and receives row 3 with \`hasMore=false\`; it stores rows
+1, 2, and 3 in that order and does not receive row 4. When delayed duplicate events 1 and 2
+arrive, then it ignores them. Given a client at sequence 1 receives event 3, then it selects
+snapshot 3, reads rows 2 then 3 with \`limit=1\`, and stores row 2 before row 3. Given a limit
+of 0, 101, or non-integer, a negative or non-integer after, an after greater than through, or a through greater than the request
+maximum, then the endpoint returns \`operator_ruling_submission_cursor_invalid\` without row
+or request-existence disclosure. Given an event or replay has an already stored sequence with a
+different submission id or digest, or a page omits the next expected sequence, then the client
+clears only R's local projection and performs the one full pinned-snapshot resync from zero.
 
 T8 — Given process loss before commit, when service restarts, then no submission, terminal
 change, fact, wake, or event exists. Given loss after commit, then one submission and terminal

@@ -1,4 +1,4 @@
-{"ordinal":1,"kind":"operator","authority":"user:mike","sessionState":"known","sessionSlot":"retained-session-03"}
+{"ordinal":1,"kind":"operator","authority":"user:mike","sessionState":"known","sessionSlot":"retained-session-02"}
 {"ordinal":2,"kind":"operator","authority":"user:mike","sessionState":"legacy-unknown","sessionSlot":null}
 {"ordinal":3,"kind":"operator","authority":"user:mike","sessionState":"legacy-unknown","sessionSlot":null}
 {"ordinal":4,"kind":"operator","authority":"user:mike","sessionState":"legacy-unknown","sessionSlot":null}
@@ -28,9 +28,9 @@
 {"ordinal":28,"kind":"operator","authority":"user:mike","sessionState":"legacy-unknown","sessionSlot":null}
 {"ordinal":29,"kind":"operator","authority":"user:mike","sessionState":"legacy-unknown","sessionSlot":null}
 {"ordinal":30,"kind":"operator","authority":"user:mike","sessionState":"legacy-unknown","sessionSlot":null}
-{"ordinal":31,"kind":"operator","authority":"user:mike","sessionState":"known","sessionSlot":"retained-session-04"}
+{"ordinal":31,"kind":"operator","authority":"user:mike","sessionState":"known","sessionSlot":"retained-session-03"}
 {"ordinal":32,"kind":"operator","authority":"user:mike","sessionState":"legacy-unknown","sessionSlot":null}
-{"ordinal":33,"kind":"operator","authority":"user:mike","sessionState":"known","sessionSlot":"retained-session-02"}
+{"ordinal":33,"kind":"operator","authority":"user:mike","sessionState":"known","sessionSlot":"retained-session-01"}
 {"ordinal":34,"kind":"operator","authority":"user:mike","sessionState":"legacy-unknown","sessionSlot":null}
 {"ordinal":35,"kind":"operator","authority":"user:mike","sessionState":"legacy-unknown","sessionSlot":null}
 {"ordinal":36,"kind":"operator","authority":"user:mike","sessionState":"legacy-unknown","sessionSlot":null}
