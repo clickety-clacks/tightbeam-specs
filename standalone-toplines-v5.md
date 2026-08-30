@@ -2,17 +2,62 @@
 
 Canonical path: `standalone-toplines-v5.md`
 
+**Spec homing and canonical set.** The canonical home is the
+`clickety-clacks/tightbeam-specs` repository. The complete canonical set for
+this successor contains exactly these repository-root paths at one exact
+repository commit:
+
+- `standalone-toplines-v5.md` is the canonical standalone product
+  specification. It governs the Toplines product behavior, the two Target
+  lines, the four Implementation lanes, their evidence, the Final full-scope
+  review, and the No-release gate.
+- `v0.2-program-2026-08-12.md` governs only the negative program-membership
+  fact: the old `wi_35abce19` Toplines row is absent and no replacement
+  Toplines phase or hierarchy row exists. It supplies no Toplines product
+  requirement, Target-line revision, implementation custody, or release
+  authority.
+
+The deletion of the `wi_35abce19` row from
+`v0.2-program-2026-08-12.md` is the paired homing change that removes Toplines
+from every v0.2 program phase and hierarchy.
+The two-file canonical set, not either file alone, carries this
+specification-only transition.
+The exact repository commit plus the SHA-256 of each file identifies this set
+for specification review. After reviewed-clean, the work item's `--spec-ref`
+and `--spec-sha256` values bind `standalone-toplines-v5.md`; the same reviewed
+commit and the paired program-file SHA-256 preserve the negative
+program-membership evidence.
+A later material change amends the file that owns that authority, then presents
+both canonical paths from one new exact commit for independent review.
+
+The reviewed V5 artifact, the pinned REST contract, the program-removal
+artifact, prior work-item rows, messages, worktrees, and review reports are
+authority or provenance inputs. They are not additional canonical custody and
+cannot amend either canonical file. The REST contract remains the separate
+canonical contract for REST transport. Its exact pinned commit constrains the
+shared query and projection boundary without joining this custody set.
+
 Work item: `wi_875fbdd5-6756-4149-b032-f055dc4f965c`
 
 Prior work item: `wi_35abce19-8d05-4a18-90db-335cabe0893c` is provenance only.
 It supplies reviewed design and implementation evidence. It does not place this
 work in a program phase and it does not carry implementation custody.
 
-Status: targetless spec candidate. Independent specification review is required
-before the work item can bind this file as implementation authority.
+Status: targetless spec amendment candidate. Independent specification
+re-review is required before the work item can bind this file as implementation
+authority.
 
 Authority and evidence:
 
+- Independent exact-tip review
+  `asg_afd2c88f-e685-4c64-9b5a-6b8957bf3930` verified commit
+  `39a063df882fb6a8ed3a79b1e0571da3f3155e6f`, both file hashes, and the
+  product contract, then returned `changes-requested` in
+  `att_64ea68a8-1927-4aa1-b01e-b5ba286e319a`. Its SHA-bound report
+  `art_6e1f6de9` identified one blocking finding: the candidate did not state
+  its canonical set or split the authority of the paired program-row deletion.
+  This amendment adds that boundary without changing a product behavior,
+  Target line, lane, program byte, or release authority.
 - Mike authorized one standalone Toplines deliverable for product targets
   `0.1.9` and `0.2.0` in message
   `s_17b635eb-05be-4644-bab0-aed66fc18d38`. The same ruling authorizes no
@@ -863,9 +908,13 @@ I86. Every target-line test uses synthetic users, sessions, Work Items,
 credentials, titles, reasons, and prompts. Evidence redacts bearer material and
 contains no live prompt body, production database row, or unrelated user data.
 
-I87. The targetless specs commit that introduces this file also deletes the
-`wi_35abce19` Toplines row from `v0.2-program-2026-08-12.md`. No replacement row
-links this work to a program phase.
+I87. One exact repository commit resolves the two-file canonical set. The
+standalone file is the canonical Toplines product specification. The paired
+program-file deletion removes Toplines from every v0.2 program phase and
+hierarchy. The two-file set, not either file alone, carries that
+specification-only transition. The program file supplies no Toplines product
+or release authority. The targetless commit that introduced this file also
+performed that row deletion.
 
 ## Architecture
 
@@ -2925,10 +2974,17 @@ commit, artifact ID, or SHA-256. A version mismatch yields
 `target_version_mismatch`; an absent or mismatched rollback fixture yields
 `previous_fixture_unverified`; neither case starts a product process.
 
-AC100. Given the targetless specs commit that introduces this file, when a
-reviewer inspects `v0.2-program-2026-08-12.md`, then the document contains no
-`wi_35abce19` Toplines row and no replacement Toplines phase or hierarchy row.
-The same commit contains both that deletion and this standalone specification.
+AC100. Given an exact specification-review candidate commit, when a reviewer
+resolves its canonical set, then the set contains exactly
+`standalone-toplines-v5.md` and `v0.2-program-2026-08-12.md`. The standalone
+file is the canonical Toplines product specification. The program-file row
+deletion is the paired homing change that removes Toplines from every v0.2
+program phase and hierarchy. The two-file set, not either file alone, carries
+the specification-only transition. The program file supplies no Toplines
+product requirement, Target-line revision, implementation custody, or release
+authority. The review evidence records the exact commit and both file SHA-256
+values. An additional claimed canonical file, a path resolved at another
+commit, or an authority claim outside these two scopes fails this case.
 
 ### Traceability
 
