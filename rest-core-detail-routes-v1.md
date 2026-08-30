@@ -17,7 +17,11 @@ with its source-readable extract in message
 `s_611313bb-ad2d-4434-b075-267b6f67f2e7` and its R7 correlation correction
 in message `s_6f2e66ab-bfed-409a-92e5-a72701548c20`; message
 `s_88e9615c-a45e-4726-98dc-29356d4a2ca2` fixes the shared ordered-item
-encoding requirement.
+encoding requirement. Independent exact-revision review
+`att_da2b9fde-22bd-4b90-8314-6675ebf92f33` and immutable report
+`art_d6fea797` at SHA-256
+`e15b8716d0969941b8199565667af5dd2760113845e48409d687bee1dbd7edbd`
+require the work-item and assignment query correction below.
 This specification serves
 `wi_62996c64-1871-409b-be96-ecce9555bd7e`.
 
@@ -62,6 +66,10 @@ Add the other eight detail routes without changing their collection routes.
   target, deployment, or release. The exact turn and device serializer/ref
   corrections below change conformance to the existing R7 fields; they do not
   amend a projection or add a serializer.
+- This work does not modify the composite CLI `work-item-get` or
+  `assignment-get` handlers. The two existing `StateResources` detail names
+  stop delegating to those handlers; the handlers retain their own callers and
+  response contracts.
 - This work does not retain the legacy composite work-item response at
   `/api/work-items/:workItemId` under another query flag or response variant.
 - This file does not authorize product edits before its exact bytes pass
@@ -78,10 +86,13 @@ Add the other eight detail routes without changing their collection routes.
   segment or query parameter. A session principal without AU2 user resolution
   has no effective marker key.
 - **Shared lookup**: the one `Tightbeam.StateResources` row lookup named in
-  Table 1. Seven exist at product commit `581afe9b`. This build adds the two
-  missing shared seams for turn sequence and decision-request id. A shared
-  seam may delegate to the owning module or transaction query. It copies no
-  SQL, visibility rule, or item map into a route.
+  Table 1. Seven names exist at product commit `581afe9b`, but the work-item
+  and assignment names delegate to composite CLI handlers and are not valid
+  detail implementations. This build replaces those two delegations behind
+  the same names and adds the two missing seams for turn sequence and
+  decision-request id. A shared seam may delegate only to a non-composite
+  resource-row or transaction query. It copies no SQL, visibility rule, or
+  item map into a route.
 - **Public item bytes**: the compact UTF-8 JSON bytes emitted by the resource's
   sole `Tightbeam.StateResources` serializer through the D1/M1 shared R7/R7a
   ordered-item encoder, with all top-level and nested order, conditional
@@ -101,10 +112,16 @@ request decoder, and no-store response adapter. The code-start check fails
 before a product edit when this assumption is false.
 
 AS2. Product commit `581afe9b8de4b4595717a81bdd0d38402d9c747c`
-contains the seven Table 1 lookups marked existing. It has no public by-sequence
-turn lookup and no decision-request detail lookup in `StateResources`. It does
-contain `query_turn_in_txn/2` and the Escalation-owned canonical by-id read that
-the two new Table 1 seams reuse.
+contains the seven Table 1 lookup names not labeled `new`. It has no public
+by-sequence turn lookup and no decision-request detail lookup in
+`StateResources`. It does contain `query_turn_in_txn/2` and the
+Escalation-owned canonical by-id read that the two new Table 1 seams reuse. Its
+`query_work_item/3` delegates to
+`WorkItems.__handle__(..., "work-item-get", ...)`, which resolves prefixes and
+loads assignments. Its `query_assignment/3` delegates to
+`Assignments.__handle__(..., "assignment-get", ...)`, which reads the row and
+then loads reopenings. This build removes both delegations from the
+`StateResources` detail seams.
 
 AS3. The R7 and wire-schema field lists remain the authority for item keys,
 types, nullability, enum domains, and order. This card corrects the existing
@@ -118,16 +135,20 @@ for both reviewed lanes.
 
 ## Invariants
 
-I1. A core detail route calls one shared lookup, one existing AU4 visibility
-predicate, one public item serializer through the D1/M1 shared ordered-item
-encoder, and one D1 outer-envelope encoder. The route contains no row query,
-item map, JSON reshaping, field selection, item encoder, projection, or error
-encoder.
+I1. A core detail route composes one shared lookup and one existing AU4
+predicate as one exact-key visibility-selection boundary, then calls one public
+item serializer through the D1/M1 shared ordered-item encoder and one D1
+outer-envelope encoder. The corrected work-item and assignment lookups perform
+their AU4 boundary before they return resource or child payload. The route
+contains no row query, item map, JSON reshaping, field selection, item encoder,
+projection, visibility predicate, or error encoder.
 
 I2. The service applies bearer authentication, query decoding, AU2 principal
 resolution, query validation, visibility-filtered lookup, serialization, and
 encoding in R4d order. The visibility check and existence selection use one
-query snapshot.
+query snapshot. Before that selection admits a row, neither the route nor the
+shared lookup reads a child collection, reopening, trace, or another composed
+payload.
 
 I3. An unknown key, forbidden row, malformed typed string id, noncanonical
 `turnSeq`, or unavailable effective marker key selects the same 404. No earlier
@@ -180,8 +201,8 @@ or release lane.
 
 | Route template | Canonical route key | Canonical shared lookup | AU4 row | Sole serializer | R8 primary refs | Exact R4c `resource` |
 |---|---|---|---|---|---|---|
-| `GET /api/work-items/:workItemId` | exact R7 `id` | `StateResources.query_work_item/3` | work items | `StateResources.work_item/1` | `workItemId` | `work items` |
-| `GET /api/assignments/:assignmentId` | exact R7 `id` | `StateResources.query_assignment/3` | assignments | `StateResources.assignment/1` | `assignmentId` | `assignments` |
+| `GET /api/work-items/:workItemId` | exact R7 `id` | corrected `StateResources.query_work_item/3`: non-composite exact visible row | work items | `StateResources.work_item/1` | `workItemId` | `work items` |
+| `GET /api/assignments/:assignmentId` | exact R7 `id` | corrected `StateResources.query_assignment/3`: non-composite exact visible row | assignments | `StateResources.assignment/1` | `assignmentId` | `assignments` |
 | `GET /api/wakes/:wakeId` | exact R7 `wakeId` | `StateResources.query_wake/2` | wakes | `StateResources.wake/1` | `wakeId` | `wakes` |
 | `GET /api/turns/:turnSeq` | canonical positive base-10 R7 `seq` | new `StateResources.query_turn_by_seq/2`, reusing `query_turn_in_txn/2` | turns | `StateResources.turn/1` | `turnSeq` derived from R7 `seq` | `turns` |
 | `GET /api/decision-requests/:decisionRequestId` | exact R7 `id` | new `StateResources.query_decision_request/2`, delegating to the Escalation-owned canonical by-id read | decision requests, by kind | `StateResources.decision_request/1` | `decisionRequestId` | `decision requests` |
@@ -201,6 +222,18 @@ existing Escalation-owned read without copying `decision_requests` SQL or
 bypassing Escalation's row decoding. `query_turn_by_seq/2` runs the existing
 exact-sequence transaction lookup through one shared read transaction. A route
 cannot substitute `query_turn/3`, whose key is `(sessionKey,messageId)`.
+
+The two rows labeled `corrected` preserve the existing public
+`StateResources` names and arities but replace their implementations.
+`query_work_item/3` and `query_assignment/3` each perform exact-key,
+visibility-filtered selection of only the canonical resource row. They do not
+call a CLI handler, resolve an id prefix, return a composite, or return or
+materialize assignments, reopenings, attests, traces, or another child
+payload. The shared AU4 predicate may inspect only the ownership, opener,
+holder, or work-item membership columns its AU4 row requires inside the same
+visibility-filtered snapshot; those columns do not enter the returned row.
+Unknown and forbidden keys traverse the same statement shape and count before
+the same 404.
 
 ### Two mechanical R7 correlation corrections
 
@@ -235,19 +268,20 @@ performs these steps in one fixed order:
    `400 invalid_filter` before lookup.
 5. Decode the path key without trimming, case-folding, aliasing, Unicode
    normalization, typed-prefix expansion, or alternate numeric spelling.
-6. Pass the resolved principal and Table 1 key to the shared lookup and AU4
-   predicate in one visibility-filtered snapshot. A miss or denial returns the
-   same 404.
+6. Pass the resolved principal and Table 1 key to the shared lookup and
+   existing AU4 predicate as one visibility-selection boundary in one query
+   snapshot. The corrected work-item and assignment lookups implement that
+   boundary before they expose a resource row or child payload. A miss or
+   denial returns the same 404.
 7. Pass the allowed row to the Table 1 serializer. A lookup, schema,
    serialization, or encoding failure returns `500 projection_invalid` with
    no partial item.
 8. Insert the shared ordered-item bytes into the detail envelope without
    decoding, map reshaping, reordering, or re-encoding, and return 200.
 
-When an existing CLI-oriented lookup accepts a unique typed prefix, the REST
-adapter requires the returned R7 primary key to equal the complete decoded path
-key before it exposes the row. A prefix-resolved mismatch returns the same 404
-without a second lookup.
+No core detail lookup performs typed-prefix resolution. A decoded string key
+that is not the complete stored public key reaches the exact visibility-filtered
+selection and returns the same 404 without a candidate list or child query.
 
 The effective marker key step requires a resolved user principal. It uses that
 user id even when the user is an admin. Thus two users can hold the same
@@ -319,11 +353,18 @@ ADD wins for the two shared query seams because each absent detail route needs
 one non-route-local row lookup; deleting either route loses the approved
 resource, and accepting route-local SQL violates the one-query invariant.
 
-The intended product touch set is the router, the two new shared query seams,
-the exact turn/device serializer and primary-ref corrections, and focused
-core-detail tests. A source diff that changes another serializer, a projection
-contract, collection, registry row, visibility grant, mutation, CLI, notice
-envelope, or Card 5 comparator file is outside this spec.
+DELETE wins for the work-item and assignment composite-handler delegations.
+Adding a post-lookup AU4 check cannot erase the child reads already performed,
+and accepting those reads cannot satisfy the same-404 contract. The existing
+`StateResources` names remain as exact non-composite seams.
+
+The intended product touch set is the router; the corrected implementations
+behind `query_work_item/3` and `query_assignment/3`; the two new shared query
+seams; the exact turn/device serializer and primary-ref corrections; and
+focused core-detail tests. A source diff that changes a composite CLI handler,
+another serializer, a projection contract, collection, registry row,
+visibility grant, mutation, CLI response, notice envelope, or Card 5 comparator
+file is outside this spec.
 
 ## Acceptance
 
@@ -351,6 +392,15 @@ records one Table 1 lookup, the resource's existing AU4 predicate, one Table 1
 serializer, one D1/M1 shared ordered-item encoder, and one shared envelope
 encoder. It records no route-local SQL, item map, JSON reshaping, visibility
 predicate, projection, item encoder, serializer, or error encoder.
+
+Given the corrected work-item and assignment seams, when each receives an exact
+allowed, forbidden, or unknown id, then it performs only the same
+visibility-filtered resource-row statement shape and count. A source and query
+spy records no call to `WorkItems.__handle__/3`, `Assignments.__handle__/3`, or
+`IdPrefix`, and no child projection or enumeration. Authorization-only
+membership access occurs solely inside the shared AU4 predicate, returns no
+child field, and preserves the same statement shape and count for forbidden
+and unknown ids.
 
 Given the two new query seams, when the spy calls `query_turn_by_seq/2` and
 `query_decision_request/2`, then the first uses the existing exact-sequence
@@ -392,6 +442,8 @@ key and then an unknown key, then status, body bytes, application headers,
 statement shape, and statement count match. The existing AU8 harness runs at
 least 10,000 randomized requests per case and requires the canonical p50 and
 p95 bound. The decision-request cases cover statute, effort, and agent kinds.
+For work items and assignments, both denied and unknown cases also perform zero
+child-payload reads and expose zero resource rows before AU4 admission.
 
 AC8 — **Closed error and projection failure.** Given each Table 1 route and a
 forced shared-lookup, schema, serializer, or encoding failure after input
@@ -442,16 +494,20 @@ source. A source-diff assertion rejects changes outside the touch boundary.
 
 AC13 — **Scope separation.** Given the candidate diff, when a reviewer checks
 it against the D1, G7, registry, Card 5, CLI, deployment, and release lanes,
-then it contains only this card's routes, two query seams, two R7 conformance
-corrections, focused tests, and required ref extraction. It does not contain
-the G7 role/name or condition-fact id corrections. The candidate has no
-integration target and performs no canonical landing, deployment, or release.
+then it contains only this card's routes, the two new query seams, two R7
+conformance corrections, the two existing non-composite query corrections,
+focused tests, and required ref extraction. It does not change either
+composite CLI handler or contain the G7 role/name or condition-fact id
+corrections. The candidate has no integration target and performs no canonical
+landing, deployment, or release.
 
 ## Open Questions
 
 None. D1's reviewed product landing is a blocking code-start dependency, not
 an unresolved product choice. The two absent Table 1 query seams and two
-mechanical R7 corrections are closed implementation requirements. Another
-missing shared lookup, serializer, AU4 seam, or D1 adapter is an upstream
-conformance defect and returns to the responsible owner; the core-detail
-builder does not fill it with route-local behavior.
+mechanical R7 corrections are closed implementation requirements. The
+work-item and assignment composite delegations are closed defects: replace
+them behind their existing `StateResources` names with the exact non-composite
+behavior above. Another missing shared lookup, serializer, AU4 seam, or D1
+adapter is an upstream conformance defect and returns to the responsible owner;
+the core-detail builder does not fill it with route-local behavior.
