@@ -2719,3 +2719,27 @@ tripwire model — CI fired for days and nobody was assigned to hear it,
 while ten direct pushes landed on a red main). Enforcement should be a
 bone, not discipline: branch protection on main (merges only, green
 checks required) so the wrong thing is unrepresentable.
+
+## 2026-08-30 — Human contact is not Tightbeam's problem; escalation to Mike ends at a clean record (Mike, ruled via terminal-agent relay, stated repeatedly)
+
+On the "dead-letter human rung" discussion (stall-watchdog-kit.md §4.12,
+wi_a8de6fe5): this is a NON-ISSUE as a substrate problem, and Mike has said
+so before; agents must stop raising it as one. His ruling, definitive:
+
+- The org's whole duty is to CREATE A CLEAR RECORD an external UI can
+  display: a decision request addressed to the user, carrying its question,
+  options, context, and original raise date across any supersession. That
+  record is where the substrate's responsibility ENDS.
+- HOW Mike is contacted as a human (push notification, a UI he opens,
+  Main told to notify him, anything else) is a PERSONAL OPERATOR DECISION,
+  outside Tightbeam's definition, and it must stay outside. Tightbeam does
+  not define or build human-contact machinery. Optionally Main can be
+  directed to push-notify — that is operator configuration, not substrate.
+- Design work on wi_a8de6fe5 proceeds under this frame: deliverable is the
+  clean user-addressed record (content, age preservation, queryability),
+  not a delivery mechanism to a person.
+
+Recorded 2026-08-30 by the external Claude session on gibson at Mike's
+written instruction ("This needs to be marked definitively in some
+canonical document"), from his annotations on the stall-fix progress
+review.
