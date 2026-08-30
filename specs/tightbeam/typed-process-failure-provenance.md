@@ -101,9 +101,9 @@ Acceptance: cases A01, A02, A18, A19, A21, and A25.
 
 ### I-15 — Safe mapping is closed and fail-closed
 
-The command edge owns one versioned closed switch for observed input shapes. Unlisted or incomplete shapes map to fixed class-only or unknown causes. Arbitrary provider prose does not enter public output. `reportedAtLayer` records where Tightbeam observed a value. `upstreamClaim` records only an allowlisted assertion present in the observed payload.
+The command edge owns one versioned closed switch for observed input shapes. Unlisted or incomplete shapes map to fixed class-only or unknown causes. Arbitrary provider prose does not enter public output. `failure-safe-cause-v1` defines no public retry/reset-time field and appends no time to a safe message. `reportedAtLayer` records where Tightbeam observed a value. `upstreamClaim` records only an allowlisted assertion present in the observed payload.
 
-Acceptance: cases A03, A10, A21, and A24.
+Acceptance: cases A01, A02, A03, A10, A21, and A24.
 
 ### I-16 — Unknown stays unknown
 
@@ -672,8 +672,8 @@ The mapper version is `failure-safe-cause-v1`. It matches only these shapes. `{}
 
 | Observed safe shape | Code and fixed public message | Specificity | Reported layer | Public protocol | Upstream claim |
 | --- | --- | --- | --- | --- | --- |
-| Codex `data.codexErrorInfo=usageLimitExceeded`; include a retry time only when the structured-time rule below proves a UTC instant | `codex_usage_limit`; `Codex usage limit reached` plus optional bounded UTC retry time | `concrete` | `provider_adapter` | observed integer `jsonRpcCode`; `providerCode=usageLimitExceeded` | `{layer=provider_adapter, code=usageLimitExceeded}` |
-| Claude `data.errorKind=rate_limit`; include a reset time only when the structured-time rule below proves a UTC instant | `claude_rate_limit`; `Claude rate limit reached` plus optional bounded UTC reset time | `concrete` | `provider_adapter` | observed integer `jsonRpcCode`; `providerErrorKind=rate_limit` | `{layer=provider_adapter, code=rate_limit}` |
+| Codex `data.codexErrorInfo=usageLimitExceeded` | `codex_usage_limit`; exactly `Codex usage limit reached` | `concrete` | `provider_adapter` | observed integer `jsonRpcCode`; `providerCode=usageLimitExceeded` | `{layer=provider_adapter, code=usageLimitExceeded}` |
+| Claude `data.errorKind=rate_limit` | `claude_rate_limit`; exactly `Claude rate limit reached` | `concrete` | `provider_adapter` | observed integer `jsonRpcCode`; `providerErrorKind=rate_limit` | `{layer=provider_adapter, code=rate_limit}` |
 | `data.details` begins with exact class `Invalid value for config option model` | `invalid_model_config`; `Configured model is unavailable` | `concrete` | `acp` | observed integer `jsonRpcCode` only | — |
 | `data.details == Session not found` | `session_not_found`; `Session was not found` | `concrete` | `acp` | observed integer `jsonRpcCode` only | — |
 | `data.details == auth expired` | `authentication_expired`; `Authentication expired` | `concrete` | `acp` | observed integer `jsonRpcCode` only | — |
@@ -689,7 +689,7 @@ The mapper version is `failure-safe-cause-v1`. It matches only these shapes. `{}
 | outer `message=Internal error` with no allowlisted concrete field | `acp_internal_error`; `ACP returned an internal error` | `class_only` | `acp` | observed integer `jsonRpcCode` only | — |
 | every unlisted shape | `unclassified_failure`; `Failure cause is unavailable` | `unknown` | the boundary layer that supplied the input | `{}` | — |
 
-Message constructors interpolate only a parsed UTC instant, a bounded integer exit status, or a closed enum. A time parser accepts only an allowlisted structured field containing either RFC 3339 with the `Z` UTC designator or a nonnegative integer UTC epoch millisecond value. It does not parse prose or infer a year or timezone from `observedAt`. The reviewed Codex prose without a timezone and Claude prose without a year therefore produce no public retry/reset time. Accepted instants render as RFC 3339 UTC; every other value is omitted. Public output never contains raw account state, path, URL, prompt, map, stderr, stack, or credentials.
+Message constructors interpolate only a bounded integer exit status or a closed enum. `failure-safe-cause-v1` has no structured-time input field, public retry/reset-time field, or time suffix. The mapper does not parse or project time from any provider field, including `data.message`, and does not infer a year or timezone from `observedAt`. Public output never contains raw account state, path, URL, prompt, map, stderr, stack, or credentials.
 
 Historical `legacy_untyped` rows use their stored bounded string only on the local legacy surface. Parent and owner projections use fixed `Failure cause is unavailable` and retain safe turn/session identifiers. They receive no fabricated code, layer, outcome, retry, or owner.
 
@@ -809,11 +809,11 @@ The implementation must pass these 26 deterministic cases. Each fixture-dependen
 
 ### A01 — Surf Codex cause and one identity
 
-Given the immutable real fixture derived from lifecycle row `221422`, when the command edge settles the attempt, then it writes `safeCause.code=codex_usage_limit`, a bounded fixed message, typed local marker, parent delivery, owner delivery, and one identical `failureId` on each surface; and no account URL or raw map crosses `FailurePublicV1`.
+Given the immutable real fixture derived from lifecycle row `221422`, when the command edge settles the attempt, then it writes `safeCause.code=codex_usage_limit`, `safeCause.message="Codex usage limit reached"` with no retry-time suffix, a typed local marker, parent delivery, owner delivery, and one identical `failureId` on each surface; and no account URL or raw map crosses `FailurePublicV1`.
 
 ### A02 — Claude weekly limit
 
-Given the immutable real fixture derived from lifecycle row `219529`, when the command edge settles the attempt, then it writes `safeCause.code=claude_rate_limit`, preserves the numeric protocol code separately, writes the typed marker and bounded parent/owner projection, and publishes no arbitrary provider prose.
+Given the immutable real fixture derived from lifecycle row `219529`, when the command edge settles the attempt, then it writes `safeCause.code=claude_rate_limit`, `safeCause.message="Claude rate limit reached"` with no reset-time suffix, preserves the numeric protocol code separately, writes the typed marker and bounded parent/owner projection, and publishes no arbitrary provider prose.
 
 ### A03 — Existing `data.details` classes and no invented specimen
 
