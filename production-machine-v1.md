@@ -132,9 +132,12 @@ machine's failure, retirement, or authorization policy.
 
 At each assignment-terminal transition, a turn already queued under that
 assignment can start only if its claim committed before that transition.
-Reopening makes turns enqueued after reopen eligible until the assignment's
-next terminal transition. The ledger preserves the turn, attribution, wake,
-and lifecycle evidence for each race result.
+A turn enqueue whose transaction sees that assignment closed commits its input
+evidence but creates its turn directly as terminal canceled; it never becomes
+queued. Reopening makes turns whose enqueue transactions commit after reopen
+eligible until the assignment's next terminal transition.
+The ledger preserves the turn, attribution, wake, message, and lifecycle
+evidence for each race result.
 
 ### Non-Goals
 
@@ -148,6 +151,8 @@ and lifecycle evidence for each race result.
   or unknown-outcome recovery.
 - This amendment does not add a schema field, public verb, request parameter,
   queue process, timer, retry, attribution backfill, or lifecycle backfill.
+- This amendment does not change the public delivery result or wake eligibility
+  contract.
 - This amendment does not repair a non-null `turns.assignmentId` that names no
   assignment. The report-dirt path in ATI-10 fails that turn by a named cause
   instead of guessing an assignment or close disposition.
@@ -166,6 +171,10 @@ and lifecycle evidence for each race result.
   session. This is the existing per-session FIFO boundary.
 - **Matching queued turn:** a turn with `status = 'queued'` and
   `assignmentId` equal to the assignment-terminal transition's assignment id.
+- **Closed-assignment enqueue:** an invocation of the shared turn enqueue seam
+  whose non-null `assignmentId` resolves, in its transaction's durable
+  snapshot, to an assignment with `state = 'closed'` and outcome `completed`,
+  `surrendered`, or `revoked`.
 - **Legacy queued turn:** a matching queued turn found at boot whose assignment
   had already closed before this contract was active.
 - **Lifecycle-covered turn:** a turn whose `seq` is greater than or equal to
@@ -186,8 +195,8 @@ and lifecycle evidence for each race result.
 - The substrate stamps `turns.assignmentId` from an existing durable carrier;
   public prompt prose does not author it. `job-forensics-v2.md` owns that
   attribution contract.
-- The database serializes assignment closure, turn claim, and boot recovery
-  writes through transactions over the same ledger.
+- The database serializes assignment closure, reopen, turn enqueue, turn claim,
+  and boot recovery writes through transactions over the same ledger.
 - `turn_lifecycle_events` permits one `terminal:committed` event and one
   `terminal:published` event per lifecycle-covered turn. Its epoch boundary
   excludes earlier turns from event backfill.
@@ -211,10 +220,11 @@ its existing fields and related rows, and records the assignment-terminal
 cancellation token in `turns.error`.
 
 **ATI-2E — Lifecycle evidence.** For each lifecycle-covered turn canceled by
-ATI-2 or ATI-5, the same transaction appends one `terminal:committed` event
-whose `outcome` is `canceled`, whose `cause` is the assignment-terminal
-cancellation token, and whose `principal` is `process:tightbeam`. Existing
-terminal publication appends one `terminal:published` event.
+ATI-2, ATI-2P, or ATI-5, the same transaction appends one
+`terminal:committed` event whose `outcome` is `canceled`, whose `cause` is the
+assignment-terminal cancellation token, and whose `principal` is
+`process:tightbeam`. Existing terminal publication appends one
+`terminal:published` event.
 
 **ATI-2L — Legacy evidence boundary.** For each canceled turn below
 `turn_lifecycle_epoch.firstTurnSeq`, the terminal turn row, its error token,
@@ -231,28 +241,50 @@ the cause with that row's stored id and outcome. A malformed cause or any row,
 outcome, id, error, or principal mismatch returns the existing named
 lifecycle-write refusal and appends no event.
 
+**ATI-2P — Closed-assignment enqueue.** The shared ledger enqueue seam resolves
+a non-null `assignmentId` before it inserts the turn. For a closed-assignment
+enqueue, the caller's transaction inserts the attributed turn directly with
+`status = 'canceled'`, `endedAt`, and the valid assignment-terminal
+cancellation token in `turns.error`. The seam appends the ordinary `accepted`
+lifecycle event before the ATI-2E terminal event and returns the existing
+successful turn-sequence shape. It creates no queued state. When the caller is
+the shared turn-bearing delivery seam, that same transaction commits the input
+message and consumes a pending wake as `fired`, when present; the turn retains
+its message and wake identities, and the caller returns its existing
+successful delivery shape. Replay by the same wake id or client-message
+identity returns the existing dedupe result and creates no second message,
+turn, accepted event, terminal event, or publication.
+
 **ATI-3 — Exact scope.** The terminal drain selects by the exact stored
 `turns.assignmentId` and `status = 'queued'`. It leaves a turn with null
 attribution, a turn attributed to another assignment, and a turn already in
 `running`, `delivered`, `canceled`, `failed`, or `failed_unknown` at its
 pre-transition state.
 
-**ATI-4 — Serialized race.** The terminal drain and the claim gate form one
-serialized race boundary. A committed claim wins and leaves a running turn
-for its ordinary result. A committed terminal transition wins and leaves a
-canceled turn that no claim can start.
+**ATI-4 — Serialized race.** Assignment-terminal transition, turn-bearing
+enqueue, reopen, and claim transactions form one serialized race boundary. An
+enqueue that commits while the assignment is open creates a queued turn; a
+later terminal transaction cancels it under ATI-2. A terminal transaction that
+commits before enqueue makes that enqueue commit a canceled turn under
+ATI-2P. A claim that commits before the terminal transaction leaves a running
+turn for its ordinary result. A reopen that commits before a new enqueue makes
+that new turn eligible under ATI-1. A later reopen changes none of the canceled
+race results.
 
 **ATI-5 — Boot convergence.** Before a session lane starts, boot cancels each
 legacy queued turn whose non-null `assignmentId` names a closed assignment.
 Boot uses the assignment row's stored outcome to produce the same cancellation
 token as ATI-2. Repeating boot, replaying terminal publication, or repeating a
 terminal command appends no second terminal event and publishes no second
-terminal transition for that turn.
+terminal transition for that turn. Boot leaves a turn already canceled under
+ATI-2P unchanged.
 
 **ATI-6 — Reopen is prospective.** Reopening an assignment authorizes future
 work. It does not change a turn canceled under ATI-2 or ATI-5 and does not
-enqueue a replacement turn. A turn enqueued with that assignment after reopen
-is eligible under ATI-1 until the assignment's next terminal transition.
+enqueue a replacement turn. It does not change a turn canceled under ATI-2P
+whose enqueue committed while the assignment was closed. A turn whose enqueue
+commits with that assignment open after reopen is eligible under ATI-1 until
+the assignment's next terminal transition.
 
 **ATI-7 — Fault evidence.** An assignment-terminal canceled cause turn does
 not start a fault bubble. A `failed` or `failed_unknown` cause turn that
@@ -298,9 +330,14 @@ claim without an external wake, timer, or enqueue. Existing `no_session` and
 The assignment state row is the single decision-free source for this gate.
 The shared completion, surrender, and revocation transaction invokes one
 ledger mutation seam that cancels queued turns by exact `assignmentId`. The
-claim update adds the assignment-open predicate beside its existing active-
-session predicate. Boot invokes the same cancellation semantics for queued
-rows joined to closed assignments before it starts session lanes.
+shared ledger enqueue seam resolves a non-null assignment attribution in its
+caller's transaction. When that assignment is closed, the seam creates the
+turn as canceled with the stored assignment's terminal token. A turn-bearing
+delivery caller commits its ordinary wake and message evidence in the same
+transaction. The claim update adds the assignment-open predicate beside its
+existing active-session predicate. Boot invokes the same cancellation
+semantics for queued rows joined to closed assignments before it starts
+session lanes.
 
 The cancellation token uses stored turn and assignment fields. The lifecycle
 writer validates its exact shape and cross-row equality; it does not authorize
@@ -311,24 +348,27 @@ assignment-terminal token is a typed lifecycle-cause convention, not prose
 from a caller.
 
 The lifecycle writer's system-terminal authority list gains only the exact
-ATI-2A case. The existing unclaimable-turn path gains the exact ATI-10 tuple,
+ATI-2A case, which serves transition-time, post-close-enqueue, and boot
+cancellation. The existing unclaimable-turn path gains the exact ATI-10 tuple,
 single-row compare-and-set, and immediate next-claim evaluation. The
 authorized `turn-trace` projection adds the two ATI-8 fields. The bubble
 producer continues to omit assignment attribution from ancestor notices.
 
-Mechanism choice — ADD the exact state gate: deleting assignment attribution
-would destroy required causality, while accepting the failure would let work
-start after its recorded authority ended.
+Mechanism choice — ADD the exact assignment-state gate at enqueue and claim,
+and reuse the terminal cancellation token. Refusing the whole delivery would
+discard required message or wake evidence. Retaining queued dirt would let
+reopen resurrect it. Deleting assignment attribution would destroy required
+causality.
 
 Operating pattern taught to agents: none. This is substrate physics derived
 from durable rows; it adds no agent instruction or manual step.
 
 ### Acceptance
 
-Each check uses the real assignment-close, ledger-claim, boot, reopen,
-retirement, lifecycle-publication, and fault-bubble transaction seams. A test
-that edits staged state instead of exercising the named seam does not satisfy
-the check.
+Each check uses the real assignment-close, ledger-enqueue, ledger-claim,
+turn-bearing-delivery, boot, reopen, retirement, lifecycle-publication, and
+fault-bubble transaction seams. A test that edits staged state instead of
+exercising the named seam does not satisfy the check.
 
 1. **ATI-A1 — Each disposition.** Given three open assignments with one
    already-fired lifecycle-covered queued turn attributed to each, when the
@@ -429,12 +469,37 @@ the check.
     `process:tightbeam`, then each write returns
     `{:error, {:turn_lifecycle_write_rejected,
     :invalid_terminal_authority}}` and appends no event.
+13. **ATI-A13 — Post-close delivery for each disposition.** Given three
+    assignments already closed as `completed`, `surrendered`, and `revoked`,
+    and pending attributed wakes Wc, Ws, and Wr respectively, when the three
+    wakes run through the shared turn-bearing delivery transaction and terminal
+    publication runs, then the three input messages commit with three new turns
+    created directly as `canceled`. Each turn retains its assignment id, has
+    `endedAt`, and has the exact token for its stored assignment outcome. Each
+    turn has one accepted lifecycle event, one committed canceled event, and
+    one published canceled event. Wc, Ws, and Wr become `fired` and retain
+    their respective turn identities. Each caller receives its existing
+    successful delivery shape, and no row enters `queued` or starts a fault
+    bubble.
+14. **ATI-A14 — Post-close replay, reopen, and mixed-queue progress.** Given a
+    closed assignment A, an open sibling assignment B in the same active
+    session, and a pending wake attributed to A, when the wake delivers, the
+    process restarts, the same wake delivery replays, A reopens, and turns
+    attributed to B, with null attribution, and attributed to reopened A are
+    enqueued in that order, then the original A delivery remains one canceled
+    turn with one message, accepted event, committed event, and publication.
+    Replay creates no second row or event. Without boot cleanup, a repair
+    timer, or another enqueue, successive claim evaluations start the B turn,
+    the null-attributed turn, and the new post-reopen A turn in FIFO order. The
+    canceled A turn never becomes claimable and does not block those turns.
 
 Traceability: ATI-A1 verifies ATI-2, ATI-2E, and ATI-2A; ATI-A2 and ATI-A3
 verify ATI-1 and ATI-4; ATI-A4 verifies ATI-2L, ATI-5, and ATI-6; ATI-A5 and
 ATI-A6 verify ATI-3; ATI-A7 verifies ATI-1 and ATI-10; ATI-A8 verifies ATI-9;
 ATI-A9 and ATI-A11 verify ATI-7; ATI-A10 verifies ATI-8; ATI-A12 verifies the
-rejection boundary in ATI-2A.
+rejection boundary in ATI-2A; ATI-A13 verifies ATI-2P, ATI-2E, ATI-2A, and the
+three post-close disposition tokens; ATI-A14 verifies ATI-1, ATI-4, ATI-5,
+ATI-6, ATI-2P replay, and mixed-queue progress.
 
 ### Open Questions
 
