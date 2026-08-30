@@ -322,14 +322,27 @@ asked (2026-08-21).
 **Cause.** Triage happened — legitimately — but silently. Nothing obliges an
 owner to surface a priority decision to the human whose ask lost.
 
-**Repair.** The owner files one of two rows the moment a principal ask is
-deprioritized: a notice naming what it is parked behind and the expected
-pickup, or an ask ("A or B first?"). Silence is the violation, not the
-triage. Patrols treat principal-sourced items with no producing card and no
-such row as this class.
+**Repair.** The accountable owner files exactly one typed row at the moment
+they deprioritize it: a notice naming the open priority it is parked behind
+and a bounded pickup horizon, or a decision request that names both open
+priorities and asks which wins. Silence is the violation, not triage.
+Deprioritization is the owner's explicit declaration of either alternative;
+the substrate must not infer it from elapsed time, a quiet card, or a changed
+priority. For this class, “Mike-sourced” means immutable creation provenance:
+the item was created directly by user `mike`, or by a session whose recorded
+owner is `mike` (a relay). An item sourced by any other user is outside 4.10.
+The filing owner must be the item's recorded owner, not an administrator
+standing in for that owner. A keyed replay returns the first row and creates
+neither another notice nor another decision request.
 
-**Prevented by.** The outcome kind's horizon duty: a goal card must escalate
-itself when its boundary has not moved by its own stated horizon.
+**Prevented by.** A qualified goal card may declare a nonblank boundary and a
+bounded horizon. A different boundary replaces the prior declaration and
+arms a new generation. At the exact horizon wake, the row matching that
+generation self-escalates once; duplicate delivery, recovery, and a late
+wake from a moved boundary do not escalate or re-arm it again. A same-boundary
+extension is not movement. Terminal disposition cancels the duty. Patrols
+treat a Mike-sourced item with no producing card and no current notice-or-ask
+row as this class.
 
 ### 4.11 Ratified false premise (a laundered park)
 
