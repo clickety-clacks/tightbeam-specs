@@ -23,6 +23,22 @@ impersonating him.
 The substrate records who, how, and from what exact evidence. It does not decide whether words
 mean consent. Org policy decides which authenticated actors may bind Mike's authority.
 
+## Spec Homing
+
+The canonical resolution text is this file:
+\`operator-ruling-provenance-v1.md\` in the \`tightbeam-specs\` repository. Its evidence set is
+\`operator-ruling-provenance-census-2026-08-30.md\` at SHA-256
+\`db48b63856e3baa7df68378be2ee9bccb3d8b97c5229df716fbd849cb6151d21\` and
+\`operator-ruling-provenance-diagnosis-2026-08-30.md\` at SHA-256
+\`28d42cf96ed56fa5282d166e13b46184887a39a3330545e64c695f79a35b6022\`.
+
+This file supersedes the parked discussion
+\`user-alerted-decision-request-escalation.md\`. It carries no product-change authority until
+the product owner binds this path and content SHA-256 to a work item. A later amendment edits
+this file, names the superseded content SHA-256 and applicable review findings in its handoff
+receipt, and re-binds the work item. A builder reads the work-item binding; an unbound candidate
+authorizes no product change.
+
 ## Goal
 
 Deliver one buildable provenance seam for operator decision requests and use that seam for
@@ -83,10 +99,15 @@ the gap leaves persistent alerts undiscoverable.
   transport. An asserted \`asUser\` field or an absent session does not establish this class.
 - **Session-mediated**: a submission with a substrate-observed submitting session.
 - **Legacy-unknown**: a historical field whose value cannot be proved from retained rows.
-- **Alert episode**: one assertion fact of kind \`user-alerted\`, \`harness-auth-dead\`, or
-  \`harness-rate-limit-dead\`, ending at its matching retraction fact.
+- **Alert episode**: one durable \`alert_episodes\` row. Its id, kind, scope, and assertion
+  fact id never change. Its nullable retraction fact id transitions once from null to the
+  matching retraction fact id. It begins with its assertion fact and ends with that transition.
+- **Alert-episode registry**: the sole table that matches an alert assertion to its retraction.
+  At most one episode for one kind and scope has a null retraction fact id.
 - **Persistent alert**: an alert episode that remains standing at assertion time plus 900,000
   milliseconds.
+- **Original raise date**: the \`raisedAt\` value of the first persistent-alert decision record
+  in one supersedes chain. A successor reads and preserves that value.
 
 ## Assumptions
 
@@ -172,11 +193,18 @@ Migration emits no direct-user classification and creates no source text. A term
 the epoch without a valid binding submission refuses as
 \`decision_request_provenance_invalid\`.
 
-P9. Owner-authorized detail returns authority, actor, session state, transport, submission
-kind, source kind, reference, digest, and timestamps. It returns source text only when the
-caller can already read that private carrier. List views use exactly these labels: \`Mike
-confirmed\`, \`session recommendation\`, \`session-mediated legacy ruling\`, and \`legacy
-attribution unknown\`.
+P9. The provenance resource applies this reader matrix before it discloses a row or event:
+
+| Reader | Authorization source | List and detail disclosure | Firehose disclosure |
+| --- | --- | --- | --- |
+| Request owner | authenticated user equals \`ownerUserId\` | authority, actor, session state and key, transport, kind, source kind and reference, digest, timestamps, and delegation id | the same metadata, without source text |
+| Metadata-granted admin without source read | authenticated admin holds \`operator-ruling-provenance.metadata.read\` | submission id, request id, kind, authority principal, actor principal, actor session state, transport class, source kind, digest, submitted time, and delegation id; no session key or source reference | the same redacted metadata |
+| Source-authorized reader without provenance metadata grant | existing private-carrier authorization only | no provenance list or detail row; the carrier remains readable through its existing resource | no event |
+| Unrelated user | none | no list item; detail returns the same not-found body as an absent id | no event |
+
+The owner receives source text only when the existing private-carrier authorization also grants
+it. List labels are exactly \`Mike confirmed\`, \`session recommendation\`,
+\`session-mediated legacy ruling\`, and \`legacy attribution unknown\`.
 
 P10. Existing REST decision-request routes and Firehose
 \`decision_request.opened|ruled|consumed|withdrawn|superseded\` frames remain byte-compatible.
@@ -185,9 +213,10 @@ Firehose classes are \`operator_ruling_submission.recommended\` and
 \`operator_ruling_submission.bound\`, with \`schemaVersion:1\`, \`op:\"upsert\"\`, request id,
 and submission id. REST and Firehose use one authorized serializer.
 
-P11. Audit and refusal output contains ids, enums, digests, and cause codes. It contains no
-decision, rationale, message, attachment, or source text. Authorization runs before existence
-disclosure. A hidden id and an absent id return the same detail body.
+P11. Audit and refusal output contains only ids, enums, digests, and cause codes. It contains
+no decision, rationale, message, attachment, or source text. The gateway authorizes provenance
+metadata by P9 before it checks row existence. A hidden id and an absent id return the same
+detail body.
 
 P12. After restart, a committed submission appears once and an uncommitted submission is
 absent. Recovery does not derive actor, source, or delegation from chronology. The provenance
@@ -195,35 +224,45 @@ epoch is the only migration cutoff.
 
 ### Persistent alerts
 
-A1. Org policy schedules one persistence check for the exact assertion fact id when a
-\`user-alerted\`, \`harness-auth-dead\`, or \`harness-rate-limit-dead\` episode begins. The due
-time is assertion time plus 900,000 milliseconds.
+A1. In the transaction that records an alert assertion, the alert-episode registry creates one
+episode row when no open row has that fact kind and scope. It stores the assertion fact id. In
+the transaction that records a retraction, the registry sets the retraction fact id of the one
+open row with that kind and scope. A retraction with no open row refuses as
+\`alert_episode_not_open\`.
 
-A2. At the due boundary, one transaction rechecks the exact episode and files one operator
-request only if it still stands. The idempotency key is
-\`persistent-alert:<fact-kind>:<assertion-fact-id>\`. A committed retraction produces no
-request.
+A2. Org policy schedules one persistence check with the created episode id and assertion fact
+id. Its due time is assertion time plus 900,000 milliseconds.
 
-A3. The request has the closed action menu \`re-staff\`, \`park\`, and \`acknowledge\`. These
-are instructions for the accountable agent. The substrate does not perform those actions.
+A3. At the due boundary, one transaction reads that exact episode row. It files one operator
+request only when the row still has a null retraction fact id. The idempotency key is
+\`persistent-alert:<episode-id>\`. A retracted episode produces no request even when a later
+episode has the same kind and scope.
 
-A4. The owner delivery line is:
+A4. The policy creates an owner-addressed decision record with this exact question:
 
-> Tightbeam has been unable to reach an agent for 15 minutes. Choose re-staff, park, or acknowledge. Status: {standing|recovered}.
+> Tightbeam has been unable to reach an agent for 15 minutes. Choose re-staff, park, or acknowledge.
 
-The message carries the request id and alert kind as typed metadata. It carries no private
-failure text.
+The record has the closed action menu \`re-staff\`, \`park\`, and \`acknowledge\`. Its context
+contains the episode id, assertion fact id, alert kind, alert scope, derived alert status, and
+original raise date, which equals that first record's \`raisedAt\`. The policy records no private
+failure text and performs none of the three actions. The substrate creates no human contact,
+delivery message, wake, retry, or delivery
+receipt for this policy. A separately authorized consumer can render the owner-addressed record.
 
-A5. Recovery after request filing appends the matching retraction fact to the request's
-observable basis and changes its derived display status to \`recovered\`. It does not withdraw,
-rule, consume, supersede, or close the request. The same episode cannot file a second request.
-A later assertion is a new episode.
+A5. Supersession retains the original decision record unchanged. Its question, options,
+context, and original raise date remain owner-readable through the \`supersedes\` chain. A
+successor can add its own record but cannot overwrite those fields.
 
-A6. \`user-alerted\` uses its owner scope. Harness auth and rate-limit episodes resolve the
+A6. Recovery reads the episode's retraction fact id, appends that fact to the record's
+observable basis, and changes its derived display status to \`recovered\`. It does not
+withdraw, rule, consume, supersede, or close the record. The same episode cannot file a second
+request. A later assertion is a new episode.
+
+A7. \`user-alerted\` uses its owner scope. Harness auth and rate-limit episodes resolve the
 owner through the existing affected-session and host relation. Zero or several owners produce
 \`persistent_alert_owner_unresolved\` and no decision request.
 
-A7. The alert rule is org policy over substrate facts. Removing the policy removes only
+A8. The alert rule is org policy over substrate facts. Removing the policy removes only
 persistence escalation. It does not remove facts, terminal alerts, quarantine, or recovery.
 
 ## Architecture
@@ -277,11 +316,19 @@ evidence or re-enable an unproven writer.
 
 ### Persistent-alert policy
 
-One org-authored policy production observes the existing fact stream. It schedules the exact
-episode boundary, rechecks standing state, and files the existing operator-request kind with
-the closed action menu. It uses the provenance seam for recommendations and confirmation. It
-adds no alert state beyond the assertion fact id, ordinary scheduled check, and ordinary
-decision request.
+The \`record_alert_episode_transition\` mutation seam is the only writer for
+\`alert_episodes\`. It runs in the assertion or retraction fact transaction. It creates an
+episode for an assertion after no open episode of that kind and scope exists. It attaches a
+retraction to the one open episode of that kind and scope. A later assertion therefore cannot
+make an older check observe a newer episode.
+
+One org-authored policy production observes the resulting episode row. It schedules the exact
+episode boundary, rechecks that same row, and files the existing operator-request kind in
+\`record-only\` mode with the closed action menu. Record-only mode writes the decision row and
+its ordinary state event, but schedules no wake, external transport, retry, or delivery receipt.
+Existing operator-request callers retain their current delivery behavior. The policy uses the
+provenance seam for recommendations and confirmation. It adds only the episode row, scheduled
+check, and ordinary decision request.
 
 ## Acceptance
 
@@ -311,10 +358,10 @@ without another row or event. An unequal retry returns \`ruling_submission_confl
 two confirmations race, then one wins and the loser commits no bytes. Given supersession,
 then old recommendations stay only on the old request.
 
-T6 — Given the owner, an admin without message-read authority, and an unrelated user, when
-each reads lists, details, logs, and Firehose, then only the owner receives source text; the
-admin receives authorized metadata; the unrelated user receives no row-identifying response
-or event. Logs and events contain no candidate, rationale, message, attachment, or source text.
+T6 — Given the owner, a metadata-granted admin without private-carrier read, a
+source-authorized reader without the metadata grant, and an unrelated user, when each reads
+lists, details, logs, and Firehose, then each response matches P9's exact row. Logs and events
+contain no candidate, rationale, message, attachment, or source text.
 
 T7 — Given pre-change exact-key fixtures, when an open request receives a recommendation and
 later binds, then existing REST decision-request responses and existing Firehose frames remain
@@ -326,18 +373,22 @@ change, fact, wake, or event exists. Given loss after commit, then one submissio
 exist and an equal retry returns them. Given rollback after activation, then the old writer
 refuses while unrelated reads and mutations remain available.
 
-T9 — Given each supported alert retracts at 899,999 milliseconds, when its check runs, then no
-request exists. Given it remains standing at 900,000 milliseconds, then one request with the
-exact menu and delivery line exists. A boundary race produces one request only if the filing
-transaction observes the episode standing.
+T9 — Given an alert assertion creates episode E1 and E1 retracts at 899,999 milliseconds, when
+E1's check runs, then no request exists. Given E1 remains standing at 900,000 milliseconds,
+then one owner-addressed record with A4's question, options, and context exists. Given E1
+retracts and E2 asserts with the same kind and scope before E1's check, when E1's check runs,
+then E1 files no request. A boundary race produces one request only when its filing transaction
+reads E1 with a null retraction fact id. In each case, the policy creates no human-contact
+message, wake, retry, or delivery receipt.
 
-T10 — Given a persistent-alert request is open, when its episode retracts, then the request
-stays open, display status becomes \`recovered\`, and Mike receives no second alert. A later
-standing assertion can file one new request. An unresolved harness-alert owner produces the
-typed refusal and no guessed owner.
+T10 — Given a persistent-alert record is open, when its episode retracts, then the record stays
+open, its status becomes \`recovered\`, and the policy files no second request for that episode.
+Given the record is superseded, then the original question, options, context, and raise date
+remain readable through the supersedes chain. A later standing assertion can file one new
+record. An unresolved harness-alert owner produces the typed refusal and no guessed owner.
 
 Trace: P1-P4 and P8 map to T1, T2, and T4. P3-P7 map to T3 and T5. P9-P11 map
-to T4, T6, and T7. P12 maps to T5 and T8. A1-A2 map to T9. A3-A7 map to T9
+to T4, T6, and T7. P12 maps to T5 and T8. A1-A3 map to T9. A4-A8 map to T9
 and T10.
 
 ## Open Questions
