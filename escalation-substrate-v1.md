@@ -128,6 +128,16 @@ provenance-stamped with the acting principal.
   F4). The park is **idempotent** via the DR's stored `parkWakeId` (§4): a sweep over
   an already-parked open DR re-returns it and never double-parks.
 
+**E8 — A RULED ROW IS ONE COMPLETE FACT (Mike, 2026-08-30).** A
+decision-request with `status = ruled` carries a nonblank text `decision`, a nonblank
+text `ruledBy`, and an integer `ruledAt`. The transition CAS writes all four members
+in one statement. The table itself rejects a future partial ruled row. A reader that
+encounters corruption despite that boundary refuses the request or whole response; it
+does not render `ruled` with missing detail. A migration never invents a decision,
+ruler, or time: it either moves a legacy row through a separately specified repair
+transition or stops the upgrade with a remedy that identifies the broken row. Rationale
+remains optional.
+
 ---
 
 ## 2. The `escalate` outcome at the gate — resolve (read), escalate (effect), consume (actor)
@@ -453,6 +463,39 @@ attest is FK-bound to an assignment and CHECK-locked to
 not. Provenance lives on the `decision_requests` row (`ruledBy`/`ruledAt`/`decision`/
 `rationale`) plus the `condition_facts` origin and the lifecycle row — three legible,
 append-only records, no attest overload.
+
+### 5a. Ruled-decision integrity boundary (Mike, 2026-08-30)
+
+The decision-request table owns E8 for every kind that can become `ruled`. Its exact
+database predicate rejects a null, empty, or ASCII-whitespace-only `decision` or
+`ruledBy`, and rejects a non-integer or null `ruledAt`. The normal verb edge
+normalizes text before its open-row CAS; this predicate is the final write-time
+boundary, not a second policy decision.
+
+The canonical readers — direct detail, lists, REST, and firehose serialization — check
+the same complete-fact shape before they project a ruled row. A corrupt row yields the
+named `decision_request_integrity_invalid` refusal and no partial ruled item. Existing
+operator rows also retain their deeper provenance, condition-fact, lifecycle, and wake
+audit checks.
+
+The one stamped upgrade from the prior decision-request shape preflights every ruled
+row before it rebuilds the table. A row that lacks any E8 field makes that upgrade fail
+with `incompatible_ruled_decision_integrity_v1` and a repair message containing its
+request id. This is the selected legacy remedy: no migration writes a made-up decision,
+ruler, timestamp, or status transition. A repaired source database can retry the
+upgrade; until then the new build refuses that database rather than exposing its
+partial ruling.
+
+Acceptance:
+
+- A direct ruled write with a blank, whitespace-only, or absent decision/ruler, or an
+  absent/non-integer time, fails the table constraint.
+- A valid direct or session-mediated ruling still projects unchanged through CLI, REST,
+  and firehose; retry and competing terminal CAS behavior remain unchanged.
+- A deliberately corrupted ruled row is refused by list, detail, replay, REST, and
+  firehose before any ruled payload is emitted.
+- A legacy incomplete ruled row fails the stamped upgrade with the named remedy; a
+  valid legacy ruling migrates and preserves its original raise time and audit links.
 
 ---
 
