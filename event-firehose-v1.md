@@ -338,7 +338,8 @@ in payload), `attest.filed` (kind and verdictKind in payload).
 R2. Attention and escalation:
 `wake.scheduled`, `wake.fired`, `wake.canceled`, `prod.fired`,
 `turn.started`, `turn.ended`, `decision_request.opened`,
-`decision_request.ruled`, `decision_request.withdrawn`.
+`decision_request.ruled`, `decision_request.withdrawn`,
+`operator_ruling.provenance_recorded`.
 
 R3. Org shape:
 `session.spawned`, `session.updated`, `session.retired`, `role.created`, `role.bound`,
@@ -387,6 +388,7 @@ correlation contract). A class without a row is a red build.
 | `session.spawned`, `session.updated`, `session.retired` | `sessions` | `upsert` | `sessionKey` | exact shared R7 session serializer | The session projection mutation seam allocates the next durable session `rowVersion` in the same transaction as the changed projection. First materialization selects `session.spawned`; an `active` to `retired` state transition selects `session.retired`; each other changed item selects `session.updated`. One commit selects one class. A no-change request emits none. | REST AU4 session visibility. Consumers apply last-version-wins by `sessionKey`. The payload `sessionKey` equals `refs.sessionKey`. | A1 covers the mutation seam and class selection. A6 verifies byte equivalence with `GET /api/sessions/:sessionKey`. |
 | `condition_fact.filed` | `condition facts` | `upsert` | `factId` | exact shared R7 condition-fact serializer | The condition fact `id` is its append-only natural version; its `rowVersion` equals `id`. Each successful insertion into `condition_facts` emits one notice after commit. An idempotent filing that returns the existing fact emits none. | `GET /api/facts` visibility. Consumers apply last-version-wins by `factId`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 | `critical_lease.updated` | `critical state` | `upsert` | `sessionKey` | exact shared R7 critical-state serializer | The item uses R7 critical-state `rowVersion`. Each committed change to the R7 item for one `sessionKey` emits one notice after commit. A replay or idempotent request that leaves the item and `rowVersion` unchanged emits none. | `GET /api/critical-state` admin-only visibility. Consumers apply last-version-wins by `sessionKey`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
+| `operator_ruling.provenance_recorded` | `operator ruling provenance` | `upsert` | `decisionRequestId`, `sessionKey` | `Tightbeam.Escalation.public_operator_ruling_provenance_item/1`, the exact shared R7 operator-ruling-provenance serializer | The terminal mutation allocates the decision-request row's next positive `rowVersion`. Each successful post-epoch ruling emits one notice after commit. A refusal, pre-epoch row, migration, or replay that leaves the terminal row unchanged emits none. | `GET /api/decision-requests/:id/operator-ruling-provenance` visibility: operator-request owner user or admin. Consumers apply last-version-wins by `(requestId,rowVersion)`. Payload `requestId` equals `refs.decisionRequestId`; payload `submittingSessionKey` equals `refs.sessionKey`. | A1 covers the class, emission seam, resource, op, and refs. A6 verifies the complete payload is byte-equivalent to the REST detail item. |
 | `message.created` | `transcript messages` | `upsert` | `messageId`, `sessionKey` | exact shared R7 transcript-message serializer | The item uses its R7 `rowVersion`. Each newly committed transcript message emits one notice after commit; an idempotency replay that returns the existing row emits none. | `GET /api/sessions/:sessionKey/messages` visibility. Consumers correlate by `messageId` and apply last-version-wins by `(payload.id, payload.rowVersion)`. | A1 covers the class and both refs. A6 verifies the complete item, including conditional `messageType` omission, is byte-equivalent to the matching REST row. |
 
 R8b. Source invalidation classes are deliberately not R8 rebuildable-state
@@ -718,6 +720,7 @@ exactly these addressable detail routes:
 | transcript messages | `GET /api/sessions/{payload.sessionKey}/messages/{payload.id}` |
 | condition facts | `GET /api/facts/{payload.id}` |
 | critical state | `GET /api/critical-state/{payload.sessionKey}` |
+| operator ruling provenance | `GET /api/decision-requests/{payload.requestId}/operator-ruling-provenance` |
 | host environment | `GET /api/host-env/{payload.host}/{payload.harness}/{payload.name}` |
 
 Each comparator invokes the same resource query, AU4 visibility predicate,

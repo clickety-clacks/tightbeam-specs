@@ -30,6 +30,11 @@ types remain unchanged. The complete item, including materialized
 `mechanicalStatus`, is the versioned value shared by REST and the three
 `session.*` firehose classes.
 
+Operator-ruling-provenance candidate, 2026-08-31: add the closed public
+provenance item shared by its REST detail route and
+`operator_ruling.provenance_recorded` firehose payload. This adds no field to
+the existing decision-request item.
+
 ## Encoding rules
 
 JSON is UTF-8. Integers are signed JSON integers and never floating-point
@@ -230,6 +235,7 @@ presence. It is optional and non-null when present.
 | Resource | Strings | Integers / numbers | Booleans | Arrays / objects | Nullable |
 |---|---|---|---|---|---|
 | decision requests | id, kind, raiserId, raiserSessionKey, ownerUserId, assignmentId, expecterSessionKey, expecterUserId, deadlineWakeId, statuteName, question, status, decision, rationale, ruledBy, withdrawnBy, withdrawnReason, askedOfRole, answer, answeredBy | lineageRung, effortGeneration, raisedAt, deadlineAt, ruledAt, consumedAt, withdrawnAt, answeredAt, rowVersion | — | options `A<O<DecisionOption>>`, context `J` | raiserId, raiserSessionKey, ownerUserId, assignmentId, expecterSessionKey, expecterUserId, deadlineWakeId, statuteName, decision, rationale, ruledBy, ruledAt, consumedAt, withdrawnBy, withdrawnReason, withdrawnAt, askedOfRole, answer, answeredBy, answeredAt, context |
+| operator ruling provenance | requestId, authorityPrincipal, state, submittingSessionKey | ruledAt, rowVersion | — | — | submittingSessionKey |
 | toplines | id, ownerUserId, title, state, dependencyVersion | createdAt, updatedAt, closedAt, activeWorkCount, openConcernCount | — | createdActor `O<Actor>`, workMemberships `A<O<ToplineMembership>>`, concerns `A<O<Concern>>` | closedAt |
 | execution map node | id, title, specRefName, specRefSha256, state, failReason | finishedAt, jobs, startedAt, openDecisionRequests, fanOut, sinceProgressMs | bracket1Armed | origin `O<ExecutionMapOrigin>`, creationContext `O<ExecutionMapCreationContext>`, parent `O<ExecutionMapParent>`, assignments `O<ExecutionMapAssignmentCounts>`, attests `O<ExecutionMapAttestCounts>`, closingAttests `A<O<ExecutionMapClosingAttest>>`, turns `O<ExecutionMapTurns>`, minds `A<O<ExecutionMapMind>>`, active `O<ExecutionMapActive>` | specRefName, specRefSha256, failReason, finishedAt, startedAt, fanOut, minds |
 | coordination share | sessionKey, dependencyVersion | from, to, turns, wakeTurns, classedTurns, coordinationTurns, summons, algedonic, share `N` | — | byClass `M<I>` | share |
@@ -257,6 +263,9 @@ presence. It is optional and non-null when present.
 - device status: `allowlisted|pending|denied`.
 - decision kind: `statute|effort|agent`; decision status:
   `open|ruled|consumed|withdrawn|superseded|answered`.
+- operator-ruling-provenance state: `recorded|unknown`.
+  `submittingSessionKey` is a non-null string exactly when state is `recorded`
+  and is null exactly when state is `unknown`.
 - topline state: `open|closed`; actor kind: `user|session`.
 - execution-map origin principal: `user|session`; parent status:
   `linked|from_turn|no_turn_observed|unrecorded`. `parent.item` is non-null only
