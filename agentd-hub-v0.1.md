@@ -1,6 +1,6 @@
 # agentd-hub v0.1 — multi-machine roster aggregator
 
-Status: DRAFT — PENDING COLD DIGEST
+Status: READY FOR INDEPENDENT REVIEW
 
 Date: 2026-08-31
 
@@ -91,16 +91,19 @@ is the peer's `DNSName` with one trailing dot removed. For the hosts-file fallba
 the trimmed line exactly as written. The hub does not resolve aliases or merge two
 machine strings.
 
-**Source** is one machine plus one supervised child process that runs
-`ssh <machine> agentd watch --json`.
+**Source** is one machine plus one supervision lane. The lane owns at most one child
+process that runs `ssh <machine> agentd watch --json` and owns that source's reconnect
+timer while no child runs.
 
 **Discovery probe** is one startup execution of
 `ssh <machine> agentd list --json`. It decides whether a candidate becomes a source; it
 does not supply continuing state.
 
-**Valid Agentd snapshot** is one newline-delimited JSON frame accepted by the current
-Agentd `agentd.snapshot.v1` contract. The hub accepts additive agent fields, but it
-requires the identity and display fields named in Architecture A4.
+**Valid Agentd snapshot** is one newline-delimited JSON object with `type="snapshot"`,
+`schema="agentd.snapshot.v1"`, a non-empty string `instanceId`, unsigned-integer
+`revision` and `observedAtUnixMs`, an Agentd `scan` object, and an `agents` array. Each
+agent satisfies Architecture A4. The hub ignores additive fields that it does not
+project.
 
 **Hub snapshot** is the complete JSON object defined in Architecture A5. The current
 hub snapshot is the only roster state served by `/snapshot`, `/events`, and `/`.
@@ -116,9 +119,9 @@ start again at `1`; it is not a durable cursor.
 - `no_agentd`: an SSH connection ran the remote shell and reported that `agentd` does
   not exist or cannot execute.
 
-**Claim age** is `hub.observedAtUnixMs - activity.observedAtUnixMs` when Agentd supplies
-the activity observation time. It is unknown when Agentd supplies `null`. The page
-computes this display value; the JSON API preserves the source timestamp.
+**Claim age** is the browser's current Unix time minus `activity.observedAtUnixMs` when
+Agentd supplies an observation time that is not in the browser's future. It is unknown
+otherwise. The JSON API preserves the source timestamp.
 
 ## Assumptions
 
@@ -141,6 +144,8 @@ computes this display value; the JSON API preserves the source timestamp.
 The product is one Rust binary named `agentd-hub`. It starts one HTTP server that
 defaults to `127.0.0.1:8787`. A listen option may select another port or a loopback IPv4
 or IPv6 address. The binary rejects a non-loopback address before discovery or SSH.
+The server begins accepting requests after discovery produces the complete initial hub
+snapshot at revision `1` and before watch children can publish a later revision.
 
 The server exposes exactly three successful routes in v0.1:
 
@@ -152,9 +157,10 @@ Another method or path returns a non-success status and does not mutate hub stat
 
 ### A2 — Discovery
 
-At startup the hub runs `tailscale status --json` once. It takes each non-empty peer
-`DNSName`, removes one trailing dot, sorts the resulting strings, and removes exact
-duplicates. It probes each resulting machine once.
+At startup the hub runs `tailscale status --json` once. It takes the non-empty
+`DNSName` from the top-level `Self` object and each non-empty `DNSName` from the values
+of the top-level `Peer` map. It removes one trailing dot, sorts the resulting strings,
+and removes exact duplicates. It probes each resulting machine once.
 
 The CLI accepts `--hosts-file <path>`. The hub reads this file only when the Tailscale
 command fails, its JSON is invalid, or it yields no machine. The hub trims each line,
@@ -162,34 +168,43 @@ ignores blank and comment lines, sorts the targets, removes exact duplicates, an
 probes each target once. Startup fails with a typed diagnostic when no discovery path
 produces a target.
 
-Each probe runs non-interactively and has a 10-second connection deadline. A candidate
-becomes a source when the probe returns a valid Agentd snapshot, proves `no_agentd`, or
-fails to yield a valid snapshot. Thus a known candidate remains visible even when it
-cannot report.
+Each probe uses SSH batch mode, a 10-second SSH connection timeout, and a 10-second
+whole-probe deadline. At the whole-probe deadline, the hub terminates the probe and
+records `not_reached`. A candidate becomes a source when the probe returns a valid
+Agentd snapshot, proves `no_agentd`, or fails to yield a valid snapshot. Thus a known
+candidate remains visible even when it cannot report.
+
+The hub assembles the sorted probe results into one initial snapshot. It sets that
+snapshot's revision to `1`; individual probe completions do not publish intermediate
+snapshots.
 
 ### A3 — Watch supervision and health
 
 The hub starts exactly one watch child per source. A source has no overlapping watch
 children. The child runs non-interactively as
-`ssh <machine> agentd watch --json` and reads newline-delimited complete snapshots.
+`ssh <machine> agentd watch --json` with SSH batch mode and a 10-second connection
+timeout, and reads newline-delimited complete snapshots.
 
 The first reconnect delay is 1 second. Consecutive unsuccessful attempts wait 2, 4, 8,
 16, then 30 seconds; later attempts remain at 30 seconds. Acceptance of one valid
 snapshot resets the next delay to 1 second. The hub schedules from child exit or
-invalid-frame detection, so checking and scheduling form one state transition.
+invalid-frame detection, so checking and scheduling form one state transition. On an
+invalid frame, the hub terminates that watch child before it schedules a replacement.
 
 When a source first fails to yield a valid snapshot, health becomes `not_reached` and
 `sinceUnixMs` records that transition time. Further failures keep the same time. If the
 hub has an earlier valid snapshot for that source, it retains those agents unchanged
 while the source is `not_reached`.
 
-When the remote shell reports that `agentd` is missing or not executable, health
-becomes `no_agentd`, the source's agent list becomes empty, and the hub continues the
-same reconnect schedule. The API exposes a stable health code, not remote stderr.
+When SSH establishes the remote session and the remote command exits `126` or `127`
+before a valid frame, health becomes `no_agentd`, the source's agent list becomes
+empty, and the hub continues the same reconnect schedule. The API exposes a stable
+health code, not remote stderr.
 
 Acceptance of a valid snapshot atomically replaces that source's prior Agentd state,
-sets health to `reporting`, and publishes one new hub snapshot. Byte-for-byte duplicate
-valid snapshots do not publish a hub revision.
+sets health to `reporting`, records the hub acceptance time as
+`health.observedAtUnixMs`, and publishes one new hub snapshot. Each accepted frame
+publishes one revision, including when its JSON equals the prior frame.
 
 ### A4 — Agent projection and identity
 
@@ -199,14 +214,16 @@ from the source, followed by these Agentd v0.3 fields without reinterpretation:
 `id`, `harness`, `detectedBy`, `presence`, `cwd`, `activity`, `tty`, `tmux`, `name`, and
 `startedAtUnixMs`.
 
-The hub requires `id.pid` and `id.startTimeTicks`. It treats absent v0.3 fields `tty`,
-`tmux`, `name`, and `startedAtUnixMs` as `null`. It preserves Agentd's explicit unknown
-objects and values. It sorts agents by machine, instance ID, PID, then start-time ticks.
+The hub requires `id.pid`, `id.startTimeTicks`, `harness`, `detectedBy`, `presence`,
+`cwd`, and `activity` with the Agentd v0.3 JSON types. It treats absent v0.3 fields
+`tty`, `tmux`, `name`, and `startedAtUnixMs` as `null`. It preserves Agentd's explicit
+unknown objects and values. It sorts agents by machine, instance ID, PID, then
+start-time ticks.
 
 ### A5 — Hub snapshot JSON
 
 The JSON object has this closed hub-owned shape. `scan` and each projected Agentd field
-retain their Agentd JSON shape.
+retain their Agentd JSON shape. The hub sorts `sources` by machine.
 
 ```json
 {
@@ -256,9 +273,10 @@ complete hub snapshot JSON as one `data` value. The first message on each connec
 the current snapshot. Each later message is the next complete snapshot. Reconnection
 ignores `Last-Event-ID`; it sends current state and performs no replay.
 
-The server removes a disconnected client without changing the hub revision. A slow
-client may skip intermediate revisions, but its next delivered message is one complete
-current snapshot.
+The server gives each client one replaceable pending-snapshot slot. A new revision
+replaces an unsent older revision in that slot. The server removes a disconnected
+client without changing the hub revision. A slow client may skip intermediate
+revisions, but its next delivered message is one complete current snapshot.
 
 ### A7 — Static page
 
@@ -270,7 +288,9 @@ harness, PID, and start-time ticks.
 Each source section shows machine and source health. Each agent row shows activity,
 claim age or `unknown`, name or `unknown`, harness, PID, cwd or `unknown`, tty or
 `unknown`, tmux session/window/pane or `unknown`, and presence. The page does not infer
-that an old claim has changed state.
+that an old claim has changed state. It shows claim age as `unknown` when the activity
+timestamp is `null` or later than the browser's current wall-clock time. It recomputes
+visible claim ages at least once per second without changing hub state.
 
 ### A8 — Release and cross-repository pointer
 
@@ -296,11 +316,11 @@ A1. **Loopback floor.** Given default startup, when the HTTP server listens, the
 OS socket inspection shows only `127.0.0.1:8787`. Given a requested non-loopback
 address, when startup validates it, then the process exits nonzero before SSH starts.
 
-A2. **Discovery choice.** Given valid Tailscale JSON with two peer DNS names, one
-duplicate, when the hub starts, then it probes the two sorted unique names once and
-does not read the hosts file. Given a failed Tailscale command and a hosts file with
-two targets, blanks, comments, and one duplicate, then it probes the two sorted unique
-targets once.
+A2. **Discovery choice.** Given valid Tailscale JSON whose self and peer entries produce
+three DNS names with one duplicate, when the hub starts, then it probes the two sorted
+unique names once and does not read the hosts file. Given a failed Tailscale command
+and a hosts file with two targets, blanks, comments, and one duplicate, when the hub
+starts, then it probes the two sorted unique targets once.
 
 A3. **Source health.** Given one reporting source, one unreachable target, and one host
 without an executable `agentd`, when discovery finishes, then one `/snapshot` response
@@ -310,7 +330,7 @@ does not expose SSH stderr.
 A4. **Backoff and single child.** Given a watch child that exits before a valid frame,
 when six retry timers fire under a controlled clock, then starts occur after 1, 2, 4,
 8, 16, and 30 seconds and no two watch children overlap. Given a later valid frame,
-then the next failed attempt waits 1 second.
+when the next watch attempt fails, then its replacement waits 1 second.
 
 A5. **Identity isolation.** Given two machines whose snapshots contain the same PID and
 start-time ticks, when the hub merges them, then `/snapshot` contains two agents with
@@ -321,15 +341,17 @@ watch becomes unreachable, then the next snapshot retains that agent unchanged, 
 the source `not_reached` with the first-failure time, and the page shows the source
 health and increasing claim age without changing activity.
 
-A7. **Snapshot mutation seam.** Given revision 7, when one valid changed source frame
+A7. **Snapshot mutation seam.** Given revision 7, when one valid source frame
 arrives, then the source replacement, health transition, merged agents, timestamp, and
-revision 8 become visible together. Given a byte-for-byte duplicate frame, then the
-revision remains 8.
+revision 8 become visible together. Given a byte-for-byte duplicate frame next, when
+the hub accepts it, then the complete current state becomes revision 9 through the same
+seam.
 
 A8. **Snapshot-first SSE.** Given current revision 8, when a client connects to
 `/events` with or without `Last-Event-ID`, then its first event is named `snapshot`, has
 ID `8`, and contains the same JSON value as `/snapshot`. Given a later source change,
-then its next event contains the complete revision 9 snapshot.
+when the hub publishes revision 9, then the client's next event contains the complete
+revision 9 snapshot.
 
 A9. **Slow subscriber.** Given a subscriber that cannot consume revisions 10 through
 12, when it next receives an event, then the event is one complete current snapshot;
@@ -350,15 +372,15 @@ same discovery inputs, then it reads no prior roster or revision from disk, disc
 and subscribes again, and publishes a new revision 1 snapshot.
 
 A13. **Routes.** Given a running hub, when a client requests `/snapshot`, `/events`, and
-`/`, then each returns its specified media type. When it requests another path or uses
-a mutating method, then the server returns non-success and the hub revision does not
-change.
+`/`, then each returns its specified media type. Given the same running hub, when a
+client requests another path or uses a mutating method, then the server returns
+non-success and the hub revision does not change.
 
 A14. **Real SSH smoke.** Given two reachable Linux hosts running current Agentd and one
 authorized SSH identity, when `agentd-hub` runs against them, then a real browser and
-`curl` observe both machine sections; causing one real Agentd claim change produces a
-complete later SSE snapshot; stopping one SSH path leaves its source visible as
-`not_reached`.
+`curl` observe both machine sections. Given that running hub, when one real Agentd claim
+changes, then the next SSE event is a complete snapshot. Given that running hub, when
+one SSH path stops, then the affected source remains visible as `not_reached`.
 
 A15. **Release.** Given the `0.1.0` version-bump commit, when CI runs on tag `v0.1.0`,
 then version parity passes, all Rust gates pass, two package runs produce identical
