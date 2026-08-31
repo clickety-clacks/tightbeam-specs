@@ -1,6 +1,6 @@
 # Operator ruling provenance migration fixture — 2026-08-30
 
-This fixture is a privacy-safe, row-level capture for migration acceptance T1 in
+This fixture is a privacy-safe, row-level evidence capture used by migration acceptance T3 in
 \`operator-ruling-provenance-v1.md\`.
 
 ## Source and boundary
@@ -23,13 +23,13 @@ option, context, decision, rationale, message, attachment, raw session key, or r
    \`retained-session-<two digits>\`, and emit \`sessionState:"known"\`.
 5. Emit only \`ordinal\`, \`kind\`, \`authority\`, \`sessionState\`, and \`sessionSlot\`.
 
-The transform preserves the legacy shape that migration uses while removing identifiers and
-private content. \`rows.jsonl\` contains 294 rows: 291 legacy-unknown rows and 3 known rows
+The transform preserves the observed legacy shape while removing identifiers and private content.
+\`rows.jsonl\` contains 294 rows: 291 legacy-unknown rows and 3 known rows
 with 3 distinct pseudonymized slots.
 
 ## Consumer contract
 
-T1 reads \`rows.jsonl\` as JSON Lines. Each row has exactly this schema:
+T3 reads \`rows.jsonl\` as JSON Lines. Each row has exactly this evidence schema:
 
 | Key | Value |
 | --- | --- |
@@ -39,9 +39,10 @@ T1 reads \`rows.jsonl\` as JSON Lines. Each row has exactly this schema:
 | \`sessionState\` | \`legacy-unknown\` or \`known\` |
 | \`sessionSlot\` | null for \`legacy-unknown\`; otherwise \`retained-session-01\`, \`retained-session-02\`, or \`retained-session-03\` |
 
-The known labels are dense ranks of the three distinct retained raw session keys. They label
-session-mediated legacy rows only. A null slot labels a legacy-unknown row; neither label proves
-direct-user authorship.
+The known labels are dense ranks of the three distinct retained raw session keys. They prove only
+that the old row retained a key. A null slot proves only that the old row did not retain one. Neither
+label proves direct-user authorship. The current migration projects each pre-epoch row as \`unknown\`;
+it does not copy this evidence label into the product projection.
 
-The fixture's SHA-256 is declared by P8 and T1 in the canonical proposal. A replacement capture
-uses this same transform and updates both declarations in one amendment.
+The row fixture remains immutable point-in-time evidence. A replacement capture uses this same
+transform and becomes a separate dated artifact; it does not overwrite this file.
