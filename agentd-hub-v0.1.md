@@ -1,6 +1,6 @@
 # agentd-hub v0.1 — multi-machine roster aggregator
 
-Status: DRAFT — REVIEW DEFECTS FIXED; PENDING COLD DIGEST
+Status: READY FOR INDEPENDENT RE-REVIEW
 
 Date: 2026-08-31
 
@@ -176,8 +176,8 @@ whole-probe deadline. At the whole-probe deadline, the hub terminates the probe 
 reaps it before recording `not_reached`. A candidate becomes a source when the probe
 returns a valid Agentd snapshot, proves `no_agentd`, or fails to yield a valid snapshot.
 A valid probe snapshot seeds that source's initial Agentd state and sets its initial
-health to `reporting`. Thus a known candidate remains visible even when it cannot
-report.
+health to `reporting` with the hub acceptance time in `health.observedAtUnixMs`. Thus a
+known candidate remains visible even when it cannot report.
 
 The hub assembles the sorted probe results into one initial snapshot. It sets that
 snapshot's revision to `1`; individual probe completions do not publish intermediate
@@ -204,10 +204,13 @@ invalid-frame detection, so checking and scheduling form one state transition. O
 invalid frame, the hub terminates and reaps that watch child before it schedules a
 replacement.
 
-When a source first fails to yield a valid snapshot, health becomes `not_reached` and
-`sinceUnixMs` records that transition time. Further failures keep the same time. If the
-hub has an earlier valid snapshot for that source, it retains those agents unchanged
-while the source is `not_reached`.
+Except for the `no_agentd` case below, a watch-child exit, invalid frame, first-frame
+deadline, SSH connection failure, or unanswered SSH keepalive changes health to
+`not_reached`. A transition from another health records its time in `sinceUnixMs`.
+Further failures while health is already `not_reached` keep that time. A later valid
+snapshot changes health to `reporting`; a later failure starts a new `not_reached`
+interval. If the hub has an earlier valid snapshot for that source, it retains those
+agents unchanged while the source is `not_reached`.
 
 When SSH establishes the remote session and the remote command exits `126` or `127`
 before a valid frame, health becomes `no_agentd`, the source's agent list becomes
@@ -291,7 +294,8 @@ operation that is atomic with publication at the I9 state seam. Publication eith
 linearizes before registration, so the seed contains that revision, or after
 registration, so it replaces the pending older seed. A client therefore receives the
 seed revision or a newer complete revision first. It never receives a lower revision
-after a higher revision or the same revision twice.
+after a higher revision or the same revision twice during one connection. A reconnect
+is a new subscription and can seed the revision that ended the prior connection.
 
 A new revision replaces an unsent older revision in the client slot. The server removes
 a disconnected client without changing the hub revision. A slow client may skip
@@ -351,7 +355,8 @@ probes the two sorted unique file targets once.
 A3. **Source health.** Given one valid probe snapshot, one unreachable target, and one
 host without an executable `agentd`, when discovery finishes, then revision 1 contains
 three source rows with health `reporting`, `not_reached`, and `no_agentd`; the reporting
-row contains the probe-derived agents and no response exposes SSH stderr.
+row contains the probe-derived agents and its hub acceptance time, and no response
+exposes SSH stderr.
 
 A4. **Backoff and single child.** Given a watch child that exits before a valid frame,
 when six retry timers fire under a controlled clock, then starts occur after 1, 2, 4,
@@ -366,9 +371,11 @@ start-time ticks, when the hub merges them, then `/snapshot` contains two agents
 different `(machine, instanceId, pid, startTimeTicks)` keys.
 
 A6. **Stale truth.** Given a reporting source with one `needs_attention` agent, when its
-watch becomes unreachable, then the next snapshot retains that agent unchanged, marks
-the source `not_reached` with the first-failure time, and the page shows the source
-health and increasing claim age without changing activity.
+watch exits, then the next snapshot retains that agent unchanged, marks the source
+`not_reached` with the transition time, and the page shows the source health and
+increasing claim age without changing activity. Given that source later reports and
+then fails again, when the second failure occurs, then `sinceUnixMs` records the second
+transition instead of the first interval's time.
 
 A7. **Snapshot mutation seam.** Given revision 7, when one valid source frame
 arrives, then the source replacement, health transition, merged agents, timestamp, and
