@@ -4,10 +4,8 @@ Status: review candidate for work item
 `wi_133b36ba-3078-4dc6-be9a-14b582facbfd`.
 
 Authority: parent assignment
-`asg_b16007ea-7f9d-4698-944d-f3173ad4f2d8`, including spirit corrections
-`att_14ef863c-8ac2-4516-bd25-39124d126b41` and
-`att_cfa338ff-5995-4a71-bf27-0720641d519f`. This specification uses the work
-item and parent assignment as its source. It does not use the temporary
+`asg_b16007ea-7f9d-4698-944d-f3173ad4f2d8`. This specification uses the
+work item and parent assignment as its source. It does not use the temporary
 discussion file.
 
 ## Goal
@@ -111,11 +109,10 @@ must reject a public surface beyond the seven named capabilities.
   boundary, not the lower adapters.
 - **Client**: a graphical program, agent host, or script that invokes the
   `pimcamp` executable.
-- **Client credential**: 32 random bytes encoded as unpadded base64url and sent
-  inside the standard-input request. Pimcamp maps the lowercase hexadecimal
-  SHA-256 digest of the decoded bytes to one client identity and one exact
-  capability grant. Pimcamp does not accept identity or grant fields in a
-  request.
+- **Client credential**: a deployment-issued high-entropy bearer value sent
+  inside the standard-input request. Pimcamp maps its hash to one client
+  identity and one exact capability grant. Pimcamp does not accept identity or
+  grant fields in a request.
 - **Client session**: the authenticated context Pimcamp creates for one finite
   invocation or one live subscription after it resolves the client
   credential.
@@ -160,8 +157,8 @@ must reject a public surface beyond the seven named capabilities.
 
 ## Assumptions
 
-1. Deployment configures one account, one inbox, any available junk mailbox,
-   and one positive finite-operation adapter wait bound before Pimcamp starts.
+1. Deployment configures one account, one inbox, and any available junk
+   mailbox before Pimcamp starts.
 2. Deployment supplies a read-only map from client-credential hashes to stable
    client identities and exact capability grants. Clients receive their
    credential through an existing private secret-delivery path.
@@ -328,10 +325,8 @@ It returns `invalid_request` for envelope or input defects. It returns
 `permission_denied` for missing, unknown, or insufficient client authority so
 the response does not reveal whether a credential exists. Pimcamp hashes the
 credential, resolves client identity and grant from deployment configuration,
-and performs the I-05 check before an operation calls an adapter. The envelope
-and operation input accept only their defined fields; a duplicate or unknown
-field returns `invalid_request`. A request cannot carry client identity,
-grant, adapter selection, or account selection.
+and performs the I-05 check before an operation calls an adapter. A request
+cannot carry client identity, grant, adapter selection, or account selection.
 
 ### Operations
 
@@ -390,8 +385,6 @@ No supported mechanism returns `unsupported`. Pimcamp does not substitute
 delete or an arbitrary folder move.
 
 The same mutation-ID replay and conflict rules as `send` apply to `junk`.
-Pimcamp makes at most one junk mutation call for a request. After the selected
-mechanism call begins, Pimcamp does not fall through to another mechanism.
 
 **R-07 — `subscribe_new_mail`.** Pimcamp opens one live subscription through
 the observation adapter. For each accepted Mirador new-mail observation it
@@ -418,10 +411,7 @@ fields before it crosses the port.
 Error code set. Unsupported backend behavior maps to `unsupported`; a missing
 message maps to `not_found`; unavailable lower I/O maps to
 `backend_unavailable`; an unprovable mutation result maps to
-`outcome_unknown`. A finite adapter call that reaches the configured wait
-bound returns `backend_unavailable` when Pimcamp proves no mutation call began;
-otherwise it returns `outcome_unknown`. The wait bound stops waiting and does
-not infer a backend outcome.
+`outcome_unknown`.
 
 ### Mutation receipt state
 
@@ -430,15 +420,7 @@ reservations before external I/O. A receipt key is
 `(client_identity, operation, mutation_id)`. A receipt stores the request
 digest and one state from `reserved`, `succeeded`, `failed`, or `unknown`, plus
 the normalized result when known. The store survives a Pimcamp process
-restart. Pimcamp computes the digest from a deterministic canonical encoding
-of the validated operation request, not the caller's JSON field order. On
-reservation, one invocation atomically becomes the mutation claimant across
-Pimcamp processes. Another invocation with the same key and digest makes no
-adapter call; it reads the claimant's terminal result when available. If its
-wait bound expires first, it returns `outcome_unknown` without changing the
-claimant's receipt. If the claiming invocation exits without a terminal
-receipt, Pimcamp changes `reserved` to `unknown` and later replays return
-`outcome_unknown` without an adapter call.
+restart.
 
 This mechanism is part of the MVP because accepting duplicate send attempts
 would violate the agent-safety goal, while deleting `send` would remove a core
@@ -522,9 +504,7 @@ send adapter that proves success, when the client sends it twice with the same
 identity and mutation ID, then both calls return the same sent result and the
 adapter records one submission. When the client reuses that mutation ID with
 a changed body, Pimcamp returns `conflict` and the adapter still records one
-submission. When two executable processes submit the same identity, mutation
-ID, and composition concurrently, both return the same sent result and the
-adapter still records one submission.
+submission.
 
 **AC-07 — Reply send preserves threading and ambiguity (R-04, R-05, I-08).**
 Given the reply Composition from AC-05 and a send adapter that accepts the
@@ -551,8 +531,7 @@ a same-ID retry after restart does not make a second adapter call.
 **AC-10 — Notification precedes authoritative query (R-07, I-04).** Given a
 live granted subscription, a redacted real Mirador fixture event containing
 lower-specific message ID, sender, and subject fields, and an
-operations-adapter spy, when Mirador emits that event, then Pimcamp first emits
-exactly
+operations-adapter spy, when Mirador emits that event, then Pimcamp first emits exactly
 `{contract_version: "pimcamp.v1", kind: "new_mail", mailbox: "inbox",
 observed_at: <valid UTC RFC3339>}` and the operations spy retains zero calls.
 When the client then calls `list`, Pimcamp calls the operations adapter and
@@ -605,14 +584,6 @@ mutation, and one subscription failure, then a scan of ordinary logs and
 returned Error records finds none of the sentinel values. The evidence still
 names the operation, normalized result code, adapter class, mutation ID when
 present, and event/query order.
-
-**AC-14 — Finite adapter waits fail visibly (R-10, I-08).** Given a
-controllable clock, the configured finite-operation wait bound, and an adapter
-that does not finish, when a `list` call reaches the bound, then the executable
-emits `backend_unavailable` and exits with code 1. Given a `send` adapter call
-that begins and does not produce a provable outcome before the same bound,
-then the executable emits `outcome_unknown`, records an unknown receipt, and
-a same-ID retry makes no second adapter call.
 
 ## Open Questions
 
