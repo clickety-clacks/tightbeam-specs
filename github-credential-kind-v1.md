@@ -526,24 +526,66 @@ tightbeam dispatch-rule-check
   --identity-sha <pinned-identity-sha>
 ```
 
-The command reads exactly one supported harness PreToolUse JSON document from
-stdin. The document must identify tool `Bash` and carry a string
-`tool_input.command`; any other shape returns `malformed_tool_call`. The command
-resolves the session key, session principal, gateway URL, and gateway recording
-credential through the ordinary `.tightbeam-session` credential. It reads the
-registered machine and projected principal from `TIGHTBEAM_MACHINE` and
-`TIGHTBEAM_PRINCIPAL`, the optional elected profile from
-`TIGHTBEAM_GITHUB_PROFILE`, and the provider home from `GH_CONFIG_DIR`. It
-verifies that the projected principal equals the session credential's principal
-and that the supplied identity SHA equals the session's pinned revision, then
-performs structural classification locally. A Git candidate on a non-default
-hostname reads the current machine-wide hostname index through the binding API;
-after recognition, health reads only the elected profile's binding and home.
-The gateway authorizes each read with the same session credential. An
-unavailable or unauthorized required read returns `rule_runtime_failure`; it
-does not fall back to a cached host list. A `not_applicable` call performs no
-gateway or provider I/O. No actor, machine, profile, or identity field from
-tool-call JSON is authoritative.
+Claude and Codex pass the same native PreToolUse stdin wire to the command. The
+wire is one UTF-8 JSON object followed only by JSON whitespace. Duplicate member
+names, a non-object root, a second JSON value, and non-whitespace trailing bytes
+return `malformed_tool_call`. The complete accepted schema is:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tightbeam://abi/harness-pre-tool-use-v1",
+  "type": "object",
+  "required": ["tool_name", "tool_input"],
+  "properties": {
+    "tool_name": { "const": "Bash" },
+    "tool_input": {
+      "type": "object",
+      "required": ["command"],
+      "properties": { "command": { "type": "string" } },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
+```
+
+The additional properties are harness metadata. They are accepted and ignored;
+they cannot become actor, machine, profile, identity, or authorization input.
+The compiled Claude entry and compiled Codex entry both send their native stdin
+unchanged to `dispatch-rule-check`. The command's first step invokes the
+product-owned normalizer named `pretooluse-normalize-v1`. For each harness, that
+normalizer maps JSON pointer `/tool_name` to `ToolCallInputV1.tool` and
+`/tool_input/command` to `ToolCallInputV1.command`. It fixes the ABI from the
+validated `--abi 1` argument and returns exactly this typed value:
+
+```text
+ToolCallInputV1 {
+  abi: 1,
+  tool: Bash,
+  command: <the decoded JSON string, without trimming or rewriting>
+}
+```
+
+No later classifier or handler reads the native JSON. A missing pointer, wrong
+type, tool name other than the exact string `Bash`, duplicate member, invalid
+UTF-8, or JSON parse/schema failure returns `malformed_tool_call` before any
+gateway, provider, filesystem, or network I/O.
+
+After normalization, the command resolves the session key, session principal,
+gateway URL, and gateway recording credential through the ordinary
+`.tightbeam-session` credential. It reads the registered machine and projected
+principal from `TIGHTBEAM_MACHINE` and `TIGHTBEAM_PRINCIPAL`, the optional
+elected profile from `TIGHTBEAM_GITHUB_PROFILE`, and the provider home from
+`GH_CONFIG_DIR`. It verifies that the projected principal equals the session
+credential's principal and that the supplied identity SHA equals the session's
+pinned revision, then performs structural classification locally. A Git
+candidate on a non-default hostname reads the current machine-wide hostname
+index through the binding API; after recognition, health reads only the elected
+profile's binding and home. The gateway authorizes each read with the same
+session credential. An unavailable or unauthorized required read returns
+`rule_runtime_failure`; it does not fall back to a cached host list. A
+`not_applicable` call performs no gateway or provider I/O.
 
 The registered handler returns this typed fact envelope for one classified
 target:
@@ -597,10 +639,14 @@ recreate it as a reserved entry.
 **R14 / A14.** Given Claude and Codex home fixtures, when the law compiles and
 the wiring proof runs, then both harnesses refuse the probe with the same rule
 identity, exact argv, ABI, reserved environment, stdin shape, and effect table,
-then later enforce the vector. Given each invalid schema case named above, the
-identity load refuses as `tool-call-rule-invalid`. Given an unarmed hook,
-session readiness refuses as `github-rule-unarmed` before an agent tool call;
-given the rule removed from identity, the compiler emits no GitHub entry.
+then later enforce the vector. Given native Claude and Codex payloads with
+distinct extra metadata but the same Bash command, both normalize to the same
+`ToolCallInputV1`. Given each malformed native-input case named above, the
+command returns `malformed_tool_call` without downstream I/O. Given each invalid
+law-schema case named above, the identity load refuses as
+`tool-call-rule-invalid`. Given an unarmed hook, session readiness refuses as
+`github-rule-unarmed` before an agent tool call; given the rule removed from
+identity, the compiler emits no GitHub entry.
 
 The classifier preserves the reviewed 60bda7e behavior and tests. It adds
 configured GitHub hostnames from the machine-wide hostname index instead of
@@ -917,7 +963,7 @@ the boundary-capture rows.
 |---|---|---|
 | `github-kind-storage` | private, permissive, absent, empty, symlink, hard link, directory, device; regeneration and assimilation preservation | R1, R11, R12 |
 | `github-projection` | local and satellite hosts; elected, unelected, desk, overlay collision; inherited token removal; inline reserved-variable assign/unset; gateway credential cannot satisfy satellite | R2, R5, R13 |
-| `github-rule-compile` | exact specimen; each invalid schema case; registered handler/ABI/token/effect validation; rule present/absent/amended; exact argv/stdin/env; Claude/Codex hook wiring; unarmed and runtime failures; named refusal | R3, R14, R20 |
+| `github-rule-compile` | exact specimen; each invalid law-schema case; registered handler/ABI/token/effect validation; rule present/absent/amended; exact argv/env; complete Claude/Codex native stdin schema; `pretooluse-normalize-v1` parity and malformed-input cases; hook wiring; unarmed and runtime failures; named refusal | R3, R14, R20 |
 | `github-command-vector` | direct Git verbs; `gh repo/pr/issue/api`; each hostname selector rank and malformed hostname-only shape; stronger/lower and same-rank conflicts; explicit unbound enterprise host; env/wrapper prefixes; connectors; nested shells; named remotes; submodules; userinfo; mixed case; leading redirects; push value options; prose and here-doc negatives | R6, R7, R15 |
 | `github-health` | missing CLI, unelected, missing, hollow, live, stale/rejected credential observed through provider 401, provider 403, git failure, timeout, transport error, provider-check disagreement, unrecognized response, revoked, present-but-unverified; pending onboarding with an absent or present home | R4, R18 |
 | `github-device-real-response` | sanitized capture from the installed `gh`: pre-device Git-auth prompt, one explicit `Y\n`, URL/code emission, completion and cancellation shapes; session and authenticated satellite user principals; missing/invalid principal pre-mutation refusal | R10, R16 |
