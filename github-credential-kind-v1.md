@@ -569,8 +569,49 @@ ToolCallInputV1 {
 
 No later classifier or handler reads the native JSON. A missing pointer, wrong
 type, tool name other than the exact string `Bash`, duplicate member, invalid
-UTF-8, or JSON parse/schema failure returns `malformed_tool_call` before any
-gateway, provider, filesystem, or network I/O.
+UTF-8, or JSON parse/schema failure returns one internal normalization failure
+with cause `native_input_malformed`. The normalizer does not include raw input
+or parser detail in that failure.
+
+The command handles that failure through the product-owned
+`preclassification-refusal-v1` seam. This seam attempts exactly these two
+effects in order and stops at the first failure:
+
+1. Read the ordinary `.tightbeam-session` credential and authenticate it with
+   the gateway. The gateway returns the registered machine, authenticated
+   session principal, and pinned identity revision. The seam verifies them
+   against `TIGHTBEAM_MACHINE`, `TIGHTBEAM_PRINCIPAL`, and the supplied
+   `--identity-sha`.
+2. Append one capability observation through the authenticated event API.
+
+It performs no structural operation classification and does not read a profile
+binding, `GH_CONFIG_DIR`, Git configuration, a provider, or a target network.
+The successful write returns this exact material:
+
+```text
+ToolCheckMaterialV1 {
+  state: malformed_tool_call,
+  operation_class: pre_classification,
+  machine: <authenticated registered machine>,
+  profile: none,
+  hostname: none,
+  phase: normalization,
+  cause: native_input_malformed,
+  principal: <authenticated session principal>,
+  repair: tightbeam doctor --json,
+  observation_ids: [<the durable refusal observation id>]
+}
+```
+
+The observation carries the same state, operation class, machine, phase, cause,
+principal, and rule name. It contains no native JSON, parser detail, command
+text, credential path, profile, or hostname. A session-credential read or
+authentication failure, projected identity mismatch, or pinned-revision
+mismatch produces no fabricated principal or observation; the compiled wrapper
+maps the missing valid material to `rule_runtime_failure` and denies. An event
+write failure follows the existing `observation_record_failed` path, becomes
+`rule_runtime_failure`, and denies. Neither failure path starts the proposed
+tool call.
 
 After normalization, the command resolves the session key, session principal,
 gateway URL, and gateway recording credential through the ordinary
@@ -588,16 +629,17 @@ session credential. An unavailable or unauthorized required read returns
 `not_applicable` call performs no gateway or provider I/O.
 
 The registered handler returns this typed fact envelope for one classified
-target:
+target. The `preclassification-refusal-v1` seam returns the same envelope for
+malformed native input:
 
 ```text
 ToolCheckMaterialV1 {
   state: <one declared return token>,
-  operation_class: not_applicable | gh | git,
+  operation_class: pre_classification | not_applicable | gh | git,
   machine: <registered machine>,
   profile: <elected profile | none>,
   hostname: <normalized target | none>,
-  phase: <classifier | projection | storage | provider | git | recording>,
+  phase: <normalization | classifier | projection | storage | provider | git | recording>,
   cause: <safe cause>,
   principal: <authenticated session principal>,
   repair: <exact safe command | none>,
@@ -642,11 +684,16 @@ identity, exact argv, ABI, reserved environment, stdin shape, and effect table,
 then later enforce the vector. Given native Claude and Codex payloads with
 distinct extra metadata but the same Bash command, both normalize to the same
 `ToolCallInputV1`. Given each malformed native-input case named above, the
-command returns `malformed_tool_call` without downstream I/O. Given each invalid
-law-schema case named above, the identity load refuses as
-`tool-call-rule-invalid`. Given an unarmed hook, session readiness refuses as
-`github-rule-unarmed` before an agent tool call; given the rule removed from
-identity, the compiler emits no GitHub entry.
+command authenticates the session, records one redacted observation, and
+returns the exact `malformed_tool_call` material above without classifier,
+binding, credential-home, Git-config, provider, or target-network I/O. Given a
+session-authentication failure or event-write failure on that branch, the
+wrapper returns `rule_runtime_failure`, records no false observation, and
+denies before the proposed call starts. Given each invalid law-schema case
+named above, the identity load refuses as `tool-call-rule-invalid`. Given an
+unarmed hook, session readiness refuses as `github-rule-unarmed` before an
+agent tool call; given the rule removed from identity, the compiler emits no
+GitHub entry.
 
 The classifier preserves the reviewed 60bda7e behavior and tests. It adds
 configured GitHub hostnames from the machine-wide hostname index instead of
@@ -951,7 +998,11 @@ the failed fixture says the observation could not be recorded. Neither output
 contains raw detail. A live operation with a recorded observation prints no rule
 text. The fixture sends the exact ABI-1 stdin through the compiled Claude and
 Codex entries and proves the authenticated session credential, not tool JSON,
-owns each row.
+owns each row. Given malformed native input and a valid session, the fixture
+records the exact pre-classification observation and material above. Given the
+same input with failed session authentication or failed recording, the fixture
+denies as `rule_runtime_failure`, runs no proposed tool call, and proves no row
+claims an unauthenticated or unrecorded principal.
 
 ## Acceptance
 
@@ -963,7 +1014,7 @@ the boundary-capture rows.
 |---|---|---|
 | `github-kind-storage` | private, permissive, absent, empty, symlink, hard link, directory, device; regeneration and assimilation preservation | R1, R11, R12 |
 | `github-projection` | local and satellite hosts; elected, unelected, desk, overlay collision; inherited token removal; inline reserved-variable assign/unset; gateway credential cannot satisfy satellite | R2, R5, R13 |
-| `github-rule-compile` | exact specimen; each invalid law-schema case; registered handler/ABI/token/effect validation; rule present/absent/amended; exact argv/env; complete Claude/Codex native stdin schema; `pretooluse-normalize-v1` parity and malformed-input cases; hook wiring; unarmed and runtime failures; named refusal | R3, R14, R20 |
+| `github-rule-compile` | exact specimen; each invalid law-schema case; registered handler/ABI/token/effect validation; rule present/absent/amended; exact argv/env; complete Claude/Codex native stdin schema; `pretooluse-normalize-v1` parity; malformed-input authenticated material, observation, session-auth failure, and recording-failure cases; hook wiring; unarmed and runtime failures; named refusal | R3, R14, R20 |
 | `github-command-vector` | direct Git verbs; `gh repo/pr/issue/api`; each hostname selector rank and malformed hostname-only shape; stronger/lower and same-rank conflicts; explicit unbound enterprise host; env/wrapper prefixes; connectors; nested shells; named remotes; submodules; userinfo; mixed case; leading redirects; push value options; prose and here-doc negatives | R6, R7, R15 |
 | `github-health` | missing CLI, unelected, missing, hollow, live, stale/rejected credential observed through provider 401, provider 403, git failure, timeout, transport error, provider-check disagreement, unrecognized response, revoked, present-but-unverified; pending onboarding with an absent or present home | R4, R18 |
 | `github-device-real-response` | sanitized capture from the installed `gh`: pre-device Git-auth prompt, one explicit `Y\n`, URL/code emission, completion and cancellation shapes; session and authenticated satellite user principals; missing/invalid principal pre-mutation refusal | R10, R16 |
