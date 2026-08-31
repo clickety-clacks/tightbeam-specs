@@ -61,8 +61,8 @@ safety mechanisms. They do not add an eighth public product capability.
   local executable and standard input/output instead of new transport
   infrastructure.
 - Local responsiveness matters, but the MVP invents no numeric latency target.
-  Tests detect completion and events directly; time limits only bound external
-  smoke waiting.
+  A deployment-owned bound stops finite lower-adapter waiting, and the real
+  smoke has an external-delivery bound. Neither bound infers a backend outcome.
 - Failures and diagnostics remain content-safe. They expose normalized reason
   codes without mail content, credentials, or raw lower-adapter material.
 - Himalaya and Mirador remain replaceable. Their formats do not define the
@@ -122,6 +122,10 @@ must reject a public surface beyond the seven named capabilities.
   Pimcamp exposes no grant-management operation.
 - **Configured account**: the one mail account selected by deployment
   configuration. The public contract has no account selector in this MVP.
+- **Adapter wait bound**: a positive deployment-owned duration that creates
+  one absolute deadline for the lower-adapter phases of a finite invocation.
+  Client `SIGTERM` creates a fresh teardown deadline of the same duration. The
+  bound stops waiting and never infers a backend outcome.
 - **Inbox**: the configured account's configured incoming mailbox.
 - **Message reference**: an opaque Pimcamp string returned by `list`. A client
   may return it to Pimcamp in `read`, `reply`, or `junk`. The client must not
@@ -157,8 +161,8 @@ must reject a public surface beyond the seven named capabilities.
 
 ## Assumptions
 
-1. Deployment configures one account, one inbox, and any available junk
-   mailbox before Pimcamp starts.
+1. Deployment configures one account, one inbox, any available junk mailbox,
+   and one adapter wait bound before Pimcamp starts.
 2. Deployment supplies a read-only map from client-credential hashes to stable
    client identities and exact capability grants. Clients receive their
    credential through an existing private secret-delivery path.
@@ -243,10 +247,13 @@ Error exits with code 1. Standard error carries only the content-free
 diagnostics allowed by I-10.
 
 For `subscribe_new_mail`, the client runs `pimcamp subscribe_new_mail`. The
-process reads one RequestEnvelope, then writes one normalized event per JSON
-line while the subscription is live. On a normalized subscription failure it
-writes one Error line and exits with code 1. On client `SIGTERM`, it closes the
-observation adapter, writes no synthetic event, and exits with code 0.
+process reads one RequestEnvelope and opens the observation adapter. After the
+adapter confirms that the live subscription is open, Pimcamp writes one
+SuccessEnvelope whose `result` is `{status: "subscribed"}`. It then writes one
+normalized event per JSON line while the subscription is live. On a normalized
+subscription failure it writes one Error line and exits with code 1. On client
+`SIGTERM`, it closes the observation adapter, writes no synthetic event, and
+exits with code 0.
 
 The executable accepts no other product operation. Command-line arguments do
 not carry a client credential, mail content, account selector, grant, or
@@ -310,6 +317,53 @@ Error = {
 }
 ```
 
+The seven operation inputs are closed JSON objects:
+
+```text
+list.input = {
+  limit: integer,
+  cursor?: string
+}
+
+read.input = {
+  message_ref: string
+}
+
+compose.input = {
+  to: [Address],
+  cc: [Address],
+  bcc: [Address],
+  subject: string,
+  body_text: string
+}
+
+reply.input = {
+  message_ref: string,
+  body_text: string
+}
+
+send.input = {
+  composition: Composition,
+  mutation_id: UUID string
+}
+
+junk.input = {
+  message_ref: string,
+  mutation_id: UUID string
+}
+
+subscribe_new_mail.input = {}
+```
+
+The RequestEnvelope and each nested input value accept only the fields shown
+in their schemas. Pimcamp returns `invalid_request` for an unknown field, a
+duplicate object-member name at any nesting level, a value of the wrong JSON
+type, a missing required input or envelope field other than
+`client_credential`, or a second JSON value after the envelope. R-00 defines
+the non-revealing result for a missing `client_credential`. JSON whitespace
+may follow the one envelope before end-of-file. The question mark above
+designates the only optional input field.
+
 The error `message` describes the normalized failure without raw lower-adapter
 data. `retryable = true` only for `backend_unavailable`. It is false for the
 other six codes. A client needs a human decision before it attempts a mutation
@@ -318,15 +372,15 @@ adapter proved that it made no external attempt; the client uses a fresh
 mutation ID for a later attempt. Reusing the failed mutation ID returns its
 recorded result.
 
-**R-00 — Envelope and authorization.** Pimcamp rejects an unsupported
-`contract_version`, malformed JSON, a missing credential, an unknown
-credential, and a request `input` that does not match the selected operation.
-It returns `invalid_request` for envelope or input defects. It returns
-`permission_denied` for missing, unknown, or insufficient client authority so
-the response does not reveal whether a credential exists. Pimcamp hashes the
-credential, resolves client identity and grant from deployment configuration,
-and performs the I-05 check before an operation calls an adapter. A request
-cannot carry client identity, grant, adapter selection, or account selection.
+**R-00 — Envelope and authorization.** Pimcamp returns `invalid_request` for
+an unsupported `contract_version`, malformed JSON, or an envelope or input
+that does not match the closed schema for the selected operation. Pimcamp
+returns `permission_denied` for a missing credential, an unknown credential,
+or a credential without the selected operation so the response does not
+reveal whether a credential exists. Pimcamp hashes the credential, resolves
+client identity and grant from deployment configuration, and performs the
+I-05 check before an operation calls an adapter. A request cannot carry client
+identity, grant, adapter selection, or account selection.
 
 ### Operations
 
@@ -384,16 +438,25 @@ by the fixed order in Terms. A success returns
 No supported mechanism returns `unsupported`. Pimcamp does not substitute
 delete or an arbitrary folder move.
 
+The operations port reports `report_spam` as positively available only when a
+successful call reports the message as spam and files it out of the configured
+inbox. A successful `move_to_junk` call also files the message out of the
+configured inbox. Pimcamp returns `status = "filed"` only after the selected
+port call reports that postcondition. Pimcamp makes at most one junk mutation
+call for a request and does not try a second mechanism after that call begins.
+
 The same mutation-ID replay and conflict rules as `send` apply to `junk`.
 
 **R-07 — `subscribe_new_mail`.** Pimcamp opens one live subscription through
-the observation adapter. For each accepted Mirador new-mail observation it
-emits one normalized new-mail event. An observation that predates the live
-subscription produces no replay. Duplicate accepted observations may produce
-duplicate normalized events. When the observation adapter stops or violates
-its contract, Pimcamp closes the subscription with a normalized Error. When
-the client terminates the subscription process with `SIGTERM`, Pimcamp closes
-the lower observation subscription before it exits.
+the observation adapter. Pimcamp emits the subscribed SuccessEnvelope only
+after the adapter confirms that the live subscription is open. For each
+accepted Mirador new-mail observation it emits one normalized new-mail event.
+An observation that predates the live subscription produces no replay.
+Duplicate accepted observations may produce duplicate normalized events.
+When the observation adapter stops or violates its contract, Pimcamp closes
+the subscription with a normalized Error. When the client terminates the
+subscription process with `SIGTERM`, Pimcamp closes the lower observation
+subscription before it exits.
 
 ### Internal ports
 
@@ -413,14 +476,64 @@ message maps to `not_found`; unavailable lower I/O maps to
 `backend_unavailable`; an unprovable mutation result maps to
 `outcome_unknown`.
 
+Before the first lower-adapter phase of a finite invocation, Pimcamp applies
+the configured adapter wait bound as one absolute deadline across adapter
+open, call, and close. At the deadline, Pimcamp stops waiting and
+force-terminates the lower adapter. If the adapter already proved a normalized
+result before its cleanup hung, Pimcamp returns that proved result. Otherwise,
+a query, capability probe, or subscription-open timeout returns
+`backend_unavailable`. A mutation invocation that reaches the deadline before
+its mutation adapter call begins records `failed` and returns
+`backend_unavailable`. A mutation invocation that reaches the deadline after
+its mutation adapter call begins records `unknown` and returns
+`outcome_unknown`; termination does not prove that the backend rejected the
+mutation. Silence on an already-open live subscription does not reach the
+deadline because the event stream is not a finite invocation.
+
+On client `SIGTERM`, Pimcamp starts a fresh teardown deadline from the adapter
+wait bound and asks the observation adapter to close. If close does not finish
+by that deadline, Pimcamp force-terminates the lower adapter. Pimcamp then
+exits with code 0 and writes no event or Error for that client-requested
+termination.
+
 ### Mutation receipt state
 
 **R-11 — Durable receipts.** One private local receipt store records mutation
 reservations before external I/O. A receipt key is
 `(client_identity, operation, mutation_id)`. A receipt stores the request
-digest and one state from `reserved`, `succeeded`, `failed`, or `unknown`, plus
-the normalized result when known. The store survives a Pimcamp process
-restart.
+digest, a `mutation_call_began` boolean, one state from `reserved`,
+`succeeded`, `failed`, or `unknown`, and the normalized result when known. The
+store survives a Pimcamp process restart.
+
+Pimcamp computes the request digest as SHA-256 over the RFC 8785 canonical JSON
+form of the validated operation input after removing `mutation_id`. The
+receipt key already binds the client identity, operation, and mutation ID.
+JSON member order and insignificant JSON whitespace therefore do not change
+request equality.
+
+Reservation atomically creates one `reserved` receipt, one exclusive live
+claim for that receipt across Pimcamp processes, and one absolute claim
+deadline equal to the finite invocation's adapter deadline. Only the claimant
+may call the mutation adapter. The claimant atomically changes
+`mutation_call_began` from false to true immediately before that call. Before
+the deadline and while the live claim exists, only the claimant may change
+`reserved` to `succeeded`, `failed`, or `unknown`. A second invocation with the
+same key and a different digest returns `conflict`. A second invocation with
+the same key and digest makes no adapter call. It waits for the claimant to
+record a terminal state or for the claim deadline, then returns the recorded
+result.
+
+At the claim deadline, the receipt store atomically changes a still-`reserved`
+receipt with `mutation_call_began = false` to `failed` with recorded
+`backend_unavailable`. It changes a still-`reserved` receipt with
+`mutation_call_began = true` to `unknown` with recorded `outcome_unknown`.
+The claimant discards a lower result that arrives after either transition and
+returns the recorded result. The live claim ends automatically when its
+process exits. When the store finds a `reserved` receipt without its live claim
+before the deadline, it applies the same boolean-based terminal transition
+before returning the recorded result. No process may acquire a second mutation
+claim for that receipt. `succeeded`, `failed`, and `unknown` are immutable
+terminal states.
 
 This mechanism is part of the MVP because accepting duplicate send attempts
 would violate the agent-safety goal, while deleting `send` would remove a core
@@ -450,12 +563,19 @@ grants, when a separate test process invokes each of the six finite
 subcommands, sends its RequestEnvelope through standard input, and reads
 standard output, then each invocation emits one parseable SuccessEnvelope or
 normalized Error line and the specified exit code. When that test process
-invokes `subscribe_new_mail`, a fixture observation produces one parseable
-event line; `SIGTERM` closes the lower subscription and exits with code 0. The
-test process imports no Pimcamp module and communicates only through process
-arguments, pipes, exit status, and the termination signal. The executable's
-dispatch table exposes the seven named operations and no eighth product
-operation.
+invokes `subscribe_new_mail`, the process emits a subscribed SuccessEnvelope
+with `result = {status: "subscribed"}` after the fixture adapter records a live
+open, then a fixture observation produces one parseable event line; `SIGTERM`
+closes the lower subscription and exits with code 0. The test process imports
+no Pimcamp module and communicates only through process arguments, pipes, exit
+status, and the termination signal. The executable's dispatch table exposes
+the seven named operations and no eighth product operation.
+
+For each subcommand, the separate process sends the exact input object defined
+in Public contract and receives the expected fixture result. Repeating one
+case with an unknown input field, one with a duplicate `mutation_id` member,
+and one with a second JSON value makes each process emit `invalid_request`,
+exit with code 1, and retain zero adapter calls.
 
 **AC-01 — Permission denial is pre-I/O (R-00, I-05, I-07).** Given a
 deployment credential whose grant contains only `list` and spy adapters with
@@ -463,7 +583,8 @@ zero calls, when separate `pimcamp` invocations request `read`, `compose`,
 `reply`, `send`, `junk`, and `subscribe_new_mail` once each, then each process
 emits `permission_denied` and exits with code 1, both spies retain zero calls,
 and the receipt store has no new row. An unknown credential produces the same
-observable result.
+observable result. An envelope with no `client_credential` field also produces
+that same result.
 
 **AC-02 — Structured list with paging (R-01, I-01, I-03).** Given an
 operations-port fixture with 101 inbox messages whose record shape is covered
@@ -506,6 +627,13 @@ adapter records one submission. When the client reuses that mutation ID with
 a changed body, Pimcamp returns `conflict` and the adapter still records one
 submission.
 
+Given two executable processes, the same identity, mutation ID, and
+Composition, and an adapter that pauses its first submission, when both
+processes send concurrently and the adapter then completes successfully
+before the adapter deadline, both processes return the same sent
+result and the adapter records one submission. Reordering JSON members in the
+second process does not change the digest or the result.
+
 **AC-07 — Reply send preserves threading and ambiguity (R-04, R-05, I-08).**
 Given the reply Composition from AC-05 and a send adapter that accepts the
 submission but loses its response, when the client sends it with a new
@@ -514,10 +642,18 @@ threading context and Pimcamp returns `outcome_unknown`. Repeating the same
 request after a Pimcamp restart returns `outcome_unknown` without another
 adapter submission.
 
+Given a send process whose adapter has observed one submission and paused
+before Pimcamp records a terminal receipt, when that process is forcibly
+terminated and another process repeats the same request, then Pimcamp changes
+the abandoned `reserved` receipt with `mutation_call_began = true` to
+`unknown`, returns `outcome_unknown`, and the adapter records exactly one
+submission.
+
 **AC-08 — Junk selects spam reporting first (I-06, R-06).** Given an adapter that
 positively reports both `report_spam` and `move_to_junk`, when a granted client
 files message `M` as junk, then Pimcamp calls `report_spam` once, does not call
-`move_to_junk`, and returns `mechanism = "report_spam"`.
+`move_to_junk`, returns `mechanism = "report_spam"`, and the adapter's inbox
+state no longer contains `M`.
 
 **AC-09 — Junk fallback is bounded (R-06).** Given an adapter that reports
 only `move_to_junk`, when a granted client files `M` as junk, then Pimcamp
@@ -529,9 +665,10 @@ the move but loses its response, the operation returns `outcome_unknown` and
 a same-ID retry after restart does not make a second adapter call.
 
 **AC-10 — Notification precedes authoritative query (R-07, I-04).** Given a
-live granted subscription, a redacted real Mirador fixture event containing
-lower-specific message ID, sender, and subject fields, and an
-operations-adapter spy, when Mirador emits that event, then Pimcamp first emits exactly
+granted subscription process that has emitted its subscribed SuccessEnvelope,
+a redacted real Mirador fixture event containing lower-specific message ID,
+sender, and subject fields, and an operations-adapter spy, when Mirador emits
+that event, then Pimcamp first emits exactly
 `{contract_version: "pimcamp.v1", kind: "new_mail", mailbox: "inbox",
 observed_at: <valid UTC RFC3339>}` and the operations spy retains zero calls.
 When the client then calls `list`, Pimcamp calls the operations adapter and
@@ -556,21 +693,22 @@ explicit 120-second external-delivery wait bound, when a client uses only the
 `pimcamp` executable and its standard-input/output contract to perform this
 sequence:
 
-1. compose and send the unique message;
-2. receive a normalized new-mail event for the resulting incoming test mail;
-3. page through `list` until it locates the message by its returned structured
+1. start `subscribe_new_mail` and read its subscribed SuccessEnvelope;
+2. compose and send the unique message;
+3. receive a normalized new-mail event for the resulting incoming test mail;
+4. page through `list` until it locates the message by its returned structured
    summary;
-4. call `read` and verify the unique body from authoritative query data;
-5. create and send a reply composition;
-6. file the selected incoming message as junk; and
-7. page through `list` again until `next_cursor = null`;
+5. call `read` and verify the unique body from authoritative query data;
+6. create and send a reply composition;
+7. file the selected incoming message as junk; and
+8. page through `list` again until `next_cursor = null`;
 
 then each boundary result conforms to `pimcamp.v1`, the event arrives before
 the post-event list request, the send and reply each have one adapter attempt,
 the junk result names the strongest mechanism that the real backend reported,
-and the final inbox list does not contain the filed message. The wait bound
-only stops the external smoke; reaching it fails the smoke and does not infer
-delivery outcome.
+and the final inbox list does not contain the filed message. The 120-second
+bound only stops the external smoke; reaching it fails the smoke and does not
+infer delivery outcome.
 
 Release evidence includes the redacted real response captures, the exact test
 command, adapter versions, the selected junk mechanism, and a content-free
@@ -584,6 +722,25 @@ mutation, and one subscription failure, then a scan of ordinary logs and
 returned Error records finds none of the sentinel values. The evidence still
 names the operation, normalized result code, adapter class, mutation ID when
 present, and event/query order.
+
+**AC-14 — Finite lower I/O fails visibly (R-10, I-08).** Given the configured
+adapter wait bound and a controllable adapter, when a `list` call never
+returns, then Pimcamp force-terminates that adapter at the bound, emits
+`backend_unavailable`, and exits with code 1. When a `send` adapter call begins
+but never returns, Pimcamp force-terminates that adapter at the bound, records
+`unknown`, emits `outcome_unknown`, and a same-ID retry makes no second adapter
+call. When subscription open never returns, Pimcamp force-terminates that
+adapter at the bound, emits `backend_unavailable`, and exits with code 1. When
+a `list` adapter proves a result and then blocks during cleanup, Pimcamp
+force-terminates that adapter at the bound, returns the proved result, and
+exits with code 0.
+
+**AC-15 — Subscription teardown is bounded (R-07, R-10).** Given a live
+subscription whose observation adapter blocks during close, when the client
+sends `SIGTERM`, then Pimcamp requests close, force-terminates the adapter when
+the teardown deadline is reached, writes no additional standard-output
+line, and exits with code 0. A content-safe diagnostic records that forced
+termination occurred.
 
 ## Open Questions
 
