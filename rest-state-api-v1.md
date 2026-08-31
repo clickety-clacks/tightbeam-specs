@@ -415,7 +415,7 @@ R2. Core model resources:
 | GET /api/turns[, /:seq] | paged turns, detail |
 | GET /api/artifacts[, /:artifactId] | paged artifact metadata, detail (+ existing GET /download/:assetId for bytes) |
 | GET /api/assets[, /:assetId] | paged binary-asset metadata and detail; bytes remain on existing GET /download/:assetId |
-| GET /api/decision-requests[, /:id] | paged collection, detail |
+| GET /api/decision-requests[, /:id, /:id/operator-ruling-provenance] | paged collection, decision-request detail, operator-ruling-provenance detail |
 | GET /api/read-markers[, /:scopeKey] | caller's markers (write stays a verb, firehose RM2) |
 | GET /api/roles[, /:name] | paged role registry and role detail |
 
@@ -621,6 +621,7 @@ success and R4c error envelope. A query string does not change the value.
 | `/api/assets/:assetId` | `assets` |
 | `/api/decision-requests` | `decision requests` |
 | `/api/decision-requests/:id` | `decision requests` |
+| `/api/decision-requests/:id/operator-ruling-provenance` | `operator ruling provenance` |
 | `/api/read-markers` | `read markers` |
 | `/api/read-markers/:scopeKey` | `read markers` |
 | `/api/roles` | `roles` |
@@ -1000,6 +1001,7 @@ that an adapter conditionally omits.
 | artifacts | `artifactId`, `kind`, `title`, `description`, `createdBySession`, `workItemId`, `parentSession`, `originPath`, `contentSha256`, `recordedMessageId`, `recordedTurnEvidence`, `state`, `home`, `createdAt`, `updatedAt`, `rowVersion` |
 | assets | `assetId`, `ownerUserId`, `mimeType`, `size`, `filename`, `createdAt`, `rowVersion` |
 | decision requests | `id`, `kind`, `raiserId`, `raiserSessionKey`, `ownerUserId`, `assignmentId`, `expecterSessionKey`, `expecterUserId`, `lineageRung`, `effortGeneration`, `deadlineWakeId`, `raisedAt`, `deadlineAt`, `statuteName`, `question`, `options`, `context`, `status`, `decision`, `rationale`, `ruledBy`, `ruledAt`, `consumedAt`, `withdrawnBy`, `withdrawnReason`, `withdrawnAt`, `askedOfRole`, `answer`, `answeredBy`, `answeredAt`, `rowVersion` |
+| operator ruling provenance | `requestId`, `authorityPrincipal`, `state`, `submittingSessionKey`, `ruledAt`, `rowVersion` |
 | read markers | `userId`, `scopeKey`, `marker`, `updatedAt`, `rowVersion` |
 | roles | `name`, `boundSessionKey`, `ownerUserId`, `createdAt`, `updatedAt`, `rowVersion` |
 | users | `userId`, `isAdmin`, `createdAt`, `rowVersion` |
@@ -1133,6 +1135,7 @@ remain outside this table.
 | `wake.scheduled`, `wake.fired`, `wake.canceled` | wakes | upsert | `wakeId` |
 | `prod.fired`, `turn.started`, `turn.ended` | turns | upsert | `turnSeq` |
 | `decision_request.opened`, `decision_request.ruled`, `decision_request.withdrawn` | decision requests | upsert | `decisionRequestId` |
+| `operator_ruling.provenance_recorded` | operator ruling provenance | upsert | `decisionRequestId` + `sessionKey` |
 | `session.spawned`, `session.updated`, `session.retired` | sessions | upsert | `sessionKey` |
 | `role.created`, `role.bound` | roles | upsert | `role` |
 | `role.removed` | roles | delete | `role` |
@@ -1159,6 +1162,19 @@ integers with the same positive numeric value; `rowVersion` equals `id`.
 once after a committed lease change and uses the R7 version. An idempotent
 no-change replay emits no state notice. Both use the same AU4 visibility and
 exact R7 serializer as their REST resources, per `art_4a1cce6e`.
+
+The operator-ruling-provenance detail route and
+`operator_ruling.provenance_recorded` use the one shared serializer
+`Tightbeam.Escalation.public_operator_ruling_provenance_item/1`. The item uses
+the terminal decision-request row's positive `rowVersion` and the exact R7
+field order. The route returns the shared R4 detail envelope with resource
+`operator ruling provenance`. An open request, a non-operator request, an
+absent request, and a request denied by AU4 return the same R4c
+`404 not_found` envelope for that resource. A successful post-epoch ruling
+emits one notice after commit; a refusal, pre-epoch row, migration, or
+no-change replay emits none. `refs.decisionRequestId` equals item `requestId`;
+`refs.sessionKey` equals item `submittingSessionKey`. Firehose payload and
+REST detail item are byte-equivalent under A6.
 
 The session projection mutation seam uses one class per committed item change.
 First materialization selects `session.spawned`. An `active` to `retired`
@@ -1419,6 +1435,7 @@ does not borrow that bit.
 | decision requests — statute | raiser; `ownerUserId` user principal; admin |
 | decision requests — effort | named expecter session or user; holder of the linked assignment; admin |
 | decision requests — agent question | asker session; asked session; stamped accountable owner user; admin |
+| operator ruling provenance | operator-request `ownerUserId` user principal; admin |
 | read markers | marker's `userId` user principal; admin |
 | facts | filing session; filing session owner; admin; process-origin facts are admin-only |
 | toplines | topline owner; admin |

@@ -140,27 +140,37 @@ P3's typed refusal before that constraint is reached.
 P9. Existing decision-request REST bytes and existing `decision_request.ruled` Firehose bytes remain
 unchanged.
 
-P10. `GET /api/decision-requests/:id/operator-ruling-provenance` returns one read-only provenance
-item with these fields:
+P10. One serializer named
+`Tightbeam.Escalation.public_operator_ruling_provenance_item/1` emits the canonical public item in
+the key order shown below. `GET /api/decision-requests/:id/operator-ruling-provenance` wraps that
+item in the shared R4 detail envelope whose exact outer keys are `schemaVersion`, `resource`, and
+`item`; their values are `1`, `operator ruling provenance`, and the canonical item.
 
 | Field | Contract |
 | --- | --- |
-| `schemaVersion` | integer `1` |
 | `requestId` | canonical operator-request id |
 | `authorityPrincipal` | existing `ruledBy` value in `user:<id>` form |
 | `state` | `recorded` for a post-epoch ruling or `unknown` for an historical ruling |
 | `submittingSessionKey` | canonical retained key when `state=recorded`; null when `state=unknown` |
 | `ruledAt` | existing terminal timestamp |
+| `rowVersion` | the terminal decision-request row's positive `rowVersion` |
 
 P11. The request owner and an existing Tightbeam admin may read the P10 route. This spec creates no new
-permission or grant. Another caller receives the ordinary `404 not_found` body. A hidden id and an
-absent id return that same body. Authorization runs before existence lookup.
+permission or grant. An open request, a non-operator request, an absent request, and a request hidden
+from the caller return the shared R4c error envelope with HTTP 404 and exact body
+`{"schemaVersion":1,"resource":"operator ruling provenance","error":{"code":"not_found"}}`.
+Authorization runs before terminal-state and existence disclosure.
 
 P12. A successful new ruling emits one companion
-`operator_ruling.provenance_recorded` Firehose event after commit. The event carries
-`schemaVersion:1`, `op:"upsert"`, `requestId`, `authorityPrincipal`, `state:"recorded"`, and the
-submitting session key. The serializer applies P11 authorization. Migration emits no provenance
-event.
+`operator_ruling.provenance_recorded` Firehose event after commit. Its outer mapping is
+`resource:"operator ruling provenance"`, `op:"upsert"`, primary ref `decisionRequestId`, and
+secondary ref `sessionKey`. `refs.decisionRequestId` equals `payload.requestId` and
+`refs.sessionKey` equals `payload.submittingSessionKey`. Its `payload` is the complete P10 item from
+the same serializer and is byte-equivalent to the REST detail `item`. The terminal mutation
+allocates the decision-request `rowVersion`; the REST item and event payload carry that exact
+version. P11 authorization controls both surfaces. One successful post-epoch ruling emits one
+companion event. A refusal, migration, replay that changes no terminal row, or pre-epoch row emits
+no companion event.
 
 P13. Audit rows for an accepted ruling contain the request id, authority principal, authenticated
 principal, submitting session key, and success cause. Refusal audit rows contain the request id,
@@ -190,6 +200,12 @@ Activation performs one read-only shape check, records the provenance epoch, ins
 constraint, verifies each enabled ingress, and enables the writer as one boundary. The versioned
 REST detail route and companion Firehose event project the terminal row. They do not create another
 state owner or paged collection.
+
+The canonical REST, Firehose, and wire-schema amendments in `rest-state-api-v1.md`,
+`event-firehose-v1.md`, and `rest-state-api-v1-wire-schema.md` register the exact route, resource,
+item fields and types, authorization, class, operation, refs, serializer, version rule, visibility,
+and A6 comparator. Those registries and P10-P12 describe one public projection; neither surface
+owns a local shape.
 
 This spec adds read surfaces because a required field that no authorized reader can inspect would
 not meet the goal. Deleting the read surfaces would make provenance unverifiable. Accepting opaque
@@ -226,14 +242,19 @@ records the epoch, when migration projects the pre-epoch population, then the re
 `state:"unknown"` items and zero direct-user items.
 
 T6. Given the request owner, an existing admin, and an unrelated user, when each calls P10's exact
-detail route, then the first two receive exactly P10's fields and the unrelated user receives the
-ordinary `404 not_found` body. Given an absent request id, the unrelated user receives the same body.
-Existing decision-request response fixtures remain byte-equal.
+detail route for one terminal operator request, then the first two receive the exact R4 envelope
+`schemaVersion:1`, `resource:"operator ruling provenance"`, and P10 item fields in P10 order. The
+unrelated user receives P11's exact 404 bytes. Given an open request, a non-operator request, an
+absent request, or a hidden terminal request, the caller receives those same 404 bytes. Existing
+decision-request response fixtures remain byte-equal.
 
 T7. Given a committed new ruling, when Firehose publishes and replays its events, then the authorized
-consumer receives the unchanged `decision_request.ruled` frame plus P12's idempotent companion
-event. An unauthorized consumer receives no companion event. Each event omits decision text,
-rationale, message content, attachments, and credentials.
+consumer receives the unchanged `decision_request.ruled` frame plus one P12 companion event. The
+companion outer fields name class `operator_ruling.provenance_recorded`, resource
+`operator ruling provenance`, op `upsert`, refs `decisionRequestId` and `sessionKey`, and the exact
+terminal `rowVersion`. Removing the REST outer envelope makes its `item` bytes equal the companion
+`payload` bytes. An unauthorized consumer receives no companion event. Each event omits decision
+text, rationale, message content, attachments, and credentials.
 
 T8. Given one accepted ruling and one P3 refusal, when an admin reads their audit rows and service
 logs, then the accepted row contains the request id, authority principal, authenticated principal,
