@@ -25,8 +25,8 @@ Agent-facing (demanded by the shipped engineering-kungfu kernels/skills):
   assignment's attest history (kungfu: 26 references; the flagship rail's
   vocabulary).
 - **assign / assignments / dispatch / revoke-assignment** — commissioning,
-  reading, and revoking work when the existing assignment handler authorizes
-  the caller (kungfu: 14 references; feature-cycle skill;
+  reading, and revoking work with `--reason "..."` when the existing
+  assignment handler authorizes the caller (kungfu: 14 references; feature-cycle skill;
   effort-without-effect-checkin-v1 §5).
 - **effort-rule** — parent adjudication of an effort-without-effect request,
   limited to `continue|dismiss` (effort-without-effect-checkin-v1 §5).
@@ -38,9 +38,10 @@ Agent-facing (demanded by the shipped engineering-kungfu kernels/skills):
   job-trace-observability-v1).
 - **transcript** — read a session's client-visible conversation from the
   substrate's own rows, by `--session <key>` (retrieval) or `--name
-  <displayName>` (lookup returning candidates to choose from, never content),
-  with tail-by-default and `--before`/`--after` cursors the previous response
-  handed the caller (transcript-verb-v1).
+  <displayName>` (exact-name REST lookup returning full session candidates to
+  choose from, never content), with tail-by-default and opaque REST
+  `--before`/`--after` cursors the previous response handed the caller
+  (`transcript-verb-v1.md`; REST R5/R5d).
 - **spawn / retire / list** — session lifecycle and orientation (kungfu:
   operating manual, recon-lifecycle).
 - **skill (list / put / rm)** — org skill management (kungfu: operating manual).

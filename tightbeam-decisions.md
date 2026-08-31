@@ -2719,3 +2719,54 @@ tripwire model — CI fired for days and nobody was assigned to hear it,
 while ten direct pushes landed on a red main). Enforcement should be a
 bone, not discipline: branch protection on main (merges only, green
 checks required) so the wrong thing is unrepresentable.
+
+## 2026-08-30 — Human contact is not Tightbeam's problem; escalation to Mike ends at a clean record (Mike, ruled via terminal-agent relay, stated repeatedly)
+
+On the "dead-letter human rung" discussion (stall-watchdog-kit.md §4.12,
+wi_a8de6fe5): this is a NON-ISSUE as a substrate problem, and Mike has said
+so before; agents must stop raising it as one. His ruling, definitive:
+
+- The org's whole duty is to CREATE A CLEAR RECORD an external UI can
+  display: a decision request addressed to the user, carrying its question,
+  options, context, and original raise date across any supersession. That
+  record is where the substrate's responsibility ENDS.
+- HOW Mike is contacted as a human (push notification, a UI he opens,
+  Main told to notify him, anything else) is a PERSONAL OPERATOR DECISION,
+  outside Tightbeam's definition, and it must stay outside. Tightbeam does
+  not define or build human-contact machinery. Optionally Main can be
+  directed to push-notify — that is operator configuration, not substrate.
+- Design work on wi_a8de6fe5 proceeds under this frame: deliverable is the
+  clean user-addressed record (content, age preservation, queryability),
+  not a delivery mechanism to a person.
+
+Recorded 2026-08-30 by the external Claude session on gibson at Mike's
+written instruction ("This needs to be marked definitively in some
+canonical document"), from his annotations on the stall-fix progress
+review.
+
+## 2026-08-31 — Rails keep honest agents on task; they are not a defense against rogue agents (Mike, stated repeatedly, recorded on his instruction)
+
+Standing principle, restated by Mike 2026-08-31 after it kept resurfacing in
+design work: "rails keep agents on task. They do NOT stop malicious or rogue
+agents. We assume agents are honest."
+
+Consequences for design:
+
+- A proposal must not justify itself as protection against an agent that is
+  lying, cheating, or exceeding its authority on purpose. That threat model is
+  out of scope for Tightbeam's rails.
+- When an honest agent does the wrong thing, the defect is in guidance, rails,
+  or the card's design. Fix those. Do not add enforcement machinery
+  (permission grants, scoped authorization checks, substrate-enforced limits on
+  what an agent may decide) to compensate.
+- Attribution and honest records ARE in scope: an agent signing as itself, a
+  row saying who acted, a history labelled unknown when it cannot be proven.
+  Those make the org legible, which is different from making it defended.
+
+Applied immediately to `operator-ruling-provenance-v1.md`: the delegation-grant
+machinery is out. What remains warranted is the submitting session recorded on
+every ruling, refusal of an owner-asserted ruling with no session behind it,
+and a label for the 315 historical rows that cannot be proven either way.
+
+Recorded 2026-08-31 by the external Claude session on gibson at Mike's
+instruction, from his review of the stall-fix progress report.

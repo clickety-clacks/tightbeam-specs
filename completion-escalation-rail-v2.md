@@ -1,7 +1,7 @@
 # Completion-escalation rail v2
 
-Status: READY FOR NEW INDEPENDENT REVIEW for
-`wi_809821f8-e72b-41d8-b4b5-af28c7e670a6`.
+Status: CURRENT-MAIN RECONCILIATION CANDIDATE — READY FOR ONE NEW INDEPENDENT
+REVIEW for `wi_809821f8-e72b-41d8-b4b5-af28c7e670a6`.
 This file revalidates reviewed artifact `art_a22ba0ec`, SHA-256
 `cd1a9a99d0f041cd88077b4e55f1cd23e76b26b4804f0478ef94ed6a7a6165d6`, against
 Tightbeam 0.1.7 release commit `6c13efcbe9e1ae247b8aa7e91a374015c74dc947`.
@@ -11,7 +11,7 @@ artifact `art_46d2f24b`, SHA-256
 preserves those reviewed corrections and incorporates Mike's ALWAYS-PARENT ruling
 `s_0100f65a-b2b4-4278-9c5b-394987e3a839`, SQLite waiver
 `s_ee88a313-e923-435f-8999-44975bafe62f`, and abstraction ruling
-`s_b9c9fa65-267a-43b2-823e-d372954d1378`. It deletes lineage climbing, Main fallback,
+`s_b9c9fa65-267a-43b2-823e-d372954d1378`. It deletes lineage climbing, consumer-local Main fallback,
 and assignment-opener inference from completion routing. It admits one explicit
 assignment-card report-to declaration and the one justified stable cancellation
 classification, `completion_transition`. It supersedes the predecessor only after an
@@ -28,15 +28,26 @@ foreign keys on the two diagnostic parent-copy columns reject the required
 missing-parent row. This successor deletes only those two constraints and awaits a new
 independent exact-SHA verdict.
 
+This candidate reconciles those reviewed bytes to exact Tightbeam main
+`7dc984a77b035001ab6fe788f838da0e46d5efa1`. It changes only three conflicts exposed by
+that baseline: completion uses `Org.effective_parent_in_txn/2` instead of raw
+`spawnedBy`; R17 allocates shape v14 after current shape v13; and A22 expects delivered
+notice wakes to be `wake_fired` while retain cancels only wakes that remain pending. All
+other R1-R18 and A1-A24 behavior remains unchanged. Implementation remains forbidden
+until one parent-opened independent review accepts this exact revision.
+
 ## Goal
 
 When a child session files a completion attest, Tightbeam records the completion and
-routes its action request to that child's exact `spawnedBy` parent. The completion
+routes its action request to the exact effective reporting parent returned by
+`Org.effective_parent_in_txn/2`. The completion
 record and its first parent-notification wake commit in the same transaction as the
 attest and assignment close. Tightbeam does not climb the lineage and does not infer a
 route from the assignment opener or the create ceremony. If the exact parent is absent,
 inactive, or foreign-owned, Tightbeam commits the completion with the named
-`parent-unavailable` delivery failure instead of inventing a recipient. R5 defines this
+`parent-unavailable` delivery failure instead of inventing a recipient. A null stored
+`operationalParent` resolves to the owner's canonical Main key before that eligibility
+check; null alone is not unavailable. R5 defines this
 only exception to the first-parent-wake guarantee.
 
 An assignment card can explicitly declare one additional report-to session. That exact
@@ -69,7 +80,7 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
   the obligation
   (`accountability-constitution-v1.md:27-31`).
 - Mike ruling `s_0100f65a-b2b4-4278-9c5b-394987e3a839`, recorded in
-  `att_73471946-be23-46ad-b384-de4d8a8675fe`, makes the immediate `spawnedBy` parent the
+  `att_73471946-be23-46ad-b384-de4d8a8675fe`, makes the completion parent the
   unconditional completion route. Any other delivery, including the assignment opener,
   requires an explicit report-to declaration on the card. No route derives from the
   create verb or ceremony.
@@ -95,8 +106,14 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
   (`assignments.ex:211-220`).
 - The work-item bracket is not this rail. It counts assignments for one work item and
   targets the work-item's user owner (`work_items.ex:503-537`). This rail counts
-  assignments for one child session and targets only the session's exact `spawnedBy`
-  parent.
+  assignments for one child session and targets only the session's exact effective
+  reporting parent.
+- Exact main `7dc984a77b035001ab6fe788f838da0e46d5efa1` implements the one parent-selection
+  contract in `Org.effective_parent_in_txn/2`: a non-null `operationalParent` returns
+  unchanged with source `explicit`; null returns the owner's canonical Main key with
+  source `owner_main`; the resolver never reads `spawnedBy` and never writes. The current
+  database stamp is `coordination-fabric-v1-phase1-v13` (`org.ex:562-592`;
+  `schema.ex:88-98`).
 - The ordinary wake store is durable and at-least-once; `turns.wakeId` provides the
   exactly-once enqueue backstop (`wakes.ex:104-200`; `ledger.ex:1-18,99-148`).
 - Ordinary wake delivery can re-resolve a stale lineage target
@@ -162,12 +179,16 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
    authority depends on them.
 4. **Bump and recreate.** Adding `assignments.completionReportToSessionKey` and widening
    the closed wake-cancellation source/disposition checks changes existing table shapes.
-   The build stamps `coordination-fabric-v1-phase1-v7`. A database stamped with another
+   The build stamps `coordination-fabric-v1-phase1-v14`. A database stamped with another
    shape is refused before DDL or feature writes and must be moved aside and recreated.
+   In-place migration remains declined because Mike's waiver selected recreation and
+   current-main reconciliation changes only the allocated stamps, not that policy.
 5. **Route only from durable declarations.** A non-root completion's parent channel is
-   exactly the holder session's `spawnedBy`. The optional commission channel is exactly
+   exactly the result of `Org.effective_parent_in_txn/2` for the holder. The resolver
+   reads only durable `operationalParent` and owner rows. The optional commission channel is exactly
    the card's `completionReportToSessionKey`. `openedBySession`, `openedByUser`, the
-   create verb, roles, lineage ancestors, and Main provide no implicit route.
+   create verb, roles, lineage ancestors, and Main outside the shared resolver provide
+   no implicit route.
 6. **Split cancellation authority by the owning action.** R7 delivery refusal is owned
    by `tightbeam:wake-scheduler`. R8 deadline reissue is owned by
    `tightbeam:completion-escalation`, including its no-replacement cancellation when the
@@ -183,18 +204,23 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
    existing marker remains truthful without adding a domain event or deleting specified
    observability. This records the writer's smallest-contract disposition of withdrawn
    request `dr_2195043c-a970-422b-90c9-789e998755b3` under that directive.
-8. **Delete the diagnostic parent-copy foreign keys.** A missing exact `spawnedBy` row
-   is required dirt, not a valid session relation. The completion row must preserve that
-   dangling observed key while it records `parent-unavailable`. Therefore
-   `immediateParentSessionKey` and `parentSessionKey` remain nullable text copies without
+8. **Delete the diagnostic parent-copy foreign keys.** A selected effective-parent key
+   can name a missing row. That is required dirt, not a valid session relation. The
+   completion row must preserve that dangling observed key while it records
+   `parent-unavailable`. Therefore
+   `immediateParentSessionKey` and `parentSessionKey` are non-null text copies without
    `REFERENCES sessions(sessionKey)`. Child, cause, and report-to fields retain their
    session foreign keys. This is the sole F1 correction from
    `att_9d9af9f6-a194-4965-a5d8-d529e6de4395` and `art_635358a2`.
+9. **Preserve fired notice truth.** A delivered prompt wake is `fired`, so a later retain
+   records no cancellation for that notice. Retain still cancels the pending deadline
+   and any notice that has not delivered. A22 asserts `wake_fired` for the two delivered
+   notices and `wake_canceled` for the pending deadline.
 
 ## Non-Goals
 
 - No automatic retain, park, retire, reassignment, or reparenting.
-- No lineage climb, Main fallback, role fallback, assignment-opener inference, or
+- No lineage climb after effective-parent resolution, role fallback, assignment-opener inference, or
   create-ceremony inference for a non-root child completion.
 - No disposition delegation through `report-to`. The optional declaration adds one
   informational delivery only.
@@ -257,6 +283,11 @@ loses because forbidding Main assignments contradicts that ruling. ACCEPT loses 
 an unactionable self-addressed request would not provide the required retain outcome.
 The branch does not grant self-disposition to an ordinary child.
 
+The completion row adds `parentResolutionSource`. ADD wins because a later reparent can
+change the source session while the completion route must remain immutable audit truth.
+DELETE and ACCEPT lose because recomputation cannot prove whether the close selected an
+explicit stored parent or Owner Main.
+
 ## Terms
 
 - **Child session**: the assignment holder named by `assignments.holderKey` on the
@@ -264,18 +295,27 @@ The branch does not grant self-disposition to an ordinary child.
 - **Completion cause**: the committed `attests` row with `kind='completion'`, joined
   through `assignments.closingAttestId`. The cause principal is
   `session:<attests.bySession>`.
-- **Immediate parent**: the exact session incarnation key in `sessions.spawnedBy` on the
-  child session. For a non-root child, it is the only session recipient with disposition
-  authority. Tightbeam never substitutes an ancestor, Main, role holder, or assignment
-  opener.
+- **Effective reporting parent**: the exact session incarnation key returned by
+  `Org.effective_parent_in_txn/2` for the child inside the close transaction. A non-null
+  `sessions.operationalParent` returns with source `explicit`; null returns the owner's
+  canonical Main key with source `owner_main`. For a non-root child, the selected key is
+  the only session recipient with disposition authority. The resolver does not read
+  `spawnedBy`, climb, judge eligibility, or write.
+- **Exact parent**: shorthand in this spec for the effective reporting parent selected
+  and copied into the completion row by the close transaction. A later reparent does not
+  rewrite that completion snapshot or its disposition authority.
+- **Parent snapshot fields**: the legacy-named `immediateParentSessionKey` and
+  `parentSessionKey` columns. Each stores the exact selected effective reporting parent,
+  including root-self. `parentResolutionSource` stores `explicit` or `owner_main` from
+  the same resolver call.
 - **Explicit report-to**: the optional exact session incarnation stored as
   `assignments.completionReportToSessionKey` when the card is created through
   `assign|dispatch --report-to <session-key>`. The target must then be active and owned
   by the child's owner. The immutable declaration authorizes one informational
   completion copy. It does not authorize a disposition.
-- **Parent unavailable**: the non-root child's `spawnedBy` is null, names no active
-  session, or names a session with another owner. Tightbeam records the exact observed
-  class and creates no parent wake. It does not climb or fall back.
+- **Parent unavailable**: the non-root child's selected effective reporting parent names
+  no active session or names a session with another owner. Tightbeam records the exact
+  observed class and creates no parent wake. It does not climb or select another target.
 - **Root Main holder**: a child session whose row has `isBuiltIn=1` and whose
   `sessionKey` equals `Org.personal_session_key(ownerUserId)`. The exact key and built-in
   marker must both match. A custom session with a Main-like name is not a root Main.
@@ -331,10 +371,11 @@ The branch does not grant self-disposition to an ordinary child.
 1. The database owner serializes each mutation transaction.
 2. A completion attest can close one open assignment exactly once. Losing terminal
    races roll back the attest (`attest-v1.md:181-196,272-280`).
-3. Session rows persist after retirement, and `spawnedBy` preserves incarnation
-   lineage (`org.ex:65-90,505-565`).
-4. Each ordinary child's `spawnedBy` parent has the same `ownerUserId`. A null, missing,
-   inactive, or foreign-owned immediate parent is dirt; the producer reports it and
+3. Session rows persist after retirement. `spawnedBy` preserves creation provenance but
+   supplies no completion route (`org.ex:65-90,505-565`).
+4. Parent admission requires the selected effective parent to carry the child's
+   `ownerUserId`. A missing, inactive, or foreign-owned selected effective parent is
+   dirt; the producer reports it and
    creates no parent wake instead of disclosing or searching for another recipient.
 5. The owner's built-in Main is permanent under the current retire rail
    (`gateway.ex:5042-5052`). Root Main has no ordinary parent; R5 preserves its explicit
@@ -391,7 +432,8 @@ already required for decision notifications
 
 The record stores `closingAttestId`, `assignmentId`, nullable `workItemId`,
 `childSessionKey`, literal outcome `completed`, `causeBySession`, `ownerUserId`,
-`rootMainHolder`, `immediateParentSessionKey`, `remainingOpenAssignments`, and the
+`rootMainHolder`, `immediateParentSessionKey`, `parentResolutionSource`,
+`remainingOpenAssignments`, and the
 exact parent/report-to routing fields. The notification origin is
 `process:tightbeam`; the cause principal is `session:<causeBySession>`. No domain field
 derives a principal from prose or an untyped origin string.
@@ -425,17 +467,20 @@ correlation; the internal consumer does not deliver a turn to the child. The cou
 per child session, not per work item. The producer stores that historical result as
 `remainingOpenAssignments`; later assignment changes do not rewrite it.
 
-### R5 — Routing is ALWAYS-PARENT plus explicit report-to
+### R5 — Routing is effective-parent plus explicit report-to
 
-For a non-root child, the close transaction copies the exact `sessions.spawnedBy` value
-to `parentSessionKey`. It creates the parent notice only when that exact row exists,
+For a non-root child, the close transaction calls `Org.effective_parent_in_txn/2` and
+copies its exact `session_key` result to `immediateParentSessionKey` and
+`parentSessionKey`. It copies the returned source to `parentResolutionSource`. It creates
+the parent notice only when that exact row exists,
 has `state='active'`, and has the stored owner pin. It records
-`parentRouteStatus='scheduled'`. A null, missing, inactive, or foreign-owned exact
+`parentRouteStatus='scheduled'`. A missing, inactive, or foreign-owned exact
 parent records `parentRouteStatus='unavailable'`, writes
 `completion_escalation_undeliverable` with the exact reason
 `parent-missing|parent-inactive|parent-owner-mismatch`, and creates no parent wake. It
-does not traverse `spawnedBy`, resolve a role, select Main, or inspect assignment opener
-fields. An empty-slate row remains an open action request on which the owner user can act.
+does not read `spawnedBy`, traverse lineage, resolve a role, or inspect assignment opener
+fields. A null `operationalParent` selects Owner Main inside the shared resolver; no
+consumer-local Main fallback exists. An empty-slate row remains an open action request on which the owner user can act.
 A row with work remaining stays `notice-only` and queryable as a named undeliverable
 completion.
 
@@ -459,8 +504,11 @@ effect, file, marker, supervision, work-item-bracket, or idempotency result. Rep
 successful idempotent create returns the original card and cannot change the declaration.
 `reopen-assignment` preserves it exactly.
 
-For a root Main holder, the producer takes the root branch before reading `spawnedBy`.
-It records `parentSessionKey=childSessionKey`, `parentRouteStatus='root-self'`, and
+For a root Main holder, the producer takes the root branch before ordinary target
+eligibility. It requires the shared resolver's fixed-point result to equal the child key,
+records `parentResolutionSource='owner_main'`,
+`immediateParentSessionKey=childSessionKey`, `parentSessionKey=childSessionKey`,
+`parentRouteStatus='root-self'`, and
 creates the retain-only self-addressed request. R2 and R4 create the same parent notice
 and open request used for another empty child; the producer does not retain it
 automatically. Root-self is an explicit root contract, not Main fallback for a child.
@@ -842,7 +890,7 @@ source of truth. The producer writes these exact lifecycle kinds with
   `retained_root`;
 - `completion_escalation_undeliverable` for each `parent-unavailable` generation and
   each R7 exact-target delivery refusal;
-- `completion_escalation_cross_owner_lineage` when R5 observes a foreign-owned immediate
+- `completion_escalation_cross_owner_lineage` when R5 observes a foreign-owned selected
   parent; it reports dirt and never authorizes a lineage walk;
 - `completion_escalation_state_inconsistent` for R11's inactive-child dirt;
 - `completion_escalation_retire_deferred` when R12 observes an active critical lease;
@@ -958,8 +1006,9 @@ childSessionKey=<session-incarnation-key>
 closingAttestId=<attest-id>
 outcome=completed
 causePrincipal=session:<child-session-key>
-immediateParentSessionKey=<session-key-or-none>
-parentRoute=<spawnedBy|root-self>
+immediateParentSessionKey=<session-key>
+parentResolutionSource=<explicit|owner_main>
+parentRoute=<effective-parent|root-self>
 reportToSessionKey=<session-key-or-none>
 remainingOpenAssignments=<decimal-count>
 actionNeeded=<true|false>
@@ -993,8 +1042,9 @@ childSessionKey=<session-incarnation-key>
 closingAttestId=<attest-id>
 outcome=completed
 causePrincipal=session:<child-session-key>
-immediateParentSessionKey=<session-key-or-none>
-parentRoute=<spawnedBy|parent-unavailable|root-self>
+immediateParentSessionKey=<session-key>
+parentResolutionSource=<explicit|owner_main>
+parentRoute=<effective-parent|parent-unavailable|root-self>
 reportToSessionKey=<report-to-session-key>
 remainingOpenAssignments=<decimal-count>
 actionNeeded=<true|false>
@@ -1023,6 +1073,7 @@ The read/command JSON object uses camelCase:
   "routing": {
     "parent": {
       "sessionKey": "agent:... s_...",
+      "resolutionSource": "explicit",
       "routeStatus": "scheduled",
       "receipt": {"state": "pending", "turnSeq": null}
     },
@@ -1058,8 +1109,9 @@ report-to has its own receipt. An unavailable parent or report-to has
 retargeting. For `notice-only`, `request.status` is `notice-only` and its deadline/action fields are
 null. For a retained root, `request.status` is `retained_root`, `decision` is `retain`,
 `rootMainHolder` is true, and the acting fields name the explicit caller. For an
-ordinary child, `rootMainHolder` is false. For missing `workItemId` or parent fields,
-JSON uses null; prompt text uses `none`. No key is conditionally omitted.
+ordinary child, `rootMainHolder` is false. The parent object always carries a non-null
+`sessionKey` and `resolutionSource='explicit'|'owner_main'`. For missing `workItemId`,
+JSON uses null and prompt text uses `none`. No key is conditionally omitted.
 
 ### R17 — Compatibility and migration
 
@@ -1067,13 +1119,13 @@ JSON uses null; prompt text uses `none`. No key is conditionally omitted.
 composition registers it after `Assignments`. The build also adds nullable
 `assignments.completionReportToSessionKey` and admits `completion_transition` in the
 closed `wake_cancellations` source/disposition checks. SQLite cannot widen those
-existing shapes through `CREATE TABLE IF NOT EXISTS`. Under Mike's waiver, Schema bumps
-the exact stamp from `coordination-fabric-v1-phase1-v6` to
-`coordination-fabric-v1-phase1-v7`. A database carrying the prior or any other stamp is
+existing shapes through `CREATE TABLE IF NOT EXISTS`. Under Mike's waiver, Schema
+reserves successor stamp `coordination-fabric-v1-phase1-v14` after exact current-main
+stamp `coordination-fabric-v1-phase1-v13`. A database carrying v13 or any other stamp is
 refused by name before schema-module DDL or feature queries run. Tightbeam does not
 alter, rebuild, sniff, copy, or repair it. The operator moves it aside and lets this
 build create a fresh database, as the existing shape refusal instructs
-(`schema.ex:35-65,938-1005`).
+(`schema.ex:88-98,1817-1914`).
 
 The release migrates and backfills no rows. Recreation starts with no assignments,
 completion rows, or historical notices. The first completion recorded in the recreated
@@ -1145,8 +1197,11 @@ CREATE TABLE completion_escalations (
   causeBySession            TEXT NOT NULL REFERENCES sessions(sessionKey),
   ownerUserId               TEXT NOT NULL REFERENCES users(userId),
   rootMainHolder            INTEGER NOT NULL CHECK (rootMainHolder IN (0,1)),
-  immediateParentSessionKey TEXT NULL,
-  parentSessionKey          TEXT NULL,
+  immediateParentSessionKey TEXT NOT NULL,
+  parentSessionKey          TEXT NOT NULL,
+  parentResolutionSource    TEXT NOT NULL CHECK (
+    parentResolutionSource IN ('explicit','owner_main')
+  ),
   parentRouteStatus         TEXT NOT NULL CHECK (
     parentRouteStatus IN ('scheduled','unavailable','root-self')
   ),
@@ -1185,6 +1240,8 @@ CREATE TABLE completion_escalations (
       AND currentParentNoticeWakeId IS NULL)
     OR
     (parentRouteStatus = 'root-self' AND rootMainHolder = 1
+      AND parentResolutionSource = 'owner_main'
+      AND immediateParentSessionKey = childSessionKey
       AND parentSessionKey = childSessionKey
       AND currentParentNoticeWakeId IS NOT NULL)
   ),
@@ -1264,8 +1321,9 @@ home (`org.ex:1035-1042`). The DDL makes a root holder's parent target the child
 through `root-self`; it does not make Main a fallback for another child.
 
 `immediateParentSessionKey` and `parentSessionKey` deliberately have no session foreign
-key. They are diagnostic copies of the child's exact observed `spawnedBy` value, which
-can name a missing row under R5. Their checks still require the two copies to match for
+key. They are immutable diagnostic copies of the shared resolver's selected effective
+parent key, which can name a missing row under R5. `parentResolutionSource` preserves
+whether selection used the explicit stored parent or Owner Main. Their checks still require the two copies to match for
 an ordinary child. `childSessionKey`, `causeBySession`, and `reportToSessionKey` retain
 their session foreign keys because each must name an existing row when stored.
 
@@ -1436,9 +1494,10 @@ insert a second `status='open'` row for the same child fails the partial unique 
 
 ### A5 — Parent routing and recorded cause
 
-Given `C.spawnedBy=P`, `P` is active and owner-matched, and the assignment omits
-`--report-to`, when `C` completes, then the record names `P` as immediate parent and
-`parentSessionKey`, records `parentRouteStatus='scheduled'` and
+Given `C.operationalParent=P`, `P` is active and owner-matched, and the assignment omits
+`--report-to`, when `C` completes, then the record stores `P` in both parent snapshot
+fields and records `parentResolutionSource='explicit'`,
+`parentRouteStatus='scheduled'` and
 `reportToRouteStatus='not-declared'`, and stores the exact closing attest, assignment,
 work item, outcome, child incarnation, cause session, and owner. Exactly one parent
 notice targets `P`; neither `openedBySession` nor `openedByUser` creates another notice.
@@ -1451,7 +1510,7 @@ lifecycle row has `kind='completion_escalation_opened'`,
 
 ### A6 — Dead parent fails loudly and never climbs
 
-Given exact immediate parent `P1` is retired and same-owner ancestor `P2` and owner Main
+Given selected explicit parent `P1` is retired and same-owner ancestor `P2` and owner Main
 `M` are active, when `C` completes, then the row preserves `P1`, records
 `parentRouteStatus='unavailable'`, creates no parent notice for `P1`, `P2`, or `M`, and
 writes the exact parent-inactive undeliverable marker with R15's parent channel detail.
@@ -1484,13 +1543,16 @@ the original string or null.
 
 ### A8 — Parent and report-to absence are explicit
 
-Given a non-root child has null, missing, inactive, or foreign-owned exact parent, when
-completion commits, then each fixture records `parentRouteStatus='unavailable'`, writes
+Given a non-root child has a null stored parent and an eligible Owner Main, when
+completion commits, then the record targets that Main, stores
+`parentResolutionSource='owner_main'`, and does not take the unavailable path. Given the
+selected explicit parent or selected Owner Main is missing, inactive, or foreign-owned,
+then completion records `parentRouteStatus='unavailable'`, writes
 the exact R5 reason, creates no parent wake, and leaves an empty-slate request open and
 queryable with its internal deadline armed and `routing.parent.receipt.state='not-created'`.
 The missing-parent fixture runs with `PRAGMA foreign_keys=ON`, copies the dangling
-`spawnedBy` key into both diagnostic parent fields, and commits successfully.
-An active ancestor and owner Main receive no inferred notice. Given the child instead
+effective-parent key into both diagnostic parent fields, and commits successfully.
+An active ancestor receives no inferred notice. Given the child instead
 has another open assignment, the row is `notice-only`, has no deadline, and remains
 queryable. Given a distinct report-to declaration becomes inactive before close, then
 the row records `reportToRouteStatus='unavailable'`, creates no report-to wake, and does
@@ -1648,7 +1710,8 @@ row and park-operation failure leaves the request open.
 ### A16 — Authorization matrix
 
 Given one completion request, when each listed principal separately calls
-`completion-disposition`, then the exact active owner-pinned `spawnedBy` parent and the
+`completion-disposition`, then the exact active owner-pinned effective reporting parent
+and the
 owner user can act. The explicit report-to recipient, another active same-owner ancestor,
 assignment opener, owner Main when it is not the exact parent, ordinary child acting on
 its own row, a sibling, an admin user from another owner, a
@@ -1701,12 +1764,12 @@ existing bracket seam. Neither cancellation is authorized by the other mechanism
 
 ### A20 — Compatibility and shape refusal
 
-Given a database stamped `coordination-fabric-v1-phase1-v6`, including one whose
+Given a database stamped `coordination-fabric-v1-phase1-v13`, including one whose
 `wake_cancellations` table carries the old closed checks, when the new build boots, then
 Schema refuses it before any DDL, assignment query, cancellation insert, or completion
 producer call. The error names both stamps and says to move the database aside and let it
 be recreated. Given an empty database, when the new build boots, then it stamps
-`coordination-fabric-v1-phase1-v7` before table creation and creates the new assignment,
+`coordination-fabric-v1-phase1-v14` before table creation and creates the new assignment,
 cancellation, and completion shapes. A fixture inserts and validates each R8
 compatibility pair against the real recreated SQLite schema. The build performs no
 ALTER, table copy, data migration, or historical completion backfill. Current ordinary
@@ -1737,7 +1800,9 @@ acknowledgment, and Org retirement; and none of those paths derives a principal 
 The closure test also proves that only `Assignments` writes
 `completionReportToSessionKey`, only card creation accepts `reportToSessionKey`, and no
 path derives it from `openedBySession`, `openedByUser`, a role, or create-verb identity.
-It proves that every completion parent target equals the holder row's exact `spawnedBy`,
+It proves that every completion parent target and resolution source equal the result of
+`Org.effective_parent_in_txn/2` for the holder in that transaction; no completion path
+reads `spawnedBy` or implements a second Main fallback,
 that parent/report-to wakes carry no reresolution fields, that report-to never reaches
 the disposition authorization branch, and that the completion producer adds no new
 cancellation reason or `lifecycle_event` source.
@@ -1746,26 +1811,28 @@ cancellation reason or `lifecycle_event` source.
 
 Given one real gateway with exact parent `P`, child `C`, distinct explicit report-to `R`,
 and same-owner opener `O`, when a real assignment is dispatched with `--report-to R`,
-`C` files completion, and `P` retains, then the smoke captures both actual stored
+`C` files completion, both notice turns deliver, and `P` retains, then the smoke captures
+both actual stored
 messages, turns, wakes, the completion row, assignment projection, CLI read
 response, visibility results for the R15 matrix, typed opened and acknowledged
 `work-item-trace` entries, and retain acknowledgment response. It also captures the
 opened and acknowledged lifecycle rows, their
-`completion_escalation_event` trace entries, and the membership-linked
-`wake_canceled` entries for the retained request's parent notice, report-to notice, and
-deadline. It proves `R` can read but cannot act and that `O` receives no inferred
+`completion_escalation_event` trace entries, the membership-linked `wake_fired` entries
+for the delivered parent and report-to notices, and the membership-linked
+`wake_canceled` entry for the still-pending deadline. It proves retain creates no
+cancellation row for either fired notice. It proves `R` can read but cannot act and that `O` receives no inferred
 delivery. Compare those
 outputs to R15-R16 after replacing only generated ids/timestamps. Passing unit tests
 without this smoke does not satisfy the rail.
 
 ### A23 — Cross-owner lineage fails closed
 
-Given corrupt fixture state points `C.spawnedBy` at an active session owned by another
-user while the child's owner Main `M` is active, when `C` completes, then the resolver
-writes one `completion_escalation_cross_owner_lineage` event, sends no wake or readable
+Given corrupt fixture state points `C.operationalParent` at an active session owned by another
+user while the child's owner Main `M` is active, when `C` completes, then the completion
+producer writes one `completion_escalation_cross_owner_lineage` event, sends no wake or readable
 row to the foreign
 session or user, records `parentRouteStatus='unavailable'`, and preserves the foreign
-`spawnedBy` fact for diagnosis. It sends no notice to `M`; Main state is irrelevant.
+selected effective-parent fact for diagnosis. It sends no notice to `M`; Main state is irrelevant.
 
 Given same-owner `P1` is the exact parent, foreign-owner `P2` is its ancestor, and
 `P1` retires before delivery, when the notice wake fires, then the delivery transaction
@@ -1822,8 +1889,9 @@ unchanged.
    `att_35dc33fc-660c-4989-b78d-56eab886a1e7` then requested F1 and F2 changes against
    exact artifact `art_46d2f24b`, SHA-256 `96bbca96…`. This canonical amendment preserves
    those resolutions and incorporates ruled request `dr_5e23055c…` plus Mike's
-   ALWAYS-PARENT ruling. No implementation scope can start until a linked independent reviewer
-   files `reviewed-clean` against the new exact artifact hash and release commit. On
+   ALWAYS-PARENT ruling as refined by the effective-parent contract on exact target source
+   `7dc984a77b035001ab6fe788f838da0e46d5efa1`. No implementation scope can start until a linked independent reviewer
+   files `reviewed-clean` against the new exact artifact hash and that target source commit. On
    `changes-requested`, amend this canonical file before responding and publish another
    hash. The reviewed artifact retains this gate text; the linked verdict row resolves it
    without changing reviewed bytes.
@@ -1833,5 +1901,5 @@ unchanged.
    with one shared terminal-notice design; this spec does not pre-approve that expansion.
 
 Operating pattern taught by this spec: none. The new commands and production do not
-exist in release 0.1.7. Guidance must not teach them before implementation and release
+exist in exact target source `7dc984a77b035001ab6fe788f838da0e46d5efa1`. Guidance must not teach them before implementation and release
 (wisdom 20 and 21).

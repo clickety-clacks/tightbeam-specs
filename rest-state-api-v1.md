@@ -786,6 +786,61 @@ whitespace, non-ASCII digit, non-integer, or repeated key as
 route clamps a valid value above 500 to 500. This clause changes no other
 resource's pagination contract.
 
+R5d. Conversation history has one authority: the REST transcript-messages
+collection. For a target session with current history boundary
+`clearedThroughSeq = F`, the visible set is the R7 transcript-message rows
+whose `seq > F`, ordered by R5a `(seq,id)`. Tail, `before`, `after`,
+`hasMoreBefore`, and `hasMoreAfter` operate only on that visible set. Cleared
+rows do not make either page flag true. The service reads `F`, selects the
+items, and computes the flags as one indivisible read; a returned page reflects
+one value of `F`. For one `sessionKey`, the observable value of `F` is
+non-decreasing. A production mutation cannot expose a row that an earlier
+value of `F` hid.
+
+Session creation is the sole initializer and writes
+`clearedThroughSeq = 0`. After creation, the sole production write seam is the
+canonical session-store operation
+`advanceClearedThroughSeq(sessionKey,candidateSeq)`. It atomically writes and
+returns `max(storedValue,candidateSeq)` in the session transaction. When that
+maximum changes the row, the same commit publishes the resulting session
+`rowVersion`; a no-change candidate returns the unchanged row and version. The
+closed v1 caller inventory contains exactly two causes and source sites:
+
+- the harness-change path submits the current maximum message `seq` at
+  `gateway.ex:2700-2712`; and
+- turn-failure recovery submits the old session's failed-prompt `seq` at
+  `gateway.ex:3742-3758`.
+
+Both sites must call the sole operation. No other production statement or
+caller may write the column. A new cause requires an independently reviewed
+amendment to this inventory before implementation and must call the same
+operation.
+
+The signed message cursor contains the immutable `(seq,id)` tuple and R5/AU7
+request binding. It does not contain `clearedThroughSeq`; that value is
+server-owned state, not a request filter. The service compares the decoded
+tuple directly and does not resolve it through a live row. Deleting the
+boundary row or advancing the history boundary therefore does not invalidate
+an otherwise valid cursor.
+
+When a valid cursor tuple is at or below the current history boundary,
+`before` returns an empty page with `hasMoreBefore:false` and
+`hasMoreAfter:true` exactly when the visible set is nonempty. `after` returns
+the first visible page above the boundary. An empty caught-up `after` page has
+`hasMoreAfter:false`; the caller retains its last non-null `newestCursor` for
+healthy catch-up. Reconnect, a firehose sequence skip, or a history-boundary
+change invokes a fresh displayed-slice rebuild from a cursorless tail instead
+of treating `after` as gap recovery.
+
+For a nonempty page, `hasMoreBefore` is true exactly when a visible row exists
+below the page's first item, and `hasMoreAfter` is true exactly when a visible
+row exists above its last item. A cursorless tail has `hasMoreAfter:false`. An
+empty cursorless tail has both flags false. An empty caught-up `after` page has
+`hasMoreBefore:true` exactly when the visible set is nonempty and
+`hasMoreAfter:false`. The service emits `oldestCursor` bound to `before` and
+`newestCursor` bound to `after`; using either cursor in the other direction
+returns `400 invalid_cursor`.
+
 R6. Filters are whitelisted per resource:
 
 | Resource | V1 whitelist filters |
@@ -897,7 +952,10 @@ sessions collection lookup. It returns zero, one, or many visible R7 session
 candidates without transcript content. The caller then chooses a `sessionKey`
 and calls `GET /api/sessions/:sessionKey/messages`. The wrapper does not issue
 an unfiltered session read, a substring lookup, SQL, or another session-name
-endpoint.
+endpoint. The wrapper passes REST's opaque `before` and `after` cursors through
+unchanged and returns the R4 page object unchanged. It does not accept or emit
+a message id as a cursor, translate the superseded transcript projection, or
+fall back to a legacy dispatch read after M4 parity passes.
 
 R6c. The shared seams for these two resources are named and exclusive:
 
@@ -935,7 +993,7 @@ that an adapter conditionally omits.
 | sessions | `sessionKey`, `displayName`, `kind`, `orderIndex`, `isBuiltIn`, `adopted`, `ownerUserId`, `origin`, `spawnedBy`, `handle`, `archetype`, `overrides`, `identityName`, `identityRevision`, `harness`, `provider`, `model`, `thinkingLevel`, `modelContext`, `host`, `clearedThroughSeq`, `state`, `createdAt`, `updatedAt`, `mechanicalStatus`, `rowVersion` |
 | transcript messages | `id`, `seq`, `sessionKey`, `role`, `messageType`, `content`, `at`, `sender`, `deviceId`, `clientMessageId`, `replyToMessageId`, `replyToClientMessageId`, `llmVisibleMessageId`, `attachments`, `attentionTier`, `turnSeq`, `assignmentId`, `jobRef`, `harness`, `provider`, `model`, `effort`, `context`, `rowVersion` |
 | work items | `id`, `title`, `specRefName`, `specRefSha256`, `isBug`, `ownerUserId`, `state`, `failReason`, `routingWakeId`, `slateWakeId`, `createdByUser`, `createdBySession`, `createdInTurnSeq`, `createdContextKnown`, `createdAt`, `rowVersion` |
-| assignments | `id`, `subject`, `holderKey`, `holderRole`, `holderFallback`, `openedByUser`, `openedBySession`, `openedAt`, `state`, `outcome`, `closedAt`, `closedByUser`, `closedBySession`, `closingAttestId`, `workItemId`, `reviewsAssignmentId`, `holderHarness`, `holderProvider`, `files`, `effectKind`, `derivedStatus`, `rowVersion` |
+| assignments | `id`, `subject`, `holderKey`, `holderRole`, `holderFallback`, `openedByUser`, `openedBySession`, `openedAt`, `state`, `outcome`, `closedAt`, `closedByUser`, `closedBySession`, `closingAttestId`, `revocationReason`, `workItemId`, `reviewsAssignmentId`, `holderHarness`, `holderProvider`, `files`, `effectKind`, `derivedStatus`, `rowVersion` |
 | attests | `id`, `assignmentId`, `kind`, `verdictKind`, `note`, `bySession`, `byUser`, `producer`, `producerCommand`, `byHarness`, `byProvider`, `commitRefs`, `ts`, `rowVersion` |
 | wakes | `wakeId`, `sessionKey`, `targetRole`, `origin`, `prompt`, `consumer`, `dueAt`, `state`, `createdAt`, `firedAt`, `reresolve`, `reresolveSeed`, `reresolveRung`, `conditionKind`, `conditionScope`, `conditionAfterId`, `firedBy`, `creatorSessionKey`, `rumination`, `workItemId`, `assignmentId`, `canceledAt`, `targetGate`, `class`, `classElection`, `deliveryRule`, `digest`, `summon`, `rowVersion` |
 | turns | `seq`, `sessionKey`, `messageId`, `wakeId`, `origin`, `prompt`, `roleRef`, `roleFallback`, `assignmentId`, `jobRef`, `model`, `thinkingLevel`, `modelContext`, `harness`, `replyAttention`, `status`, `owner`, `adapterGen`, `requestRef`, `error`, `createdAt`, `startedAt`, `endedAt`, `publishedAt`, `rowVersion` |
@@ -1438,11 +1496,22 @@ that response. A wrapper that currently sends dispatch `asUser` sends the
 same value as the GET `asUser` parameter. During M4 migration, the existing
 dispatch adapter may remain; both transports resolve the same principal and
 call the same canonical query function and serializer. No CLI read keeps a
-second query or serializer implementation.
+second query or serializer implementation. Until the `transcript` adapter is
+removed, it retains the audit-elision and router non-target safeguards in
+`transcript-verb-v1.md` I10 and I11.
 
 C2. New flexible reads are designed REST-first; the CLI gains a wrapper
 only when a common agent task wants one line. `doctor` stays local (it
 probes the host, it is not a state resource).
+
+C3. `transcript --name` maps to the exact-name sessions collection and returns
+full R7 session items. `transcript --session` maps to the transcript-messages
+collection and returns full R7 message items. Machine-readable CLI output
+preserves the successful R4 envelope, R7 items, and page cursors. On refusal,
+it returns the REST error code without choosing a second authorization or
+cursor outcome. A human renderer may select fields, add labels, or summarize
+counts without creating another data field or cursor meaning.
+`transcript-verb-v1.md` owns only this wrapper and presentation mapping.
 
 ## Migration (order is normative)
 
@@ -1452,8 +1521,10 @@ those seams. M3. Point the firehose payload builders at the same
 serializers. M4. Point CLI read handlers at the canonical read services.
 Move each wrapper from dispatch to its REST GET using the existing bearer plus
 AU2's `asUser` principal selection where required. Remove its legacy dispatch
-read path after parity acceptance passes. This transport move does not change
-item shapes, authorization, or the M1 query and serializer seams.
+read path after parity acceptance passes. Before removal, the `transcript`
+adapter retains the audit-elision and router non-target proofs in
+`transcript-verb-v1.md` A9 and A10. This transport move does not change item
+shapes, authorization, or the M1 query and serializer seams.
 M5. Keep current routes only as migration aliases (/api/streams,
 /api/org-options, /api/session-status, /api/work[/:id],
 /api/trackable-sessions, /harnesses); no new client may adopt them. M6. Migrate
@@ -1882,6 +1953,56 @@ statuses are both outside `queued` and `running`, changing that status leaves
 input. The table fails on a direct session writer, a turn writer that bypasses
 I12, another input to `mechanicalStatus`, a value outside `idle` and `running`,
 or any read-time derivation of the field.
+
+A50. Given 1,205 visible transcript messages with tied and regressed
+timestamps, when a caller reads the cursorless tail and repeatedly passes each
+`oldestCursor` as `before`, then each visible `(seq,id)` appears once, each page
+is oldest-to-newest, and the chain stops with `hasMoreBefore:false`. Decoding
+each cursor yields the complete `(seq,id)` tuple and no message-id alias or live
+row locator.
+
+A51. Given a cursor returned before its boundary row is deleted, when the next
+page runs, then its items and page object equal the result produced while that
+row existed while the other rows remain unchanged.
+
+A51a. Given a cursor whose tuple is at or below a newly advanced
+`clearedThroughSeq`, when `before` runs, then it returns an empty item list,
+`hasMoreBefore:false`, and `hasMoreAfter:true` exactly when visible rows exist.
+When `after` runs with that cursor, it returns only visible rows above the new
+boundary.
+
+A51b. Given nonempty visible history and a caught-up `after` cursor, when the
+caller requests the next page, then the page is empty and sets
+`hasMoreBefore:true` and `hasMoreAfter:false`. Given an `oldestCursor` used as
+`after` or a `newestCursor` used as `before`, the service returns
+`400 invalid_cursor`.
+
+A51c. A source-structure test finds one session-creation seam that initializes
+`clearedThroughSeq` at zero, exactly one post-creation production write
+statement owned by `advanceClearedThroughSeq`, and exactly the two inventoried
+caller sites: the harness-change maximum-message-seq path at
+`gateway.ex:2700-2712` and the turn-failure old-session failed-prompt-seq path at
+`gateway.ex:3742-3758`. Given concurrent candidates above, equal to, and below
+the stored value through both callers, then every committed and subsequently
+read value equals the maximum value seen for that session. A changed value and
+its new session `rowVersion` become visible in the same commit; an unchanged
+value retains its row version. The transcript route exposes no previously
+cleared row. The test fails for a direct write, a second writer, an unlisted
+caller, a decreasing result, or separate boundary and row-version publication.
+
+A52. Given concurrent message inserts and a boundary advance, when the REST
+tail and backward pages run, then each returned page corresponds wholly to the
+boundary before or after the commit and never mixes both. The versioned
+snapshot-to-buffer handoff and reconnect proof are
+`transcript-verb-v1.md` A5 and A6; this REST test does not define a second
+client recovery algorithm.
+
+A53. Given the same principal and selection, when direct REST and the M4
+`transcript` wrapper run successfully, then their R4 envelopes, R7 items, and
+page cursors are equal. Given a REST refusal, the wrapper returns the same
+error code without choosing a second authorization or cursor outcome. Passing
+a prior message id as `before` returns `400 invalid_cursor`; the wrapper does
+not decode, translate, retry, or invoke the legacy dispatch read.
 
 ## Open questions — Spirit questions for Mike
 
