@@ -2743,3 +2743,30 @@ Recorded 2026-08-30 by the external Claude session on gibson at Mike's
 written instruction ("This needs to be marked definitively in some
 canonical document"), from his annotations on the stall-fix progress
 review.
+
+## 2026-08-31 — Rails keep honest agents on task; they are not a defense against rogue agents (Mike, stated repeatedly, recorded on his instruction)
+
+Standing principle, restated by Mike 2026-08-31 after it kept resurfacing in
+design work: "rails keep agents on task. They do NOT stop malicious or rogue
+agents. We assume agents are honest."
+
+Consequences for design:
+
+- A proposal must not justify itself as protection against an agent that is
+  lying, cheating, or exceeding its authority on purpose. That threat model is
+  out of scope for Tightbeam's rails.
+- When an honest agent does the wrong thing, the defect is in guidance, rails,
+  or the card's design. Fix those. Do not add enforcement machinery
+  (permission grants, scoped authorization checks, substrate-enforced limits on
+  what an agent may decide) to compensate.
+- Attribution and honest records ARE in scope: an agent signing as itself, a
+  row saying who acted, a history labelled unknown when it cannot be proven.
+  Those make the org legible, which is different from making it defended.
+
+Applied immediately to `operator-ruling-provenance-v1.md`: the delegation-grant
+machinery is out. What remains warranted is the submitting session recorded on
+every ruling, refusal of an owner-asserted ruling with no session behind it,
+and a label for the 315 historical rows that cannot be proven either way.
+
+Recorded 2026-08-31 by the external Claude session on gibson at Mike's
+instruction, from his review of the stall-fix progress report.
