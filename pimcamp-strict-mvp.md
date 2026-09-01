@@ -8,6 +8,11 @@ Authority: parent assignment
 work item and parent assignment as its source. It does not use the temporary
 discussion file.
 
+Amendment authority: ruled decision
+`dr_486387e4-a696-40a3-b484-815cd45a8f6a` selects
+`revise-pimcamp-spec` because current Mirador exposes no post-open readiness
+signal. The amendment changes no other product scope.
+
 ## Goal
 
 Deliver the smallest useful Pimcamp capability boundary for a local,
@@ -114,7 +119,7 @@ must reject a public surface beyond the seven named capabilities.
   identity and one exact capability grant. Pimcamp does not accept identity or
   grant fields in a request.
 - **Client session**: the authenticated context Pimcamp creates for one finite
-  invocation or one live subscription after it resolves the client
+  invocation or one streaming subscription after it resolves the client
   credential.
 - **Capability grant**: a set drawn from `list`, `read`, `compose`, `reply`,
   `send`, `junk`, and `subscribe_new_mail`. The empty set is valid. No wildcard
@@ -146,9 +151,10 @@ must reject a public surface beyond the seven named capabilities.
 - **Mail operations adapter**: a replaceable internal port for list, read,
   send, junk-capability discovery, spam reporting, and move-to-junk. Himalaya
   is the first implementation.
-- **Mail observation adapter**: a replaceable internal port that reports
-  possible new mail while a subscription is live. Mirador is the first
-  implementation.
+- **Mail observation adapter**: a replaceable internal port that starts one
+  observation execution, reports possible new mail while that execution runs,
+  and stops the execution on close. A successful start does not prove that the
+  adapter's backend watch is live. Mirador is the first implementation.
 - **Normalized new-mail event**: the Pimcamp record
   `{contract_version, kind, mailbox, observed_at}` where
   `contract_version = "pimcamp.v1"`, `kind = "new_mail"`, and
@@ -247,13 +253,15 @@ Error exits with code 1. Standard error carries only the content-free
 diagnostics allowed by I-10.
 
 For `subscribe_new_mail`, the client runs `pimcamp subscribe_new_mail`. The
-process reads one RequestEnvelope and opens the observation adapter. After the
-adapter confirms that the live subscription is open, Pimcamp writes one
-SuccessEnvelope whose `result` is `{status: "subscribed"}`. It then writes one
-normalized event per JSON line while the subscription is live. On a normalized
-subscription failure it writes one Error line and exits with code 1. On client
-`SIGTERM`, it closes the observation adapter, writes no synthetic event, and
-exits with code 0.
+process reads one RequestEnvelope and starts the observation adapter. After
+Pimcamp accepts the request and the observation port's start operation returns
+success, Pimcamp writes one SuccessEnvelope whose `result` is
+`{status: "started"}`. This envelope acknowledges adapter-execution start only;
+it does not assert that the configured observation adapter's backend watch is
+live. Pimcamp then writes one normalized event per JSON line as the adapter
+reports observations. On a normalized subscription failure it writes one Error
+line and exits with code 1. On client `SIGTERM`, it closes the observation
+adapter, writes no synthetic event, and exits with code 0.
 
 The executable accepts no other product operation. Command-line arguments do
 not carry a client credential, mail content, account selector, grant, or
@@ -447,16 +455,20 @@ call for a request and does not try a second mechanism after that call begins.
 
 The same mutation-ID replay and conflict rules as `send` apply to `junk`.
 
-**R-07 — `subscribe_new_mail`.** Pimcamp opens one live subscription through
-the observation adapter. Pimcamp emits the subscribed SuccessEnvelope only
-after the adapter confirms that the live subscription is open. For each
-accepted Mirador new-mail observation it emits one normalized new-mail event.
-An observation that predates the live subscription produces no replay.
-Duplicate accepted observations may produce duplicate normalized events.
-When the observation adapter stops or violates its contract, Pimcamp closes
-the subscription with a normalized Error. When the client terminates the
+**R-07 — `subscribe_new_mail`.** Pimcamp starts one subscription execution
+through the observation adapter. Pimcamp emits the started SuccessEnvelope
+after the observation port's start operation returns success. The envelope
+proves neither that the configured observation adapter has opened its backend
+watch nor that a later observation cannot be missed during adapter startup.
+Before the first accepted signal, Pimcamp cannot distinguish backend startup
+from a live but silent watch. For each accepted observation-adapter signal,
+Pimcamp emits one normalized new-mail event. Pimcamp emits only signals
+received during this subscription execution and stores none for later replay.
+Duplicate accepted signals may produce duplicate normalized events. When the
+observation adapter stops or violates its contract, Pimcamp closes the
+subscription with a normalized Error. When the client terminates the
 subscription process with `SIGTERM`, Pimcamp closes the lower observation
-subscription before it exits.
+execution before it exits.
 
 ### Internal ports
 
@@ -465,10 +477,12 @@ read-message, send-composition, junk-capability discovery, report-spam, and
 move-to-junk. The Himalaya adapter maps current real responses into this port.
 Contract tests run against the port, not Himalaya's public syntax.
 
-**R-09 — Mail observation port.** The Pimcamp-owned port reports only an
-accepted possible-new-mail signal or a normalized adapter failure. The
-Mirador adapter parses the real event source and discards lower-event payload
-fields before it crosses the port.
+**R-09 — Mail observation port.** The Pimcamp-owned port exposes start and
+close lifecycle calls and reports only an accepted possible-new-mail signal or
+a normalized adapter failure. Start returns success when the adapter execution
+has begun; it carries no backend-watch readiness claim. The Mirador adapter
+parses the real event source and discards lower-event payload fields before it
+crosses the port.
 
 **R-10 — Error normalization.** Each adapter maps its failures to the closed
 Error code set. Unsupported backend behavior maps to `unsupported`; a missing
@@ -478,17 +492,18 @@ message maps to `not_found`; unavailable lower I/O maps to
 
 Before the first lower-adapter phase of a finite invocation, Pimcamp applies
 the configured adapter wait bound as one absolute deadline across adapter
-open, call, and close. At the deadline, Pimcamp stops waiting and
+start or open, call, and cleanup. At the deadline, Pimcamp stops waiting and
 force-terminates the lower adapter. If the adapter already proved a normalized
 result before its cleanup hung, Pimcamp returns that proved result. Otherwise,
-a query, capability probe, or subscription-open timeout returns
+a query, capability probe, or observation-adapter-start timeout returns
 `backend_unavailable`. A mutation invocation that reaches the deadline before
 its mutation adapter call begins records `failed` and returns
 `backend_unavailable`. A mutation invocation that reaches the deadline after
 its mutation adapter call begins records `unknown` and returns
 `outcome_unknown`; termination does not prove that the backend rejected the
-mutation. Silence on an already-open live subscription does not reach the
-deadline because the event stream is not a finite invocation.
+mutation. Silence after the started subscription envelope does not reach the
+deadline because the event stream is not a finite invocation and the envelope
+does not prove backend-watch readiness.
 
 On client `SIGTERM`, Pimcamp starts a fresh teardown deadline from the adapter
 wait bound and asks the observation adapter to close. If close does not finish
@@ -563,13 +578,15 @@ grants, when a separate test process invokes each of the six finite
 subcommands, sends its RequestEnvelope through standard input, and reads
 standard output, then each invocation emits one parseable SuccessEnvelope or
 normalized Error line and the specified exit code. When that test process
-invokes `subscribe_new_mail`, the process emits a subscribed SuccessEnvelope
-with `result = {status: "subscribed"}` after the fixture adapter records a live
-open, then a fixture observation produces one parseable event line; `SIGTERM`
-closes the lower subscription and exits with code 0. The test process imports
-no Pimcamp module and communicates only through process arguments, pipes, exit
-status, and the termination signal. The executable's dispatch table exposes
-the seven named operations and no eighth product operation.
+invokes `subscribe_new_mail`, the fixture adapter records that its execution
+started while its observation-source spy remains not live, and the process
+emits one SuccessEnvelope with `result = {status: "started"}`. When the fixture
+then marks its source live and emits one observation, the process emits one
+parseable event line; `SIGTERM` closes the lower subscription and exits with
+code 0. The test process imports no Pimcamp module and communicates only
+through process arguments, pipes, exit status, and the termination signal. The
+executable's dispatch table exposes the seven named operations and no eighth
+product operation.
 
 For each subcommand, the separate process sends the exact input object defined
 in Public contract and receives the expected fixture result. Repeating one
@@ -665,7 +682,7 @@ the move but loses its response, the operation returns `outcome_unknown` and
 a same-ID retry after restart does not make a second adapter call.
 
 **AC-10 — Notification precedes authoritative query (R-07, I-04).** Given a
-granted subscription process that has emitted its subscribed SuccessEnvelope,
+granted subscription process that has emitted its started SuccessEnvelope,
 a redacted real Mirador fixture event containing lower-specific message ID,
 sender, and subject fields, and an operations-adapter spy, when Mirador emits
 that event, then Pimcamp first emits exactly
@@ -693,9 +710,9 @@ explicit 120-second external-delivery wait bound, when a client uses only the
 `pimcamp` executable and its standard-input/output contract to perform this
 sequence:
 
-1. start `subscribe_new_mail` and read its subscribed SuccessEnvelope;
+1. start `subscribe_new_mail` and read its started SuccessEnvelope;
 2. compose and send the unique message;
-3. receive a normalized new-mail event for the resulting incoming test mail;
+3. receive the first normalized new-mail event emitted after step 2;
 4. page through `list` until it locates the message by its returned structured
    summary;
 5. call `read` and verify the unique body from authoritative query data;
@@ -707,12 +724,16 @@ then each boundary result conforms to `pimcamp.v1`, the event arrives before
 the post-event list request, the send and reply each have one adapter attempt,
 the junk result names the strongest mechanism that the real backend reported,
 and the final inbox list does not contain the filed message. The 120-second
-bound only stops the external smoke; reaching it fails the smoke and does not
-infer delivery outcome.
+bound only stops the external smoke. The started SuccessEnvelope is not
+evidence that Mirador's backend watch is live. The first normalized event is
+the smoke's observation evidence. If no event arrives before the bound,
+including when Mirador misses the incoming mail during startup, the smoke fails
+without issuing the post-event `list`; reaching the bound does not infer
+delivery outcome.
 
 Release evidence includes the redacted real response captures, the exact test
 command, adapter versions, the selected junk mechanism, and a content-free
-event/query ordering trace.
+start/event/query ordering trace.
 
 **AC-13 — Diagnostics omit mail content (I-10, R-13).** Given unique sentinel
 values in an address, subject, body, client credential, backend credential,
@@ -729,9 +750,9 @@ returns, then Pimcamp force-terminates that adapter at the bound, emits
 `backend_unavailable`, and exits with code 1. When a `send` adapter call begins
 but never returns, Pimcamp force-terminates that adapter at the bound, records
 `unknown`, emits `outcome_unknown`, and a same-ID retry makes no second adapter
-call. When subscription open never returns, Pimcamp force-terminates that
-adapter at the bound, emits `backend_unavailable`, and exits with code 1. When
-a `list` adapter proves a result and then blocks during cleanup, Pimcamp
+call. When observation-adapter start never returns, Pimcamp force-terminates
+that adapter at the bound, emits `backend_unavailable`, and exits with code 1.
+When a `list` adapter proves a result and then blocks during cleanup, Pimcamp
 force-terminates that adapter at the bound, returns the proved result, and
 exits with code 0.
 
