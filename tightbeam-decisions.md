@@ -2708,17 +2708,25 @@ streaming feature is waiting on Mike. The next step, whenever someone picks
 it up, is a firehose-scoped spec written off main tip with the archived
 focused design and draft as input.
 
-## 2026-08-22 — Main is merged into, never worked in (Mike, overturning the no-door ruling)
+## 2026-08-22 — Main is merged into, never worked in (Mike; stale law file was the defect)
 
 "They need to be working in their own workspaces and then only merging to
-main, not in main itself." This overturns the 2026-08-13 no-door process
-(agents pushing main directly, CI as tripwire). The new law: every agent
-works on its own branch in its own workspace; main receives MERGES only;
-a merge requires the full gate green (the red-suite era proved the
-tripwire model — CI fired for days and nobody was assigned to hear it,
-while ten direct pushes landed on a red main). Enforcement should be a
-bone, not discipline: branch protection on main (merges only, green
-checks required) so the wrong thing is unrepresentable.
+main, not in main itself." Mike states this was ALREADY the standing
+pattern for weeks — not a new ruling. The defect: the code repo's
+CLAUDE.md still carried the 2026-08-13 no-door text ("push main
+DIRECTLY"), so agents followed the stale file: the last twelve main
+commits are all direct single-parent pushes, five by
+product-owner:tightbeam (s_f63d31e5) and the rest by its coders, several
+onto a red suite (lawful under the stale text's baseline-matching
+clause). Mike's clarification of the original intent: no-door waived the
+PR CEREMONY only — it was never an invitation to land broken code; the
+gates-green requirement always stood. So the conduct finding stands too:
+pushing onto a red suite while recording the failures as pre-existing
+was a violation of the rule's intent, rationalized through the
+baseline-matching clause. Fixes: CLAUDE.md corrected to merges-only
+with green gates required and the baseline-matching loophole deleted;
+the pushing PO was notified that red blocks all merges until the suite
+is fixed.
 
 ## 2026-08-30 — Human contact is not Tightbeam's problem; escalation to Mike ends at a clean record (Mike, ruled via terminal-agent relay, stated repeatedly)
 
