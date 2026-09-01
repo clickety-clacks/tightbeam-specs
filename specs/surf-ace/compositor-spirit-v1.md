@@ -1,6 +1,6 @@
 # Surf Ace compositor spirit v1
 
-Status: Product-owner spirit; T316 slice ready for technical specification after Mike's 2026-08-31 rulings.
+Status: Product-owner spirit; T316 is ready for technical specification. T368 was amended after Mike's 2026-09-01 pane-visibility clarification.
 
 Product owner: `product-owner:surf-ace-compositor`, under `product-owner:surf-ace-codex`.
 
@@ -11,6 +11,7 @@ Durable provenance:
 - Custody transfer: `att_eebb54ba-38f9-4024-9db0-b0006a8fc3be`.
 - Product digest: `att_fa0c028d-1985-4ebb-a025-e0a6eca87b1b`.
 - T316 focus ruling: `dr_595d4764-a089-4345-8167-6b3df807f5f2`, ruled `cancel-return-surf-ace`.
+- T368 window-group ruling: `dr_eddcae41-3f78-4d3a-aa19-7be09abe6d47`, amended by Mike's 2026-09-01 clarification that focus-gated hiding is not surface disappearance.
 
 ## Spirit
 
@@ -23,6 +24,8 @@ One coherent presentation generation must govern pixels, damage, native surfaces
 Physical focus is ephemeral device-local state. Surf Ace selection remains client-owned durable state. The compositor routes physical events only among surfaces that realize the currently presented generation. It rejects stale identity and generation requests; it never retargets them by label, selection, proximity, or current topology.
 
 If focused or pointer-grabbed native content disappears, the compositor cancels the active interaction, records a durable diagnostic, and returns subsequent focus and input to Surf Ace. It never redirects that interaction to another pane or application.
+
+Focus-gated hiding is a different state transition. When a pane loses focus, its accessory windows become hidden but continue to exist. Their group identity, position, size, z-order, application state, and restoration state remain intact. Refocusing the owning pane restores those windows. Blur-hiding must not cancel the interaction as if content disappeared, invoke the `cancel-return-surf-ace` fallback, close a window, or discard application state.
 
 ## Success outcomes
 
@@ -44,6 +47,8 @@ Low portability does not weaken support for Racter or Shrdlu. It rejects cross-p
 
 - Multi-monitor desktop management.
 - General window-manager semantics, global task switching, or independent workspace identity.
+- Pane-rectangle clipping or drag clamping as the containment mechanism for native accessory windows.
+- Treating focus-gated visibility changes as native surface destruction or application lifecycle events.
 - Compositor ownership of pane topology, pane meaning, or operation ordering.
 - Cross-platform compositor abstraction.
 - General Xwayland or arbitrary-application compatibility.
@@ -76,7 +81,7 @@ After a scale, rotation, mode, or output-path change, the user must never see on
 - Preserve FIFO response ordering across the commit boundary.
 - Exercise production ownership and renderer/import paths in tests; helper-only lookalikes are not proof.
 - Prove fractional native material, import, clip, damage, and rotation with real pixel evidence.
-- Apply the ruled focus-loss behavior when a native surface disappears.
+- Apply the ruled cancellation behavior only when a native surface genuinely disappears. A focus-gated hide is not disappearance and must preserve the surface for intact restoration.
 
 ### Mechanism stance
 
@@ -93,4 +98,4 @@ None for this slice. Technical specification must preserve the deferred MS14 exc
 - T1408: representative continuous pointer drawing on Racter requires Mike's human acceptance plus at least 50 presented frames per second in every one-second bucket of a recorded 60-second run. The retained approximately 39 fps result is adverse evidence, not a floor. Exact runtime revisions, native display mode, workload, capture, and measurement method must travel with the result.
 - T285: child diagnostics must remain available outside terminal scrollback and across restart. The authoritative logging and supervisor precedent remains under investigation.
 - T359: deployment configuration owns appliance node identity, coordinates, timezone, and schedule input. No authoritative deployed values currently exist on Racter or Shrdlu; compiled examples are not deployment truth.
-- T368: native child and dialog surfaces remain pane-local physical families, never desktop-level entities. Shrdlu is a normal stopped deployment, not a recovery defect. Exact popup clipping policy still awaits `dr_eddcae41-3f78-4d3a-aa19-7be09abe6d47`.
+- T368: native child and dialog surfaces remain pane-owned physical families, but they may float outside their pane, over other panes, and over Surf Ace chrome. Focus-gated visibility is the containment mechanism: exactly one pane has keyboard focus; Surf Ace visibly identifies it; only that pane's accessory windows are visible. Blurring a pane hides its accessories without destroying them, and refocusing restores their prior position, size, z-order, and application state. Genuine disappearance during an interaction remains the separate `cancel-return-surf-ace` case. Existing clipping, edge-clamping, and pane-containment proofs are invalid for this boundary. Shrdlu is a normal stopped deployment, not a recovery defect.
