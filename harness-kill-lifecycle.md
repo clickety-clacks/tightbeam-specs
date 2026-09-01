@@ -145,7 +145,7 @@ stores:
 - the relaunch-continuity snapshot: session identity, owner and role binding,
   assignment/work-item links, workspace path, custody owner, and worktree preservation
   result; and
-- an exact failure code and bounded remedy when `result='park_failed'`, otherwise
+- an exact failure code and bounded remedy when `status='park_failed'`, otherwise
   null failure fields.
 
 The row is immutable after close. Read and audit surfaces expose the request, its
@@ -178,8 +178,8 @@ An accepted request owns one session lifecycle transition. It first closes sessi
 intake and captures the session identity, worktree path and custody, attached runtime
 identity, queued work, and pending wakes. A contending operation that loses before a
 park request is accepted receives one named refusal and creates no park outcome. Once a
-park request is accepted, a concurrent relaunch, recycle, or retire resolves through
-the same lifecycle compare-and-set. A terminal retire that wins over the accepted park
+park request is accepted, a concurrent relaunch or retire resolves through the same
+lifecycle compare-and-set. A terminal retire that wins over the accepted park
 closes that request's existing outcome `park_failed` with recovery state `retired`; it
 never silently succeeds or recreates the session.
 
@@ -228,7 +228,7 @@ missing process, an expired wait, or an absent in-memory operation.
    reports `parked` from that race.
 7. Given an owner or authorized auditor reads a closed park request, when the read
    returns, then it exposes the request identity, typed principal, authority basis,
-   cause, result, timestamps, recovery state, custody snapshot, and any later retry;
+   cause, status, timestamps, recovery state, custody snapshot, and any later retry;
    it never calls a process probe to supply missing outcome data.
 
 ## Dead means the tree, not the process
