@@ -96,6 +96,33 @@ projection mutation seam, and makes cold start, reconnect, and gap recovery
 decidable for session models. It changes no session field, visibility grant,
 socket protocol, write surface, target, or release authority.
 
+## Standing landing dependency — `work-item-update` (Mike, 2026-09-01)
+
+WU1. DO NOT reprioritize current Firehose work for this dependency. Tightbeam
+commit `0c1fc184d73bcc91a5568f770778f8a714ff32e8` is the reviewed-clean
+`work-item-update` PATCH seam for an EXISTING work item. It can change the
+title or bind, replace, or clear the governing `specRefName` and
+`specRefSha256` pair. Mike targeted that Tightbeam change to `0.1.9` and
+`0.2.0`; its owner is `product-owner:tightbeam` on `asg_c722c93f`.
+
+WU2. Before either product lands across this boundary, the Firehose owner and
+`product-owner:tightbeam` SHALL reconcile which side landed first:
+
+- If `work-item-update` lands first on the relevant Tightbeam line, Firehose
+  SHALL support each real metadata change through the existing
+  `work_item.updated` class, the canonical work-item REST item, and the CLI
+  item where applicable.
+- If Firehose lands first, Firehose owns the parity update when
+  `work-item-update` lands. That follow-up SHALL cover the same existing class
+  and shared public item without waiting for a new product ruling.
+
+WU3. This dependency adds no notice class, REST-local projection, CLI-local
+projection, or second serializer. A successful no-op update emits no notice.
+A successful change emits one post-commit `work_item.updated` notice whose
+payload is the same canonical public work-item item that REST and the CLI
+return. A spec binding is one pair: a consumer never observes a torn name and
+SHA-256.
+
 ## Spec homing
 
 The canonical firehose spec lives only in the `tightbeam-specs` repository as
@@ -632,6 +659,14 @@ and emitted classes against the registry.
 The same table covers every R8b source commit. It fails if a successful new
 Topline or marker commit emits no mapped class, emits more than the one mapped
 class, or if a refusal, idempotency replay, or ignored duplicate emits one.
+
+For `work-item-update`, A1 covers title-only change, full governing-spec
+binding, SHA-256 replacement that preserves the spec name, spec-binding clear,
+and an exact no-op. Each real change emits exactly one post-commit
+`work_item.updated`; the no-op emits none. The notice payload, matching REST
+item, and matching CLI item preserve the same `specRefName` and
+`specRefSha256` pair. The test fails if any surface exposes a torn pair, a
+different work-item shape, or a route-local projection.
 
 For `condition_fact.filed` and `critical_lease.updated`, the A1 table names
 the shared AU4 visibility function for the R8 resource and tests one allowed
