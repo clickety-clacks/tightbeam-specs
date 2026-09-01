@@ -35,6 +35,10 @@ provenance item shared by its REST detail route and
 `operator_ruling.provenance_recorded` firehose payload. This adds no field to
 the existing decision-request item.
 
+Work-item priority/shared-seam candidate, 2026-09-01: add required integer
+`priority` in the R7 position immediately before `rowVersion`. Its value is in
+the inclusive range 0 through 8. This adds no other field or wire change.
+
 ## Encoding rules
 
 JSON is UTF-8. Integers are signed JSON integers and never floating-point
@@ -43,6 +47,12 @@ all digests are strings. ExecutionMap's non-resource dependency-vector primary
 keys use the exact types defined under “Canonical array and map order.”
 `rowVersion` is a positive integer. `dependencyVersion` is a lowercase
 64-character SHA-256 hex string.
+
+The work-item `priority` key is required in its R7 position immediately before
+`rowVersion`. Its value is an integer from 0 through 8, inclusive. An absent,
+null, string, non-integer JSON number, negative integer, or integer greater
+than 8 is invalid and produces `500 projection_invalid` with no partial item.
+The serializer does not omit, default, derive, clamp, or mutate this field.
 
 For a sessions item, `rowVersion` changes if and only if at least one other
 serialized R7 field changes. The transaction stores the greater version with
@@ -224,7 +234,7 @@ mutate this field.
 |---|---|---|---|---|---|
 | sessions | sessionKey, displayName, kind, ownerUserId, origin, spawnedBy, handle, archetype, identityName, identityRevision, harness, provider, model, thinkingLevel, modelContext, host, state, mechanicalStatus | orderIndex, clearedThroughSeq, createdAt, updatedAt, rowVersion | isBuiltIn, adopted | overrides `O<SessionOverrides>` | ownerUserId, spawnedBy, handle, identityName, identityRevision, provider, model, thinkingLevel, modelContext, host, clearedThroughSeq, overrides |
 | transcript messages | id, sessionKey, role, messageType, content, sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, llmVisibleMessageId, assignmentId, jobRef, harness, provider, model, effort | seq, at, attentionTier, turnSeq, rowVersion | — | attachments `A<O<Attachment>>`, context `J` | sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, assignmentId, jobRef, harness, provider, model, effort, turnSeq, context |
-| work items | id, title, specRefName, specRefSha256, ownerUserId, state, failReason, routingWakeId, slateWakeId, createdByUser, createdBySession | createdInTurnSeq, createdAt, rowVersion | isBug, createdContextKnown | — | specRefName, specRefSha256, ownerUserId, failReason, routingWakeId, slateWakeId, createdByUser, createdBySession, createdInTurnSeq |
+| work items | id, title, specRefName, specRefSha256, ownerUserId, state, failReason, routingWakeId, slateWakeId, createdByUser, createdBySession | createdInTurnSeq, createdAt, priority, rowVersion | isBug, createdContextKnown | — | specRefName, specRefSha256, ownerUserId, failReason, routingWakeId, slateWakeId, createdByUser, createdBySession, createdInTurnSeq |
 | assignments | id, subject, holderKey, holderRole, openedByUser, openedBySession, state, outcome, closedByUser, closedBySession, closingAttestId, workItemId, reviewsAssignmentId, holderHarness, holderProvider, effectKind, derivedStatus | openedAt, closedAt, rowVersion | holderFallback | files `A<S>` | holderRole, openedByUser, openedBySession, outcome, closedAt, closedByUser, closedBySession, closingAttestId, workItemId, reviewsAssignmentId, holderHarness, holderProvider |
 | attests | id, assignmentId, kind, verdictKind, note, bySession, byUser, producer, producerCommand, byHarness, byProvider | ts, rowVersion | — | commitRefs `A<O<CommitRef>>` | verdictKind, note, bySession, byUser, producer, producerCommand, byHarness, byProvider, commitRefs |
 | wakes | wakeId, sessionKey, targetRole, origin, prompt, consumer, state, reresolve, reresolveSeed, conditionKind, conditionScope, firedBy, creatorSessionKey, workItemId, assignmentId, class, classElection, deliveryRule | dueAt, createdAt, firedAt, reresolveRung, conditionAfterId, canceledAt, targetGate, rowVersion | rumination, digest, summon | — | targetRole, prompt, firedAt, reresolve, reresolveSeed, reresolveRung, conditionKind, conditionScope, conditionAfterId, firedBy, creatorSessionKey, workItemId, assignmentId, canceledAt, class, classElection, deliveryRule |
