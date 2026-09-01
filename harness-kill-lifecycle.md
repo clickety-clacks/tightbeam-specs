@@ -98,6 +98,31 @@ it never means "we do not know whether it died."
    reaches authorization, then it refuses before any signal is sent and preserves the
    existing retry and custody boundaries.
 
+## Kill authority and audit
+
+Every kill request has one durable request record before any signal. It records the
+request id, exact process-group and boot/launch identity, typed principal, authority
+basis, cause, status, and close timestamp. Its only statuses are `accepted`, `killed`,
+`kill_failed`, and `refused`. `refused` carries one of `not_authorized` or
+`identity_mismatch`; `kill_failed` carries `delivery_failed` and remains eligible for
+the existing reconciliation retry. A refusal sends no signal and changes no session,
+worktree, assignment, or wake row.
+
+Only these principals may create an accepted kill request:
+
+- an owner user for the session attached to the recorded process group;
+- an operator or administrator;
+- `tightbeam:harness-health`, when its durable recovery decision binds that exact
+  process group, boot/launch identity, action `kill`, cause, and policy basis; or
+- `tightbeam:retirement`, inside the durable retirement transition for the exact
+  attached session.
+
+The request record and identity check commit before the signal. The caller's authority
+does not relax identity-before-signal, and a successful signal does not add a probe.
+The owner user, an operator or administrator, and an active owner-pinned session that
+owns the attached session may read the record. Each read exposes its principal,
+authority basis, identity evidence, signal result, and retry history.
+
 ## A park needs an outcome, not an inference
 
 Park preserves a session for later relaunch. Unlike SIGKILL delivery, that result is
@@ -141,17 +166,39 @@ stores:
   acceptance;
 - requesting typed principal, authority basis, cause kind and cause id;
 - closed `status` (`parked` or `park_failed`) and `closedAt`;
-- the resulting session lifecycle state and the exact recovery state when failed;
+- `resultingLifecycleState` from `active`, `parking`, `parked`, or `retired`;
+- `recoveryState` from `ready_for_relaunch`, `active_restored`,
+  `fenced_unknown_liveness`, or `retired`;
 - the relaunch-continuity snapshot: session identity, owner and role binding,
   assignment/work-item links, workspace path, custody owner, and worktree preservation
   result; and
-- an exact failure code and bounded remedy when `status='park_failed'`, otherwise
-  null failure fields.
+- `failureCode` from `runtime_settlement_failed`, `runtime_liveness_unknown`,
+  `custody_snapshot_failed`, `superseded_by_retire`, or `recovery_interrupted`; and
+- `remedy` from `retry_new_request`, `operator_recover`,
+  `resolve_runtime_then_relaunch`, or `none`.
+
+For a `parked` outcome, `resultingLifecycleState='parked'`,
+`recoveryState='ready_for_relaunch'`, and the failure fields are null. For a
+`park_failed` outcome, the failure code and remedy are non-null, and only these
+combinations are valid: `active/active_restored`, `parking/fenced_unknown_liveness`,
+or `retired/retired`. `superseded_by_retire` requires `retired/retired`; an unknown
+liveness failure requires `parking/fenced_unknown_liveness`. These checks make an
+impossible success, recovery state, or remedy unrepresentable.
 
 The row is immutable after close. Read and audit surfaces expose the request, its
 outcome, all fields above, and the causal relationship to a later retry. They must not
 derive a result from process absence, a timeout, a missing callback, or a later
 session-row read.
+
+When R12 invokes park, the completion transaction creates the park request and stores
+`completion_escalations.parkRequestId`, a nullable unique foreign key to
+`park_requests.requestId`, in the same transaction. R12 may acknowledge only when
+that exact foreign key joins to a committed `park_outcomes` row with
+`status='parked'`. It leaves the completion row open when the joined outcome is
+`open` or `park_failed`. No match by session key, caller, cause text, or a different
+completion row is valid. The completion's owner user, its active exact parent under
+R11, and an administrator may read this bound park request and outcome; no other
+auditor admission exists.
 
 ### Park authority, transition, and custody
 
@@ -230,6 +277,42 @@ missing process, an expired wait, or an absent in-memory operation.
    returns, then it exposes the request identity, typed principal, authority basis,
    cause, status, timestamps, recovery state, custody snapshot, and any later retry;
    it never calls a process probe to supply missing outcome data.
+
+## Four-consumer boundaries
+
+This one primitive serves four consumers. None creates a second park, kill, or
+adapter-lifecycle contract.
+
+1. **Harness-health recovery.** A durable `tightbeam:harness-health` decision can
+   request only the exact bound park or kill action. It does not diagnose from free
+   text, PID absence, or a single observer. Its principal, evidence, policy basis,
+   target, and mode are copied into the primitive request.
+2. **Retire-no-halt.** Retirement closes intake before it interrupts work. If the
+   attached runtime does not settle through its graceful path, its
+   `tightbeam:retirement` request uses this kill contract for that exact group. A
+   retirement cannot report terminal success while the matching runtime remains able
+   to emit effects. Generic retirement cancels pending target wakes through the
+   existing `target_retired` seam; a successful R12 park acknowledgment cancels only
+   its completion wakes through `completion_transition`, with no park-specific reason.
+3. **Pause versus retire.** Park is reversible: it preserves identity, assignments,
+   queued turns, pending wakes, and the worktree, while intake remains closed. Retire
+   is terminal: it cancels future work under its existing typed retirement rules and
+   never relaunches the session. Neither operation may be represented as the other.
+4. **Shared adapter and drain proof.** A session park never signals a shared adapter
+   group. Before a group kill, the primitive records every session attached to that
+   exact launch generation and fences each before the signal. After a successful kill,
+   reconciliation may start one successor adapter generation through the existing
+   launch fence and may restore only the attached sessions whose own durable state
+   permits relaunch. It never creates a second Tightbeam session.
+
+The final drain proof exercises the real lane, wake scheduler, shared-adapter fence,
+process-group kill seam, and retirement transaction with deterministic barriers. It
+must prove: an enqueue and a park gate close produce either one running turn or one
+queued turn; a due wake fires before the fence or remains pending; a session park does
+not interrupt another session on the same adapter; retirement leaves no target runtime
+able to emit effects and retains its typed wake-cancellation audit rows; and a restart
+during an open park request yields one request, one outcome, one session identity, and
+one worktree custody record.
 
 ## Dead means the tree, not the process
 
