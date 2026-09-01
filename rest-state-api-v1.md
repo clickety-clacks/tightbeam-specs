@@ -11,6 +11,13 @@ amendment adds the durable `/api/toplines` `(createdAt,id)` cursor and closed
 `transcript --name`. It leaves the ExecutionMap/firehose companion, R7 items,
 authorization, and public serializers unchanged.
 
+Work-item priority/shared-seam candidate, 2026-09-01: PROPOSED. Add the
+existing public work-item `priority` field to R7 and bind canonical work-item
+reads, mutation readback, and state notices to one visible query and public
+serializer. This amendment changes no work-item mutation, storage meaning,
+authorization grant, notice class, compatibility response, target, or release
+authority.
+
 G2 session-freshness landing, 2026-08-27: adds the complete session mutation
 mapping shared with `event-firehose-v1.md`. It adds `session.updated` and fixes
 session versioning, correlation, cold-start, reconnect, and gap recovery. It
@@ -126,6 +133,12 @@ Authority and inputs:
   `wi_113442f5-22ae-457b-a971-1b620069d490` consume this amendment; they do
   not define its contract. The adopted six-resource seam contract remains
   `art_b1995a26` / fact 1093 and is unchanged.
+- Work-item priority/shared-seam authority: product-owner ruling
+  `att_7633d9ce-d487-4bd6-aee0-42ca340df4dc` and fact 2889, which resolve the
+  parity blocker in `att_55799c31-541f-41c0-a90e-8d4b9b58cc50` and report
+  `art_30310cce`. The candidate may be authored and reviewed while the
+  main-landing hold in `att_fba59bdc-881a-442f-8323-d5e7e970b072` remains
+  active; it may not land under that hold.
 
 ## Spec homing
 
@@ -140,6 +153,9 @@ therefore `rest-state-api-v1.md` and `rest-state-api-v1-wire-schema.md`.
 G1 changes the transcript-message projection and `message.created` mapping.
 Its exact candidate set is this file, `rest-state-api-v1-wire-schema.md`, and
 `event-firehose-v1.md`; all three land in one reviewed revision.
+The work-item priority/shared-seam amendment changes the R7 item and its wire
+type without changing an R8 mapping or firehose frame. Its exact candidate set
+is this file and `rest-state-api-v1-wire-schema.md`.
 `rest-state-api-r3-adjudication.md`, `rest-vs-cli-adjudication.md`, and
 `topline-map-v1.md` remain authority inputs, not custody companions for this
 contract. A worktree, artifact row, transcript, adjudication ledger, or review
@@ -166,6 +182,10 @@ serializer knowledge.
 For G1, REST, CLI wrappers, and `message.created` expose one stored
 message-kind discriminator through one shared transcript-message serializer.
 
+For work items, REST, CLI mutation readback, mutation result adapters, and
+`work_item.*` notices expose one authorized public item through one query and
+serializer boundary.
+
 ## Non-goals
 
 - REST v1 does not create a general mutation API.
@@ -177,6 +197,9 @@ message-kind discriminator through one shared transcript-message serializer.
 - REST v1 does not retire compatibility aliases before their clients migrate
   or decide future tailnet identity.
 - REST v1 does not authorize implementation, deployment, or client migration.
+- The work-item priority/shared-seam amendment does not change priority write
+  semantics, add a work-item mutation, or promote a legacy composite response
+  into the canonical API.
 - The G7 detail routes do not add filters, alternate identifiers, route-local
   queries, route-local serializers, or a second error envelope. They do not
   redefine firehose A6 against a collection page.
@@ -535,6 +558,15 @@ R4. Envelopes. List:
 Detail: `{"schemaVersion":1,"resource":"assignments","item":{}}`.
 For every notice-backed resource, the `item` shape equals the firehose
 notice `payload` shape (SR1).
+
+R4e. Canonical work-item REST responses use the ordinary R4 and R4c envelopes.
+`GET /api/work-items` encodes exactly `schemaVersion`, `resource`, `items`, and
+`page`, in that order, with `resource:"work items"`. `GET /api/work-items/:id`
+encodes exactly `schemaVersion`, `resource`, and `item`, in that order, with
+the same resource value. Each error uses R4c with
+`resource:"work items"`. A compatibility response containing `workItem`,
+`assignments`, or `cursor`, or an error response lacking `schemaVersion` or
+`resource`, remains compatibility-only and is not a canonical response.
 
 R4a. ExecutionMap success envelopes are closed. Every successful route returns
 `schemaVersion:1`, `resource:"execution map"`, `edgeBasis:"concurrent_turn"`,
@@ -993,7 +1025,7 @@ that an adapter conditionally omits.
 | hosts | `host`, `rowVersion` |
 | sessions | `sessionKey`, `displayName`, `kind`, `orderIndex`, `isBuiltIn`, `adopted`, `ownerUserId`, `origin`, `spawnedBy`, `handle`, `archetype`, `overrides`, `identityName`, `identityRevision`, `harness`, `provider`, `model`, `thinkingLevel`, `modelContext`, `host`, `clearedThroughSeq`, `state`, `createdAt`, `updatedAt`, `mechanicalStatus`, `rowVersion` |
 | transcript messages | `id`, `seq`, `sessionKey`, `role`, `messageType`, `content`, `at`, `sender`, `deviceId`, `clientMessageId`, `replyToMessageId`, `replyToClientMessageId`, `llmVisibleMessageId`, `attachments`, `attentionTier`, `turnSeq`, `assignmentId`, `jobRef`, `harness`, `provider`, `model`, `effort`, `context`, `rowVersion` |
-| work items | `id`, `title`, `specRefName`, `specRefSha256`, `isBug`, `ownerUserId`, `state`, `failReason`, `routingWakeId`, `slateWakeId`, `createdByUser`, `createdBySession`, `createdInTurnSeq`, `createdContextKnown`, `createdAt`, `rowVersion` |
+| work items | `id`, `title`, `specRefName`, `specRefSha256`, `isBug`, `ownerUserId`, `state`, `failReason`, `routingWakeId`, `slateWakeId`, `createdByUser`, `createdBySession`, `createdInTurnSeq`, `createdContextKnown`, `createdAt`, `priority`, `rowVersion` |
 | assignments | `id`, `subject`, `holderKey`, `holderRole`, `holderFallback`, `openedByUser`, `openedBySession`, `openedAt`, `state`, `outcome`, `closedAt`, `closedByUser`, `closedBySession`, `closingAttestId`, `revocationReason`, `workItemId`, `reviewsAssignmentId`, `holderHarness`, `holderProvider`, `files`, `effectKind`, `derivedStatus`, `rowVersion` |
 | attests | `id`, `assignmentId`, `kind`, `verdictKind`, `note`, `bySession`, `byUser`, `producer`, `producerCommand`, `byHarness`, `byProvider`, `commitRefs`, `ts`, `rowVersion` |
 | wakes | `wakeId`, `sessionKey`, `targetRole`, `origin`, `prompt`, `consumer`, `dueAt`, `state`, `createdAt`, `firedAt`, `reresolve`, `reresolveSeed`, `reresolveRung`, `conditionKind`, `conditionScope`, `conditionAfterId`, `firedBy`, `creatorSessionKey`, `rumination`, `workItemId`, `assignmentId`, `canceledAt`, `targetGate`, `class`, `classElection`, `deliveryRule`, `digest`, `summon`, `rowVersion` |
@@ -1378,6 +1410,18 @@ non-integer, or non-positive `deadlineAt`, fails with `500 projection_invalid`
 and emits no partial item. The serializer does not omit, default, derive,
 backfill, or mutate `deadlineAt`.
 
+SR9. `Tightbeam.StateResources.query_work_item` is the sole public work-item
+query boundary. It receives the resolved principal and normalized selection,
+applies the existing AU4 work-item visibility predicate before exposing a row,
+and returns no serialized JSON. `Tightbeam.StateResources.work_item` is the
+sole public work-item serializer and emits the exact R7 item. Canonical REST
+collection and detail routes, CLI mutation readback, mutation result adapters,
+and the Publisher payload builders for `work_item.*` call these seams.
+`Tightbeam.RestEnvelope` wraps canonical REST results and errors in R4e/R4c
+and remains the sole work-items envelope encoder. A caller does not query a
+second row shape, construct a work-item map, omit an R7 field, or substitute a
+legacy composite or error envelope.
+
 ## Requirements — auth and visibility
 
 AU1. `Authorization: Bearer <existing gateway credential>`. A device
@@ -1574,11 +1618,20 @@ state mutation or source mapping.
 A2. For every non-observational rebuildable-state class governed by
 firehose A6, the REST detail item equals the notice payload after envelope
 removal.
+
+For each `work_item.*` class, the test also proves that REST detail and the
+Publisher notice obtain the item through SR9 and produce byte-identical item
+bytes after removal of their allowed outer transport envelopes. Separate
+seam-identity cases prove that canonical REST collection, CLI mutation
+readback, and each work-item mutation result adapter also call SR9.
 A3. Closed-world projection proof: every collection and detail item has
 exactly its R7 keys and no others. The secret-exclusion sweep rejects
 `cliToken`, device `token`, `identityToken`, credential paths, environment
 secrets including MCP environment values, and every value outside SR5's
 explicit allowlist.
+
+The work-item proof requires `priority` immediately before `rowVersion` and
+rejects a missing, extra, reordered, or conditionally omitted work-item key.
 
 For transcript messages, the proof evaluates the R7m condition first and then
 requires the resulting key set exactly. It proves `messageType` is the sole
@@ -1662,6 +1715,10 @@ declared order.
 The transcript-message cases also validate conditional `messageType`
 optionality, non-null string type when present, open-reader behavior, and the
 canonical key position.
+
+The work-item cases accept integer `priority` values 0 and 8. They reject an
+absent or null value, an integer below 0 or above 8, a string, and a
+non-integer JSON number as `500 projection_invalid` with no partial item.
 A18. Facts and critical-state rows have immutable cursors, complete R7 wire
 schemas, AU4 visibility tests, and exactly one R8 state mapping. The suite
 fails if either companion firehose class is absent from the adopted registry.
@@ -2037,6 +2094,24 @@ stored positive integers. Given `(agent,1)`, `(statute,null)`, `(effort,null)`,
 or a statute or effort value that is non-integer or less than one, when the
 shared serializer encodes the row, then it returns `500 projection_invalid`
 and emits no partial item.
+
+A55. Given one AU4-visible work item with `priority:4`, when canonical REST
+collection and detail, CLI mutation readback, a mutation result adapter, and a
+matching `work_item.*` Publisher path read it, then each caller invokes SR9.
+The item bytes are equal after removal of each allowed outer transport
+envelope. The REST collection and detail responses use the exact R4e success
+envelopes. For every R4c condition admitted by either canonical work-item
+route, a fixture that triggers only that condition uses the matching R4c
+work-items error envelope. No canonical response contains the legacy
+`workItem`, `assignments`, or `cursor` keys.
+
+Given a work-item update request whose resulting public R7 item is unchanged,
+when the mutation completes, then `rowVersion` remains unchanged and no
+`work_item.updated` notice exists. Given an update that changes `priority`
+from 4 to 5 and commits, then the mutation returns the SR9 item with the next
+stored `rowVersion` and publishes one `work_item.updated` notice after commit.
+The notice payload bytes equal the returned item bytes, and a duplicate notice
+does not exist.
 
 ## Open questions — Spirit questions for Mike
 
