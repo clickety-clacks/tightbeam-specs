@@ -55,7 +55,7 @@ Then the loop and the criticals, in the PO's grouping:
 
 Land as ordinary work-item flow once the core exists. Full list and one-line
 descriptions in [0.2.0-spirit-and-work-sweep.md](0.2.0-spirit-and-work-sweep.md) §TIER POST-CORE. Flagged dissent,
-unruled: the park/relaunch/stop primitive (`wi_6937890c`) is post-core, so the core
+unruled: the kill/park primitive (`wi_6937890c`) is post-core, so the core
 can see a wedged turn but not kill one — the 2026-08-20 nineteen-hour stall was
 exactly this. Mike accepts or amends.
 

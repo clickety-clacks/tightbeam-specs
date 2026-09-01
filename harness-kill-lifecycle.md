@@ -1,12 +1,44 @@
-# Parking a harness: durable identity and group termination
+# Killing a harness: durable identity and group termination
 
-**Status:** design ruled 2026-07-31.
+**Status:** design ruled 2026-07-31. Renamed from park to kill on Mike's ruling,
+2026-09-01; see Naming below.
+
+## Naming
+
+This operation is a KILL and is named one. It was previously called "park", which
+collided with two unrelated meanings and stalled the work that depends on it.
+
+Three distinct things had claimed the word:
+
+1. **Park (shipped, keeps the name).** A session parks itself on an open decision
+   request and resumes when that request is ruled. `decision_requests.parkWakeId`
+   is live in the substrate. Nothing here changes it.
+2. **Kill (this document).** End a running harness process group. Formerly called
+   park; that was a misnomer.
+3. **Park a session (proposed, keeps the name).** Set a finished session aside,
+   preserved, so it can be relaunched later. Wanted by
+   `completion-escalation-rail-v2.md` as one of its three dispositions. Not built.
+
+Mike's ruling, 2026-09-01: park does not mean kill in any ordinary sense of the
+word, and a person reading "parked" will not expect the thing to be destroyed. The
+destructive operation is called kill. Park keeps its plain meaning of setting
+something aside to come back to.
+
+Senses 1 and 3 both mean "set aside and resume", at different scopes (a request
+versus a session). Whether they need distinguishing in the wire vocabulary is open
+and belongs to the Tightbeam product owner, not to this document.
+
+**Code reconciliation still owed.** Shipped internals under `harness_process.ex`
+carry park-named identifiers predating this ruling. The lifecycle state named below
+is `kill_requested`. Reconciling the existing code identifiers to the ruled names is
+work item `wi_6937890c`'s to schedule; this document states the intended vocabulary,
+not the current code.
 
 ## The promise
 
-A user who sees "parked" believes that agent is DEAD. Anything it does afterwards — spending
-budget, writing files, acting on a session they consider closed — is unexpected work. So
-parking always ends in a kill of the whole group, and the record says which path it took.
+A user who sees "killed" believes that agent is DEAD. Anything it does afterwards, spending
+budget, writing files, acting on a session they consider closed, is unexpected work. So a kill
+always ends in the termination of the whole group, and the record says which path it took.
 
 **The promise is best effort, ruled 2026-07-31.** It is absolute for every member we have
 permission to signal, which is the entire tree in ordinary operation. It is not absolute
@@ -22,7 +54,7 @@ WAITING; a graceful close is decided by the exit we observe, never by the timer.
 "Kill" means SIGKILL, to the group. SIGKILL cannot be caught, blocked, or ignored. If the
 call succeeds, every member of that group is dead.
 
-So park asks no questions after killing, and none before. There is no absence probe, no
+So a kill asks no questions after killing, and none before. There is no absence probe, no
 post-kill re-check, and no state meaning "killed but unproven." Code that asks whether the
 target is gone can only ever return one answer, and every defect that lived in such code was
 a defect in machinery that had nothing to decide.
@@ -111,12 +143,12 @@ identity is needed, state honestly what its granularity is.
 A launch is an event with a durable consequence — a running OS process — and it must be
 written down at launch, not reconstructed when needed.
 
-The row carries the LIFECYCLE, not a boolean: launching, running, park_requested,
+The row carries the LIFECYCLE, not a boolean: launching, running, kill_requested,
 closed_gracefully, killed, kill_failed, exited. A boolean standing for the terminal outcomes
 is wrong several ways, and that is why each previous fix picked a different untruth.
 
 Consequences this buys:
-- **The fence survives a restart.** A park in progress is a row, not a map entry. An earlier
+- **The fence survives a restart.** A kill in progress is a row, not a map entry. An earlier
   design lost it when Credentials crashed and took the coordinator down with it under
   `:rest_for_one`, letting a successor start while a harness was still running.
 - **Boot reconciliation.** Without rows, a gateway restart orphans every running harness —
@@ -134,7 +166,7 @@ Consequences this buys:
    protected, once raising in turn checkout. A new failure mode is not done until its callers
    handle it.
 3. **A held fence must be clearable.** A key stranded with no operator path to retry or
-   release is a dead end. `kill_failed` is retried by the sweep, not parked forever.
+   release is a dead end. `kill_failed` is retried by the sweep, not stranded forever.
 
 ## Out of scope
 
