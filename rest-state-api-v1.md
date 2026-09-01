@@ -1370,6 +1370,14 @@ second membership, edge, visibility, or serializer implementation is a
 contract failure. These seams are separate from durable Toplines and do not
 change the six shared serializer shapes adopted by `art_b1995a26` / fact 1093.
 
+SR8. The decision-request serializer emits the required `deadlineAt` key in
+its R7 position. For `kind=agent`, it emits the stored null value. For
+`kind=statute` and `kind=effort`, it emits the stored positive integer. An
+agent row with a non-null `deadlineAt`, or a statute or effort row with a null,
+non-integer, or non-positive `deadlineAt`, fails with `500 projection_invalid`
+and emits no partial item. The serializer does not omit, default, derive,
+backfill, or mutate `deadlineAt`.
+
 ## Requirements — auth and visibility
 
 AU1. `Authorization: Bearer <existing gateway credential>`. A device
@@ -2020,6 +2028,15 @@ page cursors are equal. Given a REST refusal, the wrapper returns the same
 error code without choosing a second authorization or cursor outcome. Passing
 a prior message id as `before` returns `400 invalid_cursor`; the wrapper does
 not decode, translate, retry, or invoke the legacy dispatch read.
+
+A54. Given stored decision-request rows with `(kind,deadlineAt)` equal to
+`(agent,null)`, `(statute,1)`, and `(effort,2)`, when the shared serializer
+encodes each row, then each item contains `deadlineAt` in the R7 position; the
+agent item contains null, and the statute and effort items contain their exact
+stored positive integers. Given `(agent,1)`, `(statute,null)`, `(effort,null)`,
+or a statute or effort value that is non-integer or less than one, when the
+shared serializer encodes the row, then it returns `500 projection_invalid`
+and emits no partial item.
 
 ## Open questions — Spirit questions for Mike
 
