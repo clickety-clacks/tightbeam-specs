@@ -140,6 +140,10 @@ therefore `rest-state-api-v1.md` and `rest-state-api-v1-wire-schema.md`.
 G1 changes the transcript-message projection and `message.created` mapping.
 Its exact candidate set is this file, `rest-state-api-v1-wire-schema.md`, and
 `event-firehose-v1.md`; all three land in one reviewed revision.
+The Concern-tag semantic amendment changes no R7c wire shape, dependency entry,
+R8/R8b mapping, route, or pagination rule. Its REST custody change is this file
+only. `standalone-toplines-v5.md` is co-amended as a separate canonical
+contract at the same targetless candidate.
 `rest-state-api-r3-adjudication.md`, `rest-vs-cli-adjudication.md`, and
 `topline-map-v1.md` remain authority inputs, not custody companions for this
 contract. A worktree, artifact row, transcript, adjudication ledger, or review
@@ -338,7 +342,9 @@ existing principal selection. It adds no credential, principal binding,
 authorization grant, or tailnet-identity behavior.
 
 SP7. A Topline records durable human intent: its title, owner, lifecycle,
-memberships, and concerns. ExecutionMap reports mechanical evidence the
+memberships, and Concern tags. Each Concern is a tag definition inside exactly
+one Topline. Its current many-to-many associations group active Work
+memberships in that Topline. ExecutionMap reports mechanical evidence the
 substrate can derive from work, assignment, turn, attest, wake, decision,
 session, user, marker, and causal-event rows. Similar historical CLI names do
 not make these concepts interchangeable. A client asks Toplines what people
@@ -1013,6 +1019,14 @@ that an adapter conditionally omits.
 | coordination share | `sessionKey`, `from`, `to`, `turns`, `wakeTurns`, `classedTurns`, `coordinationTurns`, `summons`, `algedonic`, `byClass`, `share`, `dependencyVersion` |
 | digest members | `wakeId`, `prompt`, `class`, `classElection`, `createdAt`, `dependencyVersion` |
 | work-item trace | `workItem`, `assignments`, `causalChildren`, `attribution`, `dependencyVersion` |
+
+R7n. For `toplines`, `concerns` contains current Concern tag entries. Each entry
+denotes a tag definition inside exactly one Topline, not an issue with an
+open/resolved lifecycle. `openConcernCount` retains its field name and integer
+type for compatibility. It equals the number of current Concern tag definitions
+in the Topline. Neither field represents issues, resolution state, or reference
+episodes. This semantic amendment changes no R7 field name and no R7c wire
+type, nullability, nested key, or array-order rule.
 
 R7m. The transcript-message write seam assigns `messageType` without parsing
 message content. Current assignments are exact:

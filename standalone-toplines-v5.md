@@ -30,7 +30,7 @@ program-membership evidence.
 A later material change amends the file that owns that authority, then presents
 both canonical paths from one new exact commit for independent review.
 
-The reviewed V5 artifact, the pinned REST contract, the program-removal
+The reviewed V5 artifact, the co-reviewed REST contract, the program-removal
 artifact, prior work-item rows, messages, worktrees, and review reports are
 authority or provenance inputs. They are not additional canonical custody and
 cannot amend either canonical file. The REST contract remains the separate
@@ -48,6 +48,23 @@ re-review is required before the work item can bind this file as implementation
 authority.
 
 Authority and evidence:
+
+- Mike's ruling of 2026-09-01 on
+  `wi_875fbdd5-6756-4149-b032-f055dc4f965c` preserves G3 and redefines a
+  Concern as a user- or agent-applied tag inside exactly one Topline. It selects
+  D1=A: unlinking a Work membership creates no Placement obligation or prompt.
+  This ruling supersedes removal proposal `art_8224f898`; that artifact remains
+  provenance only and supplies no current requirement.
+- Prior reviewed specification commit
+  `3c83d382968f242ebab660f9b67593aa80a1e84e` carried this file at SHA-256
+  `1ffc9ee7b984df672b21d46d7a6f3cd3a40b274bd4cec8943377ca47c17881d6`.
+  This amendment changes only `standalone-toplines-v5.md` and the separate
+  canonical REST contract `rest-state-api-v1.md` in one targetless candidate.
+- Lane 2 independent review found product candidates
+  `5adc6f03e0469aa399b14a312985f92ea5036107` for main and
+  `9c45e34af46aba451ac84ea5795a50a4a16fdafd` for 0.1.9 reviewed-clean. Those
+  candidates are evidence inputs only. This assignment does not modify, land,
+  or release either candidate.
 
 - Independent exact-tip review
   `asg_afd2c88f-e685-4c64-9b5a-6b8957bf3930` verified commit
@@ -111,8 +128,9 @@ G3. One work item shall support active membership in more than one Topline.
 G4. A user or an authorized agent shall decide each membership. Tightbeam shall
 record that decision. Tightbeam shall not infer or silently write a membership.
 
-G5. Tightbeam shall prompt the responsible user's Main once when an observable
-lifecycle event leaves an open work item without a Topline decision.
+G5. Tightbeam shall prompt the responsible user's Main once when Work Item
+creation, Work Item reopen, or first activation migration leaves an open work
+item without a Topline decision. Membership unlink is not a placement event.
 
 G6. Tightbeam shall keep current execution telemetry under the name Execution
 Map. Existing telemetry data, filters, ordering, authorization, and read-only
@@ -142,8 +160,8 @@ candidates after all four lanes pass.
 NG1. A Topline is not a work item. It has no assignment holder, implementation
 status, estimate, completion percentage, or execution lifecycle.
 
-NG2. A Concern does not own work-item membership. Concern references do not add,
-remove, or imply a Topline membership.
+NG2. A Concern tag does not own work-item membership. Applying or removing a
+Concern tag does not add, remove, or imply a Topline membership.
 
 NG3. Tightbeam does not rank Toplines or work items. It does not calculate
 importance, relevance, confidence, priority, or placement.
@@ -155,8 +173,10 @@ NG5. Tightbeam does not install a default statute for the new rail fact.
 NG6. Tightbeam does not add a periodic placement scan, timer, re-nag loop, or
 threshold that decides placement.
 
-NG7. Tightbeam does not hard-delete Toplines, Concerns, memberships, placement
-decisions, or their events.
+NG7. Tightbeam does not hard-delete Toplines, Concern definitions,
+memberships, placement decisions, or their events. Removing a Concern tag from
+a Work membership deletes the current tag-association row because that row is
+not history.
 
 NG8. Tightbeam does not change Work Item ownership or assignment resolution.
 
@@ -214,12 +234,14 @@ episode.
 
 **Active membership.** A Work membership whose `unlinkedAt` field is null.
 
-**Concern.** An optional, durable issue or question that belongs to exactly one
-Topline. Its identifier starts with `tlc_`. A Concern can reference active Work
-memberships in its own Topline. The reference is an annotation, not membership.
+**Concern.** An optional, durable tag definition that belongs to exactly one
+Topline. Its identifier starts with `tlc_`. A Concern groups active Work
+memberships inside its owning Topline. It has no open/resolved lifecycle.
 
-**Concern reference.** An active or ended episode that associates one Concern
-with one Work membership. Its identifier starts with `tlcr_`.
+**Concern tag association.** The current many-to-many association between one
+Concern and one active Work membership in the same Topline. The association is
+current state, not an episode and not history. One Work membership can carry
+many Concerns. One Concern can tag many Work memberships.
 
 **Related agents and proofs.** Assignments, sessions, attests, and artifacts stay
 attached to their Work Items. A Topline does not copy those rows. Its Work
@@ -367,7 +389,7 @@ index that the Candidate creates under R1 through R6, plus
 `topline_schema_stamp`. The manifest records each exact object name, object
 type, and exact UTF-8 `sqlite_schema.sql` value. It includes `toplines`,
 `topline_work_memberships`, `topline_events`, `topline_idempotency`,
-`topline_concerns`, `topline_concern_refs`,
+`topline_concerns`, `topline_concern_tags`,
 `topline_placement_obligations`, `topline_schema_stamp`, every supporting index
 on those tables, `toplines_id_owner`, `work_items_id_owner`,
 `topline_memberships_active_pair`, `topline_memberships_id_topline`,
@@ -483,9 +505,9 @@ A16. Prior work-item evidence is sufficient to classify the Completed core as
 accepted provenance. It is not sufficient to prove that an unpinned target
 revision still contains that core.
 
-A17. The REST contract at
-`05d08b8af74a877d4dabe3dcba8250787d5d430e` remains authoritative for REST routes,
-REST cursors, REST response projection, and Firehose notices. The shared
+A17. The `rest-state-api-v1.md` file at the exact targetless candidate that
+contains this amendment remains authoritative for REST routes, REST cursors,
+REST response projection, and Firehose notices. The shared
 `Tightbeam.Toplines.query_public/2` and
 `Tightbeam.Toplines.public_item/1` seams can serve that contract without adding
 REST transport code to this work.
@@ -578,9 +600,11 @@ The successor-authoring session verified these durable inputs on 2026-08-29:
   byte-exact Toplines command matrix. It specifically lacked full mutation-key,
   unknown-alias, retired-verb, and early-version-refusal proof. Lane 2 owns that
   remaining evidence.
-- The prior final-scope evidence classifies schema and boot, final
-  Gateway/router/CLI verbs, placement and wake integration, and packaged
-  rollback proof as remaining work. No later ruling marks those seams complete.
+- Lane 2 independent review records reviewed-clean targetless product candidates
+  at main `5adc6f03e0469aa399b14a312985f92ea5036107` and 0.1.9
+  `9c45e34af46aba451ac84ea5795a50a4a16fdafd`. Those exact tips prove the
+  pre-amendment Lane 2 surface. They do not satisfy or implement this later
+  Concern-tag amendment and this specification assignment does not mutate them.
 - Commit `05d08b8af74a877d4dabe3dcba8250787d5d430e` landed the REST Toplines
   contract after V5. Its shared query and projection seams constrain Lane 1.
   Its temporary retention of the old CLI meanings is superseded only as stated
@@ -617,30 +641,33 @@ I8. The substrate creates no membership without an authenticated user or
 session mutation request.
 
 I9. A placement prompt, causal edge, assignment, shared title, matching owner,
-or Concern reference does not create membership.
+or Concern tag does not create membership.
 
 I10. A Concern belongs to one Topline.
 
-I11. A Concern reference names a Work membership in that same Topline.
+I11. A Concern tag association names an active Work membership in that same
+Topline.
 
-I12. A Concern reference does not change the result of a Topline membership
+I12. A Concern tag association does not change the result of a Topline membership
 query or the `work_item.has_topline` rail fact.
 
-I13. Ending a Work membership ends its active Concern references in the same
-transaction.
+I13. Ending a Work membership deletes all of its Concern tag associations in
+the same transaction. The unlink creates no Placement obligation or prompt.
 
-I14. A Topline close retains its Work memberships, Concerns, Concern references,
-and event history.
+I14. A Topline close retains its Work memberships, Concern definitions, current
+Concern tag associations, and event history.
 
-I15. A closed Topline accepts no new Work membership, Concern, or Concern
-reference. Its owner or an admin can end an existing incorrect membership or
-reference.
+I15. A closed Topline accepts no new Work membership, Concern definition, or
+Concern tag association. Its owner or an admin can end an existing membership
+or remove an existing Concern tag association.
 
-I16. Topline state is `open` or `closed`. Concern state is `open` or `resolved`.
+I16. Topline state is `open` or `closed`. A Concern has no lifecycle state.
 
-I17. The substrate records each successful Topline, Work membership, Concern,
-or Concern-reference mutation and its actor in the mutated Topline's append-only
-event stream. Placement obligations preserve their actors in their own rows.
+I17. The substrate records each successful Topline, Work membership, Concern
+definition, or explicit Concern tag mutation and its actor in the mutated
+Topline's append-only event stream. Automatic tag removal during membership
+unlink is part of the `work_unlinked` mutation and creates no derived tag event.
+Placement obligations preserve their actors in their own rows.
 
 I18. A non-admin user sees only Toplines owned by that user.
 
@@ -651,8 +678,8 @@ I20. An admin sees Toplines from each owner.
 I21. For a non-admin caller, an unknown identifier and an identifier owned by a
 different user produce byte-identical not-found responses.
 
-I22. A response omits invisible memberships, Work Items, Concerns, references,
-counts, ordering effects, and history events.
+I22. A response omits invisible memberships, Work Items, Concerns, tag
+associations, counts, ordering effects, and history events.
 
 I23. A process principal cannot invoke a public Topline read or mutation. The
 internal boot reconciler can write only the process-attributed Placement and
@@ -712,7 +739,8 @@ call-scoped Work Item. It is nil when the call has no resolvable Work Item, the
 Work Item is unknown, or the Work Item is invisible to the caller.
 
 I42. The fact is true for one or more active memberships. It is false for zero
-active memberships. Ended memberships and Concern references do not count.
+active memberships. Ended memberships and Concern tag associations do not
+count.
 
 I43. The new release installs no statute that reads `work_item.has_topline`.
 
@@ -760,9 +788,9 @@ I54. Event `seq` is local to one Topline. Its first value is 1, and each later
 committed event for that Topline increments it by exactly 1. Activity in another
 Topline cannot change a returned sequence.
 
-I55. Each event's non-null membership, Concern, and Concern-reference identifiers
-name parent rows in the event's `toplineId`. A Concern-reference event's three
-parent identifiers name the same reference tuple.
+I55. Each event's non-null membership and Concern identifiers name parent rows
+in the event's `toplineId`. A Concern tag event's membership and Concern name
+parents in the same Topline.
 
 I56. Each placement obligation stores a Placement causal watermark. Opening or
 resolving that obligation and storing its new watermark are one transaction.
@@ -864,7 +892,7 @@ I77. For the two Target lines, R8 and R9 supersede only the temporary sentence
 in REST R6b that retained `toplines` and `topline` as Execution Map CLI names.
 The final meanings are: `toplines` and `topline` expose durable intent;
 `execution-map` and `execution-map-select` expose telemetry. Every other REST
-requirement at `05d08b8af74a877d4dabe3dcba8250787d5d430e` remains authoritative.
+requirement in the co-reviewed `rest-state-api-v1.md` remains authoritative.
 
 I78. Each Lane evidence bundle binds all claims to full commit IDs and
 SHA-256 values for external fixtures. A moving branch, uncommitted worktree,
@@ -992,7 +1020,7 @@ title rules, query projection, or transaction semantics.
 
 **Required behavior.** Lane 1 implements or verifies R1 through R7 and R11 at
 the persistence seam. It preserves the Completed core. It adds the missing
-Topline lifecycle, Work membership history, Concerns, Concern references,
+Topline lifecycle, Work membership history, Concerns, Concern tag associations,
 event sequence, idempotency, Placement obligation storage primitives,
 Canonical title enforcement, structural database rails, deterministic reads,
 the local schema activation and refusal rail, and public REST seams.
@@ -1183,7 +1211,7 @@ the same committed transaction boundary.
 
 **Deterministic tests and acceptance.** Committed tests freeze time and causal
 sequence, use a disposable Main, and cover create, reopen, multiple membership,
-final unlink, link, explicit leave-unlinked, close, fail, icebox, prompt fire,
+final unlink with no prompt, link, explicit leave-unlinked, close, fail, icebox, prompt fire,
 pending cancel, fired preservation, already-canceled preservation, rollback-era
 reopen, rollback-era terminal disposition, transaction race order, crash before
 commit, crash after commit, repeated restart, and turn-boundary delivery. Each
@@ -1343,7 +1371,7 @@ product integration or release.
 ### Pattern names
 
 **Direct Intent Membership** applies to Topline-to-Work membership. It does not
-apply to Execution Map ancestry, assignment resolution, or Concern references.
+apply to Execution Map ancestry, assignment resolution, or Concern tags.
 Canonical example: Work Item `wi_a` has active memberships `tlm_1` in `tl_alpha`
 and `tlm_2` in `tl_beta`.
 
@@ -1375,7 +1403,7 @@ authorization, or read-only behavior.
 ### Mutation seam
 
 `Tightbeam.Toplines` is the sole runtime DML seam for Topline,
-membership, Concern, Concern-reference, Topline-event, Topline-idempotency, and
+membership, Concern, Concern-tag, Topline-event, Topline-idempotency, and
 placement-obligation rows. Work Item transactions call its public
 `*_in_txn` placement functions. The Lane 3 boot reconciler orchestrates those
 same public transaction functions and does not write a Toplines-owned table
@@ -1426,11 +1454,11 @@ closed-state check. It therefore returns `no_change` for an equal title on an
 open or closed Topline. It writes no event, idempotency row, or `updatedAt`
 change.
 
-`updatedAt` changes on a committed title, state, Work membership, Concern, or
-Concern-reference mutation for that Topline. A closed Topline accepts
-`topline-reopen`, `topline-unlink-work`, `topline-concern-resolve`, and
-`topline-concern-unlink-work`. It rejects a different Canonical title, Concern
-reopens, new Concerns, new Work memberships, and new Concern references with
+`updatedAt` changes on a committed title, state, Work membership, Concern
+definition, or explicit Concern tag mutation for that Topline. A closed Topline
+accepts `topline-reopen`, `topline-unlink-work`, and
+`topline-concern-unlink-work`. It rejects a different Canonical title, new
+Concerns, new Work memberships, and new Concern tag associations with
 `topline_closed`.
 
 Each SQLite connection that can read or write these tables shall register
@@ -1502,7 +1530,7 @@ key, the losing link returns `membership_exists` with no mutation. If a
 concurrent transaction already ended the named membership, the losing unlink
 returns `membership_ended` with no mutation.
 
-### R3. Concern state
+### R3. Concern tags
 
 The implementation shall add a `topline_concerns` table with these logical
 fields:
@@ -1512,114 +1540,92 @@ fields:
 | `id` | Primary key with `tlc_` prefix. |
 | `toplineId` | Existing Topline ID. |
 | `title` | Canonical title containing 1 through 2,000 Unicode scalar values. |
-| `state` | `open` or `resolved`. |
 | `createdActorKind`, `createdActorRef` | Required `user|session` actor pair. |
 | `createdAt`, `updatedAt` | Integer Mutation times. |
-| `resolveReason` | Null while open; Mutation reason while resolved. |
-| `resolvedActorKind`, `resolvedActorRef` | Null while open; required `user|session` pair while resolved. |
-| `resolvedAt` | Null while open; Mutation time while resolved. |
 
 Concern create and update transform the supplied title to its Canonical title
 before storage or comparison. Concern create sets creation and update time to
-one Mutation time. Resolve sets
-the current resolution actor, reason, and time. Reopen clears those current
-resolution fields. The append-only events retain earlier resolution data. The
-Concern DDL shall enforce `state IN ('open','resolved')`, `typeof(title) =
-'text'`, `tightbeam_canonical_title(title) IS NOT NULL`, `title =
-tightbeam_canonical_title(title)`, `tightbeam_unicode_scalar_length(title)
-BETWEEN 1 AND 2000`, a complete creation actor, `updatedAt >= createdAt`, and
-exactly one resolution tuple: each resolution field is null while open; each is
-non-null while resolved, the actor is `user|session`, the reason has trimmed
-length from 1 through 4,000, and `resolvedAt` is an integer not less than
-`createdAt`.
+one Mutation time. A Concern has no state, resolution fields, resolve verb,
+reopen verb, or resolution history. The Concern DDL shall enforce
+`typeof(title) = 'text'`, `tightbeam_canonical_title(title) IS NOT NULL`,
+`title = tightbeam_canonical_title(title)`, `tightbeam_unicode_scalar_length(title)
+BETWEEN 1 AND 2000`, a complete creation actor, integer `createdAt` and
+`updatedAt`, and `updatedAt >= createdAt`.
 
-The implementation shall add a `topline_concern_refs` table with ID prefix
-`tlcr_`, `toplineId`, `concernId`, `membershipId`, `linkReason`, `linkedActorKind`,
-`linkedActorRef`, `linkedAt`, `unlinkReason`, `unlinkedActorKind`,
-`unlinkedActorRef`, and `unlinkedAt`. A partial unique index shall cover
-`(concernId, membershipId)` while the reference is active. The DDL shall enforce
-a complete `user|session` link actor, link-reason bounds, integer `linkedAt`,
-and the same all-null active versus complete ended tuple used by Work
-memberships. An ended tuple requires a bounded unlink reason, a complete
-`user|session` actor, and an integer `unlinkedAt` not less than `linkedAt`.
-Unique indexes on
+The implementation shall add a `topline_concern_tags` table with `toplineId`,
+`concernId`, `membershipId`, `tagReason`, `taggedActorKind`, `taggedActorRef`,
+and `taggedAt`. Its primary key is `(concernId, membershipId)`. It stores only
+current tag associations. It has no association ID, untag fields, lifecycle
+state, or ended episode history. The DDL shall enforce a complete
+`user|session` tag actor, tag-reason bounds, and integer `taggedAt`. Unique
+indexes on
 `(id, toplineId)` for Concerns and memberships support composite foreign keys
-from `(concernId, toplineId)` and `(membershipId, toplineId)`. The reference
-therefore cannot name parents from different Toplines.
+from `(concernId, toplineId)` and `(membershipId, toplineId)`. The association
+therefore cannot name parents from different Toplines. The mutation seam also
+requires the membership to be active.
 
 The wire and CLI verbs are:
 
 - `topline-concern-create <toplineId> --title <text> --key <key>`
 - `topline-concern-update <concernId> --title <text> --reason <text> --key <key>`
-- `topline-concern-resolve <concernId> --reason <text> --key <key>`
-- `topline-concern-reopen <concernId> --reason <text> --key <key>`
 - `topline-concern-link-work <concernId> <membershipId> --reason <text> --key <key>`
-- `topline-concern-unlink-work <concernRefId> --reason <text> --key <key>`
+- `topline-concern-unlink-work <concernId> <membershipId> --reason <text> --key <key>`
 
-The concern-link handler shall require the Concern and active Work membership
-to name the same Topline. Ending a Work membership shall end its active Concern
-references in the same transaction. Each derived Concern-reference end shall
-record the same actor and `cause = "membership_unlinked"` plus the membership
-unlink reason.
+The link-work verb applies the Concern as a tag. The unlink-work verb removes
+that tag. They are the tag and untag operations; their `link-work` and
+`unlink-work` spellings are retained only for wire and CLI compatibility. The
+link handler shall require the Concern and active Work membership
+to name the same Topline. Ending a Work membership shall delete all of its
+Concern tag associations in the same transaction. That automatic cleanup
+appends no derived Concern event and creates no Placement obligation or prompt.
 
-Concern create, update, reopen, and link-work require an open Topline. Concern
-link-work also requires an open Concern. Concern resolve requires an open
-Concern and can run while its Topline is open or closed. Concern unlink-work can
-run while its Concern or Topline is open, resolved, or closed. Resolving a
-Concern retains its active Concern references. Each invalid state transition
-returns `invalid_transition` unless the Topline rule above requires
-`topline_closed`.
+Concern create, update, and link-work require an open Topline. Concern
+unlink-work can run while its Topline is open or closed.
 
 Each reason in R3 is a Mutation reason. A Concern update whose Canonical title
 equals its stored title returns `no_change`. The Topline must be open before
-this equality check runs. A second active reference for the same Concern and
-membership returns `concern_reference_exists`. Unlinking an ended reference
-returns `concern_reference_ended`. These refusals write no row.
+this equality check runs. A second tag association for the same Concern and
+membership returns `concern_tag_exists`. Removing an absent association returns
+`concern_tag_absent`. These refusals write no row.
 
 ### R4. Event history
 
 The implementation shall add an append-only `topline_events` table with an
 integer `seq` local to `toplineId`, event kind, optional membership ID,
-optional Concern ID, optional Concern-reference ID, `actorKind`, `actorRef`,
-reason, integer `eventAt` equal to Mutation time, and canonical JSON detail.
+optional Concern ID, `actorKind`, `actorRef`, reason, integer `eventAt` equal to
+Mutation time, and canonical JSON detail.
 
 The event DDL shall enforce the closed event-kind set below, a complete
 `user|session` actor pair, `typeof(seq) = 'integer' AND seq >= 1`, an integer
 event time, and the required identifier combination for its kind. Its primary
 key is `(toplineId, seq)`, and `toplineId` references `toplines(id)`. It shall
-reject an event that supplies a membership, Concern, or Concern-reference ID for
-a kind whose identifier tuple does not permit that ID. `detail` shall parse as a
+reject an event that supplies a membership or Concern ID for a kind whose
+identifier tuple does not permit that ID. `detail` shall parse as a
 JSON object with exactly the keys and value types listed below. The mutation
 seam supplies its canonical bytes.
 
 The membership table shall have a unique index on `(id, toplineId)`. The Concern
-table shall have a unique index on `(id, toplineId)`. The Concern-reference table
-shall have a unique index on
-`(id, toplineId, concernId, membershipId)`. Each non-null event parent is guarded
-by these composite foreign keys:
+table shall have a unique index on `(id, toplineId)`. Each non-null event parent
+is guarded by these composite foreign keys:
 
 - `(membershipId, toplineId)` references the membership index;
-- `(concernId, toplineId)` references the Concern index; and
-- `(concernReferenceId, toplineId, concernId, membershipId)` references the
-  Concern-reference index.
+- `(concernId, toplineId)` references the Concern index.
 
-The last foreign key makes a reference event's three parent identifiers one
-same-Topline tuple. SQLite foreign-key enforcement remains enabled on each
-connection before schema or mutation work.
+SQLite foreign-key enforcement remains enabled on each connection before
+schema or mutation work.
 
 `topline_created`, `topline_renamed`, `topline_closed`, and `topline_reopened`
-require all three optional IDs to be null. A `work_*` kind requires only
-`membershipId`. A non-reference `concern_*` kind requires only `concernId`. A
-`concern_work_*` kind requires `membershipId`, `concernId`, and
-`concernReferenceId`. The two `*_created` kinds require a null reason; each
+require both optional IDs to be null. A `work_*` kind requires only
+`membershipId`. A non-tag `concern_*` kind requires only `concernId`. A
+`concern_work_*` kind requires `membershipId` and `concernId`. The two
+`*_created` kinds require a null reason; each
 other kind requires a Mutation reason.
 
 The closed event-kind set is:
 
 `topline_created`, `topline_renamed`, `topline_closed`, `topline_reopened`,
 `work_linked`, `work_unlinked`, `concern_created`, `concern_renamed`,
-`concern_resolved`, `concern_reopened`, `concern_work_linked`, and
-`concern_work_unlinked`.
+`concern_work_tagged`, and `concern_work_untagged`.
 
 Each event detail has this closed shape:
 
@@ -1632,13 +1638,8 @@ Each event detail has this closed shape:
 | `work_unlinked` | string `workItemId`, string `unlinkReason` |
 | `concern_created` | string `title` |
 | `concern_renamed` | string `fromTitle`, string `toTitle` |
-| `concern_resolved`, `concern_reopened` | string `fromState`, string `toState` |
-| `concern_work_linked` | string `membershipId`, string `linkReason` |
-| `concern_work_unlinked` | string `membershipId`, string `unlinkReason`, string `cause` |
-
-For `concern_work_unlinked`, `cause` is `explicit` when the caller invokes
-`topline-concern-unlink-work` and `membership_unlinked` when a Work-membership
-unlink derives the reference end. No other cause value is valid.
+| `concern_work_tagged` | string `membershipId`, string `tagReason` |
+| `concern_work_untagged` | string `membershipId`, string `untagReason` |
 
 The event rows and current-state rows shall commit in the same transaction. For
 the first event in one mutation, the mutation seam computes
@@ -1651,9 +1652,9 @@ semantic order specified here. No global event sequence is stored or returned.
 normal `topline <toplineId>` omits history. No additional singular-read spelling
 ships.
 
-When one Work unlink ends multiple Concern references, the transaction appends
-`work_unlinked` first. It then appends the derived `concern_work_unlinked`
-events in Concern-reference ID ascending order.
+When one Work unlink deletes multiple Concern tag associations, the transaction
+appends only its `work_unlinked` event. The committed state contains no tag
+association for the ended membership.
 
 ### R5. Idempotency
 
@@ -1680,9 +1681,8 @@ The closed parameter shapes are:
 | `topline-unlink-work` | `membershipId`, `reason` |
 | `topline-concern-create` | `title`, `toplineId` |
 | `topline-concern-update` | `concernId`, `reason`, `title` |
-| `topline-concern-resolve`, `topline-concern-reopen` | `concernId`, `reason` |
 | `topline-concern-link-work` | `concernId`, `membershipId`, `reason` |
-| `topline-concern-unlink-work` | `concernRefId`, `reason` |
+| `topline-concern-unlink-work` | `concernId`, `membershipId`, `reason` |
 | `topline-work-leave-unlinked` | `reason`, `workItemId` |
 
 Each listed value is a JSON string. A title value is its Canonical title. Each
@@ -1707,8 +1707,8 @@ receives the current authorization refusal instead of a stored response.
 
 After authorization, the handler checks idempotency before it validates mutable
 state. A matching replay therefore returns its stored response after a later
-close, unlink, resolve, or reopen. A request under a different key validates the
-current state.
+close, unlink, rename, or tag removal. A request under a different key validates
+the current state.
 
 The CLI requires `--key` on each Topline mutation. The wire requires
 `idempotencyKey`. Read operations accept no idempotency key.
@@ -1723,12 +1723,12 @@ logical fields:
 | `id` | Primary key with `tlp_` prefix. |
 | `workItemId` | Existing Work Item ID. |
 | `ownerUserId` | Work Item owner and responsible user. |
-| `cause` | `created`, `reopened`, `last_membership_unlinked`, or `migration`. |
-| `causeRef` | Work Item ID, membership ID, or migration release ID. |
+| `cause` | `created`, `reopened`, or `migration`. |
+| `causeRef` | Work Item ID or migration release ID. |
 | `sourceCausalEventSeq` | Exact positive `causal_events.seq` for `reopened`; null for every other cause. |
 | `resolutionCausalEventSeq` | Exact positive terminal `causal_events.seq` for a process-attributed re-upgrade terminal resolution; null for every `user|session` resolution. |
 | `historyCausalSeq` | Required non-negative Placement causal watermark. |
-| `openedActorKind`, `openedActorRef` | Required opening actor; `user|session` for create, current-release reopen, or unlink; `process` and `tightbeam` for migration or a boot-reconciled reopen. |
+| `openedActorKind`, `openedActorRef` | Required opening actor; `user|session` for create or current-release reopen; `process` and `tightbeam` for migration or a boot-reconciled reopen. |
 | `state` | `pending`, `linked`, `left_unlinked`, or `work_terminal`. |
 | `openedAt` | Mutation time. |
 | `dueAt` | Equal to `openedAt`. |
@@ -1760,8 +1760,8 @@ it to be null. `resolutionCausalEventSeq` is a positive integer exactly for the
 `promptWakeId` references the existing wake row. A `migration` row requires
 `openedActorKind = 'process'` and `openedActorRef = 'tightbeam'`. A `reopened`
 row accepts either a complete `user|session` opening actor or exactly
-`process:tightbeam`. A `created` or `last_membership_unlinked` row requires a
-complete `user|session` opening actor. A pending row requires
+`process:tightbeam`. A `created` row requires a complete `user|session` opening
+actor. A pending row requires
 `resolutionActorKind`, `resolutionActorRef`, `resolutionReason`, `resolvedAt`,
 and `resolutionCausalEventSeq` to be null. A non-pending row requires a complete
 resolution actor, a non-blank resolution reason, and integer
@@ -1780,11 +1780,9 @@ State `work_terminal` accepts exactly one of these tuples:
 The DDL rejects a process resolution actor or re-upgrade reconciliation reason
 in another state or combination.
 For cause `created|reopened`, `causeRef` equals `workItemId`. For cause
-`last_membership_unlinked`, `causeRef` has the `tlm_` prefix and names the ended
-membership for that Work Item. For cause `migration`, `causeRef` is the
+`migration`, `causeRef` is the
 non-blank release identifier supplied by the boot reconciler. The DDL enforces
-the equality and prefix checks; the mutation seam resolves the referenced
-membership before insert.
+the equality check.
 
 The source composite causal-event foreign key proves that a reopened
 obligation's source sequence belongs to the same Work Item. Before insert, the
@@ -1807,8 +1805,9 @@ these edges:
    `disposition_transition` sequence, then opens an episode when the reopened
    Work Item has no active membership. The episode stores that sequence in
    `sourceCausalEventSeq`.
-3. `topline-unlink-work` opens an episode when it ends the Work Item's last active
-   membership and the Work Item is open.
+
+`topline-unlink-work` never opens a Placement episode. It creates no Placement
+prompt or wake, even when it ends the Work Item's final active membership.
 
 A Work Item close, fail, or icebox shall append its disposition event before it
 resolves a pending placement obligation in the same transaction. At every
@@ -1915,9 +1914,13 @@ uses one transaction to re-read the current Work Item, active memberships,
 pending obligation, placement history, and matching causal events before it
 writes.
 
-For an open Work Item with zero active memberships and no placement-obligation
-history, reconciliation shall create one `migration` episode and one prompt as
-before. A Work Item with placement history does not use this migration path.
+For an open Work Item with zero active memberships, no placement-obligation
+history, and `createdAt` earlier than the Toplines production schema stamp's
+`stampedAt`, reconciliation shall create one `migration` episode and one prompt
+as before. A Work Item created at or after activation does not use this path.
+Therefore, unlinking a current Work membership cannot become a delayed
+migration prompt after restart. A Work Item with placement history does not use
+this migration path.
 
 For an open Work Item with zero active memberships, placement history, and no
 pending obligation, reconciliation shall compute `H` and the Qualifying
@@ -1963,8 +1966,10 @@ state is `open`. It returns:
 }
 ```
 
-Rows sort by `createdAt ASC, id ASC`. Counts use active Work memberships and
-current Concern state. The object shown above is the **Topline summary** and has
+Rows sort by `createdAt ASC, id ASC`. `activeWorkCount` counts active Work
+memberships. `openConcernCount` is retained for compatibility and counts
+current Concern tag definitions in the Topline; `open` does not name a Concern
+lifecycle state. The object shown above is the **Topline summary** and has
 exactly those fields.
 
 `topline <toplineId> [--history]` sends wire verb `topline`. It returns the same
@@ -1973,12 +1978,12 @@ arrays:
 
 - `workMemberships`, sorted by `linkedAt ASC, id ASC`, with the membership ID,
   Work Item ID, Work Item title and state, link reason, actor, and link time;
-- `concerns`, sorted by `createdAt ASC, id ASC`, with their current state and
-  active Concern-reference IDs;
+- `concerns`, sorted by `createdAt ASC, id ASC`, with the active Work membership
+  IDs tagged by each Concern;
 - `history` only when requested.
 
-The read returns active Work memberships, each current Concern regardless of
-Concern state, and active Concern references. History contains ended episodes.
+The read returns active Work memberships, each current Concern, and current
+Concern tag associations. History contains no ended tag-association episodes.
 The augmented Topline object has no other fields.
 
 A Work-membership object has exactly these fields:
@@ -2009,47 +2014,36 @@ A Concern object has exactly these fields:
 
 ```json
 {
-  "activeConcernReferenceIds": ["tlcr_a", "tlcr_b"],
   "createdActor": {"kind": "user", "ref": "mike"},
   "createdAt": 123,
   "id": "tlc_...",
-  "resolveReason": null,
-  "resolvedActor": null,
-  "resolvedAt": null,
-  "state": "open",
+  "membershipIds": ["tlm_a", "tlm_b"],
   "title": "Migration risk",
   "toplineId": "tl_...",
   "updatedAt": 123
 }
 ```
 
-The three resolution fields are null while open and non-null while resolved.
-`activeConcernReferenceIds` sorts by reference ID ascending using UTF-8 bytes.
+`membershipIds` lists active Work memberships tagged with this Concern and
+sorts by membership ID ascending using UTF-8 bytes.
 The `concerns` array sorts by `createdAt ASC, id ASC`.
 
-A Concern-reference object used by mutation responses has exactly these fields:
+A Concern-tag object used by mutation responses has exactly these fields:
 
 ```json
 {
   "concernId": "tlc_...",
-  "id": "tlcr_...",
-  "linkReason": "This work addresses the risk",
-  "linkedActor": {"kind": "user", "ref": "mike"},
-  "linkedAt": 123,
   "membershipId": "tlm_...",
-  "toplineId": "tl_...",
-  "unlinkReason": null,
-  "unlinkedActor": null,
-  "unlinkedAt": null
+  "tagReason": "This work addresses the risk",
+  "taggedActor": {"kind": "user", "ref": "mike"},
+  "taggedAt": 123,
+  "toplineId": "tl_..."
 }
 ```
 
-The three unlink fields follow the same null-versus-complete rule as a Work
-membership.
-
 When requested, `history` contains event objects in `seq ASC`. Each event object
-has exactly `actor`, `at`, `concernId`, `concernReferenceId`, `detail`, `kind`,
-`membershipId`, `reason`, `seq`, and `toplineId`. The three optional identifier
+has exactly `actor`, `at`, `concernId`, `detail`, `kind`, `membershipId`,
+`reason`, `seq`, and `toplineId`. The two optional identifier
 fields and `reason` use JSON null when the event kind has no value for them.
 `actor` is a non-null actor object. `detail` has exactly the keys in R4.
 
@@ -2142,14 +2136,16 @@ Each successful mutation returns exactly one of these canonical shapes:
 | --- | --- |
 | `topline-create`, `topline-update`, `topline-close`, `topline-reopen` | `{"topline":<Topline summary>}` |
 | `topline-link-work` | `{"membership":<Work-membership object>,"resolvedPlacementId":<string-or-null>}` |
-| `topline-unlink-work` | `{"endedConcernReferenceIds":[<id>...],"membership":<Work-membership object>,"openedPlacement":<placement-or-null>}` |
-| `topline-concern-create`, `topline-concern-update`, `topline-concern-resolve`, `topline-concern-reopen` | `{"concern":<Concern object>}` |
-| `topline-concern-link-work`, `topline-concern-unlink-work` | `{"concernReference":<Concern-reference object>}` |
+| `topline-unlink-work` | `{"membership":<Work-membership object>,"openedPlacement":null,"untaggedConcernIds":[<id>...]}` |
+| `topline-concern-create`, `topline-concern-update` | `{"concern":<Concern object>}` |
+| `topline-concern-link-work` | `{"concernTag":<Concern-tag object>}` |
+| `topline-concern-unlink-work` | `{"concernId":<id>,"membershipId":<id>}` |
 | `topline-work-leave-unlinked` | `{"placement":<placement>}` |
 
-`endedConcernReferenceIds` sorts by ID ascending using UTF-8 bytes. A link that
+`untaggedConcernIds` sorts by ID ascending using UTF-8 bytes. A link that
 resolves no pending placement uses null for `resolvedPlacementId`. An unlink
-that opens no placement uses null for `openedPlacement`. The response object
+always uses null for `openedPlacement`; that field remains only for response
+compatibility. The response object
 for a committed mutation is rendered once, stored in the idempotency row, and
 returned byte-for-byte on an authorized matching replay.
 
@@ -2158,8 +2154,8 @@ Each Topline-handler refusal returns exactly
 
 | Slug | Message |
 | --- | --- |
-| `concern_reference_ended` | `concern reference is already ended` |
-| `concern_reference_exists` | `active concern reference already exists` |
+| `concern_tag_absent` | `concern tag is not applied to membership` |
+| `concern_tag_exists` | `concern tag is already applied to membership` |
 | `idempotency_conflict` | `idempotency key conflicts with a prior request` |
 | `invalid_message` | `invalid message` |
 | `invalid_transition` | `invalid state transition` |
@@ -2183,7 +2179,7 @@ gateway bytes and does not enter a Topline handler.
 
 Within the mutable-lifecycle phase, a Topline update compares Canonical titles
 before it tests whether the Topline is closed. A Concern update first requires an
-open parent Topline, then compares Canonical titles, then applies Concern state.
+open parent Topline, then compares Canonical titles.
 
 ### R10. Authorization and validation
 
@@ -2192,7 +2188,7 @@ Admins can read and mutate rows from any owner. Process principals receive
 `process_denied`.
 
 A non-admin mutation that names an unknown or invisible Topline, membership,
-Concern, Concern reference, placement obligation, or Work Item returns:
+Concern, Concern tag association, placement obligation, or Work Item returns:
 
 ```json
 {"code":"not_found","message":"record not found"}
@@ -2226,7 +2222,7 @@ It returns:
 - `false` when the Work Item exists and has zero active memberships; and
 - `true` when the Work Item exists and has one or more active memberships.
 
-The fact query counts no ended membership and no Concern reference. It returns
+The fact query counts no ended membership and no Concern tag. It returns
 one boolean, not Topline IDs, reasons, titles, or placement suggestions. Rules
 retain the existing behavior in which nil satisfies no operator.
 
@@ -2241,12 +2237,9 @@ order:
 - link commits first, then close commits and retains that membership; or
 - close commits first, then link returns `topline_closed`.
 
-A final unlink racing a Work Item terminal disposition has one pending-placement
-outcome after both transactions:
-
-- unlink opens an episode, then disposition resolves it as `work_terminal`; or
-- disposition commits first, then unlink ends membership without opening an
-  episode.
+A final unlink racing a Work Item terminal disposition has the same outcome in
+either transaction order: the membership ends, all of its Concern tag
+associations disappear, and unlink creates no Placement obligation or prompt.
 
 A process crash before commit leaves no current-state row, event, idempotency
 row, obligation, or wake from that mutation. A process crash after commit is a
@@ -2264,8 +2257,10 @@ crash before commit leaves the obligation and wake unchanged. A crash after
 commit is a success; restart sees a non-pending obligation and writes nothing.
 A fired or already canceled wake remains unchanged across either path.
 
-Ordinary open-item reconciliation then fills Work Items with no placement
-history and Work Items with a Qualifying rollback-era reopen. For each open
+Ordinary open-item reconciliation then fills pre-activation Work Items with no
+placement history and Work Items with a Qualifying rollback-era reopen. It
+excludes a post-activation Work Item that became unplaced through membership
+unlink. For each open
 candidate, its state check, causal watermark comparison, obligation insert, and
 wake insert are indivisible. A crash before commit leaves no new obligation or
 wake. A crash after commit is a success, and restart recognizes the source
@@ -2321,15 +2316,15 @@ into a refusal instead of a semantic fallback.
 
 ### R14. Deletion and subtraction assessment
 
-No hard-delete verb ships. Closing, resolving, and unlinking preserve causal
+No hard-delete verb ships. Closing and membership unlinking preserve causal
 history. Deleting this surface would fail G1 through G5 because the user asked
 for durable intent grouping. Accepting silent unplaced work would fail G5.
 
 The design adds Direct Intent Membership because Execution Map ancestry cannot
-represent user judgment. Deleting Concern references would lose the requested
-optional Concern structure. Accepting implied Concern membership would violate
-invariant I1. The separate reference row is the smallest mechanism that
-preserves both.
+represent user judgment. A current many-to-many Concern tag table is the
+smallest mechanism that preserves optional grouping inside one Topline without
+inventing issue lifecycle or reference-episode history. Accepting implied
+Concern membership would violate invariant I1.
 
 The design adds one-shot Placement Episodes because manual-only placement was
 rejected by the user decision. A periodic organizer was deleted from the design
@@ -2455,22 +2450,26 @@ and history retains both prior and new Canonical titles in the rename event.
 ### Concerns
 
 AC18. Given an open Topline, when its owner creates a Concern, then the Concern
-belongs to that Topline and no Work Item gains membership.
+is an active tag definition that belongs to that Topline and no Work Item gains
+membership.
 
 AC19. Given a Concern and an active Work membership in the same Topline, when
-the owner links them, then one Concern reference exists and
-`work_item.has_topline` has the same value as before the reference.
+the owner applies the Concern, then one Concern tag association exists and
+`work_item.has_topline` has the same value as before the tag.
 
 AC20. Given a Concern in Topline A and a Work membership in Topline B, when a
-caller links them, then the handler returns `topline_mismatch` and writes
+caller tries to apply the Concern, then the handler returns `topline_mismatch` and writes
 nothing.
 
-AC21. Given one membership with two active Concern references, when the owner
-unlinks the membership, then both references end in the same transaction and
-each history event names `membership_unlinked` as its cause.
+AC21. Given one membership with two Concern tags, when the owner unlinks the
+membership, then both tag associations disappear in the same transaction, the
+response lists both Concern IDs in UTF-8 order, only `work_unlinked` is added to
+history, and no Placement obligation or prompt exists.
 
-AC22. Given a resolved Concern, when its owner reopens it, then state becomes
-open and the event stream retains resolve and reopen in sequence order.
+AC22. Given one Concern applied to two Work memberships and one membership
+carrying two Concerns, when the owner reads the Topline, then each Concern lists
+its tagged membership IDs in UTF-8 order and both many-to-many associations are
+visible.
 
 ### Authorization and visibility
 
@@ -2512,8 +2511,9 @@ AC32. Given a link racing a Topline close, when both finish, then the database
 matches one of the two R12 serial outcomes and no active membership belongs to a
 Topline that was already closed when its link checked state.
 
-AC33. Given a final unlink racing a Work Item close, when both finish, then no
-pending placement obligation remains for the closed Work Item.
+AC33. Given a final unlink racing a Work Item close, when both finish, then the
+membership and its Concern tags are absent and unlink created no Placement
+obligation, prompt, or wake.
 
 ### Placement
 
@@ -2535,9 +2535,8 @@ obligation remains pending.
 AC38. Given an unlinked iceboxed Work Item, when its owner reopens it, then one
 new `reopened` episode and one prompt commit.
 
-AC39. Given a Work Item with two active memberships, when one ends, then no new
-placement episode appears. When the second ends while the Work Item is open,
-then one `last_membership_unlinked` episode appears.
+AC39. Given a Work Item with two active memberships, when either or both end,
+then no unlink creates a Placement obligation, prompt, or wake.
 
 AC40. Given a pending obligation, when the Work Item closes, fails, or iceboxes,
 then the obligation becomes `work_terminal` and its pending wake is canceled.
@@ -2561,9 +2560,9 @@ memberships, and a visible Work Item with two active memberships, when Rules
 computes `work_item.has_topline`, then the results are respectively nil, nil,
 nil, false, false, and true.
 
-AC44. Given a directly inserted corrupt Concern reference that names an ended
-Work membership, when Rules computes the fact for that visible Work Item, then
-it returns false.
+AC44. Given a directly inserted corrupt Concern tag association that names an
+ended Work membership, when Rules computes the fact for that visible Work Item,
+then it returns false.
 
 AC45. Given the shipped identity tree after implementation, when Rules loads,
 then no statute condition names `work_item.has_topline`.
@@ -2596,13 +2595,12 @@ boots again, then boot reconciliation creates one placement episode for
 it and preserves prior Topline rows.
 
 AC49. Given CLI help, the wire verb allow-list, and Gateway handlers, when a test
-searches the released surfaces, then no Topline, Concern, membership, reference,
+searches the released surfaces, then no Topline, Concern definition, membership,
 placement, or event hard-delete verb exists.
 
-AC50. Given a closed Topline with an open Concern and an active Concern
-reference, when the owner resolves the Concern and unlinks the reference, then
-both operations succeed. When the owner tries to rename or reopen the Concern,
-then each operation returns `topline_closed` and writes nothing.
+AC50. Given a closed Topline with an applied Concern, when the owner removes the
+tag, then removal succeeds. When the owner tries to create, rename, or apply a
+Concern, then each operation returns `topline_closed` and writes nothing.
 
 AC51. Given a closed or failed same-owner Work Item and an open Topline, when the
 owner links them with a reason and key, then the membership commits.
@@ -2615,14 +2613,14 @@ AC53. Given an admin mutation that committed under a key, when that user loses
 admin authorization and retries the key, then the gateway returns the current
 not-found authorization response instead of the stored success response.
 
-AC54. Given one Topline, when a membership, Concern, or Concern reference
+AC54. Given one Topline, when a membership, Concern, or explicit Concern tag
 mutation commits, then that Topline's `updatedAt`, each affected current-state
 timestamp, and each event timestamp equal the transaction's one Mutation time.
 
-AC55. Given a session-created Work Item, a user-reopened Work Item, a final
-unlink by a session, and boot reconciliation, when each opens a placement
-episode, then the opening actors are respectively the creator session, the user,
-the unlinking session, and `process:tightbeam`.
+AC55. Given a session-created Work Item, a user-reopened Work Item, and boot
+reconciliation, when each opens a placement episode, then the opening actors are
+respectively the creator session, the user, and `process:tightbeam`. Given a
+final unlink by a session, then no placement episode opens.
 
 AC56. Given an open Work Item created while the previous release runs during a
 rollback interval, when the new release boots twice, then the first boot creates
@@ -2637,19 +2635,19 @@ Canonical title, when an authorized caller submits update with a new key, then
 the handler returns `no_change` and writes no event, idempotency row, or
 `updatedAt` change. Given a closed Topline and a different Canonical title, when
 the caller submits update, then the handler returns `topline_closed`. Given an
-open Concern under an open Topline and an equal Canonical title, when the caller
+Concern under an open Topline and an equal Canonical title, when the caller
 submits update, then the handler returns `no_change` with the same no-write
 result.
 
-AC59. Given an active Concern reference, when another key tries to create the
-same active pair, then it returns `concern_reference_exists`. Given the ended
-reference ID, when a caller tries to unlink it, then it returns
-`concern_reference_ended`. Neither refusal writes a row.
+AC59. Given an applied Concern tag, when another key tries to apply the same
+pair, then it returns `concern_tag_exists`. Given an absent pair, when a caller
+tries to remove it, then it returns `concern_tag_absent`. Neither refusal writes
+a row.
 
-AC60. Given one Work membership with Concern-reference IDs `tlcr_b` and
-`tlcr_a`, when the owner unlinks the Work membership, then history orders
-`work_unlinked`, the derived event for `tlcr_a`, and the derived event for
-`tlcr_b` by increasing sequence.
+AC60. Given one Work membership tagged with Concerns `tlc_b` and `tlc_a`, when
+the owner unlinks the Work membership, then the response lists `tlc_a` before
+`tlc_b`, both tag rows are absent at commit, and history contains no derived
+Concern untag event.
 
 AC61. Given the released product source, when a source guard searches writes to
 the seven state families named by the Mutation seam, then runtime writes exist
@@ -2660,10 +2658,10 @@ leave-unlinked with a blank reason, then the handler returns `invalid_message`.
 Given no pending obligation, when the owner submits a valid reason, then the
 handler returns `placement_not_pending`. Neither refusal writes a row.
 
-AC63. Given a successful link or Concern resolve and its key, when later state
-changes and the authorized caller retries the original request with the same
-key, then the handler returns the stored original response. A new key receives
-the current-state result.
+AC63. Given a successful membership link or Concern tag application and its
+key, when later state changes and the authorized caller retries the original
+request with the same key, then the handler returns the stored original
+response. A new key receives the current-state result.
 
 ### Canonical contracts, structural rails, and real-path gate
 
@@ -2709,21 +2707,19 @@ partial unlink tuple, non-`user|session` unlink actor, non-integer `unlinkedAt`,
 `unlinkedAt < linkedAt`, when SQLite evaluates each insert, then the applicable
 membership `CHECK` rejects it.
 
-AC67. Given direct SQL inserts with an invalid Concern state, partial creation
-actor, an open Concern with a resolution value, a resolved Concern with one
-resolution value missing, non-integer `resolvedAt`, `resolvedAt < createdAt`, a
-non-canonical title, or a title outside the 1-through-2,000 scalar-value bound,
-when SQLite evaluates each insert, then the applicable Concern `CHECK` rejects
-it.
+AC67. Given direct SQL inserts with a partial Concern creation actor,
+non-integer creation or update time, `updatedAt < createdAt`, a non-canonical
+title, or a title outside the 1-through-2,000 scalar-value bound, when SQLite
+evaluates each insert, then the applicable Concern `CHECK` rejects it.
 
-AC68. Given direct SQL inserts with a partial Concern-reference link actor,
-blank link reason, partial unlink tuple, non-integer `unlinkedAt`, or
-`unlinkedAt < linkedAt`, when SQLite evaluates each insert, then the applicable
-Concern-reference `CHECK` rejects it.
+AC68. Given direct SQL inserts into `topline_concern_tags` with a partial tag
+actor, blank tag reason, or non-integer `taggedAt`, when SQLite evaluates each
+insert, then the applicable Concern-tag `CHECK` rejects it. Given a duplicate
+`(concernId,membershipId)` pair, then the primary key rejects it.
 
 AC69. Given direct SQL inserts with an invalid placement cause or state, a
-partial opening actor, a process actor on `created` or
-`last_membership_unlinked`, a migration or process-reopened actor other than
+partial opening actor, a process actor on `created`, a migration or
+process-reopened actor other than
 `process:tightbeam`, `dueAt != openedAt`, a blank wake ID, a pending row with a
 resolution value, a resolved row with one resolution value missing, a process
 resolution on `linked` or `left_unlinked`, a process terminal resolution with
@@ -2734,9 +2730,8 @@ terminal-reconciliation reason, a process resolution reference other than
 `sourceCausalEventSeq`, a non-reopened row with a source sequence, a
 process-attributed re-upgrade terminal row without a positive
 `resolutionCausalEventSeq`, a `user|session` resolution with a resolution
-sequence, a create/reopen cause reference unequal to the Work Item ID, or a
-last-unlink cause reference without a `tlm_`
-prefix, when SQLite evaluates each insert, then the applicable placement
+sequence, or a create/reopen cause reference unequal to the Work Item ID, when
+SQLite evaluates each insert, then the applicable placement
 `CHECK` rejects it. Given a reopened row whose source causal event belongs to a
 different Work Item, or a terminal row whose resolution causal event belongs to
 a different Work Item, when SQLite evaluates it, then the applicable composite
@@ -2755,8 +2750,8 @@ direct SQL insert attempts a membership carrying either owner, then a composite
 foreign key rejects it.
 
 AC72. Given a Concern in Topline A and a membership in Topline B, when a direct
-SQL insert attempts a Concern reference, then a composite foreign key rejects
-it.
+SQL insert attempts a Concern tag association, then a composite foreign key
+rejects it.
 
 AC73. Given one successful fixture for each mutation row in the R9 table, when
 the matching-version CLI invokes each mutation through the gateway, then the
@@ -2767,11 +2762,11 @@ AC74. Given any successful fixture from AC73, when the client repeats the same
 authorized request after related current state changes, then the replay bytes
 equal the first response bytes and the stored `canonicalResponse` bytes.
 
-AC75. Given a Topline with memberships, open and resolved Concerns, active
-Concern references inserted out of ID order, and events, when its owner calls
+AC75. Given a Topline with memberships, Concerns, current tag associations
+inserted out of ID order, and events, when its owner calls
 `topline <id> --history`, then the envelope and nested objects have exactly the
 R7 fields, membership and Concern arrays use their specified orders,
-`activeConcernReferenceIds` uses UTF-8 ID order, history uses `seq ASC`, and
+`membershipIds` uses UTF-8 ID order, history uses `seq ASC`, and
 each absent optional singleton is JSON null.
 
 AC76. Given one pending migration placement and one resolved placement, when
@@ -2785,11 +2780,11 @@ CLI invokes its Topline operation, then response bytes equal that slug's exact
 canonical error object. Given a mismatched CLI, when it sends the request, then
 the source-baseline HTTP 426 bytes appear instead.
 
-AC78. Given an active Concern reference, when its owner invokes
-`topline-concern-unlink-work`, then the committed
-`concern_work_unlinked` event has `detail.cause = "explicit"`. Given a Work
-membership whose unlink derives a Concern-reference end, when history is read,
-then that derived event has `detail.cause = "membership_unlinked"`.
+AC78. Given an active Concern tag association, when its owner invokes
+`topline-concern-unlink-work`, then the association disappears and one
+`concern_work_untagged` event records the explicit actor, reason, Concern, and
+membership without a cause field. Given membership unlink removes tags, when
+history is read, then no derived untag event exists.
 
 AC79. Given `topline-update` with `toplineId = "tl_a"`, a title supplied as
 `Cafe` plus U+0301, and a reason whose scalar sequence is `line`, U+000A,
@@ -2817,10 +2812,8 @@ those commits in a twin database, when A or B history is read, then its sequence
 values and response bytes remain unchanged.
 
 AC82. Given existing parents in Topline B, when direct SQL attempts an event in
-Topline A that names B's membership, Concern, or Concern reference, then a
-composite foreign key rejects it. Given a reference event that mixes otherwise
-valid parent identifiers from two Toplines, when SQLite evaluates it, then the
-four-column reference foreign key rejects it. Given the same positive `seq` in
+Topline A that names B's membership or Concern, then a composite foreign key
+rejects it. Given the same positive `seq` in
 different Toplines, when both rows use valid parents, then both inserts succeed;
 given a duplicate `seq` in one Topline, then its composite primary key rejects
 the second insert.
@@ -2959,9 +2952,9 @@ deployed-service restart, live migration, or live database mutation is
 authorized. Such an action requires a separate owner instruction outside this
 specification.
 
-AC98. Given specs commit
-`05d08b8af74a877d4dabe3dcba8250787d5d430e`, when the final reviewer inspects both
-candidate diffs, then `Tightbeam.Toplines.query_public/2` and
+AC98. Given the exact co-reviewed specs candidate containing
+`rest-state-api-v1.md`, when the final reviewer inspects both product candidate
+diffs, then `Tightbeam.Toplines.query_public/2` and
 `Tightbeam.Toplines.public_item/1` satisfy the canonical REST projection while
 no `/api/toplines` route, REST cursor, pagination, or Firehose adapter changed
 under these lanes. The only superseded REST text is the temporary CLI-name
@@ -2982,9 +2975,12 @@ deletion is the paired homing change that removes Toplines from every v0.2
 program phase and hierarchy. The two-file set, not either file alone, carries
 the specification-only transition. The program file supplies no Toplines
 product requirement, Target-line revision, implementation custody, or release
-authority. The review evidence records the exact commit and both file SHA-256
-values. An additional claimed canonical file, a path resolved at another
-commit, or an authority claim outside these two scopes fails this case.
+authority. The separate canonical REST contract `rest-state-api-v1.md` is
+co-amended at that same exact candidate without joining the Toplines canonical
+set. The review evidence records the exact commit and SHA-256 values for both
+amended canonical contracts, plus the unchanged paired program-file SHA-256.
+A path resolved at another commit or an authority claim outside these scopes
+fails this case.
 
 ### Traceability
 
