@@ -55,6 +55,13 @@ Authority and evidence:
   D1=A: unlinking a Work membership creates no Placement obligation or prompt.
   This ruling supersedes removal proposal `art_8224f898`; that artifact remains
   provenance only and supplies no current requirement.
+- Mike's consolidated ruling of 2026-09-02, recorded as relief-owner scope
+  correction `att_7c82fae2-6a3c-49a7-9a06-79529d2c097a`, further requires
+  agent-on-user-behalf creation as the primary path, one-call Concern creation,
+  no Concern update command or update columns, and current
+  `topline_concern_refs` rows keyed to `workItemId` rather than membership ID.
+  This successor correction changes only those clauses on the existing
+  targetless candidate.
 - Prior reviewed specification commit
   `3c83d382968f242ebab660f9b67593aa80a1e84e` carried this file at SHA-256
   `1ffc9ee7b984df672b21d46d7a6f3cd3a40b274bd4cec8943377ca47c17881d6`.
@@ -235,13 +242,15 @@ episode.
 **Active membership.** A Work membership whose `unlinkedAt` field is null.
 
 **Concern.** An optional, durable tag definition that belongs to exactly one
-Topline. Its identifier starts with `tlc_`. A Concern groups active Work
-memberships inside its owning Topline. It has no open/resolved lifecycle.
+Topline. Its identifier starts with `tlc_`. A Concern groups Work Items that
+have active memberships inside its owning Topline. It has no open/resolved
+lifecycle.
 
 **Concern tag association.** The current many-to-many association between one
-Concern and one active Work membership in the same Topline. The association is
-current state, not an episode and not history. One Work membership can carry
-many Concerns. One Concern can tag many Work memberships.
+Concern and one Work Item that has an active membership in the Concern's
+Topline. The association is current state, not an episode and not history. One
+Work Item can carry many Concerns in each Topline where it is a member. One
+Concern can tag many Work Items.
 
 **Related agents and proofs.** Assignments, sessions, attests, and artifacts stay
 attached to their Work Items. A Topline does not copy those rows. Its Work
@@ -384,19 +393,21 @@ field is `standalone-toplines-v5`, and its `stampedAt` field is the activation
 Mutation time. Lane 1 creates the row in the same transaction as the complete
 R1 through R6 schema. It is separate from the product-wide `schema_stamp`.
 
-**Toplines schema manifest.** Lane 1's committed, closed list of every table and
-index that the Candidate creates under R1 through R6, plus
+**Toplines schema manifest.** Lane 1's committed, closed list of every table,
+index, and trigger that the Candidate creates under R1 through R6, plus
 `topline_schema_stamp`. The manifest records each exact object name, object
 type, and exact UTF-8 `sqlite_schema.sql` value. It includes `toplines`,
 `topline_work_memberships`, `topline_events`, `topline_idempotency`,
-`topline_concerns`, `topline_concern_tags`,
+`topline_concerns`, `topline_concern_refs`,
 `topline_placement_obligations`, `topline_schema_stamp`, every supporting index
 on those tables, `toplines_id_owner`, `work_items_id_owner`,
 `topline_memberships_active_pair`, `topline_memberships_id_topline`,
 `topline_memberships_work_active`, and the R6 parent index on
-`causal_events`. The two Target lines use the same manifest. A prefix search or
-an implementation-chosen object outside the manifest cannot decide schema
-state.
+`causal_events`. It also includes
+`topline_concern_refs_active_membership_insert`, the R3 trigger that rejects a
+Concern tag without an active Work membership in the same Topline. The two
+Target lines use the same manifest. A prefix search or an implementation-chosen
+object outside the manifest cannot decide schema state.
 
 **Unregistered core schema.** Any object in the closed Toplines schema object
 manifest, other than the stamp table itself, that exists while the Toplines
@@ -645,14 +656,15 @@ or Concern tag does not create membership.
 
 I10. A Concern belongs to one Topline.
 
-I11. A Concern tag association names an active Work membership in that same
-Topline.
+I11. A Concern tag association names a Work Item with an active membership in
+that same Topline.
 
 I12. A Concern tag association does not change the result of a Topline membership
 query or the `work_item.has_topline` rail fact.
 
-I13. Ending a Work membership deletes all of its Concern tag associations in
-the same transaction. The unlink creates no Placement obligation or prompt.
+I13. Ending the active membership for one `(toplineId, workItemId)` pair deletes
+all Concern tag associations for that pair in the same transaction. The unlink
+creates no Placement obligation or prompt.
 
 I14. A Topline close retains its Work memberships, Concern definitions, current
 Concern tag associations, and event history.
@@ -774,7 +786,7 @@ passes from a fresh Gateway process. Passing does not authorize deployment.
 
 I51. The substrate stores each Topline title and Concern title as its Canonical
 title. A valid Canonical title contains from 1 through 2,000 Unicode scalar
-values.
+values. A Concern title is immutable after creation.
 
 I52. A Topline title-update request whose Canonical title equals the stored title
 returns `no_change` for an open or closed Topline. A closed Topline returns
@@ -789,8 +801,8 @@ committed event for that Topline increments it by exactly 1. Activity in another
 Topline cannot change a returned sequence.
 
 I55. Each event's non-null membership and Concern identifiers name parent rows
-in the event's `toplineId`. A Concern tag event's membership and Concern name
-parents in the same Topline.
+in the event's `toplineId`. A Concern tag event names its Work Item in detail;
+the mutation seam verifies that Work Item's active membership in the Topline.
 
 I56. Each placement obligation stores a Placement causal watermark. Opening or
 resolving that obligation and storing its new watermark are one transaction.
@@ -1440,8 +1452,10 @@ The implementation shall add a `toplines` table with these logical fields:
 | `updatedAt` | Mutation time of the last successful mutation. |
 | `closedAt` | Null while open. Set by close. Cleared by reopen. |
 
-`topline-create` creates an open Topline for the caller's user. It accepts no
-owner target. `topline-update` changes the title and requires a reason.
+`topline-create` creates an open Topline for the caller's user. Any
+authenticated user or session agent can call it, and a session agent acts for
+its owning user. It accepts no owner target. `topline-update` changes the title
+and requires a reason.
 `topline-close` and `topline-reopen` require a reason. Closing a Topline does not
 inspect Work Item states. Repeating the same state transition with a new key
 returns `invalid_transition`.
@@ -1541,52 +1555,56 @@ fields:
 | `toplineId` | Existing Topline ID. |
 | `title` | Canonical title containing 1 through 2,000 Unicode scalar values. |
 | `createdActorKind`, `createdActorRef` | Required `user|session` actor pair. |
-| `createdAt`, `updatedAt` | Integer Mutation times. |
+| `createdAt` | Integer Mutation time. |
 
-Concern create and update transform the supplied title to its Canonical title
-before storage or comparison. Concern create sets creation and update time to
-one Mutation time. A Concern has no state, resolution fields, resolve verb,
-reopen verb, or resolution history. The Concern DDL shall enforce
+Concern create transforms the supplied title to its Canonical title before
+storage. A Concern title is immutable. A Concern has no update command, update
+columns, state, resolution fields, resolve verb, reopen verb, or resolution
+history. The Concern DDL shall enforce
 `typeof(title) = 'text'`, `tightbeam_canonical_title(title) IS NOT NULL`,
-`title = tightbeam_canonical_title(title)`, `tightbeam_unicode_scalar_length(title)
-BETWEEN 1 AND 2000`, a complete creation actor, integer `createdAt` and
-`updatedAt`, and `updatedAt >= createdAt`.
+`title = tightbeam_canonical_title(title)`,
+`tightbeam_unicode_scalar_length(title) BETWEEN 1 AND 2000`, a complete
+creation actor, integer `createdAt`, and the Topline foreign key.
 
-The implementation shall add a `topline_concern_tags` table with `toplineId`,
-`concernId`, `membershipId`, `tagReason`, `taggedActorKind`, `taggedActorRef`,
-and `taggedAt`. Its primary key is `(concernId, membershipId)`. It stores only
+The implementation shall add a `topline_concern_refs` table with `toplineId`,
+`concernId`, `workItemId`, `tagReason`, `taggedActorKind`, `taggedActorRef`,
+and `taggedAt`. Its primary key is `(concernId, workItemId)`. It stores only
 current tag associations. It has no association ID, untag fields, lifecycle
 state, or ended episode history. The DDL shall enforce a complete
 `user|session` tag actor, tag-reason bounds, and integer `taggedAt`. Unique
-indexes on
-`(id, toplineId)` for Concerns and memberships support composite foreign keys
-from `(concernId, toplineId)` and `(membershipId, toplineId)`. The association
-therefore cannot name parents from different Toplines. The mutation seam also
-requires the membership to be active.
+indexes on `(id, toplineId)` for Concerns support a composite foreign key from
+`(concernId, toplineId)`. A foreign key on `workItemId` requires an existing
+Work Item. The `topline_concern_refs_active_membership_insert` trigger rejects
+an insert unless that Work Item has an active membership in `toplineId`. The
+mutation seam performs the same check before insertion.
 
 The wire and CLI verbs are:
 
 - `topline-concern-create <toplineId> --title <text> --key <key>`
-- `topline-concern-update <concernId> --title <text> --reason <text> --key <key>`
-- `topline-concern-link-work <concernId> <membershipId> --reason <text> --key <key>`
-- `topline-concern-unlink-work <concernId> <membershipId> --reason <text> --key <key>`
+- `topline-concern-link-work <concernId> <workItemId> --reason <text> --key <key>`
+- `topline-concern-unlink-work <concernId> <workItemId> --reason <text> --key <key>`
 
 The link-work verb applies the Concern as a tag. The unlink-work verb removes
 that tag. They are the tag and untag operations; their `link-work` and
 `unlink-work` spellings are retained only for wire and CLI compatibility. The
-link handler shall require the Concern and active Work membership
-to name the same Topline. Ending a Work membership shall delete all of its
-Concern tag associations in the same transaction. That automatic cleanup
-appends no derived Concern event and creates no Placement obligation or prompt.
+link handler shall require the Work Item to have an active membership in the
+Concern's Topline. Ending that membership shall delete all Concern tag
+associations for `(toplineId, workItemId)` in the same transaction. That
+automatic cleanup appends no derived Concern event and creates no Placement
+obligation or prompt.
 
-Concern create, update, and link-work require an open Topline. Concern
+Any authenticated user or session agent can create a Concern in an owned
+Topline; a session agent acts for its owning user. Agent-on-user-behalf creation
+is the primary conversation path. One user instruction such as `we should focus
+on the security of this` maps to one `topline-concern-create` request. The
+creation requires no draft, preflight, confirmation, or second mutation.
+
+Concern create and link-work require an open Topline. Concern
 unlink-work can run while its Topline is open or closed.
 
-Each reason in R3 is a Mutation reason. A Concern update whose Canonical title
-equals its stored title returns `no_change`. The Topline must be open before
-this equality check runs. A second tag association for the same Concern and
-membership returns `concern_tag_exists`. Removing an absent association returns
-`concern_tag_absent`. These refusals write no row.
+Each reason in R3 is a Mutation reason. A second tag association for the same
+Concern and Work Item returns `concern_tag_exists`. Removing an absent
+association returns `concern_tag_absent`. These refusals write no row.
 
 ### R4. Event history
 
@@ -1617,14 +1635,15 @@ schema or mutation work.
 `topline_created`, `topline_renamed`, `topline_closed`, and `topline_reopened`
 require both optional IDs to be null. A `work_*` kind requires only
 `membershipId`. A non-tag `concern_*` kind requires only `concernId`. A
-`concern_work_*` kind requires `membershipId` and `concernId`. The two
+`concern_work_*` kind requires `concernId`, requires null `membershipId`, and
+names the Work Item in `detail`. The two
 `*_created` kinds require a null reason; each
 other kind requires a Mutation reason.
 
 The closed event-kind set is:
 
 `topline_created`, `topline_renamed`, `topline_closed`, `topline_reopened`,
-`work_linked`, `work_unlinked`, `concern_created`, `concern_renamed`,
+`work_linked`, `work_unlinked`, `concern_created`,
 `concern_work_tagged`, and `concern_work_untagged`.
 
 Each event detail has this closed shape:
@@ -1637,9 +1656,8 @@ Each event detail has this closed shape:
 | `work_linked` | string `workItemId`, string `linkReason` |
 | `work_unlinked` | string `workItemId`, string `unlinkReason` |
 | `concern_created` | string `title` |
-| `concern_renamed` | string `fromTitle`, string `toTitle` |
-| `concern_work_tagged` | string `membershipId`, string `tagReason` |
-| `concern_work_untagged` | string `membershipId`, string `untagReason` |
+| `concern_work_tagged` | string `workItemId`, string `tagReason` |
+| `concern_work_untagged` | string `workItemId`, string `untagReason` |
 
 The event rows and current-state rows shall commit in the same transaction. For
 the first event in one mutation, the mutation seam computes
@@ -1680,9 +1698,8 @@ The closed parameter shapes are:
 | `topline-link-work` | `reason`, `toplineId`, `workItemId` |
 | `topline-unlink-work` | `membershipId`, `reason` |
 | `topline-concern-create` | `title`, `toplineId` |
-| `topline-concern-update` | `concernId`, `reason`, `title` |
-| `topline-concern-link-work` | `concernId`, `membershipId`, `reason` |
-| `topline-concern-unlink-work` | `concernId`, `membershipId`, `reason` |
+| `topline-concern-link-work` | `concernId`, `reason`, `workItemId` |
+| `topline-concern-unlink-work` | `concernId`, `reason`, `workItemId` |
 | `topline-work-leave-unlinked` | `reason`, `workItemId` |
 
 Each listed value is a JSON string. A title value is its Canonical title. Each
@@ -1978,8 +1995,8 @@ arrays:
 
 - `workMemberships`, sorted by `linkedAt ASC, id ASC`, with the membership ID,
   Work Item ID, Work Item title and state, link reason, actor, and link time;
-- `concerns`, sorted by `createdAt ASC, id ASC`, with the active Work membership
-  IDs tagged by each Concern;
+- `concerns`, sorted by `createdAt ASC, id ASC`, with the Work Item IDs tagged
+  by each Concern;
 - `history` only when requested.
 
 The read returns active Work memberships, each current Concern, and current
@@ -2017,27 +2034,29 @@ A Concern object has exactly these fields:
   "createdActor": {"kind": "user", "ref": "mike"},
   "createdAt": 123,
   "id": "tlc_...",
-  "membershipIds": ["tlm_a", "tlm_b"],
   "title": "Migration risk",
   "toplineId": "tl_...",
-  "updatedAt": 123
+  "workItemIds": ["wi_a", "wi_b"]
 }
 ```
 
-`membershipIds` lists active Work memberships tagged with this Concern and
-sorts by membership ID ascending using UTF-8 bytes.
+`workItemIds` lists Work Items currently tagged with this Concern and sorts by
+Work Item ID ascending using UTF-8 bytes. Each listed Work Item has an active
+membership in the Concern's Topline.
 The `concerns` array sorts by `createdAt ASC, id ASC`.
+This `workItemIds` projection is the canonical list-work-by-Concern result; no
+second Concern read resource or issue-list surface ships.
 
 A Concern-tag object used by mutation responses has exactly these fields:
 
 ```json
 {
   "concernId": "tlc_...",
-  "membershipId": "tlm_...",
   "tagReason": "This work addresses the risk",
   "taggedActor": {"kind": "user", "ref": "mike"},
   "taggedAt": 123,
-  "toplineId": "tl_..."
+  "toplineId": "tl_...",
+  "workItemId": "wi_..."
 }
 ```
 
@@ -2137,9 +2156,9 @@ Each successful mutation returns exactly one of these canonical shapes:
 | `topline-create`, `topline-update`, `topline-close`, `topline-reopen` | `{"topline":<Topline summary>}` |
 | `topline-link-work` | `{"membership":<Work-membership object>,"resolvedPlacementId":<string-or-null>}` |
 | `topline-unlink-work` | `{"membership":<Work-membership object>,"openedPlacement":null,"untaggedConcernIds":[<id>...]}` |
-| `topline-concern-create`, `topline-concern-update` | `{"concern":<Concern object>}` |
+| `topline-concern-create` | `{"concern":<Concern object>}` |
 | `topline-concern-link-work` | `{"concernTag":<Concern-tag object>}` |
-| `topline-concern-unlink-work` | `{"concernId":<id>,"membershipId":<id>}` |
+| `topline-concern-unlink-work` | `{"concernId":<id>,"workItemId":<id>}` |
 | `topline-work-leave-unlinked` | `{"placement":<placement>}` |
 
 `untaggedConcernIds` sorts by ID ascending using UTF-8 bytes. A link that
@@ -2154,8 +2173,8 @@ Each Topline-handler refusal returns exactly
 
 | Slug | Message |
 | --- | --- |
-| `concern_tag_absent` | `concern tag is not applied to membership` |
-| `concern_tag_exists` | `concern tag is already applied to membership` |
+| `concern_tag_absent` | `concern tag is not applied to work item` |
+| `concern_tag_exists` | `concern tag is already applied to work item` |
 | `idempotency_conflict` | `idempotency key conflicts with a prior request` |
 | `invalid_message` | `invalid message` |
 | `invalid_transition` | `invalid state transition` |
@@ -2167,7 +2186,7 @@ Each Topline-handler refusal returns exactly
 | `placement_not_pending` | `placement is not pending` |
 | `process_denied` | `process principals cannot access Toplines` |
 | `topline_closed` | `topline is closed` |
-| `topline_mismatch` | `concern and membership toplines differ` |
+| `topline_mismatch` | `concern topline does not contain work item` |
 
 Validation chooses the first refusal in this order: CLI compatibility;
 authentication and principal kind; wire shape; owner-filtered record visibility;
@@ -2178,8 +2197,7 @@ mapping. Transport-level missing or invalid authentication retains its existing
 gateway bytes and does not enter a Topline handler.
 
 Within the mutable-lifecycle phase, a Topline update compares Canonical titles
-before it tests whether the Topline is closed. A Concern update first requires an
-open parent Topline, then compares Canonical titles.
+before it tests whether the Topline is closed.
 
 ### R10. Authorization and validation
 
@@ -2449,27 +2467,32 @@ and history retains both prior and new Canonical titles in the rename event.
 
 ### Concerns
 
-AC18. Given an open Topline, when its owner creates a Concern, then the Concern
-is an active tag definition that belongs to that Topline and no Work Item gains
-membership.
+AC18. Given an authenticated user or session agent, when it creates a Topline,
+then one `topline-create` request creates the Topline for its owning user and
+accepts no owner target. Given an open Topline and the conversation instruction
+`we should focus on the security of this`, when its owner's session agent acts,
+then one `topline-concern-create` request creates the Concern as a tag definition
+inside that Topline. No draft, preflight, confirmation, second mutation, or Work
+membership is created.
 
-AC19. Given a Concern and an active Work membership in the same Topline, when
-the owner applies the Concern, then one Concern tag association exists and
+AC19. Given a Concern and a Work Item with an active membership in the same
+Topline, when the owner applies the Concern, then one Concern tag association
+keyed by `(concernId, workItemId)` exists and
 `work_item.has_topline` has the same value as before the tag.
 
-AC20. Given a Concern in Topline A and a Work membership in Topline B, when a
-caller tries to apply the Concern, then the handler returns `topline_mismatch` and writes
-nothing.
+AC20. Given a Concern in Topline A and a Work Item with an active membership
+only in Topline B, when a caller tries to apply the Concern, then the handler
+returns `topline_mismatch` and writes nothing.
 
 AC21. Given one membership with two Concern tags, when the owner unlinks the
 membership, then both tag associations disappear in the same transaction, the
 response lists both Concern IDs in UTF-8 order, only `work_unlinked` is added to
 history, and no Placement obligation or prompt exists.
 
-AC22. Given one Concern applied to two Work memberships and one membership
-carrying two Concerns, when the owner reads the Topline, then each Concern lists
-its tagged membership IDs in UTF-8 order and both many-to-many associations are
-visible.
+AC22. Given one Concern applied to two Work Items and one Work Item carrying two
+Concerns within their shared Topline, when the owner reads the Topline, then
+each Concern lists its tagged Work Item IDs in UTF-8 order and both many-to-many
+associations are visible.
 
 ### Authorization and visibility
 
@@ -2560,9 +2583,9 @@ memberships, and a visible Work Item with two active memberships, when Rules
 computes `work_item.has_topline`, then the results are respectively nil, nil,
 nil, false, false, and true.
 
-AC44. Given a directly inserted corrupt Concern tag association that names an
-ended Work membership, when Rules computes the fact for that visible Work Item,
-then it returns false.
+AC44. Given a corrupt Concern tag association inserted with the R3 rails
+bypassed for a Work Item whose only Topline membership ended, when Rules
+computes the fact for that visible Work Item, then it returns false.
 
 AC45. Given the shipped identity tree after implementation, when Rules loads,
 then no statute condition names `work_item.has_topline`.
@@ -2599,8 +2622,8 @@ searches the released surfaces, then no Topline, Concern definition, membership,
 placement, or event hard-delete verb exists.
 
 AC50. Given a closed Topline with an applied Concern, when the owner removes the
-tag, then removal succeeds. When the owner tries to create, rename, or apply a
-Concern, then each operation returns `topline_closed` and writes nothing.
+tag, then removal succeeds. When the owner tries to create or apply a Concern,
+then each operation returns `topline_closed` and writes nothing.
 
 AC51. Given a closed or failed same-owner Work Item and an open Topline, when the
 owner links them with a reason and key, then the membership commits.
@@ -2634,20 +2657,17 @@ AC58. Given an open or closed Topline whose stored title equals the requested
 Canonical title, when an authorized caller submits update with a new key, then
 the handler returns `no_change` and writes no event, idempotency row, or
 `updatedAt` change. Given a closed Topline and a different Canonical title, when
-the caller submits update, then the handler returns `topline_closed`. Given an
-Concern under an open Topline and an equal Canonical title, when the caller
-submits update, then the handler returns `no_change` with the same no-write
-result.
+the caller submits update, then the handler returns `topline_closed`.
 
 AC59. Given an applied Concern tag, when another key tries to apply the same
 pair, then it returns `concern_tag_exists`. Given an absent pair, when a caller
 tries to remove it, then it returns `concern_tag_absent`. Neither refusal writes
 a row.
 
-AC60. Given one Work membership tagged with Concerns `tlc_b` and `tlc_a`, when
-the owner unlinks the Work membership, then the response lists `tlc_a` before
-`tlc_b`, both tag rows are absent at commit, and history contains no derived
-Concern untag event.
+AC60. Given one Work Item tagged with Concerns `tlc_b` and `tlc_a` in a
+Topline, when the owner unlinks that Work Item's membership from the Topline,
+then the response lists `tlc_a` before `tlc_b`, both tag rows are absent at
+commit, and history contains no derived Concern untag event.
 
 AC61. Given the released product source, when a source guard searches writes to
 the seven state families named by the Mutation seam, then runtime writes exist
@@ -2707,15 +2727,16 @@ partial unlink tuple, non-`user|session` unlink actor, non-integer `unlinkedAt`,
 `unlinkedAt < linkedAt`, when SQLite evaluates each insert, then the applicable
 membership `CHECK` rejects it.
 
-AC67. Given direct SQL inserts with a partial Concern creation actor,
-non-integer creation or update time, `updatedAt < createdAt`, a non-canonical
-title, or a title outside the 1-through-2,000 scalar-value bound, when SQLite
-evaluates each insert, then the applicable Concern `CHECK` rejects it.
+AC67. Given direct SQL inserts with a partial Concern creation actor, a
+non-integer creation time, a non-canonical title, or a title outside the
+1-through-2,000 scalar-value bound, when SQLite evaluates each insert, then the
+applicable Concern `CHECK` rejects it. The Concern schema has no update,
+lifecycle, or resolution column.
 
-AC68. Given direct SQL inserts into `topline_concern_tags` with a partial tag
+AC68. Given direct SQL inserts into `topline_concern_refs` with a partial tag
 actor, blank tag reason, or non-integer `taggedAt`, when SQLite evaluates each
 insert, then the applicable Concern-tag `CHECK` rejects it. Given a duplicate
-`(concernId,membershipId)` pair, then the primary key rejects it.
+`(concernId,workItemId)` pair, then the primary key rejects it.
 
 AC69. Given direct SQL inserts with an invalid placement cause or state, a
 partial opening actor, a process actor on `created`, a migration or
@@ -2749,9 +2770,9 @@ AC71. Given a Topline owned by user A and a Work Item owned by user B, when a
 direct SQL insert attempts a membership carrying either owner, then a composite
 foreign key rejects it.
 
-AC72. Given a Concern in Topline A and a membership in Topline B, when a direct
-SQL insert attempts a Concern tag association, then a composite foreign key
-rejects it.
+AC72. Given a Concern in Topline A and a Work Item with an active membership
+only in Topline B, when a direct SQL insert attempts a Concern tag association
+in Topline A, then `topline_concern_refs_active_membership_insert` rejects it.
 
 AC73. Given one successful fixture for each mutation row in the R9 table, when
 the matching-version CLI invokes each mutation through the gateway, then the
@@ -2766,7 +2787,7 @@ AC75. Given a Topline with memberships, Concerns, current tag associations
 inserted out of ID order, and events, when its owner calls
 `topline <id> --history`, then the envelope and nested objects have exactly the
 R7 fields, membership and Concern arrays use their specified orders,
-`membershipIds` uses UTF-8 ID order, history uses `seq ASC`, and
+`workItemIds` uses UTF-8 ID order, history uses `seq ASC`, and
 each absent optional singleton is JSON null.
 
 AC76. Given one pending migration placement and one resolved placement, when
@@ -2783,7 +2804,7 @@ the source-baseline HTTP 426 bytes appear instead.
 AC78. Given an active Concern tag association, when its owner invokes
 `topline-concern-unlink-work`, then the association disappears and one
 `concern_work_untagged` event records the explicit actor, reason, Concern, and
-membership without a cause field. Given membership unlink removes tags, when
+Work Item without a cause field. Given membership unlink removes tags, when
 history is read, then no derived untag event exists.
 
 AC79. Given `topline-update` with `toplineId = "tl_a"`, a title supplied as

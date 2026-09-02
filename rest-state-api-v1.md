@@ -343,8 +343,8 @@ authorization grant, or tailnet-identity behavior.
 
 SP7. A Topline records durable human intent: its title, owner, lifecycle,
 memberships, and Concern tags. Each Concern is a tag definition inside exactly
-one Topline. Its current many-to-many associations group active Work
-memberships in that Topline. ExecutionMap reports mechanical evidence the
+one Topline. Its current many-to-many associations group Work Items that have
+active memberships in that Topline. ExecutionMap reports mechanical evidence the
 substrate can derive from work, assignment, turn, attest, wake, decision,
 session, user, marker, and causal-event rows. Similar historical CLI names do
 not make these concepts interchangeable. A client asks Toplines what people
@@ -1021,12 +1021,13 @@ that an adapter conditionally omits.
 | work-item trace | `workItem`, `assignments`, `causalChildren`, `attribution`, `dependencyVersion` |
 
 R7n. For `toplines`, `concerns` contains current Concern tag entries. Each entry
-denotes a tag definition inside exactly one Topline, not an issue with an
-open/resolved lifecycle. `openConcernCount` retains its field name and integer
+denotes a tag definition inside exactly one Topline and lists its currently
+tagged Work Item IDs. Each listed Work Item has an active membership in that
+Topline. A Concern is not an issue and has no update, open/resolved lifecycle,
+or reference episodes. `openConcernCount` retains its field name and integer
 type for compatibility. It equals the number of current Concern tag definitions
-in the Topline. Neither field represents issues, resolution state, or reference
-episodes. This semantic amendment changes no R7 field name and no R7c wire
-type, nullability, nested key, or array-order rule.
+in the Topline. This semantic amendment changes no R7 field name and no R7c
+wire type, nullability, nested key, or array-order rule.
 
 R7m. The transcript-message write seam assigns `messageType` without parsing
 message content. Current assignments are exact:
