@@ -26,8 +26,8 @@ Repository: `git@github.com:clickety-clacks/tightbeam.git`
 
 | Line | Target baseline | Candidate branch | Exact candidate commit |
 | --- | --- | --- | --- |
-| main | `3e1dc56e1bd27854487228c05f4b2e1c9dd4fb22` | `candidate/class-a-failed-turn-main` | `8568d22476fe6435bba2d7afbfb190188f65a34f` |
-| 0.1.9 | `c3299e3a75dab21ed2839822d8ad207514f92782` | `candidate/class-a-failed-turn-019` | `dc4a0d2bf8d00dac2117f1be454292c213c68f9e` |
+| main | `3e1dc56e1bd27854487228c05f4b2e1c9dd4fb22` | `candidate/class-a-failed-turn-main` | `33b975a5570eb7f788c40e1267a05b3f70a908c6` |
+| 0.1.9 | `c3299e3a75dab21ed2839822d8ad207514f92782` | `candidate/class-a-failed-turn-019` | `1ceb210a79fed83fa94db7bfafa65cff7917665d` |
 
 After the gates completed, both target refs were fetched again and were
 confirmed as ancestors of their candidate. `git ls-remote` then confirmed
@@ -50,6 +50,31 @@ that the canonical remote branches resolved to the exact commits above.
   its available transaction-local `spawnedBy` parent topology.
 - The supervision prod ladder advances from heard prods rather than sent
   prods on both lines.
+
+## First-review findings and repairs
+
+The first independent dual-line review was changes-requested in
+`att_ee7169c0-4685-40cb-b5b6-a65ae8b38e79`; its immutable report is
+`art_13b63443` with SHA-256
+`548c58e798c80a9010ff00607040eb292d090c4764453b39cf50040d2835511a`.
+Neither candidate was approved alone.
+
+- F1 found that a boot sweep could classify terminal turns that predated this
+  feature. Both lines now persist a patrol activation boundary before recovery
+  and only classify turns at or after that boundary. Explicit terminal
+  classification can establish the boundary at the observed turn, which keeps
+  the live callback seam complete without admitting predecessor history.
+- F2 found that assignment-bound prompt wakes were excluded from rate-limit
+  retry and that a successor could lose assignment lineage. Both lines now
+  admit eligible assignment-bound prompt wakes and copy both `assignment_id`
+  and `work_item_id` to the deterministic successor.
+- A full-gate schema census then exposed the boundary table's original
+  `patrol_failure_activation` name as an accidental activation-census match.
+  Both lines use `patrol_failure_boundary`; the activation census itself was
+  not weakened.
+
+Exact repair commits are `05762170`, `ac7551bf`, and `33b975a5` on main,
+and `3ff86d0f`, `710302a1`, and `1ceb210a` on 0.1.9.
 
 ## Port and reconciliation record
 
@@ -80,9 +105,10 @@ cd cli && cargo fmt --check && cargo test
 
 Results:
 
-- Authoritative Mix gate: 9 doctests, 2,166 tests, 0 failures, 11 skips.
+- Authoritative Mix gate: 9 doctests, 2,168 tests, 0 failures, 11 skips.
 - CLI gate: 279 tests across unit and integration binaries, 0 failures.
-- Focused failed-turn intent suite: 4 tests, 0 failures.
+- Focused producer, reviewer-reproduction, and activation-census run: 21 tests,
+  0 failures.
 - Related wake, Bubble, supervision, and failed-turn suites: 110 tests,
   0 failures.
 - Exact delivery-sink census: 11 tests, 0 failures.
@@ -99,9 +125,10 @@ cd cli && cargo fmt --check && cargo test
 
 Results:
 
-- Authoritative Mix gate: 9 doctests, 1,770 tests, 0 failures, 11 skips.
+- Authoritative Mix gate: 9 doctests, 1,772 tests, 0 failures, 11 skips.
 - CLI gate: 294 tests across unit and integration binaries, 0 failures.
-- Focused failed-turn intent suite: 4 tests, 0 failures.
+- Focused producer, reviewer-reproduction, and activation-census run: 6 tests,
+  0 failures.
 - Related wake, Bubble, supervision, and failed-turn suites: 105 tests,
   0 failures.
 - Exact delivery-sink census: 12 tests, 0 failures.
@@ -112,9 +139,11 @@ baseline-matching exception was used.
 
 ## Review boundary
 
-Review the two exact commits as one dual-line change. The review should check
-behavioral equivalence across the available parent APIs, deterministic retry
-and escalation identity, cancellation continuity, exactly-once terminal
-classification, Bubble recursion exclusion, and the closed scope above. No
-target branch may advance from these candidates until the independent review
-is clean and the applicable integration gate is green.
+Re-review `33b975a5570eb7f788c40e1267a05b3f70a908c6` and
+`1ceb210a79fed83fa94db7bfafa65cff7917665d` as one indivisible dual-line
+change. Confirm closure of F1 and F2, then check behavioral equivalence across
+the available parent APIs, deterministic retry and escalation identity,
+cancellation continuity, exactly-once terminal classification, Bubble
+recursion exclusion, and the closed scope above. No target branch may advance
+from these candidates until this exact pair receives a reviewed-clean verdict
+and the applicable integration gate is green.
