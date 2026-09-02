@@ -2778,3 +2778,35 @@ and a label for the 315 historical rows that cannot be proven either way.
 
 Recorded 2026-08-31 by the external Claude session on gibson at Mike's
 instruction, from his review of the stall-fix progress report.
+
+## 2026-09-02 — Gibson change law: describe exactly, then a SECOND "yes" from Mike (Mike, after the 0.2.0 install and the production schema migration)
+
+Standing substrate guidance, Mike verbatim: "you do not ever install or
+modify tightbeam on gibson without first describing what the exact change
+will be and a second confirmation from me that 'yes' I do want to make that
+exact change, even if the original request came from me."
+
+So every install, package change, symlink change, service change, schema
+change, adapter change, or live-state mutation on gibson is a TWO-STEP
+ceremony, no exceptions and no inference:
+
+1. DESCRIBE THE EXACT CHANGE to Mike as a decision request: host, the
+   precise before-state and after-state (package version and SHA, file
+   paths, service unit fields, tables and columns, adapter versions), and
+   what will NOT change. "Install the release" is not a description; "replace
+   ~/.local/lib/node_modules/tightbeam 0.1.8 build 1337 with 0.1.9 build
+   NNNN sha X, symlinks A and B, ExecStart unchanged, no gateway restart, no
+   db migration" is.
+2. WAIT FOR MIKE'S SECOND "YES" to that exact description. A prior
+   instruction from Mike that led to the work is NOT the confirmation — the
+   confirmation is a fresh ruling on the exact change. If the change drifts
+   from the description in any detail, it is a new description and a new
+   yes.
+
+Why (two incidents on 2026-09-01/02): a Mike request for a Claude catalog
+fix became a 0.2.0 install on three hosts because "cut a release and
+install" was inferred from earlier instructions and never re-confirmed as
+that exact change; and a work-lane gate migrated production state.db to
+main-line schema with no one intending it. Both would have stopped at step
+1. Gibson remains LOCKED at 0.1.8 until Mike says otherwise through this
+same ceremony.
