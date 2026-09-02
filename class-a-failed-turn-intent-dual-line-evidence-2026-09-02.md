@@ -10,7 +10,8 @@ Work item: `wi_6d418db1-26b4-4ad0-9886-86e757e93342`
 
 Mike elected exact 0.1.9 and main candidates for defects 1–3 without the
 0.2 typed-run-disposition prerequisite. The bounded design input includes
-checkpoint `att_20159eb6`, anatomy `att_e8684ab7-af91-43ee-9c85-07ac78241480`,
+checkpoint `att_20159eb6-94d5-47d7-92de-60ac72d2e9b7`, anatomy
+`att_e8684ab7-af91-43ee-9c85-07ac78241480`,
 and the reviewed patrol classification and escalation specification at
 `511539c8cefe0347cdcc74fcaf93642c6f5299d1` in this repository. The latter
 was reviewed clean in `att_598c2933`, with report `art_e81605d3`.
