@@ -104,16 +104,22 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
 - A completion is already a holder-filed row. The attest insert, guarded assignment
   close, work-item bracket, liveness transition, supervision transition, effort
   cancellation, and marker writes share one transaction
-  (`attest-v1.md:35-42,181-196`; `assignments.ex:1124-1200`).
+  (`attest-v1.md:35-42,181-196`;
+  `lib/tightbeam/assignments.ex` `attest_in_txn/2`, `lifecycle_attest_in_txn/2`, and
+  `apply_lifecycle_attest/5` at exact product commit `6ae34287aa4864b8fe6fabfc96166d02b9827a89`).
 - Assignment creation accepts any active session and does not exclude `isBuiltIn`, while
-  the retire rail makes built-in Main permanent (`assignments.ex:918-1057`;
-  `gateway.ex:5042-5052`). Product ruling
+  the retire rail makes built-in Main permanent
+  (`lib/tightbeam/assignments.ex` `open_assignment_result/5`;
+  `lib/tightbeam/gateway.ex` `retire_result/3` and `completion_retire_in_txn/4`, at exact
+  product commit `6ae34287aa4864b8fe6fabfc96166d02b9827a89`). Product ruling
   `att_e7b138b6-fb9e-4fc5-a00e-b016390a2e25` keeps Main assignable and admits only an
   explicit retain self-disposition for that exact root session.
 - `Assignments.open_count/2` already defines the session-level open-assignment count
-  (`assignments.ex:211-220`).
+  (`lib/tightbeam/assignments.ex` `open_count/2`, at exact product commit
+  `6ae34287aa4864b8fe6fabfc96166d02b9827a89`).
 - The work-item bracket is not this rail. It counts assignments for one work item and
-  targets the work-item's user owner (`work_items.ex:503-537`). This rail counts
+  targets the work-item's user owner (`lib/tightbeam/work_items.ex`
+  `open_assignments?/2` and `arm_slate_in_txn/2`). This rail counts
   assignments for one child session, snapshots the effective reporting parent, and
   routes an unanswered request through the same-owner spawner chain to the owner user.
 - Exact main `6ae34287aa4864b8fe6fabfc96166d02b9827a89` implements the one parent-selection
@@ -123,18 +129,23 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
   contract is the initial snapshot source for the reviewed completion-only rail. The
   current composed database stamp is `coordination-fabric-v1-phase1-v15`.
 - The ordinary wake store is durable and at-least-once; `turns.wakeId` provides the
-  exactly-once enqueue backstop (`wakes.ex:104-200`; `ledger.ex:1-18,99-148`).
+  exactly-once enqueue backstop (`lib/tightbeam/wakes.ex` `schedule_in_txn/2`;
+  `lib/tightbeam/ledger.ex` `@ddl` and `enqueue_in_txn/2`).
 - Ordinary wake delivery can re-resolve a stale lineage target
-  (`supervision.ex:735-770,2680-2695`; `gateway.ex:1313-1353`). R7 disables that behavior
+  (`lib/tightbeam/supervision.ex` `ladder_target/3`;
+  `lib/tightbeam/gateway.ex` `delivery_target/3`). R7 disables that behavior
   for completion-linked wakes: exact parent and report-to incarnation keys never
   retarget.
 - The current assignment-change wire event is a post-commit best-effort callback and
-  cannot carry this guarantee (`assignments.ex:691-709`; `gateway.ex:5631-5648`).
+  cannot carry this guarantee (`lib/tightbeam/gateway.ex` `emit_assignment_change/3`).
 - The current retired-strand parent prompt is also post-commit and has no durable wake
-  row (`supervision.ex:1928-1961`). It is evidence, not a reusable guarantee.
+  row (`lib/tightbeam/supervision.ex` `notify_stranded_ancestor/2`). It is evidence, not a reusable guarantee.
 - The CLI exposes only `harness-process list`; it exposes no park/relaunch action
-  (`cli/src/args.rs:513-514,1488-1501`). The existing internal harness park records do not
-  authorize inventing that missing operator primitive (`harness_process.ex:202-315`).
+  (`cli/src/args.rs` `HELP_TEMPLATE`, the `"harness-process"` dispatch arm, and
+  `parse_harness_process`, at exact product commit
+  `6ae34287aa4864b8fe6fabfc96166d02b9827a89`). The existing internal harness park records do not
+  authorize inventing that missing operator primitive (`lib/tightbeam/harness_process.ex`
+  `begin_park/2`, `complete_park/2`, and `park/2`).
 
 ### Revalidation rulings for the five post-review hunks
 
@@ -166,7 +177,7 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
    that owner. This amendment adds no retired-session credential or verb exception.
 2. **F2 — carry the authenticated device user as a typed principal.** The device DELETE
    route already authenticates a device row before it constructs generic retirement
-   (`wire/router.ex:235-252,433-443`). It must place
+   (`lib/tightbeam/wire/router.ex` `DELETE /api/streams/:key` and `retire_target/4`). It must place
    `principal={:user, device.user_id}` on that call. Gateway retirement must derive the
    owner and the durable acting principal from the typed principal, not from `origin`.
    R3, R12, R13, A14, and A21 specify and verify this path.
@@ -236,7 +247,7 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
 - No new park, relaunch, stop, recycle, or process-kill contract. Work item
   `wi_6937890c-6ba6-48b7-a9d2-4eb4510fe245` owns that primitive.
 - No change to work-item causal parent derivation, `createdInTurnSeq`, `jobRef`, or the
-  topology projection in `Toplines` (`toplines.ex:435-573,650-710`).
+  topology projection in `Toplines` (`lib/tightbeam/toplines.ex` `list/2` and `get/2`).
 - No replacement for the work-item routed/slate brackets. A work item with zero open
   assignments and a session with zero open assignments are different facts.
 - No replacement for fault bubbling, supervision prods, strand handling, role fallback,
@@ -285,7 +296,8 @@ lifecycle disposition when one session works across several items.
 
 The existing generic `decision_requests` table is not reused. Its closed `statute` and
 `effort` kinds, authorization, outcomes, waiver semantics, and consumption lifecycle
-serve different invariants (`escalation.ex:27-94,292-321`). Extending that central
+serve different invariants (`lib/tightbeam/escalation.ex` `@decision_request_ddl`,
+`resolve/3`, `escalate/4`, and `consume/2`). Extending that central
 mechanism would widen more surface than the required completion lifecycle. The focused
 row below carries both the notice and its optional disposition request.
 
@@ -420,12 +432,16 @@ explicit stored parent or Owner Main.
 - **Retire**: acknowledge in the same database transaction that commits the existing
   session-retire state transition. Existing cascade, interruption, wire removal, and
   post-commit reaping behavior remains authoritative
-  (`gateway.ex:5022-5103,5174-5289`; `org.ex:517-625`).
+  (`lib/tightbeam/gateway.ex` `retire_result/3`, `retire_cascade_in_txn/8`,
+  `retire_session_in_txn/7`, and `reap_retired_sessions/3`;
+  `lib/tightbeam/org.ex` `retire_in_txn/4`, at exact product commit
+  `6ae34287aa4864b8fe6fabfc96166d02b9827a89`).
 - **Typed wake cancellation**: a call to `Wakes.cancel_in_txn/2` whose closed requester,
   reason, durable source, and outcome fields produce one cancellation row. This rail does
   not update a pending wake directly. Reissue, supersession, acknowledgment, retirement,
   and stale-delivery refusal each name their exact cause and process principal through
-  this seam (`wakes.ex:290-352,478-516`).
+  this seam (`lib/tightbeam/wakes.ex` `cancel_in_txn/2`, `authorize_cancel/2`,
+  `validate_cancellation/5`, and `commit_cancellation/3`).
 
 ## Assumptions
 
@@ -434,26 +450,27 @@ explicit stored parent or Owner Main.
    races roll back the attest (`attest-v1.md:181-196,272-280`).
 3. Session rows persist after retirement. `spawnedBy` preserves the durable creation
    provenance that R9 alone can walk for an unanswered action request
-   (`org.ex:65-90,505-565`).
+   (`lib/tightbeam/org.ex` `@ddl`, `create_in_txn/2`, and `effective_parent_in_txn/2`).
 4. Initial parent-notice admission requires the selected effective parent to carry the
    child's `ownerUserId` and not equal the non-root child. A missing, inactive,
    foreign-owned, or self-cycling snapshot is dirt; the
    producer reports it, creates no wake for that target, and applies R9's typed
    same-owner search for an action request. A `notice-only` completion does not search.
 5. The owner's built-in Main is permanent under the current retire rail
-   (`gateway.ex:5042-5052`). Root Main has no ordinary parent; R5 preserves its explicit
+   (`lib/tightbeam/gateway.ex` `retire_result/3` and `completion_retire_in_txn/4`, at
+   exact product commit `6ae34287aa4864b8fe6fabfc96166d02b9827a89`). Root Main has no ordinary parent; R5 preserves its explicit
    retain-only self-request without making Main a fallback for another child.
 6. `Wakes.schedule_in_txn/2` can arm a prompt or internal deadline wake inside the
-   assignment-close transaction (`wakes.ex:104-200`).
+   assignment-close transaction (`lib/tightbeam/wakes.ex` `schedule_in_txn/2`).
 7. Prompt wake delivery uses the existing projection and turn pipeline. Aware and
    unaware clients can both read the ordinary message payload
-   (`wire/payloads.ex:110-139`).
+   (`lib/tightbeam/wire/payloads.ex` `server_message/1`).
 8. `wi_6937890c-6ba6-48b7-a9d2-4eb4510fe245` will define a safe, authorized park
    operation and its durable success result. This spec does not assume its function or
    wire name.
 9. Successful device authentication returns a device row with a non-empty `user_id`.
    The existing stream ownership check admits only a target session owned by that user
-   (`wire/router.ex:235-252,433-443`).
+   (`lib/tightbeam/wire/router.ex` `DELETE /api/streams/:key` and `retire_target/4`).
 
 ## Invariants
 
@@ -635,7 +652,8 @@ later deadline can create a new generation with another target only through R8-R
 
 The completion row, not `wakes.assignmentId`, carries assignment correlation. Current
 code treats each process-origin prompt wake with an `assignmentId` as supervision-owned
-and can suppress it when `work-blocked` stands (`wakes.ex:1210-1285`). Leaving that
+and can suppress it when `work-blocked` stands
+(`lib/tightbeam/wakes.ex` `suppressed_by_recognition?/2`). Leaving that
 carrier null prevents this completion notice from being misclassified. Leaving
 `work_item_id` null prevents the generic wake-cancellation projection from treating a
 session-lifecycle request as work-item liveness. The exact prompts below still carry the
@@ -663,7 +681,8 @@ cancels the still-pending wake with existing reason `target_unresolvable`, sourc
 `tightbeam:wake-scheduler`, and outcome `no_replacement`. The check and delivery or
 cancellation are indivisible. The scheduler's earlier selection grants no delivery
 authority. Cancellation makes the R14 receipt `canceled`, not `inconsistent`; its later
-fired update cannot match (`wakes.ex:1166-1204`; `gateway.ex:978-1135`). No completion
+fired update cannot match (`lib/tightbeam/wakes.ex` `mark_fired/2`;
+`lib/tightbeam/gateway.ex` `deliver_prompt_in_txn/5`). No completion
 delivery path climbs, falls back, retargets, or rewrites the card declaration.
 An owner-user carrier failure writes R15's `owner-root`/`owner-carrier-unavailable`
 detail. A generation-0 notice whose typed recipient equals the immutable parent snapshot
@@ -765,7 +784,8 @@ delivery-versus-reissue race two results: delivery commits first and the old wak
 longer pending, or reissue cancels first and R7 refuses the old callback. No two
 action-notice generations for one request remain pending after commit. Each reissued action
 notice uses R7's exact-target wake fields. `turns.wakeId UNIQUE` prevents a duplicate
-turn for one action-notice generation (`ledger.ex:1-18,99-148`). Membership history makes the
+turn for one action-notice generation (`lib/tightbeam/ledger.ex` `@ddl` and
+`enqueue_in_txn/2`). Membership history makes the
 visited recipient set and each count reset replayable without mutable hidden state.
 
 ### R9 — Deadline reissues; it does not judge
@@ -819,7 +839,7 @@ Every successful `assign` and `dispatch` insert and every successful
 `reopen-assignment` transition for a child session calls the one
 `supersede_open_for_assignment_in_txn/3` seam. An insert calls it after the assignment,
 effect, and file rows exist and before the supervision transition
-(`assignments.ex:918-1057`). A reopen calls it after the guarded assignment update
+(`lib/tightbeam/assignments.ex` `open_assignment_in_txn/6`). A reopen calls it after the guarded assignment update
 changes the outcome to `open` and before the
 supervision transition. The seam changes an open completion request for that child to
 `superseded/new-assignment`. It first writes the typed completion transition and its
@@ -940,15 +960,19 @@ The action handler uses this refusal precedence:
   gives the exact root Main its specific response; a non-root built-in dirt row receives
   the existing generic `denied` result and no lifecycle mutation. The current gateway
   then extracts one DB-only subtree/critical-lease preflight from
-  `retire_cascade_in_txn/6`; the generic retire verb and completion disposition both call
-  it (`gateway.ex:5042-5052,5174-5233`). If no target-subtree lease is active, the current
-  parent-last cascade calls the same `retire_session_in_txn/6` path. Both entry points
+  `retire_cascade_in_txn/8`; the generic retire verb and completion disposition both call
+  it (`lib/tightbeam/gateway.ex` `retire_result/3`, `completion_retire_in_txn/4`, and
+  `retire_cascade_in_txn/8`, at exact product commit
+  `6ae34287aa4864b8fe6fabfc96166d02b9827a89`). If no target-subtree lease is active, the current
+  parent-last cascade calls the same `retire_session_in_txn/7` path. Both entry points
   supply the typed caller principal required by R3. The shared retirement handler derives
   the owner and serialized acting principal from that value once, before the transaction,
   and passes the serialized principal through the cascade. That path calls the
   completion retirement seam before `Org.retire_in_txn/4`, because Org's current
   retirement transition cancels target-gated wakes after the session state update
-  (`gateway.ex:5259-5270`; `org.ex:540-625`). The completion seam writes its
+  (`lib/tightbeam/gateway.ex` `retire_session_in_txn/7`;
+  `lib/tightbeam/org.ex` `retire_in_txn/4` and `retire_active_in_txn/4`, at exact product
+  commit `6ae34287aa4864b8fe6fabfc96166d02b9827a89`). The completion seam writes its
   acknowledgment lifecycle mirror, cancels its deadline and pending parent or report-to
   notice through `obligation_disposed` with source and disposition
   `completion_transition`, and stores `decision='retire'` before Org sees the
@@ -1170,14 +1194,15 @@ opaque `detail`. JobTrace exposes `detail`; it does not parse it.
 
 The rank map remains closed. `Map.fetch!/2` continues to raise for an unranked type. The
 two new ranks preserve the relative order of each existing type
-(`job_trace.ex:15-53`).
+(`lib/tightbeam/job_trace.ex` `@type_rank` and `build/2`).
 
 ### R16 — Wire compatibility and exact payload
 
 No socket frame type changes. The notification is an ordinary stored `message` with
 `role='user'`, `sender='process:tightbeam'`, and the existing
 `[from process:tightbeam]` provenance stamp. Existing clients render readable text and
-aware clients retain the same sender anti-forgery rule (`wire/payloads.ex:10-31,110-139`).
+aware clients retain the same sender anti-forgery rule
+(`lib/tightbeam/wire/payloads.ex` `server_message/1`).
 
 For an open request, the unstamped current-recipient prompt body is exactly:
 
@@ -1352,7 +1377,8 @@ stamp `coordination-fabric-v1-phase1-v15`. A database carrying v15 or any other 
 refused by name before schema-module DDL or feature queries run. Tightbeam does not
 alter, rebuild, sniff, copy, or repair it. The operator moves it aside and lets this
 build create a fresh database, as the existing shape refusal instructs
-(`schema.ex:88-98,1817-1914`).
+(`lib/tightbeam/schema.ex` `@shape` and `check_shape/1`, at exact product commit
+`6ae34287aa4864b8fe6fabfc96166d02b9827a89`).
 
 The release migrates and backfills no rows. Recreation starts with no assignments,
 completion rows, or historical notices. The first admitted terminal transition in the
@@ -1360,13 +1386,14 @@ recreated database is the first eligible cause. Historical zero-session reconcil
 is outside this runtime producer. Downgrade means restoring a database created by
 the downgraded build; a build that does not carry the exact stamp refuses this database.
 Preserve the registered internal consumer beside `effort_probe` and `effort_deadline` in
-the gateway child specification, not in `Wakes` (`gateway.ex:292-300`).
+the gateway child specification, not in `Wakes` (`lib/tightbeam/gateway.ex` `children_after_preflight/1`
+and its internal-consumer map).
 
 The gateway and Rust CLI retain `completion-notices`, `completion-disposition`, and
 optional `reportToSessionKey`/`--report-to` on assignment creation. This revision extends
 their existing prompt and JSON projections without adding a command. Because
 the package is pre-1.0 and currently requires exact CLI/gateway versions, the release
-bumps both together (`cli_compatibility.ex:1-38`). Old Clawline clients remain compatible
+bumps both together (`lib/tightbeam/cli_compatibility.ex` `check/2`). Old Clawline clients remain compatible
 because the wire frame is unchanged.
 
 ### R18 — One mutation seam
@@ -1632,7 +1659,8 @@ CREATE INDEX completion_escalation_wakes_completion
 `Org.personal_session_key(ownerUserId)` in the close transaction. The DDL does not embed
 the Main key format. The action seam rechecks both inputs before it writes
 `retained_root`. This keeps topology in `Org.personal_session_key/1`, its existing single
-home (`org.ex:1035-1042`). The DDL makes a root holder's parent target the child itself
+home (`lib/tightbeam/org.ex` `personal_session_key/1`, at exact product commit
+`6ae34287aa4864b8fe6fabfc96166d02b9827a89`). The DDL makes a root holder's parent target the child itself
 through `root-self`; it does not make Main a fallback for another child.
 
 `immediateParentSessionKey` and `parentSessionKey` deliberately have no session foreign
@@ -1669,7 +1697,8 @@ Steps 5-10 preserve the current relative order of steps 6-10. The shared produce
 enters immediately after the guarded close so each later failure rolls back the
 completion row and each admitted initial notice with the attest and
 assignment close
-(`assignments.ex:1130-1200`).
+(`lib/tightbeam/assignments.ex` `apply_lifecycle_attest/5`, at exact product commit
+`6ae34287aa4864b8fe6fabfc96166d02b9827a89`).
 
 Revocation uses this total order in the existing revocation transaction:
 
@@ -1735,7 +1764,9 @@ channel. The `tightbeam:completion-escalation` pair admits only R8's pending his
 action notice when reissue cannot arm its replacement. A completion cancellation
 command that fails one check returns `false`; each completion caller converts `false`
 to a transaction failure. Existing reason meanings and every unrelated requester and
-compatibility pair remain unchanged (`wakes.ex:290-352,478-516,599-606,651-789`).
+compatibility pair remain unchanged (`lib/tightbeam/wakes.ex` `cancel_in_txn/2`,
+`authorize_cancel/2`, `validate_cancellation/5`, `durable_source/6`,
+`validate_disposition/3`, and `commit_cancellation/3`).
 
 Preserve `Wakes.fire_internal_in_txn/4` as the wake-owned CAS that changes one pending wake
 with the expected internal consumer to `fired` and sets `firedAt`. It returns `true` only
