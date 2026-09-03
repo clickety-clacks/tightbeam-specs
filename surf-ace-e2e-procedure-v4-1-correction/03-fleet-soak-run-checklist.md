@@ -81,6 +81,8 @@ Final invariant sign-off:
 - **Procedure bundle:** `surf-ace-e2e-procedure-v4.1`
 - **Preflight executor:**
 - **Gated E2E operator:**
+- **Preflight-ready fact kind:**
+- **Preflight-ready fact scope:**
 - **Primary admitted surface:**
 - **Primary admission basis:** `already-lockless / separately authorized explicit migration material`
 - **Primary admission evidence:**
@@ -229,6 +231,10 @@ Paths:
 - [ ] Each returned surface is recorded as a discovered candidate, not an admitted target
 - [ ] One discovered candidate is selected as the primary surface
 - [ ] Already-lockless evidence is immutable, issued by a separately authorized preflight executor, and records `admissionBasis: already-lockless`, `lockless: true`, exact surface/fixture binding, exact run-owned state root, exact gated operator, covered operations, verification method/result, reversible probe and rollback proof, issuer/authority, issue time, expiry, cleanup, restart/recovery validity, custody handoff, and artifact identity/SHA-256; or separately authorized explicit migration material and its supported CLI input location are bound to the exact surface and operation
+- [ ] Before preflight, the gated operator subscribed to the recorded preflight-ready fact kind and work-item scope
+- [ ] After the admission row was recorded, the preflight executor ran fresh `list` through the exact state root and matched the current controller, selected surface, and pane before it filed the fact
+- [ ] The exact preflight-ready fact arrived before the gated operator evaluated the row; a direct message, completion, or artifact alone did not transfer custody
+- [ ] After fact delivery, the gated operator ran fresh `list` through the exact state root and matched the current controller, state root, operator, surface, pane, boundary, and operation set with the row
 - [ ] Admission verifier rejected generic discovery/topology/readback/diagnostics, remembered success, operator assertion, another surface's result, every read-only row, every row from another state root, and every record with a missing, expired, authority-mismatched, fixture-mismatched, state-root-mismatched, operator-mismatched, surface-mismatched, or operation-out-of-scope field
 - [ ] Branch, HEAD SHA, deployed SHA/package identity, deploy state, admission basis, exact state-root binding, exact gated operator, rollback proof, and handoff evidence recorded for the primary surface
 - [ ] Each optional additional surface has its own admission evidence before any operation targets it
@@ -243,9 +249,9 @@ Paths:
 
 Admission log — this table is the only seam that changes a candidate to admitted:
 
-| Candidate `surfaceId` | Controller fixture / expiry / cleanup | Run-owned state root + gated operator | Basis and explicit assertion | Issuer/authority + evidence or migration-material artifact/SHA-256 | Verification method/result + issue time | Covered target operations | Rollback proof + handoff | Restart/recovery validity | Disposition |
+| Candidate `surfaceId` | Controller fixture / expiry / cleanup | Run-owned state root + gated operator | Basis and explicit assertion | Issuer/authority + evidence or migration-material artifact/SHA-256 | Verification method/result + issue time | Covered target operations | Rollback proof + fact handoff | Restart/recovery validity | Disposition |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-|  |  |  | `already-lockless + lockless:true / explicit migration` |  |  |  |  |  | `primary / optional / excluded` |
+|  |  |  | `already-lockless + lockless:true / explicit migration` |  |  |  | `fact kind + scope + delivered fact` |  | `primary / optional / excluded` |
 
 ---
 

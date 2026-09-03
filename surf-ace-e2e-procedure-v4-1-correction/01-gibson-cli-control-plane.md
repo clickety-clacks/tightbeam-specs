@@ -52,6 +52,7 @@ Record these values before the first command:
 - CLI execution host;
 - separately authorized preflight executor identity and assignment;
 - designated gated E2E operator identity and assignment;
+- preflight-ready fact kind and work-item scope;
 - controller endpoint;
 - controller fixture identity, expiry, and cleanup contract;
 - run-specific state-root path;
@@ -144,7 +145,9 @@ READ_INPUT_JSON="$(jq -nc --arg scopeId "$READ_SCOPE_ID" '{scopeId:$scopeId}')"
   read --input-json "$READ_INPUT_JSON"
 ```
 
-Require a current synchronized scope before using the read as post-operation proof. Store the complete JSON result and acknowledgement state.
+Store the response in a file. Require CLI exit code 0, top-level `ok: true`, `command: read`, the expected `result.scopeId`, the matching acknowledgement scope, `result.cacheStatus: current`, and a content record with the expected `contentId`. Do not require `result.ok`; local `read` does not use the network-response envelope.
+
+Source `05-read-response-validator.sh` from the canonical bundle. Call `surf_ace_read_response_ok` with the CLI exit code, response path, expected scope, and expected content id. The exact tick-0 response in `fixtures/tick-0-read-success.json` must pass the validator self-test.
 
 ### Topology changes
 
@@ -232,23 +235,26 @@ Treat a controller-hosted client as a candidate only if `list` proves a distinct
 Run this gate after the Electron cleanup and build-identity steps, but before Phase 1.
 
 1. Verify the CLI file SHA-256 and bind it to its source and review.
-2. Verify the controller endpoint fixture, its identity, expiry, cleanup contract, and host reachability. Create or select the empty run-specific state root that the gated operator will later use.
+2. Verify the controller endpoint fixture, its identity, expiry, cleanup contract, and host reachability. Create or select the empty run-specific state root that the gated operator will later use. Record one run-specific preflight-ready fact kind and the work-item scope.
 3. Run the harmless CLI `list` invocation.
 4. Store the full request, response, exit status, endpoint identity, state-root identity, and CLI hash.
 5. Require `ok: true` and a coherent discovered fleet.
 6. Stop `RED — BLOCKED: CLI_CONTROL_PLANE_UNAVAILABLE` if the CLI cannot execute, reach the approved controller endpoint, establish controller identity, or return coherent topology.
 7. Record each returned surface as a discovered candidate with its pane identities, stable identity, topology revision, product build, and observability level.
 8. Select one candidate as the required primary surface. Select additional candidates only when the run needs optional multi-surface coverage.
-9. For each selected candidate, require one of these evidence paths:
+9. Before the preflight starts, the gated operator subscribes to the exact preflight-ready fact kind and scope. A fallback wake can report a missing fact, but it never transfers custody.
+10. For each selected candidate, require one of these evidence paths:
    - a separately authorized preflight executor runs the bounded reversible probe inside the exact run-owned state root, covers each planned first-boundary operation, restores the preflight baseline, and issues the immutable already-lockless row; or
    - the run records separate authority, exact explicit migration material, and supported CLI input location for that surface and operation.
-10. Admit the candidate only after step 9 passes. Exclude candidates without one of those two evidence bases. For the already-lockless path, the row must name the exact controller fixture, exact surface and pane, exact run-owned state root, exact gated operator, exact covered operations, issue time, expiry, restart validity, cleanup contract, rollback proof, and custody handoff.
-11. Perform all required multi-pane topology work inside the primary admitted surface. Treat multi-surface execution as optional. Apply this gate independently to each additional surface.
-12. If any selected operation returns `pair.request` with `capability_mismatch`, stop before mutation. Preserve the request and response. Classify endpoint/procedure readiness. Clean the run-owned fixture and state at the terminal boundary. Route a fresh fixture. Treat it as a new admission boundary: repeat fixture verification, fresh `list` discovery, candidate selection, and steps 9–10 for every surface before any target operation. Do not retry, bypass the refusal, reuse an old fixture's admission row, invent migration material, or require a source change.
+11. The preflight executor runs fresh `list` through the exact state root after it records the row. It compares the returned `controllerInstanceId`, selected surface, and pane with the row. It files the preflight-ready fact only when every binding matches.
+12. After the fact arrives, the gated operator runs fresh `list` through the exact state root. It compares the current controller, state root, operator, surface, pane, boundary, and operation set with the row. A completion, direct message, or artifact without the matching fact is not a handoff.
+13. Admit the candidate only after steps 10–12 pass. Exclude candidates without one of those two evidence bases. For the already-lockless path, the row must name the exact controller fixture, exact surface and pane, exact run-owned state root, exact gated operator, exact covered operations, issue time, expiry, restart validity, cleanup contract, rollback proof, preflight-ready fact kind and scope, and custody handoff.
+14. Perform all required multi-pane topology work inside the primary admitted surface. Treat multi-surface execution as optional. Apply this gate independently to each additional surface.
+15. If any selected operation returns `pair.request` with `capability_mismatch`, stop before mutation. Preserve the request and response. Classify endpoint/procedure readiness. Clean the run-owned fixture and state at the terminal boundary. Route a fresh fixture. Treat it as a new admission boundary: repeat fixture verification, fresh `list` discovery, candidate selection, and steps 9–13 for every surface before any target operation. Do not retry, bypass the refusal, reuse an old fixture's admission row, invent migration material, or require a source change.
 
-After a restart, relaunch, gateway/provider bounce, network recovery, ownership handoff, or state-root change, run discovery again. Reuse admission only when the exact surface/controller-fixture binding is unchanged, the same gated operator still owns the run, the same state root remains in force, the row is not read-only, and the recorded admission evidence explicitly covers that boundary. Otherwise, treat the result as a candidate and repeat steps 7–10 before the next target operation. Never reuse admission across a fresh-fixture route; fresh discovery and a new admission-table row are mandatory even if a `surfaceId` repeats.
+After a restart, relaunch, gateway/provider bounce, network recovery, ownership handoff, or state-root change, run discovery again. Reuse admission only when the exact surface/controller-fixture binding is unchanged, the same gated operator still owns the run, the same state root remains in force, the row is not read-only, and the recorded admission evidence explicitly covers that boundary. Otherwise, treat the result as a candidate and repeat steps 7–13 before the next target operation. Never reuse admission across a fresh-fixture route; fresh discovery and a new admission-table row are mandatory even if a `surfaceId` repeats.
 
-Immediately before each target operation, recheck the admission row's expiry, exact surface/controller-fixture binding, exact state-root binding, exact gated-operator binding, boundary validity, operation coverage, and non-read-only status. If one check fails, return the surface to candidate state and repeat steps 7–10. Do not target the surface until a new row passes.
+Immediately before each target operation, recheck the admission row's expiry, exact surface/controller-fixture binding, exact state-root binding, exact gated-operator binding, boundary validity, operation coverage, and non-read-only status. If one check fails, return the surface to candidate state and repeat steps 7–13. Do not target the surface until a new row passes.
 
 Do not require a separate tool declaration. Do not call a provider plugin as a substitute.
 

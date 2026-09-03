@@ -1,7 +1,8 @@
 # Surf Ace Gibson CLI E2E procedure bundle V4.1
 
 This bundle is the complete operator procedure for a Gibson-coordinated Surf Ace fleet soak.
-V4.1 repairs only the mutation-admission seam for the current Linux Racter path.
+V4.1 introduced the mutation-admission seam for the current Linux Racter path.
+This revision also repairs the two operator faults that stopped the 2026-09-03 run before its first capture.
 Use the bundle documents in this order:
 
 1. Read `00-v4-contract.md` for the V4.1 scope and acceptance contract.
@@ -9,6 +10,7 @@ Use the bundle documents in this order:
 3. Execute `02-fleet-soak-phases.md` in order.
 4. Complete `03-fleet-soak-run-checklist.md` while the run executes.
 5. Use `04-v4-changed-clauses.md` to review each V4 clause changed by V4.1.
+6. Source `05-read-response-validator.sh` from the run-specific harness.
 
 The bundle does not authorize product, package, install, endpoint, live, deployment, or state action by itself.
 The operator must obtain separate authority for every approved soak action and every fault injection.
@@ -32,6 +34,10 @@ The operator must use topology changes inside one admitted surface for the requi
 If `pair.request` returns `capability_mismatch`, the operator stops before mutation, preserves the response, classifies endpoint/procedure readiness, cleans the run-owned fixture and state, and routes a fresh fixture. The operator does not retry, bypass the refusal, invent migration material, or require a source change. A fresh fixture begins a new admission boundary. The operator must run fresh discovery and create a new passing admission row for every surface before the fresh fixture targets it.
 
 Only one gated E2E operator may consume one admission row. A new operator, a new state root, cleanup that releases the fixture, a changed controller/surface/pane binding, or a restart boundary that the row does not explicitly cover invalidates the row until a new one passes.
+
+The gated operator must subscribe to one run-specific preflight-ready fact before the preflight starts. The preflight executor files that fact only after it records the immutable admission row and verifies the row against a fresh `list` result from the exact state root. After the fact arrives, the operator must run `list` again and compare the current controller, state root, operator, surface, pane, boundary, and operation set with the row. A completion, direct message, or admission artifact without the matching fact does not transfer custody.
+
+For local `read`, a successful response has top-level `ok: true`. Its `result` contains the acknowledgement, `cacheStatus`, records, and scope. It does not contain `result.ok`. The harness must use `05-read-response-validator.sh` and must not apply the network-response predicate to `read`.
 
 ## Frozen source custody
 
@@ -65,3 +71,5 @@ The completed checklist and evidence determine the run grade. This procedure nev
 ## V4.1 source ruling
 
 V4.1 consumes reviewed V4 artifact `art_a19b6b3a` at SHA-256 `fb832918337290546c321b7b166c6147703e2049c7ab8abf27f02010f990f0d3`, read-only admission artifact `art_545e1cf3` at SHA-256 `3e928b4224d19db47e0ebd6a09fe3b9e088c52829b9711a2ec104015a7c6e0cc`, and Red report `art_876f6fce`. The referenced report `art_88d4ac74` still had no surviving bytes and was not inspected or reconstructed. The invalid artifact `art_ff2cad0e` is not an input.
+
+This corrective revision also consumes checkpoint `art_ada61ba4` at SHA-256 `c6624e32c9fdb45589f07f56cb70b95b195c9a400c209a9fc635b0bb8f2d526b`. The checkpoint preserved the exact successful tick-0 `read` response and proved that the run-specific harness rejected it only because `result.ok` was absent. The revision also consumes preflight row `art_37ae29b4` at SHA-256 `33fab770a28fcfd72848261c2ba4db31954e0542fbe9413a6228555fd3ae0980`. That row bound another state root, controller, surface, and pane, and no required preflight-ready fact transferred custody to the stopped operator.

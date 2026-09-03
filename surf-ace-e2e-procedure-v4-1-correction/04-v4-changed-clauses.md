@@ -50,3 +50,15 @@ Red report `art_876f6fce` proved that V4 over-admitted a read-only same-epoch ro
 ## Unchanged endurance structure
 
 V4.1 retains V4 Pre-flight 0–3; Phases 1, 2, 2.5, 2.6, 3, 4, and 5; repeated pushes with per-push capture; two-pane and three-pane topology; ten churn cycles; the 60-minute churn dwell with 10-minute checkpoints; 2-minute checks; 5-, 15-, and 30-minute idle checkpoints; longitudinal 10-minute checks; the required bounded restart/recovery cycle; Aleph visual proof; invariant grading; failure capture; and final release judgment.
+
+## 2026-09-03 operator-harness correction
+
+Checkpoint `art_ada61ba4` proved that the run-specific harness rejected a successful tick-0 local `read` before capture. The CLI exited 0 and returned top-level `ok: true`, `result.cacheStatus: current`, the matching scope and acknowledgement, and the expected content record. Local `read` does not return `result.ok`. This revision adds the real response fixture and a validator that uses the correct local-read contract.
+
+Preflight row `art_37ae29b4` bound another state root, controller, surface, and pane. The stopped operator also did not receive the required preflight-ready fact. This revision makes the handoff observable and adds fresh controller-binding checks on both sides of the fact.
+
+These are the only new behavior changes:
+
+1. `README.md`, `00-v4-contract.md`, `01-gibson-cli-control-plane.md`, and `02-fleet-soak-phases.md` separate the local `read` response contract from the network-response contract.
+2. `05-read-response-validator.sh` enforces the local `read` contract against the exact tick-0 fixture.
+3. `README.md`, `00-v4-contract.md`, `01-gibson-cli-control-plane.md`, `02-fleet-soak-phases.md`, and `03-fleet-soak-run-checklist.md` require one preflight-ready fact and fresh controller-binding checks before the operator admits a surface.
