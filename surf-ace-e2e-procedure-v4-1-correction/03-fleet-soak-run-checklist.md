@@ -81,8 +81,8 @@ Final invariant sign-off:
 - **Procedure bundle:** `surf-ace-e2e-procedure-v4.1`
 - **Preflight executor:**
 - **Gated E2E operator:**
-- **Preflight-ready fact kind:**
-- **Preflight-ready fact scope:**
+- **Preflight-ready fact kind:** `surf-ace-capacity-6fbbda0-preflight-ready`
+- **Preflight-ready fact scope:** `wi_ef5e9b29-d440-4c39-b01b-58600569109b`
 - **Primary admitted surface:**
 - **Primary admission basis:** `already-lockless / separately authorized explicit migration material`
 - **Primary admission evidence:**
@@ -231,14 +231,15 @@ Paths:
 - [ ] Each returned surface is recorded as a discovered candidate, not an admitted target
 - [ ] One discovered candidate is selected as the primary surface
 - [ ] Already-lockless evidence is immutable, issued by a separately authorized preflight executor, and records `admissionBasis: already-lockless`, `lockless: true`, exact surface/fixture binding, exact run-owned state root, exact gated operator, covered operations, verification method/result, reversible probe and rollback proof, issuer/authority, issue time, expiry, cleanup, restart/recovery validity, custody handoff, and artifact identity/SHA-256; or separately authorized explicit migration material and its supported CLI input location are bound to the exact surface and operation
-- [ ] Before preflight, the gated operator subscribed to the recorded preflight-ready fact kind and work-item scope
+- [ ] Before preflight, the gated operator subscribed to fact kind `surf-ace-capacity-6fbbda0-preflight-ready` with scope `wi_ef5e9b29-d440-4c39-b01b-58600569109b`
 - [ ] After the admission row was recorded, the preflight executor ran fresh `list` through the exact state root and matched the current controller, selected surface, and pane before it filed the fact
-- [ ] The exact preflight-ready fact arrived before the gated operator evaluated the row; a direct message, completion, or artifact alone did not transfer custody
+- [ ] The exact `surf-ace-capacity-6fbbda0-preflight-ready` fact with scope `wi_ef5e9b29-d440-4c39-b01b-58600569109b` arrived before the gated operator evaluated the row; a direct message, completion, artifact, or fallback wake alone did not transfer custody or advance the E2E operator
 - [ ] After fact delivery, the gated operator ran fresh `list` through the exact state root and matched the current controller, state root, operator, surface, pane, boundary, and operation set with the row
 - [ ] Admission verifier rejected generic discovery/topology/readback/diagnostics, remembered success, operator assertion, another surface's result, every read-only row, every row from another state root, and every record with a missing, expired, authority-mismatched, fixture-mismatched, state-root-mismatched, operator-mismatched, surface-mismatched, or operation-out-of-scope field
 - [ ] Branch, HEAD SHA, deployed SHA/package identity, deploy state, admission basis, exact state-root binding, exact gated operator, rollback proof, and handoff evidence recorded for the primary surface
 - [ ] Each optional additional surface has its own admission evidence before any operation targets it
 - [ ] Immediately before each target operation, the operator rechecks that the admission row is unexpired and covers the exact surface/controller fixture, exact state root, exact gated operator, current boundary, and operation; a failed check returns the surface to candidate state until a new row passes
+- [ ] Immediately before each target operation, the operator verifies that the preflight row is unexpired and bound to the exact `controllerInstanceId`, state root, operator assignment, `surfaceId`, and `paneId`; if any field differs, the operator stops and obtains a fresh preflight before that operation
 - [ ] Required multi-pane work is scoped inside the primary admitted surface
 - [ ] Multi-surface work is marked optional
 - [ ] `pair.request` `capability_mismatch` has a terminal stop rule before mutation; no retry or bypass is permitted; a fresh fixture requires fresh discovery and a new admission row before any target operation

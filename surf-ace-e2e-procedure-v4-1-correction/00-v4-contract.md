@@ -27,7 +27,7 @@ Provide a self-contained CLI-only E2E procedure that separates surface discovery
 - **Target operation:** A Surf Ace CLI operation that names a surface or pane. Separately authorized host cleanup before discovery is not a target operation and does not admit a surface.
 - **Fresh fixture:** A newly verified endpoint fixture with its own identity, expiry, and cleanup contract.
 - **Reversible probe:** The bounded preflight sequence that covers the exact planned mutation and proof operations, captures receipts and visual/readback proof, and restores the preflight baseline before handoff.
-- **Preflight-ready fact:** The run-specific Tightbeam condition that transfers custody after the preflight executor records and verifies the immutable admission row. The fact kind and scope are inputs to the run.
+- **Preflight-ready fact:** Tightbeam condition kind `surf-ace-capacity-6fbbda0-preflight-ready` with scope `wi_ef5e9b29-d440-4c39-b01b-58600569109b`. It transfers custody for this run only after the preflight executor records and verifies the immutable admission row.
 
 ## Assumptions
 
@@ -41,7 +41,7 @@ Provide a self-contained CLI-only E2E procedure that separates surface discovery
 
 1. `surf-ace list` changes only the discovered-candidate record. It does not change the admitted-target record.
 2. The preflight executor issues one already-lockless row only after the reversible probe proves the exact covered operations inside the exact run-owned state root and restores the preflight baseline before handoff.
-3. Immediately before each target operation, the gated operator verifies that every required admission-evidence field is present, unexpired, fixture-matching, state-root-matching, operator-matching, authority-valid, boundary-valid, and operation-covering. A failed check returns the surface to candidate state until a new admission row passes.
+3. Immediately before each target operation, the gated operator verifies that every required admission-evidence field is present, unexpired, fixture-matching, state-root-matching, operator-matching, authority-valid, boundary-valid, and operation-covering. The operator also verifies that the preflight row is bound to the exact `controllerInstanceId`, state root, operator assignment, `surfaceId`, and `paneId`. If any check fails or any field differs, the operator stops and obtains a fresh preflight before that operation.
 4. The checklist admission log is the single seam that adds a surface to the admitted-target record.
 5. One admission row binds one gated operator and one run-owned state root. An operator change or state-root change invalidates the row until a new row passes.
 6. Required multi-pane work stays inside the primary admitted surface.
@@ -51,7 +51,8 @@ Provide a self-contained CLI-only E2E procedure that separates surface discovery
 10. After a restart or recovery boundary, the operator re-runs discovery. If the surface/controller-fixture binding changed or the admission evidence does not explicitly cover the boundary, the operator re-admits the candidate before the next target operation.
 11. The operator preserves the V4 phase order, CLI-only path, repeated pushes, per-push capture proof, multi-pane topology, 2/5/15/30-minute checkpoints, 60-minute churn dwell, and one bounded restart/recovery cycle.
 12. A successful local `read` has CLI exit code 0, top-level `ok: true`, the expected scope and acknowledgement, `cacheStatus: current`, and the expected content record. The operator never requires `result.ok` from `read`.
-13. The preflight executor files the preflight-ready fact only after a fresh `list` result matches the admission row. The gated operator consumes the row only after that fact arrives and its own fresh `list` result still matches every binding.
+13. After a successful `read`, the harness runs `capture-pane` for the same surface and pane and completes the render comparison. A successful `read` alone never produces a passing render result.
+14. The preflight executor files `surf-ace-capacity-6fbbda0-preflight-ready` with scope `wi_ef5e9b29-d440-4c39-b01b-58600569109b` only after a fresh `list` result matches the admission row. The gated operator consumes the row only after that fact arrives and its own fresh `list` result still matches every binding. A fallback wake can report a missing fact. It never transfers custody and never advances the E2E operator.
 
 ## Architecture
 
@@ -77,8 +78,9 @@ This design adds no new product mechanism. Deleting the mutation-capable preflig
 9. Given the sealed V4.1 bundle, when a reviewer compares its phase and checklist headings with V4, then each V4 endurance phase remains present and the required 2/5/15/30-minute, 60-minute, and restart/recovery checkpoints remain stated.
 10. Given preparation evidence, when a reviewer inspects commands and artifacts, then the evidence contains document, archive, hash, and repository operations only and contains no live Surf Ace action.
 11. Given an admitted surface whose evidence expired, does not cover the current boundary, does not cover the next target operation, names another operator, or names another state root, when the operator performs the pre-operation admission check, then the operator records the surface as a candidate and creates a new passing admission row before any target operation names it.
-12. Given the exact successful tick-0 local `read` fixture, when the harness validates it, then the response passes without a `result.ok` field and the harness proceeds to capture.
-13. Given a preflight row that names another controller, state root, operator, surface, pane, boundary, or operation set, or given no matching preflight-ready fact, when the operator evaluates the handoff, then the operator rejects the row and performs no target operation.
+12. Given the exact successful tick-0 local `read` fixture, when the harness validates it, then the response passes without a `result.ok` field and the harness proceeds to capture and render comparison.
+13. Given a successful read without successful capture and a `MATCH` render classification, when the harness grades the proof, then the proof does not pass.
+14. Given a preflight row that names another controller, state root, operator, surface, pane, boundary, or operation set, or given no matching `surf-ace-capacity-6fbbda0-preflight-ready` fact scoped to `wi_ef5e9b29-d440-4c39-b01b-58600569109b`, when the operator evaluates the handoff, then the operator rejects the row and performs no target operation.
 
 ## Open Questions
 

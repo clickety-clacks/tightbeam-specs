@@ -55,10 +55,11 @@ V4.1 retains V4 Pre-flight 0–3; Phases 1, 2, 2.5, 2.6, 3, 4, and 5; repeated p
 
 Checkpoint `art_ada61ba4` proved that the run-specific harness rejected a successful tick-0 local `read` before capture. The CLI exited 0 and returned top-level `ok: true`, `result.cacheStatus: current`, the matching scope and acknowledgement, and the expected content record. Local `read` does not return `result.ok`. This revision adds the real response fixture and a validator that uses the correct local-read contract.
 
-Preflight row `art_37ae29b4` bound another state root, controller, surface, and pane. The stopped operator also did not receive the required preflight-ready fact. This revision makes the handoff observable and adds fresh controller-binding checks on both sides of the fact.
+Preflight row `art_37ae29b4` bound another state root, controller, surface, and pane. The stopped operator also did not receive fact kind `surf-ace-capacity-6fbbda0-preflight-ready` with scope `wi_ef5e9b29-d440-4c39-b01b-58600569109b`. This revision makes the handoff observable and adds fresh controller-binding checks on both sides of the fact.
 
 These are the only new behavior changes:
 
 1. `README.md`, `00-v4-contract.md`, `01-gibson-cli-control-plane.md`, and `02-fleet-soak-phases.md` separate the local `read` response contract from the network-response contract.
-2. `05-read-response-validator.sh` enforces the local `read` contract against the exact tick-0 fixture.
-3. `README.md`, `00-v4-contract.md`, `01-gibson-cli-control-plane.md`, `02-fleet-soak-phases.md`, and `03-fleet-soak-run-checklist.md` require one preflight-ready fact and fresh controller-binding checks before the operator admits a surface.
+2. `05-read-response-validator.sh` enforces the local `read` contract against the exact tick-0 fixture and refuses a passing render result without capture and a matching render comparison.
+3. `README.md`, `00-v4-contract.md`, `01-gibson-cli-control-plane.md`, `02-fleet-soak-phases.md`, and `03-fleet-soak-run-checklist.md` require fact kind `surf-ace-capacity-6fbbda0-preflight-ready` with scope `wi_ef5e9b29-d440-4c39-b01b-58600569109b`, forbid advancing on fallback alone, and require fresh exact binding checks before every operation.
+4. `06-procedure-conformance.sh` deterministically checks these four correction rules without running Surf Ace.

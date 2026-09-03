@@ -30,6 +30,22 @@ surf_ace_read_response_ok() {
     ' "$response_path" >/dev/null
 }
 
+# A successful local read is necessary, but it is not render proof. The harness
+# passes this gate only after capture succeeds and the render comparison matches.
+surf_ace_render_proof_ok() {
+  if [ "$#" -ne 3 ]; then
+    return 64
+  fi
+
+  local read_status="$1"
+  local capture_status="$2"
+  local render_classification="$3"
+
+  [ "$read_status" -eq 0 ] || return 1
+  [ "$capture_status" -eq 0 ] || return 1
+  [ "$render_classification" = "MATCH" ]
+}
+
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   if [ "${1:-}" != "--self-test" ]; then
     printf 'usage: %s --self-test\n' "$0" >&2
@@ -41,6 +57,7 @@ if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   expected_scope="pane:sf_0e2d0a73a98d:1"
   expected_content_id="soak-6fbbda0-linux-20260903-t0-sf_0e2d0a73a98d-pa"
 
+  jq -e '(.result | has("ok")) | not' "$fixture" >/dev/null || exit 1
   surf_ace_read_response_ok 0 "$fixture" "$expected_scope" "$expected_content_id" || exit 1
   ! surf_ace_read_response_ok 1 "$fixture" "$expected_scope" "$expected_content_id" || exit 1
   ! surf_ace_read_response_ok 0 <(jq '.ok = false' "$fixture") "$expected_scope" "$expected_content_id" || exit 1
@@ -48,5 +65,10 @@ if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   ! surf_ace_read_response_ok 0 "$fixture" "pane:wrong:1" "$expected_content_id" || exit 1
   ! surf_ace_read_response_ok 0 "$fixture" "$expected_scope" "wrong-content" || exit 1
 
-  printf 'read-response validator self-test: PASS\n'
+  surf_ace_render_proof_ok 0 0 MATCH || exit 1
+  ! surf_ace_render_proof_ok 0 || exit 1
+  ! surf_ace_render_proof_ok 0 1 MATCH || exit 1
+  ! surf_ace_render_proof_ok 0 0 MISMATCH || exit 1
+
+  printf 'read-response and render-proof validator self-test: PASS\n'
 fi

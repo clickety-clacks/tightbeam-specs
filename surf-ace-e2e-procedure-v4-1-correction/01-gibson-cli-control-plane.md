@@ -52,7 +52,7 @@ Record these values before the first command:
 - CLI execution host;
 - separately authorized preflight executor identity and assignment;
 - designated gated E2E operator identity and assignment;
-- preflight-ready fact kind and work-item scope;
+- preflight-ready fact kind `surf-ace-capacity-6fbbda0-preflight-ready` and work-item scope `wi_ef5e9b29-d440-4c39-b01b-58600569109b`;
 - controller endpoint;
 - controller fixture identity, expiry, and cleanup contract;
 - run-specific state-root path;
@@ -235,18 +235,18 @@ Treat a controller-hosted client as a candidate only if `list` proves a distinct
 Run this gate after the Electron cleanup and build-identity steps, but before Phase 1.
 
 1. Verify the CLI file SHA-256 and bind it to its source and review.
-2. Verify the controller endpoint fixture, its identity, expiry, cleanup contract, and host reachability. Create or select the empty run-specific state root that the gated operator will later use. Record one run-specific preflight-ready fact kind and the work-item scope.
+2. Verify the controller endpoint fixture, its identity, expiry, cleanup contract, and host reachability. Create or select the empty run-specific state root that the gated operator will later use. Record fact kind `surf-ace-capacity-6fbbda0-preflight-ready` and scope `wi_ef5e9b29-d440-4c39-b01b-58600569109b`.
 3. Run the harmless CLI `list` invocation.
 4. Store the full request, response, exit status, endpoint identity, state-root identity, and CLI hash.
 5. Require `ok: true` and a coherent discovered fleet.
 6. Stop `RED — BLOCKED: CLI_CONTROL_PLANE_UNAVAILABLE` if the CLI cannot execute, reach the approved controller endpoint, establish controller identity, or return coherent topology.
 7. Record each returned surface as a discovered candidate with its pane identities, stable identity, topology revision, product build, and observability level.
 8. Select one candidate as the required primary surface. Select additional candidates only when the run needs optional multi-surface coverage.
-9. Before the preflight starts, the gated operator subscribes to the exact preflight-ready fact kind and scope. A fallback wake can report a missing fact, but it never transfers custody.
+9. Before the preflight starts, the gated operator subscribes to fact kind `surf-ace-capacity-6fbbda0-preflight-ready` with scope `wi_ef5e9b29-d440-4c39-b01b-58600569109b`. A fallback wake can report a missing fact. It never transfers custody and never advances the E2E operator.
 10. For each selected candidate, require one of these evidence paths:
    - a separately authorized preflight executor runs the bounded reversible probe inside the exact run-owned state root, covers each planned first-boundary operation, restores the preflight baseline, and issues the immutable already-lockless row; or
    - the run records separate authority, exact explicit migration material, and supported CLI input location for that surface and operation.
-11. The preflight executor runs fresh `list` through the exact state root after it records the row. It compares the returned `controllerInstanceId`, selected surface, and pane with the row. It files the preflight-ready fact only when every binding matches.
+11. The preflight executor runs fresh `list` through the exact state root after it records the row. It compares the returned `controllerInstanceId`, selected surface, and pane with the row. It files `surf-ace-capacity-6fbbda0-preflight-ready` with scope `wi_ef5e9b29-d440-4c39-b01b-58600569109b` only when every binding matches.
 12. After the fact arrives, the gated operator runs fresh `list` through the exact state root. It compares the current controller, state root, operator, surface, pane, boundary, and operation set with the row. A completion, direct message, or artifact without the matching fact is not a handoff.
 13. Admit the candidate only after steps 10–12 pass. Exclude candidates without one of those two evidence bases. For the already-lockless path, the row must name the exact controller fixture, exact surface and pane, exact run-owned state root, exact gated operator, exact covered operations, issue time, expiry, restart validity, cleanup contract, rollback proof, preflight-ready fact kind and scope, and custody handoff.
 14. Perform all required multi-pane topology work inside the primary admitted surface. Treat multi-surface execution as optional. Apply this gate independently to each additional surface.
@@ -255,6 +255,8 @@ Run this gate after the Electron cleanup and build-identity steps, but before Ph
 After a restart, relaunch, gateway/provider bounce, network recovery, ownership handoff, or state-root change, run discovery again. Reuse admission only when the exact surface/controller-fixture binding is unchanged, the same gated operator still owns the run, the same state root remains in force, the row is not read-only, and the recorded admission evidence explicitly covers that boundary. Otherwise, treat the result as a candidate and repeat steps 7–13 before the next target operation. Never reuse admission across a fresh-fixture route; fresh discovery and a new admission-table row are mandatory even if a `surfaceId` repeats.
 
 Immediately before each target operation, recheck the admission row's expiry, exact surface/controller-fixture binding, exact state-root binding, exact gated-operator binding, boundary validity, operation coverage, and non-read-only status. If one check fails, return the surface to candidate state and repeat steps 7–13. Do not target the surface until a new row passes.
+
+Immediately before each target operation, the operator verifies that the preflight row is unexpired and bound to the exact `controllerInstanceId`, state root, operator assignment, `surfaceId`, and `paneId`. If any field differs, the operator stops and obtains a fresh preflight before that operation.
 
 Do not require a separate tool declaration. Do not call a provider plugin as a substitute.
 
@@ -270,6 +272,8 @@ Run these steps immediately after every successful or outcome-unknown `push`. Ap
 6. Decode and inspect the returned pixels. Verify that they contain the expected marker and zero occurrences of each sibling pane's marker. Compare layout, colors, clipping, and images.
 7. Compare the capture metadata, list topology, read projection, content identity, and operation receipt.
 8. Record one classification and one per-push evidence row.
+
+After a successful `read`, the harness must run `capture-pane` for the same surface and pane and must complete the render comparison. A successful `read` alone never produces a passing render result. Use `surf_ace_render_proof_ok` from `05-read-response-validator.sh` to enforce this gate.
 
 Use these classifications:
 

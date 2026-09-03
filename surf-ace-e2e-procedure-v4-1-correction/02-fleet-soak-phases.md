@@ -89,6 +89,8 @@ Run the required repeated pushes, capture proof, multi-pane topology, dwell chec
 
 Immediately before each target operation, verify that the admission row is unexpired and covers the exact surface/controller fixture, exact run-owned state root, exact gated operator, current boundary, exact operation, and non-read-only status. If one check fails, return the surface to candidate state and record a new passing admission row before targeting it.
 
+Immediately before each target operation, the operator verifies that the preflight row is unexpired and bound to the exact `controllerInstanceId`, state root, operator assignment, `surfaceId`, and `paneId`. If any field differs, the operator stops and obtains a fresh preflight before that operation.
+
 If `pair.request` returns `capability_mismatch`, stop before mutation. Preserve the request and response. Classify endpoint/procedure readiness. Clean the run-owned fixture and state at the terminal boundary. Route a fresh fixture. The fresh fixture starts a new admission boundary: run fresh `surf-ace list` discovery and record a new passing admission-table row for every target surface before any target operation. Do not retry, bypass the refusal, reuse the old admission row, invent migration material, or require a source change.
 
 ## Dynamic window admission
@@ -193,17 +195,17 @@ Do not run an ambiguous soak against unknown builds.
 Before any topology soak can be Green, prove that the reviewed CLI path is available:
 
 1. Record the CLI path, file SHA-256, source commit, and independent review reference.
-2. Record the execution host, separately authorized preflight executor, designated gated E2E operator, controller endpoint fixture identity, fixture expiry and cleanup contract, product label, empty run-owned state root, preflight-ready fact kind, and work-item scope.
+2. Record the execution host, separately authorized preflight executor, designated gated E2E operator, controller endpoint fixture identity, fixture expiry and cleanup contract, product label, empty run-owned state root, fact kind `surf-ace-capacity-6fbbda0-preflight-ready`, and scope `wi_ef5e9b29-d440-4c39-b01b-58600569109b`.
 3. Invoke harmless `surf-ace list` with the canonical command shape in `01-gibson-cli-control-plane.md`.
 4. Save the input, standard output, standard error, exit status, endpoint identity, state-root identity, and CLI hash.
 5. Require `ok: true` and a coherent discovered fleet. Treat each result as a candidate only.
 6. Stop `RED — BLOCKED: CLI_CONTROL_PLANE_UNAVAILABLE` if the command cannot execute, reach the approved endpoint, establish controller identity, or return coherent topology.
 7. Select one primary candidate. Select additional candidates only for optional multi-surface coverage.
-8. Before the preflight starts, the gated operator subscribes to the exact preflight-ready fact kind and scope.
+8. Before the preflight starts, the gated operator subscribes to fact kind `surf-ace-capacity-6fbbda0-preflight-ready` with scope `wi_ef5e9b29-d440-4c39-b01b-58600569109b`. A fallback wake can report a missing fact. It never transfers custody and never advances the E2E operator.
 9. For each selected candidate, either:
    - run the separately authorized reversible preflight probe inside the exact run-owned state root, cover the exact push, topology, capture, and read operations that the run will use before the next boundary, restore the preflight baseline, and issue the immutable already-lockless row; or
    - record the separate authority, exact explicit migration material, and supported CLI input location for that surface and operation.
-10. After it records the row, the preflight executor runs fresh `list` through the exact state root. It files the preflight-ready fact only if the current controller, selected surface, and pane match the row.
+10. After it records the row, the preflight executor runs fresh `list` through the exact state root. It files `surf-ace-capacity-6fbbda0-preflight-ready` with scope `wi_ef5e9b29-d440-4c39-b01b-58600569109b` only if the current controller, selected surface, and pane match the row.
 11. After the fact arrives, the gated operator runs fresh `list` through the exact state root. It compares the current controller, state root, operator, surface, pane, boundary, and operation set with the row.
 12. Admit the candidate only after steps 9–11 pass. Record its branch, HEAD SHA, deployed SHA or package identity, deploy state, admission basis, exact state-root binding, exact gated operator, covered operations, rollback proof, fact delivery, and handoff evidence.
 13. On `pair.request` `capability_mismatch`, stop before mutation, preserve exact evidence, classify endpoint/procedure readiness, clean the run-owned fixture and state, and route a fresh fixture without retry or bypass. Before resuming, repeat fixture verification, fresh `list` discovery, and steps 7–12 for every target surface. Do not reuse an admission row from the failed fixture.
@@ -379,6 +381,8 @@ Run on the primary admitted surface where pane capture is expected to work. Run 
 10. Run `surf-ace read` on both panes. Use `05-read-response-validator.sh` to verify top-level success, current synchronized content, and acknowledgement state. Do not require `result.ok`. Verify that the content snapshot agrees with the captured pixels and the pushed content id.
 11. Leave the two-pane state idle for 2 minutes and repeat the complete list/read/capture verification in steps 7–10, including zero sibling-marker occurrences, without pushing new content.
 12. Restart/relaunch the surface when in scope, reconnect, and repeat the complete list/read/capture verification in steps 7–10, including zero sibling-marker occurrences, without changing content.
+
+After a successful `read`, the harness must run `capture-pane` for the same surface and pane and must complete the render comparison. A successful `read` alone never produces a passing render result.
 
 ### Pass criteria
 

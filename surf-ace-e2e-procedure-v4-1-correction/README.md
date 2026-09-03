@@ -11,6 +11,7 @@ Use the bundle documents in this order:
 4. Complete `03-fleet-soak-run-checklist.md` while the run executes.
 5. Use `04-v4-changed-clauses.md` to review each V4 clause changed by V4.1.
 6. Source `05-read-response-validator.sh` from the run-specific harness.
+7. Run `06-procedure-conformance.sh` before freezing a run-specific harness.
 
 The bundle does not authorize product, package, install, endpoint, live, deployment, or state action by itself.
 The operator must obtain separate authority for every approved soak action and every fault injection.
@@ -29,15 +30,19 @@ For case 1, the evidence must be an immutable record from a separately authorize
 
 Immediately before each target operation, the operator must verify that the admission row is unexpired and covers the current fixture, state root, operator, boundary, and operation. A failed check returns the surface to candidate state until a new admission row passes.
 
+Immediately before each target operation, the operator verifies that the preflight row is unexpired and bound to the exact `controllerInstanceId`, state root, operator assignment, `surfaceId`, and `paneId`. If any field differs, the operator stops and obtains a fresh preflight before that operation.
+
 The operator must use topology changes inside one admitted surface for the required multi-pane proof. Additional surfaces are optional. Each additional surface needs its own admission evidence before any operation targets it.
 
 If `pair.request` returns `capability_mismatch`, the operator stops before mutation, preserves the response, classifies endpoint/procedure readiness, cleans the run-owned fixture and state, and routes a fresh fixture. The operator does not retry, bypass the refusal, invent migration material, or require a source change. A fresh fixture begins a new admission boundary. The operator must run fresh discovery and create a new passing admission row for every surface before the fresh fixture targets it.
 
 Only one gated E2E operator may consume one admission row. A new operator, a new state root, cleanup that releases the fixture, a changed controller/surface/pane binding, or a restart boundary that the row does not explicitly cover invalidates the row until a new one passes.
 
-The gated operator must subscribe to one run-specific preflight-ready fact before the preflight starts. The preflight executor files that fact only after it records the immutable admission row and verifies the row against a fresh `list` result from the exact state root. After the fact arrives, the operator must run `list` again and compare the current controller, state root, operator, surface, pane, boundary, and operation set with the row. A completion, direct message, or admission artifact without the matching fact does not transfer custody.
+The gated operator must subscribe to fact kind `surf-ace-capacity-6fbbda0-preflight-ready` with scope `wi_ef5e9b29-d440-4c39-b01b-58600569109b` before this run's preflight starts. The preflight executor files that fact only after it records the immutable admission row and verifies the row against a fresh `list` result from the exact state root. After the fact arrives, the operator must run `list` again and compare the current controller, state root, operator, surface, pane, boundary, and operation set with the row. A completion, direct message, or admission artifact without the matching fact does not transfer custody. A fallback wake can report a missing fact. It never transfers custody and never advances the E2E operator.
 
 For local `read`, a successful response has top-level `ok: true`. Its `result` contains the acknowledgement, `cacheStatus`, records, and scope. It does not contain `result.ok`. The harness must use `05-read-response-validator.sh` and must not apply the network-response predicate to `read`.
+
+After a successful `read`, the harness must run `capture-pane` for the same surface and pane and must complete the render comparison. A successful `read` alone never produces a passing render result.
 
 ## Frozen source custody
 
