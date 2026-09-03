@@ -25,10 +25,11 @@ credential action, service action, adapter workaround, or live-state mutation.
 
 After a catalog probe reaches a final credential 401, Tightbeam must treat that exact
 `{host, harness}` pair as a terminal credential incident. Tightbeam must stop every
-automatic catalog probe for the pair. It must keep the existing lawful routing path free
-to select another capable host. It must maintain one deduplicated standing statement that
-names the affected host, harness, observed redirect destination, and required human
-sign-in.
+ordinary automatic catalog probe for the pair. The sole provider-I/O exception is the one
+durably claimed recovery attempt that I7 permits after a newer credential transition. It
+must keep the existing lawful routing path free to select another capable host. It must
+maintain one deduplicated standing statement that names the affected host, harness,
+observed redirect destination, and required human sign-in.
 
 The statement must reach the org's human administrators, including `user:mike` in the
 current org. Runtime readiness and doctor must render the same current statement on every
@@ -55,8 +56,9 @@ This requirement joins the mechanisms proved in:
 ## Non-Goals
 
 - Do not add a proactive credential refresh, expiry, polling, retry, or backoff timer.
-- Do not slow a terminal loop and call that stopped. An open incident permits no automatic
-  provider probe for its catalog key.
+- Do not slow a terminal loop and call that stopped. An open incident permits no ordinary
+  automatic provider probe for its catalog key. The sole exception is the one durably
+  claimed I7 recovery attempt after a newer credential transition.
 - Do not add a Tightbeam read, reference, fingerprint, hash, comparison, repair, replace,
   or copy of the harness credential store. The pre-existing rotation-harvest attempt
   remains the only harvest in the catalog failure path. Incident and recovery state must
@@ -108,9 +110,10 @@ This requirement joins the mechanisms proved in:
   than the incident's opening watermark and every recovery fact already consumed by that
   incident. It is an edge, not credential evidence and not permission to read a
   credential file.
-- **Suppression**: the terminal rule that refuses to start provider I/O for an open
-  catalog key. A suppressed trigger may increment one aggregate counter. It must not
-  enqueue a recheck or produce one warning per call.
+- **Suppression**: the terminal rule that refuses to start ordinary provider I/O for an
+  open catalog key. Only the one durably claimed I7 recovery attempt is exempt. A
+  suppressed trigger may increment one aggregate counter. It must not enqueue a recheck
+  or produce one warning per call.
 - **Recovery attempt**: the one catalog derivation that an eligible credential transition
   arms for an open incident. It uses the current retry policy. No clock, read, spawn, boot,
   doctor run, or ordinary force re-derivation can arm it.
@@ -205,9 +208,10 @@ If the durable transition cannot commit, the catalog owner must not continue as 
 It must stop serving that key and surface an internal persistence failure. It must not
 turn a failed database write into a fresh provider loop.
 
-### I3. Suppression covers every automatic probe source
+### I3. Suppression covers every ordinary automatic probe source
 
-While an incident is open, suppression must win over:
+While an incident is open, suppression must win over every probe source below except the
+one durably claimed I7 recovery attempt:
 
 - ModelCatalog startup and host enumeration;
 - ordinary `get` and route reads;
@@ -219,9 +223,10 @@ While an incident is open, suppression must win over:
 - spawn and tune model validation; and
 - process restart reconciliation.
 
-Each source must read or receive the same durable incident state before it can start
-provider I/O. Repeated suppressed sources return the same neutral incident reference.
-Elapsed time alone never changes suppression.
+Each ordinary source must read or receive the same durable incident state before it can
+start provider I/O. The I7 recovery owner must read the same state and a durable eligible
+claim before it can use the sole exception. Repeated suppressed sources return the same
+neutral incident reference. Elapsed time alone never changes suppression.
 
 The affected catalog must expose no routable entries while the incident is open. An
 unaffected catalog key keeps its current cache, TTL, read, and force-rederive behavior.
@@ -258,8 +263,13 @@ shape:
 <lost-host> lost <harness>: its <provider> credential was rejected after the allowed
 retry policy completed. Redirect destination: <redirect-state>. <lost-host> needs a human
 sign-in for <harness>; run on <lost-host>: tightbeam onboard <provider> --as-user
-<admin-user>.
+<adminUserId> (replace <adminUserId> with your own administrator id).
 ```
+
+Both occurrences of `<adminUserId>` are literal canonical bytes. No renderer substitutes
+a recipient, owner, or session id. An administrator replaces the documented placeholder
+only when entering the command. Audience and delivery metadata remain outside the
+statement text.
 
 `<redirect-state>` must be one of:
 
@@ -510,9 +520,13 @@ statement.
 
 ### AC7. Mike, readiness, and doctor see the same open statement
 
-Given `user:mike` is an administrator and the incident opens, then one high-attention
-delivery projection for that statement and user exists. Publisher retry does not create
-a second logical projection.
+Given `user:mike` and a second user are administrators and the incident opens, then one
+high-attention delivery projection for each administrator exists. Both delivery
+projections, readiness human output, and doctor human output contain identical canonical
+statement bytes with the literal `<adminUserId>` placeholder. Doctor JSON contains those
+same bytes in its canonical-statement field and keeps recipient metadata in separate
+fields. No surface interpolates either administrator's id. Publisher retry does not
+create a second logical projection for either administrator.
 
 Given another harness can run, then readiness may remain `READY` and doctor may retain
 its current successful exit, but both outputs contain the terminal statement as a blocked
