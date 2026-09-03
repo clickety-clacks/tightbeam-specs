@@ -2810,3 +2810,44 @@ that exact change; and a work-lane gate migrated production state.db to
 main-line schema with no one intending it. Both would have stopped at step
 1. Gibson remains LOCKED at 0.1.8 until Mike says otherwise through this
 same ceremony.
+
+## 2026-09-03 — Build only what was asked (Mike, after cursor signing and the timing gate)
+
+Mike, verbatim: "it is not to overengineer or engineer ANYTHING that isn't in
+the original ask. if it MUST add something it must do so in a decision
+request." And: "every extra line of code is a maintenance burden i didn't ask
+for and is a liability."
+
+The law: build what the card asks for and stop. Anything beyond the ask is not
+added on judgment — it is one decision request to Mike naming the addition,
+why the ask cannot be met without it, and its cost, and then a WAIT for his
+ruling. Silence is not permission; a reviewer's request is not permission; an
+inferred spec clause is not permission; "safer" is not permission. A reviewer
+who demands unasked scope is wrong, and the producer refuses and routes it to
+Mike instead of building it.
+
+Banned without a Mike ruling: security or hardening beyond the deployment
+model (one operator, local/tailscale, own credential, no adversary); defenses
+against forgery, timing channels, existence oracles, replay, or DoS; new
+native code, dependencies, daemons, schema, tables, persistence, or
+background processes; generalization beyond the case at hand; any
+"while I was in there" improvement.
+
+The two specimens that produced this ruling, both being deleted:
+
+- CURSOR SIGNING (wi_70531dda): nobody asked. ~4,200 lines over 34 commits
+  since 2026-08-27 — a 1,445-line module, a 218-line C NIF, a 2,028-line test
+  suite with multi-node distributed tests, a 465-line C filesystem probe, plus
+  key durability, quarantine recovery, owner-death authority transfer, and
+  cross-node exclusive mutation admission — to make a pagination cursor
+  unforgeable on a network whose only caller is Mike's own credential. It grew
+  from tb02's adjudication of Sol review finding F8, which said the cursor
+  should be "opaque"; opaque was read as unforgeable. The actual requirement is
+  a position in an immutable ordering tuple, about 30 lines.
+- THE TIMING GATE: nobody asked, and Mike had already killed the idea once as
+  firehose OQ8 when the capability system was removed. A 220,000-request
+  p50/p95 comparison between forbidden and unknown cohorts, as an acceptance
+  gate. It failed on macOS, turned main red, and stopped every lane for twelve
+  hours. The cheap same-404 response shape stays; the timing proof goes.
+
+Audit of every other unasked security measure: wi_58d4fcdd.
