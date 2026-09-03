@@ -1,8 +1,18 @@
 # Surf Ace: fleet-unique window labels are a core requirement
 
-Ruled by Mike, 2026-09-03. This document exists because the requirement was
-dropped in a rewrite and then argued away three separate times, twice by Mike's
-own terminal session. Treat every section below as settled.
+Ruled by Mike, 2026-09-03.
+
+**This requirement was always explicit in the specification.** It is stated in
+section 15.1 of the original Surf Ace spec, quoted verbatim below. It was never
+implicit, never merely spoken, never a gap in the documentation. Any account of
+this failure that says otherwise is wrong, including earlier revisions of this
+document.
+
+What actually happened: agents rewrote the architecture, wrote a new DESIGN.md
+clause that contradicted section 15.1, and no review checked the new design
+against the original requirement. The reviews passed because they compared the
+code to the newer contradicting text. The requirement was superseded without
+authorization by anyone entitled to supersede it.
 
 ## The requirement
 
@@ -48,9 +58,14 @@ and persists both `windowLabels` and `nextWindowLabelIndex`.
 
 The CLI rewrite removed that process and did not replace the allocator.
 Allocation became client-local. DESIGN.md was then amended to state that pane
-labels are "not globally unique", which recorded the regression as though it
-were a design property. Nobody flagged that a core requirement had been
-abandoned, and no test asserted it, so every subsequent soak passed.
+labels are "not globally unique", directly contradicting section 15.1, which
+was still in the repository and still said the opposite.
+
+This is the core failure. The requirement was written down. It was available to
+every agent that touched this. Instead of being checked against, it was
+overwritten by a clause describing what the new code happened to do, and every
+later review validated the code against that newer clause. No test asserted the
+requirement, so every subsequent soak passed.
 
 The clause is now deleted. DESIGN.md at `edc747d` carries the invariant
 explicitly.
