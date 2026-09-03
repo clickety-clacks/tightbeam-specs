@@ -392,3 +392,29 @@ ancestor chain is this class, whatever its timestamp says.
 **Proven not to work.** Another wake at Main; superseding into a fresh row;
 assuming ruledBy user:X means the human acted (as-user actions are
 indistinguishable in the ledger).
+
+### 4.13 Work finished and stranded
+
+**Signature.** A card is closed, or its holder has filed completion or
+reviewed-clean; its exact artifact or commit exists and its required gates are
+green; and its last durable evidence says targetless, "done awaiting target",
+"candidate remains unintegrated", or otherwise names a next step the holder
+cannot take alone. No open card obliges anyone to name the release line, land
+the candidate, or open the required successor, and no upstream owner was told.
+The closed card looks successful while the product step is dead. Specimens:
+wi_f46d2e83 (five idle days), wi_ed6b68fe (four days), and wi_6d418db1
+(since 2026-09-02).
+
+**Cause.** Completion proves a bounded producer or reviewer obligation. It
+does not create integration authority or an owner obligation for the next
+line. Treating the completed row as terminal erases the handoff.
+
+**Repair.** On every patrol pass, scan reviewed-clean and completed candidates
+for a missing target or integration card. Route one exact pointer to the live
+owner who can name the line. If no such owner acts, report that missing
+obligation as the stall. Preserve the candidate and its review lineage; do not
+infer a target, re-open completed work, add a second review, or land it.
+
+**Proven not to work.** Calling a reviewed-clean targetless candidate a
+success; waiting for its former producer to choose a release line; or opening
+duplicate implementation custody.
