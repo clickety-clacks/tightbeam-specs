@@ -1,6 +1,6 @@
 # Surf Ace compositor spirit v1
 
-Status: Product-owner spirit; T316 is ready for technical specification. T368 was amended after Mike's 2026-09-01 pane-visibility clarification.
+Status: Product-owner spirit; T316 and T285 are ready for technical specification. The parent product owner approved the T368 implementation plan after Mike's 2026-09-01 pane-visibility clarification.
 
 Product owner: `product-owner:surf-ace-compositor`, under `product-owner:surf-ace-codex`.
 
@@ -98,9 +98,41 @@ The preserved candidate `e5a1f03adf01e9639acf94a9f2fae0b599bf9cea` is evidence, 
 
 None for this slice. Technical specification must preserve the deferred MS14 exclusions and the acceptance boundary above.
 
+## T285: durable native-child diagnostics
+
+Work item: `wi_54ef779b-d05c-4df4-910d-903733ff9b68`.
+
+### Outcome
+
+An operator can recover a compositor-launched child's diagnostics after the compositor or child restarts, without access to the terminal that launched the compositor. The record identifies the child unit and preserves launch, output, exit, and failure evidence through the appliance's normal systemd journal.
+
+### Acceptance boundary
+
+- The compositor's production child-launch path creates an actual transient systemd user unit named `surfaceN-<child>` through `systemd-run --user`.
+- The child does not inherit stdout or stderr from a pseudo-terminal. Its diagnostics are available through `journalctl --user -u <unit>` after both compositor and child restart.
+- The host uses persistent journald storage at `/var/log/journal`. Evidence records effective caps of 14 days and 200 MB; the first reached bound controls retention.
+- A synthetic token- or credential-shaped value is removed before its line reaches journald. The original value must not appear in the persistent journal.
+- Launch, sanitizer, journal-delivery, child-exit, and recovery failures remain explicit and recoverable. A sanitizer failure must not pass an unredacted line to journald.
+- Verification records the exact compositor revision, host, unit name, launch context, timestamps, journal query, restart sequence, and effective journal configuration.
+
+### Product non-goals
+
+- Terminal scrollback or inherited pseudo-terminal file descriptors as durable evidence.
+- A compositor-owned log file, log database, or rotation mechanism alongside journald.
+- A silent non-systemd fallback. A non-systemd target requires a new product ruling before implementation.
+- Using a real secret as redaction-test input.
+
+### Technical specification questions
+
+- Place a sanitizer in the stdout and stderr path before systemd writes each line to journald; direct child-to-journal capture cannot satisfy the redaction rule.
+- Define safe systemd unit-name escaping, collision handling, and lifecycle cleanup while preserving the ruled `surfaceN-<child>` identity.
+- Preserve native-surface binding, child exit status, and launch-failure reporting when systemd owns the child process.
+- Verify the effective journald caps without silently changing host-wide journal policy.
+
+No open product question remains for this slice. These are implementation choices inside the ruled outcome and security boundary.
+
 ## Other active slices
 
 - T1408: representative continuous pointer drawing on Racter requires Mike's human acceptance plus at least 50 presented frames per second in every one-second bucket of a recorded 60-second run. The retained approximately 39 fps result is adverse evidence, not a floor. Exact runtime revisions, native display mode, workload, capture, and measurement method must travel with the result.
-- T285: child diagnostics must remain available outside terminal scrollback and across restart. The compositor's own child-launch path is authoritative. It uses transient systemd user units named `surfaceN-<child>`, persistent host journald storage under `/var/log/journal`, lookup through `journalctl --user -u <unit>`, journald retention capped at 14 days or 200 MB, and pre-journal stripping of token- and credential-shaped values. No bespoke rotation or terminal file-descriptor inheritance is allowed. This slice applies only to supported systemd appliances; another platform requires a new logging-pattern ruling.
-- T359: deployment configuration owns appliance node identity, coordinates, timezone, and schedule input. No authoritative deployed values currently exist on Racter or Shrdlu; compiled examples are not deployment truth.
+- T359: each appliance's system configuration is authoritative. The compositor reads the IANA timezone from `/etc/localtime`, derives coordinates from `/usr/share/zoneinfo/zone1970.tab`, and uses the desktop color-scheme preference where one exists. Deployment configuration is an exception override, not primary authority; no hand-maintained node registry may exist. Racter now uses `America/Los_Angeles` and Shrdlu uses `America/New_York`, but automatic compositor discovery and a real scheduled transition remain unproven.
 - T368: native child and dialog surfaces remain pane-owned physical families, but they may float outside their pane, over other panes, and over Surf Ace chrome. Focus-gated visibility is the containment mechanism: exactly one pane has keyboard focus; Surf Ace visibly and unambiguously identifies it even under accessory overlap; only that pane's accessory windows are visible. Primary pane content remains visible when its pane is unfocused. A visible overflow accessory wins hit-testing over the pane beneath it; an exposed pane region or explicit Surf Ace focus affordance changes pane focus. Blurring a pane hides its accessories without destroying them, and refocusing restores every still-existing accessory at its prior position, size, z-order, and application state. An accessory genuinely destroyed while hidden remains destroyed and is reported as such. Genuine disappearance during an active interaction remains the separate `cancel-return-surf-ace` case. Explicit pane target restore is not blur, and the first slice does not promise child-window persistence across it. Existing clipping, edge-clamping, and pane-containment proofs are invalid for this boundary. Shrdlu is a normal stopped deployment, not a recovery defect.
