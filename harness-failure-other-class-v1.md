@@ -67,8 +67,9 @@ interpret the description or mint the class.
    session state, work-item state, or revocation authority.
 8. This spec does not change `0.1.8`.
 9. This spec does not backfill `other` incidents from old unclassified failures.
-10. This spec does not expose raw error, probe, description, recovery, or
-    not-known-class text in metrics, list projections, notices, or logs.
+10. This spec does not expose raw error, probe, description, observed-state,
+    recovery, or not-known-class text in metrics, list projections, notices, or
+    logs.
 
 ## Terms
 
@@ -83,9 +84,19 @@ interpret the description or mint the class.
 - **Expiry instant**: the first millisecond for which `now >= expiresAt`.
 - **Shared harness gate**: the one transaction-owned function that decides
   whether a prod-shaped action may target an `(harness, host)`.
+- **Other standing fact**: the pair
+  `harness-other-unavailable|harness-other-restored` at exact
+  `scope=JSON([harness,host])`. The latest fact in that kind pair represents
+  whether the pair has at least one active `other` incident; it is not an
+  incident-specific fact.
 - **Prod-shaped action**: any periodic or terminal-edge action that spends a
   prompt or turn to chase, inspect, or dispose of idle work. The assignment
   prodder and session garbage collector are members of this set.
+- **Prod-shaped action seam**: the sole production function that can record or
+  dispatch a prod-shaped action. It calls the shared harness gate in its owning
+  transaction before it invokes the action callback.
+- **Recovery-condition digest**: lowercase hexadecimal SHA-256 of the exact
+  UTF-8 bytes of the normalized recovery condition stored by admission.
 - **Living authority**: the first active ancestor of the source session under
   the line's existing lineage seam; if no active ancestor exists, the source
   session owner's active Main session; if no active Main carrier exists, the
@@ -127,10 +138,11 @@ interpret the description or mint the class.
 
 1. **OTH-INV-01 — Complete evidence or no effect.** The first `other` admission
    for an active incident identity commits all required evidence, one incident,
-   one review, one initial escalation route, one standing harness fact, and one
-   expiry identity atomically. A later admission for that active identity adds
-   its immutable observation and event and reuses those rows. A refusal commits
-   none of them.
+   one review, one initial escalation route, and one expiry identity atomically.
+   It asserts the other standing fact only when the pair had zero active `other`
+   incidents before this transaction. A later admission for that active identity
+   adds its immutable observation and event and reuses those rows. A refusal
+   commits none of them.
 2. **OTH-INV-02 — No guessed class.** Only an admitted explicit `other` mutation
    can create an `other` observation. An unmatched terminal error remains
    unclassified and does not open an incident.
@@ -138,9 +150,10 @@ interpret the description or mint the class.
    time and no greater than `observedAt + 900000` milliseconds. The shared gate
    cannot deny because of that incident at or after `expiresAt`.
 4. **OTH-INV-04 — All prod-shaped work shares one gate.** Every prod-shaped
-   consumer calls the same exported transaction-owned gate immediately before
-   it records or dispatches its action. No consumer reads incident rows,
-   condition facts, adapter state, process state, or harness state separately.
+   consumer enters the same exported transaction-owned action seam immediately
+   before it records or dispatches its action. That seam calls the one gate. No
+   consumer reads incident rows, condition facts, adapter state, process state,
+   or harness state separately.
 5. **OTH-INV-05 — Healthy harnesses continue.** An active incident for one
    `(harness, host)` does not pause a different harness or host.
 6. **OTH-INV-06 — Evidence and actor survive.** Admission, recovery, expiry,
@@ -148,8 +161,9 @@ interpret the description or mint the class.
    source row, and time. Updates and deletes cannot erase them.
 7. **OTH-INV-07 — Delivery is not review.** A delivered escalation changes the
    review custodian. It does not close the review or incident.
-8. **OTH-INV-08 — Expiry is not recovery.** Expiry retracts the pause and records
-   `expired`. It does not claim that the harness recovered and does not close the
+8. **OTH-INV-08 — Expiry is not recovery.** Expiry records `expired` and retracts
+   the other standing fact only when no active `other` incident remains for the
+   pair. It does not claim that the harness recovered and does not close the
    review or promotion case.
 9. **OTH-INV-09 — Recurrence promotes deterministically.** The second admitted
    incident with one description digest creates exactly one promotion case.
@@ -207,12 +221,24 @@ at most 8,000 bytes and `outputDigest` is null. For `probe_digest`,
 `outputDigest` is exactly 64 lowercase hexadecimal SHA-256 characters and
 `exactObservedError` is null. `UNKNOWN` requires `exact_error`; the exact probe
 names the failed read and the error records its refusal. `redactionConfirmed`
-must be true. It states that the caller used the digest mode when exact output could
-contain a credential or secret, and that description, recovery, and
-not-known-class text contain no secret.
+must be true. It states that the caller used the digest mode when exact output
+could contain a credential or secret, and that `description`, `observedState`,
+`exactProbe`, `exactObservedError`, `recoveryCondition`, and
+`notKnownClassReason` contain no secret.
+
+Before persistence, one shared `SensitiveText.credential_shaped?/1` validator
+checks every non-null free-text field named above. It returns true for a PEM
+private-key block; a case-insensitive `authorization|api-key|api_key|token|password|secret`
+name followed by `:` or `=` and a non-empty value; or a case-insensitive
+`sk_|ghp_|github_pat_|tbc_|tbs_|tbt_|tbp_` prefix followed by at least eight
+ASCII letters, digits, dots, underscores, or hyphens. A match refuses
+`credential_shaped_evidence` before hashing, echoing, logging, or writing the
+value. This closed lexical check does not read a credential store or claim that
+unmatched text is secret-free.
 
 The mutation refuses `missing_other_evidence`, `invalid_other_evidence`,
-`stale_other_evidence`, `secret_redaction_unconfirmed`, `source_not_found`,
+`stale_other_evidence`, `secret_redaction_unconfirmed`,
+`credential_shaped_evidence`, `source_not_found`,
 `source_not_active`, `not_authorized`, or `idempotency_conflict` before any
 incident effect. The response names every missing or invalid field. It never
 echoes sensitive field values.
@@ -228,26 +254,57 @@ Extend `harness_health_observations` with nullable columns:
 
 ```text
 description, descriptionDigest, observedState, evidenceMode, exactObservedError,
-exactProbe, outputDigest, recoveryCondition, notKnownClassReason,
-validUntil, worldStatus, redactionConfirmed
+exactProbe, outputDigest, recoveryCondition, recoveryConditionDigest,
+recoverySatisfied, notKnownClassReason, validUntil, worldStatus,
+redactionConfirmed
 ```
 
-Existing six-class observations require all twelve columns to be null. An
-`other` opening observation requires the ARC-01 combinations. The stored
-`cause` is `other:<descriptionDigest>`; the existing `principal` stores the
-authenticated typed principal. The exact evidence fields, cause, principal,
-and correlation identity are immutable.
+Existing six-class observations require all fourteen columns to be null. An
+`other` opening observation has `evidenceKind='authoritative-provider'`, requires
+the ARC-01 combinations, stores the recovery-condition digest, and requires
+`recoverySatisfied` null. An `other` recovery observation has
+`evidenceKind='normal-turn-success'`, requires the incident's description digest,
+non-empty `observedState` and `exactProbe`, `evidenceMode='probe_digest'`, a valid
+`outputDigest`, the matching recovery-condition digest,
+`recoverySatisfied=1`, `worldStatus='PROVEN'`, and
+`redactionConfirmed=1`. Its `description`, `exactObservedError`,
+`recoveryCondition`, `notKnownClassReason`, and `validUntil` are null. No other
+combination is valid.
+
+The opening `cause` is `other:<descriptionDigest>`; recovery stores its supplied
+non-empty cause. The existing `principal` stores the authenticated typed
+principal. Correlation identity is
+`other-<open|resolve>:SHA256(canonicalPrincipal || NUL || mutationName || NUL || idempotencyKey)`.
+The exact evidence fields, cause, principal, and correlation identity are
+immutable.
 
 Extend `harness_health_incidents.failureClass` to admit `other`. Add nullable
 `descriptionDigest`, `expiresAt`, `expiredAt`, and `expiryFactId`. Six-class
 incidents require these columns to be null and preserve their current
 `open|resolved` transitions. An `other` incident requires
-`descriptionDigest` and `expiresAt=validUntil`. It permits exactly:
+`descriptionDigest` and `expiresAt=validUntil`. Its existing `openedFactId` and
+`resolvedFactId` are nullable because one pair-level fact can span several
+incidents. It permits exactly:
 
-- `open`: `resolvedAt`, resolution fields, `expiredAt`, and `expiryFactId` null;
-- `resolved`: the existing resolution fields non-null and expiry fields null;
-- `expired`: `expiredAt >= openedAt`, `expiryFactId` non-null, and resolution
-  fields null.
+- `open`: terminal fields null; `openedFactId` is non-null only for the incident
+  whose admission changed the pair from zero to one active `other` incidents;
+- `resolved`: `resolvedAt` and `resolutionObservationId` non-null and expiry
+  fields null; `resolvedFactId` is non-null only when this transition changed
+  the pair from one to zero active `other` incidents; or
+- `expired`: `expiredAt >= openedAt` and resolution fields null;
+  `expiryFactId` is non-null only when this transition changed the pair from
+  one to zero active `other` incidents.
+
+Each non-null `openedFactId` references the pair's one assert fact. Each
+non-null `resolvedFactId` or `expiryFactId` references its one retract fact.
+Database triggers refuse a second standing assert while one stands, a retract
+while another active `other` incident remains, and a zero-active terminal
+transition without its retract fact.
+
+Add `harness-other-unavailable => harness-other-restored` to the closed
+`ConditionFacts` standing-pair map. Reserve both kinds to
+`process:tightbeam`. Their scope is exactly the compact JSON encoding of the
+two-string array `[harness,host]`, matching the existing harness fact scope.
 
 Known classes retain the existing partial uniqueness on
 `(harness, host, failureClass)` while open. `other` uses partial uniqueness on
@@ -288,14 +345,16 @@ and lineage rows, compute the description digest, expire any due matching
 incident, and use the existing
 transaction owner. In one transaction:
 
-1. insert the immutable observation;
-2. open or attach to the matching active other incident;
-3. assert the reserved `harness-other-unavailable` standing fact when opening;
-4. create the pending review and first route when opening;
-5. count admitted incidents with the exact description digest;
-6. on count two, insert the one promotion case; on later counts, attach the
+1. count active `other` incidents for the pair and retain `hadActiveOther`;
+2. insert the immutable observation;
+3. open or attach to the matching active other incident;
+4. when a new incident opened and `hadActiveOther=false`, assert the other
+   standing fact and bind its id to that incident;
+5. create the pending review and first route when opening;
+6. count admitted incidents with the exact description digest;
+7. on count two, insert the one promotion case; on later counts, attach the
    incident to that case; and
-7. append typed events and the deterministic notice turn or owner alert.
+8. append typed events and the deterministic notice turn or owner alert.
 
 Idempotency scope is `(principal, harness-health-observe-other,
 idempotencyKey)`. An exact replay returns the original observation, incident,
@@ -348,12 +407,12 @@ Expiry never closes a review. Every list and trace read exposes pending reviews
 and open promotions until an authorized reviewer closes them. The substrate
 does not decide whether two different digests mean the same cause.
 
-### ARC-06 — Shared gate, recovery, and expiry
+### ARC-06 — Shared gate, recovery, expiry, and consumer discovery
 
 Expose one transaction-owned `HarnessHealth.prod_shape_gate_in_txn/4` taking
-`txn`, `harness`, `host`, and `now`. Every prod-shaped consumer calls it after
-selecting a candidate and immediately before writing or dispatching an action.
-It first expires due `other` incidents, then returns:
+`txn`, `harness`, `host`, and `now`. Only the prod-shaped action seam calls it,
+after its consumer selects a candidate and immediately before the seam writes
+or dispatches the action. It first expires due `other` incidents, then returns:
 
 ```text
 available
@@ -362,24 +421,89 @@ unavailable {incidentIds, failureClasses, earliestExpiryAt?}
 
 The known-class decision remains the existing standing-fact decision. An
 `other` decision requires `state='open' AND now < expiresAt`. At the expiry
-instant, the function atomically changes the due incident to `expired`, files
-`harness-other-restored`, records `expiredAt` and `expiryFactId`, and appends an
-event before it decides availability. A separate consumer cannot skip this
-step or copy its predicate. The transaction rechecks the selected prod-shaped
-candidate after an `available` result before it writes the action.
+instant, the function atomically changes every due incident for the pair to
+`expired` in ascending `(expiresAt,id)` order, records each `expiredAt` and
+expiry event, and then counts active
+`other` incidents. It files one `harness-other-restored` retraction and stores
+that fact id on the last incident transitioned only when the count becomes zero.
+An earlier transition stores `expiryFactId` null. A separate consumer cannot
+skip this step or copy its predicate. The transaction rechecks the selected
+prod-shaped candidate after an `available` result before it writes the action.
 
-An authorized `harness-health-resolve-other` mutation requires the incident id,
-an exact probe and output digest, `observedAt`, `worldStatus=PROVEN`, cause,
-`redactionConfirmed=true`, and idempotency key. It must prove the caller's
-recorded recovery condition; the substrate records the caller's assertion and
-does not parse the condition. Before `expiresAt`, it writes a normal-success
-observation, changes the incident to `resolved`, and retracts the standing
-fact atomically. At or after `expiresAt`, expiry wins and resolution returns
-`incident_expired` without claiming recovery.
+Both lines expose `HarnessHealth.prod_shape_act_in_txn/6` as the prod-shaped
+action seam. It takes `txn`, `consumerKind`, `candidateId`, `harness`, `host`,
+and a zero-arity action callback. It calls `prod_shape_gate_in_txn/4`; on
+`unavailable` it records the deduped suppression event and does not invoke the
+callback. On `available` it rechecks the candidate and invokes the callback in
+the same transaction.
 
-If another active incident remains for the same harness, the gate remains
-unavailable. A normal delivered turn continues to resolve the six known
-classes as today; it does not resolve `other` without the explicit proof.
+`Supervision.prod_shape_consumers/0` is the authoritative, sorted manifest of
+`{consumerKind,module,function,arity}` entries. This change initially names
+`assignment_prodder`. The separately reviewed collector change must add
+`session_garbage_collector` in the same commit that adds its callable step and
+before that product candidate can pass. A new periodic or terminal-edge consumer
+is invalid until it enters this manifest and calls only the action seam.
+
+The build gate runs an Elixir compiler tracer over every production `.ex` file.
+It derives roots from the existing Supervision callbacks for initial sweep,
+scheduled sweep, requested sweep, terminal notification, and every function in
+the pinned turn-end schedule. The collector must add its step beneath one of
+these roots; Non-Goal 6 forbids another timer or patrol. The tracer follows
+local and remote calls from those roots. A dynamic handler invocation on a
+root-reachable path is forbidden outside `prod_shape_act_in_txn/6`.
+
+The tracer emits every root-reachable call to `prod_shape_act_in_txn/6` with its
+caller tuple and compares the sorted set byte-for-byte with the manifest. A
+root-reachable path that records or dispatches a prompt, turn, wake, or harness
+command without first entering the action seam fails
+`unmediated_prod_shape_action`. The gate also rejects a production call from
+outside `HarnessHealth` to `prod_shape_gate_in_txn/4`, and rejects
+`ConditionFacts.harness_unavailable?/3` or a direct
+`harness_health_incidents` read in any manifested consumer.
+
+A fixture module added to the turn-end schedule that calls the action seam
+without a manifest entry must add one tracer tuple and fail exact set equality.
+A second scheduled fixture that reaches the prompt/turn sink directly must fail
+`unmediated_prod_shape_action`. These compiler-derived roots and paths, not a
+hand-maintained scan target, discover a new prod-shaped act before registration.
+
+An authorized `harness-health-resolve-other` mutation requires `incidentId`,
+`observedState`, `exactProbe`, `outputDigest`, `recoveryConditionDigest`,
+`recoverySatisfied`, `observedAt`, `worldStatus`, `cause`,
+`redactionConfirmed`, and `idempotencyKey`. The text fields use the ARC-01 trim,
+size, and credential-shape rules; `cause` is trimmed, non-empty, at most 2,000
+UTF-8 bytes, and covered by the same validator and redaction confirmation.
+`outputDigest` and
+`recoveryConditionDigest` are 64 lowercase hexadecimal SHA-256 values.
+`recoverySatisfied` must be true, `worldStatus` must be `PROVEN`, and
+`redactionConfirmed` must be true. `observedAt` must be at or after `openedAt`,
+must not be later than acceptance time, and must be no more than 120000
+milliseconds old.
+
+The supplied recovery-condition digest must equal the digest stored by the
+opening observation. This equality plus `recoverySatisfied=true` is the typed
+authorized assertion that the probe satisfies that exact recorded condition;
+the substrate does not interpret either text. Complete proof with a different
+digest refuses `recovery_condition_mismatch`. False satisfaction refuses
+`recovery_not_satisfied`. Missing, malformed, stale, credential-shaped, or
+unauthorized proof refuses `missing_recovery_evidence`,
+`invalid_recovery_evidence`, `stale_recovery_evidence`,
+`credential_shaped_evidence`, or `not_authorized`. Every refusal occurs before
+an observation, incident, fact, or event change.
+
+Idempotency scope is `(principal,harness-health-resolve-other,idempotencyKey)`.
+Exact replay returns the original ids; a normalized-field difference returns
+`idempotency_conflict`. Before `expiresAt`, one transaction writes the ARC-02
+normal-success observation, changes the incident to `resolved`, counts the
+remaining active `other` incidents for the pair, and retracts the other standing
+fact only on a one-to-zero transition. At or after `expiresAt`, expiry wins and
+resolution returns `incident_expired` without writing recovery proof or claiming
+recovery.
+
+If another active incident remains for the same pair, the other standing fact
+and gate remain unavailable. A normal delivered turn continues to resolve the
+six known classes as today; it does not resolve `other` without the explicit
+proof.
 
 ### ARC-07 — Authorization and privacy
 
@@ -393,10 +517,10 @@ Detail reads return exact evidence only to those principals. Ordinary incident
 lists, prodder output, garbage-collector output, notices, lifecycle summaries,
 logs, firehose rows, and metrics expose only ids, class, harness, host, state,
 times, status, and review/promotion state. They never expose description,
-description digest, error, probe, output digest, recovery, not-known reason,
-idempotency key, or free-text cause. The routed same-owner review notice may
-carry the description digest because its recipient already has detail-read
-authority.
+description digest, observed state, error, probe, output digest, recovery,
+not-known reason, idempotency key, or free-text cause. The routed same-owner
+review notice may carry the description digest because its recipient already
+has detail-read authority.
 
 Only an admin can read a promotion case's cross-owner incident membership. A
 source owner or review custodian sees its own incident and the fact that a
@@ -475,7 +599,10 @@ incidents.
    for each required ARC-01 field omitted, empty after trim, malformed, stale,
    or mutually inconsistent, when it calls `harness-health-observe-other`, then
    the typed refusal names the invalid fields and zero observation, incident,
-   fact, review, route, event, turn, wake, or promotion rows change.
+   fact, review, route, event, turn, wake, or promotion rows change. Run one
+   additional no-effect row for a credential-shaped value in each of
+   `description`, `observedState`, `exactProbe`, `exactObservedError`,
+   `recoveryCondition`, and `notKnownClassReason`.
 2. **OTH-AC-02 — Exact error entry.** Given a fresh `PROVEN` exact-error WORLD
    FACT with redaction confirmed, when an authorized source owner admits it,
    then one transaction writes the exact error, description digest, recovery
@@ -497,8 +624,8 @@ incidents.
    match the pre-change line.
 6. **OTH-AC-06 — Whole-harness shared gate.** Given an active `other` incident
    for `(codex,gibson)`, when the assignment prodder, session garbage collector,
-   and every registered prod-shaped test consumer reach their act boundary,
-   then all call `prod_shape_gate_in_txn/4`, record no prompt or turn, and return
+   and every manifested prod-shaped test consumer reach their act boundary,
+   then all enter `prod_shape_act_in_txn/6`, record no prompt or turn, and return
    the same incident id. A consumer for `(claude,gibson)` proceeds.
 7. **OTH-AC-07 — Act-time race.** Given a consumer selected work before an
    incident opened, when the incident commits before the consumer's act
@@ -521,19 +648,28 @@ incidents.
     keys for the same harness and description create one open incident, two
     observations, one review, one active fact, and one initial route.
 11. **OTH-AC-11 — Multiple other causes.** Given two descriptions with different
-    digests on one harness, when both are admitted, then two incidents open.
-    Resolving or expiring one leaves the gate unavailable until the other is no
-    longer active.
+    digests on one pair, when both are admitted in either order, then two
+    incidents open and exactly one pair-scoped other fact stands. Resolve the
+    first and expire the second, then repeat with expiry first and resolution
+    second. After the first terminal transition, no retract exists, the fact
+    stands, and the gate is unavailable. After the second, exactly one retract
+    exists, the fact does not stand, and the gate is available.
 12. **OTH-AC-12 — Evidenced recovery.** Given an active `other` incident and an
-    authorized fresh `PROVEN` recovery probe, when resolve commits before
-    expiry, then one transaction appends proof, marks `resolved`, retracts its
-    fact, preserves opening evidence, and never invokes revocation. The same key
-    replays without a second transition.
+    authorized fresh `PROVEN` recovery probe whose condition digest matches the
+    opening observation and whose `recoverySatisfied` value is true, when
+    resolve commits before expiry, then one transaction writes the exact ARC-02
+    recovery shape, marks `resolved`, applies the one-to-zero fact rule,
+    preserves opening evidence, and never invokes revocation. The same key
+    replays without a second transition. A complete probe with a different
+    condition digest, false satisfaction, stale time, credential-shaped
+    `observedState`, credential-shaped `exactProbe`, or changed replay payload
+    returns its typed refusal and changes no row.
 13. **OTH-AC-13 — Deterministic expiry race.** Given `now < expiresAt`, recovery
     may resolve. Given `now >= expiresAt`, when recovery and a prod-shaped gate
     contend in either start order, SQLite serialization yields one `expired`
-    transition, one retract fact, no resolved claim, no denied prod because of
-    that incident, and the recovery call returns `incident_expired`.
+    transition, no resolved claim, no denied prod because of that incident, and
+    the recovery call returns `incident_expired`. The transition writes a
+    retract only when no second active `other` incident remains for the pair.
 14. **OTH-AC-14 — Crash and restart.** At barriers after observation insert,
     incident insert, fact assertion, review insert, route insert, notice enqueue,
     expiry state write, and recovery proof insert, force rollback or process
@@ -564,19 +700,24 @@ incidents.
     six-class fresh layout. Each forced migration barrier rolls back to its
     predecessor. Unknown, mixed, partial, or target-stamp-with-bad-object
     fixtures refuse before supervision starts.
-19. **OTH-AC-19 — Shared-gate registration.** Given the prodder and session
-    garbage collector plus every module registered as prod-shaped, when a
-    static call-site test scans their act boundaries, then each calls only the
-    shared gate and no module contains a direct harness-health, condition-fact,
-    adapter, process, or harness-up predicate. Adding a prod-shaped consumer
-    without registration makes the test fail.
+19. **OTH-AC-19 — Authoritative consumer discovery.** Given the prodder, session
+    garbage collector, manifest, and compiler tracer on each line, when the
+    static gate compiles all production `.ex` files, then its sorted caller set
+    equals `Supervision.prod_shape_consumers/0`; every caller uses only
+    `prod_shape_act_in_txn/6`; and no manifested caller contains a direct
+    harness-health, condition-fact, adapter, process, or harness-up predicate.
+    Compile a fixture that calls the action seam without a manifest entry: its
+    added tracer tuple must fail exact set equality. Compile fixtures that call
+    an action sink without the seam, call the gate outside `HarnessHealth`, or
+    read the forbidden fact/table directly: each must fail the static gate with
+    its declared refusal.
 20. **OTH-AC-20 — Quiet-path silence and observability.** Given no active
     incident, repeated gate calls write nothing. Given one denied candidate,
     repeated identical calls produce one redacted suppression event. Given an
     open, resolved, expired, reviewed, recurrent, and promoted fixture, the
     authorized trace reconstructs cause, principal, evidence, route, custody,
-    review, expiry/recovery, and promotion from typed rows without parsing a
-    notice.
+    review, expiry/recovery, promotion, and the zero-to-one/one-to-zero standing
+    fact epochs from typed rows without parsing a notice.
 21. **OTH-AC-21 — Cross-line parity.** Run OTH-AC-01 through OTH-AC-20 against
     targetless candidates based on the exact admitted `0.1.9` four-class port
     and current `main`. The observable outcomes, refusal codes, privacy,
