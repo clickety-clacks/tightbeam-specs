@@ -15,6 +15,8 @@ Source baselines read for this revision:
 - Tightbeam specs `main` at `c898bd4e91b7d8b6f92f2ef421d7845e6868f2be`.
 - Tightbeam product `main` at `3e1dc56e1bd27854487228c05f4b2e1c9dd4fb22`.
 - Tightbeam product `0.1.9` at `c3299e3a75dab21ed2839822d8ad207514f92782`.
+- Frozen `0.1.9` four-class port candidate
+  `f655a000ef50e4416f45c83b0e822843aed86980`.
 - `production-machine-v1.md`, `stall-watchdog-kit.md`,
   `harness-kill-lifecycle.md`, and the served `product-owner.md` WORLD FACT
   guidance current on 2026-09-03.
@@ -107,11 +109,13 @@ interpret the description or mint the class.
 3. A stored notice turn's terminal state is the proof that a session could or
    could not receive the escalation. `delivered` proves a living authority;
    `failed`, `failed_unknown`, and `canceled` do not.
-4. The four-class `0.1.9` port on assignment
-   `asg_8187716c-2e0a-4b6a-be73-e68fa73c429e` precedes the `0.1.9` product
-   implementation of this contract. The implementation must bind its migration
-   to that port's exact reviewed and landed schema stamp. It must refuse any
-   other predecessor.
+4. The frozen four-class `0.1.9` port on assignment
+   `asg_8187716c-2e0a-4b6a-be73-e68fa73c429e` is
+   `f655a000ef50e4416f45c83b0e822843aed86980`, parent
+   `c3299e3a75dab21ed2839822d8ad207514f92782`. It keeps schema stamp
+   `identity-universal-root-render-v1-019`. The `0.1.9` product candidate for
+   this contract must use the reviewed and landed `f655a000...` as its direct
+   first parent and apply the closed predecessor-shape rule in ARC-08.
 5. Product `main` baseline `3e1dc56e...` contains the reviewed repair series at
    `31c91a7a...` and already recognizes the four added named classes.
 6. The system clock supplies integer UTC epoch milliseconds. SQLite transaction
@@ -413,12 +417,25 @@ advancing the stamp. It never sniffs DDL to guess a predecessor.
 
 The target stamps are `harness-health-other-v1-main` and
 `harness-health-other-v1-019`. Main accepts only
-`coordination-fabric-v1-phase1-v15`. The 0.1.9 implementation records in its
-candidate report the exact reviewed four-class predecessor commit and stamp;
-this contract admits only that stamp. Missing, unknown, partially migrated, or
-already conflicting objects cause `harness_health_other_schema_conflict` and
-abort startup before Supervision, the prodder, or the session garbage collector
-starts.
+`coordination-fabric-v1-phase1-v15` and its exact harness-health objects.
+
+The `0.1.9` migration accepts stamp
+`identity-universal-root-render-v1-019` only when every harness-health column,
+index, trigger, and constraint matches one of two closed layouts from the
+declared commit chain: the two-class persisted layout at `c3299e3a...`, or the
+six-class fresh-database layout at `f655a000...`. Those layouts differ only in
+the `failureClass` checks: the first admits `auth-dead|rate-limit-dead`; the
+second also admits `adapter_unavailable|model_unavailable|task_crash|interrupted-outcome-unknown`.
+The migration does not infer a predecessor from a subset of objects. It
+compares the complete canonical object set to these two declared layouts,
+rebuilds either one to the same seven-class target, and records
+`harness-health-other-v1-019`. The candidate report binds the implementation to
+direct parent `f655a000...` and records which admitted database layout each
+migration fixture used.
+
+Missing, unknown, partially migrated, or conflicting objects cause
+`harness_health_other_schema_conflict` and abort startup before Supervision,
+the prodder, or the session garbage collector starts.
 
 A crash before commit leaves the predecessor stamp and tables. A restart runs
 the same migration. A crash after commit reads the target stamp and starts
@@ -538,12 +555,15 @@ incidents.
     case or internal whitespace, when admitted, then their digests differ and
     they do not recur. Given descriptions that differ only in leading or
     trailing whitespace, their trimmed bytes and digests match.
-18. **OTH-AC-18 — Migration and rollback.** On each line, given its exact
-    predecessor fixture with open and resolved six-class incidents, when the
-    migration runs, then counts, ids, foreign keys, facts, and old response
-    bytes remain exact; new columns are null; the target stamp is exact. Each
-    forced migration barrier rolls back to the predecessor. Unknown, partial,
-    or target-stamp-with-bad-object fixtures refuse before supervision starts.
+18. **OTH-AC-18 — Migration and rollback.** On main, given its exact predecessor
+    fixture with open and resolved six-class incidents, when the migration runs,
+    then counts, ids, foreign keys, facts, and old response bytes remain exact;
+    new columns are null; the target stamp is exact. On `0.1.9` at direct parent
+    `f655a000...`, run the same assertions once against the exact `c3299e3a...`
+    two-class persisted layout and once against the exact `f655a000...`
+    six-class fresh layout. Each forced migration barrier rolls back to its
+    predecessor. Unknown, mixed, partial, or target-stamp-with-bad-object
+    fixtures refuse before supervision starts.
 19. **OTH-AC-19 — Shared-gate registration.** Given the prodder and session
     garbage collector plus every module registered as prod-shaped, when a
     static call-site test scans their act boundaries, then each calls only the
