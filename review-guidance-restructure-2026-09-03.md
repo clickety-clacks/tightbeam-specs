@@ -19,6 +19,19 @@ two finding classes and cold-review rules stand and are assumed here.
 - The orchestrator rules a producer's contest of one blocking finding ("ok on
   orchestrator i guess").
 
+## Audit criterion, sharpened (Mike, 2026-09-03)
+
+The test for keeping a line is not "does a competent agent know this?" but "does a
+competent agent DO this reliably?" Knowledge an agent has and acts on is waste in the
+document. Knowledge it has and routinely fails to act on is the highest-value line in
+the document, because that is the only kind guidance can change. Mike: "they should
+know this, but it's already proven that they have a propensity to overbuild, so I
+would argue it has value."
+
+This supersedes the earlier reading of the cut rule, which tested knowledge rather
+than behaviour. It does not supersede the threshold rule: a line still needs something
+an agent can act on.
+
 ## Open
 
 - Quick fixes. Mike: "allow for some simple non-mvp fixes ... if there are a bunch
