@@ -1,7 +1,7 @@
 # Kung Fu product-scope authority
 
-Status: candidate for one independent exact-tip review; not implementation or
-landing authority. This specification is based on Tightbeam
+Status: revised candidate for exact-tip review; not implementation or landing
+authority. This specification is based on Tightbeam
 `42c20cdcee81c632a26b663ab0521642ee4a7b7d` and tightbeam-specs
 `e125efe346a51f115785b5e7ad5804355b958a42`.
 
@@ -12,6 +12,9 @@ The B1 and B2 corrections come from owner ruling
 verdict `att_61c8f42f-7608-4a14-bd75-64052d92b473` and report
 `art_49aff2e0`. This specification amends the product-scope, spec-review, and
 spec-assignment-opening clauses of `agentic-engineering-guidance-spec.md`.
+The explicit automatic-remedy purpose transport closes verdict
+`att_faa62df3-a700-4fa5-9d36-f74c7780841d` and report `art_f034dc25` without
+changing the owner-ruled B1 or B2 boundary.
 
 ## Goal
 
@@ -103,7 +106,10 @@ Review continues to enforce law, correctness, and quality floors.
   provide this field. `true` declares implementation work and invokes the
   authorized-spec-package gate. `false` declares pre-implementation work and does
   not invoke this scope gate. Spec production, linked review, and evidence work
-  use `false`. The field is independent of `effectKind`.
+  use `false`. An internal rule remedy spells the same field
+  `implementation_purpose` in its typed remedy parameters. The remedy call builder
+  forwards that value as the assignment call's `implementationPurpose`; it does
+  not select or derive the value. The field is independent of `effectKind`.
 - **Spec-backed product implementation opening**: an `assign` or `dispatch` call
   whose work item has a complete spec binding and whose
   `implementationPurpose` is `true`.
@@ -143,8 +149,9 @@ Review continues to enforce law, correctness, and quality floors.
 6. Both `assign` and `dispatch` deny a spec-backed product implementation opening
    unless the current work-item binding has an authorized spec package.
 7. `implementationPurpose=false` keeps spec production, linked review, and
-   evidence work before the package gate. No rule infers this value from another
-   field.
+   evidence work before the package gate. Each caller, including an internal
+   assignment-producing remedy, supplies this value explicitly. No rule or call
+   builder infers it from another field.
 8. A review or scope acceptance for one spec hash cannot authorize another spec
    hash.
 9. A reviewer's proposed expansion cannot become a blocking requirement without
@@ -170,7 +177,13 @@ Review continues to enforce law, correctness, and quality floors.
 - `lib/tightbeam/dispatch.ex` runs rules for both assignment-opening verbs.
 - `lib/tightbeam/assignments.ex` validates and opens both `assign` and
   `dispatch` assignments.
-- `lib/tightbeam/rules.ex` exposes typed facts to the Kung Fu rules.
+- `lib/tightbeam/rules.ex` exposes typed facts to the Kung Fu rules and validates
+  the typed parameters for an assignment-producing remedy.
+- `lib/tightbeam/rail_remedy.ex` builds the internal `assign` calls produced by a
+  rule remedy.
+- `priv/kungfu/agentic-engineering/rules/engineering.toml` declares the two
+  current assignment-producing remedies, `completion-requires-review` and
+  `refix-requires-diagnosis`.
 - `lib/tightbeam/wire/router.ex` and `cli/src/args.rs` carry the two new typed
   inputs through the existing wire and CLI surfaces.
 
@@ -223,6 +236,22 @@ The `assign` and `dispatch` transports both accept
 field on every call for a spec-backed work item and refuses any non-Boolean value.
 The same typed value reaches the rule decision and the assignment-opening
 transaction. A successful opening stores it as immutable assignment data.
+
+The typed parameter schema for a rule remedy whose action is `assign` requires
+one Boolean `implementation_purpose` value. It has no default. The
+`completion-requires-review` and `refix-requires-diagnosis` remedy definitions
+each set `implementation_purpose = false`. The remedy call builder forwards that
+Boolean unchanged as the assignment call's `implementationPurpose`. It does not
+derive the value from the remedy action, produced verdict, effect kind, target
+role, reviewed assignment, or work item.
+
+For `completion-requires-review`, the linked review continues to resolve its
+effective work item through `reviewsAssignmentId`. For
+`refix-requires-diagnosis`, the diagnosis card continues to use the explicit work
+item parameter. In both cases, a spec-backed effective work item reaches the same
+purpose validation and scope gate as any other `assign` call. Purpose `false`
+keeps the automatic review or diagnosis assignment before the package gate, and
+the successful assignment stores `false`.
 
 The rules engine exposes the raw typed purpose and one neutral fact for an
 authorized spec package. The Kung Fu rules apply the same package predicate to
@@ -445,6 +474,23 @@ bypasses in place.
     that lack the new typed bindings, when migration runs, then it preserves them
     as history and none gains invented product-owner authority, purpose, review
     qualification, or implementation authorization.
+39. **Automatic completion review.** Given a producing assignment on a
+    spec-backed work item without a qualifying `reviewed-clean` verdict, when its
+    holder files completion and `completion-requires-review` produces its linked
+    review assignment, then the remedy supplies Boolean
+    `implementation_purpose = false`, the call builder forwards the value
+    unchanged, the scope gate does not deny the review assignment, and Tightbeam
+    stores purpose `false` on that assignment.
+40. **Automatic re-fix diagnosis.** Given a spec-backed bug work item with one
+    completed fix and no qualifying `diagnosed` verdict, when a later
+    implementation dispatch triggers `refix-requires-diagnosis`, then the remedy
+    supplies Boolean `implementation_purpose = false`, the call builder forwards
+    the value unchanged, the scope gate does not deny the diagnosis assignment,
+    and Tightbeam stores purpose `false` on that assignment.
+41. **Invalid automatic-remedy purpose.** Given an `assign` rule remedy, when its
+    parameters omit `implementation_purpose` or supply a string, integer, object,
+    or array, then rule loading returns a remedy-parameter error. The loader and
+    call builder do not add, select, or derive a purpose value.
 
 ## Open Questions
 
