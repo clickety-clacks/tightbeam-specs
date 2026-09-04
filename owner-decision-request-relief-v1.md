@@ -352,9 +352,12 @@ OQ-6's line election.
 open. No rail fact reads `decision_requests`: the fact list in
 `lib/tightbeam/rules.ex` contains no decision-request fact. The only consumer of
 the open set elsewhere in the tree is a count summed into the execution map
-projection (`lib/tightbeam/execution_map.ex:519`), which displays and authorizes
-nothing. Verified in source, 2026-09-04. This assumption is what makes I2 a
-checked claim rather than an assertion.
+projection, which displays and authorizes nothing:
+`open_decision_requests/2` at `lib/tightbeam/execution_map.ex:518` on the
+mainline and `:429` on the released line, fed by one `SELECT ... GROUP BY
+assignmentId` over open rows. The function body is character-identical on both
+lines; only the address differs. Verified in source on BOTH lines, 2026-09-04.
+This assumption is what makes I2 a checked claim rather than an assertion.
 
 **A16.** Operator request populations by the opener of their subject card, over
 all 630 rows in the live database: 349 have an opener session in the active
@@ -922,11 +925,11 @@ given at Q5.
 ### What the substrate does NOT gain
 
 No new verb. No new column. No new table. No new kind. No new rail. No new rule
-file entry. No exemption, override, or claim. No migration. No new sweep,
-scheduler, timer, or background pass. R1, R3, R4, R6, and R7 are edits to
-existing queries and authorization predicates; R5 is prose. R3 and R4 are
-deletions of one clause each, and R4 reuses a sweep and a trigger the substrate
-already has (A13).
+file entry. No exemption, override, or claim. No migration. R1, R3, R4, R6, and
+R7 are edits to existing queries and authorization predicates; R5 is prose. R3
+and R4 are deletions of one clause each, and R4 reuses a sweep and a trigger the
+substrate already has (A13); the sweep fence a builder is held to is stated once,
+at R4 under "Build no sweep", and is not repeated here.
 
 ## The five questions
 
@@ -1553,6 +1556,11 @@ nothing in the decision request subsystem. It may run in parallel with the
 others, and it is the one that removes a cause rather than clearing effects, so
 prefer it first.
 
+Four requirements target code that differs between the two lines, and each of
+their cards must name the line it targets before dispatch: R3, R4, R6, and R7,
+per OQ-6. R6's difference is the sharpest, because there the two lines differ in
+BEHAVIOUR and not only in address. R1, R2, and R5 need no such election.
+
 R1, R3, and R4 are independent of each other in effect but touch the same
 subsystem; order them rather than running them in parallel. R3 and R4 delete the
 same clause in two functions and should land together. R5 lands after R1 so its
@@ -1560,9 +1568,8 @@ guidance can name the opener path, which is a preference about completeness and
 not a dependency: R5 is true and buildable before R1, merely incomplete (Q1).
 
 R7 touches `effort_checkin.ex` and nothing R1 through R6 touch, so it may run in
-parallel with all of them. Its card must name the line it targets, per OQ-6, and
-must carry AC-16 as a check that has to be green on whichever line it lands,
-because on the mainline that check starts red.
+parallel with all of them. Its card must carry AC-16 as a check that has to be
+green on whichever line it lands, because on the mainline that check starts red.
 
 Nothing in this document is applied to a running host by the work it specifies.
 The production host is locked at 0.1.8 under Mike's 2026-09-02 change law, and
