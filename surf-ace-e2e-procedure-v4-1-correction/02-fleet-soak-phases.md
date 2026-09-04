@@ -201,7 +201,7 @@ Before any topology soak can be Green, prove that the reviewed CLI path is avail
 7. Select one primary candidate. Select additional candidates only for optional multi-surface coverage.
 8. Before the preflight starts, the gated operator subscribes to the exact preflight-ready fact kind and scope.
 9. For each selected candidate, either:
-   - run the separately authorized reversible preflight probe inside the exact run-owned state root, cover the exact push, topology, capture, and read operations that the run will use before the next boundary, restore the preflight baseline, and issue the immutable already-lockless row; or
+   - run the separately authorized reversible preflight probe inside the exact run-owned state root, cover the exact push, topology, capture, and read operations that the run will use before the next boundary, restore the preflight baseline under `06-restoration-oracle.sh`, and issue the immutable already-lockless row; or
    - record the separate authority, exact explicit migration material, and supported CLI input location for that surface and operation.
 10. After it records the row, the preflight executor runs fresh `list` through the exact state root. It files the preflight-ready fact only if the current controller, selected surface, and pane match the row.
 11. After the fact arrives, the gated operator runs fresh `list` through the exact state root. It compares the current controller, state root, operator, surface, pane, boundary, and operation set with the row.
@@ -209,6 +209,8 @@ Before any topology soak can be Green, prove that the reviewed CLI path is avail
 13. On `pair.request` `capability_mismatch`, stop before mutation, preserve exact evidence, classify endpoint/procedure readiness, clean the run-owned fixture and state, and route a fresh fixture without retry or bypass. Before resuming, repeat fixture verification, fresh `list` discovery, and steps 7–12 for every target surface. Do not reuse an admission row from the failed fixture.
 
 Link the discovery artifact and each per-surface admission artifact in the run report. A list result without per-surface admission evidence is not mutation authority or product proof.
+
+For each split/close rollback, preserve the baseline and restored PNG files and their SHA-256 values. Do not require byte-identical PNGs. Require the intended one-pane topology and exact agreement between baseline and restored pane id, content id, content type, revision, visible text, selection, and viewport. Require the restored local `read` to pass `05-read-response-validator.sh`, including `cacheStatus: current`. A wrong or stale content value fails restoration.
 
 ### 2. Record observability level per surface
 

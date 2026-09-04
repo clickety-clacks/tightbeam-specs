@@ -2,7 +2,7 @@
 
 This bundle is the complete operator procedure for a Gibson-coordinated Surf Ace fleet soak.
 V4.1 introduced the mutation-admission seam for the current Linux Racter path.
-This revision also repairs the two operator faults that stopped the 2026-09-03 run before its first capture.
+This revision also repairs the operator faults that stopped the 2026-09-03 runs before the soak.
 Use the bundle documents in this order:
 
 1. Read `00-v4-contract.md` for the V4.1 scope and acceptance contract.
@@ -11,6 +11,7 @@ Use the bundle documents in this order:
 4. Complete `03-fleet-soak-run-checklist.md` while the run executes.
 5. Use `04-v4-changed-clauses.md` to review each V4 clause changed by V4.1.
 6. Source `05-read-response-validator.sh` from the run-specific harness.
+7. Source `06-restoration-oracle.sh` from the run-specific preflight harness.
 
 The bundle does not authorize product, package, install, endpoint, live, deployment, or state action by itself.
 The operator must obtain separate authority for every approved soak action and every fault injection.
@@ -38,6 +39,8 @@ Only one gated E2E operator may consume one admission row. A new operator, a new
 The gated operator must subscribe to one run-specific preflight-ready fact before the preflight starts. The preflight executor files that fact only after it records the immutable admission row and verifies the row against a fresh `list` result from the exact state root. After the fact arrives, the operator must run `list` again and compare the current controller, state root, operator, surface, pane, boundary, and operation set with the row. A completion, direct message, or admission artifact without the matching fact does not transfer custody.
 
 For local `read`, a successful response has top-level `ok: true`. Its `result` contains the acknowledgement, `cacheStatus`, records, and scope. It does not contain `result.ok`. The harness must use `05-read-response-validator.sh` and must not apply the network-response predicate to `read`.
+
+After a reversible split/close probe, preserve the baseline and restored PNG files and their SHA-256 values as evidence. Do not require the two PNG byte hashes to match. The restoration oracle is the intended one-pane topology plus the semantic render/content metadata: exact pane, content id, content type, revision, visible text, selection, and viewport. The restored local `read` must also pass `05-read-response-validator.sh`, including `cacheStatus: current`. Use `06-restoration-oracle.sh` for the semantic comparison. A wrong or stale content value is a restoration failure.
 
 ## Frozen source custody
 
@@ -73,3 +76,5 @@ The completed checklist and evidence determine the run grade. This procedure nev
 V4.1 consumes reviewed V4 artifact `art_a19b6b3a` at SHA-256 `fb832918337290546c321b7b166c6147703e2049c7ab8abf27f02010f990f0d3`, read-only admission artifact `art_545e1cf3` at SHA-256 `3e928b4224d19db47e0ebd6a09fe3b9e088c52829b9711a2ec104015a7c6e0cc`, and Red report `art_876f6fce`. The referenced report `art_88d4ac74` still had no surviving bytes and was not inspected or reconstructed. The invalid artifact `art_ff2cad0e` is not an input.
 
 This corrective revision also consumes checkpoint `art_ada61ba4` at SHA-256 `c6624e32c9fdb45589f07f56cb70b95b195c9a400c209a9fc635b0bb8f2d526b`. The checkpoint preserved the exact successful tick-0 `read` response and proved that the run-specific harness rejected it only because `result.ok` was absent. The revision also consumes preflight row `art_37ae29b4` at SHA-256 `33fab770a28fcfd72848261c2ba4db31954e0542fbe9413a6228555fd3ae0980`. That row bound another state root, controller, surface, and pane, and no required preflight-ready fact transferred custody to the stopped operator.
+
+The visual restoration correction consumes refusal `art_663ac4d3` at SHA-256 `0f5ee1161a0c481069acdfed537d9a68b0469566d97ace97c46fe8d73b046ff1` and its evidence manifest at SHA-256 `531ff5147540bdaf4f1dd3da383c34f0758028fd5fe92ab56b66428b6f7507ac`. On `sf_49049d957bd4`, baseline PNG SHA-256 `7509fa0979e04e7f4542644f93e38eeaaee8499a035eb10babe201bcc9e9816e` and restored PNG SHA-256 `ecb9a7edd36ca9b562f6d66ee141033f06466ffb53378c3ec79e03180d7abccb` differed while the semantic render/content metadata matched. The first two surfaces restored. The last three were not probed after the stop.

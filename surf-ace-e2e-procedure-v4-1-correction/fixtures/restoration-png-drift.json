@@ -1,0 +1,94 @@
+{
+  "controller": "ctl_c4b8df107e8543a99445885c3cac08b2",
+  "allSixOnePane": [
+    {
+      "surfaceId": "sf_6b1db7ae8f50",
+      "paneCount": 1,
+      "paneId": 107840,
+      "topologyRevision": 13
+    },
+    {
+      "surfaceId": "sf_1029c6c6827d",
+      "paneCount": 1,
+      "paneId": 112957,
+      "topologyRevision": 11
+    },
+    {
+      "surfaceId": "sf_49049d957bd4",
+      "paneCount": 1,
+      "paneId": 112088,
+      "topologyRevision": 11
+    },
+    {
+      "surfaceId": "sf_f9c1fd8a9b67",
+      "paneCount": 1,
+      "paneId": 1,
+      "topologyRevision": 10
+    },
+    {
+      "surfaceId": "sf_0e2d0a73a98d",
+      "paneCount": 1,
+      "paneId": 1,
+      "topologyRevision": 10
+    },
+    {
+      "surfaceId": "sf_4c201627fae6",
+      "paneCount": 1,
+      "paneId": 1,
+      "topologyRevision": 8
+    }
+  ],
+  "baseline": {
+    "contentId": "soak-04e45e1-linux-20260903-t60-sf_49049d957bd4-pa",
+    "contentType": "markdown",
+    "paneId": 112088,
+    "revision": 18,
+    "selection": null,
+    "viewport": {
+      "contentSize": {
+        "height": 1378,
+        "width": 5120
+      },
+      "scrollOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "visibleRect": {
+        "height": 1378,
+        "width": 5120,
+        "x": 0,
+        "y": 0
+      },
+      "zoomLevel": 1
+    },
+    "visibleText": "Surf Ace soak tick 60 surface sf_49049d957bd4 pane a UTC 2026-09-03T08:25:00Z"
+  },
+  "afterRollback": {
+    "contentId": "soak-04e45e1-linux-20260903-t60-sf_49049d957bd4-pa",
+    "contentType": "markdown",
+    "paneId": 112088,
+    "revision": 18,
+    "selection": null,
+    "viewport": {
+      "contentSize": {
+        "height": 1378,
+        "width": 5120
+      },
+      "scrollOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "visibleRect": {
+        "height": 1378,
+        "width": 5120,
+        "x": 0,
+        "y": 0
+      },
+      "zoomLevel": 1
+    },
+    "visibleText": "Surf Ace soak tick 60 surface sf_49049d957bd4 pane a UTC 2026-09-03T08:25:00Z"
+  },
+  "baselinePngSha256": "7509fa0979e04e7f4542644f93e38eeaaee8499a035eb10babe201bcc9e9816e",
+  "afterRollbackPngSha256": "ecb9a7edd36ca9b562f6d66ee141033f06466ffb53378c3ec79e03180d7abccb",
+  "stateSha256": "197518779f5c72fc5805de028875a0d4fedd94d429507e7533de68f84b4a0d23"
+}

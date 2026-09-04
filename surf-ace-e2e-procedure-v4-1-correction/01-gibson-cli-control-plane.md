@@ -244,7 +244,7 @@ Run this gate after the Electron cleanup and build-identity steps, but before Ph
 8. Select one candidate as the required primary surface. Select additional candidates only when the run needs optional multi-surface coverage.
 9. Before the preflight starts, the gated operator subscribes to the exact preflight-ready fact kind and scope. A fallback wake can report a missing fact, but it never transfers custody.
 10. For each selected candidate, require one of these evidence paths:
-   - a separately authorized preflight executor runs the bounded reversible probe inside the exact run-owned state root, covers each planned first-boundary operation, restores the preflight baseline, and issues the immutable already-lockless row; or
+   - a separately authorized preflight executor runs the bounded reversible probe inside the exact run-owned state root, covers each planned first-boundary operation, restores the preflight baseline under the semantic restoration oracle below, and issues the immutable already-lockless row; or
    - the run records separate authority, exact explicit migration material, and supported CLI input location for that surface and operation.
 11. The preflight executor runs fresh `list` through the exact state root after it records the row. It compares the returned `controllerInstanceId`, selected surface, and pane with the row. It files the preflight-ready fact only when every binding matches.
 12. After the fact arrives, the gated operator runs fresh `list` through the exact state root. It compares the current controller, state root, operator, surface, pane, boundary, and operation set with the row. A completion, direct message, or artifact without the matching fact is not a handoff.
@@ -257,6 +257,12 @@ After a restart, relaunch, gateway/provider bounce, network recovery, ownership 
 Immediately before each target operation, recheck the admission row's expiry, exact surface/controller-fixture binding, exact state-root binding, exact gated-operator binding, boundary validity, operation coverage, and non-read-only status. If one check fails, return the surface to candidate state and repeat steps 7–13. Do not target the surface until a new row passes.
 
 Do not require a separate tool declaration. Do not call a provider plugin as a substitute.
+
+### Preflight restoration oracle
+
+After each reversible split/close probe, run fresh `list`, `read`, and `capture-pane` for the surviving baseline pane. Require the intended one-pane topology. Validate `read` with `05-read-response-validator.sh`, including the expected content id and `cacheStatus: current`. Build the restoration summary from the baseline and restored capture payloads without image bytes. Source `06-restoration-oracle.sh` and require `surf_ace_restoration_ok` to pass.
+
+The semantic restoration fields are the exact pane id, content id, content type, revision, visible text, selection, and viewport. Preserve both PNG files and their SHA-256 values in the evidence manifest. Do not use PNG byte equality as the restoration predicate. A changed PNG SHA-256 with matching semantic fields is evidence, not a failure. A wrong pane, content id, content type, revision, visible text, selection, or viewport is a failure. A missing or stale restored read is a failure.
 
 ## Mandatory capture-and-compare after every push
 

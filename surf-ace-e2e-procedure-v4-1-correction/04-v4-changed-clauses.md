@@ -62,3 +62,10 @@ These are the only new behavior changes:
 1. `README.md`, `00-v4-contract.md`, `01-gibson-cli-control-plane.md`, and `02-fleet-soak-phases.md` separate the local `read` response contract from the network-response contract.
 2. `05-read-response-validator.sh` enforces the local `read` contract against the exact tick-0 fixture.
 3. `README.md`, `00-v4-contract.md`, `01-gibson-cli-control-plane.md`, `02-fleet-soak-phases.md`, and `03-fleet-soak-run-checklist.md` require one preflight-ready fact and fresh controller-binding checks before the operator admits a surface.
+
+
+## 2026-09-04 visual restoration-oracle correction
+
+Refusal `art_663ac4d3` at SHA-256 `0f5ee1161a0c481069acdfed537d9a68b0469566d97ace97c46fe8d73b046ff1` stopped preflight when restored PNG SHA-256 `ecb9a7edd36ca9b562f6d66ee141033f06466ffb53378c3ec79e03180d7abccb` differed from baseline SHA-256 `7509fa0979e04e7f4542644f93e38eeaaee8499a035eb10babe201bcc9e9816e`. The intended one-pane topology and the pane, content, revision, visible-text, selection, and viewport metadata matched. Evidence manifest SHA-256 `531ff5147540bdaf4f1dd3da383c34f0758028fd5fe92ab56b66428b6f7507ac` preserves the stopped run.
+
+This correction changes only the preflight restoration oracle. The harness preserves baseline and restored PNG files and hashes but grades restoration against one-pane topology, current read content, and matching semantic capture metadata. `06-restoration-oracle.sh` covers the exact passing drift fixture plus wrong-content, wrong-visible-text, and stale-revision failures.
