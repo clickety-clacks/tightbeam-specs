@@ -210,7 +210,7 @@ Before any topology soak can be Green, prove that the reviewed CLI path is avail
 
 Link the discovery artifact and each per-surface admission artifact in the run report. A list result without per-surface admission evidence is not mutation authority or product proof.
 
-For each split/close rollback, preserve the baseline and restored PNG files and their SHA-256 values. Do not require byte-identical PNGs. Require the intended one-pane topology and exact agreement between baseline and restored pane id, content id, content type, revision, visible text, selection, and viewport. Require the restored local `read` to pass `05-read-response-validator.sh`, including `cacheStatus: current`. A wrong or stale content value fails restoration.
+For each split/close rollback, preserve the baseline and restored PNG files and their SHA-256 values. Do not require byte-identical PNGs. Require the intended one-pane topology and exact agreement between baseline and restored pane id, content id, content type, revision, visible text, selection, and viewport. Require the restored local `read` to pass `surf_ace_current_read_response_ok`, including `cacheStatus: current` and no consumable loss. Accept an exact current-empty delta when the restored content predates controller admission; `capture-pane` carries the content comparison. A wrong or stale capture content value fails restoration.
 
 ### 2. Record observability level per surface
 
@@ -378,9 +378,9 @@ Run on the primary admitted surface where pane capture is expected to work. Run 
    - decoded pixels contain the marker pushed to that exact pane;
    - decoded pixels do not contain the sibling pane's marker;
    - captured pixels agree with the `contentId`/visible-content state that provider/readback reports.
-10. Run `surf-ace read` on both panes. Use `05-read-response-validator.sh` to verify top-level success, current synchronized content, and acknowledgement state. Do not require `result.ok`. Verify that the content snapshot agrees with the captured pixels and the pushed content id.
-11. Leave the two-pane state idle for 2 minutes and repeat the complete list/read/capture verification in steps 7–10, including zero sibling-marker occurrences, without pushing new content.
-12. Restart/relaunch the surface when in scope, reconnect, and repeat the complete list/read/capture verification in steps 7–10, including zero sibling-marker occurrences, without changing content.
+10. Run `surf-ace read` on both panes. Immediately after each push, use `surf_ace_read_response_ok` to require top-level success, current synchronized content, the matching acknowledgement, and the pushed content id. Do not require `result.ok`. Verify that the pushed delta agrees with the captured pixels and content id.
+11. Leave the two-pane state idle for 2 minutes and repeat the complete list/read/capture verification in steps 7–10, including zero sibling-marker occurrences, without pushing new content. Use `surf_ace_current_read_response_ok` for the repeated read because the pushed record was already consumed; use `capture-pane` to prove unchanged current content.
+12. Restart/relaunch the surface when in scope, reconnect, and repeat the complete list/read/capture verification in steps 7–10, including zero sibling-marker occurrences, without changing content. Use `surf_ace_current_read_response_ok` for the repeated read and `capture-pane` for current content truth.
 
 ### Pass criteria
 

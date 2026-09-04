@@ -145,9 +145,9 @@ READ_INPUT_JSON="$(jq -nc --arg scopeId "$READ_SCOPE_ID" '{scopeId:$scopeId}')"
   read --input-json "$READ_INPUT_JSON"
 ```
 
-Store the response in a file. Require CLI exit code 0, top-level `ok: true`, `command: read`, the expected `result.scopeId`, the matching acknowledgement scope, `result.cacheStatus: current`, and a content record with the expected `contentId`. Do not require `result.ok`; local `read` does not use the network-response envelope.
+Store the response in a file. Local `read` returns unread consumable records; it is not a current-render snapshot. Always require CLI exit code 0, top-level `ok: true`, `command: read`, the expected `result.scopeId`, `result.cacheStatus: current`, and `result.consumableLoss: null`. After a push, also require the matching acknowledgement scope and a content record with the expected `contentId`. For a baseline or restoration whose content predates controller admission, `acknowledgement: null` plus an empty record list is valid; use `capture-pane` for current rendered-content identity. Do not require `result.ok`; local `read` does not use the network-response envelope.
 
-Source `05-read-response-validator.sh` from the canonical bundle. Call `surf_ace_read_response_ok` with the CLI exit code, response path, expected scope, and expected content id. The exact tick-0 response in `fixtures/tick-0-read-success.json` must pass the validator self-test.
+Source `05-read-response-validator.sh` from the canonical bundle. Immediately after a push, call `surf_ace_read_response_ok` with the CLI exit code, response path, expected scope, and expected content id. For baseline, restoration, and later reads with no new push, call `surf_ace_current_read_response_ok` with the CLI exit code, response path, and expected scope. The exact post-push response in `fixtures/tick-0-read-success.json` and exact preflight current-empty response in `fixtures/preflight-read-current-empty.json` must pass the validator self-test.
 
 ### Topology changes
 
@@ -260,9 +260,9 @@ Do not require a separate tool declaration. Do not call a provider plugin as a s
 
 ### Preflight restoration oracle
 
-After each reversible split/close probe, run fresh `list`, `read`, and `capture-pane` for the surviving baseline pane. Require the intended one-pane topology. Validate `read` with `05-read-response-validator.sh`, including the expected content id and `cacheStatus: current`. Build the restoration summary from the baseline and restored capture payloads without image bytes. Source `06-restoration-oracle.sh` and require `surf_ace_restoration_ok` to pass.
+After each reversible split/close probe, run fresh `list`, `read`, and `capture-pane` for the surviving baseline pane. Require the intended one-pane topology. Validate `read` with `surf_ace_current_read_response_ok`, including `cacheStatus: current` and no consumable loss. Do not require a pre-admission content record from that unread delta. Build the restoration summary from the baseline and restored capture payloads without image bytes. Source `06-restoration-oracle.sh` and require `surf_ace_restoration_ok` to pass.
 
-The semantic restoration fields are the exact pane id, content id, content type, revision, visible text, selection, and viewport. Preserve both PNG files and their SHA-256 values in the evidence manifest. Do not use PNG byte equality as the restoration predicate. A changed PNG SHA-256 with matching semantic fields is evidence, not a failure. A wrong pane, content id, content type, revision, visible text, selection, or viewport is a failure. A missing or stale restored read is a failure.
+The semantic restoration fields are the exact pane id, content id, content type, revision, visible text, selection, and viewport from `capture-pane`. Preserve both PNG files and their SHA-256 values in the evidence manifest. Do not use PNG byte equality as the restoration predicate. A changed PNG SHA-256 with matching semantic fields is evidence, not a failure. A wrong pane, content id, content type, revision, visible text, selection, or viewport is a failure. A missing, stale, lossy, or structurally invalid restored read is a failure; an exact current-empty read is not.
 
 ## Mandatory capture-and-compare after every push
 

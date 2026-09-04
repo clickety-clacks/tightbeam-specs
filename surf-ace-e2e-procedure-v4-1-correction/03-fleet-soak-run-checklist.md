@@ -233,7 +233,7 @@ Paths:
 - [ ] Already-lockless evidence is immutable, issued by a separately authorized preflight executor, and records `admissionBasis: already-lockless`, `lockless: true`, exact surface/fixture binding, exact run-owned state root, exact gated operator, covered operations, verification method/result, reversible probe and rollback proof, issuer/authority, issue time, expiry, cleanup, restart/recovery validity, custody handoff, and artifact identity/SHA-256; or separately authorized explicit migration material and its supported CLI input location are bound to the exact surface and operation
 - [ ] Each split/close rollback preserved the baseline and restored PNG files and SHA-256 values; differing PNG bytes alone did not fail restoration
 - [ ] Each split/close rollback restored the intended one-pane topology and exact pane id, content id, content type, revision, visible text, selection, and viewport
-- [ ] Each restored local `read` passed `05-read-response-validator.sh`, including the expected content id and `cacheStatus: current`; wrong or stale content failed restoration
+- [ ] Each restored local `read` passed `surf_ace_current_read_response_ok`, including `cacheStatus: current` and no consumable loss; exact current-empty deltas for pre-admission content were accepted, and `capture-pane` carried the content comparison
 - [ ] `06-restoration-oracle.sh` passed for each admitted already-lockless probe
 - [ ] Before preflight, the gated operator subscribed to the recorded preflight-ready fact kind and work-item scope
 - [ ] After the admission row was recorded, the preflight executor ran fresh `list` through the exact state root and matched the current controller, selected surface, and pane before it filed the fact
