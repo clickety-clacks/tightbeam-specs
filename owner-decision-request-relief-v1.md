@@ -1018,8 +1018,10 @@ must raise again with a living raiser. The cost of that mistake is a delay and
 an attributable record. The cost of the current design is measured above: 494
 rulings and a hand-clearing session.
 
-There is one open question attached to this answer, and it is BLOCKING for one
-requirement that this document deliberately does not yet state. See OQ-1.
+One question was attached to this answer and has since been ruled out of this
+document's scope, for the reason stated here: a retraction removes the question
+and authorizes nothing, so nothing specified here rests on the ruling path. See
+OQ-1.
 
 ### Q3. What happens to a request whose raiser has retired?
 
@@ -1360,19 +1362,37 @@ transaction after admitting outside it. The two checks exist so authorization
 survives a concurrent expecter advance; R7 changes the one predicate they share
 and leaves both call sites in place.
 
+**AC-25 (I4, a retraction is a marker carrying its cause and its principal).**
+GIVEN an open operator decision request and a principal R1 through R4 newly
+admits, WHEN that principal calls `operator-withdraw` WITHOUT a reason, THEN the
+call is refused and the row is unchanged; and WHEN it calls with a reason, THEN
+the row records `withdrawnBy` naming that principal and `withdrawnReason`
+carrying the given cause, and a `decision_request_withdrawn` lifecycle row is
+written carrying both. This check is green today — the withdrawal reason is
+required at the entry point on both lines, and the row update and the lifecycle
+write happen inside one transaction — and it must stay green after every
+widening here lands. AC-1 does not test it: AC-1 supplies a reason in its GIVEN,
+so a build that accepted a reasonless retraction would pass AC-1 and still
+destroy I4. Widening WHO may retract is lawful only while every retraction stays
+attributable to a principal and a stated cause. That is the property which makes
+a wrong retraction findable in the record afterwards rather than a silent loss,
+and it is the whole of what this document offers against a retraction that
+should not have happened.
+
 ## Open Questions
 
-**OQ-1. BLOCKING, for one requirement this document does not state. Blocks
-nothing this document specifies.** Whether hardening the operator RULING path is
-in scope for this work item.
+**OQ-1. RULED on 2026-09-04: out of scope for this document, and it stays out.**
+Whether hardening the operator RULING path belongs to this work item.
 
-While verifying I1 against the source, the ruling authorization was found not to
-hold as written on either the mainline or the released line: the owner-user
-principal that `operator-rule` requires is obtainable through the ordinary
-identity flag, and the proxy carve-out beside that check reads a field nothing in
-the shipped code ever sets. The `decision_requests` row would be indistinguishable
-from an owner ruling; the `events` row would not, because it records the calling
-session key.
+While verifying I1 against the source, a gap was found between what I1 promises
+and what the ruling path enforces. Its shape is not the same on both code lines,
+and its detail is deliberately not written here: the spec commons is a public
+repository, and a precise account of a gap in an authorization guard does not
+belong in one. The finding is recorded on `asg_d893bbf9` and carried to the
+card's owner, who has it. What can be said safely is the part that matters to a
+reader of this document: a `decision_requests` row alone would not distinguish
+the case, while the `events` row would, because it records the calling session
+key.
 
 Measured state as of 2026-09-04: unexercised. All 493 successful operator
 rulings in the preceding 30 days carry the owner principal with a NULL session
@@ -1381,23 +1401,27 @@ likewise from the owner's CLI. No agent session has attempted it. It was not
 executed against the live org during this specification's verification and must
 not be.
 
-Why it is BLOCKING and why it blocks nothing else: I1 is the invariant this
-document promises, and a promise resting on an unenforced guard is a promise
-this document cannot make honestly. But nothing specified here depends on it.
-The retraction widening in R1 through R4 records no decision, so widening it
-neither uses nor worsens the ruling path; R5 is prose; R6 is a completion rail
-and touches the decision request subsystem nowhere; and R7 is the `effort` arm,
-which I1 does not govern and which reaches no `operator` row. **Every
-requirement in this document — R1 through R7 — may be built now.** What is
-blocked is only the additional requirement that would state the ruling guard
-precisely, which is not written here because writing it without a ruling would
-be this document deciding its own scope. The owner, or the recovery owner under
-the owner's standing laws, rules whether that requirement belongs on this work
-item or its own.
+**The ruling, and the reason it is the right one.** Nothing specified here
+depends on the ruling path. The retraction widening in R1 through R4 records no
+decision — a retraction removes the QUESTION and authorizes nothing — so widening
+it neither uses nor worsens that path; R5 is prose; R6 is a completion rail and
+touches the decision request subsystem nowhere; and R7 is the `effort` arm, which
+I1 does not govern and which reaches no `operator` row. A hole this document does
+not stand on is not a hole this document must fill. **Every requirement here —
+R1 through R7 — may be built now**, and no card may be widened on account of this
+question.
 
-Detail beyond what is written here is deliberately withheld from this file. The
-spec commons is a public repository. The full finding is recorded on
-`asg_d893bbf9` as `att_63956e2b` and in the wake to the recovery owner.
+The finding travels as a security fact to the owner by a different instrument
+than a decision request, on the card owner's ruling of 2026-09-04. It does not
+gate this build, it is not reopened by a later reader of this file, and the
+requirement that would state the ruling guard precisely is not written here. If
+it is ever wanted, it belongs to its own work item with its own authority.
+
+**It must not be tested.** Exercising the gap to confirm it IS the forgery. It
+was not executed against the live org during this specification's verification,
+it was found by reading source on a read-only checkout, and no builder working
+from this document may execute it either. The measured state recorded above —
+unexercised, by any session, ever — is the last word this file has on it.
 
 **OQ-2. NON-BLOCKING. Deliberately not specified; do not build it.**
 `reopen-assignment` requires the card's holder session to be active. When a card
