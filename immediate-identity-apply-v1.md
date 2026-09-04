@@ -20,6 +20,14 @@ candidate's `ContextProjectionV1` premise. Amendment surrender
 harness homes. The ruled decision reopens that architecture and requires the
 single-writer design below.
 
+Cold-digest attest `att_01b7619c-a175-4efe-aa5b-3713623c1fe2` invalidated
+candidate commit `f4b49223caa4a24842675cde57c74daa01983043`. That candidate
+placed Codex generation skills below `.codex/skills`, but installed Codex ACP
+`1.1.4` maps each additional directory to its `.agents/skills` child. This
+amendment corrects that native root and its dependent validation and acceptance
+clauses. The invalidated commit and its readiness evidence do not authorize
+implementation.
+
 **Observed source bases:** Preserved Tightbeam `0.1.9` at
 `91da03046eb8c48888ec486b2264f1618303298e` and preserved Tightbeam `main` at
 `910cbde089762623b88d6c83d0445e333750a880` on 2026-09-04. Installed adapter
@@ -84,6 +92,15 @@ failure, and leave durable, redacted evidence on `0.1.9` and `main`.
   `<generation-store>/sha256/<first-two-generation-ID-characters>/<generation-ID>`.
   It contains `generation.json`, `guidance.utf8`, and one harness-native skills
   tree. It is generation material, not a session cwd or harness home.
+- **Native skill root:** The one generation-bound discovery root below a
+  projection root: `P/.agents/skills` for Codex and `P/.claude/skills` for
+  Claude. A stored skill path in `generation.json` is relative to this root.
+- **Non-generation skill source:** Each other source from which the pinned
+  adapter and vendor CLI can enumerate a skill for the logical session. This
+  includes cwd and ancestor project roots, each other additional directory,
+  shared user and harness-home roots, administrator roots, enabled plugin
+  roots, and bundled system roots. R-03 evidence enumerates the exact sources
+  for the pinned package and process configuration.
 - **Shared harness home:** The existing one home for one harness and machine:
   `CODEX_HOME` for Codex or `CLAUDE_CONFIG_DIR` for Claude. It contains the
   canonical rotating credential state. Apply never copies, versions, swaps, or
@@ -92,6 +109,10 @@ failure, and leave durable, redacted evidence on `0.1.9` and `main`.
   current adapter session. It equals the active generation except while a
   prior-bound turn is running, while target realization is recovering, or while
   no adapter session is resident.
+- **Adapter generation:** The existing monotonically increasing coordinator
+  generation for one shared harness adapter process on one machine. Recycling
+  that process advances the value and invalidates adapter session handles from
+  the prior value. It is separate from an identity generation.
 - **Target realization:** Starting or resuming one adapter session with the
   unchanged product cwd, an admitted work row's captured native skill root, and
   that binding's guidance after the prior adapter session is closed. It occurs before
@@ -320,21 +341,25 @@ declare all of these exact values:
   "generationInput": "native-additional-directory-v1",
   "historyCatchUp": "durable-before-first-prompt-v1",
   "sessionClose": "acp-session-close-v1",
-  "sharedCredentialHome": "single-writer-v1"
+  "sharedCredentialHome": "single-writer-v1",
+  "skillSourceIsolation": "enumerated-no-reserved-name-v1"
 }
 ```
 
 Codex shall additionally declare
-`"guidanceInput":"acp-meta-developer-instructions-v1"`; Claude shall declare
-`"guidanceInput":"acp-meta-system-prompt-append-v1"`. A declaration is valid
-only for the package version and package-content digest recorded by the
-release-blocking A-21 adapter capture. If any declaration or matching capture is
-absent, the transaction returns `generation_isolation_unsupported`, names the
-first session in sorted order, and creates no operation, target, generation,
-payload, adapter session, or idempotency binding. Otherwise it creates the
-operation and targets, recording each target's expected active generation and
-prior revision. A missing or different value is an absent capability. The
-transaction commits before any preparation I/O.
+`"guidanceInput":"acp-meta-developer-instructions-v1"` and
+`"nativeSkillRoot":"additional-directory-dot-agents-skills-v1"`; Claude shall
+declare `"guidanceInput":"acp-meta-system-prompt-append-v1"` and
+`"nativeSkillRoot":"additional-directory-dot-claude-skills-v1"`. A declaration
+is valid only for the package version, package-content digest, and complete
+non-generation skill-source inventory recorded by the release-blocking A-21
+adapter capture. If any declaration or matching capture is absent, the
+transaction returns `generation_isolation_unsupported`, names the first session
+in sorted order, and creates no operation, target, generation, payload, adapter
+session, or idempotency binding. Otherwise it creates the operation and targets,
+recording each target's expected active generation and prior revision. A missing
+or different value is an absent capability. The transaction commits before any
+preparation I/O.
 
 A one-session selector that is absent or retired returns `not_found` with the
 remedy `Run tightbeam identity status and select an active session.` For
@@ -379,11 +404,12 @@ prefix, length field, delimiter, or trailing newline. The lowercase SHA-256 of
 those bytes is the generation ID. The identical bytes shall be stored as
 `generation.json`. `guidance.utf8` shall be valid UTF-8 and shall store the
 complete rendered guidance bytes. A Codex generation shall store each listed
-skill at `P/.codex/skills/<path>`. A Claude generation shall store each listed
-skill at `P/.claude/skills/<path>`. A generation shall contain neither the
-other harness's native directory nor `.agents/skills`. It shall contain no
-credential, token, auth configuration, vendor settings, transcript, or product
-file. Publication shall write and fsync a temporary sibling tree, set
+skill at `P/.agents/skills/<path>`. A Claude generation shall store each listed
+skill at `P/.claude/skills/<path>`. A Codex generation shall contain no
+`.claude/skills` or `.codex/skills` directory. A Claude generation shall
+contain no `.agents/skills` or `.codex/skills` directory. A generation shall
+contain no credential, token, auth configuration, vendor settings, transcript,
+or product file. Publication shall write and fsync a temporary sibling tree, set
 directories to mode `0555` and regular files to `0444`, fsync the parent, and
 use an atomic no-replace rename. A published generation object and every file
 below it are immutable. Tightbeam shall validate file type, mode, size, path,
@@ -391,9 +417,11 @@ and digest before each realization and shall fail closed on a mismatch.
 Every walk shall use `lstat`. It shall reject a symlink, a non-directory parent,
 a non-regular leaf, a regular file whose link count is not one, an unlisted
 leaf, a missing listed leaf, and a resolved store or temporary path that escapes
-the configured generation store. The only allowed entries are
-`generation.json`, `guidance.utf8`, the selected harness's native parent
-directories, and the listed skill files.
+the configured generation store. The only allowed regular files are
+`generation.json`, `guidance.utf8`, and the listed skill files. The only allowed
+directories are `P`, the selected harness's native-root ancestors, its native
+skill root, and the directory ancestors of listed skill files below that root.
+An allowed directory shall contain an allowed directory or listed file.
 
 For a logical session with product workdir `C` and captured projection root
 `P`, target realization shall use the existing shared adapter process and
@@ -404,7 +432,7 @@ shared harness home. The bridge shall send these exact inputs:
 | cwd | `session/resume.cwd = C`, or `session/new.cwd = C` when no vendor session exists | `session/resume.cwd = C`, or `session/new.cwd = C` when no vendor session exists |
 | generation root | Replace the prior generation root with `P` in `additionalDirectories`; retain every pre-existing non-generation product root in its prior order | Replace the prior generation root with `P` in `additionalDirectories`; retain every pre-existing non-generation product root in its prior order |
 | guidance | Decode `P/guidance.utf8` without normalization and send it as `_meta.developerInstructions` on `session/resume` or `session/new` | Decode `P/guidance.utf8` without normalization and send it as `_meta.systemPrompt.append` on the locked `claude_code` preset for `session/resume` or `session/new` |
-| native skills | Adapter discovery from `P/.codex/skills/tightbeam__*` | SDK discovery from `P/.claude/skills/tightbeam__*` |
+| native skills | Adapter discovery from `P/.agents/skills/tightbeam__*` | SDK discovery from `P/.claude/skills/tightbeam__*` |
 | close | ACP `session/close` after the resident turn terminals and before target realization | ACP `session/close` after the resident turn terminals and before target realization |
 | harness home | The one unchanged machine `CODEX_HOME` | The one unchanged machine `CLAUDE_CONFIG_DIR` |
 
@@ -415,10 +443,30 @@ shared harness home. The bridge shall send these exact inputs:
 receive `P` as cwd. Identity apply shall not create a harness process, change a
 harness-home environment value, or touch a credential path.
 
-Before a generation-ready session opens, R-21 shall prove that `C` and every
-non-generation additional directory contain no Tightbeam-owned reserved child
-under `.codex/skills/tightbeam__*` or `.claude/skills/tightbeam__*`. Target
-preparation repeats that collision check. A collision fails with
+For Codex, ACP `session/close` shall fence the logical session, unsubscribe the
+thread, clear its local handlers and session state, and shall not archive or
+delete the vendor thread. A later `session/resume` shall name that same vendor
+thread and send the captured target inputs. For Claude, ACP `session/close`
+shall cancel any in-flight work only after the prior turn is terminal, close the
+SDK Query stream and its vendor child, dispose its settings watchers, and delete
+the in-memory session entry without deleting the on-disk resumable session. A
+later `session/resume` shall recreate the Query with the captured target inputs.
+Claude ACP `0.66.0` omits `additionalDirectories` and guidance metadata from its
+same-session fingerprint, so a binding change shall never use `session/resume`
+without the preceding successful `session/close` or proof that an adapter-process
+incarnation change removed the old in-memory session.
+
+Before a generation-ready session opens, R-21 shall enumerate every
+non-generation skill source from the exact R-03 package and process
+configuration. Each mutable non-generation source shall contain no skill whose
+name or discovery path begins `tightbeam__`. The exact build manifest shall
+prove the same fact for immutable administrator, plugin, and bundled sources.
+For Codex project and additional-directory sources, the checked child is
+`.agents/skills/tightbeam__*`; for Claude, it is
+`.claude/skills/tightbeam__*`. The check includes cwd ancestors through the
+repository root and shared user or harness-home skill sources. Target
+preparation repeats the enumeration and collision check. A missing source,
+newly discovered source, or collision fails with
 `generation_prepare_failed`; the adapter does not select one copy by search
 order. Product-owned non-prefixed skills, product guidance, vendor-native
 skills, and every product path remain at their existing backing paths. Identity
@@ -497,7 +545,8 @@ Status returns only `not_started`, `in_progress`,
 `prepared(targetGenerationId,projectionRootHash,validated=true)`, or
 `failed(safeCode)`. `prepared` proves that the complete immutable payload exists,
 its canonical metadata recomputes the target generation ID, every listed file
-recomputes its stored digest, the native root has no reserved-name collision,
+recomputes its stored digest, the enumerated non-generation skill sources have
+no reserved-name collision,
 and the R-03 build evidence matches the running adapter package. It also proves
 that preparation made no adapter request and left the prior adapter session
 unchanged. Preparation performs no session-row or resident-generation update.
@@ -860,7 +909,9 @@ A separate reviewed readiness bridge shall mark one session
 It shall render the session's recorded active revision into an immutable
 ordinal-zero payload, validate the exact R-03 adapter capture, close its idle
 legacy adapter session, and remove only byte-verified Tightbeam-owned reserved
-`tightbeam__*` children from the native skills directory below `C`. It shall
+`tightbeam__*` children from `.agents/skills` below the Codex project roots or
+`.claude/skills` below the Claude project roots. It shall reject a reserved
+child in another mutable non-generation skill source. It shall
 not change the cwd pathname `C`, the active revision, any product-owned or
 non-prefixed byte, credential state, transcript, or durable history. It then
 records no resident
@@ -938,10 +989,13 @@ binds B. No row contains a binding assembled from both generations.
 I-08).** Run
 the deterministic bridge fixture once for Codex and once for Claude with one
 logical workdir `C`, roots P-A and P-B, and another logical session with P-X in
-the same shared adapter process. Hold an A turn and activate B. The apply path
-makes no adapter call, creates no adapter session, and sends no P-B path. The A
-turn reports cwd exactly `C`, receives exact A guidance, and invokes an A-only
-native skill sentinel after activation. It observes A and not B. A later
+the same shared adapter process. The Codex roots contain only their generation
+metadata, guidance, and `.agents/skills/tightbeam__*` trees. The Claude roots
+contain only their generation metadata, guidance, and
+`.claude/skills/tightbeam__*` trees. Hold an A turn and activate B. The apply
+path makes no adapter call, creates no adapter session, and sends no P-B path.
+The A turn reports cwd exactly `C`, receives exact A guidance, and invokes an
+A-only native skill sentinel after activation. It observes A and not B. A later
 Tightbeam operation captures B and reads B identity bytes directly from P-B.
 
 Release A. Its terminal result commits before ACP `session/close`. Claim the
@@ -1113,16 +1167,31 @@ vendor CLI version. Use a deterministic local MCP gate to hold A. The sanitized
 ACP capture shall prove the exact cwd, `additionalDirectories`, guidance meta,
 `session/close`, `session/resume`, and prompt order. Native skill enumeration
 and invocation shall prove A/B isolation and the concurrent P-X no-bleed case.
+The Codex ledger shall prove close unsubscribes without archiving the vendor
+thread and resume names the same thread. The Claude ledger shall prove close
+terminates the old Query vendor child and removes the in-memory session before
+resume creates the target-bound Query; a same-fingerprint fast path shall not
+reuse the old Query.
 
 The process and filesystem ledger shall prove one unchanged shared `CODEX_HOME`
 or `CLAUDE_CONFIG_DIR`, no generation-home environment value, no credential
 object below any P, no second shared adapter process, no write to the rotating
 credential store by an apply worker, and no product-cwd mutation. Capture the
 credential writer identity before, during, and after activation and realization.
+For Codex, capture `skillsExtraRootsSet` and `listSkills` and prove that each
+generation additional directory contributes its `.agents/skills` child, not a
+`.codex/skills` child. For Claude, prove that each generation additional
+directory contributes its `.claude/skills` child. Enumerate every
+non-generation skill source and prove that none contributes a `tightbeam__`
+skill. Concurrent prompt starts shall prove that Codex's process-global extra
+root update cannot expose P-A to P-X, P-X to P-A, or either root to another
+logical session.
+
 Sanitize tokens and identity bytes before publication. A package version or
-content-digest mismatch, missing raw ordering evidence, skill bleed, unsupported
-resume guidance, or second credential writer fails the gate and removes the
-corresponding R-03 declaration. A mocked adapter cannot satisfy this acceptance.
+content-digest mismatch, wrong native skill root, unenumerated non-generation
+source, missing raw ordering evidence, skill bleed, unsupported resume guidance,
+or second credential writer fails the gate and removes the corresponding R-03
+declaration. A mocked adapter cannot satisfy this acceptance.
 
 **A-22 — Realization crash matrix (R-11, I-02, I-03, I-10).** Start with A's
 terminal row committed, B active, and one B-bound turn in
