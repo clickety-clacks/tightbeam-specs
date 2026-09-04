@@ -1,6 +1,6 @@
 # Surf Ace fleet-wide window-label allocator
 
-Status: implementation-ready specification, before build. Revision r3.
+Status: implementation-ready specification, before build. Revision r4.
 
 Normative inputs, pinned by content:
 - Requirement (settled ruling): `tightbeam-specs`
@@ -20,15 +20,16 @@ left to the builder, it says so and keeps the detail inside the design's stated
 safety property (one configured endpoint, one durable single writer, no
 provisional label).
 
-**Revision r3 closes the ten blocking findings of the adversarial review
-`art_99b70bbc` (SHA-256
-`093b63a65642935f655a7c6e7e817cc44cf9db2296ef3443f5bf0f1c1d0f036d`). The
-per-finding disposition is in "Review response (r3)" at the end. r3 supersedes
-r2 (SHA-256 `137e0e85a5482387a05f06f9e28df34025837484ee4e8e117131435d80584a90`)
+**Revision r4 closes R3-01 through R3-06 from adversarial review
+`art_55b97955` (SHA-256
+`f92db50971c0e15cce20f299f284a15a07ab0edd73c232e983fc4f64b2e8ae5b`). The
+per-finding disposition is in "Review response (r4)" at the end. r4 supersedes
+r3 (SHA-256 `d6d4b9475c62e36129946c38231dd54765600267638a87cb5057c36d50b4a496`),
+r2 (SHA-256 `137e0e85a5482387a05f06f9e28df34025837484ee4e8e117131435d80584a90`),
 and r1 (SHA-256
-`421f7cb5b29d8c675456aa4ad9d9d922bd6e2cb26ab50e4e682d98e1c1503c7a`); those
-bytes are retained in this workspace and this document is the only spec to build
-from.**
+`421f7cb5b29d8c675456aa4ad9d9d922bd6e2cb26ab50e4e682d98e1c1503c7a`).
+Those prior bytes remain immutable in git history and their recorded artifact
+paths. This digest-specific file is the sole r4 review target.**
 
 ---
 
@@ -58,11 +59,11 @@ before the CLI rewrite removed it (requirement doc, "How it was lost").
 - G-N5. Host-qualified labels (`shrdlu b1`), random labels, provisional labels,
   or optimistic local labels. All are forbidden, not merely out of scope
   (requirement doc, "Rejected alternatives"; core invariant consequences). The
-  client authority identity added in r3 (Terms, `authorityId`) is an internal
+  client authority identity refined in r4 (Terms, `authorityId`) is an internal
   allocation key, never a visible label component; it does not host-qualify or
   otherwise alter the plain alphabetic user-visible label.
 - G-N6. Moving pane-label allocation into this service. Pane labels stay
-  client-local and lowest-free (design artifact, "Pane labels"). r3 does require
+  client-local and lowest-free (design artifact, "Pane labels"). r4 retains
   a bounded correction to the iOS pane allocator so it is lowest-free like
   Electron (INV-11, REQ-G1); this is a defect fix against the settled ruling,
   not a move of pane allocation into the allocator.
@@ -73,13 +74,17 @@ before the CLI rewrite removed it (requirement doc, "How it was lost").
 - G-N8. A new transport. The allocator reuses the WebSocket/JSON envelope
   conventions already defined in `DESIGN.md` §5; it does not add REST or binary
   frames.
-- G-N9. WSS/TLS for the allocator link in v1. It runs on the fleet network
-  (normally Tailscale), consistent with the v1 `ws` scheme in `DESIGN.md` §3.
+- G-N9. WSS/TLS for the allocator link in v1. It runs on the configured fleet
+  network (the current deployment uses Tailscale), consistent with the v1 `ws`
+  scheme in `DESIGN.md` §3.
 - G-N10. Cryptographic authentication of claims, forgery/replay/timing
   defenses, or any hardening beyond the one-operator trusted-tailnet threat
   model. The `authorityId` is a distinguishing key, not a credential; the
   allocator does not authenticate it. Adding such hardening is a separate
   operator decision, out of v1 scope (see OQ-3).
+- G-N11. Gap-free labels after a persistence failure. A reserved ordinal whose
+  mapping cannot be committed is burned. Safety forbids reclaiming it; the next
+  successful label may skip a letter.
 
 ---
 
@@ -91,8 +96,9 @@ Each load-bearing term, what it denotes, and where it lives.
   single user addresses as one namespace. All of them share one window-label
   space.
 - **Fleet coordinator** — the one explicitly configured, always-on host that
-  runs the window-label allocator process. Normally the host that runs the
-  OpenClaw gateway (design artifact, "Decision").
+  runs the window-label allocator process. The current deployment candidate is
+  the host that runs the OpenClaw gateway (design artifact, "Decision"); OQ-5
+  requires the operator to name the exact host before deployment.
 - **Window-label allocator** (the **allocator**) — the single resident process
   on the fleet coordinator that owns the window-label space for the fleet. It is
   a WebSocket server. It is the only writer of window labels.
@@ -103,6 +109,7 @@ Each load-bearing term, what it denotes, and where it lives.
   `allocatorId`: `fleetId` is configured up front and stable across allocator
   re-initialization; `allocatorId` is minted per initialized allocator state and
   changes when a new fleet state is initialized.
+  Format: 1–128 characters from `[A-Za-z0-9._:-]`.
 - **Allocator identity** (`allocatorId`) — a stable identifier minted once when a
   fleet's allocator state is first initialized, carried in every response and in
   every client provenance record. It names *which allocator state generation*
@@ -110,21 +117,30 @@ Each load-bearing term, what it denotes, and where it lives.
   `[A-Za-z0-9._:-]`.
 - **State-format version** (`stateVersion`) — the integer schema version of the
   allocator's persisted state, present in state and in responses.
-- **Client authority identity** (`authorityId`) — a durable, fleet-unique
-  identifier for one client's surface authority (the Electron
-  `lockless-client-authority` or the iOS `SurfAceLocklessAuthority` instance).
-  Minted once with UUID-grade entropy the first time an authority needs it,
-  persisted in that authority's durable state, and never reused across distinct
-  installs. Format: `auth_` followed by 22–64 characters from
-  `[A-Za-z0-9._:-]`. It exists because `surfaceId` is **not** fleet-unique
-  (Assumptions A-6): two independent clients can mint the same client-local
-  `surfaceId`, so `surfaceId` alone cannot key a fleet-wide assignment.
-  `authorityId` is an internal allocation key only; it is never displayed and is
-  never part of a window label (G-N5).
-- **Fleet surface key** — the pair `(authorityId, surfaceId)`. This is the
-  fleet-unique immutable key of an assignment. Two physically distinct surfaces
-  always have distinct fleet surface keys because distinct authorities have
-  distinct `authorityId`s, even if their client-local `surfaceId`s collide.
+- **Authority owner anchor** (`ownerAnchorId`) — the stable fingerprint of a
+  per-authority, per-installation non-exportable key that the client profile,
+  ordinary app-state backup, and device migration do not carry. The secure-store
+  record belongs to one installation-owned authority slot; copied profile bytes
+  cannot name, copy, or reproduce that slot. Two authority instances in one app
+  installation use different slots and keys. Electron uses the platform secure
+  store outside the copyable profile; iOS uses a non-synchronizable
+  `ThisDeviceOnly` Keychain key. A client derives the fingerprint only from that
+  local key; it never accepts the value from copied profile state. This is an
+  ordinary clone discriminator in the trusted-client model, not a wire
+  authenticator (G-N10). Format:
+  `owner_` followed by 22–64 characters from `[A-Za-z0-9._:-]`.
+- **Client authority identity** (`authorityId`) — a durable identifier for one
+  client's surface authority (the Electron `lockless-client-authority` or the
+  iOS `SurfAceLocklessAuthority` instance). Format: `auth_` followed by 22–64
+  characters from `[A-Za-z0-9._:-]`. The allocator binds each `authorityId` to
+  exactly one `ownerAnchorId` before accepting claims. A copied profile on a new
+  installation has a different anchor and must rekey to a new `authorityId`
+  before any copied label is authoritative. The identifier is an internal
+  allocation key only; it is never displayed or included in a window label.
+- **Fleet surface key** — the pair `(authorityId, surfaceId)` after the allocator
+  has confirmed the authority-owner binding. This is the fleet-unique immutable
+  key of an assignment. An unbound or ownership-conflicted pair is not a fleet
+  surface key and cannot receive or display a label.
 - **Label ordinal** (`ordinal`) — a non-negative integer. The allocator assigns
   ordinals in strictly increasing order and maps each to a window label:
   `0 -> a`, `1 -> b`, … `25 -> z`, `26 -> aa`, `27 -> ab`, … (bijective base-26
@@ -142,14 +158,27 @@ Each load-bearing term, what it denotes, and where it lives.
   `allocatorId`.
 - **Claim** — the idempotent client-to-allocator operation that returns the
   assignment for a fleet surface key, creating it on first request.
-- **High-water ordinal** (`highWater`) — a durable, strictly monotonic
-  non-decreasing integer recording the highest ordinal the allocator has ever
-  committed, stored **outside** the restorable state generation (its own
-  fenced record). It is never rolled back by a state restore. It fences ordinal
-  reuse across restore of an older backup (Invariants INV-3, INV-13).
+- **Next-ordinal fence** (`nextOrdinalFence`) — the lowest ordinal that the
+  custody store has never reserved. It starts at 0 and only increases. Reserving
+  ordinal `n` atomically changes it from `n` to `n + 1`; the reservation is
+  never rolled back, even if the later mapping commit fails. Thus every ordinal
+  below it has a durable `reserved`, `committed`, or `burned` transaction and can
+  never be reserved again. Recovery completes a `reserved` transaction under
+  D3. This replaces r3's contradictory `highWater` name and meaning.
+- **Fleet custody store** — the separately located, linearizable durable store
+  named by `fleetId`. It owns the next-ordinal fence, authority-owner bindings,
+  transaction outcomes, and the exclusive fenced writer session. It provides
+  compare-and-swap transactions and rejects every mutation carrying a stale
+  writer token. Local allocator files are recoverable snapshots/caches, not an
+  independent authority. Copying them to another path or host cannot create a
+  second writer.
+- **Writer token** — an opaque monotonically fenced token returned by the
+  custody store to the one exclusive writer session. Every reservation, binding,
+  and mapping commit includes it. The store rejects a stale token even if its
+  former process remains alive after a partition.
 - **Allocator provenance** — the record a client persists per surface proving a
   window label was durably issued by the configured allocator:
-  `{ fleetId, allocatorId, stateVersion, authorityId, surfaceId, ordinal,
+  `{ fleetId, allocatorId, stateVersion, authorityId, ownerAnchorId, surfaceId, ordinal,
   windowLabel, committed: true }`. The `committed: true` field records that the
   client observed a durably committed success (REQ-C2) before persisting; a
   record without it is not proof of a durable issue. A bare `windowLabel`
@@ -175,16 +204,15 @@ Each load-bearing term, what it denotes, and where it lives.
   cannot be targeted by label (see the operation matrix in D-C).
 - **Pane label** (`paneLabel`) — the lowest free positive integer within one
   window, client-local (`DESIGN.md` §3.1.1 pane rules, §15.1). The user-facing
-  pane token is `windowLabel + paneLabel`. r3 requires iOS pane allocation to be
+  pane token is `windowLabel + paneLabel`. r4 retains iOS pane allocation as
   lowest-free like Electron (INV-11).
-- **Atomic persistent-state pattern** — the repository's existing durable-write
-  pattern (`packages/electron/src/persistent-state-file.ts`): write and fsync a
-  complete next generation, atomically replace the accepted generation, then
-  proceed, with an explicit **unknown/ambiguous** outcome
-  (`PersistentStateOutcomeUnknownError`, the `ambiguous-persistence` startup
-  guard) when a replace neither clearly succeeded nor clearly failed. This spec
-  reuses that pattern including its unknown outcome (INV-5, INV-14) and does not
-  define a new one.
+- **Allocation transaction** — the two-stage custody-store transaction for one
+  new assignment: reserve one ordinal under a unique `transactionId`, then
+  commit the mapping under the same id. The custody store records each stage
+  durably and idempotently. Its reserve and mapping operations each have one
+  linearization point and return committed, clearly-not-committed, or unknown.
+  Recovery queries the transaction id; it never infers an outcome from a local
+  file or timeout.
 
 ---
 
@@ -195,12 +223,13 @@ Indicative givens this spec relies on. If one is false, raise it before building
 - A-1. Exactly one always-on host can be designated the fleet coordinator, and
   it can run a resident process reachable by every client. (Design artifact
   states this as the chosen shape.)
-- A-2. Every client can reach the coordinator over the fleet network (normally
-  Tailscale) at a configured WebSocket URL.
-- A-3. The repository already provides an atomic persistent-state pattern with
-  fsync-before-replace semantics AND an explicit unknown/ambiguous outcome,
-  usable by the allocator process (`packages/electron/src/persistent-state-file.ts`:
-  `PersistentStateOutcomeUnknownError`, `ambiguous-persistence` guard).
+- A-2. Every client can reach the coordinator over the configured fleet network
+  at one WebSocket URL.
+- A-3. The deployment can provide one fleet custody store with linearizable
+  compare-and-swap, durable idempotency by transaction id, and exclusive fenced
+  writer sessions, including one atomic fence-increment/journal-append mutation.
+  Backend selection and its URL are deployment inputs (OQ-5);
+  an implementation that cannot prove these semantics cannot serve labels.
 - A-4. Clients already persist per-surface state and per-authority state across
   restarts and can extend those records with a durable `authorityId` and with
   allocator provenance without changing `surfaceId`.
@@ -221,6 +250,10 @@ Indicative givens this spec relies on. If one is false, raise it before building
 - A-7. v1 fleet size and label churn are small enough that a single writer with
   a durable commit per claim is adequate; no batching is required for
   correctness. (Design artifact chose the single-writer sidecar shape.)
+- A-8. Electron and iOS can persist the authority owner anchor in
+  installation-local OS secure storage excluded from the copy/restore paths
+  named in Terms. If either platform cannot supply that storage, its surfaces
+  stay unaddressable; copied profile bytes alone never establish ownership.
 
 ---
 
@@ -231,43 +264,46 @@ first because a failure of any one reintroduces the exact defect this work
 exists to remove.
 
 - INV-1. **One allocator fleet-wide, enforced structurally.** At most one
-  process is the writer of window labels for a fleet. This is enforced not by
-  convention but by an exclusive, OS-level single-writer lock on the allocator
-  state (REQ-D7): a second allocator process cannot acquire the lock and fails
-  closed at startup. Clients hold exactly one configured allocator endpoint, one
-  configured `fleetId`, and one configured/learned `allocatorId`. There is no
-  election and no fallback writer in v1. (Requirement "What must be built" 1;
-  design artifact "Decision".)
+  process holds the fleet custody store's current writer token. The custody
+  store, not a path-local lock, rejects every stale-token mutation. A host-local
+  lock keyed only by `fleetId` also excludes a second path on the designated
+  host. A process without both locks fails closed before it listens. Copied state
+  bytes, a second path, or a second host cannot become a writer. Clients hold one
+  fleet-wide configured endpoint, `fleetId`, and configured/learned
+  `allocatorId`. There is no client election, allocator election, or fallback.
 - INV-2. **Fleet-unique window labels.** No two distinct fleet surface keys
   under one `allocatorId` ever hold the same `windowLabel`, and no two live
   surfaces across the fleet ever display the same window label. (Core invariant;
   requirement "The requirement".)
 - INV-3. **Monotonic, no reuse, fenced across restore.** The allocator issues
-  ordinals strictly increasing from the high-water ordinal (INV-13), never below
-  it. A committed ordinal is never issued again — across restarts, corruption
-  recovery, surface close, AND restore of any older backup. (Design artifact
-  "Authority and allocation", "Persistence and recovery"; review B-04.)
+  ordinals by reserving from `nextOrdinalFence` (INV-13). An ordinal below the
+  fence is reserved, committed, or burned and is never reserved again across a
+  clear failure, unknown outcome, restart, corruption recovery, surface close,
+  or restore. Only a committed transaction produces an assignment or success.
 - INV-4. **Immutable assignment.** Once committed, an assignment
   `(authorityId, surfaceId) -> { ordinal, windowLabel }` never changes. A repeat
-  claim for the same fleet surface key returns the same assignment. (Design
-  artifact "Authority and allocation".)
+  claim or re-confirm for the same fleet surface key returns that assignment.
+  Restoring an old snapshot may temporarily omit it from the inactive restore
+  generation; journal replay reconstructs the identical proven assignment
+  before that generation becomes accepted. Re-confirm returns that assignment
+  or a conflict. It never imports client-supplied authority and never relabels
+  that key.
 - INV-5. **Durable-before-reply, with an explicit unknown outcome.** The
-  allocator commits the new next-ordinal, the new mapping, and the advanced
-  high-water using the atomic persistent-state pattern before it sends any
-  success reply. A commit has exactly three outcomes: committed (reply success),
-  clearly-not-committed (reply `persistence_failed`, no state change), or
-  **unknown/ambiguous** (reply nothing that implies not-committed; enter the
-  fail-closed unknown state of INV-14). A crash after commit and before reply
-  loses no label and creates no duplicate, because the next claim for that fleet
-  surface key returns the committed mapping. (Design artifact; review B-05;
-  acceptance AC-8, AC-8b.)
+  allocator commits a mapping in the fleet custody store before it sends success.
+  Each reserve and mapping stage has exactly three outcomes: committed,
+  clearly-not-committed, or unknown. A committed reservation is not rolled back;
+  a later clear mapping failure burns the ordinal. An unknown stage makes the
+  allocator fail closed until it resolves that exact `transactionId`. A crash
+  after mapping commit and before reply loses no assignment because a repeat
+  claim returns the committed mapping.
 - INV-6. **Fail closed.** An initialized allocator whose state is missing,
   unreadable, corrupt, of an unsupported `stateVersion`, internally
-  inconsistent, in the unknown-persistence state (INV-14), or unable to acquire
-  its single-writer lock (INV-1) MUST refuse to serve claims and MUST NOT
-  silently start a new sequence. It returns an error and requires an operator to
-  restore a verified backup or explicitly initialize a new fleet. (Design
-  artifact "Persistence and recovery".)
+  inconsistent, in the unknown-persistence state, unable to reach or validate
+  custody, or unable to acquire both writer locks MUST refuse claims and MUST NOT
+  silently start a sequence. It requires transaction recovery, a verified
+  same-identity restore, or explicit new-fleet initialization: an unknown
+  transaction follows D3/D7; lost or inconsistent initialized custody follows
+  I3; and only custody that has never been initialized follows I1.
 - INV-7. **No label without authority.** A client displays a window label for a
   surface only when that surface holds a valid allocator assignment: a fresh
   committed claim from the configured allocator, or a persisted assignment whose
@@ -286,21 +322,24 @@ exists to remove.
   fail-closed outranks continuity.** A cached assignment is authoritative after a
   client restart only when its provenance `fleetId` equals the configured fleet
   identity, its `allocatorId` equals the configured allocator identity, AND it
-  records a durable issue (`committed: true`). A bare persisted `windowLabel`, or
+  records a durable issue (`committed: true`), its `authorityId` equals the
+  active authority, and its `ownerAnchorId` equals the anchor read from secure
+  storage. A bare persisted `windowLabel`, copied provenance whose owner anchor
+  is absent or different, or
   provenance for a different fleet or allocator identity, is a legacy label and
   its surface is unaddressable until it claims. Live re-confirmation on restart is
   governed by one rule, with the settled fail-closed rule (INV-6) as the higher
   priority when they tension:
   - if the allocator is reachable at restart, the client MUST re-confirm each
-    provenanced surface with an idempotent claim (REQ-B3) before admitting it as
+    provenanced surface with an idempotent re-confirm (REQ-C1) before admitting it as
     addressable; re-confirmation catches an allocator re-initialized under a new
     identity (identity mismatch -> unaddressable) or any divergence, and for a
     still-valid assignment returns the identical immutable mapping;
   - if the allocator is unreachable at restart, the client MAY admit a
     provenanced surface as addressable WITHOUT a live round-trip only because the
     assignment is immutable (INV-4) and never reused (INV-3), and only when its
-    provenance `fleetId` and `allocatorId` equal the configured fleet and
-    allocator identity and it is `committed`; otherwise the surface stays
+    provenance `fleetId`, `allocatorId`, `authorityId`, and `ownerAnchorId` equal
+    configured and secure-store values and it is `committed`; otherwise it stays
     unaddressable (fail closed). When reachability returns, the client
     re-confirms in the background and drops the surface to unaddressable at once
     on any identity or assignment mismatch.
@@ -315,9 +354,10 @@ exists to remove.
   "Persistence and recovery", "Migration"; operator clarification 2026-09-03;
   review B-03.)
 - INV-10. **Idempotent, serialized claims.** Repeated or concurrent claims for
-  one fleet surface key return one stable assignment. Concurrent claims for
-  different fleet surface keys are serialized by the single writer and receive
-  different labels. (Design artifact "Authority and allocation".)
+  one bound fleet surface key return one stable assignment. Concurrent claims
+  for different keys serialize through custody and receive different reserved
+  ordinals. A copied or colliding authority with a different owner anchor fails
+  ownership validation and cannot alias the bound key.
 - INV-11. **Pane labels are lowest-free on every client.** Each client allocates
   the lowest free positive integer `paneLabel` within a window, client-local. On
   Electron this already holds (`lockless-client-authority.ts` lowest-free
@@ -330,22 +370,22 @@ exists to remove.
   `windowLabel`. (Requirement "What must be built" 4; design artifact "Pane
   labels"; `DESIGN.md` §3.1.1 rule 4; review B-10.)
 - INV-12. **Single startup validation gate.** Before serving any claim after a
-  load, the allocator acquires its single-writer lock (INV-1) and validates its
-  state, and either passes all checks in Architecture §D or fails closed per
-  INV-6. There is no partial-serve state.
-- INV-13. **High-water fence never rolls back.** The high-water ordinal is
-  persisted outside the restorable state generation and only ever increases. The
-  allocator issues the next ordinal as `highWater` and advances `highWater` by
-  one atomically with the assignment commit. Restoring an older state generation
-  restores older mappings but never lowers `highWater`, so no restore reissues an
-  ordinal that was ever committed. (Review B-04.)
+  load, the allocator acquires the host lock and custody writer token, then
+  validates the custody head and local projection. It either passes every §D-D
+  check or fails closed. There is no partial-serve state.
+- INV-13. **Next-ordinal fence never rolls back.** Custody owns
+  `nextOrdinalFence`. A reservation atomically returns its old value `n` and
+  persists `n + 1` before a mapping can commit. Restore never writes a smaller
+  value. Recovery completes a durable `reserved` transaction under D3. An
+  ordinal becomes permanently unavailable when its transaction reaches
+  `burned`; a committed ordinal remains assigned. This single fence meaning
+  applies to state, diagnostics, backup, restore, and acceptance.
 - INV-14. **Unknown persistence fails closed until resolved.** If a commit's
-  durability is unknown/ambiguous (INV-5), the allocator MUST NOT reply success
-  and MUST NOT reply a clean `persistence_failed` (which would assert
-  not-committed). It enters a fail-closed unknown state, stops serving claims,
-  returns `persistence_outcome_unknown`, and requires a startup re-read /
-  operator resolution (the repository `ambiguous-persistence` guard) to
-  determine the accepted generation before serving again. (Review B-05.)
+  durability is unknown, the allocator sends no success or clean failure. It
+  stops serving and queries custody by `transactionId`. Only custody's durable
+  `absent`, `reserved`, `burned`, or `committed` answer selects a D3 transition.
+  A failed query or contradictory transaction record keeps it fail closed for
+  operator recovery.
 - INV-15. **New-identity re-initialization is not a hot recovery.** Creating a
   new `allocatorId` (REQ-I1) invalidates all prior provenance and MUST NOT be
   used to recover a lost or corrupt allocator while any client may still hold
@@ -396,35 +436,46 @@ never on connection state.
   persisted label as legacy and MUST claim live before any surface is
   addressable; it MUST NOT trust a persisted label offline without a configured
   identity to compare against (INV-9, fail-closed).
-- REQ-A5. Each client authority holds a durable `authorityId` (Terms). If none
-  exists, the authority mints one with UUID-grade entropy and persists it before
-  its first claim. The `authorityId` is stable across restarts and is sent on
-  every claim (REQ-C1). Distinct installs never share an `authorityId`. (Review
-  B-02.)
+- REQ-A5. Each authority reads or creates its own `ownerAnchorId` in the
+  installation-owned secure-store slot defined in Terms. The authority reads or
+  creates an `authorityId` in its durable profile. Before a claim, the client
+  binds that pair with `authority.bind` (REQ-C0). Custody accepts the first
+  binding and returns it idempotently thereafter. If the `authorityId` is
+  already bound to a different anchor, it returns
+  `authority_ownership_conflict` and creates no assignment.
+- REQ-A6. On `authority_ownership_conflict`, or when copied provenance names an
+  owner anchor that does not equal secure storage, the client first makes every
+  affected surface unaddressable. It mints and persists a new `authorityId`,
+  binds the new pair, discards copied provenance as non-authoritative, then
+  claims each surface under the new bound key. The original authority and its
+  assignments do not change. If any bind or persistence step fails, the copied
+  authority remains unaddressable. This is the sole rekey seam.
 
 ### D-B. Authority and allocation semantics
 
-- REQ-B1. The allocator owns four pieces of state: one monotonically increasing
-  next-ordinal counter; one immutable `(authorityId, surfaceId) ->
-  { ordinal, windowLabel }` map; one stable `{ fleetId, allocatorId,
-  stateVersion }` header; and one fenced `highWater` (INV-13, stored outside the
-  restorable generation). (Design artifact "Authority and allocation"; review
-  B-02, B-04.)
+- REQ-B1. The fleet custody store owns one stable
+  `{ fleetId, allocatorId, stateVersion }` header, `nextOrdinalFence`, the
+  authority-owner binding map, the immutable fleet-surface assignment map, the
+  transaction ledger, and the current writer token. The allocator's local file
+  is a derived snapshot of that accepted custody state.
 - REQ-B2. On a claim for a fleet surface key with no existing assignment, the
-  allocator takes `n = highWater`, computes `windowLabel = base26(n)`, records
-  the mapping under `(authorityId, surfaceId)`, sets next-ordinal to `n+1`,
-  advances `highWater` to `n+1`, commits durably (INV-5, INV-13), then replies
-  with `{ ordinal: n, windowLabel }`. `next-ordinal` and `highWater` are equal in
-  normal operation and diverge only transiently under an older-backup restore,
-  where `highWater` governs issuance (INV-13).
+  allocator creates one `transactionId`; custody atomically reserves
+  `n = nextOrdinalFence` and advances the fence to `n + 1`; the allocator then
+  computes `base26(n)` and atomically commits the mapping under that transaction.
+  It replies only after the mapping stage is committed. A reservation whose
+  mapping stage is durably resolved as not committed transitions atomically to
+  `burned` before the allocator returns a clean failure. A later claim for the
+  still-unassigned key creates a new `transactionId` and reserves from the
+  current fence; it never reopens the burned transaction.
 - REQ-B3. On a claim for a fleet surface key that already has an assignment, the
   allocator replies with the existing assignment and commits nothing. (INV-4,
   INV-10.)
 - REQ-B4. The allocator never searches for a locally unused label and never
   reuses a label. Closing a surface does not free its label in v1. (INV-3;
   design artifact "Persistence and recovery", "Migration".)
-- REQ-B5. A single writer serializes all mutating claims so that two different
-  fleet surface keys can never be assigned the same ordinal. (INV-10.)
+- REQ-B5. Custody serializes reservations and validates the current writer token
+  inside each mutation, so different fleet surface keys cannot reserve the same
+  ordinal even if an obsolete process remains alive.
 - REQ-B6. `base26(n)` is the bijective base-26 encoding over the alphabet
   `a`–`z`: `0->a … 25->z, 26->aa, 27->ab …`, matching `DESIGN.md` §3.1.1 and
   §15.1. The decode inverse MUST round-trip for validation (§D-D).
@@ -435,6 +486,16 @@ never on connection state.
   belt-and-suspenders check on top of the fleet-surface-key uniqueness (REQ-B1);
   the composed key is designed to make duplicates unrepresentable, and this check
   catches any implementation slip. (Review B-02.)
+- REQ-B8. `label.reconfirm` supplies the client's complete cached assignment.
+  The operation is read-only. If accepted custody has the same mapping from the
+  activated snapshot, it returns `confirmed`. If REQ-D10 journal replay reconstructed
+  that exact mapping before activating the restore generation, the accepted
+  mapping carries its `recoveredAtCustodyRevision` and re-confirm returns
+  `recovered`. Any repeat re-confirm of that reconstructed mapping also returns
+  `recovered`. The client is comparison evidence, never authority to create,
+  import, or change a mapping. Any field mismatch or absence of a matching
+  accepted mapping is `assignment_conflict`; the allocator fails closed and
+  serves no further claim until an operator restores consistent custody.
 
 ### D-C. WebSocket protocol
 
@@ -444,14 +505,58 @@ frames; every message carries `v`, `type`, `op`, `id`, `sentAt`; requests and
 responses carry a `payload`; error responses carry `error` with `ok: false`;
 per-connection unique request `id`; last-1024 idempotent replay cache.
 
-**Schema delta to `DESIGN.md` §5 / §10.** This spec adds one op, `label.claim`,
-to the request/response op set and to the `ErrorResponse.op` enum (`DESIGN.md`
-§10 `ErrorResponse`), and adds one response-level error code,
-`window_label_unavailable`, to the surface error set (§8.1). No other envelope
-convention changes.
+**Complete schema delta to `DESIGN.md` §5 / §10.** Add `authority.bind`,
+`label.claim`, and `label.reconfirm` to the request and response unions. Extend
+the pinned `ErrorResponse.op` enum with the exact pinned-source/live operations
+missing from that older enum:
+`surface.window.open`, `surface.window.close`, `pane.restore`,
+`surface.window.restore`, `topology.apply`, `target.apply`, `target.register`,
+`consumable.ack`, `consumable.sync`, `operation.receipt.sync`,
+`operation.receipt.ack`, `authority.bind`, `label.claim`, and
+`label.reconfirm`. Extend the closed `ErrorBody.code` enum with exactly:
+`fleet_identity_mismatch`, `allocator_identity_mismatch`, `allocator_uninitialized`,
+`allocator_state_corrupt`, `allocator_state_unsupported_version`,
+`authority_ownership_conflict`, `assignment_conflict`, `persistence_failed`,
+`persistence_outcome_unknown`, `writer_fence_unavailable`, and
+`window_label_unavailable`. The pinned `invalid_payload` code continues to cover
+an invalid request envelope or payload. Except for that enumerated code
+extension, `ErrorBody` retains the pinned closed property shape and constraints:
+only `code`, `message`, and optional `details` are allowed. Allocator identity
+belongs in `error.details.allocatorId`; no direct `error.allocatorId` property
+exists.
 
-- REQ-C1. **Claim request** (client -> allocator), conforming to `DESIGN.md` §5
-  request envelope:
+All six new request/success payload schemas set `additionalProperties: false`.
+For `authority.bind`, the request requires `protocolVersion` (constant `1`),
+`fleetId`, `authorityId`, and `ownerAnchorId`; `expectedAllocatorId` is the only
+optional field. Its success requires `fleetId`, `allocatorId`, `stateVersion`
+(integer, minimum 1), `authorityId`, `ownerAnchorId`, and `bound` (constant
+`true`). `label.claim` requires the fields in REQ-C1 except that
+`expectedAllocatorId` has the stated first-contact exception. Its success
+requires every field shown in REQ-C2. `label.reconfirm` requires all claim fields
+and `expectedAssignment`; `expectedAllocatorId` is required because provenance
+already names it. Its success requires every claim-success field plus
+`confirmation`, enum `confirmed | recovered`. `ordinal` is an integer with
+minimum 0; `windowLabel` matches `^[a-z]+$`; `committed` is constant `true`; and
+identity strings follow Terms. The nested `expectedAssignment` object also sets
+`additionalProperties: false` and requires exactly `ordinal`, `windowLabel`, and
+`committed`. This paragraph and the exact op/code additions
+above are the full allocator schema delta; no other envelope convention, error
+property, or schema constraint changes.
+
+- REQ-C0. **Authority bind** uses the common envelope with
+  `op: "authority.bind"` and payload
+  `{ protocolVersion: 1, fleetId, authorityId, ownerAnchorId,
+  expectedAllocatorId? }`. Its success payload is
+  `{ fleetId, allocatorId, stateVersion, authorityId, ownerAnchorId,
+  bound: true }`. The allocator commits the binding before success. A repeat of
+  the same pair is idempotent. A different anchor for the same `authorityId`
+  returns `authority_ownership_conflict` and no success. A clear persistence
+  failure returns `persistence_failed`; an unknown outcome stops service until
+  custody confirms the binding pair present or absent. Present returns the bind
+  success; absent returns `persistence_failed`. The client remains unaddressable
+  until it receives success.
+- REQ-C1. **Claim and re-confirm requests** conform to the common request
+  envelope. `label.claim` is:
   ```json
   {
     "v": 1,
@@ -463,14 +568,19 @@ convention changes.
       "protocolVersion": 1,
       "fleetId": "<configured fleet id>",
       "authorityId": "auth_...",
+      "ownerAnchorId": "owner_...",
       "surfaceId": "sf_...",
       "expectedAllocatorId": "alloc_..."
     }
   }
   ```
-  `expectedAllocatorId` is omitted only on genuine first contact before any
-  identity is known; `fleetId`, `authorityId`, and `surfaceId` are always
-  present.
+  `label.reconfirm` uses the same envelope and identity fields, plus
+  `payload.expectedAssignment` equal to
+  `{ ordinal, windowLabel, committed: true }` from persisted provenance.
+  For `label.claim`, `expectedAllocatorId` is omitted only on genuine first
+  contact before any identity is known. It is required for `label.reconfirm`.
+  The other fields are required. The allocator accepts either operation only
+  after the `(authorityId, ownerAnchorId)` binding passes.
 - REQ-C2. **Claim success response** (allocator -> client), conforming to
   `DESIGN.md` §5 response envelope:
   ```json
@@ -486,6 +596,7 @@ convention changes.
       "allocatorId": "alloc_...",
       "stateVersion": 1,
       "authorityId": "auth_...",
+      "ownerAnchorId": "owner_...",
       "surfaceId": "sf_...",
       "ordinal": 0,
       "windowLabel": "a",
@@ -493,6 +604,10 @@ convention changes.
     }
   }
   ```
+  A `label.reconfirm` success has the same payload plus
+  `"confirmation": "confirmed"` or `"recovered"`; its `op` is
+  `label.reconfirm`. Both results assert the exact supplied assignment is the
+  accepted custody mapping.
 - REQ-C3. **Error response** (allocator -> client), conforming to `DESIGN.md` §5
   / §10 `ErrorResponse` (`ok: false`, `error` body):
   ```json
@@ -505,13 +620,15 @@ convention changes.
     "sentAt": 0,
     "error": {
       "code": "<allocator error code>",
-      "message": "<bounded human string, <=512 UTF-8 bytes>",
-      "allocatorId": "alloc_..."
+      "message": "<human-readable string allowed by pinned ErrorBody>",
+      "details": { "allocatorId": "alloc_..." }
     }
   }
   ```
-  `error.allocatorId` is present when the allocator identity is known.
-- REQ-C4. Idempotency and request-id reuse follow `DESIGN.md` §5.3 exactly:
+  `error.details.allocatorId` is present when identity is known. `details` is
+  omitted when there is no detail. This conforms to the pinned `ErrorBody`.
+- REQ-C4. `authority.bind`, `label.claim`, and `label.reconfirm` idempotency and
+  request-id reuse follow `DESIGN.md` §5.3 exactly:
   - a duplicate request `id` with an identical payload returns the original
     response from the last-1024 replay cache (§5.3.2–3);
   - a duplicate request `id` with a different payload returns
@@ -521,14 +638,18 @@ convention changes.
     of connection or request `id`. This is the correctness guarantee across
     reconnects; the replay cache is the transport-level guard.
 - REQ-C5. Allocator error `code` values (`[a-z_]{1,64}`) inside `error.code`:
-  - `invalid_request` — request envelope shape or type invalid (per §5 envelope
-    validation).
+  - `invalid_payload` — request envelope or payload shape/type invalid (the
+    existing pinned code).
   - `invalid_request_id_reuse` — request `id` reused with a different payload
     (§5.3.4).
   - `unsupported_protocol_version` — `payload.protocolVersion` not supported.
   - `fleet_identity_mismatch` — `payload.fleetId` is not this allocator's fleet.
   - `allocator_identity_mismatch` — `expectedAllocatorId` present and not equal
     to this allocator's identity.
+  - `authority_ownership_conflict` — the supplied `authorityId` is durably
+    bound to another `ownerAnchorId`; the client follows REQ-A6.
+  - `assignment_conflict` — re-confirmation contradicts accepted custody; the
+    allocator enters fail-closed recovery.
   - `allocator_uninitialized` — no state exists and the allocator has not been
     explicitly initialized; fail closed (INV-6). Distinct from a served empty
     fleet, which has an initialized header with zero mappings.
@@ -542,21 +663,22 @@ convention changes.
     (INV-14); the allocator is fail-closed pending resolution. The client MUST
     NOT treat this as not-committed; it retries the claim, which is idempotent by
     fleet surface key once the allocator resolves and serves again.
+  - `writer_fence_unavailable` — the allocator lacks the current custody writer
+    token or custody cannot validate it; no mutation or success occurs.
   - `rate_limited` — temporary throttle; the client retries with backoff.
   - `internal_error` — unhandled allocator error, including the residual
     collision safety net (REQ-B7).
 - REQ-C6. The client MUST reject a response whose `id` does not match a request
   it sent on that connection, whose `payload.surfaceId`/`payload.authorityId` do
-  not equal the pair it claimed, whose `fleetId` or `allocatorId` does not match
-  the configured/expected values (once known), or whose `windowLabel` does not
-  decode to `ordinal` under REQ-B6. A rejected response leaves the surface
-  unaddressable and is reported through diagnostics (REQ-H3).
-- REQ-C7. **New surface-protocol error code and the unaddressable operation
-  matrix.** Add `window_label_unavailable` to the `DESIGN.md` §8.1
-  response-level error set. A surface client applies the following matrix by
-  concrete op when a targeted surface has no valid window-label assignment
-  (unaddressable). The matrix is exhaustive over the §10 `ErrorResponse.op` set
-  plus label-resolution:
+  not equal the pair it claimed, whose `ownerAnchorId` does not equal secure
+  storage, whose `fleetId` or `allocatorId` does not match configured/expected
+  values, or whose `windowLabel` does not decode to `ordinal`. A re-confirm
+  response must also equal every field in `expectedAssignment`. A rejection
+  leaves the surface unaddressable and is reported through diagnostics.
+- REQ-C7. **Exhaustive unaddressable operation matrix.** The matrix covers the
+  pinned public request set in `message-names.ts`, the larger lockless request
+  union in `lockless.ts`, the three allocator recovery ops, diagnostics, and
+  label resolution. No request is left to implementation judgment.
 
   | Operation (concrete) | On an unaddressable surface |
   |---|---|
@@ -564,21 +686,35 @@ convention changes.
   | `surfaces.list` | ALLOWED (inspection): the surface appears with `windowLabel: null`, `addressable: false` (schema delta below). |
   | `panes.list` | ALLOWED (inspection). |
   | `heartbeat.ping` | ALLOWED (liveness/inspection). |
-  | `label.claim` (recovery) | ALLOWED (this is the positive recovery path to become addressable). |
+  | `authority.bind`, `label.claim`, `label.reconfirm` | ALLOWED (ownership and label recovery). |
   | Diagnostics read (§D-H) | ALLOWED (inspection). |
+  | `surface.window.open` | ALLOWED only to create a dormant unaddressable surface. It returns the pinned success response and preserves its existing `surfaceId` field semantics; no addressable projection or visible label exists until provenance is durable. |
+  | `surface.window.restore` | ALLOWED only to restore a dormant unaddressable surface and its tombstone/provenance. It returns the pinned success response and completes re-confirm before any addressable projection. |
+  | `surface.window.close` | ALLOWED for cleanup. It retains the immutable mapping/provenance and never frees the label. |
   | `pair.request` | REJECTED with `window_label_unavailable`. |
   | `content.set` / `content.append` / `content.patch` / `content.clear` | REJECTED with `window_label_unavailable`. |
-  | `annotations.remove` (and other annotation writes) | REJECTED with `window_label_unavailable`. |
+  | `annotations.remove` | REJECTED with `window_label_unavailable`. |
   | `snapshot.get` / capture | REJECTED with `window_label_unavailable`. |
-  | `pane.split` / `pane.rename` / `pane.close` (topology) | REJECTED with `window_label_unavailable`. |
+  | `pane.split`, `pane.rename`, `pane.close`, `pane.restore` | REJECTED with `window_label_unavailable`. |
+  | `topology.apply` | REJECTED with generic `ErrorResponse` code `window_label_unavailable`; its `windowLabel` input is checked only after addressability and never relabels. |
+  | `target.apply` | REJECTED before intent admission with generic `ErrorResponse` code `window_label_unavailable`; no intent, receipt, work item, or materialization commits. |
+  | `target.register` | REJECTED before registration admission with generic `ErrorResponse` code `window_label_unavailable`; no registration commits. |
+  | `consumable.ack`, `consumable.sync`, `operation.receipt.sync`, `operation.receipt.ack` | REJECTED with generic `ErrorResponse` code `window_label_unavailable` when scoped to the unaddressable surface; no delivery or receipt state mutates. |
+
+  A bulk or sync request that names both addressable and unaddressable surface
+  scopes rejects atomically; it does not apply the addressable subset. A sync
+  request with no surface scope follows its existing behavior.
 
   A surface becomes addressable only after a committed claim and persisted
   provenance (REQ-E2); the ALLOWED inspection/recovery rows are exactly the
   positive path an operator uses to see why a surface is dark and drive it to
   addressable. (Design artifact "Client behavior" line 50; review B-08.)
 
-  **Projection schema delta (`DESIGN.md` §10 `SurfacesListResponse`).** Each
-  element of `payload.surfaces[]` gains two required fields:
+  **Exhaustive label-bearing projection rule and schema delta.** At pin
+  `edc747d`, the only protocol request field named `windowLabel` is
+  `TopologyApplyRequest.payload.windowLabel`; it becomes a checked echo and a
+  mismatch rejects the whole operation. Each element of
+  `SurfacesListResponse.payload.surfaces[]` gains two required fields:
   - `windowLabel`: `string | null` — the assigned label, or `null` when the
     surface is unaddressable;
   - `addressable`: `boolean` — `true` only when the surface holds a valid
@@ -587,93 +723,164 @@ convention changes.
   are unchanged. An unaddressable surface is always
   `{ windowLabel: null, addressable: false }`.
 
+  The same rule covers every non-protocol projection at the pin: Electron
+  surface/tombstone durable records; `surface-core` list and visible-address
+  projections; renderer bootstrap/update state and identity overlay; native
+  window title; `main.ts` tool, diagnostic, and log fields; iOS authority,
+  runtime, model, and scene snapshots; iOS `displayId`/`visibleAddress`; and
+  both platforms' topology/provider echoes. Each consumes the one validated
+  assignment. When unaddressable, UI/addressing projections use no window
+  label, structured inspection uses `windowLabel: null` plus
+  `addressable: false`, and legacy snake-case diagnostic/log fields use
+  `window_label: null`. No projection converts null, empty, legacy, provider,
+  or topology input into authority. Surface/topology/pane events carry no
+  independent label authority; any surface summary they reference uses this
+  same nullable projection. Tombstones and backups may retain provenance for
+  re-confirmation, but they do not make a surface addressable by themselves.
+  `surface.window.open`, `surface.window.close`, and `surface.window.restore`
+  responses and events gain no independent label authority; any embedded surface
+  summary uses the same nullable projection. `target.apply`, `target.register`,
+  consumable, and operation-receipt responses or echoes also gain no label
+  authority. Any label token they carry is resolved against the addressable
+  projection at admission and cannot populate or change an assignment.
+
 ### D-D. Persistence, atomic commit, and startup validation
 
-- REQ-D1. Allocator state lives in one dedicated state file on the coordinator,
-  holding `{ fleetId, allocatorId, stateVersion, nextOrdinal, mappings[] }`
-  where each mapping is `{ authorityId, surfaceId, ordinal, windowLabel }`. The
-  `highWater` fence is persisted in its own durable record outside this state
-  generation (INV-13). (Design artifact "Persistence and recovery"; review
-  B-02, B-04.)
-- REQ-D2. Every mutation uses the atomic persistent-state pattern: build and
-  fsync a complete next generation, atomically replace the accepted generation,
-  then reply. A partially written generation is never the accepted generation.
-  The `highWater` fence is advanced durably before or atomically with the
-  assignment commit so a crash cannot leave `highWater` below a committed
-  ordinal.
-- REQ-D3. On load, before serving any claim (INV-12), the allocator validates
-  all of:
-  - the header `{ fleetId, allocatorId, stateVersion }` is present and
-    `stateVersion` is supported;
-  - every `(authorityId, surfaceId)` maps to exactly one label;
-  - every `windowLabel` belongs to exactly one fleet surface key;
-  - every `windowLabel` decodes (REQ-B6) to its recorded `ordinal`, and every
-    recorded `ordinal` is `< nextOrdinal`;
-  - no two mappings share an `ordinal`;
-  - `nextOrdinal` is strictly greater than every committed `ordinal`;
-  - the `highWater` fence is present and `>= nextOrdinal - 1` and `>=` every
-    committed `ordinal` (a loaded generation whose ordinals exceed `highWater`
-    is corrupt).
-  (Design artifact "Persistence and recovery"; review B-04.)
-- REQ-D4. If any REQ-D3 check fails, or the file is missing on an allocator that
-  has been initialized, or unreadable, the allocator fails closed (INV-6):
-  returns `allocator_state_corrupt`, `allocator_state_unsupported_version`, or
-  `allocator_uninitialized` as applicable, serves no claim, and does not create a
-  new sequence.
-- REQ-D5. On a claim commit, the allocator distinguishes three outcomes (INV-5):
-  - **committed** — reply success (REQ-C2);
-  - **clearly not committed** — send no success reply, expose no uncommitted
-    mapping, leave `nextOrdinal` and `highWater` unchanged, and return
-    `persistence_failed` (the client MUST retry);
-  - **unknown/ambiguous** — the durable replace neither clearly succeeded nor
-    clearly failed (repository `PersistentStateOutcomeUnknownError`): send no
-    reply that implies not-committed, return `persistence_outcome_unknown`, and
-    enter the fail-closed unknown state (INV-14, REQ-D8).
-  (INV-5; review B-05; acceptance AC-8, AC-8b.)
-- REQ-D6. A restart resumes issuing ordinals strictly above the high-water fence
-  (INV-3, INV-13), so no restart, and no restore of an older backup, reuses or
-  skips-into a committed label.
-- REQ-D7. **Single-writer lock.** At startup, before serving, the allocator
-  acquires an exclusive OS-level lock on its state (for example an advisory file
-  lock or equivalent single-holder lease). If the lock cannot be acquired, a
-  writer is already running: the second process fails closed (INV-1, INV-6) and
-  does not serve. The lock is held for the process lifetime and released on exit.
-  This makes two concurrent writers structurally unrepresentable rather than
-  merely discouraged. (Review B-06.)
-- REQ-D8. **Unknown-persistence resolution.** While in the unknown state
-  (INV-14) the allocator serves no claim and returns
-  `persistence_outcome_unknown`. Resolution is the repository
-  `ambiguous-persistence` startup path: re-read durable state, determine which
-  generation is the accepted one, advance or confirm `highWater`, and either
-  resume serving (if a consistent accepted generation is found and passes REQ-D3)
-  or remain fail-closed for operator restore (INV-6). Resolution never issues a
-  label below `highWater`. (Review B-05.)
+- REQ-D1. The fleet custody record is the authority. Its accepted value is
+  `{ fleetId, allocatorId, stateVersion, custodyRevision,
+  nextOrdinalFence, authorityOwners[], mappings[], transactions[],
+  currentWriterToken }`. A local allocator snapshot contains the same accepted
+  projection and its `custodyRevision`; it may accelerate startup but cannot
+  authorize a mutation or override custody.
+- REQ-D2. Startup first takes a host-wide OS lock keyed by `fleetId` at one
+  canonical location independent of the configured snapshot path. It then opens
+  one exclusive fenced writer session in custody. Custody increments and returns
+  the writer token atomically. Every mutation compares that token inside its
+  transaction. Custody admits a replacement only after it observes the prior
+  session close or an operator explicitly revokes it; elapsed time alone does
+  not transfer ownership. Failure at either gate returns `writer_fence_unavailable`, opens
+  no listening endpoint, and writes no state.
+- REQ-D3. One new-assignment transaction has this exhaustive state machine:
+
+  | Durable state for `transactionId` | `nextOrdinalFence` | Mapping | Required action/result |
+  |---|---:|---|---|
+  | absent; reserve clearly fails | unchanged | absent | Return `persistence_failed`; remain serving. |
+  | reserve outcome unknown | unknown until query | absent or reserved | Stop serving; query custody by `transactionId`; follow the matching resolved row below. |
+  | `reserved(n, key, ownerBinding)` after crash/recovery | `n + 1` | absent | The current writer idempotently commits that exact prepared key at `n`; a validation conflict follows the contradictory row. |
+  | mapping clearly fails | `n + 1` | absent | Atomically change `reserved` to `burned`; return `persistence_failed` only after that change commits. A failed/unknown burn transition stops serving and resolves by transaction id. `burned` returns the clean failure; `reserved` follows the reserved recovery row and sends no prior failure. |
+  | `burned(n, key)` | `n + 1` or greater | absent | Return/retain clean failure; no later operation may map ordinal `n`. |
+  | mapping outcome unknown | `n + 1` | absent or present | Stop serving; query custody by `transactionId`. `committed` returns the exact success. `reserved` proves mapping did not commit and follows the reserved recovery row. |
+  | `committed(n, key)` | `> n` | exact key -> `n` | Return success, or on recovery serve the same result to the repeat claim. |
+  | contradictory transaction/mapping/binding | any | any | Return `assignment_conflict`; stop serving for operator restore. |
+
+  Reserve linearizes when custody commits `reserved` and increments the fence.
+  Assignment linearizes when custody commits the immutable mapping. The local
+  snapshot is written only after custody acceptance and is never a linearization
+  point.
+  Failure to refresh the non-authoritative local snapshot records a diagnostic
+  but does not undo a custody-committed mapping or change its success response.
+- REQ-D4. Crash recovery is exhaustive by boundary: before reserve, no durable
+  effect; after reserve and before mapping, commit the recorded exact prepared
+  key; after a clear mapping failure and before or during the burn CAS, query the
+  transaction, where `reserved` follows the reserved recovery row and `burned`
+  retains the failure; after burn and before the failure reply, a later claim
+  starts the new transaction required by REQ-B2; after mapping and before the
+  local snapshot, rebuild the snapshot from custody; and after snapshot and
+  before the success reply, a repeat claim returns the committed mapping. A
+  process never guesses from a missing reply, elapsed time, or local bytes.
+- REQ-D5. On startup, before serving, the allocator validates: the header and
+  supported version; the configured `fleetId` and `allocatorId`; current writer
+  token; increasing custody revision; one owner anchor per `authorityId`; one
+  assignment per bound fleet surface key; one key per ordinal and label;
+  `windowLabel = base26(ordinal)`; each mapping ordinal is below
+  `nextOrdinalFence`; each transaction record is `reserved`, `burned`, or
+  `committed` (`absent` means no record exists); each committed transaction has
+  its exact mapping; and each reserved
+  or burned ordinal is below the fence. A local snapshot ahead of custody, a
+  duplicate, or a contradictory ledger entry is corrupt. A stale local snapshot
+  is replaced from custody before serving.
+- REQ-D6. Missing, unreadable, unsupported, or inconsistent custody fails closed
+  with the applicable allocator error. Missing or corrupt local snapshot alone
+  is recoverable by rebuilding it from valid custody. The allocator never creates
+  a new sequence on either failure.
+- REQ-D7. Unknown resolution uses only an idempotent custody query keyed by
+  `transactionId`. A durable `reserved`, `burned`, or `committed` record selects
+  the corresponding D3 action. An absent record proves reserve did not commit.
+  A query failure or contradiction retains fail-closed
+  `persistence_outcome_unknown`; no request outcome or fence value is inferred.
+- REQ-D8. Custody maintains an append-only transaction journal on storage
+  independent of the coordinator snapshot path. It records each transaction's
+  `{ fleetId, allocatorId, transactionId, ordinal, key, ownerBinding }` and its
+  durable `reserved`, `committed`, or `burned` transition. The custody backend
+  makes each state transition and corresponding accepted-state mutation one
+  linearizable durable operation. A stage does not return committed until its
+  journal transition commits. Backup captures a mapping snapshot plus the
+  journal position; restore replays through the current journal head, rebuilds
+  committed mappings, retains burned ordinals, and sets `nextOrdinalFence` one
+  greater than the greatest ordinal ever recorded as reserved, or 0 when the
+  journal has no transaction. It never uses a snapshot's lower value. This
+  journal is the recoverable non-rollback fence and mapping custody.
+- REQ-D9. If both live custody and its independent transaction journal are lost,
+  same-identity recovery is impossible: the allocator fails closed. The operator
+  may initialize a new identity only after the INV-15 drain. The system does not
+  pretend an old snapshot proves the missing fence.
+- REQ-D10. Restore uses an inactive custody generation and one atomic activation
+  CAS. The operator first fences and drains the allocator writer. Custody creates
+  `preparing(generationId, snapshotRevision, journalPosition)` without changing
+  the accepted generation. It verifies the snapshot, replays the journal through
+  its captured current head, marks reconstructed mappings with
+  `recoveredAtCustodyRevision`, computes the fence under D8, validates every D5
+  rule, and records `ready(generationId, replayedJournalHead, computedFence)`.
+  One CAS then changes the accepted generation from the prior revision to that
+  exact ready generation and records `activated`. A crash or clear/unknown write
+  before activation leaves the prior accepted generation authoritative; startup
+  resumes or discards the inactive generation by `generationId`. An unknown
+  activation is resolved by querying that id: the accepted generation is either
+  the prior revision or the complete ready generation, never a partial mixture.
+  When live custody has been lost, verified same-identity backup custody starts
+  recovery with no accepted generation; the activation CAS expects `absent` and
+  installs the complete ready generation. Before that CAS, no state can serve.
+  This bootstrap is permitted only when the snapshot and journal satisfy I2 and
+  carry the same `fleetId` and `allocatorId`; it never mints identity or fence
+  state. A crash after activation loads the activated generation. The allocator
+  obtains a new writer token and listens only after activation and D5 validation.
 
 ### D-E. Client behavior: provenance, fail-closed addressability, reconnect
 
 - REQ-E1. Client per-surface state records allocator provenance
-  `{ fleetId, allocatorId, stateVersion, authorityId, surfaceId, ordinal,
+  `{ fleetId, allocatorId, stateVersion, authorityId, ownerAnchorId, surfaceId, ordinal,
   windowLabel, committed: true }` alongside the surface, written only after the
   client observes a durably committed success (REQ-C2). A `windowLabel` with no
   matching provenance, with provenance for another `fleetId` or a non-configured
   `allocatorId`, or with no `committed` mark is a legacy label and is not
-  authoritative (INV-9).
+  authoritative. Provenance whose `ownerAnchorId` does not equal the current
+  secure-store anchor is copied state and follows REQ-A6.
 - REQ-E2. On surface open or restore, before exposing the surface as
   addressable, the client obtains or confirms an authoritative assignment, with
   fail-closed (INV-6) as the higher priority (INV-9):
-  - if it has no valid provenance (none, wrong fleet, wrong identity, or
-    uncommitted), it issues `label.claim(fleetId, authorityId, surfaceId)` and,
+  - if it has no valid provenance (none, wrong fleet, wrong identity, wrong
+    owner anchor, or uncommitted), it binds/rekeys per REQ-A5/A6, issues
+    `label.claim`, and,
     on a committed success, persists provenance (REQ-E1) *before* admitting the
     surface as addressable (INV-7);
-  - if it holds valid provenance AND the allocator is reachable, it MUST
-    re-confirm with an idempotent claim before admitting the surface; the
-    re-confirm returns the identical assignment (INV-4) for a valid surface, or a
-    fleet/identity/assignment mismatch, which keeps the surface unaddressable;
+  - if it holds valid provenance AND the allocator is reachable, it sends
+    `label.reconfirm` with that exact assignment before admission. `confirmed`
+    or `recovered` must echo every `expectedAssignment` field byte-for-byte; the
+    client persists the response, then changes the local projection atomically from
+    `{windowLabel: null, addressable: false}` to
+    `{windowLabel: expected.windowLabel, addressable: true}`. Any identity,
+    owner, or assignment conflict keeps the null/false projection;
   - if it holds valid provenance AND the allocator is unreachable, it MAY admit
     the surface as addressable using the persisted assignment (INV-9), then
     re-confirm in the background when reachability returns and drop the surface
     to unaddressable at once on any mismatch. A background re-confirm never
     downgrades a surface whose assignment still matches.
+- REQ-E2a. A clone transition is atomic at the client authority seam: anchor
+  mismatch or ownership conflict changes every copied surface to null/false
+  before the client persists a replacement `authorityId`. The client binds the
+  replacement before it claims. It changes each surface to addressable only
+  after its new provenance is durable. At no point does copied provenance appear
+  under the replacement authority.
 - REQ-E3. While a surface has no valid assignment and the allocator is
   unreachable or returns an error, the client:
   - keeps `windowLabel` empty and hides the window-identity overlay box (the
@@ -693,8 +900,9 @@ convention changes.
   more of its surfaces wait for labels; unaddressable surfaces do not block
   addressable ones. (Design artifact "Client behavior".)
 - REQ-E5. Reconnect. On losing the allocator connection, the client reconnects
-  with bounded backoff and re-claims per REQ-E2; because claims are idempotent by
-  fleet surface key (REQ-C4), reconnect never changes an assigned label. Ordinary
+  with bounded backoff and re-confirms per REQ-E2; because claim and re-confirm
+  operations are idempotent by fleet surface key (REQ-C4), reconnect never
+  changes an assigned label. Ordinary
   controller <-> surface reconnect is unchanged by this spec, except that an
   unaddressable surface stays unaddressable until it obtains a label.
 
@@ -740,9 +948,9 @@ convention changes.
   test 9; review B-09. Line numbers are at pin `edc747d`/current source and are
   guides; the builder closes the seam even if a line moved.)
 - REQ-F4. Recoverable tombstones retain the allocator-issued mapping and
-  provenance. Restoring the same fleet surface key claims (and therefore
-  receives) the same label (INV-4). Closing a surface does not free its label in
-  v1 (INV-3). (Design artifact "Migration".)
+  provenance. Restoring the same fleet surface key re-confirms and receives the
+  same label (INV-4); it claims only when no valid provenance exists. Closing a
+  surface does not free its label in v1 (INV-3). (Design artifact "Migration".)
 
 ### D-G. Pane labels
 
@@ -760,14 +968,17 @@ convention changes.
 ### D-H. Observability
 
 - REQ-H1. The allocator exposes diagnostic state: `fleetId`, `allocatorId`,
-  `stateVersion`, `nextOrdinal`, `highWater`, total assignment count, last
+  `stateVersion`, `custodyRevision`, `nextOrdinalFence`, current writer-token
+  generation, total assignment count, burned-ordinal count, last
   successful commit time, current serve status (`serving`, or a fail-closed
-  reason from INV-6 including `unknown-persistence` and `lock-held-elsewhere`),
+  reason from INV-6 including `unknown-persistence` and
+  `writer-fence-unavailable`),
   and uptime. Read-only; carries no authority.
 - REQ-H2. Each client publishes per-surface label diagnostics: whether the
   surface is addressable, its `windowLabel` (or null), the configured allocator
   URL, configured `fleetId`, expected `allocatorId`, this authority's
-  `authorityId`, last claim attempt time, last error code, and current backoff.
+  `authorityId`, current `ownerAnchorId`, last claim/re-confirm attempt time,
+  last error code, and current backoff.
   These surface through the existing `surf_ace_authority_diagnostics` tool path
   (`DESIGN.md` §14.3).
 - REQ-H3. A client that rejects an allocator response (REQ-C6) records the
@@ -777,29 +988,31 @@ convention changes.
 ### D-I. Operator: initialization, backup, restore
 
 - REQ-I1. **Initialize (new fleet only).** An explicit operator action creates a
-  new fleet: it writes an initial state with a freshly minted `allocatorId`, the
-  configured `fleetId`, the current `stateVersion`, `nextOrdinal = 0`, no
-  mappings, and `highWater = 0`. Initialization refuses to run if committed
-  allocator state already exists, so it cannot silently reset a live fleet. It is
+  new fleet in custody with a freshly minted `allocatorId`, configured `fleetId`,
+  current `stateVersion`, `nextOrdinalFence = 0`, empty owner/mapping/transaction
+  sets, and the first writer token. Initialization refuses when the custody key
+  or transaction journal exists, so it cannot reset a live fleet. It is
   **not** a recovery for a lost/corrupt allocator (INV-15); its runbook requires
   every client to be drained of prior provenance first, because an offline client
   holding old provenance would otherwise display a label the new fleet reissues.
   (Design artifact "Persistence and recovery"; review B-03.)
-- REQ-I2. **Backup.** Because every mutation atomically replaces a complete
-  accepted generation (REQ-D2), the accepted state file is always internally
-  consistent; a backup is a copy of that accepted generation. The `highWater`
-  fence is captured with each backup for diagnostics, but on restore the **live**
-  fence governs and is never lowered by a restored value (INV-13).
+- REQ-I2. **Backup.** A backup contains one accepted custody mapping snapshot,
+  its identity and custody revision, and its transaction-journal position. The
+  independently retained append-only transaction journal is part of backup
+  custody, not diagnostic metadata. A successful backup proves its snapshot and
+  journal position share one accepted custody revision.
 - REQ-I3. **Restore (same identity, fenced).** An operator restores by placing a
-  verified backup as the allocator state and starting the allocator, which
-  validates it on load (REQ-D3) and fails closed if it does not pass (INV-6).
-  Restoring does not reset `allocatorId`; the same fleet identity and label
-  assignments return, so clients with matching provenance stay addressable.
-  Restoring an **older** backup (fewer mappings) never lowers `highWater`, so no
-  ordinal that was ever committed is reissued; a surface created after the backup
-  and missing from it is treated as new on its next claim and receives an ordinal
-  above `highWater` — it may be **relabeled** (a named, accepted consequence of
-  data loss) but is never **duplicated**. (INV-3, INV-13; review B-04.)
+  verified mapping snapshot under the same `fleetId` and `allocatorId` into the
+  inactive generation of REQ-D10, then replaying the independently retained
+  journal through its captured current head. Only the atomic D10 activation
+  makes that generation accepted. The replay computes `nextOrdinalFence` and
+  reconstructs committed mappings; the snapshot cannot lower or overwrite
+  either. A post-backup surface sends
+  `label.reconfirm` with its exact cached assignment before reachable admission.
+  Custody returns `recovered` for the journal-reconstructed assignment under
+  REQ-B8, after which the client performs
+  the null/false to label/true transition in REQ-E2. The surface keeps its old
+  label; restore never relabels it. A conflict fails the allocator closed.
 - REQ-I4. On missing or failed state, the allocator does not self-heal by
   creating a new sequence; the only recovery is REQ-I3 (restore the same fleet,
   fenced). REQ-I1 (new fleet) is reserved for a genuinely new or fully drained
@@ -807,16 +1020,17 @@ convention changes.
 
 ### Split-brain safety argument (why v1 needs no election)
 
-By INV-1 there is exactly one configured allocator endpoint and — enforced by the
-single-writer lock (REQ-D7) — exactly one durable writer, with no fallback
-(G-N2). Two surfaces can be assigned the same label only if (a) two writers each
-advance a counter over the same symbol set, which the exclusive lock makes
-structurally impossible; or (b) one writer reissues an ordinal, which the
-high-water fence (INV-13) makes impossible across restart and restore; or (c) a
-client trusts a label from the wrong authority, which the fleet/allocator
-identity checks (INV-9, REQ-A4, REQ-C6) and the ban on new-identity hot
-re-initialization (INV-15) prevent; or (d) two physical surfaces share an
-assignment key, which the fleet surface key (Terms, A-6) prevents. The design
+By INV-1 there is one configured allocator endpoint and one custody-accepted
+writer token, with no fallback. A path-local copy cannot pass the canonical host
+lock; a host copy can open its own local lock but cannot acquire a second custody
+writer session; and any stale process loses every mutation CAS. Two surfaces can
+share a label only if (a) two reservations return one ordinal, which custody's
+linearizable fence forbids; (b) an ordinal is reissued, which the append-only
+transaction journal forbids; (c) a client trusts the wrong allocator, which
+identity and provenance checks forbid; or (d) two physical authorities alias one
+key, which owner binding and fail-closed rekey prevent. No process elects a
+leader: the operator configures one endpoint and custody admits one fenced
+writer. The design
 deliberately trades availability (a down coordinator makes new claims
 unavailable, failing closed to "unaddressable", INV-8) for the safety property,
 because a split-brain here means two `a`s, the exact prohibited outcome
@@ -834,25 +1048,36 @@ review-driven additions. A check is written so a reviewer can decide pass or fai
 from observed output.
 
 - AC-1 (proof 1 — the mandatory duplicate test). Given two independent client
-  authorities **with distinct `authorityId`s** configured to one real running
+  authorities with distinct owner anchors configured to one real running
   allocator, When both concurrently claim labels for many `surfaceId`s
   **including deliberately colliding client-local `surfaceId`s (for example both
   authorities' `sf_0000000000000001`)**, Then every returned `windowLabel` is
   distinct and the test FAILS if any two authorities ever receive or display the
   same window label. (INV-2, A-6; requirement "What must be built" 3; review
   B-02.)
+- AC-1b (real clone ownership/rekey). Given one real client profile with a bound
+  authority and assigned surface, When its profile/state bytes are copied first
+  to a second authority slot on the same host and then to a second real host,
+  without copying either secure-store slot, and both clients run in each case,
+  Then each copy detects its local anchor mismatch, first projects null/false,
+  persists a new `authorityId`, binds it, and
+  receives a different label; the original retains its identity and label. The
+  test fails if copied provenance is displayed, both installations use one
+  assignment, or any rekey failure leaves the clone addressable. Repeat with two
+  independently created authorities forced to the same `authorityId`; in that
+  case the second bind must return `authority_ownership_conflict` before rekey.
 - AC-2 (proof 2). Given one fleet surface key, When a client issues repeated and
   concurrent `label.claim` calls for it, Then every response carries the same
   `ordinal` and `windowLabel` and the allocator committed exactly one mapping.
   (INV-4, INV-10.)
 - AC-3 (proof 3). Given an allocator with committed assignments, When the
   allocator process restarts, Then every prior mapping is preserved and the next
-  new claim receives an ordinal strictly greater than the high-water fence, with
-  no reuse. (INV-3, INV-5, INV-13, REQ-D6.)
+  new claim receives `nextOrdinalFence` as reserved at the transaction point, with
+  no reuse. (INV-3, INV-5, INV-13, REQ-D4, REQ-D5.)
 - AC-4 (proof 4). Given a client holding an allocator-issued label with valid
   provenance (configured fleet and identity, `committed`), When the client
   restarts with the allocator reachable, Then it live-re-confirms with an
-  idempotent claim before admitting the surface, keeps the same window label, and
+  exact `label.reconfirm` before admitting the surface, keeps the same window label, and
   never re-mints a different label; And When the client restarts with the
   allocator unreachable, Then it admits the surface addressable from the
   persisted assignment and re-confirms in the background once reachability
@@ -875,56 +1100,75 @@ from observed output.
   new identity reissue `a` while prior-identity provenance may still be
   displayed. (INV-15; review B-03.)
 - AC-5 (proof 5 — unaddressable operation matrix). Given a surface with no valid
-  assignment and an unavailable allocator, When a controller exercises each op in
-  the D-C matrix, Then `surfaces.list`/`panes.list`/`heartbeat.ping`/`label.claim`/
-  diagnostics are ALLOWED and the surface appears with `windowLabel: null,
-  addressable: false`, while `pair.request`/content.*/annotations.*/`snapshot.get`/
-  pane.* and label resolution are REJECTED with `window_label_unavailable`; and
-  When the allocator becomes available and returns a committed assignment, Then
-  the surface becomes addressable only after the client persists provenance.
+  assignment, When each exact D-C operation runs, Then inspection, allocator
+  recovery, dormant `surface.window.open`/`restore`, and cleanup
+  `surface.window.close` produce only their specified ALLOWED results;
+  `pair.request`, content and annotation writes, snapshot, each pane mutation
+  including `pane.restore`, `topology.apply`, `target.apply`, `target.register`,
+  consumable/receipt ops, and label resolution produce their exact specified
+  rejection envelope with no mutation. Exercise each projection inventory row
+  and observe null/false or no UI label while unaddressable. Then make the
+  allocator available; observe label/true only after provenance persists.
   (INV-7, INV-8, REQ-C7, REQ-E2, REQ-E3; review B-08.)
+- AC-5b (closed schema conformance). Given the pinned §10 schema plus the full
+  delta in D-C, When each allocator success/error and each unaddressable
+  rejection is validated, Then it passes; removing an enum addition, adding
+  direct `error.allocatorId`, or returning a success-shaped target response for
+  an unaddressable rejection fails validation.
 - AC-6 (proof 6 — legacy duplicates). Given two clients each starting with the
   same legacy `windowLabel` and no provenance, When both migrate against one
   allocator, Then each receives a different fleet label and no two live surfaces
   display the same label. (INV-2, INV-9, REQ-F1, REQ-F2.)
 - AC-7 (proof 7 — fail closed on corruption). Given an initialized allocator
-  whose state file is corrupted, of an unsupported version, or missing, When it
-  loads, Then it fails closed, serves no claim, returns the applicable
-  `allocator_state_*` / `allocator_uninitialized` code, and never resets or
-  advances the sequence. (INV-6, INV-12, REQ-D3, REQ-D4.)
-- AC-8 (proof 8 — persistence failure). Given a claim whose durable commit is
-  forced to **clearly fail**, When the client claims, Then no success reply is
-  sent, no uncommitted mapping is exposed, `nextOrdinal` and `highWater` are
-  unchanged, and the client receives `persistence_failed`; a subsequent
-  successful claim for that fleet surface key then commits exactly one mapping.
-  (INV-5, REQ-D5.)
-- AC-8b (persistence unknown/ambiguous — the B-05 hole). Given a claim whose
-  durable commit is forced into the **unknown/ambiguous** outcome (repository
-  `PersistentStateOutcomeUnknownError`), When the client claims, Then the
-  allocator sends no reply implying not-committed, returns
-  `persistence_outcome_unknown`, and serves no further claim until the
-  `ambiguous-persistence` resolution (REQ-D8) determines the accepted generation;
-  And after resolution, the fleet surface key resolves to exactly one committed
-  mapping with no duplicate and no reused ordinal. (INV-5, INV-14, REQ-D5, REQ-D8;
-  review B-05.)
-- AC-8c (single-writer lock — the B-06 hole). Given one allocator running and
-  holding its state lock, When a second allocator process is started against the
-  same state, Then the second fails closed at startup (cannot acquire the lock,
-  status `lock-held-elsewhere`) and serves no claim; And Given a client
+  whose custody record is corrupt, unsupported, or missing, When it loads, Then
+  it fails closed and does not move the fence. When only the local snapshot is
+  missing/corrupt, Then it rebuilds from valid custody before serving.
+- AC-8 (proof 8 — exhaustive clear persistence failures). Given an initialized
+  allocator, When a clear failure is injected before reservation, Then no
+  transaction or mapping exists, the fence is unchanged, and the response is
+  `persistence_failed`. Given a durable reservation of `n`, When a clear mapping
+  failure is injected, Then custody records fence `n + 1`, transaction
+  `burned(n)`, no mapping, and only then returns `persistence_failed`. When the
+  claim is retried, Then its mapping uses an ordinal greater than `n`, and no
+  later claim uses the burned ordinal.
+- AC-8b (unknown/crash state machine). Given each reserve, mapping, and burn
+  transition, When an unknown outcome is injected before and after its
+  linearization point, Then the allocator exposes the exact D3 durable state,
+  serves nothing while the outcome is unknown, and resolves only by
+  `transactionId`. Given each D4 crash boundary, When the allocator restarts,
+  Then it takes the exact D4 action and finishes with one mapping or a burned
+  ordinal, never a duplicate or reused ordinal.
+- AC-8c (fleet-wide single writer). Given byte-identical allocator snapshot and
+  configuration bytes on two paths on one host and on two hosts, When processes
+  start concurrently against the one real custody store, Then same-host path
+  duplication loses the host lock and cross-host duplication loses the custody
+  writer session. Exactly one endpoint listens and only its current writer token
+  can reserve or commit. After forcibly fencing that writer, its next mutation is
+  rejected even while its process remains alive. Also Given a client
   configured with a `fleetId`/`allocatorId` that does not match an endpoint it is
   pointed at, When it claims, Then it is rejected
   (`fleet_identity_mismatch`/`allocator_identity_mismatch`) and the surface stays
   unaddressable rather than acquiring a second label space. The test FAILS if two
-  writers ever serve concurrently or a mismatched endpoint yields an addressable
-  label. (INV-1, REQ-D7, REQ-A4; review B-06.)
+  writers ever commit concurrently or a mismatched endpoint yields an addressable
+  label. (INV-1, REQ-D2, REQ-A4; review B-06.)
 - AC-8d (older-backup restore never reuses — the B-04 hole). Given an allocator
-  that has committed ordinals up to `b` (highWater 2), When an operator restores
-  an older backup whose latest committed ordinal is `a` (nextOrdinal 1) and
-  starts the allocator, Then the live `highWater` is not lowered, the next new
-  claim receives `c` (never `b`), and a surface that had `b` and is missing from
-  the backup is relabeled above `highWater` on reconnect but no two live surfaces
-  ever share a label. The test FAILS on any reissue of `b`. (INV-3, INV-13,
-  REQ-I3; review B-04.)
+  that committed `a` and `b` (`nextOrdinalFence = 2`), When the operator restores
+  an older mapping snapshot containing only `a` plus the current independent
+  transaction journal, Then the computed fence remains 2 and the next new claim
+  receives `c`. The surface holding cached `b` first projects null/false, sends
+  exact `label.reconfirm`, receives `recovered` with `b`, persists it, then
+  projects `b`/true. No relabel occurs. Repeat without the live custody record but
+  with its independent journal backup. The test fails if `b` is reissued, the
+  surface receives a new label, or restore proceeds without recoverable fence
+  custody.
+- AC-8e (atomic restore activation). Given an accepted generation and an older
+  verified backup, When the allocator crashes or each storage outcome becomes
+  unknown at every D10 boundary before activation, Then the prior accepted
+  generation remains authoritative and no partial restored state can serve.
+  When activation becomes unknown, Then a query by `generationId` returns either
+  the complete prior generation or the complete replayed generation. Given a
+  crash after activation, When the allocator restarts, Then it loads only the
+  complete activated generation with the replay-computed fence and mappings.
 - AC-9 (proof 9 — no client-local path, full inventory). Given the Electron and
   iOS builds, When each label-writer seam listed in REQ-F3 is inspected and
   exercised (admission, tombstone/relabel, provider bootstrap/`topology.apply`,
@@ -940,21 +1184,26 @@ from observed output.
   both clients (the freed low number is reused before a higher one). The test
   FAILS if iOS assigns a monotonically increasing number instead of the lowest
   free. (INV-11, REQ-G1; review B-10.)
-- AC-11 (fleet acceptance run). Given at least two clients with distinct
-  `authorityId`s against one allocator, When windows are created and restored
-  concurrently and the allocator and both clients are restarted, Then inspecting
-  the rendered overlays and the authoritative list output shows no two live
-  surfaces with the same window label and no unlabeled surface that is
-  addressable. The run is red if either condition is violated. (INV-2, INV-8;
-  design artifact "Required proof" final paragraph.)
+- AC-11 (fleet acceptance run). Given two real client authorities against one
+  resident allocator and real custody, including colliding `surfaceId`s and one
+  cloned profile, When windows are created/restored concurrently, clients and
+  allocator restart, and one writer is fenced, Then rendered overlays and the
+  authoritative list contain no duplicate label and no unlabeled addressable
+  surface. The run is red on either condition.
 
-Fixture honesty: AC-1, AC-2, AC-6, AC-8c, AC-8d, and AC-11 MUST run against a
-real allocator process and real client authorities, not a hand-written fixture,
-because a fabricated "all-unique" fixture would pass while shipping the exact
-broken behavior this work removes (requirement "How it was lost": no test
-asserted the property, so every soak passed). AC-1 is the single mandatory test
-called out in the requirement, and r3 strengthens it to include colliding
-client-local `surfaceId`s (A-6).
+Fixture honesty: AC-1, AC-1b, AC-2, AC-6, AC-8, AC-8b, AC-8c, AC-8d, AC-8e,
+and AC-11 MUST run against a real allocator process and the selected real custody
+adapter, with real client authorities where the check names clients. They do not
+use a hand-written allocator or custody fixture. A fabricated "all-unique"
+fixture would pass while shipping the exact broken behavior this work removes
+(requirement "How it was lost": no test asserted the property, so every soak
+passed). AC-1 is the single mandatory test called out in the requirement. r4
+includes colliding client-local `surfaceId`s, real copied client state,
+byte-identical two-host allocator state, and storage fault injection at every
+specified transition.
+
+Agent operating pattern: none. This specification defines product and operator
+behavior; it does not teach a new agent operating pattern.
 
 ---
 
@@ -965,17 +1214,16 @@ around it). The settled inputs decide the load-bearing choices; the questions
 below are the residue the inputs left open.
 
 - OQ-1 (NON-BLOCKING). **Backoff bounds and rate-limit thresholds.** The client
-  retry backoff bounds (initial, max, jitter) and the allocator `rate_limited`
-  threshold are not fixed by the inputs. Build with sensible bounded values
-  (for example initial 0.5 s, cap 30 s, full jitter) and expose them as
-  configuration. These bound waiting, not an outcome, so they do not gate
-  correctness.
+  uses full-jitter exponential retry with base 500 ms and cap 30 s. The
+  allocator default rate limit is 100 claim-family requests per connection per
+  second; both values are explicit configuration. Future tuning is non-blocking
+  because it changes availability, not an allocation outcome.
 - OQ-2 (NON-BLOCKING). **`stateVersion` starting value and upgrade path.** v1
   starts at `stateVersion = 1`. A future schema change adds a versioned migration
-  on load; v1 need only reject unsupported versions (REQ-D4). No cross-version
+  on load; v1 need only reject unsupported versions (REQ-D6). No cross-version
   migration is in v1 scope.
 - OQ-3 (NON-BLOCKING). **Allocator authentication/authorization on the WS link.**
-  v1 runs on the trusted fleet network (normally Tailscale) with no WSS (G-N9)
+  v1 runs on the configured trusted fleet network with no WSS (G-N9)
   and no claim authentication (G-N10); the `authorityId` is a distinguishing key,
   not a credential. Whether to add a shared-secret or WSS profile is a later
   hardening decision, out of v1 scope. Do not add it without an operator ruling.
@@ -985,14 +1233,11 @@ below are the residue the inputs left open.
   label (INV-3, G-N4). Whether a future version reclaims labels of long-dead
   surfaces is deferred; it needs its own no-ambiguity ruling because reuse can
   reintroduce a duplicate a user still has in mind. Not in v1 scope.
-- OQ-5 (BLOCKING for the coordinator-selection step only, not for allocator or
-  client code). **Which host is the fleet coordinator, its allocator URL, and the
-  `fleetId` value.** The design fixes the *shape* (one configured always-on
-  coordinator, normally the OpenClaw gateway host) but the concrete host, URL,
-  and `fleetId` are operator configuration values. Allocator and client code
-  build against configuration (REQ-A2, REQ-A3, REQ-A4) with no default; only the
-  deployment/config step waits on the operator naming them. This does not block
-  writing or reviewing the code.
+- OQ-5 (BLOCKING for deployment only, not code). **Coordinator and custody
+  values.** The operator must name the coordinator host, allocator URL,
+  `fleetId`, custody backend/URL, and independent transaction-journal location.
+  Code builds against the exact behavioral contract in A-3 and D-D with no
+  default backend or endpoint. Deployment waits for these values.
 - OQ-6 (NON-BLOCKING). **Does the iOS pane-lowest-free correction (INV-11,
   REQ-G1) ride this card or a separate card?** The required end-state is
   lowest-free on both clients regardless; this is a card-routing question for the
@@ -1008,74 +1253,41 @@ does not fill it with an assumption.
 
 ---
 
-## Review response (r3)
+## Review response (r4)
 
-How each blocking finding of `art_99b70bbc` is closed. Per the subtraction
-ratchet, each closure names why DELETE and ACCEPT lost when it chose ADD.
+r4 preserves the r3 clauses that review found closed and changes only the six
+blocking areas in `art_55b97955`.
 
-- **B-01 (custody / overwritten bytes).** Closed by process: r2's exact bytes are
-  preserved in this workspace at `surf-ace-fleet-window-label-allocator.r2.md`
-  (SHA-256 `137e0e8…`), r1 at `421f7cb…` is recorded in the artifact history, and
-  r3 is authored as a **distinct** file, never overwriting a prior revision's
-  path. Durable custody is a landing in the `tightbeam-specs` git repo (immutable
-  via commit history) — requested below in the handoff; this seat cannot push.
-  (DELETE/ACCEPT n/a: this is a custody-hygiene fix, not a mechanism.)
-- **B-02 (`surfaceId` not fleet-unique).** Closed by ADD: the fleet surface key
-  `(authorityId, surfaceId)` (Terms, A-6, REQ-A5, REQ-B1) plus a residual
-  collision safety net (REQ-B7) and a collision-inclusive AC-1. ADD chosen
-  because DELETE (drop the need for a key) is impossible — an assignment needs a
-  key — and pure ACCEPT (detect collision and darken both surfaces) needlessly
-  makes two legitimately-distinct surfaces unaddressable; the composed key keeps
-  both addressable and distinct. The visible label stays a plain letter (G-N5).
-  The deeper root fix (make `surfaceId` itself globally unique) is left to the
-  owner as it touches identity/migration; noted, not taken, because the composed
-  key closes the safety hole without changing `surfaceId`.
-- **B-03 (cached provenance survives reinit).** Closed by DELETE: new-identity
-  re-initialization is forbidden as a hot recovery path (INV-15, REQ-I1 guard,
-  REQ-I4); the only recovery is same-identity restore. AC-4c proves no new
-  identity can reissue a label while prior provenance may be displayed. DELETE
-  chosen over ADD (an epoch/revocation channel to reach offline clients) because
-  an offline client is by definition unreachable, so no revocation channel can be
-  relied on; removing the dangerous path is both simpler and actually safe.
-- **B-04 (older-backup restore reuses an ordinal).** Closed by ADD: the
-  non-rollback high-water fence (INV-3, INV-13, REQ-B1/B2/D1/D2/D3/D6, REQ-I2/I3,
-  AC-8d), stored outside the restorable generation. ADD chosen because DELETE
-  (forbid restore of older backups) removes the only data-loss recovery, and
-  ACCEPT (allow reuse) reintroduces the prohibited duplicate. The fence makes
-  reuse unrepresentable while permitting restore; a post-backup surface may be
-  relabeled (named, accepted) but never duplicated.
-- **B-05 (persistence unknown outcome erased).** Closed by ADD, reusing an
-  existing repository primitive: the explicit unknown/ambiguous outcome and
-  fail-closed unknown state (INV-5, INV-14, REQ-D5, REQ-D8, error
-  `persistence_outcome_unknown`, AC-8b). ADD chosen because ACCEPT (treat unknown
-  as not-committed) can drop a committed label and, on retry against a
-  half-committed state, risk a second mapping; DELETE (ignore the case) is the
-  bug. This is reuse of `PersistentStateOutcomeUnknownError`/`ambiguous-persistence`,
-  not new machinery.
-- **B-06 (one endpoint ≠ one writer).** Closed by ADD at the make-unrepresentable
-  rung: an exclusive OS single-writer lock (INV-1, REQ-D7) plus a fleet
-  configuration identity (`fleetId`, Terms, REQ-A3/A4) and negative AC-8c. ADD
-  chosen because the property (one writer) cannot be delivered by DELETE or
-  ACCEPT — it needs an enforcement seam; the lock is the highest affordable rung
-  (structural exclusion) over mere convention.
-- **B-07 (envelopes contradict DESIGN §5).** Closed by rewrite to the pinned
-  envelope: REQ-C1/C2/C3 now carry `v`, `type`, `op`, `id`, `sentAt`, and
-  `payload`/`error` with `ok`; REQ-C4/C5 add `invalid_request_id_reuse` (§5.3.4);
-  a schema delta adds `label.claim` to the op enums. (Conformance fix, no
-  mechanism choice.)
-- **B-08 (unaddressable boundary not decidable).** Closed by the concrete
-  operation matrix and the projection schema delta in REQ-C7 (exact ALLOWED vs
-  REJECTED ops, `windowLabel`/`addressable` fields on `SurfacesListResponse`) and
-  the positive inspection/recovery path; AC-5 exercises the matrix. The deletion
-  test now answers YES per op.
-- **B-09 (migration misses writers).** Closed by the full seam inventory in
-  REQ-F3 (Electron admission, tombstone, provider bootstrap/`topology.apply`,
-  ws-server provider `topology.apply.windowLabel`; iOS open, tombstone, runtime
-  restore) with provider/topology `windowLabel` demoted to a checked echo; AC-9
-  verifies each seam. (Completeness fix.)
-- **B-10 (pane labels not lowest-free on iOS).** Closed by scoping the bounded
-  iOS correction to lowest-free (INV-11, REQ-G1, AC-10) and removing the false
-  "unchanged on both" claim; the card-routing question is OQ-6. Authorized by the
-  settled requirement doc, which names lowest-free as required — the iOS monotonic
-  counter is a demonstrated bug against it, so the correction cites live
-  authority, not tidiness.
+- **R3-01 (copied/colliding authority ownership).** Closed by the
+  per-authority, per-installation owner anchor, allocator binding, fail-closed rekey seam,
+  exact wire shapes, atomic client projection transition, and real clone plus
+  forced-collision AC-1b. ADD won because an assignment still needs identity;
+  DELETE would remove addressability, while ACCEPT would allow one key to denote
+  two physical authorities.
+- **R3-02 (two-record fence atomicity and recovery).** Closed by one explicit
+  custody transaction state machine. `nextOrdinalFence` has one meaning: lowest
+  never-reserved ordinal. The D3 table covers clear and unknown reserve/mapping
+  outcomes; D4 covers each crash boundary; D7 resolves only by transaction id;
+  D8/I2 give the fence independent recoverable custody. ADD won because DELETE
+  would remove old-backup recovery and ACCEPT would permit ordinal reuse.
+- **R3-03 (copied-state split brain).** Closed at the structural rung by a
+  host-wide fleet lock plus a fleet-wide linearizable custody writer token that
+  fences stale processes on every mutation. AC-8c starts byte-identical copies
+  on two paths and two hosts, then proves only one can commit. This is not leader
+  election: the endpoint is operator-configured and custody admits one writer.
+  ADD won because neither deleting enforcement nor accepting two writers can
+  satisfy the core invariant.
+- **R3-04 (old-backup provenance and immutable assignment).** Closed by exact
+  `label.reconfirm` request/response, recovery admission rules, and the
+  null/false to old-label/true client transition. A missing post-backup mapping
+  is reconstructed from the independent journal before atomic restore activation
+  or the fleet fails closed; the client never supplies mapping authority.
+  Relabeling was deleted because it contradicted immutable assignment.
+- **R3-05 (closed ErrorBody).** Closed by retaining only `code`, `message`, and
+  optional `details`, moving allocator identity to `details`, and enumerating
+  the complete op/code delta. AC-5b validates each envelope.
+- **R3-06 (operation and projection completeness).** Closed by the full public
+  and lockless request matrix, including every operation named by the finding,
+  plus the pinned label-bearing protocol, client, UI, tool, diagnostic, log,
+  event, tombstone, and backup projections. AC-5 exercises each row. No new
+  operation mechanism was added; the change classifies existing surfaces.
