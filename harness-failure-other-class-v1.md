@@ -98,9 +98,10 @@ interpret the description or mint the class.
 - **Action sink**: one exact module, function, and arity tuple in the closed
   ARC-06 action-sink vocabulary. A sink writes a turn or wake, starts a harness
   prompt, sends an ACP request, or crosses a command edge.
-- **Non-prod sink exclusion**: one compiler-visible ARC-06 manifest entry for an
-  exact production call site that reaches an action sink for a closed non-prod
-  reason. It is not permission to exclude a prod-shaped consumer.
+- **Non-prod sink exclusion**: one ARC-06 manifest entry for an exact production
+  call site, one closed non-prod reason, and one closed proof shape. The compiler
+  trace and the runtime proof check must both accept it. It is not permission to
+  exclude a prod-shaped consumer.
 - **Recovery-condition digest**: lowercase hexadecimal SHA-256 of the exact
   UTF-8 bytes of the normalized recovery condition stored by admission.
 - **Living authority**: the first active ancestor of the source session under
@@ -470,10 +471,11 @@ vocabulary on both lines. It contains exactly these tuples:
 ```text
 {turn,            Tightbeam.Ledger,       enqueue_in_txn, 2}
 {wake,            Tightbeam.Wakes,        schedule_in_txn, 2}
-{prompt,          Tightbeam.ACP.Adapter,  prompt,          3}
-{prompt,          Tightbeam.ACP.Adapter,  prompt,          4}
-{acp_request,     Tightbeam.ACP.Conn,     request,         3}
-{acp_request,     Tightbeam.ACP.Conn,     request,         4}
+{wake,            Tightbeam.Wakes,        retarget_in_txn, 3}
+{prompt,          Tightbeam.Acp.Adapter,  prompt,          3}
+{prompt,          Tightbeam.Acp.Adapter,  prompt,          4}
+{acp_request,     Tightbeam.Acp.Conn,     request,         3}
+{acp_request,     Tightbeam.Acp.Conn,     request,         4}
 {command_signal,  Tightbeam.CommandEdge,  signal,          2}
 {command_job,     Tightbeam.CommandEdge,  job,             2}
 {command_request, Tightbeam.CommandEdge,  request,         4}
@@ -481,7 +483,7 @@ vocabulary on both lines. It contains exactly these tuples:
 
 The build gate verifies that each tuple resolves to an exported function on its
 line. It also rejects a direct `turns` or `wakes` insert outside the named row
-sink, a `session/prompt` ACP request outside `Tightbeam.ACP.Adapter`, and a
+sink, a `session/prompt` ACP request outside `Tightbeam.Acp.Adapter`, and a
 command-edge dispatch outside the three named command-edge sinks. Adding,
 removing, renaming, or changing the arity of an action sink requires a canonical
 spec amendment and a new exact-revision review.
@@ -503,20 +505,63 @@ from the caller to that sink tuple. It also emits every root-reachable call to
 
 Each emitted sink call must have a traced path through
 `prod_shape_act_in_txn/6`, or it must match one exact entry in
-`Supervision.non_prod_shape_sink_calls/0`. An exclusion entry adds one final
-reason field. The closed reasons and their predicates are:
+`Supervision.non_prod_shape_sink_calls/0`. Each exclusion entry is the emitted
+eight-field call-site tuple followed by `reason` and `proof`. The closed proof
+shapes are:
 
-- `interactive_user_request`: the path begins at an authenticated inbound verb
-  and is unreachable from every supervision callback and turn-end root;
-- `durable_row_delivery`: the path delivers one turn or wake row committed
-  before this invocation and creates no replacement action row;
-- `lifecycle_notification`: the path carries one committed lifecycle, review,
-  or decision row id and does not select work by age, idle state, or terminal
-  state; or
-- `adapter_session_maintenance`: the ACP method is exactly `initialize`,
-  `session/close`, `session/fork`, `session/load`, `session/new`,
-  `session/set_config_option`, or `session/set_mode`, and the request contains
-  no prompt.
+```text
+interactive_user_request    {principalArgOrdinal, inboundModule, inboundFunction, inboundArity}
+durable_row_delivery        {turn|wake, committedRowId}
+lifecycle_notification      {assignment|review|decision, committedRowId}
+adapter_session_maintenance {literalMethod}
+```
+
+Each excluded caller invokes
+`HarnessHealth.verify_non_prod_sink_in_txn/4` immediately before the sink in the
+same branch. It passes `txn`, `reason`, `proof`, and the existing authenticated
+call or sink request. The verifier returns a single-use proof token. The caller
+passes that token, the manifest's literal sink tuple, and a zero-arity callback
+to `HarnessHealth.non_prod_sink_call/3`. The callback contains exactly the one
+sink call named by the tuple. `non_prod_sink_call/3` consumes the token before it
+invokes the callback once. A branch, return, nested callback, or second sink in
+the callback fails the build gate. A caller cannot store or return a proof token.
+The token binds the transaction, reason, proof, call-site tuple, and callback.
+
+The compiler gate reads the manifest literal, the compiler trace, and the quoted
+AST of the named caller. It applies these deterministic rules:
+
+- `interactive_user_request` requires `principalArgOrdinal` to select the typed
+  `{:user,id}` or `{:session,id}` principal in the existing authenticated call.
+  The runtime verifier rejects a missing, process, remedy, or malformed
+  principal. The compiler trace requires the named inbound MFA to be the first
+  root of the call path and requires the selected principal to data-flow
+  unchanged from that root's call argument to the verifier. The trace also
+  requires the excluded caller to be unreachable from each supervision callback
+  and turn-end root.
+- `durable_row_delivery` requires a `turn` or `wake` row id. The runtime verifier
+  reads it through a separate read-only database connection, so an uncommitted
+  row is invisible. It matches the row kind to the proof. The compiler trace
+  requires the path from the excluded caller through the sink to contain no
+  `enqueue_in_txn/2`, `schedule_in_txn/2`, or `retarget_in_txn/3` call other than
+  the sink named by the entry. The named sink cannot itself be one of those
+  three row writers.
+- `lifecycle_notification` requires one committed assignment, review, or
+  decision row id. The runtime verifier reads that exact row through a separate
+  read-only database connection and matches its table kind to the proof. The
+  compiler trace requires the row id at the verifier to data-flow unchanged from
+  an argument of the excluded caller. It also requires the caller to be
+  unreachable from each supervision callback and turn-end root.
+- `adapter_session_maintenance` requires `literalMethod` to be exactly
+  `initialize`, `session/close`, `session/fork`, `session/load`, `session/new`,
+  `session/set_config_option`, or `session/set_mode`. The compiler gate requires
+  that literal at the ACP request call. The runtime verifier recursively rejects
+  a request map or list that contains a `prompt` key or field.
+
+The runtime verifier and `non_prod_sink_call/3` write no row. They return
+`invalid_non_prod_exclusion` before the sink when a principal, delivered row,
+notification row, row kind, method, prompt-absence, token-binding, or token-use
+check fails. The compiler gate returns the same refusal when the manifest shape,
+control flow, literal, reachability, or data-flow rule fails.
 
 The gate fails `unmediated_prod_shape_action` for an unclassified sink call. It
 fails `invalid_non_prod_exclusion` for an unknown reason, a predicate mismatch,
@@ -530,13 +575,19 @@ rejects a production call from outside `HarnessHealth` to
 
 A fixture module added to the turn-end schedule that calls the action seam
 without a consumer entry must add one tracer tuple and fail exact set equality.
-One fixture for each of the nine sink tuples must call that sink outside the
+One fixture for each of the ten sink tuples must call that sink outside the
 action seam without an exclusion and fail `unmediated_prod_shape_action`. One
 fixture for each non-prod reason must satisfy its predicate and remain outside
-the harness pause. A stale entry, duplicate entry, unknown reason, predicate
-mismatch, and attempted exclusion of a manifested consumer must each fail with
-the declared refusal. These compiler-derived calls and exact manifests, not a
-hand-maintained scan target, discover a new action call before classification.
+the harness pause. Each reason also has one runtime proof failure fixture and
+one compiler proof failure fixture. The compiler failures cover a forged inbound
+root, a row-writer delivery path, a changed notification row id, a prod-root
+notification path, a non-literal maintenance method, and an intervening branch.
+The runtime failures cover a missing or uncommitted row, a row-kind mismatch, an
+inbound-MFA mismatch, a disallowed maintenance method, and a nested prompt
+field. A stale entry, duplicate entry, unknown reason, attempted exclusion of a
+manifested consumer, or proof failure returns the declared refusal. These
+compiler-derived calls, proof checks, and exact manifests discover a new action
+call before classification.
 
 An authorized `harness-health-resolve-other` mutation requires `incidentId`,
 `observedState`, `exactProbe`, `outputDigest`, `recoveryConditionDigest`,
@@ -782,14 +833,15 @@ incidents.
     fixtures refuse before supervision starts.
 19. **OTH-AC-19 — Authoritative consumer discovery.** Given the prodder, session
     garbage collector, both exact manifests, and compiler tracer on each line,
-    when the static gate compiles every production `.ex` file, then the nine
+    when the static gate compiles every production `.ex` file, then the ten
     action-sink tuples match ARC-06, the sorted seam caller set matches
     `prod_shape_consumers/0`, and each emitted sink call passes through the seam
-    or matches one valid non-prod exclusion. Every manifested caller uses only
-    `prod_shape_act_in_txn/6` and contains no direct harness-health,
-    condition-fact, adapter, process, or harness-up predicate. Run every ARC-06
-    positive and negative fixture on `0.1.9` and main. Each refusal code and the
-    legitimate non-prod no-pause result must match across the two lines.
+    or matches one valid non-prod exclusion whose compiler and runtime proofs
+    both pass. Every manifested caller uses only `prod_shape_act_in_txn/6` and
+    contains no direct harness-health, condition-fact, adapter, process, or
+    harness-up predicate. Run every ARC-06 positive and negative fixture on
+    `0.1.9` and main. Each proof result, refusal code, and legitimate non-prod
+    no-pause result must match across the two lines.
 20. **OTH-AC-20 — Quiet-path silence and observability.** Given no active
     incident, repeated gate calls write nothing. Given one denied candidate,
     repeated identical calls produce one redacted suppression event. Given an
