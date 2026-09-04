@@ -97,9 +97,10 @@ mistake this document for permission to build.
 1. **Not a redesign of decision requests.** The `statute`, `effort`, and
    `operator` arms keep their current shapes, kinds, and lifecycles. Two
    authorization predicates change, the same one-clause query filter is deleted
-   in two places, and one rail fact stops discarding rows. Nothing else. In
-   particular no new sweep, scheduler, timer, daemon, or background pass is
-   built; R4 uses a sweep and a trigger that already exist (A13).
+   in two places, one rail fact stops discarding rows, and that rail's `text`
+   string is corrected to describe itself truthfully afterwards (R6). Nothing
+   else. In particular no new sweep, scheduler, timer, daemon, or background pass
+   is built; R4 uses a sweep and a trigger that already exist (A13).
 2. **No new notification surface, dashboard, digest, or queue view.** Nothing in
    this document displays decision requests to anyone.
 3. **No new receipt kind, verdict kind, attest kind, or decision request kind.**
@@ -174,7 +175,9 @@ assignment. That other assignment is its **producing card**.
 **Review-conclusion verdict.** A holder-filed verdict on a review card whose
 kind is drawn from the closed set {`reviewed-clean`, `changes-requested`}: the
 two kinds that state what a review round CONCLUDED about the producing card. The
-verdict vocabulary as a whole is open text; this set is not. Holder-filed
+verdict vocabulary as a whole is open text; this set is closed, and it is closed
+because the rail fact's definition names it, never because storage constrains it
+(A7). Holder-filed
 verdicts of any other kind observed on review cards in the live data —
 `verified`, `merged`, `release-approved`, `tests-passed`, `spirit-approved`,
 `spec-reviewed`, `spirit-reviewed`, `no-landing`, `work-blocked`, `pass` — say
@@ -392,12 +395,26 @@ holder-filed `reviewed-clean` verdicts on `--reviews`-linked cards held by a
 session other than the producing card's holder. R6 does not enlarge that set of
 row shapes by one. It stops unrelated rows from concealing members of it.
 
-**I7. A correction to a rail may not reduce what the rail refuses.** Every case
-`completion-requires-review` denies today, other than the cases R6 names as false
-positives, it must still deny after R6. The independence guard, the effect-kind
-scope, and the retraction of a clean by a later `changes-requested` are all
-preserved exactly. A rail is corrected by making it silent when satisfied, never
-by making it quieter when unsatisfied.
+**I7. A correction to a rail may not reduce what the rail refuses.** A rail is
+corrected by making it silent when satisfied, never by making it quieter when
+unsatisfied.
+
+Stated so that it can be decided rather than argued: exactly one class of case
+may change from denied to allowed, and it is defined by the corrected predicate
+itself, not by the two causes R6 narrates. A case may change if and only if the
+most recent holder-filed review-conclusion verdict across all of the producing
+card's linked review cards is `reviewed-clean` and sits on a card held by another
+session. Every other case the rail denies today it must still deny. "R6 names it
+as a false positive" is not a licence a builder may extend; the sentence above is
+the whole of the exception, and anything else that stops denying is a regression
+however well it is argued.
+
+Three consequences are worth naming because each is a place a plausible
+implementation would drift: the effect-kind scope is untouched (AC-14); a later
+`changes-requested` still retracts an earlier clean, across cards as well as
+within one (AC-12); and a self-held latest round still disqualifies past an
+earlier independent clean (AC-20), which is the third collapse R6 deliberately
+keeps.
 
 **I8. A holder never answers its own effort check-in.** The check-in asks
 whether the holder produced effect. Admitting the holder as an answerer destroys
@@ -445,15 +462,43 @@ does three things, and two of them are wrong:
 
 Each collapse hides a `reviewed-clean` that is on the record.
 
-**The corrected predicate.** Across ALL of the producing card's
-`--reviews`-linked review cards held by a session other than the producing card's
-holder, consider only holder-filed REVIEW-CONCLUSION verdicts as Terms defines
-them. Take the single most recent such verdict across that whole set. The
-producing card qualifies if and only if that verdict's kind is `reviewed-clean`.
+**The corrected predicate.** Consider every holder-filed REVIEW-CONCLUSION
+verdict, as Terms defines that set (A7), on every one of the producing card's
+`--reviews`-linked review cards. Order that pool by the verdict row's own recency
+— the same order the fact already uses, `ts` descending then `rowid` descending,
+so that two verdicts filed in the same millisecond still have exactly one winner.
+Take the single most recent verdict in the pool. The producing card qualifies if
+and only if that verdict's kind is `reviewed-clean` AND the card it sits on is
+held by a session other than the producing card's holder.
+
+Read in that order, and only in that order. The independence test applies to the
+winning verdict, exactly where it applies today; it is NOT a filter that removes
+self-held cards from the pool before the winner is chosen. The difference is not
+cosmetic and it is the subject of the preserved behaviour named below.
 
 A holder-filed verdict whose kind is outside the review-conclusion set is
 ignored by this fact: it neither qualifies a card nor retracts a qualification.
-It was never a statement about the reviewed work.
+It was never a statement about the reviewed work. If the pool is empty — no
+linked review card carries any holder-filed review-conclusion verdict at all, as
+when every one of them carries only `verified` — then there is no winner, the
+fact yields nothing, and the rail denies exactly as it does today.
+
+**The fact's return contract does not change.** Today
+`assignment.qualifying_review_verdict_kinds` returns either the single-element
+list `["reviewed-clean"]` or the empty list, and the rule tests it with
+`not_in ["reviewed-clean"]`. After R6 it returns the same two values, under the
+corrected reading. A builder who changes the fact to return the winning kind
+whatever it is, or a boolean, has changed the rule's contract and will find
+itself editing `deny_when`, which Non-Goal 6 forbids.
+
+**One computation, not two.** The winning verdict and the holder it is tested
+against must be read from the same row. The fact already works this way
+deliberately, because reopening lets one review card carry several verdicts over
+its life, so "which verdict wins" and "whose card is it on" cannot be two
+separately-derived answers that have to agree by luck. Pooling across cards makes
+that temptation stronger, not weaker: a builder who computes the winning verdict
+in one query and the qualifying cards in another has reintroduced the defect a
+previous review of this fact already removed.
 
 **Kind collapse, measured.** Ten review cards in the live database carry the
 holder-filed sequence `reviewed-clean -> verified` as their complete verdict
@@ -479,6 +524,25 @@ The fourth, `asg_e526fd86`, carries a single `release-approved` and is the most
 recent. The rail read the fourth card only, saw a kind that is not
 `reviewed-clean`, and denied a card with three independent clean reviews and a
 release approval on it.
+
+**A third collapse exists and R6 deliberately does NOT remove it.** The fact's
+card selection today ignores who holds the card, and applies the independence
+test only to whichever card won. So a review card held by the producing card's
+own holder, carrying the most recent verdict, wins the selection and then fails
+independence, and the producing card is denied even though an earlier
+independent round concluded `reviewed-clean`. That behaviour is deliberate: the
+fact's own documentation states it as a rule, that a self-held latest round
+still disqualifies so a holder cannot launder its own verdict past an earlier
+independent one, and it was written that way in response to a previous review of
+this fact.
+
+It looks like a third false positive and it is not one. Removing it would let a
+producing card's holder resurrect a stale independent clean by filing a verdict
+on a card it holds itself, which is the laundering the guard exists to stop. It
+is also a change to observable behaviour that nothing in this document's
+authority asks for, and I7 forbids it. R6 removes the card collapse and the kind
+collapse. It leaves this one exactly as it is, and the ordering stated in the
+corrected predicate is what preserves it. AC-20 pins it.
 
 **The size of this defect, stated honestly.** Over the thirty days to 2026-09-04
 `completion-requires-review` denied 1,036 times across 820 distinct cards. Of the
@@ -524,8 +588,18 @@ The subtraction test, applied to R6:
   rail that refuses reviewed work about eight times a month, each refusal
   landing on the owner's desk as a decision request. That is the manufactured
   paperwork the authority names. Acceptance loses.
-- *Add?* Nothing is added. Two collapses are removed from a query. The rule file
-  is untouched; `deny_when` keeps the same three clauses and the same fact name.
+- *Add?* Nothing is added. Two collapses are removed from a query. `deny_when`
+  keeps the same three clauses, the same fact name, and the same values, and the
+  fact keeps its return contract, so no rule logic is edited.
+
+One string in the rule file does have to change, and it is not logic. The rule's
+`text` — the sentence a denied agent reads — currently says completion "needs
+exactly one `--reviews`-linked card held by a different session whose latest
+holder-filed verdict is reviewed-clean". That sentence describes both collapses
+verbatim, and after R6 it would describe the rail wrongly to the one reader who
+most needs it right: the agent that was just refused. Correct it to state the
+corrected predicate. A rail that misdescribes itself is what sends a lane looking
+for someone to ask, which is the paperwork this document exists to stop.
 
 ### R7 — `effort-rule` admits the escalation lineage, not only the rung the clock has reached
 
@@ -1131,10 +1205,29 @@ invalid-action error; and WHEN that member invokes any ordinary power from the
 request's menu, THEN that power's own handler authorizes it independently and R7
 grants it nothing. R7 changes one clause of one authorization predicate.
 
+**AC-20 (I7, the third collapse stays).** GIVEN a producing card with two
+`--reviews`-linked review cards, an earlier one held by another session whose
+holder filed `reviewed-clean`, and a later one held by the producing card's own
+holder whose holder filed `reviewed-clean` after it, WHEN the producing card's
+holder attests completion, THEN `completion-requires-review` denies it. This
+check is green today and must stay green after R6. It is the anti-laundering
+behaviour R6 deliberately preserves, and it is the check that fails if a builder
+filters self-held cards out of the pool before choosing the winning verdict
+instead of testing independence on the winner.
+
+**AC-21 (R6, the empty pool).** GIVEN a producing card with one
+`--reviews`-linked review card held by another session, whose holder's only
+verdict is `verified` and which carries no review-conclusion verdict at all,
+WHEN the producing card's holder attests completion, THEN
+`completion-requires-review` denies it. This check is green today and must stay
+green after R6. R6 makes the rail read conclusions it already has; it invents
+none where there are none.
+
 ## Open Questions
 
-**OQ-1. BLOCKING, for one requirement this document does not state.**
-Whether hardening the operator RULING path is in scope for this work item.
+**OQ-1. BLOCKING, for one requirement this document does not state. Blocks
+nothing this document specifies.** Whether hardening the operator RULING path is
+in scope for this work item.
 
 While verifying I1 against the source, the ruling authorization was found not to
 hold as written on either the mainline or the released line: the owner-user
@@ -1153,9 +1246,12 @@ not be.
 
 Why it is BLOCKING and why it blocks nothing else: I1 is the invariant this
 document promises, and a promise resting on an unenforced guard is a promise
-this document cannot make honestly. But the retraction widening in R1 through R4
-does not depend on it. Retraction records no decision, so widening it neither
-uses nor worsens the ruling path. **R1 through R5 may be built now.** What is
+this document cannot make honestly. But nothing specified here depends on it.
+The retraction widening in R1 through R4 records no decision, so widening it
+neither uses nor worsens the ruling path; R5 is prose; R6 is a completion rail
+and touches the decision request subsystem nowhere; and R7 is the `effort` arm,
+which I1 does not govern and which reaches no `operator` row. **Every
+requirement in this document — R1 through R7 — may be built now.** What is
 blocked is only the additional requirement that would state the ruling guard
 precisely, which is not written here because writing it without a ruling would
 be this document deciding its own scope. The owner, or the recovery owner under
