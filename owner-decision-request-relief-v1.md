@@ -96,8 +96,10 @@ mistake this document for permission to build.
 
 1. **Not a redesign of decision requests.** The `statute`, `effort`, and
    `operator` arms keep their current shapes, kinds, and lifecycles. Two
-   authorization predicates change, one query filter is deleted, one trigger key
-   moves, and one rail fact stops discarding rows. Nothing else.
+   authorization predicates change, the same one-clause query filter is deleted
+   in two places, and one rail fact stops discarding rows. Nothing else. In
+   particular no new sweep, scheduler, timer, daemon, or background pass is
+   built; R4 uses a sweep and a trigger that already exist (A13).
 2. **No new notification surface, dashboard, digest, or queue view.** Nothing in
    this document displays decision requests to anyone.
 3. **No new receipt kind, verdict kind, attest kind, or decision request kind.**
@@ -106,8 +108,10 @@ mistake this document for permission to build.
    bookkeeping or a real owner decision. Section "Q5" explains why that is a
    refusal rather than an omission.
 5. **Not a widening of who may RULE an operator request.** Ruling authority is
-   unchanged and, in one respect noted in Open Questions, is to be tightened
-   rather than relaxed. Separately, R7 does not widen who may answer an effort
+   unchanged by every requirement in this document. Whether it should separately
+   be TIGHTENED is an open question (OQ-1) that this document does not answer and
+   does not authorize anyone to answer by building; nothing here may be read as
+   an instruction to change `operator-rule`. Separately, R7 does not widen who may answer an effort
    check-in beyond the lineage the substrate itself already walks, and it admits
    no principal the substrate has not already selected as an expecter at some
    rung.
@@ -296,6 +300,42 @@ own keystrokes in this channel. The upper bound on rulings that required a user
 principal is the 378 whose expecter was a user, and even that is an upper bound
 rather than a count, because the identity flag is available to an agent.
 
+**A13.** The state-keyed retired-raiser sweep that R4 requires ALREADY EXISTS.
+`Escalation.recover_retired/1` (`lib/tightbeam/escalation.ex:1622`) selects
+sessions in the retired state that still have open decision requests, and calls
+`withdraw_for_retired/2` on each. It is documented as the boot backstop for
+retirement casts lost across a crash, and `lib/tightbeam/boot.ex:53` calls it on
+every gateway boot. Its candidate query carries the SAME `kind != 'operator'`
+exclusion as `withdraw_for_retired/2` itself. So the sweep, its state key, and
+its trigger are all built; only the exclusion stops it working. Verified in
+source, 2026-09-04. This assumption is what collapses R4 from a mechanism to a
+deletion.
+
+**A14.** `withdraw_for_retired/2` carries a SECOND filter beside the kind
+exclusion: it rejects any request whose `context.verb` is `cannot-proceed`, with
+the stated reason that retirement is neither an exact assignment disposition nor
+an exact release fact. That carve-out is deliberate and is not a defect. No row
+in the live database sets `context.verb` at all — all 6,563 rows across both live
+kinds read NULL — so it fires on nothing today, and deleting the kind exclusion
+does reach operator rows. Verified in source and against the live database,
+read only.
+
+**A15.** Nothing outside the decision request subsystem gates on a request being
+open. No rail fact reads `decision_requests`: the fact list in
+`lib/tightbeam/rules.ex` contains no decision-request fact. The only consumer of
+the open set elsewhere in the tree is a count summed into the execution map
+projection (`lib/tightbeam/execution_map.ex:519`), which displays and authorizes
+nothing. Verified in source, 2026-09-04. This assumption is what makes I2 a
+checked claim rather than an assertion.
+
+**A16.** Operator request populations by the opener of their subject card, over
+all 630 rows in the live database: 349 have an opener session in the active
+state, 127 have an opener session that is now retired, 106 are on cards the owner
+opened himself, and 48 have no subject card. Opener state is measured now, not as
+of the moment each request was open, so the 127 measures how often an opener has
+since retired rather than a count of retractions that would have failed.
+Verified against the live database, read only.
+
 ## Invariants
 
 **I1. Nothing specified here lets an agent rule a decision that is genuinely the
@@ -308,13 +348,24 @@ requirement is narrowed rather than the invariant. If a future reader finds a
 conflict between this invariant and any other sentence in this file, this
 invariant wins and the other sentence is the defect.
 
-**I2. Retraction confers no permission.** Retracting a request removes the
-question and authorizes nothing. If the retracted question was genuinely the
-owner's, the work it gated is still not authorized to proceed, and the agent
-that retracted has gained nothing by retracting. This is what makes widening
-retraction safe where widening ruling would not be. An agent that retracts a
-real owner question has not stolen a decision; it has only lost its own place in
-the queue, and must raise again.
+**I2. Retraction removes a question, never a gate.** Retracting a request
+authorizes nothing. If the retracted question was genuinely the owner's, the work
+it gated is still not authorized to proceed, and the agent that retracted has
+gained nothing by retracting. This is what makes widening retraction safe where
+widening ruling would not be. An agent that retracts a real owner question has
+not stolen a decision; it has only lost its own place in the queue, and must
+raise again.
+
+This is a checked claim, not a hopeful one, and it is checked in the only way
+that would falsify it: by asking what else in the substrate reads the open set.
+If the EXISTENCE of an open operator request gated anything, then retracting one
+would remove that gate, and every widening below would be a bypass wearing a
+different verb. It gates nothing. No rail fact reads `decision_requests` at all,
+and the single consumer of the open set outside the request subsystem is a count
+in a projection that displays and authorizes nothing (A15). Retraction therefore
+changes what a viewer sees and what nobody may do. A future change that makes an
+open request gate anything breaks this invariant and must revisit R1 through R4
+before it lands.
 
 **I3. An agent-authored ruling is unrepresentable, not merely forbidden.** The
 storage constraint already refuses any `ruled` row whose `ruledBy` is not the
@@ -508,6 +559,14 @@ lineage, as Terms defines that set: computed from the assignment by the same wal
 never read from the row's current expecter columns. The user clause is unchanged.
 The authorized actions remain exactly `continue` and `dismiss`.
 
+R7 may read, call, or extract the walk `route_session/5` already performs in
+order to enumerate that set, including lifting it into a shared function that
+both the selector and the membership test call. What it must not do is change the
+principal `route_session/5` selects for `advance_expecter/2`, which is the
+behaviour Non-Goal 8 protects. Enumerating a chain and picking one member of it
+are the same walk read two ways; R7 adds the first reading and leaves the second
+identical.
+
 Everything else stays where it is. `advance_expecter/2` still walks on deadline.
 The deadline is still 24 hours. The notification still goes to the current
 expecter. `menu_in_txn/3` still computes the ordinary-power menu for the current
@@ -576,6 +635,31 @@ Rejected: a designated adjudicator role. It invents a principal, and per the
 subtraction doctrine a mechanism named after a cognitive act is compensation for
 not having a mind. The opener is a mind, and it is already there.
 
+**The opener can be dead too, and this is the limit of R1.** The authority R1
+derives is perishable in exactly the way the raiser's is: an opener session
+retires like any other. Across the 630 operator requests in the live database,
+349 have an active opener, 127 have an opener that has since retired, 106 are on
+cards the owner opened himself, and 48 have no subject card (A16). Three
+consequences follow, and none of them is worked around:
+
+- On the 106 owner-opened cards R1 adds nothing. Terms resolves the opener of
+  such a card to the owner's own session, and the owner could already retract.
+  R1 is a no-op there by construction, not by oversight.
+- Where the raiser has retired, a dead opener costs nothing, because R3 and R4
+  clear the row on the raiser's retirement without needing any live principal at
+  all. That is the case the authority names, and it is closed.
+- One residual case is left open and is named here rather than hidden: the raiser
+  is alive but cannot run — out of capacity, wedged, or unresponsive — AND the
+  subject card's opener has retired. R3 and R4 do not fire, because the raiser
+  never retired, and R1 admits a principal that cannot act. That row is stranded
+  until the raiser recovers or retires.
+
+R1 removes the single point of failure in the common case; it does not make the
+clearing path immortal, and this document does not claim it does. Closing the
+residual would mean deriving authority from something further up than the opener,
+which is a wider design than the authority permits and is not specified here. It
+is recorded as OQ-7.
+
 ### R2 — a request with no subject card keeps today's authority
 
 Where `assignmentId` is NULL, the authorized set is unchanged: the owner, or the
@@ -594,30 +678,56 @@ withdraws ALL of a retiring session's open decision request rows on that
 session's behalf, withdrawal being the one lawful judgment-free exit every arm
 answers to. Its query then excludes `kind = 'operator'`.
 
-Delete that exclusion. The comment describes the intended behaviour correctly;
-the filter contradicts it.
+Delete that one clause, `AND kind != 'operator'`, from that routine's row query
+(`lib/tightbeam/escalation.ex:1505`). The comment describes the intended
+behaviour correctly; the filter contradicts it. Nothing else in the routine
+changes.
+
+**One thing in that routine must NOT be deleted.** The same query is followed by
+a second filter that rejects any request whose `context.verb` is
+`cannot-proceed`, on the stated ground that retirement is neither an exact
+assignment disposition nor an exact release fact (A14). That carve-out is
+deliberate and correct, and R3 leaves it exactly as it is. R3 deletes the KIND
+exclusion and only the kind exclusion. A builder that reads "delete that
+exclusion" as licence to strip both filters has changed a behaviour this
+document did not authorize changing.
 
 The measured consequence of the contradiction: across the entire live database,
-for every kind, zero rows carry the retirement withdrawal reason. The routine
-has never cleared anything in production, because the org raises operator
-requests and effort requests, effort requests supersede rather than withdraw,
-and operator requests were excluded. The sweep excludes precisely the one kind
-that exists.
+for every kind, zero rows carry the withdrawal reason `raiser-retired` that the
+routine writes. The routine has never cleared anything in production, because the
+org raises exactly two kinds — 5,933 effort rows and 630 operator rows, and no
+others — effort requests supersede rather than withdraw, and operator requests
+were excluded. The sweep excludes precisely the one kind it could have helped.
 
-### R4 — retirement clearing keys on the raiser's state, not only the retirement event
+### R4 — the sweep that already exists stops excluding the same kind
 
-The routine runs from the retirement event alone. A session that retired before
-this change ships is never revisited, so its rows stay open forever with no
-lawful actor.
+R3 alone fixes the future: it fires on the retirement event, so a session that
+retired before it ships is never revisited and its rows stay open forever with no
+lawful actor. Reaching those rows needs a pass keyed on the raiser's recorded
+state rather than on the retirement event.
 
-Key the clearing on the raiser session's recorded state instead, so that an open
-operator request whose raiser is already retired is cleared on the next pass.
-The mechanism must be idempotent: a request already withdrawn, ruled, or
-superseded is left untouched.
+**That pass is already built.** `Escalation.recover_retired/1` selects every
+session in the retired state that still has open decision requests and calls the
+withdrawal routine on each; `boot.ex` calls it on every gateway boot (A13). It is
+the exact mechanism, with the exact state key and a working trigger. Its
+candidate query carries the same `kind != 'operator'` exclusion.
+
+So R4 is one deletion, not a mechanism: **delete `AND dr.kind != 'operator'` from
+`recover_retired/1`'s candidate query** (`lib/tightbeam/escalation.ex:1629`).
+With R3 that makes both halves of the pair the same one-clause subtraction in two
+places.
+
+**Build no sweep.** No scheduler, no timer, no daemon, no periodic pass, no
+migration-time backfill, and no second reconciliation beside the one that exists.
+The trigger is the existing boot call and this document adds none. A builder that
+finds itself writing a new sweep has misread R4 and should re-read A13. The
+idempotence R4 needs is already a property of the routine it reuses: the update
+is guarded on `status = 'open'`, so a request already withdrawn, ruled, or
+superseded is left untouched and no second lifecycle row is written.
 
 R3 and R4 together are the answer to "what happens to a request whose raiser has
-retired". R3 alone fixes the future. R4 is what reaches a row that is already
-stranded.
+retired". R3 fixes the future at the retirement event. R4 reaches a row that is
+already stranded, at the next boot. Neither one adds anything to the substrate.
 
 ### R5 — one guidance paragraph on the raise side
 
@@ -634,8 +744,11 @@ given at Q5.
 ### What the substrate does NOT gain
 
 No new verb. No new column. No new table. No new kind. No new rail. No new rule
-file entry. No exemption, override, or claim. No migration. R1, R3, R4, R6, and
-R7 are edits to existing queries and authorization predicates; R5 is prose.
+file entry. No exemption, override, or claim. No migration. No new sweep,
+scheduler, timer, or background pass. R1, R3, R4, R6, and R7 are edits to
+existing queries and authorization predicates; R5 is prose. R3 and R4 are
+deletions of one clause each, and R4 reuses a sweep and a trigger the substrate
+already has (A13).
 
 ## The five questions
 
@@ -678,13 +791,20 @@ raising, because raising becomes consequence-free.
 
 *Why correcting the predicate is insufficient alone.* R6 removes about eight
 false refusals a month. It does not reach a single request already raised, it
-does nothing for the friction that comes from a rail firing correctly, and it
-leaves the retired-raiser dead end exactly where it is. Fixing a cause never
-clears the effects that already happened.
+does nothing for a rail that refuses correctly — which is not rail friction as
+Terms defines it, since the work is not done and recorded — and it leaves the
+retired-raiser dead end exactly where it is. Fixing a cause never clears the
+effects that already happened.
 
-The order matters and the guidance depends on the substrate change: R5's
-paragraph is only true once R1 exists, because the path it names is the path R1
-creates. Ship R6, R1, R3, R4 first, then R5.
+*What the ordering claim is, exactly.* R5's paragraph is not FALSE before R1
+ships. Every path it names works today for a raiser that can run: raisers
+retracted their own requests on 2026-09-04, openers adjudicated, and the fresh
+review round is the repair Q4 records as already working. R5 is incomplete before
+R1, not untrue: without R1 its advice has nothing to offer the case where the
+raiser cannot run, which is the case that produced this document. Ship R6, R1,
+R3, R4 first, then R5, so the paragraph can name the opener path as well. That is
+a preference about completeness, not a dependency, and R5 shipping early would
+make no sentence in it wrong.
 
 ### Q2. Who may clear one, and what structurally prevents that principal from ruling a decision that is genuinely the owner's?
 
@@ -754,10 +874,13 @@ time they were answered.
 
 So the honest answer to "answer it for the four that already exist, not only for
 future ones" is: **the four cost the owner a hand-clearing session that R3 and R4
-would have prevented, and as of this writing no stranded row remains.** The open
-operator set is three, all with living raisers. R4 is therefore prophylactic
-today rather than remedial, and the specification says so plainly instead of
-claiming a cleanup it will not perform.
+would have prevented, and as of this writing no stranded row remains.** At
+2026-09-04 22:50 UTC the open operator set is a single row, `dr_24edf371`, whose
+raiser is active and which is the genuine owner decision named in Terms. R4 is
+therefore prophylactic today rather than remedial, and the specification says so
+plainly instead of claiming a cleanup it will not perform. It will not stay
+prophylactic: 127 of the 630 operator requests raised to date sit on cards whose
+opener has since retired (A16), and raisers retire at the same rate.
 
 The owner clearing them by hand is not the mechanism working. It is the rule 14
 failure being paid for by the one actor the rule exists to protect. Four rows
@@ -773,9 +896,9 @@ The subtraction test, applied to R3 and R4:
   class of row that only a human can clear, which is the manufactured paperwork
   named in the authority. Accepting the defect the card exists to remove is not
   a design. Acceptance loses.
-- *Add?* R3 is a deletion of a filter clause and R4 is a change of trigger key.
-  What is added is nothing; what is removed is an exclusion that contradicted
-  its own documentation.
+- *Add?* Nothing is added. R3 and R4 are the same one-clause deletion in two
+  places, and the sweep and trigger R4 needs already exist (A13). What is removed
+  is an exclusion that contradicted its own documentation, twice.
 
 ### Q4. Does a landed and independently reviewed card close on evidence already on the record, or does it need a new receipt kind?
 
@@ -828,7 +951,9 @@ deliberately not specified.
 ### Q5. How does a lane distinguish rail friction from a real owner decision at the moment it is about to raise one?
 
 **It cannot be made mechanically, the substrate must not attempt it, and this
-document designs for the honest case instead.**
+document designs for the honest case instead.** The question's "real owner
+decision" is the term Terms defines as **genuine owner decision**; the two names
+are one concept and the defined one governs.
 
 The distinguishing property is the SUBJECT MATTER of the question: whether the
 answer changes the product. That is a judgment about meaning. The substrate
@@ -880,10 +1005,25 @@ the raiser, nor the subject card's opener, nor the owner user calls
 `assignmentId`, WHEN any session other than its raiser calls
 `operator-withdraw`, THEN the call is refused and the row is unchanged.
 
-**AC-4 (I1, I3).** GIVEN an open operator decision request, WHEN any principal
-other than the owner user attempts to rule it by any route, THEN no row exists
-afterwards with `status = 'ruled'` attributable to that principal. This check
-must be written so that it fails if the ruling authorization is ever widened.
+**AC-4 (I1, I3, what this build must hold).** GIVEN an open operator decision
+request, WHEN a session principal calls `operator-withdraw` under any of the
+widenings R1 through R4 grant, THEN the row reads `status = 'withdrawn'` and its
+`decision`, `ruledBy`, `ruledAt`, and `rulingFactId` are all NULL; AND GIVEN the
+same request, WHEN a session principal calls `operator-rule` without an identity
+flag, THEN the call is refused and the row is unchanged. This check is green
+today and must stay green after every requirement here lands. It is the whole of
+what this document changes and the whole of what it can promise.
+
+**AC-4b (I1, the hole OQ-1 names).** GIVEN an open operator decision request,
+WHEN an agent session calls `operator-rule` with the owner's identity flag, THEN
+the row is unchanged. This check FAILS today and this document does not repair
+it. It is written here so that the gap is a named red check rather than an
+absence, and it belongs to the requirement OQ-1 asks whether to state; a builder
+working from this document must not attempt to make it pass. It cannot be
+decided from the `decision_requests` row, whose `ruledBy` records attribution
+and not the authorizing principal (A12); it is decidable only from the `events`
+row's calling session key. AC-4 does not subsume it, and a reader who reads AC-4
+as covering the identity-flag route has read it wrong.
 
 **AC-5 (R3).** GIVEN a session holding one open `operator` request and one open
 request of another kind, WHEN that session retires, THEN both rows read
@@ -891,12 +1031,16 @@ request of another kind, WHEN that session retires, THEN both rows read
 decision on either.
 
 **AC-6 (R4).** GIVEN an open `operator` request whose raiser session is ALREADY
-in the retired state before the mechanism runs, WHEN the mechanism runs, THEN
-that row reads `status = 'withdrawn'` with the retirement sentinel.
+in the retired state, and whose retirement therefore left it open, WHEN
+`Escalation.recover_retired/1` runs — the routine `boot.ex` already calls on
+every gateway boot (A13), and no other trigger — THEN that row reads
+`status = 'withdrawn'` with the retirement sentinel. The check names that
+routine by name; a builder who has to introduce a new trigger to make it pass
+has built something R4 forbids.
 
 **AC-7 (R4, idempotence).** GIVEN a request already `ruled`, `withdrawn`, or
-`superseded` whose raiser is retired, WHEN the mechanism runs, THEN the row is
-byte-identical to before and no second lifecycle record is written.
+`superseded` whose raiser is retired, WHEN `recover_retired/1` runs, THEN the
+row is byte-identical to before and no second lifecycle record is written.
 
 **AC-8 (lifecycle reading, no regression).** GIVEN a producing card with exactly
 one `--reviews`-linked review card held by a different session, that review card
@@ -1045,7 +1189,8 @@ generalise it.
 log, with no per-rule denial record. The counts in this document were extracted
 by matching rule names in event payload text, which is sufficient for the window
 measured and is not a durable measurement surface. Building one is a Non-Goal.
-If the owner later wants standing measurement of rail friction, it is its own
+If the owner later wants standing measurement of rail denials — the whole
+denial population, wider than rail friction as Terms defines it — it is its own
 work item.
 
 **OQ-4. NON-BLOCKING.** Whether R5's guidance paragraph should later be promoted
@@ -1097,6 +1242,24 @@ item lands on `0.1.x`, on `main`, or on both by cherry-pick is an election under
 the repository's cross-line rule, and it belongs on the assignment card that
 dispatches R7.
 
+**OQ-7. NON-BLOCKING, and deliberately not specified.** The residual case R1
+leaves open: a request whose raiser is ALIVE but cannot run — out of capacity,
+wedged, or unresponsive — AND whose subject card's opener has itself retired.
+R1 admits the opener, R3 and R4 clear the row when the raiser retires, and
+neither reaches this shape. It is a real hole and it is left open on purpose.
+
+Closing it means deriving withdrawal authority from something further up than
+the subject card's opener: an ancestor walk, a lineage rule, or an owner-agent
+role. Every one of those is a general permissions design, which is wider than
+this work item's authority and is exactly the accretion its fences forbid. The
+honest MVP position is that the row stays open, visible, and answerable by the
+owner user, who retains the authority every requirement here already grants.
+
+A builder must not close OQ-7. If it turns out to bite in practice — a row
+stranded in this shape and noticed — the evidence goes back to the owner as its
+own work item, with the stranded row named. It is not a defect in R1 to be
+repaired inside this build.
+
 ## Sequencing note
 
 R6 is independent of the rest: it touches one fact query in the rules layer and
@@ -1105,8 +1268,10 @@ others, and it is the one that removes a cause rather than clearing effects, so
 prefer it first.
 
 R1, R3, and R4 are independent of each other in effect but touch the same
-subsystem; order them rather than running them in parallel. R5 lands after R1,
-because the path its guidance names does not exist until then.
+subsystem; order them rather than running them in parallel. R3 and R4 delete the
+same clause in two functions and should land together. R5 lands after R1 so its
+guidance can name the opener path, which is a preference about completeness and
+not a dependency: R5 is true and buildable before R1, merely incomplete (Q1).
 
 R7 touches `effort_checkin.ex` and nothing R1 through R6 touch, so it may run in
 parallel with all of them. Its card must name the line it targets, per OQ-6, and
