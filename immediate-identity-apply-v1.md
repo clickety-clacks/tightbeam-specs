@@ -25,8 +25,8 @@ either as revision readback or strict confirmation.
 The controlling decision says that identity apply does not merit transition
 machinery. Tightbeam updates its owned skill files in a selected session's
 existing harness home. Tightbeam then tells that session to re-read the files
-on a best-effort basis. A workflow reloads the session when it needs strict
-confirmation that later work uses the new guidance.
+on a best-effort basis. Apply supplies no strict confirmation that later work
+uses the new guidance.
 
 This authority supersedes owner ruling
 `att_8aaff8d4-aba0-44c4-be19-7099eba49fce` where that ruling required atomic
@@ -41,8 +41,8 @@ authority.
 This file replaces only the `tightbeam identity apply` behavior in
 `served-identity-home-projection-v1.md` and
 `relearn-and-identity-apply-workflow.md`. Existing identity edit, relearn,
-publication, skill-file ownership, session reload, authorization, credential,
-installation, release, and two-YES laws remain authoritative. Where an older
+publication, skill-file ownership, authorization, credential, installation,
+release, and two-YES laws remain authoritative. Where an older
 file requires an atomic apply switch, adapter or model revision readback, an
 identity generation, an adapter extension, or quiescence, this file supersedes
 that requirement.
@@ -59,7 +59,8 @@ ordinary prompt that tells the session to re-read its Tightbeam skills.
 
 This path is best effort. It does not prove which skill text is in the model's
 current context. A running turn is not a refusal. A workflow that needs strict
-confirmation reloads the selected session before it relies on the new guidance.
+confirmation must establish a separate external session-replacement or reload
+boundary before it relies on the new guidance.
 
 ## Non-Goals
 
@@ -113,14 +114,14 @@ confirmation reloads the selected session before it relies on the new guidance.
   session that its Tightbeam skills changed and asks it to re-read them. Apply
   submits it after the revision stamp commits. Prompt acceptance, delivery,
   acknowledgment, and compliance are best effort.
-- **Reload:** A separate external operation, when available, that replaces or
-  reconstructs the harness session from current identity inputs. Apply does not
-  expose or perform this operation.
-- **Strict confirmation:** A successful external reload boundary before later
-  work. An apply response, file observation, prompt result, or agent
-  acknowledgment is not strict confirmation. A revision stamp is also not
-  strict confirmation. If no reload operation is available, strict confirmation
-  is unavailable.
+- **Reload:** A separate external operator action, when available, that replaces
+  or reconstructs the harness session from current identity inputs. Apply does
+  not expose, perform, or define this action or its result.
+- **Strict confirmation:** An external reload boundary that the operator
+  establishes before later work. An apply response, file observation, prompt
+  result, agent acknowledgment, or revision stamp is not strict confirmation.
+  If the operator cannot establish that boundary, strict confirmation is
+  unavailable.
 - **Non-file archetype guidance:** Guidance supplied through a harness
   instruction channel, such as Codex developer instructions or a Claude system
   prompt. It is not a skill file.
@@ -141,8 +142,8 @@ confirmation reloads the selected session before it relies on the new guidance.
    delivered.
 6. Neither target CLI currently exposes a per-session reload command or a reload
    success result.
-7. An operator environment can expose a separate session replacement or reload
-   operation. That operation remains outside identity apply.
+7. An operator environment, not identity apply, controls whether a separate
+   session replacement or reload action exists and how the operator verifies it.
 8. The existing identity-administrator check runs before the command reveals a
    selected session.
 
@@ -168,8 +169,8 @@ re-read nudge only after that stamp commits.
 
 **I-06 — Apply supplies no strict boundary.** No apply response, status value,
 revision stamp, prompt event, or natural-language acknowledgment proves that
-current model context uses the new guidance. Only a separate successful reload
-can supply the strict boundary when that operation is available.
+current model context uses the new guidance. A workflow that requires strict
+confirmation has an external prerequisite that identity apply cannot satisfy.
 
 **I-07 — Non-file guidance stays separate.** Apply leaves the resident harness
 session's non-file archetype guidance unchanged.
@@ -197,8 +198,8 @@ tightbeam identity apply (<session> | --all)
 
 Apply shall expose no idempotency key, effect ID, operation ID, operation-status
 form, revision selector, or reload flag. Help text shall call apply a
-best-effort Tightbeam skill-file update and re-read nudge. It shall direct a
-caller to reload the session when strict confirmation matters.
+best-effort Tightbeam skill-file update and re-read nudge. It shall state that
+apply cannot provide strict confirmation.
 
 The existing identity-administrator check shall run before Tightbeam resolves
 or reveals a selected session and before it writes a file. An unauthorized
@@ -290,15 +291,16 @@ caller. The caller shall retry the ordinary command. Reconciliation through the
 existing projection writer is the only file recovery. At-least-once nudges are
 acceptable. Exactly-once nudge delivery is not promised.
 
-**R-09 — Reload when strict confirmation matters.** A workflow that requires
-strict confirmation shall not rely on apply. The workflow can proceed only
-after a separate available reload operation replaces or reconstructs the
-selected session and returns its own success result.
+**R-09 — Strict confirmation is external.** A workflow that requires strict
+confirmation shall not rely on apply. The workflow can proceed only after the
+operator establishes a separate reload or session-replacement boundary outside
+identity apply.
 
-If no reload operation is available, or if it does not return success, strict
-confirmation is unavailable and the dependent work shall not proceed. Apply
-shall add no reload command, flag, protocol, receipt, model query, status field,
-or revision readback.
+This specification shall not define that external action's availability,
+invocation, behavior, result, or proof. If the operator cannot establish the
+boundary, strict confirmation is unavailable and the dependent work shall not
+proceed. Apply shall add no reload command, flag, protocol, receipt, model
+query, status field, or revision readback.
 
 ### Guidance, status, and preserved boundaries
 
@@ -306,11 +308,10 @@ or revision readback.
 developer instructions, Claude system-prompt additions, or another non-file
 archetype guidance carrier in a resident harness session.
 
-A separately available reload, a session replacement, or a new session can
-receive current non-file guidance through session construction. Apply shall not
-promise that the current CLI exposes such a reload. Apply help, response, and
-status text shall not claim that a skill-file update changed resident non-file
-guidance or current model context.
+The behavior of a reload, session replacement, or new-session construction is
+outside this specification. Apply shall not promise that the current CLI exposes
+such a lifecycle. Apply help, response, and status text shall not claim that a
+skill-file update changed resident non-file guidance or current model context.
 
 **R-11 — Keep bookkeeping distinct from readback.** The existing success
 response shall remain:
@@ -344,8 +345,9 @@ runtime topology shall remain unchanged.
 **R-13 — Equivalent target-line implementation.** Exactly `0.1.9` and
 `main/0.2.0` shall implement the same command, selection rule, source capture,
 skill-file scope, file semantics, stamp meaning, response, status wording,
-nudge text and ordering, running-turn behavior, retry behavior, reload rule,
-non-file-guidance disclosure, and prohibited machinery.
+nudge text and ordering, running-turn behavior, retry behavior,
+strict-boundary disclosure, non-file-guidance disclosure, and prohibited
+machinery.
 
 Line-specific module names are not behavioral differences. Live `0.1.8` shall
 receive no backport, feature test execution, target move, identity action, or
@@ -370,7 +372,7 @@ remain in force. This specification authorizes no live identity edit or apply.
 | Update selected-session Tightbeam-owned skill files | R-02 through R-04 | A-01, A-03, A-04 |
 | Send an explicit best-effort re-read nudge | R-06 through R-08 | A-02, A-04 |
 | Running turn is allowed | R-04, R-07 | A-02, A-03 |
-| Reload is the only strict-confirmation path | R-09 | A-05 |
+| Apply supplies no strict confirmation; the prerequisite is external | R-09 | A-05 |
 | Existing revision bookkeeping is not readback or confirmation | R-05, R-09, R-11 | A-01, A-04, A-05 |
 | No atomic, effect, generation, adapter, root, or quiescence machinery | Non-Goals, R-04, R-08, R-12 | A-04, A-07 |
 | Treat non-file guidance separately | R-09, R-10 | A-05, A-06 |
@@ -411,23 +413,22 @@ file success and assert no nudge. Retry the ordinary command and assert file and
 stamp convergence. Permit a duplicate nudge when the prior submission result
 was lost.
 
-**A-05 — Reload supplies strict confirmation when available (R-09, I-06).**
+**A-05 — Apply supplies no strict confirmation (R-09, I-06).**
 Complete apply while the running turn retains old skill text. Assert that the
 apply response, status, prompt result, and agent acknowledgment make no
 strict-current claim. Assert that the B stamp describes only the last successful
-skill-file update. In a fixture that exposes an external reload operation,
-return success from that operation and assert that dependent work starts only
-after that result. In a fixture without a reload operation, assert that strict
-confirmation remains unavailable and dependent work does not start. Assert that
-apply exposes no reload form.
+skill-file update. In a fixture where an operator establishes an external reload
+boundary, assert that dependent work starts only after that boundary. In a
+fixture without such a boundary, assert that strict confirmation remains
+unavailable and dependent work does not start. Assert that apply exposes no
+reload form or receipt.
 
 **A-06 — Non-file guidance is separate (R-10, I-07).** Give a resident Codex
 or Claude session A-only non-file guidance. Publish B-only non-file guidance and
 changed Tightbeam skill files. Apply B. Assert that the skill files can change
 while the resident non-file instruction carrier remains A. Assert that help,
-response, and status text do not call the resident non-file guidance B. In a
-fixture that exposes external session replacement, replace the session and
-verify current non-file guidance only through the new session construction.
+response, and status text do not call the resident non-file guidance B. Assert
+that apply exposes no non-file-guidance update or confirmation result.
 
 **A-07 — Ownership and prohibited machinery (R-03, R-08, R-11, R-12, I-02,
 I-08, I-09).** Invoke apply as an unauthorized principal and assert the existing
@@ -442,16 +443,16 @@ root, additional skill root, process-global skill root, generation-specific
 home, adapter extension, adapter split, sidecar, quiescence wait, rollback
 graph, credential write, or runtime replacement. Assert that the only revision
 state changed by apply is the existing `identityRevision` field described by
-R-05 and R-10.
+R-05 and R-11.
 
 **A-08 — Cross-line conformance and gates (R-01, R-13, R-14, I-10).** Run the
 same focused fixture corpus against exact `0.1.9` and `main/0.2.0` candidates.
 Assert byte-equal R-06 prompt text and logically equivalent selection, source
 capture, skill-file scope, file semantics, running-turn behavior, retries,
-non-file-guidance disclosure, reload rule, and failure behavior. Review evidence
-shall name both implementation commits. Landing evidence shall show one
-authorized both-line sequence. Negative evidence shall show no feature commit
-or execution on live `0.1.8` and no implementation before exact-spec
+non-file-guidance disclosure, strict-boundary disclosure, and failure behavior.
+Review evidence shall name both implementation commits. Landing evidence shall
+show one authorized both-line sequence. Negative evidence shall show no feature
+commit or execution on live `0.1.8` and no implementation before exact-spec
 reviewed-clean, installation, release, target move, or live identity action
 before the existing gates and later two YES decisions.
 
