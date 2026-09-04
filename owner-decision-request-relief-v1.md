@@ -107,8 +107,10 @@ mistake this document for permission to build.
    authorization predicates change, the same one-clause query filter is deleted
    in two places, one rail fact stops discarding rows, and that rail's `text`
    string is corrected to describe itself truthfully afterwards (R6). Nothing
-   else. In particular no new sweep, scheduler, timer, daemon, or background pass
-   is built; R4 uses a sweep and a trigger that already exist (A13).
+   else. In particular no new sweep and no new trigger of any kind is built; R4
+   reuses a sweep and a trigger that already exist (A13). The full fence and its
+   reason live at R4 under "Build no sweep" and are not restated here, so that
+   the list a builder is held to has one home.
 2. **No new notification surface, dashboard, digest, or queue view.** Nothing in
    this document displays decision requests to anyone.
 3. **No new receipt kind, verdict kind, attest kind, or decision request kind.**
@@ -149,7 +151,9 @@ mistake this document for permission to build.
    asked, of whom it is asked, what the options are, or what it costs to ignore
    it. A builder who finds itself editing `advance_expecter`, `deadline_in_txn`,
    `initial_expecter`, `menu_in_txn`, or the channel counters has left this
-   document's scope.
+   document's scope. Calling those functions to enumerate the escalation lineage
+   is reading, not editing, and R7 permits it explicitly; what this non-goal
+   forbids is changing what any of them returns.
 
 ## Terms
 
@@ -316,24 +320,33 @@ principal is the 378 whose expecter was a user, and even that is an upper bound
 rather than a count, because the identity flag is available to an agent.
 
 **A13.** The state-keyed retired-raiser sweep that R4 requires ALREADY EXISTS.
-`Escalation.recover_retired/1` (`lib/tightbeam/escalation.ex:1622`) selects
-sessions in the retired state that still have open decision requests, and calls
-`withdraw_for_retired/2` on each. It is documented as the boot backstop for
-retirement casts lost across a crash, and `lib/tightbeam/boot.ex:53` calls it on
-every gateway boot. Its candidate query carries the SAME `kind != 'operator'`
-exclusion as `withdraw_for_retired/2` itself. So the sweep, its state key, and
-its trigger are all built; only the exclusion stops it working. Verified in
-source, 2026-09-04. This assumption is what collapses R4 from a mechanism to a
-deletion.
+`Escalation.recover_retired/1` selects sessions in the retired state that still
+have open decision requests, and calls `withdraw_for_retired/2` on each. It is
+documented as the boot backstop for retirement casts lost across a crash, and
+`boot.ex` calls it on every gateway boot. Its candidate query carries the SAME
+`kind != 'operator'` exclusion as `withdraw_for_retired/2` itself. So the sweep,
+its state key, and its trigger are all built; only the exclusion stops it
+working. Verified in source on BOTH lines, 2026-09-04: the routine is at
+`escalation.ex:1625` on the mainline and `escalation.ex:654` on the released
+line, and the boot call is at `boot.ex:53` and `boot.ex:32` respectively. This
+assumption is what collapses R4 from a mechanism to a deletion.
 
-**A14.** `withdraw_for_retired/2` carries a SECOND filter beside the kind
-exclusion: it rejects any request whose `context.verb` is `cannot-proceed`, with
-the stated reason that retirement is neither an exact assignment disposition nor
-an exact release fact. That carve-out is deliberate and is not a defect. No row
-in the live database sets `context.verb` at all — all 6,563 rows across both live
-kinds read NULL — so it fires on nothing today, and deleting the kind exclusion
-does reach operator rows. Verified in source and against the live database,
-read only.
+**A14. Mainline only.** On the mainline `withdraw_for_retired/2` carries a SECOND
+filter beside the kind exclusion: it rejects any request whose `context.verb` is
+`cannot-proceed` (`escalation.ex:1476`, applied at `:1509`), with the stated
+reason that retirement is neither an exact assignment disposition nor an exact
+release fact. That carve-out is deliberate and is not a defect. No row in the live
+database sets `context.verb` at all — all 6,563 rows across both live kinds read
+NULL — so it fires on nothing today, and deleting the kind exclusion does reach
+operator rows.
+
+**The released line has no such filter.** Its `withdraw_for_retired/2` selects
+`id` alone and decodes no context (`escalation.ex:530-541`); the typed
+cannot-proceed request does not exist on that line at all. R3's instruction to
+preserve the carve-out is therefore a no-op on the released line, and it is NOT
+an instruction to port the carve-out there. Verified in source on both lines and
+against the live database, read only. A14's split is why R3 and R4 appear in
+OQ-6's line election.
 
 **A15.** Nothing outside the decision request subsystem gates on a request being
 open. No rail fact reads `decision_requests`: the fact list in
@@ -835,19 +848,27 @@ withdraws ALL of a retiring session's open decision request rows on that
 session's behalf, withdrawal being the one lawful judgment-free exit every arm
 answers to. Its query then excludes `kind = 'operator'`.
 
-Delete that one clause, `AND kind != 'operator'`, from that routine's row query
-(`lib/tightbeam/escalation.ex:1505`). The comment describes the intended
-behaviour correctly; the filter contradicts it. Nothing else in the routine
-changes.
+Delete that one clause, `AND kind != 'operator'`, from that routine's row query:
+`lib/tightbeam/escalation.ex:1505` on the mainline, `:539` on the released line.
+The clause is character-identical in both places; only its address differs. The
+comment describes the intended behaviour correctly; the filter contradicts it.
+Nothing else in the routine changes.
 
-**One thing in that routine must NOT be deleted.** The same query is followed by
-a second filter that rejects any request whose `context.verb` is
-`cannot-proceed`, on the stated ground that retirement is neither an exact
-assignment disposition nor an exact release fact (A14). That carve-out is
-deliberate and correct, and R3 leaves it exactly as it is. R3 deletes the KIND
-exclusion and only the kind exclusion. A builder that reads "delete that
-exclusion" as licence to strip both filters has changed a behaviour this
-document did not authorize changing.
+**On the mainline, one thing in that routine must NOT be deleted.** There the
+same query is followed by a second filter that rejects any request whose
+`context.verb` is `cannot-proceed`, on the stated ground that retirement is
+neither an exact assignment disposition nor an exact release fact (A14). That
+carve-out is deliberate and correct, and R3 leaves it exactly as it is. R3
+deletes the KIND exclusion and only the kind exclusion. A builder that reads
+"delete that exclusion" as licence to strip both filters has changed a behaviour
+this document did not authorize changing.
+
+**On the released line that filter does not exist**, and this paragraph is
+therefore a no-op there. A builder on the released line must not add it. Porting
+the carve-out backwards would be a behaviour change on a released line, with no
+authority in this document and none in the work item: the rows it would guard do
+not exist there either (A14). R3 on the released line is one deletion and nothing
+else.
 
 The measured consequence of the contradiction: across the entire live database,
 for every kind, zero rows carry the withdrawal reason `raiser-retired` that the
@@ -870,9 +891,9 @@ the exact mechanism, with the exact state key and a working trigger. Its
 candidate query carries the same `kind != 'operator'` exclusion.
 
 So R4 is one deletion, not a mechanism: **delete `AND dr.kind != 'operator'` from
-`recover_retired/1`'s candidate query** (`lib/tightbeam/escalation.ex:1629`).
-With R3 that makes both halves of the pair the same one-clause subtraction in two
-places.
+`recover_retired/1`'s candidate query** — `lib/tightbeam/escalation.ex:1629` on
+the mainline, `:658` on the released line, character-identical in both. With R3
+that makes both halves of the pair the same one-clause subtraction in two places.
 
 **Build no sweep.** No scheduler, no timer, no daemon, no periodic pass, no
 migration-time backfill, and no second reconciliation beside the one that exists.
@@ -1314,7 +1335,9 @@ corrected one, and the count of cards that move from qualified to unqualified is
 zero. This document measured that count as 0 on both lines over the thirty days
 to 2026-09-04, with 8 cards moving from denied to allowed on the mainline and 17
 on the released line. A builder re-runs the comparison on the line being built
-and reports both numbers. A nonzero denied count is a defect in the
+and records both numbers on the card. The comparison is a read-only query run by
+hand; nothing here authorizes a report, a view, or a check that ships
+(Non-Goal 2). A nonzero denied count is a defect in the
 implementation, not a revision of this requirement: R6 removes a collapse, and
 removing a collapse cannot subtract a member from the pool.
 
@@ -1463,13 +1486,23 @@ the corrected predicate, and a builder who reads "the order the fact already
 uses" without checking which line they are on will. A6 records the same split
 from the measurement side.
 
-R1 through R5 do not raise this question: their targets are byte-identical on
-both lines, verified in source.
+R3 and R4 raise a weaker form of it. The clause each deletes is
+character-identical on both lines, so the requirement and the edit are the same;
+what differs is the address (R3 at `:1505` mainline, `:539` released; R4 at
+`:1629` and `:658`) and the surrounding routine. The mainline's
+`withdraw_for_retired/2` carries a cannot-proceed carve-out that the released
+line's does not have at all (A14), so R3's "must not delete" paragraph guards
+something that exists on only one line. A builder must not read it as an
+instruction to port that carve-out backwards.
+
+R1, R2, and R5 do not raise this question: R1 and R2 change one authorization
+predicate that is byte-identical on both lines, verified in source, and R5 is
+kungfu guidance with no code target at all.
 
 Whether this work item lands on `0.1.x`, on `main`, or on both by cherry-pick is
 an election under the repository's cross-line rule, and it belongs on the
-assignment cards that dispatch R6 and R7. Each card states its line; a card that
-does not state it is not ready to dispatch.
+assignment cards that dispatch R3, R4, R6, and R7. Each card states its line; a
+card that does not state it is not ready to dispatch.
 
 **OQ-7. NON-BLOCKING, and deliberately not specified.** The residual case R1
 leaves open: a request whose raiser is ALIVE but cannot run — out of capacity,
