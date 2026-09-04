@@ -14,9 +14,19 @@ Authority, verbatim (Mike, 2026-09-04):
 > paperwork for Mike. Fix it so a landed, reviewed card can close without an
 > owner ruling.
 
+Scope addition, verbatim (Mike, ruling `dr_778ba73b`, 2026-09-04 21:30 UTC):
+
+> a retired raiser leaves an immortal owner-facing request that no living actor
+> can clear. That is worse than the completion rail Mike named, and four of these
+> were unclearable by anyone but him, forever. It is staffed as wi_3d328d28 —
+> keep it, and make sure the spec covers BOTH the retired-raiser trap and the 37
+> effort check-in requests that effort-rule refuses with current expecter
+> required.
+
 ## Goal
 
-Two things, matching the two mechanisms in the authority.
+Three things: the two mechanisms in the original authority, and the third named
+by the scope addition.
 
 **One.** A card that is landed and independently reviewed files its terminal
 receipt, because the completion rail reads the review evidence already on the
@@ -28,10 +38,17 @@ not finish its bookkeeping is clearable by an agent, without an owner ruling, an
 without giving any agent the power to decide a question that is genuinely the
 owner's.
 
+**Three.** An effort check-in that has a lawful agent answerer is answerable by
+that agent, instead of by whichever single rung of the chain the clock has
+reached. The check-in itself is untouched: same probe, same question, same
+deadline, same escalation. Only the refusal of parties the substrate itself
+already selected is removed, and the holder stays refused.
+
 That is the whole goal. Above everything in it stands I1: nothing here lets an
 agent rule a decision that is genuinely the owner's.
 
-Three measured facts set its size.
+Four measured facts set its size, and the fourth corrects the scope addition's
+own count.
 
 **The false refusal rate.** Over the thirty days to 2026-09-04
 `completion-requires-review` refused 8 cards that carried an independent
@@ -55,14 +72,31 @@ retired days earlier; three of the four asked about work that had since
 completed. That hand-clearing is the cost this specification exists to stop
 recurring.
 
+**The effort channel, measured rather than assumed.** The scope addition counts
+37 effort check-in requests that `effort-rule` refuses. All 37 are open and all
+37 are refused to some caller, but they are not one population and a predicate
+change does not reach most of them. Of the 37: **23** carry an active session
+expecter and are the rail working as designed, because the caller they refuse is
+the holder, and the holder is the party the check-in is about; **3** have an
+agent lineage and are the cases a predicate correction repairs; **11** reach the
+owner because the card's lineage contains no agent at all, so there is no one
+for any authorization change to admit. R7 fixes the 3. The 11 are OQ-5, which is
+not an authorization question. The full derivation is at A10 and A11.
+
+The scope addition's phrase "even to the card's own holder" describes the 23,
+and refusing them is correct. This is recorded here rather than quietly built
+around, because a builder reading the addition without this paragraph would
+widen the predicate until the holder could dismiss its own check-in, which is
+the mainline's current defect (R7).
+
 ## Non-Goals
 
 Named as deliberately as the goal, because each is a thing a reader could
 mistake this document for permission to build.
 
 1. **Not a redesign of decision requests.** The `statute`, `effort`, and
-   `operator` arms keep their current shapes, kinds, and lifecycles. One
-   authorization predicate changes, one query filter is deleted, one trigger key
+   `operator` arms keep their current shapes, kinds, and lifecycles. Two
+   authorization predicates change, one query filter is deleted, one trigger key
    moves, and one rail fact stops discarding rows. Nothing else.
 2. **No new notification surface, dashboard, digest, or queue view.** Nothing in
    this document displays decision requests to anyone.
@@ -73,7 +107,10 @@ mistake this document for permission to build.
    refusal rather than an omission.
 5. **Not a widening of who may RULE an operator request.** Ruling authority is
    unchanged and, in one respect noted in Open Questions, is to be tightened
-   rather than relaxed.
+   rather than relaxed. Separately, R7 does not widen who may answer an effort
+   check-in beyond the lineage the substrate itself already walks, and it admits
+   no principal the substrate has not already selected as an expecter at some
+   rung.
 6. **No exemption, override, escape hatch, or claim on any completion rail.**
    This document corrects ONE predicate, in one named way, at R6. It creates no
    exemption flag, no override verb, no "already landed" assertion, no bypass
@@ -92,6 +129,14 @@ mistake this document for permission to build.
    work only. The production host is locked at 0.1.8 under Mike's 2026-09-02
    change law. Nothing in this document may be applied to a running host without
    that law's separate two-step ceremony.
+8. **Not a change to effort check-in escalation.** The probe, the four effect
+   channels, the zero-effect verdict, the 24-hour deadline, the rung advance,
+   the notification, and the ordinary-power menu are all untouched. R7 changes
+   who may answer the question. It changes nothing about when the question is
+   asked, of whom it is asked, what the options are, or what it costs to ignore
+   it. A builder who finds itself editing `advance_expecter`, `deadline_in_txn`,
+   `initial_expecter`, `menu_in_txn`, or the channel counters has left this
+   document's scope.
 
 ## Terms
 
@@ -131,6 +176,25 @@ verdicts of any other kind observed on review cards in the live data —
 `spec-reviewed`, `spirit-reviewed`, `no-landing`, `work-blocked`, `pass` — say
 something about the reviewer's own card or its own bookkeeping. They are not
 conclusions about the reviewed work, and they neither grant nor retract one.
+
+**Effort check-in request.** A row in `decision_requests` with `kind = 'effort'`.
+The substrate raises one when it armed a liveness generation on an assignment,
+probed the four effect channels, and observed no effect. Its question is whether
+the holder's silence should be tolerated (`continue`) or acted on (`dismiss`).
+It is a supervision question about a session, never a product question.
+
+**Expecter.** The single principal a `kind = 'effort'` row currently addresses,
+held in `expecterSessionKey` or `expecterUserId`, with `lineageRung` recording
+how far up the chain it has walked. Exactly one of the two columns is set.
+
+**Escalation lineage.** The chain `route_session/5` walks for an assignment: it
+starts at the card's opener session, or at the holder's parent when the opener
+is the holder, and follows `spawnedBy` upward, skipping the assignment's holder
+at every step and skipping sessions that are not active. It ends at the owner
+user when the chain runs out. Every session in this chain is a principal the
+substrate has already selected as an expecter at some rung, or would select at a
+later one. The lineage is a property of the assignment, computable at any time;
+the expecter is one member of it, selected by the clock.
 
 **Rail friction.** A state in which an agent's work is done and recorded, and
 the substrate refuses its bookkeeping verb. The agent needs a lawful way to file
@@ -173,6 +237,16 @@ where this document's denial counts come from. There is no separate rail denial
 table. The counts are therefore complete for the window measured and cannot be
 broken down further without new recording, which is a Non-Goal.
 
+A qualification on the denial counts at R6. Reproducing what the rail SAW at each
+denial requires replicating the fact's card-selection rule in SQL, and the two
+lines select differently: the mainline collapses to the review card carrying the
+most recent holder-filed verdict, the released line to the most recently opened
+review card. The counts at R6 were produced under the mainline's rule. Both lines
+collapse by card and then by kind, so both exhibit both causes R6 names, and the
+kind-collapse cases are unaffected by which rule is used. The card-collapse
+count, and only that count, is sensitive to it. The defect and the requirement do
+not move; the number attached to one of the two causes may.
+
 **A7.** `attests.verdictKind` is open text. No storage constraint limits it to a
 vocabulary, and the live data carries a long tail of one-off kinds. The
 review-conclusion set named in Terms is therefore a property of the rail fact's
@@ -186,6 +260,41 @@ card, and its remedy wakes the holder to file exactly that. A review card held
 by a coder-archetype session must therefore carry a `verified` verdict filed
 after its review work in order to close. Verified in source and in the live data;
 this assumption is what makes the defect at R6 systematic rather than incidental.
+
+**A9.** `effort-rule --request <dr> --action continue|dismiss` authorizes a
+session principal by exact identity with the row's current expecter on the
+released line (`lib/tightbeam/effort_checkin.ex:1269`,
+`authorized?({:session, key}, request), do: request.expecter_session_key == key`)
+and by admitting every session on the mainline
+(`lib/tightbeam/effort_checkin.ex:1390`,
+`authorized?({:session, _key}, _request), do: true`, from commit `e02cab00`,
+2026-08-27). The user clause is identical on both lines. Nothing else in either
+line's `rule/3` guards the caller. Verified in source, both lines, 2026-09-04.
+
+**A10.** On 2026-09-04 the org held 37 open `kind = 'effort'` requests. 23 carry
+a session expecter, and every one of those expecter sessions is in the active
+state. 14 carry a user expecter with a NULL session expecter. Verified against
+the live database, read only.
+
+**A11.** Of the 14 at a user expecter: 11 are on cards the owner opened himself
+(`openedByUser` non-NULL), and every one of those cards is held by a session
+with no active ancestor by `spawnedBy`, so the card's lineage contains no agent
+at any rung; 2 are on cards whose opener session is retired and has no parent;
+1 is on a card whose opener session is active and is not the current expecter.
+Their ages run from 0.1 to 7.8 days and every one carries a deadline on
+2026-09-05, which is the 24-hour re-arm described at OQ-5. Verified against the
+live database, read only.
+
+**A12.** `decision_requests.ruledBy` records the call's attributed origin, not
+its authorizing principal. A session call carrying `--as-user <id>` records
+`user:<id>` while being authorized as the session. Of the 918 effort rulings
+attributed to `user:mike` in the 14 days to 2026-09-04, 540 are on requests whose
+expecter was a session, which the user clause of `authorized?` cannot authorize;
+those calls were therefore authorized as the expecter session and merely
+attributed to the owner. No count in this document claims to measure the owner's
+own keystrokes in this channel. The upper bound on rulings that required a user
+principal is the 378 whose expecter was a user, and even that is an upper bound
+rather than a count, because the identity flag is available to an agent.
 
 ## Invariants
 
@@ -239,12 +348,30 @@ scope, and the retraction of a clean by a later `changes-requested` are all
 preserved exactly. A rail is corrected by making it silent when satisfied, never
 by making it quieter when unsatisfied.
 
+**I8. A holder never answers its own effort check-in.** The check-in asks
+whether the holder produced effect. Admitting the holder as an answerer destroys
+the only property the mechanism has, and it is the one widening that would turn
+a liveness prod into a formality. No requirement here admits the holder by any
+route. The lineage walk already excludes it, and AC-16 is written to fail if any
+change ever admits it.
+
+The reason widening who may answer an effort check-in does not touch I1 is worth
+stating rather than assuming: an effort check-in is a supervision act about
+whether a session is working, not a product choice, a scope call, a release
+intent, or a trust root. It is `kind = 'effort'`, not `kind = 'operator'`, and
+the two arms are separate rows with separate verbs and separate authorization.
+I1 governs `operator` requests, and nothing in R7 reaches them. If a future
+reader finds an effort check-in whose real content is a product decision, the
+defect is that it was raised as an effort row, and the repair is upstream of
+this document.
+
 ## Architecture
 
 The design in one sentence: **correct the one completion predicate that hides
 review evidence from itself, widen who may RETRACT an operator request, never
-widen who may RULE one, and make session retirement do what its own code comment
-already claims it does.**
+widen who may RULE one, admit the whole escalation lineage the substrate already
+walks to answer an effort check-in while still refusing the holder, and make
+session retirement do what its own code comment already claims it does.**
 
 ### R6 — `completion-requires-review` reads the review's conclusion, not the last thing typed
 
@@ -349,10 +476,70 @@ The subtraction test, applied to R6:
 - *Add?* Nothing is added. Two collapses are removed from a query. The rule file
   is untouched; `deny_when` keeps the same three clauses and the same fact name.
 
+### R7 — `effort-rule` admits the escalation lineage, not only the rung the clock has reached
+
+**The defect.** The released line authorizes a session principal by exact
+identity with the row's current expecter (A9). But the expecter is not a party
+the request was addressed to once and for all. It is one member, selected by the
+clock, of a chain the substrate itself computes: `initial_expecter/2` picks the
+first entry, and `advance_expecter/2` walks `spawnedBy` upward on each 24-hour
+deadline, `route_session/5` skipping the holder and any inactive session at every
+step. Every session in that chain is a principal the substrate has already
+decided is entitled to answer. The predicate admits exactly one of them at a
+time, and which one is a function of how many deadlines have passed.
+
+That is the same defect shape as R6 and R1: a predicate collapses a set the
+substrate already computes down to a single current member, and refuses the rest.
+Two consequences, both present in the live data (A11):
+
+- **The passed rung.** An active session at a lower rung, entitled to answer and
+  in fact the expecter until the last deadline fired, is refused now. One open
+  request is in this state.
+- **The retired rung.** When the current expecter retires, no living member of
+  the chain may act, and the request is stranded exactly as a retired raiser
+  strands an operator request at R1. Two open requests are in this state. This is
+  the retired-raiser trap in a second subsystem, and it is why R7 belongs on this
+  work item rather than its own.
+
+**The requirement.** Change the session clause of `authorized?/2` so that a
+session principal is authorized when it is a member of the request's escalation
+lineage, as Terms defines that set: computed from the assignment by the same walk
+`route_session/5` performs, excluding the assignment's holder at every step, and
+never read from the row's current expecter columns. The user clause is unchanged.
+The authorized actions remain exactly `continue` and `dismiss`.
+
+Everything else stays where it is. `advance_expecter/2` still walks on deadline.
+The deadline is still 24 hours. The notification still goes to the current
+expecter. `menu_in_txn/3` still computes the ordinary-power menu for the current
+expecter's rung, and every ordinary power keeps its own handler's authorization,
+so admitting a lineage member to `effort-rule` grants it nothing anywhere else.
+
+**Two things R7 must not become.**
+
+*It must not admit the holder.* The holder is the party under supervision. A
+check-in a stalled holder may dismiss is not a check-in. `route_session/5`
+already excludes the holder from the chain, and R7's membership test excludes it
+for the same reason. I8 states this and AC-16 fails if it is ever violated.
+
+*It must not become "any session".* The mainline already carries that change
+(A9), and read against the rule path around it, no other clause excludes the
+holder, so on the mainline as it stands a stalled holder may dismiss its own
+liveness check-in. R7 REPLACES that clause; it does not build on it and it is not
+a formalisation of it. This is recorded here because a builder working on the
+mainline would otherwise read the existing widening as the fix already landed and
+close the requirement without changing anything.
+
+**Size, stated rather than implied.** R7 reaches 3 of the 37 open effort
+requests. It leaves the 23 correctly refused, and it does not reach the 11 that
+have no agent in the lineage at all, because there is no principal for it to
+admit. What happens to those 11 is OQ-5, and this document does not decide it.
+A builder must not close OQ-5 by widening R7; AC-18 is written to make that
+attempt fail.
+
 ### The seam (mechanism two)
 
-R6 above is the whole of mechanism one. R1 through R5 below are mechanism two,
-and they rest on one seam.
+R6 and R7 above are mechanisms one and three. R1 through R5 below are mechanism
+two, and they rest on one seam.
 
 `decision_requests` already separates two acts that a reader might blur. Ruling
 writes an answer. Retraction writes an absence. The table's constraint binds an
@@ -447,8 +634,8 @@ given at Q5.
 ### What the substrate does NOT gain
 
 No new verb. No new column. No new table. No new kind. No new rail. No new rule
-file entry. No exemption, override, or claim. No migration. R1, R3, R4, and R6
-are edits to existing queries and authorization predicates; R5 is prose.
+file entry. No exemption, override, or claim. No migration. R1, R3, R4, R6, and
+R7 are edits to existing queries and authorization predicates; R5 is prose.
 
 ## The five questions
 
@@ -760,6 +947,46 @@ completion with no review at all, THEN the completion is not denied by
 `completion-requires-review`, exactly as today. R6 changes one fact's query and
 no clause of the rule.
 
+**AC-15 (R7, the passed rung).** GIVEN an open `effort` request whose current
+expecter is the session at rung 1 of its assignment's escalation lineage, and an
+active session at rung 0 of that same lineage which is not the assignment's
+holder, WHEN the rung-0 session calls `effort-rule --action continue`, THEN the
+request reads `status = 'ruled'` with `decision = 'continue'`, and the deadline
+wake and generation are disposed of exactly as they are when the current expecter
+rules. This check FAILS against the released line as it stands on 2026-09-04; it
+is the defect R7 repairs.
+
+**AC-16 (I8, the holder stays refused).** GIVEN an open `effort` request on an
+assignment, WHEN the assignment's holder session calls `effort-rule` with either
+`continue` or `dismiss`, THEN the call is refused and the row is byte-identical
+to before. This check must be green on the released line, where it passes today,
+and it FAILS against the mainline as it stands on 2026-09-04. It is the check
+that makes the difference between R7 and the mainline's existing widening
+observable, and it must be written so that it fails for any change that admits
+the holder by any route.
+
+**AC-17 (R7, the retired rung).** GIVEN an open `effort` request whose current
+expecter session is in the retired state, and an active session above it in the
+same escalation lineage which is not the assignment's holder, WHEN that session
+calls `effort-rule --action dismiss`, THEN the request is ruled and the holder
+re-arm proceeds exactly as it does for a dismissal by the current expecter. This
+check also FAILS today.
+
+**AC-18 (R7, no lineage means no path).** GIVEN an open `effort` request whose
+assignment's escalation lineage contains no active session other than the holder,
+WHEN any session calls `effort-rule` with either action, THEN the call is refused
+and the request keeps its user expecter. R7 creates no answerer where the
+substrate itself computes none. This check exists so that a builder cannot close
+OQ-5 by widening R7, and it must be written so that it fails if any principal
+outside the computed lineage is ever admitted.
+
+**AC-19 (R7, scope unchanged).** GIVEN an open `effort` request and a lineage
+member that R7 newly admits, WHEN that member calls `effort-rule` with an action
+other than `continue` or `dismiss`, THEN the call is refused with the existing
+invalid-action error; and WHEN that member invokes any ordinary power from the
+request's menu, THEN that power's own handler authorizes it independently and R7
+grants it nothing. R7 changes one clause of one authorization predicate.
+
 ## Open Questions
 
 **OQ-1. BLOCKING, for one requirement this document does not state.**
@@ -827,6 +1054,49 @@ that it should not be promoted on the evidence available. A rail on the raise
 side would require the classifier that Q5 refuses. Revisit only if measurement
 shows the guidance failing, which requires OQ-3 first.
 
+**OQ-5. BLOCKING, for the claim that the effort channel is fixed. Blocks
+nothing this document specifies.** What becomes of an effort check-in that
+reaches the owner user and has no agent above the holder.
+
+`advance_expecter/2`, given a request whose expecter is already a user, returns
+the same user at the same rung (`lib/tightbeam/effort_checkin.ex:989`, released
+line). `deadline_in_txn/3` then writes that same expecter back to the row,
+schedules a fresh deadline wake into the owner's personal session, and re-arms
+the notification. The default deadline is 24 hours. So a check-in that tops out
+at the owner re-asks the owner every day and never resolves. Eleven of the
+fourteen requests currently at a user expecter are in this state, and the oldest
+has been in it for 7.8 days (A11).
+
+This is rule 14 in its exact form. The intent has an owner, and its deadline is
+rewritten before it can ever expire, so its absence is not detectable. It is not
+an authorization defect: for those eleven, the card was opened by the owner and
+the holder has no ancestor, so there is genuinely no agent to admit, and R7
+changes nothing about them.
+
+Three answers exist and this document deliberately picks none. ADD: resolve the
+request after a bounded number of terminal re-arms, recording the mechanical
+cause. DELETE: stop escalating a liveness prod past the last agent, on the ground
+that a check-in with no supervisor above the holder has no addressee and the
+substrate is asking a question it has nobody to ask. ACCEPT: let it stand and
+re-ask, and record that as the org's chosen answer rather than an accident.
+Choosing among them is a judgment about what the org wants when nobody answers a
+supervision question for a week. That is the owner's to make, and a specification
+that assumed one would be deciding its own scope.
+
+What is blocked is only the claim that the effort channel is fixed. **R7 may be
+built now**, and it closes every case in that channel where a lawful agent
+answerer exists.
+
+**OQ-6. NON-BLOCKING, but the card must answer it before a builder starts.**
+Which line R7 targets. The released line and the mainline carry different session
+clauses (A9), and the mainline's is the opposite defect: too wide rather than too
+narrow. R7's requirement text is the same against either, and only the clause the
+builder deletes differs. R1 through R6 do not raise this question because their
+targets are byte-identical on both lines, verified in source. Whether this work
+item lands on `0.1.x`, on `main`, or on both by cherry-pick is an election under
+the repository's cross-line rule, and it belongs on the assignment card that
+dispatches R7.
+
 ## Sequencing note
 
 R6 is independent of the rest: it touches one fact query in the rules layer and
@@ -837,6 +1107,11 @@ prefer it first.
 R1, R3, and R4 are independent of each other in effect but touch the same
 subsystem; order them rather than running them in parallel. R5 lands after R1,
 because the path its guidance names does not exist until then.
+
+R7 touches `effort_checkin.ex` and nothing R1 through R6 touch, so it may run in
+parallel with all of them. Its card must name the line it targets, per OQ-6, and
+must carry AC-16 as a check that has to be green on whichever line it lands,
+because on the mainline that check starts red.
 
 Nothing in this document is applied to a running host by the work it specifies.
 The production host is locked at 0.1.8 under Mike's 2026-09-02 change law, and
