@@ -8,11 +8,18 @@ reviewed-clean for the exact commit and SHA-256.
 
 **Controlling authority:** Mike's decision
 `dr_07bdef13-45ae-435f-bc79-b2dc6b0a5ebf`, recovered in direct message
-`s_4867db6b-8fa8-4f81-b46a-b1806531463b` and owner ruling
-`att_1e928176-63b6-4a39-b76b-fd7694c2311b`. Producer verdict
-`att_fb2292c8-1732-48fe-9582-d5b3b50dd81c` applies the same correction.
+`s_4867db6b-8fa8-4f81-b46a-b1806531463b` and final owner ruling
+`att_6349ad2d-6d7e-4352-a333-6ff0218cfd79`. Owner ruling
+`att_1e928176-63b6-4a39-b76b-fd7694c2311b` and producer verdict
+`att_fb2292c8-1732-48fe-9582-d5b3b50dd81c` apply the same correction.
 Target ruling `att_a3883546-7a75-4208-8823-5eeac314052a` fixes the two product
 lines and indivisible landing rule.
+
+Review adjudication `att_fdfbb9e5-a015-4645-94f4-bca5c43554a7` supplies two
+source-reality corrections: apply covers materialized Tightbeam skill files
+only, and neither target CLI currently exposes a per-session reload result. The
+final owner ruling controls where that adjudication accepted revision
+bookkeeping or a revision-bearing prompt; this contract contains neither.
 
 The controlling decision says that identity apply does not merit transition
 machinery. Tightbeam updates its owned skill files in a selected session's
@@ -56,7 +63,8 @@ confirmation reloads the selected session before it relies on the new guidance.
 - Apply does not make an atomic switch across one file, multiple files,
   database state, prompt delivery, or model context.
 - Apply does not add an effect ID, operation status, durable executor, recovery
-  worker, revision readback, or loaded-revision status.
+  worker, revision stamp, revision bookkeeping, revision readback, or
+  loaded-revision status.
 - Apply does not create an immutable identity generation, generation ordinal,
   generation payload, reader graph, rollback protocol, or cleanup protocol.
 - Apply does not create a projection root, additional skill root,
@@ -99,12 +107,13 @@ confirmation reloads the selected session before it relies on the new guidance.
 - **Re-read nudge:** An ordinary Tightbeam prompt that tells the selected
   session that its Tightbeam skills changed and asks it to re-read them. Prompt
   acceptance, delivery, acknowledgment, and compliance are best effort.
-- **Reload:** The existing explicit session lifecycle that reconstructs the
-  harness session from current files and current non-file guidance. This
-  specification does not add or change that lifecycle.
-- **Strict confirmation:** A successful reload boundary before later work. An
-  apply response, file observation, prompt result, or agent acknowledgment is
-  not strict confirmation.
+- **Reload:** A separate external operation, when available, that replaces or
+  reconstructs the harness session from current identity inputs. Apply does not
+  expose or perform this operation.
+- **Strict confirmation:** A successful external reload boundary before later
+  work. An apply response, file observation, prompt result, or agent
+  acknowledgment is not strict confirmation. If no reload operation is
+  available, strict confirmation is unavailable.
 - **Non-file archetype guidance:** Guidance supplied through a harness
   instruction channel, such as Codex developer instructions or a Claude system
   prompt. It is not a skill file.
@@ -123,8 +132,11 @@ confirmation reloads the selected session before it relies on the new guidance.
 5. The ordinary prompt surface can accept a prompt for a selected session that
    has a running turn. Existing per-session ordering controls when the prompt is
    delivered.
-6. The existing reload lifecycle is the available strict-confirmation boundary.
-7. The existing identity-administrator check runs before the command reveals a
+6. Neither target CLI currently exposes a per-session reload command or a reload
+   success result.
+7. An operator environment can expose a separate session replacement or reload
+   operation. That operation remains outside identity apply.
+8. The existing identity-administrator check runs before the command reveals a
    selected session.
 
 ## Invariants
@@ -147,9 +159,10 @@ skill-file update.
 after the projection writer reports a successful skill-file update for that
 selected session.
 
-**I-06 — Reload is the strict boundary.** No apply response, status value,
+**I-06 — Apply supplies no strict boundary.** No apply response, status value,
 prompt event, or natural-language acknowledgment proves that current model
-context uses the new guidance.
+context uses the new guidance. Only a separate successful reload can supply the
+strict boundary when that operation is available.
 
 **I-07 — Non-file guidance stays separate.** Apply leaves the resident harness
 session's non-file archetype guidance unchanged.
@@ -259,14 +272,14 @@ existing projection writer is the only file recovery. At-least-once nudges are
 acceptable. Exactly-once nudge delivery is not promised.
 
 **R-08 — Reload when strict confirmation matters.** A workflow that requires
-strict confirmation shall explicitly reload the selected session after apply.
-It shall wait for the existing reload lifecycle's normal success result before
-it relies on the new identity for later work.
+strict confirmation shall not rely on apply. The workflow can proceed only
+after a separate available reload operation replaces or reconstructs the
+selected session and returns its own success result.
 
-Apply success, a file read, prompt submission, prompt delivery, and an agent's
-acknowledgment are not substitutes for reload. If reload fails or is
-unavailable, strict confirmation is unavailable. Apply shall add no reload
-protocol, receipt, model query, status field, or revision readback.
+If no reload operation is available, or if it does not return success, strict
+confirmation is unavailable and the dependent work shall not proceed. Apply
+shall add no reload command, flag, protocol, receipt, model query, status field,
+or revision readback.
 
 ### Guidance, status, and preserved boundaries
 
@@ -274,20 +287,20 @@ protocol, receipt, model query, status field, or revision readback.
 developer instructions, Claude system-prompt additions, or another non-file
 archetype guidance carrier in a resident harness session.
 
-A later explicit reload or a new session can receive current non-file guidance
-through the existing session lifecycle. Apply help, response, and status text
-shall not claim that a skill-file update changed resident non-file guidance or
-current model context.
+A separately available reload, a session replacement, or a new session can
+receive current non-file guidance through session construction. Apply shall not
+promise that the current CLI exposes such a reload. Apply help, response, and
+status text shall not claim that a skill-file update changed resident non-file
+guidance or current model context.
 
-**R-10 — Add no revision readback or confirmation claim.** Apply shall not read
-a loaded identity or skill revision from an adapter, vendor process, model,
-session acknowledgment, or file watcher.
+**R-10 — Add no revision machinery or confirmation claim.** Apply shall not
+create, update, or compare a session revision stamp or other apply-specific
+revision state. Apply shall not read a loaded identity or skill revision from an
+adapter, vendor process, model, session acknowledgment, or file watcher.
 
 Apply shall add no success, status, or audit field that claims which revision a
-resident harness or model uses. Existing identity selection bookkeeping remains
-governed by the existing session lifecycle; this specification neither exposes
-it as readback nor makes it a strict-confirmation boundary. The existing command
-envelope remains in place. This specification adds no result schema.
+resident harness or model uses. The existing command envelope remains in place.
+This specification adds no result schema.
 
 **R-11 — Preserve runtime, credentials, and authority.** Apply shall not invoke
 credential code, home regeneration, onboarding, adapter installation, adapter
@@ -327,7 +340,7 @@ remain in force. This specification authorizes no live identity edit or apply.
 | Send an explicit best-effort re-read nudge | R-05 through R-07 | A-02, A-04 |
 | Running turn is allowed | R-04 through R-06 | A-02, A-03 |
 | Reload is the only strict-confirmation path | R-08 | A-05 |
-| No revision readback, atomic, effect, generation, adapter, root, or quiescence machinery | Non-Goals, R-04, R-07, R-10, R-11 | A-04, A-07 |
+| No revision, atomic, effect, generation, adapter, root, or quiescence machinery | Non-Goals, R-04, R-07, R-10, R-11 | A-04, A-07 |
 | Treat non-file guidance separately | R-08, R-09 | A-05, A-06 |
 | Exactly `0.1.9` and `main/0.2.0`; indivisible landing | R-12, R-13 | A-08 |
 
@@ -356,25 +369,27 @@ apply makes no atomic-snapshot or single-revision claim.
 **A-04 — Failure and retry stay simple (R-04, R-05, R-07).** Inject a failure
 during the file update, after file success but before prompt submission, and
 after prompt acceptance but before the command response. Assert no nudge after a
-reported file-update failure. Assert no rollback, revision readback, effect
-row, adapter receipt, or automatic recovery. Retry the ordinary command and
-assert file reconciliation. Permit a duplicate nudge when the prior submission
-result was lost.
+reported file-update failure. Assert no rollback, revision stamp, revision
+readback, effect row, adapter receipt, or automatic recovery. Retry the ordinary
+command and assert file reconciliation. Permit a duplicate nudge when the prior
+submission result was lost.
 
-**A-05 — Reload supplies strict confirmation (R-08, I-06).** Complete apply
-while the running turn retains old skill text. Assert that the apply response,
-status, prompt result, and agent acknowledgment make no strict-current claim.
-Run the existing explicit reload lifecycle and wait for its ordinary success.
-Assert that a workflow requiring strict confirmation relies on that reload
-boundary.
+**A-05 — Reload supplies strict confirmation when available (R-08, I-06).**
+Complete apply while the running turn retains old skill text. Assert that the
+apply response, status, prompt result, and agent acknowledgment make no
+strict-current claim. In a fixture that exposes an external reload operation,
+return success from that operation and assert that dependent work starts only
+after that result. In a fixture without a reload operation, assert that strict
+confirmation remains unavailable and dependent work does not start. Assert that
+apply exposes no reload form.
 
 **A-06 — Non-file guidance is separate (R-09, I-07).** Give a resident Codex
 or Claude session A-only non-file guidance. Publish B-only non-file guidance and
 changed Tightbeam skill files. Apply B. Assert that the skill files can change
 while the resident non-file instruction carrier remains A. Assert that help,
-response, and status text do not call the resident non-file guidance B. Reload
-the session and verify current non-file guidance only through the existing
-reload lifecycle.
+response, and status text do not call the resident non-file guidance B. In a
+fixture that exposes external session replacement, replace the session and
+verify current non-file guidance only through the new session construction.
 
 **A-07 — Ownership and prohibited machinery (R-03, R-07, R-10, R-11, I-02,
 I-08, I-09).** Invoke apply as an unauthorized principal and assert the existing
@@ -383,11 +398,12 @@ effect. Plant product files, non-reserved skills, vendor state, transcripts,
 credentials, and harness-owned state beside the existing skill projection.
 After authorized apply, assert that only Tightbeam-owned skill files changed.
 Source inspection on both target lines shall find no apply-specific atomic
-switch, staging tree, revision readback, loaded-revision status, effect ID,
-operation query, durable effect store, immutable generation, projection root,
-additional skill root, process-global skill root, generation-specific home,
-adapter extension, adapter split, sidecar, quiescence wait, rollback graph,
-credential write, or runtime replacement.
+switch, staging tree, revision stamp, revision bookkeeping, revision readback,
+loaded-revision status, effect ID, operation query, durable effect store,
+immutable generation, projection root, additional skill root, process-global
+skill root, generation-specific home, adapter extension, adapter split,
+sidecar, quiescence wait, rollback graph, credential write, or runtime
+replacement.
 
 **A-08 — Cross-line conformance and gates (R-01, R-12, R-13, I-10).** Run the
 same focused fixture corpus against exact `0.1.9` and `main/0.2.0` candidates.
