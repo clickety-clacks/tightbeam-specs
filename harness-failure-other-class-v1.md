@@ -95,6 +95,12 @@ interpret the description or mint the class.
 - **Prod-shaped action seam**: the sole production function that can record or
   dispatch a prod-shaped action. It calls the shared harness gate in its owning
   transaction before it invokes the action callback.
+- **Action sink**: one exact module, function, and arity tuple in the closed
+  ARC-06 action-sink vocabulary. A sink writes a turn or wake, starts a harness
+  prompt, sends an ACP request, or crosses a command edge.
+- **Non-prod sink exclusion**: one compiler-visible ARC-06 manifest entry for an
+  exact production call site that reaches an action sink for a closed non-prod
+  reason. It is not permission to exclude a prod-shaped consumer.
 - **Recovery-condition digest**: lowercase hexadecimal SHA-256 of the exact
   UTF-8 bytes of the normalized recovery condition stored by admission.
 - **Living authority**: the first active ancestor of the source session under
@@ -341,20 +347,34 @@ name, exact spec SHA-256, reviewed-clean attest id, closer, and close time.
 ### ARC-03 — Atomic opening, dedupe, and concurrency
 
 Normalize and validate the complete input, authorize against stored session
-and lineage rows, compute the description digest, expire any due matching
-incident, and use the existing
-transaction owner. In one transaction:
+and lineage rows, compute the description digest, and use the existing
+transaction owner. After normalized idempotency lookup, an exact replay returns
+its original result before expiry processing and writes nothing. A conflicting
+replay refuses before expiry processing. For a new key, one transaction:
 
-1. count active `other` incidents for the pair and retain `hadActiveOther`;
-2. insert the immutable observation;
-3. open or attach to the matching active other incident;
-4. when a new incident opened and `hadActiveOther=false`, assert the other
-   standing fact and bind its id to that incident;
-5. create the pending review and first route when opening;
-6. count admitted incidents with the exact description digest;
-7. on count two, insert the one promotion case; on later counts, attach the
+1. selects every open `other` incident for the pair whose `expiresAt <= now`;
+2. changes the selected incidents through the ARC-06 expiry transition in
+   ascending `(expiresAt,id)` order and appends each expiry event in that order;
+3. counts active `other` incidents for the pair after those transitions;
+4. when the count is zero and at least one incident transitioned, files one
+   `harness-other-restored` fact, binds its id only to the last expired incident,
+   and retains `expiryFactId=null` on each earlier incident;
+5. retains `hadActiveOther=true` exactly when that post-expiry count is nonzero;
+6. inserts the immutable observation;
+7. opens or attaches to the matching active other incident;
+8. when a new incident opened and `hadActiveOther=false`, asserts the other
+   standing fact and binds its id to that incident;
+9. creates the pending review and first route when opening;
+10. counts admitted incidents with the exact description digest;
+11. on count two, inserts the one promotion case; on later counts, attaches the
    incident to that case; and
-8. append typed events and the deterministic notice turn or owner alert.
+12. appends typed events and the deterministic notice turn or owner alert.
+
+The transaction inserts the expiry events and optional restored fact before it
+inserts the new opening event and optional unavailable fact. The event-table ids
+and fact-table ids reflect those respective insertion orders. Thus an expired
+last incident followed by a new incident in the same transaction creates one
+retract-then-assert rollover. Rollback removes both sides of that rollover.
 
 Idempotency scope is `(principal, harness-health-observe-other,
 idempotencyKey)`. An exact replay returns the original observation, incident,
@@ -444,6 +464,28 @@ the same transaction.
 before that product candidate can pass. A new periodic or terminal-edge consumer
 is invalid until it enters this manifest and calls only the action seam.
 
+`Supervision.prod_shape_action_sinks/0` is the authoritative sorted action-sink
+vocabulary on both lines. It contains exactly these tuples:
+
+```text
+{turn,            Tightbeam.Ledger,       enqueue_in_txn, 2}
+{wake,            Tightbeam.Wakes,        schedule_in_txn, 2}
+{prompt,          Tightbeam.ACP.Adapter,  prompt,          3}
+{prompt,          Tightbeam.ACP.Adapter,  prompt,          4}
+{acp_request,     Tightbeam.ACP.Conn,     request,         3}
+{acp_request,     Tightbeam.ACP.Conn,     request,         4}
+{command_signal,  Tightbeam.CommandEdge,  signal,          2}
+{command_job,     Tightbeam.CommandEdge,  job,             2}
+{command_request, Tightbeam.CommandEdge,  request,         4}
+```
+
+The build gate verifies that each tuple resolves to an exported function on its
+line. It also rejects a direct `turns` or `wakes` insert outside the named row
+sink, a `session/prompt` ACP request outside `Tightbeam.ACP.Adapter`, and a
+command-edge dispatch outside the three named command-edge sinks. Adding,
+removing, renaming, or changing the arity of an action sink requires a canonical
+spec amendment and a new exact-revision review.
+
 The build gate runs an Elixir compiler tracer over every production `.ex` file.
 It derives roots from the existing Supervision callbacks for initial sweep,
 scheduled sweep, requested sweep, terminal notification, and every function in
@@ -452,20 +494,49 @@ these roots; Non-Goal 6 forbids another timer or patrol. The tracer follows
 local and remote calls from those roots. A dynamic handler invocation on a
 root-reachable path is forbidden outside `prod_shape_act_in_txn/6`.
 
-The tracer emits every root-reachable call to `prod_shape_act_in_txn/6` with its
-caller tuple and compares the sorted set byte-for-byte with the manifest. A
-root-reachable path that records or dispatches a prompt, turn, wake, or harness
-command without first entering the action seam fails
-`unmediated_prod_shape_action`. The gate also rejects a production call from
-outside `HarnessHealth` to `prod_shape_gate_in_txn/4`, and rejects
+The tracer emits every production call site to the closed sink vocabulary as
+`{callerModule,callerFunction,callerArity,sinkKind,sinkModule,sinkFunction,
+sinkArity,callOrdinal}`. `callOrdinal` is one-based lexical order among calls
+from the caller to that sink tuple. It also emits every root-reachable call to
+`prod_shape_act_in_txn/6` and compares that sorted caller set byte-for-byte with
+`prod_shape_consumers/0`.
+
+Each emitted sink call must have a traced path through
+`prod_shape_act_in_txn/6`, or it must match one exact entry in
+`Supervision.non_prod_shape_sink_calls/0`. An exclusion entry adds one final
+reason field. The closed reasons and their predicates are:
+
+- `interactive_user_request`: the path begins at an authenticated inbound verb
+  and is unreachable from every supervision callback and turn-end root;
+- `durable_row_delivery`: the path delivers one turn or wake row committed
+  before this invocation and creates no replacement action row;
+- `lifecycle_notification`: the path carries one committed lifecycle, review,
+  or decision row id and does not select work by age, idle state, or terminal
+  state; or
+- `adapter_session_maintenance`: the ACP method is exactly `initialize`,
+  `session/close`, `session/fork`, `session/load`, `session/new`,
+  `session/set_config_option`, or `session/set_mode`, and the request contains
+  no prompt.
+
+The gate fails `unmediated_prod_shape_action` for an unclassified sink call. It
+fails `invalid_non_prod_exclusion` for an unknown reason, a predicate mismatch,
+or an exclusion on a path from a manifested prod-shaped consumer. It fails
+`stale_non_prod_exclusion` when an exclusion matches no emitted call, and
+`duplicate_non_prod_exclusion` when two entries match one call. The gate also
+rejects a production call from outside `HarnessHealth` to
+`prod_shape_gate_in_txn/4`, and rejects
 `ConditionFacts.harness_unavailable?/3` or a direct
 `harness_health_incidents` read in any manifested consumer.
 
 A fixture module added to the turn-end schedule that calls the action seam
-without a manifest entry must add one tracer tuple and fail exact set equality.
-A second scheduled fixture that reaches the prompt/turn sink directly must fail
-`unmediated_prod_shape_action`. These compiler-derived roots and paths, not a
-hand-maintained scan target, discover a new prod-shaped act before registration.
+without a consumer entry must add one tracer tuple and fail exact set equality.
+One fixture for each of the nine sink tuples must call that sink outside the
+action seam without an exclusion and fail `unmediated_prod_shape_action`. One
+fixture for each non-prod reason must satisfy its predicate and remain outside
+the harness pause. A stale entry, duplicate entry, unknown reason, predicate
+mismatch, and attempted exclusion of a manifested consumer must each fail with
+the declared refusal. These compiler-derived calls and exact manifests, not a
+hand-maintained scan target, discover a new action call before classification.
 
 An authorized `harness-health-resolve-other` mutation requires `incidentId`,
 `observedState`, `exactProbe`, `outputDigest`, `recoveryConditionDigest`,
@@ -654,6 +725,14 @@ incidents.
     second. After the first terminal transition, no retract exists, the fact
     stands, and the gate is unavailable. After the second, exactly one retract
     exists, the fact does not stand, and the gate is available.
+    On each line, given one active same-owner ancestor, open A as the pair's sole
+    incident, advance `now` to A's `expiresAt` without a gate call, and admit
+    different-description B with a new key. The admission transaction expires A
+    before it counts active incidents, then opens B. The final totals are two
+    incidents (A expired and B open), three other pair-fact rows in
+    assert-retract-assert order with one fact standing, two pending reviews, two
+    initial routes, two review notices, and zero expiry prompts. Exact replay of
+    B returns its original ids and changes no total.
 12. **OTH-AC-12 — Evidenced recovery.** Given an active `other` incident and an
     authorized fresh `PROVEN` recovery probe whose condition digest matches the
     opening observation and whose `recoverySatisfied` value is true, when
@@ -672,10 +751,11 @@ incidents.
     retract only when no second active `other` incident remains for the pair.
 14. **OTH-AC-14 — Crash and restart.** At barriers after observation insert,
     incident insert, fact assertion, review insert, route insert, notice enqueue,
-    expiry state write, and recovery proof insert, force rollback or process
-    loss. After restart, either the whole owning transaction is absent or its
-    complete state is readable; replay writes no duplicate and does not extend
-    expiry or resend a delivered notice.
+    expiry state write, rollover retraction, replacement fact assertion, and
+    recovery proof insert, force rollback or process loss. After restart, either
+    the whole owning transaction is absent or its complete state is readable;
+    replay writes no duplicate and does not extend expiry or resend a delivered
+    notice.
 15. **OTH-AC-15 — Review is durable.** Given delivery, resolution, or expiry,
     when no authorized review outcome exists, then the review stays pending and
     owner/admin trace lists it. Given an authorized first-occurrence review,
@@ -701,16 +781,15 @@ incidents.
     predecessor. Unknown, mixed, partial, or target-stamp-with-bad-object
     fixtures refuse before supervision starts.
 19. **OTH-AC-19 — Authoritative consumer discovery.** Given the prodder, session
-    garbage collector, manifest, and compiler tracer on each line, when the
-    static gate compiles all production `.ex` files, then its sorted caller set
-    equals `Supervision.prod_shape_consumers/0`; every caller uses only
-    `prod_shape_act_in_txn/6`; and no manifested caller contains a direct
-    harness-health, condition-fact, adapter, process, or harness-up predicate.
-    Compile a fixture that calls the action seam without a manifest entry: its
-    added tracer tuple must fail exact set equality. Compile fixtures that call
-    an action sink without the seam, call the gate outside `HarnessHealth`, or
-    read the forbidden fact/table directly: each must fail the static gate with
-    its declared refusal.
+    garbage collector, both exact manifests, and compiler tracer on each line,
+    when the static gate compiles every production `.ex` file, then the nine
+    action-sink tuples match ARC-06, the sorted seam caller set matches
+    `prod_shape_consumers/0`, and each emitted sink call passes through the seam
+    or matches one valid non-prod exclusion. Every manifested caller uses only
+    `prod_shape_act_in_txn/6` and contains no direct harness-health,
+    condition-fact, adapter, process, or harness-up predicate. Run every ARC-06
+    positive and negative fixture on `0.1.9` and main. Each refusal code and the
+    legitimate non-prod no-pause result must match across the two lines.
 20. **OTH-AC-20 — Quiet-path silence and observability.** Given no active
     incident, repeated gate calls write nothing. Given one denied candidate,
     repeated identical calls produce one redacted suppression event. Given an
