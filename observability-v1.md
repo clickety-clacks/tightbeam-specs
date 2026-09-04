@@ -1024,7 +1024,8 @@ where one is needed.
 ### Tests (extend §Tests)
 
 - identity-apply on a started session yields exactly one `stream_updated`; `:noop`
-  (never-started) yields none; `turn_in_progress` refusal yields none.
+  (never-started) yields none. Apply has no turn-boundary refusal to test
+  (`dr_07bdef13`); a session with a running turn is applied like any other.
 - mark_terminal with N running provider-sessions yields N park messages + N
   `stream_updated`; a second mark_terminal for the same provider (already terminal)
   emits nothing and re-parks nothing.
