@@ -51,9 +51,9 @@ Provide a self-contained CLI-only E2E procedure that separates surface discovery
 9. A `pair.request` `capability_mismatch` ends the current fixture before mutation. A fresh fixture starts a new admission boundary: the operator performs fresh discovery and records a new passing admission row for each target surface before any target operation.
 10. After a restart or recovery boundary, the operator re-runs discovery. If the surface/controller-fixture binding changed or the admission evidence does not explicitly cover the boundary, the operator re-admits the candidate before the next target operation.
 11. The operator preserves the V4 phase order, CLI-only path, repeated pushes, per-push capture proof, multi-pane topology, 2/5/15/30-minute checkpoints, 60-minute churn dwell, and one bounded restart/recovery cycle.
-12. A successful local `read` has CLI exit code 0, top-level `ok: true`, the expected scope and acknowledgement, `cacheStatus: current`, and the expected content record. The operator never requires `result.ok` from `read`.
+12. A successful local `read` has CLI exit code 0, top-level `ok: true`, the expected scope, `cacheStatus: current`, and no consumable loss. Local `read` is an unread-delta projection, not a current-content snapshot. Immediately after a push it must include that push's content record and matching acknowledgement. For a baseline, restoration, or later check with no new push, `acknowledgement: null` and an empty record list is valid; current rendered-content truth comes from `capture-pane`. The operator never requires `result.ok` from `read`.
 13. The preflight executor files the preflight-ready fact only after a fresh `list` result matches the admission row. The gated operator consumes the row only after that fact arrives and its own fresh `list` result still matches every binding.
-14. Preflight restoration requires the intended one-pane topology, a current local `read`, and exact agreement between baseline and restored pane, content id, content type, revision, visible text, selection, and viewport. PNG files and SHA-256 values remain evidence, but PNG byte equality is not a restoration predicate.
+14. Preflight restoration requires the intended one-pane topology, a current lossless local `read`, and exact agreement between the local read, its same-controller capture, and the baseline/restored capture pane, content id, content type, revision, visible text, selection, and viewport. The read can be current-empty when that content predates controller admission; any nonempty content delta must match the paired capture. PNG files and SHA-256 values remain evidence, but PNG byte equality is not a restoration predicate.
 
 ## Architecture
 
@@ -62,7 +62,7 @@ Provide a self-contained CLI-only E2E procedure that separates surface discovery
 - `02-fleet-soak-phases.md` defines the preserved phase sequence and execution scope.
 - `03-fleet-soak-run-checklist.md` is the sole run record and admission-log mutation seam.
 - `04-v4-changed-clauses.md` traces each V4 clause changed by V4.1.
-- `05-read-response-validator.sh` validates current local content.
+- `05-read-response-validator.sh` validates strict post-push content deltas and current lossless baseline/restoration reads jointly with their same-controller captures.
 - `06-restoration-oracle.sh` validates semantic restoration while preserving PNG hashes as evidence.
 - `MANIFEST.sha256` binds the bundle contents.
 
@@ -78,13 +78,14 @@ This design adds no new product mechanism. Deleting the mutation-capable preflig
 6. Given a second discovered surface without independent admission evidence, when the primary surface has already passed, then the second surface remains excluded and untargeted.
 7. Given a `pair.request` response with `capability_mismatch`, when the operator reaches the first mutation boundary, then the run records no mutation, performs terminal fixture/state cleanup, classifies endpoint/procedure readiness, and routes a fresh fixture without retry. Before resuming, the operator runs fresh `surf-ace list` discovery and creates a new passing admission row for every surface that the fresh fixture will target.
 8. Given a restart, recovery, ownership handoff, or state-root change, when fresh discovery returns a changed surface/controller-fixture binding or the prior admission evidence does not explicitly cover that boundary, then the candidate is re-admitted before read, capture, push, or topology work targets it.
-9. Given the sealed V4.1 bundle, when a reviewer compares its phase and checklist headings with V4, then each V4 endurance phase remains present and the required 2/5/15/30-minute, 60-minute, and restart/recovery checkpoints remain stated.
-10. Given preparation evidence, when a reviewer inspects commands and artifacts, then the evidence contains document, archive, hash, and repository operations only and contains no live Surf Ace action.
-11. Given an admitted surface whose evidence expired, does not cover the current boundary, does not cover the next target operation, names another operator, or names another state root, when the operator performs the pre-operation admission check, then the operator records the surface as a candidate and creates a new passing admission row before any target operation names it.
-12. Given the exact successful tick-0 local `read` fixture, when the harness validates it, then the response passes without a `result.ok` field and the harness proceeds to capture.
-13. Given a preflight row that names another controller, state root, operator, surface, pane, boundary, or operation set, or given no matching preflight-ready fact, when the operator evaluates the handoff, then the operator rejects the row and performs no target operation.
-14. Given the exact `art_663ac4d3` restoration fixture whose baseline and restored PNG hashes differ while semantic render/content metadata matches, when the harness validates restoration, then the semantic oracle passes and both hashes remain recorded.
-15. Given a restored capture with a wrong content id, wrong visible text, or stale revision, when the harness validates restoration, then the semantic oracle rejects it.
+9. Given a newly admitted controller and pre-existing pane content, when local `read` returns top-level `ok: true`, the exact scope, `cacheStatus: current`, `consumableLoss: null`, `acknowledgement: null`, and no records while `capture-pane` proves the expected rendered content, then the baseline or restoration read passes. The same empty response does not satisfy a post-push content check.
+10. Given the sealed V4.1 bundle, when a reviewer compares its phase and checklist headings with V4, then each V4 endurance phase remains present and the required 2/5/15/30-minute, 60-minute, and restart/recovery checkpoints remain stated.
+11. Given preparation evidence, when a reviewer inspects commands and artifacts, then the evidence contains document, archive, hash, and repository operations only and contains no live Surf Ace action.
+12. Given an admitted surface whose evidence expired, does not cover the current boundary, does not cover the next target operation, names another operator, or names another state root, when the operator performs the pre-operation admission check, then the operator records the surface as a candidate and creates a new passing admission row before any target operation names it.
+13. Given the exact successful tick-0 local `read` fixture, when the harness validates it, then the response passes without a `result.ok` field and the harness proceeds to capture.
+14. Given a preflight row that names another controller, state root, operator, surface, pane, boundary, or operation set, or given no matching preflight-ready fact, when the operator evaluates the handoff, then the operator rejects the row and performs no target operation.
+15. Given the exact `art_663ac4d3` restoration fixture whose baseline and restored PNG hashes differ while semantic render/content metadata matches, when the harness validates restoration, then the semantic oracle passes and both hashes remain recorded.
+16. Given a restored capture with a wrong content id, wrong visible text, or stale revision, when the harness validates restoration, then the semantic oracle rejects it.
 
 ## Open Questions
 
