@@ -51,13 +51,21 @@ Four measured facts set its size, and the fourth corrects the scope addition's
 own count.
 
 **The false refusal rate.** Over the thirty days to 2026-09-04
-`completion-requires-review` refused 8 cards that carried an independent
-holder-filed `reviewed-clean` on the record at the moment it refused them. The
-measurement and the two distinct causes are at R6.
+`completion-requires-review` refused 821 distinct cards in 1037 denials. Of those,
+**8 on the mainline and 17 on the released line** carried, at the moment of
+refusal, a holder-filed review conclusion from a session other than the card's own
+holder — a conclusion the fact discards. R6 repairs exactly those and turns none
+of the others from allowed to denied. The measurement, both selection rules, and
+the three distinct causes are at R6.
 
-**The raise rate.** Over the fourteen days to 2026-09-04 the org raised between
-30 and 69 operator decision requests per day. The owner has personally ruled 494
-of them.
+**The raise rate.** Over the fourteen days to 2026-09-04 the org raised between 11
+and 73 operator decision requests per day, 617 in total. All-time, 502 operator
+requests carry a ruling, and every one of those rulings carries a `user:mike`
+origin. Measured 2026-09-04 against `decision_requests` where `kind = 'operator'`,
+counting raises by `createdAt` bucketed to UTC days and rulings by
+`status = 'ruled'`. Read that 502 as A12 requires: `ruledBy` records attribution,
+not the authorizing principal, so it counts rows the owner is recorded against,
+not keystrokes proven to be his.
 
 **The clearing rate.** Zero of them were cleared by an agent, because no agent
 path exists. `operator-rule` refuses any principal that is not the owner user.
@@ -244,15 +252,19 @@ where this document's denial counts come from. There is no separate rail denial
 table. The counts are therefore complete for the window measured and cannot be
 broken down further without new recording, which is a Non-Goal.
 
-A qualification on the denial counts at R6. Reproducing what the rail SAW at each
-denial requires replicating the fact's card-selection rule in SQL, and the two
-lines select differently: the mainline collapses to the review card carrying the
-most recent holder-filed verdict, the released line to the most recently opened
-review card. The counts at R6 were produced under the mainline's rule. Both lines
-collapse by card and then by kind, so both exhibit both causes R6 names, and the
-kind-collapse cases are unaffected by which rule is used. The card-collapse
-count, and only that count, is sensitive to it. The defect and the requirement do
-not move; the number attached to one of the two causes may.
+A qualification on the denial counts at R6, now measured rather than hedged.
+Reproducing what the rail SAW at each denial requires replicating the fact's
+card-selection rule in SQL, and the two lines select differently: the mainline
+collapses to the review card carrying the most recent holder-filed verdict, the
+released line to the most recently opened review card. Both rules were run over
+the same 30-day window; the results are at R6. What does not move is the false
+refusal count this document is sized by: **8 under both rules**, because the
+cards it names are cards whose winning verdict is a review conclusion the fact's
+kind list omits, and both rules select the same winner on all 8. What moves is
+the size of the correctly-denied population around them, and the number of cards
+R6 additionally repairs on the released line, which is larger. Neither the defect
+nor the requirement moves. R6 states both figures rather than one, so a builder
+targeting either line reads its own number.
 
 **A7.** `attests.verdictKind` is open text. No storage constraint limits it to a
 vocabulary, and the live data carries a long tail of one-off kinds. The
@@ -338,6 +350,15 @@ opened himself, and 48 have no subject card. Opener state is measured now, not a
 of the moment each request was open, so the 127 measures how often an opener has
 since retired rather than a count of retractions that would have failed.
 Verified against the live database, read only.
+
+**A17.** The `sessions` table carries exactly two states in the live database:
+`active` (407 rows) and `retired` (2,712 rows). Measured 2026-09-04, read only.
+R7's active-session condition is therefore inert against today's data — every
+lineage member that can make a call is already `active` — and a build that omits
+the condition passes every test the live corpus can produce. This assumption is
+why AC-23 is written against the predicate rather than against the corpus. If a
+third state is ever added, the condition stops being inert and R7's requirement
+sentence is already correct for it; nothing in this document needs amending.
 
 ## Invariants
 
@@ -433,6 +454,15 @@ reader finds an effort check-in whose real content is a product decision, the
 defect is that it was raised as an effort row, and the repair is upstream of
 this document.
 
+That separation is mechanical, not conventional, and a builder should verify it
+before trusting this paragraph. The `effort-rule` entry point refuses any request
+whose `kind` is not `effort` before it consults `authorized?/2` at all, so the
+predicate R7 changes is unreachable from an `operator` row on both lines. R7
+widens a clause of a function that operator requests never call. A build that
+moves the kind check, or that reuses the widened predicate on the operator path,
+breaks I1 — which is the one invariant this document forbids trading against
+anything.
+
 ## Architecture
 
 The design in one sentence: **correct the one completion predicate that hides
@@ -465,8 +495,13 @@ Each collapse hides a `reviewed-clean` that is on the record.
 **The corrected predicate.** Consider every holder-filed REVIEW-CONCLUSION
 verdict, as Terms defines that set (A7), on every one of the producing card's
 `--reviews`-linked review cards. Order that pool by the verdict row's own recency
-— the same order the fact already uses, `ts` descending then `rowid` descending,
-so that two verdicts filed in the same millisecond still have exactly one winner.
+— `ts` descending then `rowid` descending, so that two verdicts filed in the same
+millisecond still have exactly one winner. Both lines already order VERDICTS this
+way inside the fact; what R6 changes is that this ordering now decides the winner
+outright, rather than being applied inside a review card that a separate rule
+picked first. On the released line that separate rule is `openedAt` descending, so
+a builder there must not read "the order the fact already uses" as licence to keep
+`openedAt` anywhere in the corrected predicate.
 Take the single most recent verdict in the pool. The producing card qualifies if
 and only if that verdict's kind is `reviewed-clean` AND the card it sits on is
 held by a session other than the producing card's holder.
@@ -523,7 +558,9 @@ Three concluded `reviewed-clean` (`asg_2cdabccb`, `asg_3da5b789`, `asg_ec8fb3ac`
 The fourth, `asg_e526fd86`, carries a single `release-approved` and is the most
 recent. The rail read the fourth card only, saw a kind that is not
 `reviewed-clean`, and denied a card with three independent clean reviews and a
-release approval on it.
+release approval on it. This example was replayed under both card-selection rules
+and selects `asg_e526fd86` under each, so it demonstrates the card collapse
+identically on the mainline and on the released line.
 
 **A third collapse exists and R6 deliberately does NOT remove it.** The fact's
 card selection today ignores who holds the card, and applies the independence
@@ -544,17 +581,42 @@ authority asks for, and I7 forbids it. R6 removes the card collapse and the kind
 collapse. It leaves this one exactly as it is, and the ordering stated in the
 corrected predicate is what preserves it. AC-20 pins it.
 
-**The size of this defect, stated honestly.** Over the thirty days to 2026-09-04
-`completion-requires-review` denied 1,036 times across 820 distinct cards. Of the
-denied cards that had a linked review card carrying any holder-filed verdict, the
-rail saw `reviewed-clean` on 263 (the denial preceded the review; this is the
-remedy loop working exactly as designed), `changes-requested` on 67 (a true
-positive: the review found problems), `verified` on 7, and `release-approved` on
-1. All seven of the `verified` cards had a `reviewed-clean` earlier on that same
-review card. So the false positives are 8 of 338, about 2.4 percent, and this
-document does not claim they explain the bulk of the denials. They do not. They
-are the shape that produces the wedge the authority names: a card that IS landed
-and IS independently reviewed, refused its terminal receipt.
+**The size of this defect, stated honestly, on both lines.** Over the thirty days
+to 2026-09-04 `completion-requires-review` denied 1,037 times across 821 distinct
+cards. 360 of those cards had a linked review card; 339 had one carrying any
+holder-filed verdict. What the rail SAW on those depends on which line's card
+selection is replayed, so both were replayed over the same window:
+
+| what the rail saw | mainline selection | released selection |
+|---|---|---|
+| `reviewed-clean` | 264 | 255 |
+| `changes-requested` | 67 | 63 |
+| `verified` | 7 | 7 |
+| `release-approved` | 1 | 1 |
+| winning card carries no holder verdict | 0 | 34 |
+
+The `reviewed-clean` rows are the denial preceding the review — the remedy loop
+working exactly as designed. The `changes-requested` rows are true positives: the
+review found problems. The `verified` and `release-approved` rows are the false
+positives, 8 on both lines, and all seven `verified` cards carry a
+`reviewed-clean` earlier on that same review card. That is about 2.4 percent of
+the 339, and this document does not claim they explain the bulk of the denials.
+They do not. They are the shape that produces the wedge the authority names: a
+card that IS landed and IS independently reviewed, refused its terminal receipt.
+
+**What R6 changes, measured on both lines.** Applying the corrected predicate to
+the same 821 cards: **272 qualify, against 264 on the mainline today and 255 on
+the released line today. R6 flips 8 cards from denied to allowed on the mainline
+and 17 on the released line, and it flips 0 cards from allowed to denied on
+either.** The released figure is larger only because that line's `openedAt`
+selection additionally loses cards whose most recently OPENED review card carries
+no verdict while an earlier one concluded clean; the corrected predicate reaches
+those too, as a consequence of removing the card collapse and not as a separate
+requirement.
+
+That zero is I7's test made empirical, not argued. It is the check a builder
+should re-run before and after, and AC-22 pins it as an acceptance obligation
+rather than a claim to trust.
 
 **Why this is a predicate correction and not a bypass.** I6 and I7 are the
 guarantees, and here is why they hold. R6 adds no flag, no claim, no exemption,
@@ -585,9 +647,10 @@ The subtraction test, applied to R6:
   live-mutation work. The measured 67 genuine `changes-requested` denials in
   thirty days are the rail earning its place. Deletion loses.
 - *Accept the failure as a named value instead?* Accepting means the org keeps a
-  rail that refuses reviewed work about eight times a month, each refusal
-  landing on the owner's desk as a decision request. That is the manufactured
-  paperwork the authority names. Acceptance loses.
+  rail that refuses reviewed work about eight times a month on the mainline and
+  seventeen on the released line, each refusal landing on the owner's desk as a
+  decision request. That is the manufactured paperwork the authority names.
+  Acceptance loses.
 - *Add?* Nothing is added. Two collapses are removed from a query. `deny_when`
   keeps the same three clauses, the same fact name, and the same values, and the
   fact keeps its return contract, so no rule logic is edited.
@@ -629,17 +692,37 @@ Two consequences, both present in the live data (A11):
 **The requirement.** Change the session clause of `authorized?/2` so that a
 session principal is authorized when it is a member of the request's escalation
 lineage, as Terms defines that set: computed from the assignment by the same walk
-`route_session/5` performs, excluding the assignment's holder at every step, and
-never read from the row's current expecter columns. The user clause is unchanged.
-The authorized actions remain exactly `continue` and `dismiss`.
+`route_session/5` performs, excluding the assignment's holder at every step,
+**admitting only sessions in state `active` and stepping past any session that is
+not**, and never read from the row's current expecter columns. The user clause is
+unchanged. The authorized actions remain exactly `continue` and `dismiss`.
+
+Both halves of that sentence are load-bearing and a builder must implement both.
+Dropping the active-session condition builds a WIDER set than Terms defines and a
+wider one than `route_session/5` selects from, which contradicts R7's own
+rationale: the members admitted are exactly the principals the substrate has
+already decided are entitled to answer, and a session the selector steps past was
+never one of them. The condition is currently inert in the live data — the
+`sessions` table holds only `active` and `retired` (A17), and a retired session
+cannot make a call — so a build that omits it passes every test the live corpus
+can produce and is still wrong. AC-23 pins it.
+
+`authorized?/2` is one private function consulted at TWO points on the rule path:
+once in `effort-rule`'s pre-transaction check and again inside the ruling
+transaction, so the check survives a concurrent expecter advance. R7 changes that
+one function, and both call sites therefore change together. A builder who inlines
+a lineage test at one site and leaves the other on identity has built the race the
+second check exists to close. AC-24 pins it.
 
 R7 may read, call, or extract the walk `route_session/5` already performs in
 order to enumerate that set, including lifting it into a shared function that
-both the selector and the membership test call. What it must not do is change the
-principal `route_session/5` selects for `advance_expecter/2`, which is the
-behaviour Non-Goal 8 protects. Enumerating a chain and picking one member of it
-are the same walk read two ways; R7 adds the first reading and leaves the second
-identical.
+both the selector and the membership test call. It may likewise CALL
+`initial_expecter/2` and `advance_expecter/2` if enumeration needs them: Non-Goal 8
+forbids changing what those functions return, not reading them. What R7 must not
+do is change the principal `route_session/5` selects for `advance_expecter/2`,
+which is the behaviour Non-Goal 8 protects. Enumerating a chain and picking one
+member of it are the same walk read two ways; R7 adds the first reading and leaves
+the second identical.
 
 Everything else stays where it is. `advance_expecter/2` still walks on deadline.
 The deadline is still 24 hours. The notification still goes to the current
@@ -1223,6 +1306,37 @@ WHEN the producing card's holder attests completion, THEN
 green after R6. R6 makes the rail read conclusions it already has; it invents
 none where there are none.
 
+**AC-22 (R6, no card flips from allowed to denied).** GIVEN the set of producing
+cards that `completion-requires-review` denied over a stated window, WHEN the
+fact is evaluated over that same set before and after R6 on the line being
+built, THEN every card the current predicate qualifies is still qualified by the
+corrected one, and the count of cards that move from qualified to unqualified is
+zero. This document measured that count as 0 on both lines over the thirty days
+to 2026-09-04, with 8 cards moving from denied to allowed on the mainline and 17
+on the released line. A builder re-runs the comparison on the line being built
+and reports both numbers. A nonzero denied count is a defect in the
+implementation, not a revision of this requirement: R6 removes a collapse, and
+removing a collapse cannot subtract a member from the pool.
+
+**AC-23 (R7, only active sessions are admitted).** GIVEN an open `effort`
+request whose escalation lineage contains a session in a state other than
+`active`, WHEN that session's principal calls `effort-rule` on the request,
+THEN the call is refused as unauthorized, and WHEN the next `active` session
+along the same walk calls it, THEN the call is authorized. This check cannot be
+produced from the live corpus today, because `sessions` holds only `active` and
+`retired` and a retired session makes no calls (A17). It is written against the
+predicate, not against the corpus, and it fails a build that computes lineage
+membership without the state condition.
+
+**AC-24 (R7, both call sites move together).** GIVEN an open `effort` request
+and a lineage member that R7 newly admits, WHEN that member rules the request,
+THEN the ruling is authorized both by the pre-transaction check and by the
+in-transaction re-check, and the request reaches `ruled`. A build that changes
+one call site and not the other fails this check by refusing inside the
+transaction after admitting outside it. The two checks exist so authorization
+survives a concurrent expecter advance; R7 changes the one predicate they share
+and leaves both call sites in place.
+
 ## Open Questions
 
 **OQ-1. BLOCKING, for one requirement this document does not state. Blocks
@@ -1329,14 +1443,33 @@ built now**, and it closes every case in that channel where a lawful agent
 answerer exists.
 
 **OQ-6. NON-BLOCKING, but the card must answer it before a builder starts.**
-Which line R7 targets. The released line and the mainline carry different session
-clauses (A9), and the mainline's is the opposite defect: too wide rather than too
-narrow. R7's requirement text is the same against either, and only the clause the
-builder deletes differs. R1 through R6 do not raise this question because their
-targets are byte-identical on both lines, verified in source. Whether this work
-item lands on `0.1.x`, on `main`, or on both by cherry-pick is an election under
-the repository's cross-line rule, and it belongs on the assignment card that
-dispatches R7.
+Which line R7 and R6 target. TWO requirements raise this, not one.
+
+R7's targets differ in text. The released line and the mainline carry different
+session clauses (A9), and the mainline's is the opposite defect: too wide rather
+than too narrow. R7's requirement sentence is the same against either, and only
+the clause the builder deletes differs.
+
+R6's targets differ in behaviour, which is the sharper case and the one an
+earlier draft of this section got wrong. The fact's card selection is NOT
+byte-identical across lines: the mainline collapses to the review card carrying
+the most recent holder-filed verdict, computed in one join, while the released
+line collapses to the most recently OPENED review card and reads verdicts inside
+it. R6's requirement text holds against both, because both collapse and R6
+removes the collapse. What differs is what a builder deletes, and what the change
+is worth: 8 cards on the mainline, 17 on the released line, measured in R6 and
+pinned by AC-22. A builder on the released line must not carry `openedAt` into
+the corrected predicate, and a builder who reads "the order the fact already
+uses" without checking which line they are on will. A6 records the same split
+from the measurement side.
+
+R1 through R5 do not raise this question: their targets are byte-identical on
+both lines, verified in source.
+
+Whether this work item lands on `0.1.x`, on `main`, or on both by cherry-pick is
+an election under the repository's cross-line rule, and it belongs on the
+assignment cards that dispatch R6 and R7. Each card states its line; a card that
+does not state it is not ready to dispatch.
 
 **OQ-7. NON-BLOCKING, and deliberately not specified.** The residual case R1
 leaves open: a request whose raiser is ALIVE but cannot run — out of capacity,
