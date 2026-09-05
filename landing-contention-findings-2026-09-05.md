@@ -49,10 +49,18 @@ the new SHA, so that proof buys nothing today.
 
 Three facts, all checkable:
 
-1. **The substrate already has the primitive and it has never been used.** Table
-   `critical_leases` carries `sessionKey`, `reason`, `startedAt`, `expiresAt`,
-   `hardDeadline`. That is a landing lock. It held zero rows on 2026-09-05 and
-   shows no history of use.
+1. **There is no mutual-exclusion primitive for a shared resource, and the one
+   that looks like it is not one.** `critical_leases` (`sessionKey`, `reason`,
+   `startedAt`, `expiresAt`, `hardDeadline`) held zero rows on 2026-09-05, and
+   the shape invites the wrong conclusion. It is not a landing lock. Its module
+   doc reads "Bounded critical-section leases for session lifecycle deferral":
+   it is keyed by session, declared by a session about itself, and consumed
+   where session lifecycle is decided, so its meaning is "do not reap me yet",
+   not "nobody else may write this branch". *(Correction recorded 2026-09-05:
+   an earlier revision of this document called it a landing lock. The
+   Orchestration session caught the error from the code before this document
+   had been read by anyone else. Verified against
+   `lib/tightbeam/critical_leases.ex` and `gateway.ex` on main.)*
 
 2. **One orchestrator independently built the right answer.** The stall-fix
    recovery owner (`s_c71f88da`) runs what its own attests call a *serializer*:
@@ -81,16 +89,20 @@ Recorded as options, not recommendations. Both were put to Mike on 2026-09-05.
   gates re-run against the new SHA. Substrate and rails change. Removes the cost
   rather than the collision, and helps every future lane.
 - **Serialize landing.** One lane at a time holds the right to land against a
-  stationary base, using `critical_leases` or the serializer pattern above.
-  Policy and guidance change, no substrate work required. Removes the collision
-  rather than the cost.
+  stationary base, using the serializer pattern above. Note there is no existing
+  primitive to hang this on: `critical_leases` is session-scoped lifecycle
+  deferral, not a resource lock. As convention it needs no substrate work but
+  gives a second lane no way to observe the claim; as a rail it needs a new
+  resource-scoped lease.
 
 They are complementary. The second is available immediately; the first is the
 durable fix.
 
 ## Where to look when the overhaul starts
 
-- `critical_leases` in the schema: unused mutual exclusion, ready to adopt.
+- `critical_leases`: NOT a landing lock, despite its shape. Session lifecycle
+  deferral only. Any landing rail needs a new resource-scoped primitive, or a
+  convention with somewhere for a second lane to observe the claim.
 - Session `s_c71f88da` attests: the working serializer prototype and its wording.
 - `stall-watchdog-kit.md`: the comparable case of a duty that was written down
   once and then spread by being handed to fresh agents.
