@@ -6,6 +6,14 @@ Posture: HEAVY (`att_4a8e3cc4` on `asg_14e7590c`)
 Evidence: `art_02574fb9`, sha256
 `83782fe8522c87066d3b9eddb7207c5e8606e5a55e6346c90fdb6c7047e386b8`
 
+Amended 2026-09-05 for review finding B-1 and post-MVP items P-1 through P-5
+(`art_141180b0`). The amendment corrects one class of error throughout: the first
+draft made per-ref claims against a two-branch model of a repository that has
+three branches and a running release whose artifact matches no branch tip. A18 is
+new and every per-ref claim below now names its ref. No requirement text changed.
+The measured size of R6 changed from 17 to 8, because the 17 describes only a
+frozen branch pointer that no host runs and no release ships.
+
 Authority, verbatim (Mike, 2026-09-04):
 
 > ROOT CAUSE, file it as a work item and staff it: the completion rail refuses
@@ -52,9 +60,12 @@ own count.
 
 **The false refusal rate.** Over the thirty days to 2026-09-04
 `completion-requires-review` refused 821 distinct cards in 1037 denials. Of those,
-**8 on the mainline and 17 on the released line** carried, at the moment of
+**8** carried, at the moment of
 refusal, a holder-filed review conclusion from a session other than the card's own
-holder — a conclusion the fact discards. R6 repairs exactly those and turns none
+holder — a conclusion the fact discards. That 8 is the figure on `main`, on
+`0.1.9`, and on the release gibson runs, which share one card-selection rule; a
+larger figure of 17 belongs only to the frozen `0.1.8` pointer, which no host runs
+and no release ships (A18, A6). R6 repairs exactly those and turns none
 of the others from allowed to denied. The measurement, both selection rules, and
 the three distinct causes are at R6.
 
@@ -95,7 +106,7 @@ The scope addition's phrase "even to the card's own holder" describes the 23,
 and refusing them is correct. This is recorded here rather than quietly built
 around, because a builder reading the addition without this paragraph would
 widen the predicate until the holder could dismiss its own check-in, which is
-the mainline's current defect (R7).
+the current defect on BOTH `main` and `0.1.9` (R7, A9).
 
 ## Non-Goals
 
@@ -231,6 +242,41 @@ is correctly the owner's.
 Stated separately because each is a thing believed true of the world today, not
 a thing this document makes true. If one is false, the design above it moves.
 
+**A18. The four code refs this document reads.** Numbered last and placed first,
+because every per-ref claim below depends on it. The repository carries THREE
+branches, not two, and the artifact production runs is none of their tips.
+
+| Ref | What it is | Commit, as of 2026-09-05 |
+|---|---|---|
+| `main` | the mainline | — |
+| `0.1.9` | the active 0.1 maintenance branch; release tags are cut from here | `8bcc242b`, 2026-09-05 |
+| `0.1.8` | a FROZEN branch pointer, 85 commits behind `0.1.9` | `2ff4ed2a`, 2026-08-22 |
+| `v0.1.8+1337` | the release gibson runs today | `fdb3db5`, 2026-08-22 |
+
+`0.1.8` is a strict ancestor of `0.1.9`, so they are one line and not two:
+`0.1.9` is that line's live tip and `0.1.8` is a bookmark left behind on it.
+`v0.1.8+1337` sits BETWEEN them, three commits ahead of the `0.1.8` pointer.
+Gibson's `/version` reports build 1337, sha `fdb3db5`, version 0.1.8. **There is
+no branch named `0.1.x`.**
+
+Two consequences this document depends on.
+
+First, **"the released line" is ambiguous, and this document no longer uses that
+phrase or "the mainline"**. The frozen `0.1.8` pointer and the running release
+`v0.1.8+1337` are byte-identical in `escalation.ex`, `execution_map.ex`, and
+`effort_checkin.ex` — but they DIFFER in `assignments.ex`, which is R6's only
+target. A claim true of the `0.1.8` pointer is therefore not automatically true
+of production, and the one place they diverge is the one place this document
+makes its boldest per-ref claim.
+
+Second, every per-ref claim below names a ref from this table, and a claim that
+holds on only some refs says which. A builder must not generalise a claim from
+one ref to another; where this document has done so it was wrong, and A6, A9,
+and OQ-6 record the corrections.
+
+Verified 2026-09-05 by reading each ref with `git cat-file -p` and comparing the
+extracted files. No code was run and no host was touched.
+
 **A1.** `decision_requests` carries `assignmentId`, `raiserSessionKey`,
 `withdrawnBy`, and `withdrawnReason` columns, and its CHECK constraint refuses
 any row with `status <> 'ruled'` that carries a non-NULL `decision`,
@@ -258,17 +304,31 @@ broken down further without new recording, which is a Non-Goal.
 
 A qualification on the denial counts at R6, now measured rather than hedged.
 Reproducing what the rail SAW at each denial requires replicating the fact's
-card-selection rule in SQL, and the two lines select differently: the mainline
-collapses to the review card carrying the most recent holder-filed verdict, the
-released line to the most recently opened review card. Both rules were run over
-the same 30-day window; the results are at R6. What does not move is the false
-refusal count this document is sized by: **8 under both rules**, because the
-cards it names are cards whose winning verdict is a review conclusion the fact's
-kind list omits, and both rules select the same winner on all 8. What moves is
-the size of the correctly-denied population around them, and the number of cards
-R6 additionally repairs on the released line, which is larger. Neither the defect
-nor the requirement moves. R6 states both figures rather than one, so a builder
-targeting either line reads its own number.
+card-selection rule in SQL, and TWO such rules exist in the repository. The
+VERDICT-RECENCY rule collapses to the review card carrying the most recent
+holder-filed verdict, computed in one join. The `openedAt` rule collapses to the
+most recently OPENED review card and reads verdicts inside it. Both were run over
+the same 30-day window; the results are at R6.
+
+Which ref carries which is the correction that matters, and an earlier draft of
+this document got it wrong. `main`, `0.1.9`, AND the release gibson runs
+(`v0.1.8+1337`) all carry the VERDICT-RECENCY rule; the function body is
+byte-identical between `0.1.9` and the running release, verified 2026-09-05. The
+`openedAt` rule survives on the frozen `0.1.8` pointer alone
+(`assignments.ex:315`), which no host runs and no release ships. Commit
+`8765c22e`, "Fix holder verdict selection on 0.1.8", replaced it on the 0.1.x
+line before the release gibson runs was cut.
+
+What does not move is the false refusal count this document is sized by: **8
+under both rules**, because the cards it names are cards whose winning verdict is
+a review conclusion the fact's kind list omits, and both rules select the same
+winner on all 8. What moves is the size of the correctly-denied population around
+them, and the count of cards the `openedAt` rule additionally loses. That larger
+count, 17, is therefore a fact about the frozen pointer ONLY. **A builder
+targeting `main`, `0.1.9`, or the running release should expect 8, not 17.**
+
+Neither the defect nor the requirement moves. R6's requirement text holds against
+both rules, because both collapse and R6 removes the collapse.
 
 **A7.** `attests.verdictKind` is open text. No storage constraint limits it to a
 vocabulary, and the live data carries a long tail of one-off kinds. The
@@ -285,14 +345,28 @@ after its review work in order to close. Verified in source and in the live data
 this assumption is what makes the defect at R6 systematic rather than incidental.
 
 **A9.** `effort-rule --request <dr> --action continue|dismiss` authorizes a
-session principal by exact identity with the row's current expecter on the
-released line (`lib/tightbeam/effort_checkin.ex:1269`,
-`authorized?({:session, key}, request), do: request.expecter_session_key == key`)
-and by admitting every session on the mainline
-(`lib/tightbeam/effort_checkin.ex:1390`,
-`authorized?({:session, _key}, _request), do: true`, from commit `e02cab00`,
-2026-08-27). The user clause is identical on both lines. Nothing else in either
-line's `rule/3` guards the caller. Verified in source, both lines, 2026-09-04.
+session principal by one of two clauses, and WHICH ONE is a per-ref fact (A18).
+
+The NARROW clause requires exact identity with the row's current expecter:
+`authorized?({:session, key}, request), do: request.expecter_session_key == key`.
+It is at `lib/tightbeam/effort_checkin.ex:1269` on the frozen `0.1.8` pointer and
+at the same address in the release gibson runs, `v0.1.8+1337`; the two files are
+byte-identical.
+
+The WIDE clause admits every session unconditionally:
+`authorized?({:session, _key}, _request), do: true`. It is on **both** `main`
+(`lib/tightbeam/effort_checkin.ex:1390`, introduced by commit `e02cab00`, "Add
+targetless decision request responders", 2026-08-27 00:00 UTC) and **`0.1.9`**
+(`lib/tightbeam/effort_checkin.ex:1425`, introduced by commit `7090a630`, "Adapt
+decision expecter preference to 0.1.9", 2026-08-27 07:29 UTC).
+
+`7090a630` is contained in no release tag. That is why the release gibson runs
+still carries the NARROW clause while the branch that ships next carries the
+WIDE one. A reader who checks only the running host will not see the defect R7's
+"must not become any session" paragraph guards against.
+
+The user clause is identical on all four refs. Nothing else in any ref's `rule/3`
+guards the caller. Verified in source on all four refs, 2026-09-05.
 
 **A10.** On 2026-09-04 the org held 37 open `kind = 'effort'` requests. 23 carry
 a session expecter, and every one of those expecter sessions is in the active
@@ -326,12 +400,13 @@ documented as the boot backstop for retirement casts lost across a crash, and
 `boot.ex` calls it on every gateway boot. Its candidate query carries the SAME
 `kind != 'operator'` exclusion as `withdraw_for_retired/2` itself. So the sweep,
 its state key, and its trigger are all built; only the exclusion stops it
-working. Verified in source on BOTH lines, 2026-09-04: the routine is at
-`escalation.ex:1625` on the mainline and `escalation.ex:654` on the released
-line, and the boot call is at `boot.ex:53` and `boot.ex:32` respectively. This
+working. Verified in source on all four refs, 2026-09-05: the routine is at
+`escalation.ex:1625` on `main`, `:819` on `0.1.9`, and `:654` on both the `0.1.8`
+pointer and the running release; the boot call is at `boot.ex:53` on `main` and
+`boot.ex:32` on the other three. This
 assumption is what collapses R4 from a mechanism to a deletion.
 
-**A14. Mainline only.** On the mainline `withdraw_for_retired/2` carries a SECOND
+**A14. `main` only.** On `main` `withdraw_for_retired/2` carries a SECOND
 filter beside the kind exclusion: it rejects any request whose `context.verb` is
 `cannot-proceed` (`escalation.ex:1476`, applied at `:1509`), with the stated
 reason that retirement is neither an exact assignment disposition nor an exact
@@ -340,23 +415,29 @@ database sets `context.verb` at all — all 6,563 rows across both live kinds re
 NULL — so it fires on nothing today, and deleting the kind exclusion does reach
 operator rows.
 
-**The released line has no such filter.** Its `withdraw_for_retired/2` selects
-`id` alone and decodes no context (`escalation.ex:530-541`); the typed
-cannot-proceed request does not exist on that line at all. R3's instruction to
-preserve the carve-out is therefore a no-op on the released line, and it is NOT
-an instruction to port the carve-out there. Verified in source on both lines and
-against the live database, read only. A14's split is why R3 and R4 appear in
-OQ-6's line election.
+**Neither `0.1.9` nor `0.1.8` has such a filter.** On both, and therefore in the
+running release too, `withdraw_for_retired/2` selects `id` alone and decodes no
+context (the row query is at `escalation.ex:704` on `0.1.9` and `:539` on the
+`0.1.8` pointer and the running release, against `SELECT id,context` at `:1505`
+on `main`). The typed cannot-proceed request does not exist on either ref at all:
+the strings `cannot-proceed` and `cannot_proceed` appear nowhere in
+`escalation.ex` on `0.1.9` or `0.1.8`, verified 2026-09-05. R3's instruction to
+preserve the carve-out is therefore a no-op on those refs, and it is NOT
+an instruction to port the carve-out there. Verified in source on all four refs
+and against the live database, read only. A14's split is why R3 and R4 appear in
+OQ-6's ref election.
 
 **A15.** Nothing outside the decision request subsystem gates on a request being
 open. No rail fact reads `decision_requests`: the fact list in
 `lib/tightbeam/rules.ex` contains no decision-request fact. The only consumer of
 the open set elsewhere in the tree is a count summed into the execution map
 projection, which displays and authorizes nothing:
-`open_decision_requests/2` at `lib/tightbeam/execution_map.ex:518` on the
-mainline and `:429` on the released line, fed by one `SELECT ... GROUP BY
-assignmentId` over open rows. The function body is character-identical on both
-lines; only the address differs. Verified in source on BOTH lines, 2026-09-04.
+`open_decision_requests/2` at `lib/tightbeam/execution_map.ex:518` on `main` and
+`:429` on `0.1.9`, on the `0.1.8` pointer, and in the running release, fed by one
+`SELECT ... GROUP BY assignmentId` over open rows. The function body is
+character-identical on all four refs; only the address differs, and
+`execution_map.ex` is byte-identical across the three non-`main` refs. Verified in
+source on all four refs, 2026-09-05.
 This assumption is what makes I2 a checked claim rather than an assertion.
 
 **A16.** Operator request populations by the opener of their subject card, over
@@ -473,7 +554,13 @@ this document.
 That separation is mechanical, not conventional, and a builder should verify it
 before trusting this paragraph. The `effort-rule` entry point refuses any request
 whose `kind` is not `effort` before it consults `authorized?/2` at all, so the
-predicate R7 changes is unreachable from an `operator` row on both lines. R7
+predicate R7 changes is unreachable from an `operator` row. Verified on all four
+refs in A18 (2026-09-05): the refusal and the `authorized?/2` call are clauses of
+one `cond` in `rule/3`, in that order, at `effort_checkin.ex:409`/`:406` on
+`main`, `:375`/`:372` on `0.1.9`, and `:336` on the `0.1.8` pointer and the
+running release. `main` and `0.1.9` place an additional visibility clause AHEAD
+of the kind refusal, which masks a non-effort request as not-found; that makes
+the gate stricter, not weaker, and does not change this conclusion. R7
 widens a clause of a function that operator requests never call. A build that
 moves the kind check, or that reuses the widened predicate on the operator path,
 breaks I1 — which is the one invariant this document forbids trading against
@@ -512,12 +599,14 @@ Each collapse hides a `reviewed-clean` that is on the record.
 verdict, as Terms defines that set (A7), on every one of the producing card's
 `--reviews`-linked review cards. Order that pool by the verdict row's own recency
 — `ts` descending then `rowid` descending, so that two verdicts filed in the same
-millisecond still have exactly one winner. Both lines already order VERDICTS this
+millisecond still have exactly one winner. Every ref already orders VERDICTS this
 way inside the fact; what R6 changes is that this ordering now decides the winner
 outright, rather than being applied inside a review card that a separate rule
-picked first. On the released line that separate rule is `openedAt` descending, so
-a builder there must not read "the order the fact already uses" as licence to keep
-`openedAt` anywhere in the corrected predicate.
+picked first. On the frozen `0.1.8` pointer that separate rule is `openedAt`
+descending, and a builder targeting that ref must not read "the order the fact
+already uses" as licence to keep `openedAt` anywhere in the corrected predicate.
+On `main`, on `0.1.9`, and in the running release the separate rule is verdict
+recency instead (A6), and `openedAt` does not appear in the fact at all.
 Take the single most recent verdict in the pool. The producing card qualifies if
 and only if that verdict's kind is `reviewed-clean` AND the card it sits on is
 held by a session other than the producing card's holder.
@@ -576,7 +665,7 @@ recent. The rail read the fourth card only, saw a kind that is not
 `reviewed-clean`, and denied a card with three independent clean reviews and a
 release approval on it. This example was replayed under both card-selection rules
 and selects `asg_e526fd86` under each, so it demonstrates the card collapse
-identically on the mainline and on the released line.
+identically on every ref in A18.
 
 **A third collapse exists and R6 deliberately does NOT remove it.** The fact's
 card selection today ignores who holds the card, and applies the independence
@@ -597,13 +686,16 @@ authority asks for, and I7 forbids it. R6 removes the card collapse and the kind
 collapse. It leaves this one exactly as it is, and the ordering stated in the
 corrected predicate is what preserves it. AC-20 pins it.
 
-**The size of this defect, stated honestly, on both lines.** Over the thirty days
+**The size of this defect, stated honestly, under both selection rules.** Over the
+thirty days
 to 2026-09-04 `completion-requires-review` denied 1,037 times across 821 distinct
 cards. 360 of those cards had a linked review card; 339 had one carrying any
-holder-filed verdict. What the rail SAW on those depends on which line's card
-selection is replayed, so both were replayed over the same window:
+holder-filed verdict. What the rail SAW on those depends on which card-selection
+rule is replayed, so both were replayed over the same window. Read the columns by
+A6: the first is what `main`, `0.1.9`, and the running release actually do; the
+second describes the frozen `0.1.8` pointer alone.
 
-| what the rail saw | mainline selection | released selection |
+| what the rail saw | verdict-recency selection (`main`, `0.1.9`, running release) | `openedAt` selection (frozen `0.1.8` pointer only) |
 |---|---|---|
 | `reviewed-clean` | 264 | 255 |
 | `changes-requested` | 67 | 63 |
@@ -614,21 +706,27 @@ selection is replayed, so both were replayed over the same window:
 The `reviewed-clean` rows are the denial preceding the review — the remedy loop
 working exactly as designed. The `changes-requested` rows are true positives: the
 review found problems. The `verified` and `release-approved` rows are the false
-positives, 8 on both lines, and all seven `verified` cards carry a
+positives, 8 under both rules, and all seven `verified` cards carry a
 `reviewed-clean` earlier on that same review card. That is about 2.4 percent of
 the 339, and this document does not claim they explain the bulk of the denials.
 They do not. They are the shape that produces the wedge the authority names: a
 card that IS landed and IS independently reviewed, refused its terminal receipt.
 
-**What R6 changes, measured on both lines.** Applying the corrected predicate to
-the same 821 cards: **272 qualify, against 264 on the mainline today and 255 on
-the released line today. R6 flips 8 cards from denied to allowed on the mainline
-and 17 on the released line, and it flips 0 cards from allowed to denied on
-either.** The released figure is larger only because that line's `openedAt`
-selection additionally loses cards whose most recently OPENED review card carries
+**What R6 changes, measured under both rules.** Applying the corrected predicate
+to the same 821 cards: **272 qualify, against 264 under verdict recency and 255
+under `openedAt`. R6 flips 8 cards from denied to allowed on `main`, on `0.1.9`,
+and in the running release, and 17 on the frozen `0.1.8` pointer. It flips 0 cards
+from allowed to denied under either rule.** The `openedAt` figure is larger only
+because that rule additionally loses cards whose most recently OPENED review card
+carries
 no verdict while an earlier one concluded clean; the corrected predicate reaches
 those too, as a consequence of removing the card collapse and not as a separate
 requirement.
+
+**8 is the live number.** No host runs the `openedAt` rule and no release ships
+it, so a builder targeting any ref this work item can plausibly land on should
+expect 8. The 17 is retained here only so the frozen pointer's behaviour is on
+the record, and it must not be quoted as the size of this defect.
 
 That zero is I7's test made empirical, not argued. It is the check a builder
 should re-run before and after, and AC-22 pins it as an acceptance obligation
@@ -663,8 +761,8 @@ The subtraction test, applied to R6:
   live-mutation work. The measured 67 genuine `changes-requested` denials in
   thirty days are the rail earning its place. Deletion loses.
 - *Accept the failure as a named value instead?* Accepting means the org keeps a
-  rail that refuses reviewed work about eight times a month on the mainline and
-  seventeen on the released line, each refusal landing on the owner's desk as a
+  rail that refuses reviewed work about eight times a month on every ref that runs
+  or ships, each refusal landing on the owner's desk as a
   decision request. That is the manufactured paperwork the authority names.
   Acceptance loses.
 - *Add?* Nothing is added. Two collapses are removed from a query. `deny_when`
@@ -682,8 +780,10 @@ for someone to ask, which is the paperwork this document exists to stop.
 
 ### R7 — `effort-rule` admits the escalation lineage, not only the rung the clock has reached
 
-**The defect.** The released line authorizes a session principal by exact
-identity with the row's current expecter (A9). But the expecter is not a party
+**The defect.** The frozen `0.1.8` pointer and the release gibson runs authorize a
+session principal by exact identity with the row's current expecter (A9). `main`
+and `0.1.9` carry the opposite defect and are treated separately below. But the
+expecter is not a party
 the request was addressed to once and for all. It is one member, selected by the
 clock, of a chain the substrate itself computes: `initial_expecter/2` picks the
 first entry, and `advance_expecter/2` walks `spawnedBy` upward on each 24-hour
@@ -753,13 +853,22 @@ check-in a stalled holder may dismiss is not a check-in. `route_session/5`
 already excludes the holder from the chain, and R7's membership test excludes it
 for the same reason. I8 states this and AC-16 fails if it is ever violated.
 
-*It must not become "any session".* The mainline already carries that change
-(A9), and read against the rule path around it, no other clause excludes the
-holder, so on the mainline as it stands a stalled holder may dismiss its own
+*It must not become "any session".* **BOTH `main` and `0.1.9` already carry that
+change** (A9) — `main` at `effort_checkin.ex:1390` from `e02cab00`, `0.1.9` at
+`:1425` from `7090a630`. Read against the rule path around it, no other clause
+excludes the holder, so on `main` and on `0.1.9` as they stand a stalled holder
+may dismiss its own
 liveness check-in. R7 REPLACES that clause; it does not build on it and it is not
-a formalisation of it. This is recorded here because a builder working on the
-mainline would otherwise read the existing widening as the fix already landed and
+a formalisation of it. This is recorded here because a builder working on
+EITHER of those refs would otherwise read the existing widening as the fix
+already landed and
 close the requirement without changing anything.
+
+This warning applies to `0.1.9` as much as to `main`, and an earlier draft of this
+document said `main` only. `0.1.9` is the branch release tags are cut from, so the
+ref most likely to be built on is one the earlier draft did not warn about. The
+running release is not affected: `7090a630` is in no tag, so the shipped artifact
+still carries the narrow clause (A9, A18).
 
 **Size, stated rather than implied.** R7 reaches 3 of the 37 open effort
 requests. It leaves the 23 correctly refused, and it does not reach the 11 that
@@ -852,12 +961,13 @@ session's behalf, withdrawal being the one lawful judgment-free exit every arm
 answers to. Its query then excludes `kind = 'operator'`.
 
 Delete that one clause, `AND kind != 'operator'`, from that routine's row query:
-`lib/tightbeam/escalation.ex:1505` on the mainline, `:539` on the released line.
-The clause is character-identical in both places; only its address differs. The
+`lib/tightbeam/escalation.ex:1505` on `main`, `:704` on `0.1.9`, and `:539` on
+both the `0.1.8` pointer and the running release.
+The clause is character-identical in all four places; only its address differs. The
 comment describes the intended behaviour correctly; the filter contradicts it.
 Nothing else in the routine changes.
 
-**On the mainline, one thing in that routine must NOT be deleted.** There the
+**On `main`, one thing in that routine must NOT be deleted.** There the
 same query is followed by a second filter that rejects any request whose
 `context.verb` is `cannot-proceed`, on the stated ground that retirement is
 neither an exact assignment disposition nor an exact release fact (A14). That
@@ -866,11 +976,12 @@ deletes the KIND exclusion and only the kind exclusion. A builder that reads
 "delete that exclusion" as licence to strip both filters has changed a behaviour
 this document did not authorize changing.
 
-**On the released line that filter does not exist**, and this paragraph is
-therefore a no-op there. A builder on the released line must not add it. Porting
-the carve-out backwards would be a behaviour change on a released line, with no
+**On `0.1.9` and on `0.1.8` that filter does not exist**, and this paragraph is
+therefore a no-op on both, and in the running release. A builder on either of
+those refs must not add it. Porting
+the carve-out backwards would be a behaviour change on a shipping line, with no
 authority in this document and none in the work item: the rows it would guard do
-not exist there either (A14). R3 on the released line is one deletion and nothing
+not exist there either (A14). R3 on `0.1.9` or `0.1.8` is one deletion and nothing
 else.
 
 The measured consequence of the contradiction: across the entire live database,
@@ -895,7 +1006,8 @@ candidate query carries the same `kind != 'operator'` exclusion.
 
 So R4 is one deletion, not a mechanism: **delete `AND dr.kind != 'operator'` from
 `recover_retired/1`'s candidate query** — `lib/tightbeam/escalation.ex:1629` on
-the mainline, `:658` on the released line, character-identical in both. With R3
+`main`, `:823` on `0.1.9`, and `:658` on both the `0.1.8` pointer and the running
+release, character-identical in all four. With R3
 that makes both halves of the pair the same one-clause subtraction in two places.
 
 **Build no sweep.** No scheduler, no timer, no daemon, no periodic pass, no
@@ -1280,17 +1392,26 @@ active session at rung 0 of that same lineage which is not the assignment's
 holder, WHEN the rung-0 session calls `effort-rule --action continue`, THEN the
 request reads `status = 'ruled'` with `decision = 'continue'`, and the deadline
 wake and generation are disposed of exactly as they are when the current expecter
-rules. This check FAILS against the released line as it stands on 2026-09-04; it
-is the defect R7 repairs.
+rules. This check FAILS against the `0.1.8` pointer and against the running
+release as they stand on 2026-09-05, which is the defect R7 repairs. On `main` and
+`0.1.9` it passes for the wrong reason — the wide clause admits every session
+(A9) — so on those refs AC-15 alone does not demonstrate R7, and AC-16 is the
+check that does.
 
 **AC-16 (I8, the holder stays refused).** GIVEN an open `effort` request on an
 assignment, WHEN the assignment's holder session calls `effort-rule` with either
 `continue` or `dismiss`, THEN the call is refused and the row is byte-identical
-to before. This check must be green on the released line, where it passes today,
-and it FAILS against the mainline as it stands on 2026-09-04. It is the check
-that makes the difference between R7 and the mainline's existing widening
-observable, and it must be written so that it fails for any change that admits
-the holder by any route.
+to before. This check must be green on whichever ref R7 lands on, and it must be
+written so that it fails for any change that admits the holder by any route.
+
+**Where it starts red.** AC-16 passes today on the frozen `0.1.8` pointer and in
+the release gibson runs, which carry the narrow clause. **It starts RED on BOTH
+`main` and `0.1.9`**, which carry the wide clause that admits every session (A9).
+An earlier draft of this document said `main` only; that was wrong, and `0.1.9`
+is the ref release tags are cut from. A builder on either of those two refs must
+expect this check to fail before the work begins and must not read its failure as
+a defect in the check. It is the check that makes the difference between R7 and
+the existing widening observable.
 
 **AC-17 (R7, the retired rung).** GIVEN an open `effort` request whose current
 expecter session is in the retired state, and an active session above it in the
@@ -1337,10 +1458,14 @@ cards that `completion-requires-review` denied over a stated window, WHEN the
 fact is evaluated over that same set before and after R6 on the line being
 built, THEN every card the current predicate qualifies is still qualified by the
 corrected one, and the count of cards that move from qualified to unqualified is
-zero. This document measured that count as 0 on both lines over the thirty days
-to 2026-09-04, with 8 cards moving from denied to allowed on the mainline and 17
-on the released line. A builder re-runs the comparison on the line being built
-and records both numbers on the card. The comparison is a read-only query run by
+zero. This document measured that count as 0 under both selection rules over the
+thirty days
+to 2026-09-04, with 8 cards moving from denied to allowed under verdict recency
+(`main`, `0.1.9`, the running release) and 17 under `openedAt` (the frozen `0.1.8`
+pointer only, A6). A builder re-runs the comparison on the ref being built
+and records both numbers on the card; on any ref this work item can plausibly land
+on, the expected move-to-allowed figure is 8. The comparison is a read-only query
+run by
 hand; nothing here authorizes a report, a view, or a check that ships
 (Non-Goal 2). A nonzero denied count is a defect in the
 implementation, not a revision of this requirement: R6 removes a collapse, and
@@ -1372,7 +1497,9 @@ call is refused and the row is unchanged; and WHEN it calls with a reason, THEN
 the row records `withdrawnBy` naming that principal and `withdrawnReason`
 carrying the given cause, and a `decision_request_withdrawn` lifecycle row is
 written carrying both. This check is green today — the withdrawal reason is
-required at the entry point on both lines, and the row update and the lifecycle
+required at the entry point on all four refs in A18, verified 2026-09-05 at
+`escalation.ex:659` on `main`, `:477` on `0.1.9`, and `:314` on the `0.1.8`
+pointer and the running release, and the row update and the lifecycle
 write happen inside one transaction — and it must stay green after every
 widening here lands. AC-1 does not test it: AC-1 supplies a reason in its GIVEN,
 so a build that accepted a reasonless retraction would pass AC-1 and still
@@ -1493,43 +1620,51 @@ built now**, and it closes every case in that channel where a lawful agent
 answerer exists.
 
 **OQ-6. NON-BLOCKING, but the card must answer it before a builder starts.**
-Which line R7 and R6 target. TWO requirements raise this, not one.
+Which REF R7 and R6 target. TWO requirements raise this, not one. Read this
+section against A18: there are three branches and a running release, not two
+lines, and an earlier draft of this section reasoned about two.
 
-R7's targets differ in text. The released line and the mainline carry different
-session clauses (A9), and the mainline's is the opposite defect: too wide rather
-than too narrow. R7's requirement sentence is the same against either, and only
-the clause the builder deletes differs.
+R7's targets differ in text. The `0.1.8` pointer and the running release carry
+the narrow session clause; **both `main` and `0.1.9` carry the wide one** (A9),
+which is the opposite defect: too wide rather than too narrow. R7's requirement
+sentence is the same against any of them, and only the clause the builder
+replaces differs. The consequence a card must carry: on `main` and on `0.1.9`,
+AC-16 starts RED.
 
-R6's targets differ in behaviour, which is the sharper case and the one an
-earlier draft of this section got wrong. The fact's card selection is NOT
-byte-identical across lines: the mainline collapses to the review card carrying
-the most recent holder-filed verdict, computed in one join, while the released
-line collapses to the most recently OPENED review card and reads verdicts inside
-it. R6's requirement text holds against both, because both collapse and R6
-removes the collapse. What differs is what a builder deletes, and what the change
-is worth: 8 cards on the mainline, 17 on the released line, measured in R6 and
-pinned by AC-22. A builder on the released line must not carry `openedAt` into
-the corrected predicate, and a builder who reads "the order the fact already
-uses" without checking which line they are on will. A6 records the same split
-from the measurement side.
+R6's targets differ in behaviour, which is the sharper case. The fact's card
+selection is NOT byte-identical across refs, but the split does not fall where an
+earlier draft placed it. `main`, `0.1.9`, AND the running release all collapse to
+the review card carrying the most recent holder-filed verdict, computed in one
+join; the function body is byte-identical between `0.1.9` and the running
+release. Only the frozen `0.1.8` pointer collapses to the most recently OPENED
+review card and reads verdicts inside it. R6's requirement text holds against
+both rules, because both collapse and R6 removes the collapse. What differs is
+what a builder deletes, and what the change is worth: **8 cards on any ref this
+work item can plausibly land on, and 17 only on the frozen pointer**, measured in
+R6 and pinned by AC-22. A builder targeting the frozen pointer must not carry
+`openedAt` into the corrected predicate; on the other three refs `openedAt` is
+not in the fact to carry. A6 records the same split from the measurement side.
 
 R3 and R4 raise a weaker form of it. The clause each deletes is
-character-identical on both lines, so the requirement and the edit are the same;
-what differs is the address (R3 at `:1505` mainline, `:539` released; R4 at
-`:1629` and `:658`) and the surrounding routine. The mainline's
-`withdraw_for_retired/2` carries a cannot-proceed carve-out that the released
-line's does not have at all (A14), so R3's "must not delete" paragraph guards
-something that exists on only one line. A builder must not read it as an
-instruction to port that carve-out backwards.
+character-identical on all four refs, so the requirement and the edit are the
+same; what differs is the address (R3 at `:1505` on `main`, `:704` on `0.1.9`,
+`:539` on the `0.1.8` pointer and the running release; R4 at `:1629`, `:823`, and
+`:658` respectively) and the surrounding routine. Only `main`'s
+`withdraw_for_retired/2` carries a cannot-proceed carve-out; neither `0.1.9` nor
+`0.1.8` has it, or the typed request it guards, at all (A14). So R3's "must not
+delete" paragraph guards something that exists on ONE ref. A builder must not read
+it as an instruction to port that carve-out backwards.
 
 R1, R2, and R5 do not raise this question: R1 and R2 change one authorization
-predicate that is byte-identical on both lines, verified in source, and R5 is
+predicate, `operator_withdrawer_in_txn/3`, which is byte-identical across `0.1.8`
+and `0.1.9` (verified 2026-09-05) and on `main`, and R5 is
 kungfu guidance with no code target at all.
 
-Whether this work item lands on `0.1.x`, on `main`, or on both by cherry-pick is
-an election under the repository's cross-line rule, and it belongs on the
-assignment cards that dispatch R3, R4, R6, and R7. Each card states its line; a
-card that does not state it is not ready to dispatch.
+Whether this work item lands on `0.1.9`, on `main`, or on both by cherry-pick is
+an election under the repository's cross-ref rule, and it belongs on the
+assignment cards that dispatch R3, R4, R6, and R7. Each card states its ref by the
+names in A18; a card that does not state it, or that says `0.1.x`, is not ready to
+dispatch. **`0.1.x` is not a branch and is not an answer to this question.**
 
 **OQ-7. NON-BLOCKING, and deliberately not specified.** The residual case R1
 leaves open: a request whose raiser is ALIVE but cannot run — out of capacity,
@@ -1556,10 +1691,11 @@ nothing in the decision request subsystem. It may run in parallel with the
 others, and it is the one that removes a cause rather than clearing effects, so
 prefer it first.
 
-Four requirements target code that differs between the two lines, and each of
-their cards must name the line it targets before dispatch: R3, R4, R6, and R7,
-per OQ-6. R6's difference is the sharpest, because there the two lines differ in
-BEHAVIOUR and not only in address. R1, R2, and R5 need no such election.
+Four requirements target code that differs across the refs in A18, and each of
+their cards must name the ref it targets before dispatch, by the names in A18:
+R3, R4, R6, and R7, per OQ-6. R6's difference is the sharpest, because there the
+refs differ in BEHAVIOUR and not only in address, and the behavioural split
+isolates the frozen `0.1.8` pointer alone. R1, R2, and R5 need no such election.
 
 R1, R3, and R4 are independent of each other in effect but touch the same
 subsystem; order them rather than running them in parallel. R3 and R4 delete the
@@ -1569,9 +1705,11 @@ not a dependency: R5 is true and buildable before R1, merely incomplete (Q1).
 
 R7 touches `effort_checkin.ex` and nothing R1 through R6 touch, so it may run in
 parallel with all of them. Its card must carry AC-16 as a check that has to be
-green on whichever line it lands, because on the mainline that check starts red.
+green on whichever ref it lands, because on BOTH `main` and `0.1.9` that check
+starts red (A9, AC-16). `0.1.9` is the ref release tags are cut from, so the ref
+most likely to carry this work is one that starts red.
 
 Nothing in this document is applied to a running host by the work it specifies.
-The production host is locked at 0.1.8 under Mike's 2026-09-02 change law, and
-any deployment of this change is a separate act requiring that law's two-step
-ceremony.
+The production host runs `v0.1.8+1337` and is locked at 0.1.8 under Mike's
+2026-09-02 change law, and any deployment of this change is a separate act
+requiring that law's two-step ceremony.
