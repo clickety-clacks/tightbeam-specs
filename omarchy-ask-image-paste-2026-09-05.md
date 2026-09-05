@@ -90,6 +90,14 @@ which checks are new versus historical. `docs/model-verification.md` and
 Earlier osanwe test results remain historical handoff evidence and do not
 satisfy the required fresh nacelle desktop and system-harness acceptance.
 
+Mike's theme feedback: preserve the existing theme-aware Ask appearance in
+both popup and pinned windows; do not introduce a hardcoded black background.
+Classify the reported black background against the actual nacelle candidate
+and runtime as temporary test styling, theme-loading regression, or intentional
+change, using evidence rather than appearance alone. Correct an image-work
+regression within this slice. Include private-content-free themed popup and
+pinned screenshots in acceptance. This is not a broader visual redesign.
+
 Implementation assignment: `asg_9acc5352-3b86-4df6-8c29-a6957d32d06c`.
 Orchestrator: `asg_a12431d5-bd1e-4443-9e39-35e3ce94670a`.
 Exactly one fresh independent linked review follows the author's honest
