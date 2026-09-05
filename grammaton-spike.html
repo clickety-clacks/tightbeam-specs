@@ -22,8 +22,8 @@
     height: 100vh;
     overflow: hidden;
   }
-  #stage { flex: 1; min-width: 0; position: relative; }
-  #stage svg { width: 100%; height: 100%; display: block; }
+  #stage { flex: 1; min-width: 0; position: relative; touch-action: none; }
+  #stage svg { width: 100%; height: 100%; display: block; touch-action: none; }
   #panel {
     width: 320px;
     flex: none;
@@ -101,7 +101,11 @@
   #legend svg { width: 44px; height: 14px; flex: none; }
   #title {
     position: absolute; left: 16px; top: 12px; pointer-events: none;
+    right: 240px; /* never run under the archetype chips */
+    transition: opacity .25s;
   }
+  /* while zoomed into a selection, flyouts own the top of the frame */
+  .zoomed #title { opacity: 0; }
   #title .t { font-size: 16px; font-weight: 700; letter-spacing: .02em; }
   #title .s { font-size: 11.5px; color: var(--dim); margin-top: 2px; }
   .hydra { transition: opacity .18s ease; cursor: pointer; }
@@ -117,7 +121,7 @@
 <div id="stage">
   <div id="title">
     <div class="t">Grammaton</div>
-    <div class="s">Tightbeam rails &middot; each hydra is one rail &middot; hover or click a hub or curve &middot; click empty space to reset</div>
+    <div class="s">Tightbeam rails &middot; one rail = one flow: origin &rarr; trigger &rarr; reads &rarr; outcome &middot; click a rail to isolate it &middot; drag = orbit &middot; shift-drag / right-drag / scroll = pan &middot; pinch / ctrl-scroll = zoom &middot; click empty space to reset</div>
   </div>
   <svg id="svg" viewBox="0 0 900 900" preserveAspectRatio="xMidYMid meet"></svg>
   <div id="legend">
@@ -127,11 +131,12 @@
   <div class="row"><span style="width:12px;height:12px;border-radius:3px;background:hsl(40,90%,58%);flex:none"></span>economy — no turns into dead ends</div>
   <div class="row"><span style="width:12px;height:12px;border-radius:3px;background:hsl(0,80%,62%);flex:none"></span>safety — irreversible forbidden</div>
   <div class="row" style="border-top:1px solid #333;margin-top:6px;padding-top:6px"></div>
-    <div class="row"><svg><circle cx="7" cy="7" r="5" fill="none" stroke="#9db2ff" stroke-width="1.5"/><line x1="12" y1="7" x2="42" y2="7" stroke="#9db2ff" stroke-width="2.5"/></svg>trigger (solid, ring at its row)</div>
-    <div class="row"><svg><line x1="2" y1="7" x2="42" y2="7" stroke="#9db2ff" stroke-width="1.1" stroke-dasharray="1.5 9"/></svg>read (dashed thin)</div>
+    <div class="row"><svg><circle cx="7" cy="7" r="5" fill="none" stroke="#9db2ff" stroke-width="1.5"/><line x1="12" y1="7" x2="34" y2="7" stroke="#9db2ff" stroke-width="2.5"/><polygon points="42,7 32,3 32,11" fill="#9db2ff"/></svg>trigger: origin &rarr; its row (ring marks the row)</div>
+    <div class="row"><svg><line x1="2" y1="7" x2="34" y2="7" stroke="#9db2ff" stroke-width="1.1" stroke-dasharray="1.5 9"/><polygon points="42,7 32,3 32,11" fill="#9db2ff"/></svg>read arrow (dotted), labeled with its condition</div>
     <div class="row"><svg><line x1="2" y1="7" x2="34" y2="7" stroke="#9db2ff" stroke-width="2"/><polygon points="42,7 32,3 32,11" fill="#9db2ff"/></svg>creates (arrow into row type)</div>
-    <div class="row"><svg><line x1="2" y1="7" x2="28" y2="7" stroke="#ff5566" stroke-width="2"/><circle cx="36" cy="7" r="5.5" fill="none" stroke="#ff5566" stroke-width="1.6"/><line x1="32.2" y1="10.8" x2="39.8" y2="3.2" stroke="#ff5566" stroke-width="1.6"/></svg>vetoes (returns to trigger, &#8856;)</div>
+    <div class="row"><svg><line x1="2" y1="7" x2="28" y2="7" stroke="#ff5566" stroke-width="2"/><circle cx="36" cy="7" r="5.5" fill="none" stroke="#ff5566" stroke-width="1.6"/><line x1="32.2" y1="10.8" x2="39.8" y2="3.2" stroke="#ff5566" stroke-width="1.6"/></svg>vetoes: reads join on &#8856; at the trigger row</div>
     <div class="row"><svg><line x1="2" y1="7" x2="42" y2="7" stroke="#9db2ff" stroke-width="2" stroke-dasharray="14 7" opacity=".6"/></svg>dashed hydra = planned, not built</div>
+    <div class="row"><svg><circle cx="6" cy="3.5" r="2" fill="none" stroke="#9db2ff" stroke-width="1.2"/><line x1="6" y1="5.5" x2="6" y2="9" stroke="#9db2ff" stroke-width="1.2"/><line x1="3" y1="7" x2="9" y2="7" stroke="#9db2ff" stroke-width="1.2"/><line x1="6" y1="9" x2="4" y2="12" stroke="#9db2ff" stroke-width="1.2"/><line x1="6" y1="9" x2="8" y2="12" stroke="#9db2ff" stroke-width="1.2"/><circle cx="22" cy="7" r="5" fill="none" stroke="#9db2ff" stroke-width="1.2"/><line x1="22" y1="7" x2="22" y2="3.5" stroke="#9db2ff" stroke-width="1.2"/><polyline points="38,1 34,8 37,8 33,13" fill="none" stroke="#9db2ff" stroke-width="1.2"/></svg>origin = who fires it: agent &middot; schedule &middot; substrate</div>
   </div>
   <div id="legendIcon" title="show legend">i</div>
   <div id="layers"></div>
@@ -164,73 +169,73 @@ const ROWTYPES = [
 // trigger: {t, q, qf}; reads/creates/vetoes: [{t, q, qf}]
 // (t = row type id, q = short qualifier for hover labels, qf = full predicate for click callouts)
 const HYDRAS = [
-  { id: "completion-requires-review", promise: "proof", desc: "You cannot mark code, policy, release, or live-mutation work done on your own say-so: a separate session must have reviewed it and its verdict must be on file.", short: "review", layer: "culture",
+  { id: "completion-requires-review", src: "agent", promise: "proof", desc: "You cannot mark code, policy, release, or live-mutation work done on your own say-so: a separate session must have reviewed it and its verdict must be on file.", short: "review", layer: "culture",
     trigger: { t: "completionAttest", qf: "a completion attest is filed on the assignment" },
-    reads: [ { t: "assignment", q: "effectKind", qf: "effectKind ∈ {code, policy, release, live_mutation}" },
-             { t: "reviewCard", qf: "a linked review card exists for this assignment" },
-             { t: "verdict", qf: "the linked review's verdict is reviewed-clean" } ],
+    reads: [ { t: "assignment", q: "effectKind", pk: "in", c: "if effectKind qualifies", qf: "effectKind ∈ {code, policy, release, live_mutation}" },
+             { t: "reviewCard", pk: "exists", c: "if a review card exists", qf: "a linked review card exists for this assignment" },
+             { t: "verdict", pk: "eq", c: "if verdict = reviewed-clean", qf: "the linked review's verdict is reviewed-clean" } ],
     creates: [], vetoes: [ { t: "completionAttest" } ] },
-  { id: "completion-requires-verification", promise: "proof", desc: "Done means verified: a completion needs its verification evidence recorded, not just claimed.", short: "verify", layer: "culture",
+  { id: "completion-requires-verification", src: "agent", promise: "proof", desc: "Done means verified: a completion needs its verification evidence recorded, not just claimed.", short: "verify", layer: "culture",
     trigger: { t: "completionAttest", qf: "a completion attest is filed on the assignment" },
-    reads: [ { t: "artifact", qf: "verification evidence for this completion is recorded" } ],
+    reads: [ { t: "artifact", pk: "exists", c: "if verification is recorded", qf: "verification evidence for this completion is recorded" } ],
     creates: [], vetoes: [ { t: "completionAttest" } ] },
-  { id: "completion-requires-results-artifact", promise: "proof", desc: "Finished work must leave a results artifact behind; no artifact, no completion.", short: "results", layer: "culture",
+  { id: "completion-requires-results-artifact", src: "agent", promise: "proof", desc: "Finished work must leave a results artifact behind; no artifact, no completion.", short: "results", layer: "culture",
     trigger: { t: "completionAttest", qf: "a completion attest is filed on the assignment" },
-    reads: [ { t: "artifact", qf: "a results artifact is attached to the work" } ],
+    reads: [ { t: "artifact", pk: "exists", c: "if a results artifact exists", qf: "a results artifact is attached to the work" } ],
     creates: [], vetoes: [ { t: "completionAttest" } ] },
-  { id: "code-review-requires-passing-tests", promise: "proof", desc: "A reviewer cannot approve code that has not passed its tests; the tests-passed record must exist first.", short: "tests", layer: "culture",
+  { id: "code-review-requires-passing-tests", src: "agent", promise: "proof", desc: "A reviewer cannot approve code that has not passed its tests; the tests-passed record must exist first.", short: "tests", layer: "culture",
     trigger: { t: "verdict", qf: "a review verdict is about to be filed" },
-    reads: [ { t: "checkpointAttest", q: "tests-passed", qf: "a tests-passed attest is on file for the reviewed commit" } ],
+    reads: [ { t: "checkpointAttest", q: "tests-passed", pk: "exists", c: "if tests-passed is on file", qf: "a tests-passed attest is on file for the reviewed commit" } ],
     creates: [], vetoes: [ { t: "verdict" } ] },
-  { id: "refix-requires-diagnosis", promise: "proof", desc: "You cannot dispatch a second fix for the same bug without a recorded diagnosis of why the first one failed.", short: "refix", layer: "culture",
+  { id: "refix-requires-diagnosis", src: "agent", promise: "proof", desc: "You cannot dispatch a second fix for the same bug without a recorded diagnosis of why the first one failed.", short: "refix", layer: "culture",
     trigger: { t: "assignment", q: "re-fix dispatch", qf: "a dispatch that re-fixes an already-fixed defect" },
-    reads: [ { t: "artifact", q: "diagnosis", qf: "a recorded diagnosis of why the prior fix failed" } ],
+    reads: [ { t: "artifact", q: "diagnosis", pk: "exists", c: "if a diagnosis exists", qf: "a recorded diagnosis of why the prior fix failed" } ],
     creates: [], vetoes: [ { t: "assignment" } ] },
-  { id: "spec-dispatch-requires-spirit", promise: "proof", desc: "Spec work cannot be dispatched without the governing spirit/spec document on file to build against.", short: "spirit", layer: "culture",
+  { id: "spec-dispatch-requires-spirit", src: "agent", promise: "proof", desc: "Spec work cannot be dispatched without the governing spirit/spec document on file to build against.", short: "spirit", layer: "culture",
     trigger: { t: "assignment", q: "dispatch", qf: "a spec-work dispatch" },
-    reads: [ { t: "artifact", q: "spec/spirit", qf: "the governing spec/spirit document is on file" } ],
+    reads: [ { t: "artifact", q: "spec/spirit", pk: "exists", c: "if the spirit doc is on file", qf: "the governing spec/spirit document is on file" } ],
     creates: [], vetoes: [ { t: "assignment" } ] },
-  { id: "git-safety statutes (×5)", promise: "safety", desc: "Five commands that destroy uncommitted work (stash, reset --hard, clean -f, checkout --, restore) are refused outright.", short: "git ×5", layer: "culture",
+  { id: "git-safety statutes (×5)", src: "agent", promise: "safety", desc: "Five commands that destroy uncommitted work (stash, reset --hard, clean -f, checkout --, restore) are refused outright.", short: "git ×5", layer: "culture",
     trigger: { t: "terminalTurn", q: "tool call", qf: "a shell tool call matching stash / reset --hard / clean -f / checkout -- / restore" },
     reads: [], creates: [], vetoes: [ { t: "terminalTurn" } ],
     note: "One hydra representing five git-safety statutes." },
-  { id: "fault bubbling", promise: "attention", desc: "When a turn fails terminally, the substrate climbs the family tree with notices until someone demonstrably able to act hears it; if nobody can, it tells the human directly.", short: "fault", layer: "physics",
+  { id: "fault bubbling", src: "substrate", promise: "attention", desc: "When a turn fails terminally, the substrate climbs the family tree with notices until someone demonstrably able to act hears it; if nobody can, it tells the human directly.", short: "fault", layer: "physics",
     trigger: { t: "terminalTurn", q: "failure", qf: "a turn ends failed or failed_unknown" },
-    reads: [ { t: "assignment", qf: "the failed turn's assignment, to find the family tree" } ],
+    reads: [ { t: "assignment", pk: "lookup", c: "using: the family tree", qf: "the failed turn's assignment, to find the family tree" } ],
     creates: [ { t: "wake", q: "climb notice", qf: "a climb notice to the next able ancestor" },
                { t: "conditionFact", q: "user-alerted", qf: "user-alerted — the human has been told directly" } ],
     vetoes: [] },
-  { id: "prod ladder", promise: "economy", desc: "Quiet holders of open work get prodded on a paced ladder; each silence climbs a rung, and the ladder freezes rather than burns when the engine itself is down.", short: "prod", layer: "physics",
+  { id: "prod ladder", src: "clock", promise: "economy", desc: "Quiet holders of open work get prodded on a paced ladder; each silence climbs a rung, and the ladder freezes rather than burns when the engine itself is down.", short: "prod", layer: "physics",
     trigger: { t: "supervisionCounters", q: "schedule", qf: "supervision sweep tick over an open, quiet assignment" },
-    reads: [ { t: "assignment", qf: "open assignments and who holds them" },
-             { t: "supervisionCounters", qf: "the ladder rung and pacing counters" },
-             { t: "conditionFact", qf: "standing facts that pause the ladder" } ],
+    reads: [ { t: "assignment", pk: "lookup", c: "using: open assignments", qf: "open assignments and who holds them" },
+             { t: "supervisionCounters", pk: "lookup", c: "using: rung & pacing", qf: "the ladder rung and pacing counters" },
+             { t: "conditionFact", pk: "exists", c: "if no pause fact stands", qf: "standing facts that pause the ladder" } ],
     creates: [ { t: "wake", q: "prod", qf: "a prod wake to the quiet holder" },
                { t: "supervisionCounters", q: "stall stamp", qf: "a stall stamp on the ladder rung" } ],
     vetoes: [] },
-  { id: "harness gate", promise: "economy", desc: "No prods are spent into a dead engine: if the holder's harness has a standing auth-dead or rate-limit fact, supervision waits instead of wasting the ladder.", short: "harness", layer: "physics",
+  { id: "harness gate", src: "substrate", promise: "economy", desc: "No prods are spent into a dead engine: if the holder's harness has a standing auth-dead or rate-limit fact, supervision waits instead of wasting the ladder.", short: "harness", layer: "physics",
     trigger: { t: "wake", q: "prod about to send", qf: "a prod wake is about to be sent" },
-    reads: [ { t: "conditionFact", q: "harness-dead", qf: "harness-auth-dead or harness-rate-limit-dead standing at this harness+host scope" } ],
+    reads: [ { t: "conditionFact", q: "harness-dead", pk: "exists", c: "if harness-dead stands", qf: "harness-auth-dead or harness-rate-limit-dead standing at this harness+host scope" } ],
     creates: [], vetoes: [ { t: "wake" } ] },
-  { id: "DR outbox", promise: "attention", desc: "The instant a decision request is filed anywhere, a wake to its owner's Main is committed in the same transaction — a decision cannot exist unnoticed.", short: "DR", layer: "physics",
+  { id: "DR outbox", src: "substrate", promise: "attention", desc: "The instant a decision request is filed anywhere, a wake to its owner's Main is committed in the same transaction — a decision cannot exist unnoticed.", short: "DR", layer: "physics",
     trigger: { t: "decisionRequest", q: "insert", qf: "a decision_request row wins its insert" },
     reads: [],
     creates: [ { t: "wake", q: "to owner's Main", qf: "a wake to the owner's Main, committed in the same transaction" } ],
     vetoes: [] },
-  { id: "outcome done-rail", promise: "proof", desc: "An outcome card cannot be closed by its holder: it needs finished subordinate work on file plus the goal-stater's own verdict that the goal is true.", short: "done", layer: "planned",
+  { id: "outcome done-rail", src: "agent", promise: "proof", desc: "An outcome card cannot be closed by its holder: it needs finished subordinate work on file plus the goal-stater's own verdict that the goal is true.", short: "done", layer: "planned",
     trigger: { t: "completionAttest", qf: "a completion attest on an outcome-kind card" },
-    reads: [ { t: "verdict", q: "principal", qf: "the principal's verdict that the goal is true" },
-             { t: "completionAttest", q: "subordinate terminal", qf: "terminal evidence from at least one subordinate card" } ],
+    reads: [ { t: "verdict", q: "principal", pk: "eq", c: "if goal-verdict = true", qf: "the principal's verdict that the goal is true" },
+             { t: "completionAttest", q: "subordinate terminal", pk: "exists", c: "if subordinate work is terminal", qf: "terminal evidence from at least one subordinate card" } ],
     creates: [], vetoes: [ { t: "completionAttest" } ] },
-  { id: "outcome horizon-rail", promise: "proof", desc: "Every outcome card carries a deadline; if the boundary has not moved by then, the substrate itself asks the principal what to do — silence becomes a page.", short: "horizon", layer: "planned",
+  { id: "outcome horizon-rail", src: "clock", promise: "proof", desc: "Every outcome card carries a deadline; if the boundary has not moved by then, the substrate itself asks the principal what to do — silence becomes a page.", short: "horizon", layer: "planned",
     trigger: { t: "supervisionCounters", q: "clock past horizon", qf: "now() passes the card's horizon with no boundary-moved filing since" },
-    reads: [ { t: "assignment", qf: "the card's horizon and declared boundary" },
-             { t: "checkpointAttest", qf: "boundary-moved filings since the horizon was set" } ],
+    reads: [ { t: "assignment", pk: "lookup", c: "using: horizon & boundary", qf: "the card's horizon and declared boundary" },
+             { t: "checkpointAttest", pk: "exists", c: "if boundary unmoved", qf: "boundary-moved filings since the horizon was set" } ],
     creates: [ { t: "decisionRequest", qf: "a decision request to the principal: horizon passed" } ],
     vetoes: [] },
-  { id: "outcome boundary-rail", promise: "proof", desc: "Checkpoints on an outcome card must name the boundary and whether it moved; 'still working' is not writable.", short: "boundary", layer: "planned",
+  { id: "outcome boundary-rail", src: "agent", promise: "proof", desc: "Checkpoints on an outcome card must name the boundary and whether it moved; 'still working' is not writable.", short: "boundary", layer: "planned",
     trigger: { t: "checkpointAttest", qf: "a checkpoint attest on an outcome-kind card lacking the typed boundary field" },
-    reads: [ { t: "assignment", q: "kind=outcome", qf: "the card is outcome-kind and declares a boundary" } ],
+    reads: [ { t: "assignment", q: "kind=outcome", pk: "eq", c: "if card is outcome-kind", qf: "the card is outcome-kind and declares a boundary" } ],
     creates: [], vetoes: [ { t: "checkpointAttest" } ] }
 ];
 
@@ -303,6 +308,65 @@ function quad(p0, p1, bend, trim0, trim1) {
            end: e, endDir: vnorm(vsub(e, c)), start: s };
 }
 
+// ---------- camera: the flat diagram is the top-down projection ----------
+// The drawing itself is flat (z is currently unspent); the nav is 3D:
+// drag = free orbit (arcball, not a turntable): a quaternion rotates the
+// world about the SCREEN axes, with mild perspective. At identity the scene
+// is exactly the flat 2D diagram (every z is 0 and the scale is 1).
+let cam = [1, 0, 0, 0];                    // w x y z; identity = flat top-down
+const Q_ID = [1, 0, 0, 0];
+const PERSP = 1600;                        // perspective distance, user units
+function qmul(a, b) {
+  const [aw, ax, ay, az] = a, [bw, bx, by, bz] = b;
+  return [aw*bw - ax*bx - ay*by - az*bz, aw*bx + ax*bw + ay*bz - az*by,
+          aw*by - ax*bz + ay*bw + az*bx, aw*bz + ax*by - ay*bx + az*bw];
+}
+function qaxis(x, y, z, ang) {
+  const s = Math.sin(ang / 2);
+  return [Math.cos(ang / 2), x * s, y * s, z * s];
+}
+function qrot(q, v) {
+  const [w, x, y, z] = q, [vx, vy, vz] = v;
+  const tx = 2 * (y * vz - z * vy), ty = 2 * (z * vx - x * vz), tz = 2 * (x * vy - y * vx);
+  return [vx + w * tx + (y * tz - z * ty), vy + w * ty + (z * tx - x * tz), vz + w * tz + (x * ty - y * tx)];
+}
+function slerpq(a, b, t) {
+  let dot = a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3], bb = b;
+  if (dot < 0) { dot = -dot; bb = b.map(v => -v); }
+  if (dot > 0.9995) {
+    const r = a.map((v, i) => v + (bb[i] - v) * t), n = Math.hypot(...r);
+    return r.map(v => v / n);
+  }
+  const th = Math.acos(dot), s = Math.sin(th);
+  const f1 = Math.sin((1 - t) * th) / s, f2 = Math.sin(t * th) / s;
+  return a.map((v, i) => v * f1 + bb[i] * f2);
+}
+function camAngleTo(t) {
+  const d = Math.abs(cam[0]*t[0] + cam[1]*t[1] + cam[2]*t[2] + cam[3]*t[3]);
+  return 2 * Math.acos(Math.min(1, d));
+}
+// orbit pivot: the scene center normally; the selected rail's base while a
+// rail is standing, so rotating while zoomed orbits the rail, not the room.
+// pivot stays at z=0, so at camera identity the projection is exact 2D
+// regardless of pivot.
+let pivot = { x: CX, y: CY, z: 0 };
+function P(x, y, z) {
+  const v = qrot(cam, [x - pivot.x, y - pivot.y, z - pivot.z]);
+  const s = PERSP / (PERSP - v[2]);
+  return { x: pivot.x + v[0] * s, y: pivot.y + v[1] * s };
+}
+// a circle lying in the ground plane, projected segment by segment
+function groundCirclePath(cx, cy, r, segs) {
+  const n = segs || 24;
+  let d = "";
+  for (let s = 0; s <= n; s++) {
+    const a = s * 2 * Math.PI / n;
+    const p = P(cx + r * Math.cos(a), cy + r * Math.sin(a), 0);
+    d += (s ? " L " : "M ") + p.x.toFixed(1) + " " + p.y.toFixed(1);
+  }
+  return d + " Z";
+}
+
 // ---------- render ----------
 
 const NS = "http://www.w3.org/2000/svg";
@@ -317,23 +381,14 @@ function el(tag, attrs, parent) {
 // background click-catcher
 const bg = el("rect", { x: 0, y: 0, width: 900, height: 900, fill: "transparent" }, svg);
 
+const baseLayer = el("g", {}, svg);
 const edgeLayer = el("g", {}, svg);
 const hubLayer = el("g", {}, svg);
 const nodeLayer = el("g", {}, svg);
 
-// row-type nodes
-const nodeEls = {};
-ROWTYPES.forEach(rt => {
-  const p = nodePos[rt.id];
-  const g = el("g", { class: "rowtype" }, nodeLayer);
-  el("circle", { cx: p.x, cy: p.y, r: 7 }, g);
-  const cos = Math.cos(p.a), sin = Math.sin(p.a);
-  const tx = p.x + cos * 16, ty = p.y + sin * 16 + 4;
-  const anchor = cos > 0.35 ? "start" : cos < -0.35 ? "end" : "middle";
-  const dy = anchor === "middle" ? (sin > 0 ? 10 : -8) : 0;
-  el("text", { x: tx, y: ty + dy, "text-anchor": anchor }, g).textContent = rt.label;
-  nodeEls[rt.id] = g;
-});
+let nodeEls = {};
+let hydraEls = [], hydraEdgeData = [];
+let sceneSel = null;  // selection the scene was last built for
 
 function edgeLabel(g, q, text, col, dy) {
   if (!text) return;
@@ -349,87 +404,179 @@ function addPath(g, d, attrs) {
   return p;
 }
 
-const hydraEls = [];
-const hydraEdgeData = [];
-const triggerRings = {}; // per row type: rings already drawn, to nest concentrically
-HYDRAS.forEach((h, i) => {
-  const hub = hubs[i];
-  const col = color(i);
-  const planned = h.layer === "planned";
-  const g = el("g", { class: "hydra", color: col, "data-i": i }, edgeLayer);
-  const dashSolid = planned ? "16 8" : "none";
-  const recs = [];
+// small origin glyphs: who fires the trigger
+function drawOrigin(g, p, kind, col) {
+  const o = el("g", { stroke: col, fill: "none", "stroke-width": 1.6, "stroke-linecap": "round" }, g);
+  if (kind === "clock") {
+    el("circle", { cx: p.x, cy: p.y, r: 7 }, o);
+    el("line", { x1: p.x, y1: p.y, x2: p.x, y2: p.y - 4.5 }, o);
+    el("line", { x1: p.x, y1: p.y, x2: p.x + 3.5, y2: p.y + 1.5 }, o);
+  } else if (kind === "substrate") {
+    el("polyline", { points: `${p.x + 3},${p.y - 8} ${p.x - 3},${p.y + 1} ${p.x + 1},${p.y + 1} ${p.x - 3},${p.y + 8}` }, o);
+  } else { // agent
+    el("circle", { cx: p.x, cy: p.y - 5.5, r: 2.6 }, o);
+    el("line", { x1: p.x, y1: p.y - 3, x2: p.x, y2: p.y + 2.5 }, o);
+    el("line", { x1: p.x - 4, y1: p.y - 0.5, x2: p.x + 4, y2: p.y - 0.5 }, o);
+    el("line", { x1: p.x, y1: p.y + 2.5, x2: p.x - 3.2, y2: p.y + 7.5 }, o);
+    el("line", { x1: p.x, y1: p.y + 2.5, x2: p.x + 3.2, y2: p.y + 7.5 }, o);
+  }
+}
+function arrowHead(g, q, col) {
+  const d = q.endDir, n2 = vperp(d);
+  const b = vsub(q.end, vscale(d, 9));
+  el("polygon", { points: `${q.end.x},${q.end.y} ${b.x + n2.x * 4.2},${b.y + n2.y * 4.2} ${b.x - n2.x * 4.2},${b.y - n2.y * 4.2}`,
+    fill: col }, g);
+}
 
-  // trigger: origin ring circling the trigger row's dot, then a solid bezier
-  // into the hub launching from the ring's edge
-  const tp = nodePos[h.trigger.t];
-  const ringR = 12 + (triggerRings[h.trigger.t] || 0) * 3;
-  triggerRings[h.trigger.t] = (triggerRings[h.trigger.t] || 0) + 1;
-  el("circle", { cx: tp.x, cy: tp.y, r: ringR, fill: "none", stroke: col,
-    "stroke-width": 1.6, "stroke-dasharray": planned ? "6 4" : "none" }, g);
-  const tq = quad(tp, hub, 26 + (i % 3) * 9, ringR + 2, 8);
-  addPath(g, tq.d, { stroke: col, "stroke-width": 2.4, "stroke-dasharray": dashSolid });
-  edgeLabel(g, tq, "on: " + (h.trigger.q || "filed"), col);
-  recs.push({ kind: "on", mid: tq.mid,
-    text: h.trigger.qf || h.trigger.q || ("a " + rtLabel(h.trigger.t) + " row is filed") });
+// The whole scene rebuilds through P() whenever camera or selection change;
+// curves are built between PROJECTED endpoints. Each rail draws as a directed
+// FLOW read along the arrows: origin glyph → trigger row → fan out to the
+// rows it reads → fan back in on the outcome (the created row, or the ⊘
+// refusal at the trigger row), then chain to secondary effects. Sequence is
+// the chain itself; the drawing is flat (z unused for now, nav stays 3D).
+function buildScene() {
+  sceneSel = selected;
+  [baseLayer, edgeLayer, nodeLayer].forEach(l => { while (l.firstChild) l.removeChild(l.firstChild); });
+  nodeEls = {}; hydraEls = []; hydraEdgeData = [];
+  const P2 = p => P(p.x, p.y, 0);
 
-  // reads: dashed thinner beziers into hub
-  h.reads.forEach((e, k) => {
-    const p = nodePos[e.t];
-    const bend = (k % 2 ? -1 : 1) * (22 + k * 9) + (e.t === h.trigger.t ? 46 : 0);
-    const q = quad(p, hub, bend, 11, 8);
-    addPath(g, q.d, { stroke: col, "stroke-width": 1.1, "stroke-dasharray": "1.5 9" });
-    edgeLabel(g, q, e.q ? ("reads: " + e.q) : "reads", col, 10);
-    recs.push({ kind: "reads", mid: q.mid, text: e.qf || e.q || rtLabel(e.t) });
+  // faint ground ring through the row dots: anchors the plane when orbiting
+  el("path", { d: groundCirclePath(CX, CY, R, 72), fill: "none",
+    stroke: "#242e40", "stroke-width": 1 }, baseLayer);
+
+  // row-type nodes
+  ROWTYPES.forEach(rt => {
+    const p = nodePos[rt.id];
+    const pq = P2(p);
+    const g = el("g", { class: "rowtype" }, nodeLayer);
+    el("circle", { cx: pq.x, cy: pq.y, r: 7 }, g);
+    // label offset follows the node's PROJECTED direction from center, so
+    // labels stay outside the ring at any camera orientation
+    const dl = Math.hypot(pq.x - CX, pq.y - CY) || 1;
+    const cos = (pq.x - CX) / dl, sin = (pq.y - CY) / dl;
+    const tx = pq.x + cos * 16, ty = pq.y + sin * 16 + 4;
+    const anchor = cos > 0.35 ? "start" : cos < -0.35 ? "end" : "middle";
+    const dy = anchor === "middle" ? (sin > 0 ? 10 : -8) : 0;
+    el("text", { x: tx, y: ty + dy, "text-anchor": anchor }, g).textContent = rt.label;
+    nodeEls[rt.id] = g;
   });
 
-  // creates: bezier from hub out, arrowhead into the target node
-  h.creates.forEach((e, k) => {
-    const p = nodePos[e.t];
-    const sameAsTrigger = e.t === h.trigger.t;
-    const bend = (k % 2 ? -1 : 1) * (26 + k * 10) + (sameAsTrigger ? -52 : 0);
-    const q = quad(hub, p, bend, 8, 15);
-    addPath(g, q.d, { stroke: col, "stroke-width": 2, "stroke-dasharray": dashSolid });
-    edgeLabel(g, q, "creates: " + (e.q || ROWTYPES.find(r => r.id === e.t)?.label || e.t), col);
-    recs.push({ kind: "creates", mid: q.mid, text: e.qf || e.q || rtLabel(e.t) });
-    const d = q.endDir, n = vperp(d), e1 = q.end;
-    const b = vsub(e1, vscale(d, 9));
-    el("polygon", {
-      points: `${e1.x},${e1.y} ${b.x + n.x * 4.2},${b.y + n.y * 4.2} ${b.x - n.x * 4.2},${b.y - n.y * 4.2}`,
-      fill: col }, g);
+  const triggerRings = {}; // per trigger row: seats taken, to fan co-triggered rails
+  HYDRAS.forEach((h, i) => {
+    const col = color(i);
+    const planned = h.layer === "planned";
+    const g = el("g", { class: "hydra", color: col, "data-i": i }, edgeLayer);
+    const dashSolid = planned ? "16 8" : "none";
+    const recs = [];
+    const tp = nodePos[h.trigger.t];
+    const seat = triggerRings[h.trigger.t] || 0;
+    triggerRings[h.trigger.t] = seat + 1;
+
+    // ring marking the trigger row
+    const ringR = 12 + seat * 3;
+    el("path", { d: groundCirclePath(tp.x, tp.y, ringR, 20), fill: "none",
+      stroke: col, "stroke-width": 1.6,
+      "stroke-dasharray": planned ? "6 4" : "none" }, g);
+
+    // origin: who fires it (agent figure / schedule clock / substrate bolt),
+    // seated outside the ring, fanned so co-triggered rails don't stack.
+    // The rail's name lives at its origin now that there is no hub.
+    const out = vnorm(vsub(tp, { x: CX, y: CY }));
+    const perp = vperp(out);
+    const oPlane = vadd(vadd(tp, vscale(out, 52 + seat * 8)),
+                        vscale(perp, (seat % 2 ? -1 : 1) * (24 + seat * 10)));
+    const op = P2(oPlane);
+    drawOrigin(g, op, h.src || "agent", col);
+    el("title", {}, g).textContent = h.id;
+    el("text", { class: "hublabel", x: op.x, y: op.y + 20, "text-anchor": "middle", fill: col }, g)
+      .textContent = h.short;
+    if (planned)
+      el("text", { class: "plannedtag", x: op.x, y: op.y - 15, "text-anchor": "middle" }, g)
+        .textContent = "PLANNED";
+
+    // link 1 — the event arrives at its row: solid arrow origin → trigger row
+    const tq = quad(op, P2(tp), 10 + (i % 3) * 6, 12, ringR + 4);
+    addPath(g, tq.d, { stroke: col, "stroke-width": 2.4, "stroke-dasharray": dashSolid });
+    arrowHead(g, tq, col);
+    edgeLabel(g, tq, "on: " + (h.trigger.q || "filed"), col);
+    recs.push({ kind: "on", mid: tq.mid,
+      text: h.trigger.qf || h.trigger.q || ("a " + rtLabel(h.trigger.t) + " row is filed") });
+
+    // link 2 — fan out: an arrow from the trigger row to each row it
+    // consults, labeled with the conditional; a self-read draws a loop
+    const readPts = [];
+    h.reads.forEach((e, k) => {
+      const p = nodePos[e.t];
+      let q;
+      if (e.t === h.trigger.t) {
+        const a = vadd(tp, vscale(perp, 9)), b = vsub(tp, vscale(perp, 9));
+        q = quad(P2(a), P2(b), 42 + k * 8, 3, 3);
+      } else {
+        const bend = (k % 2 ? -1 : 1) * (24 + k * 9) + (i % 3) * 5;
+        q = quad(P2(tp), P2(p), bend, ringR + 2, 11);
+      }
+      addPath(g, q.d, { stroke: col, "stroke-width": 1.1, "stroke-dasharray": "1.5 9" });
+      arrowHead(g, q, col);
+      edgeLabel(g, q, e.c || (e.q ? ("reads: " + e.q) : "reads"), col, 10);
+      recs.push({ kind: "reads", mid: q.mid, text: e.qf || e.q || rtLabel(e.t) });
+      readPts.push(p);
+    });
+    const joinFrom = readPts.length ? readPts : [tp];
+
+    // link 3 — fan back in on the outcome
+    // refusal: arrows from the consulted rows join on the ⊘ at the trigger row
+    h.vetoes.forEach((e, k) => {
+      const p = nodePos[e.t];
+      const toward = vnorm(vsub({ x: CX, y: CY }, p));
+      const side = vperp(toward);
+      const tip = vadd(vadd(p, vscale(toward, 26)), vscale(side, 18));
+      const tipPt = P2(tip);
+      joinFrom.forEach((f, j) => {
+        const q = quad(P2(f), tipPt, (j % 2 ? -1 : 1) * (30 + j * 12) + (i % 4) * 5, 11, 10);
+        addPath(g, q.d, { stroke: col, "stroke-width": 1.6, "stroke-dasharray": dashSolid });
+        if (j === 0) {
+          edgeLabel(g, q, "rule_denied: " + h.id, col, -8);
+          recs.push({ kind: "refused", mid: q.mid, text: e.qf || ("rule_denied: " + h.id) });
+        }
+      });
+      el("circle", { cx: tipPt.x, cy: tipPt.y, r: 7, fill: "#10141c", stroke: "var(--veto)", "stroke-width": 1.8 }, g);
+      el("line", { x1: tipPt.x - 4.7, y1: tipPt.y + 4.7, x2: tipPt.x + 4.7, y2: tipPt.y - 4.7,
+        stroke: "var(--veto)", "stroke-width": 1.8 }, g);
+    });
+    // effects: join once at the primary created row, then chain to secondaries
+    let prev = joinFrom;
+    h.creates.forEach((e, k) => {
+      const p = nodePos[e.t];
+      let firstQ = null;
+      prev.forEach((f, j) => {
+        if (f === p) return;
+        const q = quad(P2(f), P2(p), (j % 2 ? -1 : 1) * (26 + j * 10) + (k ? -18 : (i % 3) * 6), 11, 9);
+        addPath(g, q.d, { stroke: col, "stroke-width": k ? 1.6 : 2, "stroke-dasharray": dashSolid });
+        arrowHead(g, q, col);
+        if (!firstQ) firstQ = q;
+      });
+      if (firstQ) {
+        edgeLabel(g, firstQ, "creates: " + (e.q || rtLabel(e.t)), col);
+        recs.push({ kind: "creates", mid: firstQ.mid, text: e.qf || e.q || rtLabel(e.t) });
+      }
+      prev = [p];
+    });
+
+    g.addEventListener("mouseenter", () => {
+      if (camBusy() || pinchActive) return; // no hover reactions mid-navigation
+      hovered = i; apply();
+    });
+    g.addEventListener("mouseleave", () => {
+      if (camBusy() || pinchActive) return;
+      hovered = null; apply();
+    });
+    g.addEventListener("click", ev => { ev.stopPropagation(); setSelected(i); });
+    hydraEls.push(g);
+    hydraEdgeData.push(recs);
   });
 
-  // vetoes: curve returns to the triggering row type, ends beside it in a red no-entry glyph
-  h.vetoes.forEach((e, k) => {
-    const p = nodePos[e.t];
-    const toward = vnorm(vsub(hub, p));
-    const side = vperp(toward);
-    const tip = vadd(vadd(p, vscale(toward, 24)), vscale(side, 16));
-    const q = quad(hub, tip, -(48 + k * 14) - (i % 4) * 7, 8, 9);
-    addPath(g, q.d, { stroke: col, "stroke-width": 2, "stroke-dasharray": planned ? "16 8" : "none" });
-    edgeLabel(g, q, "rule_denied: " + h.id, col, -8);
-    recs.push({ kind: "refused", mid: q.mid, text: e.qf || ("rule_denied: " + h.id) });
-    const vg = el("g", {}, g);
-    el("circle", { cx: tip.x, cy: tip.y, r: 7, fill: "#10141c", stroke: "var(--veto)", "stroke-width": 1.8 }, vg);
-    el("line", { x1: tip.x - 4.7, y1: tip.y + 4.7, x2: tip.x + 4.7, y2: tip.y - 4.7,
-      stroke: "var(--veto)", "stroke-width": 1.8 }, vg);
-  });
-
-  // hub
-  const hg = el("g", {}, g);
-  el("circle", { cx: hub.x, cy: hub.y, r: 9, fill: "#171d28", stroke: col,
-    "stroke-width": 2.2, "stroke-dasharray": planned ? "14 7" : "none" }, hg);
-  el("circle", { cx: hub.x, cy: hub.y, r: 3.2, fill: col }, hg);
-  el("title", {}, hg).textContent = h.id;
-  el("text", { class: "hublabel", x: hub.x, y: hub.y + 20, "text-anchor": "middle", fill: col }, g)
-    .textContent = h.short;
-  if (planned)
-    el("text", { class: "plannedtag", x: hub.x, y: hub.y - 15, "text-anchor": "middle" }, g)
-      .textContent = "PLANNED";
-
-  hydraEls.push(g);
-  hydraEdgeData.push(recs);
-});
+  apply();
+}
 
 // ---------- callouts (full predicates, shown on click-select) ----------
 
@@ -456,7 +603,7 @@ function hydraHazards(i) {
       pts.push({ x: q.x, y: q.y });
     }
   });
-  hydraEls[i].querySelectorAll("circle, polygon, .hublabel, .plannedtag")
+  hydraEls[i].querySelectorAll("circle, ellipse, line, polygon, .hublabel, .plannedtag")
     .forEach(n => bboxPts(n.getBBox(), pts));
   const h = HYDRAS[i];
   new Set([h.trigger.t].concat(h.reads.map(e => e.t), h.creates.map(e => e.t),
@@ -589,7 +736,26 @@ function renderCallouts(i) {
       };
       consider(desired);
       merged.forEach(r => { consider(r[0]); consider(r[1]); });
-      c.y = best != null ? best : desired; // no clear seat exists: accept overlap
+      if (best == null) {
+        // no clear seat exists: take the candidate that covers the least ink
+        // (a box may never cover another box)
+        const cands = [desired];
+        merged.forEach(r => {
+          cands.push(Math.min(Math.max(r[0], CALL_MARGIN), lim),
+                     Math.min(Math.max(r[1], CALL_MARGIN), lim));
+        });
+        let bestScore = Infinity;
+        cands.forEach(y => {
+          const onBox = placed.some(b =>
+            b.x < c.x + CALL_W + CALL_GAP && b.x + CALL_W + CALL_GAP > c.x &&
+            y < b.y + b.h + CALL_GAP && b.y < y + c.h + CALL_GAP);
+          const score = (onBox ? 1e6 : 0) + hazards.filter(p =>
+            p.x > c.x - HAZ_PAD && p.x < c.x + CALL_W + HAZ_PAD &&
+            p.y > y - HAZ_PAD && p.y < y + c.h + HAZ_PAD).length;
+          if (score < bestScore) { bestScore = score; best = y; }
+        });
+      }
+      c.y = best;
       placed.push(c);
     });
   });
@@ -730,41 +896,45 @@ function renderPanel(i) {
   panelbody.innerHTML = html;
 }
 
-// ---------- layers: archetype families + substrate, ATC-style toggles ----------
-// Every rail belongs to exactly one layer. Families are hand-declared in this
-// spike; a real build compiles membership from a declared archetype field in
-// the rules format — never inferred.
+// ---------- archetype controls, ATC-style toggles ----------
+// Each chip is one of the org's real agent archetypes (identity/archetypes/
+// *.toml in the live install), plus the substrate. An active archetype shows
+// every rail bound to it; a rail hides only when NO archetype claiming it is
+// active. Binding here is involvement-based and hand-declared for the spike
+// (a rail governs the archetype's verbs, or summons it by remedy
+// target_role); the real build compiles it from the rule declarations.
 const LAYERS = [
-  { id: "completion-requires-*", label: "completion requires proof", members: [0, 1, 2],
-    color: PROMISE_COLOR.proof, eyebrow: "ARCHETYPE — shared form",
-    desc: "One form, three predicates: a completion attest cannot stand unless its proof row is on file. The veto is the form; what counts as proof is the instance." },
-  { id: "git-safety-statutes", label: "git safety", members: [6], count: 5,
-    color: PROMISE_COLOR.safety, eyebrow: "ARCHETYPE — shared form",
-    desc: "Five commands that destroy uncommitted work, refused outright: one form, five statutes, drawn compressed as a single hydra." },
-  { id: "outcome-*-rail", label: "outcome rails", members: [11, 12, 13],
-    color: PROMISE_COLOR.proof, eyebrow: "ARCHETYPE — planned family",
-    desc: "Planned family: an outcome card cannot drift. Closing, deadlines, and checkpoints each get a rail cut from the same form." },
-  { id: "substrate", label: "substrate physics", members: [7, 8, 9, 10],
-    color: "#9db2ff", eyebrow: "SUBSTRATE — the laws the engine itself executes",
-    desc: "Fault bubbling, the prod ladder, the harness gate, the DR outbox: physics no org rule can switch off." },
-  { id: "culture-unfamilied", label: "culture · unfamilied", members: [3, 4, 5],
-    color: "#7f8ba0", eyebrow: "CULTURE — unfamilied rules",
-    desc: "Org rules that belong to no archetype yet: review needs passing tests, refix needs diagnosis, spec dispatch needs its spirit doc." },
+  { id: "coder", label: "coder", members: [0, 1, 2, 6], color: "hsl(210, 70%, 62%)",
+    desc: "Builds the work. Its completions must carry proof — review, verification, a results artifact — and the five destructive git commands are refused outright." },
+  { id: "reviewer", label: "reviewer", members: [0, 3], color: "hsl(140, 50%, 60%)",
+    desc: "Summoned by completion-requires-review as the remedy (target_role: reviewer); its own verdicts are gated by the tests-passed attest." },
+  { id: "recon", label: "recon", members: [4], color: "hsl(280, 55%, 68%)",
+    desc: "Summoned when a fix repeats (target_role: recon): its diagnosed verdict is what releases the re-fix dispatch." },
+  { id: "spec-writer", label: "spec-writer", members: [5], color: "hsl(180, 50%, 55%)",
+    desc: "Its work cannot be dispatched without the governing spirit document on file." },
+  { id: "orchestrator", label: "orchestrator", members: [4, 5], color: "hsl(30, 80%, 62%)",
+    desc: "Dispatches work — the dispatch verb is where the refix-diagnosis and spec-spirit gates bind." },
+  { id: "product-owner", label: "product-owner", members: [11, 12, 13], color: "hsl(330, 60%, 68%)",
+    desc: "Holds outcome cards; the planned outcome rails govern their closing, horizons, and checkpoints." },
+  { id: "substrate", label: "substrate", members: [7, 8, 9, 10], color: "#9db2ff",
+    desc: "The engine itself: fault bubbling, the prod ladder, the harness gate, the DR outbox. Physics no org rule can switch off." },
 ];
-const layerOf = [];
-LAYERS.forEach((L, li) => L.members.forEach(m => layerOf[m] = li));
+// a rail may be bound to several archetypes; it hides only when all are off
+const railArch = HYDRAS.map((_, i) =>
+  LAYERS.map((L, ai) => L.members.includes(i) ? ai : -1).filter(a => a >= 0));
 const layerOff = new Set();
+const railHidden = i => railArch[i].length > 0 && railArch[i].every(ai => layerOff.has(ai));
 let layerHover = null;
 
 function renderLayerPanel(li) {
   const L = LAYERS[li];
   panelbody.innerHTML =
-    `<div class="eyebrow" style="color:${L.color}">${L.eyebrow}</div>
+    `<div class="eyebrow" style="color:${L.color}">${L.id === "substrate" ? "SUBSTRATE" : "ARCHETYPE"}</div>
      <div class="headline">${esc(L.desc)}</div>
-     <div class="railtag" style="border-color:${L.color}; color:${L.color}">${esc(L.id)}<span class="layer"> · ×${L.count || L.members.length}</span></div>
+     <div class="railtag" style="border-color:${L.color}; color:${L.color}">${esc(L.id)}<span class="layer"> · ×${L.count || L.members.length} rails</span></div>
      <div style="--railcolor:${L.color}">
-     <div class="sect">Rails</div><ul>${L.members.map(m => `<li>${esc(HYDRAS[m].id)}</li>`).join("")}</ul>
-     <div class="note">Click the chip to show or hide this layer. Grouping is hand-declared in this spike; a real build compiles archetype membership from the rules format.</div></div>`;
+     <div class="sect">Its rails</div><ul>${L.members.map(m => `<li>${esc(HYDRAS[m].id)}</li>`).join("")}</ul>
+     <div class="note">An active archetype shows its rails; a rail bound to several archetypes hides only when all of them are off. Binding is involvement-based and hand-declared in this spike; the real build compiles it from rule declarations (verb scope, remedy target_role, archetype manifests).</div></div>`;
 }
 
 const layersEl = document.getElementById("layers");
@@ -775,13 +945,10 @@ LAYERS.forEach((L, li) => {
   c.innerHTML = `<span class="dot"></span>${esc(L.label)}&nbsp;<span class="n">×${L.count || L.members.length}</span>`;
   c.addEventListener("click", () => {
     if (layerOff.has(li)) layerOff.delete(li);
-    else {
-      layerOff.add(li);
-      if (selected != null && layerOf[selected] === li) selected = null;
-      if (hovered != null && layerOf[hovered] === li) hovered = null;
-    }
+    else layerOff.add(li);
+    if (hovered != null && railHidden(hovered)) hovered = null;
     c.classList.toggle("off", layerOff.has(li));
-    apply();
+    if (selected != null && railHidden(selected)) setSelected(null); else apply();
   });
   c.addEventListener("mouseenter", () => { layerHover = li; apply(); });
   c.addEventListener("mouseleave", () => { layerHover = null; apply(); });
@@ -789,16 +956,18 @@ LAYERS.forEach((L, li) => {
 });
 
 function apply() {
+  if (selected !== sceneSel) { buildScene(); return; } // scene tracks selection
   const active = hovered != null ? hovered : selected;
   // callouts belong to the click-selection; hovering another hydra never
   // dismisses them. Only deselect or selecting another rail clears them.
-  const co = selected;
+  // While the camera is moving they clear and re-seat on settle.
+  const co = camBusy() ? null : selected;
   // hovering a chip isolates its layer (if shown), like hovering a hydra
   const fam = layerHover != null && active == null && !layerOff.has(layerHover)
     ? new Set(LAYERS[layerHover].members) : null;
   hydraEls.forEach((g, i) => {
     const h = HYDRAS[i];
-    const off = layerOff.has(layerOf[i]);
+    const off = railHidden(i);
     g.style.opacity = off ? 0
       : active != null ? (i === active ? fullOpacity(h) : 0.15)
       : fam ? (fam.has(i) ? fullOpacity(h) : 0.12)
@@ -808,7 +977,9 @@ function apply() {
     g.classList.toggle("callouts", co === i);
   });
   renderCallouts(co);
-  if (selected !== zoomSel) { zoomSel = selected; zoomToSelection(); }
+  if (!camBusy()) {
+    if (selected !== zoomSel) { zoomSel = selected; zoomToSelection(); }
+  } else if (selected == null && zoomSel !== null) { zoomSel = null; zoomTo({ ...FULL_VIEW }); }
   document.getElementById("stage").classList.toggle("zoomed", selected != null);
   const lit = new Set();
   const litFrom = h => [h.trigger].concat(h.reads, h.creates, h.vetoes).forEach(e => lit.add(e.t));
@@ -820,15 +991,152 @@ function apply() {
   else renderPanel(null);
 }
 
-hydraEls.forEach((g, i) => {
-  g.addEventListener("mouseenter", () => { hovered = i; apply(); });
-  g.addEventListener("mouseleave", () => { hovered = null; apply(); });
-  g.addEventListener("click", ev => { ev.stopPropagation(); selected = i; apply(); });
-});
-bg.addEventListener("click", () => { selected = null; apply(); });
+// ---------- camera animation + selection ----------
+let camRAF = 0, dragging = false, dragMoved = false, dpx = 0, dpy = 0, rebuildQueued = 0;
+function camBusy() { return camRAF !== 0 || dragging; }
+// orbit pivot for a selected rail: the centroid of its INK — the row dots it
+// touches. Flyout boxes are chrome, never in the centroid.
+function railPivot(i) {
+  const h = HYDRAS[i];
+  const pts = [nodePos[h.trigger.t]];
+  h.reads.forEach(e => pts.push(nodePos[e.t]));
+  h.creates.forEach(e => pts.push(nodePos[e.t]));
+  h.vetoes.forEach(e => pts.push(nodePos[e.t]));
+  const c = pts.reduce((a, p) => ({ x: a.x + p.x, y: a.y + p.y }), { x: 0, y: 0 });
+  return { x: c.x / pts.length, y: c.y / pts.length, z: 0 };
+}
+function animateCam(targetQ, targetP) {
+  if (camRAF) { cancelAnimationFrame(camRAF); camRAF = 0; }
+  const p0 = { ...pivot };
+  const pd = Math.hypot(targetP.x - p0.x, targetP.y - p0.y, targetP.z - p0.z);
+  if (camAngleTo(targetQ) < 0.001 && pd < 0.5) { cam = targetQ; pivot = targetP; return; }
+  if (REDUCED_MOTION || !CAN_ANIMATE) { cam = targetQ; pivot = targetP; buildScene(); return; }
+  const from = cam.slice(), start = performance.now(), MS = 380;
+  const step = now => {
+    const k = easeOutCubic(Math.min(Math.max((now - start) / MS, 0), 1));
+    cam = slerpq(from, targetQ, k);
+    pivot = { x: p0.x + (targetP.x - p0.x) * k, y: p0.y + (targetP.y - p0.y) * k,
+              z: p0.z + (targetP.z - p0.z) * k };
+    camRAF = k < 1 ? requestAnimationFrame(step) : 0;
+    buildScene(); // final frame runs with camRAF=0 → callouts + zoom re-seat
+  };
+  camRAF = requestAnimationFrame(step);
+}
+function setSelected(i) {
+  selected = i;
+  // selection no longer rotates the camera — it only moves the orbit pivot
+  animateCam(cam.slice(), i != null ? railPivot(i) : { x: CX, y: CY, z: 0 });
+  if (!camBusy()) apply();
+}
+
+bg.addEventListener("click", () => setSelected(null));
 document.getElementById("stage").addEventListener("click", ev => {
-  if (ev.target === svg || ev.target.id === "stage") { selected = null; apply(); }
+  if (ev.target === svg || ev.target.id === "stage") setSelected(null);
 });
+
+// ---------- 3D nav gesture: drag = free orbit (arcball) ----------
+// shift-drag or right-drag = pan; wheel also pans (below)
+let panMode = false;
+svg.addEventListener("contextmenu", ev => ev.preventDefault());
+svg.addEventListener("pointerdown", ev => {
+  if (ev.button !== 0 && ev.button !== 2) return;
+  dragging = true; dragMoved = false; dpx = ev.clientX; dpy = ev.clientY;
+  panMode = ev.button === 2 || ev.shiftKey;
+  if (camRAF) { cancelAnimationFrame(camRAF); camRAF = 0; }
+});
+window.addEventListener("pointermove", ev => {
+  if (!dragging) return;
+  const dx = ev.clientX - dpx, dy = ev.clientY - dpy;
+  if (!dragMoved && Math.hypot(dx, dy) < 4) return;
+  if (!dragMoved) { dragMoved = true; hovered = null; } // keep zoom; kill hover
+  dpx = ev.clientX; dpy = ev.clientY;
+  if (panMode) {
+    const s = clientToUser(ev.clientX, ev.clientY).scale;
+    manualView({ x: view.x - dx / s, y: view.y - dy / s, w: view.w, h: view.h });
+    return;
+  }
+  // rotate about the SCREEN axes so every drag direction works from any pose
+  cam = qmul(qaxis(0, 1, 0, dx * 0.005), qmul(qaxis(1, 0, 0, dy * 0.005), cam));
+  if (!rebuildQueued) rebuildQueued = requestAnimationFrame(() => { rebuildQueued = 0; buildScene(); });
+});
+window.addEventListener("pointerup", () => {
+  if (!dragging) return;
+  dragging = false;
+  const wasPan = panMode; panMode = false;
+  if (!dragMoved) return;
+  if (wasPan) { apply(); return; } // pan never re-fits or snaps
+  if (selected == null && camAngleTo(Q_ID) < 0.12)
+    animateCam(Q_ID, { x: CX, y: CY, z: 0 }); // snap flat
+  else { zoomSel = undefined; apply(); }      // re-seat callouts + zoom
+});
+// a drag that ends over the svg still fires a click — swallow that one
+svg.addEventListener("click", ev => {
+  if (dragMoved) { ev.stopPropagation(); dragMoved = false; }
+}, true);
+
+// ---------- zoom + pan: wheel / trackpad / touch pinch ----------
+function clientToUser(cx, cy) {
+  const rect = svg.getBoundingClientRect();
+  const scale = Math.min(rect.width / view.w, rect.height / view.h);
+  const padX = (rect.width - view.w * scale) / 2, padY = (rect.height - view.h * scale) / 2;
+  return { x: view.x + (cx - rect.left - padX) / scale,
+           y: view.y + (cy - rect.top - padY) / scale, scale };
+}
+function manualView(v) {
+  zoomGen++;
+  if (zoomRAF) { cancelAnimationFrame(zoomRAF); zoomRAF = 0; }
+  setView(v);
+  zoomSel = selected; // manual framing wins; no auto re-fit until selection changes
+}
+function zoomAbout(cx, cy, factor) {
+  const u = clientToUser(cx, cy);
+  const w = Math.min(2400, Math.max(80, view.w * factor));
+  const f = w / view.w;
+  manualView({ x: u.x - (u.x - view.x) * f, y: u.y - (u.y - view.y) * f,
+               w, h: view.h * f });
+}
+svg.addEventListener("wheel", ev => {
+  ev.preventDefault();
+  if (ev.ctrlKey || ev.metaKey) zoomAbout(ev.clientX, ev.clientY, Math.exp(ev.deltaY * 0.004));
+  else {
+    const s = clientToUser(ev.clientX, ev.clientY).scale;
+    manualView({ x: view.x + ev.deltaX / s, y: view.y + ev.deltaY / s, w: view.w, h: view.h });
+  }
+}, { passive: false });
+
+// touch: one finger orbits (pointer path above); two fingers pinch-zoom + pan
+const touches = new Map();
+let pinchActive = false, pinchDist = 0, pinchMid = null;
+svg.addEventListener("pointerdown", ev => {
+  if (ev.pointerType !== "touch") return;
+  touches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+  if (touches.size === 2) {
+    const [a, b] = [...touches.values()];
+    pinchActive = true; dragging = false; dragMoved = true; hovered = null;
+    pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+    pinchMid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  }
+});
+window.addEventListener("pointermove", ev => {
+  if (ev.pointerType !== "touch" || !touches.has(ev.pointerId)) return;
+  touches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+  if (!pinchActive || touches.size < 2) return;
+  const [a, b] = [...touches.values()];
+  const dist = Math.hypot(a.x - b.x, a.y - b.y);
+  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  if (pinchDist > 0 && dist > 0) zoomAbout(mid.x, mid.y, pinchDist / dist);
+  const s = clientToUser(mid.x, mid.y).scale;
+  manualView({ x: view.x - (mid.x - pinchMid.x) / s,
+               y: view.y - (mid.y - pinchMid.y) / s, w: view.w, h: view.h });
+  pinchDist = dist; pinchMid = mid;
+});
+const endTouch = ev => {
+  if (ev.pointerType !== "touch") return;
+  touches.delete(ev.pointerId);
+  if (touches.size < 2) pinchActive = false;
+};
+window.addEventListener("pointerup", endTouch);
+window.addEventListener("pointercancel", endTouch);
 const stageEl = document.getElementById("stage");
 document.getElementById("legend").title = "hide legend";
 document.getElementById("legend").addEventListener("click",
@@ -836,7 +1144,7 @@ document.getElementById("legend").addEventListener("click",
 document.getElementById("legendIcon").addEventListener("click",
   () => stageEl.classList.remove("minlegend"));
 
-apply();
+buildScene();
 </script>
 </body>
 </html>

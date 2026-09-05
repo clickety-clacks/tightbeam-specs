@@ -1,0 +1,2 @@
+eb03d0c6c1934726535d5c6b8defd3b37c2c2d77f5d9d037d3a97d624ea733c3  evidence/claude-0.73.0.tgz
+e41014b49c5ac096b5e18a89f990ee0ec64452e440666b59dcf4e087f632e370  evidence/npm-claude-0.73.0/package/dist/acp-agent.js

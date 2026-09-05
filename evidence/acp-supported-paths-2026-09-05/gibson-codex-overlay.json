@@ -1,0 +1,12 @@
+{
+  "overlays": [
+    {
+      "harness": "codex",
+      "host": "gibson",
+      "name": "CODEX_PATH",
+      "setAt": 1788597774326,
+      "setBy": "user:mike",
+      "value": "/home/mike/.local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex"
+    }
+  ]
+}

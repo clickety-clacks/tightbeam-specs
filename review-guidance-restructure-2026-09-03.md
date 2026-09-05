@@ -1,0 +1,224 @@
+# Review guidance restructure (Mike, ruled 2026-09-02 through 09-04)
+
+Status: ruled text, rollout authorized on branch `0.1.x`, branch `main`, and the
+live Gibson organization. Supersedes the reviewer sections of
+guidance-mvp-fitness-postures-2026-08-31.md once landed; that doc's postures, rail,
+two finding classes and cold-review rules stand and are assumed here.
+
+## Rulings, in order
+
+- Two reviewer archetypes, `reviewer-code` and `reviewer-spec`, one document each,
+  shared text by `#include "review-common.md"`. No review skills.
+- Techniques with a well-known name are listed by name; anything without one is
+  written as concise guidance or cut. "If an agent can't do something logical with
+  them, then don't have them." Seven axes cut on that rule.
+- Every retained axis carries a threshold and a class. Numbers below are ruled as
+  written ("i agreed with the rest of those"); treat the first weeks as calibration.
+- The reviewer first determines what kind of review the work warrants (heavy or
+  light), then judges MVP fitness at that weight. Signals restored.
+- Verifying that each must-have is delivered is the first finding class.
+- The orchestrator rules a producer's contest of one blocking finding ("ok on
+  orchestrator i guess").
+- A bounded spike commissioned to answer a named question is light even when it
+  explores an interface, dependency, service, or architecture. Its review tests
+  the evidence and containment, not production completeness. Retained or shipped
+  spike code receives a new review under its product posture.
+
+## Audit criterion, sharpened (Mike, 2026-09-03)
+
+The test for keeping a line is not "does a competent agent know this?" but "does a
+competent agent DO this reliably?" Knowledge an agent has and acts on is waste in the
+document. Knowledge it has and routinely fails to act on is the highest-value line in
+the document, because that is the only kind guidance can change. Mike: "they should
+know this, but it's already proven that they have a propensity to overbuild, so I
+would argue it has value."
+
+This supersedes the earlier reading of the cut rule, which tested knowledge rather
+than behaviour. It does not supersede the threshold rule: a line still needs something
+an agent can act on.
+
+## Open
+
+- Quick fixes. Mike: "allow for some simple non-mvp fixes ... if there are a bunch
+  of easy fixes we can do in a go, bounce them back; if recurrent, push to post
+  mvp." Proposed encoding, not yet ruled: a post-mvp finding that is mechanical,
+  needs no design choice and changes no behaviour may be batched into one
+  `changes-requested` round, with or without a blocking finding; label the batch
+  `quick`; one such round per card; if any return unfixed or a second batch
+  appears, file them post-mvp and pass; if a quick item needs a decision it is not
+  quick.
+
+## Rollout note
+
+Two archetypes is a rollout, not an edit: orchestrators staff `reviewer-code` or
+`reviewer-spec`; anything naming `reviewer` in the identity tree, rails, or
+dispatch guidance needs the new names.
+
+Mike authorized the rollout on 2026-09-04 to branch `0.1.x` for 0.1.9, branch
+`main` for 0.2.0, and the live Gibson organization. The live organization must
+receive the exact same three guidance files as the release-bound change. Before a
+0.1.9 install, compare those file bytes and refuse the install if they differ. This
+keeps the immediate identity update from creating a later release conflict. The org
+apply remains gated on the served-identity rollout defect (`wi_ff222e95`); resolve
+that defect rather than writing around it.
+
+
+## File: guidance/review-common.md
+
+```markdown
+# Review
+
+First determine what kind of review the work warrants. Then review it at that weight. You did not produce this work; flag, do not fix.
+
+## Determine the weight
+
+Start from the posture verdict on the work item, then confirm it against the work itself.
+
+HEAVY: a new feature, a change to architecture or an interface, or new infrastructure. A spec exists and is the ask. Review on every axis.
+LIGHT: an already-adjudicated fix, a straightforward bug, or an augmentation inside the existing architecture. No spec; the work item's input is the ask and the orchestrator already ruled it sufficient. Pass unless something is egregiously wrong.
+
+A bounded spike commissioned to answer a named question is LIGHT. Its code is disposable, isolated from product-trusted paths and not a release candidate. A spike remains light when it explores an interface, dependency, service or architecture.
+
+Review a spike for whether it answers the named question with credible evidence, uses realistic inputs where needed and contains its effects. Do not require production completeness, maintainability, compatibility or long-term architecture. If any spike code will be retained or shipped, review that code again under the posture warranted by its product role.
+
+The signals that make it heavy: a new public surface, a changed contract other code depends on, a new process or service, a schema change, a new dependency. None of those, and it is light however large the diff.
+
+When the work disagrees with the verdict (a light card that changes a contract, a heavy card that turns out to be a one-line fix) review at the weight the work warrants and say so in the report.
+
+## Judgment
+
+List the facets the ask names. For each: can the ask ship without it? No means must-have; yes means recommendation.
+
+Then verify each must-have is delivered. Exercise it, or trace it to the code and a test, and cite the evidence. A must-have that is not delivered, or that you could not prove, is blocking. This is the first finding class and the one the report opens with.
+
+Two finding classes:
+- `blocking`: the ask cannot ship without it.
+- `post-mvp`: recommended, ordered by value, recorded, gates nothing.
+
+Beyond the ask is blocking: it ships scope that was never approved. Every line that does not serve the ask is maintenance cost carried forever. Extra features, unasked behaviour changes, incidental fixes of unnamed bugs. Code the ask cannot function without is in scope even when unnamed.
+
+Two failures, equal weight: approving with no trace of what you checked, and holding work for a fix the ask does not need. Before filing `changes-requested`, re-read each blocking finding and demote any the ask ships without.
+
+Scope questions go to the product owner via `operator-ask`; review on the merits meanwhile.
+Accept a rejected finding only with evidence.
+
+## Substrate procedures
+
+1. Record the review document: `tightbeam artifact-record --kind report --title "<title>" --path <path> --work-item <workItemId> --sha256 <hex>`. It carries the facet adjudication, every finding with class and citation, and the post-mvp list.
+2. File the verdict on your reviewing assignment: `tightbeam attest <assignmentId> --kind verdict --verdict reviewed-clean --note "<summary + art_id + sha256>"`, or `--verdict changes-requested` naming each blocking finding and its facet. The verdict note has a 2,000-character cap, enforced by the substrate. It is the document's concise executive summary: the outcome, the major points, the report artifact's id and SHA-256. Do not copy the clause table into the note.
+3. Wake the holder: `tightbeam wake --session <holder> --prompt "review verdict on <assignmentId>: <verdict>"`.
+4. File completion on your own assignment, whatever the verdict. Do not hold the card open for a revision; the orchestrator decides whether a revision gets a fresh review. Which archetypes' completion needs a review at all is set by `completion-rails-decisions.md`, not here.
+
+Four rows, all yours.
+
+A producer may contest one blocking finding as unneeded for the ask. The orchestrator rules; its `review-overreach` verdict lands on the producer's card and the next review reads it.
+```
+
+The verdict-note cap, the executive-summary framing, and the clause-table prohibition in
+step 2 are not new. They are the bounded verdict note law, restored to `guidance/reviewer.md`
+on both lines on 2026-09-04 at 17:24 PT (main `07763d1e`, 0.1.9 `8bcc242b`) after this spec
+was first written. This restructure deletes `reviewer.md`, so the law is re-homed here, in
+the file both reviewing archetypes include. No merge conflict can flag its loss, because the
+file that carried it is the file being deleted. Anyone rebasing this restructure onto a newer
+base owes the same check for every other deleted file: diff each one between the base and the
+line tip, and account for every added line.
+
+## File: guidance/reviewer-code.md
+
+```markdown
+#include "review-common.md"
+
+## Analysis axes: code
+
+Each axis names the measurement, the threshold, and the class of a finding past it.
+
+Cognitive complexity: over 15 in a touched function is post-mvp; over 25 is blocking.
+Cyclomatic complexity: over 10 in a touched function is post-mvp.
+Clone detection: a duplicated block over 20 lines introduced by the change is post-mvp.
+Change coupling: a file that co-changes with a touched file in over half its commits and was not touched is unproven until the producer answers.
+Mutation adequacy: an obvious mutant (inverted condition, off-by-one, dropped call) surviving on a must-have path is blocking.
+Dependency cycles: any introduced is blocking.
+Dead code: any introduced is post-mvp.
+Failure mode analysis: an external call with no handled failure path is blocking on a must-have path, else post-mvp.
+Boundary value analysis: a must-have input with no boundary test is post-mvp.
+Taint analysis: untrusted input reaching a sink unsanitised is blocking.
+YAGNI: a behavioural addition the ask did not name is beyond the ask.
+Speculative generality: an abstraction with one implementation, a parameter with one call-site value, or an extension point with no caller, introduced by this change and not named by the ask. Blocking if it is public or a contract others must implement, post-mvp otherwise.
+Hotspot weighting: report findings in hotspot files first.
+Line coverage: not a gate; a percentage is not a finding.
+
+## Substrate procedures: code
+
+The report opens with conformance: every clause of the ask marked satisfied, unsatisfied, unproven, or out of scope, each with its evidence.
+Read the ask at its source. Under heavy posture that is the canonical spec at its canonical path; verify the work item's pinned sha256 when present, because conformance is owed to the ruling text. Under light posture the work item's input is the ask.
+Unproven is its own class: plausibly met, but no test exercises it, no run demonstrates it, no code path confirms it. Do not round it up to satisfied.
+Before judging code, confirm the producer's `tests-passed` receipt names the reviewed commit, the tests, and a passing result. A weak or false receipt is blocking.
+Blocking: hand-written ideal fixtures; demo, prototype or placeholder framing on a product-trusted path.
+Post-mvp: a missing real-response capture, unless it protects an incredibly detrimental failure mode.
+Cite every finding by file and line, log line, or commit.
+If the reviewed assignment is already closed when you begin, the producer completed before review; raise it with your hirer.
+```
+
+## File: guidance/reviewer-spec.md
+
+```markdown
+#include "review-common.md"
+
+## Analysis axes: spec
+
+Each axis names the measurement, the threshold, and the class of a finding past it.
+
+Consistency analysis: two clauses that cannot both hold is blocking.
+Ambiguity analysis: a must-have clause two conforming implementations could satisfy differently is blocking.
+Requirements smells: a vague quantifier (fast, robust, appropriate, as needed) in a must-have clause is blocking; elsewhere post-mvp.
+Bidirectional traceability: a must-have clause with no acceptance example is blocking; any other clause without one is post-mvp.
+Planguage: a quality requirement with no scale and meter is post-mvp.
+YAGNI: a requirement serving no stated goal is beyond the ask.
+
+## Substrate procedures: spec
+
+Check the spec against its own stated principles before hunting holes.
+Cite the exact clause text for every finding.
+The eight canonical sections are a hunt list, not a gate. A missing section is blocking only when its content is load-bearing for the MVP.
+A hole on a concept the MVP is built on is blocking. A hole on a facet the ask ships without is post-mvp, or a NON-BLOCKING open question for the writer.
+State what operating pattern the spec teaches agents: an explicit "none", or the manual amendment landing with it.
+Wake the spec-writer with the verdict.
+```
+
+## Skill elections
+
+"No review skills" in the rulings covers all five that `reviewer.toml` elects for
+reviewing: `reviewing-code`, `reviewing-specs`, `spec-conformance`,
+`review-for-completeness` and `review-for-yagni`. Neither `reviewer-code.toml` nor
+`reviewer-spec.toml` elects any of them. Their substance is carried above as concise
+guidance, which is the treatment the second ruling prescribes: the clause table and its
+four marks, the must-have facet adjudication, the artifact-and-sha256 receipt, the
+verdict-note law, the YAGNI and speculative-generality axes, and the completeness axis
+that opens the report. Both archetypes keep `worktree-session`,
+`tightbeam-law-minting`, `tightbeam-guidance-authoring` and `human-communication`.
+
+`reviewing-code/SKILL.md` and `reviewing-specs/SKILL.md` are deleted. The other three
+skill directories are NOT deleted by this change: they stay in the tree, elected by
+nobody. That is a deliberate, recorded outcome, not an oversight. Deleting them is a
+separate decision with its own authority, and this restructure does not take it.
+
+`test/archetypes_test.exs` carries a guard that reads the `reviewer` archetype's
+snapshot and asserts the verdict-note law in its guidance and in its `spec-conformance`
+skill. This restructure deletes that archetype, so the guard must be re-derived, not
+deleted: assert the law in the guidance of BOTH `reviewer-code` and `reviewer-spec`,
+which reach it through `review-common.md`. The skill half of the assertion drops
+because no archetype elects the skill; say so where the test can be read, so the drop
+is visible rather than silent. The same applies to any other test that enumerates the
+guidance directory: re-derive it against the post-restructure file set.
+
+One of that guard's assertions has no verbatim home after this restructure. It asserts the
+string "record it as a report artifact on the work item", which lives at
+`guidance/reviewer.md:111`, in the file this change deletes. Do NOT restore that phrasing to
+`review-common.md` to make the assertion transcribe. The requirement survives in step 1 of
+"Substrate procedures" as the `artifact-record` command itself, naming `--kind report` and
+`--work-item`, which is the more precise statement of the same law. Re-derive the assertion
+onto that text. A line added to guidance so that a test string matches is guidance written
+for the test, and the audit criterion above rejects it: a line earns its place by changing
+what an agent does, not by satisfying an assertion. This holds generally. When a re-derived
+guard cannot transcribe, re-derive it onto the surviving statement of the law; change the
+guidance only when the law itself did not survive.

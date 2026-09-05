@@ -1,40 +1,71 @@
 # Completion-escalation rail v2
 
-Status: READY FOR SUCCESSOR INDEPENDENT REVIEW for
+Status: TARGETLESS G1/G2 REVISION CANDIDATE — AWAITS ONE OWNER-OPENED
+INDEPENDENT EXACT-SHA REVIEW for
 `wi_809821f8-e72b-41d8-b4b5-af28c7e670a6`.
-This file revalidates reviewed artifact `art_a22ba0ec`, SHA-256
-`cd1a9a99d0f041cd88077b4e55f1cd23e76b26b4804f0478ef94ed6a7a6165d6`, against
-Tightbeam 0.1.7 release commit `6c13efcbe9e1ae247b8aa7e91a374015c74dc947`.
-Independent verdict `att_35dc33fc-660c-4989-b78d-56eab886a1e7` requested changes to
-artifact `art_46d2f24b`, SHA-256
-`96bbca96ab56e5269e40b19799f9b080142e8868eb635b8d15259e7988597736`. This amendment
-removes retired-session replay and carries the authenticated device user as a typed
-principal through generic retirement. It supersedes the predecessor only after an
-independent reviewer clears this file's new exact hash. Implementation stays
-unauthorized before that verdict. The park decision remains blocked on
-`wi_6937890c-6ba6-48b7-a9d2-4eb4510fe245`.
+
+Tightbeam main `6ae34287aa4864b8fe6fabfc96166d02b9827a89` contains the previously
+reviewed completion-only mechanism. Mike's 2026-09-01 scope request
+`s_6f2c6413-8e9a-4b7f-bfc9-3c395bcd19b0` identifies two pre-release gaps in
+those landed bytes. First, the action-needed request must open for each observable
+one-or-more-to-zero assignment transition, not only for a completion attest. Second,
+an unanswered request must stop repeating forever to one recipient and must climb the
+same-owner `spawnedBy` reporting chain after a bounded number of reissues. This revision
+specifies those changes without choosing retain, park, or retire.
+
+The prior foreign-key correction remains authoritative: diagnostic parent-copy columns
+store observed keys without session foreign keys. The explicit report-to commission copy,
+typed cancellation vocabulary, root-Main retain-only rule, and external park dependency
+remain unchanged. This revision has no product integration target. No implementation
+delta may start until one owner-opened independent reviewer accepts this file's exact
+content hash.
 
 ## Goal
 
-When a child session files a completion attest, Tightbeam records and routes that
-completion to an agent that can act on the child. The completion record and its first
-notification wake commit in the same transaction as the attest and assignment close.
-If corrupt state contains neither an active same-owner lineage ancestor nor the
-owner's Main session, Tightbeam commits the completion with the named
-`main-unavailable` delivery failure instead of inventing a recipient. R5 defines this
-only exception to the first-wake guarantee.
+When a terminal assignment mutation changes a child session's open-assignment count from
+one-or-more to zero, Tightbeam records one empty epoch and opens one action-needed
+request in that same transaction. Completion and revocation are current 0.2 terminal
+mutations and are the only trigger cases in this revision. Active surrender remains
+deleted from 0.2, so this rail adds no dead branch for a transition the product cannot
+emit. If surrender returns to 0.2, this trigger requires a separately reviewed third
+case. A session that has never held an assignment has no observable
+one-or-more-to-zero transition. Open Question 3 records that deliberate, non-blocking
+exclusion.
+
+The effective reporting parent returned by `Org.effective_parent_in_txn/2` is the
+immutable initial search seed. If that exact session is eligible, it is the first action
+recipient. Otherwise the initial selector skips it under R5 and R9 and chooses the
+nearest active, same-owner, unvisited `spawnedBy` ancestor or the owner-user root.
+Tightbeam reissues to one selected session recipient on the existing decision deadline
+at most the stored per-recipient limit. If no disposition acknowledges the request, the
+next deadline advances by the same rule. The walk skips retired links, terminates
+cycles, and ends at the owner-user root through the existing wake-to-user seam. Each
+selected session recipient or the owner user becomes the exact current disposition
+authority. Tightbeam routes the unchanged request; it does not choose its outcome.
+
+For completion, the completion record and its first notice still commit with the attest
+and assignment close. A completion that leaves other assignments open remains a
+`notice-only` informational record and does not start the escalation ladder. The original
+effective-parent snapshot stays immutable audit truth after an action request advances
+to another reporting ancestor.
+
+An assignment card can explicitly declare one additional report-to session. That exact
+session receives one informational copy of the completion. The declaration grants no
+disposition authority and creates no fallback. Without the declaration, no commission
+channel exists, including to the assignment opener.
 
 When the completed holder is the owner's exact built-in Main, that Main is both child
-and final backstop. Tightbeam creates the normal open request and addresses its notice
-to that exact Main. The Main session can explicitly retain itself into the named
+and the initial session recipient. Tightbeam creates the normal open request and
+addresses its notice to that exact Main. The Main session can explicitly retain itself into the named
 `retained_root` terminal state. Tightbeam does not auto-retain it. Park and retire stay
-unavailable for the permanent root session.
+unavailable for the permanent root session. If Main ignores its bounded notices, the
+owner user becomes the terminal recipient.
 
-If that close leaves a non-root child session with zero open assignments, the same
-record becomes an action-needed request. A session principal authorized by R11 or the
-owner user chooses exactly one disposition under R11: retain, park, or retire. Tightbeam
-records and enacts that explicit choice. Tightbeam does not choose a disposition and
-does not auto-retire.
+If a terminal mutation leaves a non-root child session with zero open assignments, the
+empty-epoch record becomes an action-needed request. A session principal authorized by
+R11 or the owner user chooses exactly one disposition under R11: retain, park, or retire.
+Tightbeam records and enacts that explicit choice. Tightbeam does not choose a
+disposition and does not auto-retire.
 
 This rail implements substrate law over rows. It does not teach a conversational norm.
 The conditions are observable assignment, attest, session, and wake rows; the action is
@@ -43,11 +74,29 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
 
 ### Authority and current evidence
 
-- The current accountability amendment requires unresolved operational events to
-  escalate through the durable parent chain, names the owner's Main as the normal-root
-  parent, and stops escalation only after a live authority records the required
-  disposition or a separate terminal contract closes the obligation
-  (`accountability-constitution-v1.md:27-31`).
+- The accountability constitution requires escalation to reach a living authority by
+  climbing past dead spawner links to the owner root. It applies the same rule to empty
+  or dead escalation chains (`accountability-constitution-v1.md:16-17,125-126`).
+- Mike's scope request `s_6f2c6413-8e9a-4b7f-bfc9-3c395bcd19b0` supplies the observed
+  trigger and silence evidence: 380 completion, 61 revocation, 53 surrender, and three
+  initial-zero idle sessions; Main also ignored four consecutive daily notices on
+  `wi_0bb4b7eb`.
+- Ruled accept outcomes `dr_d255b817-1541-460e-8549-bc55a9e7aa1f` and
+  `dr_518d5591-57b8-4a73-8aeb-6634afb334a1` were delivered as exact recorded rationale
+  by the product owner in `s_904edadd-16b9-41ba-81cf-680eb8c86c3a`; the delivery is not
+  represented as Mike's personal wording. The first keeps initial-zero outside this
+  transition revision. The later, authoritative surrender ruling preserves the 0.2
+  deletion and admits only completion and revocation here.
+- Mike ruling `s_0100f65a-b2b4-4278-9c5b-394987e3a839`, recorded in
+  `att_73471946-be23-46ad-b384-de4d8a8675fe`, makes the completion parent the
+  unconditional completion route. Any other delivery, including the assignment opener,
+  requires an explicit report-to declaration on the card. No route derives from the
+  create verb or ceremony.
+- Mike waiver `s_ee88a313-e923-435f-8999-44975bafe62f` and ruled request
+  `dr_5e23055c-0d2d-4eb6-88fb-ccffb3a6a601` authorize the shape-bump/recreate boundary
+  needed to widen fixed wake-cancellation vocabulary. The abstraction answer
+  `s_b9c9fa65-267a-43b2-823e-d372954d1378` rejects the five proposed values as a bundle:
+  only `completion_transition` is a stable new domain classification.
 - Direct owner assignment `asg_a12d6873-9b00-4924-b3c8-674582fd7973` and digest
   `att_55fab334-3d4b-413a-bd85-fd8e3882ba67` require a parent-facing completion notice,
   an action-needed request when the child reaches zero open assignments, an explicit
@@ -55,40 +104,55 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
 - A completion is already a holder-filed row. The attest insert, guarded assignment
   close, work-item bracket, liveness transition, supervision transition, effort
   cancellation, and marker writes share one transaction
-  (`attest-v1.md:35-42,181-196`; `assignments.ex:1124-1200`).
+  (`attest-v1.md:35-42,181-196`;
+  `lib/tightbeam/assignments.ex` `attest_in_txn/2`, `lifecycle_attest_in_txn/2`, and
+  `apply_lifecycle_attest/5` at exact product commit `6ae34287aa4864b8fe6fabfc96166d02b9827a89`).
 - Assignment creation accepts any active session and does not exclude `isBuiltIn`, while
-  the retire rail makes built-in Main permanent (`assignments.ex:918-1057`;
-  `gateway.ex:5042-5052`). Product ruling
+  the retire rail makes built-in Main permanent
+  (`lib/tightbeam/assignments.ex` `open_assignment_result/5`;
+  `lib/tightbeam/gateway.ex` `retire_result/3` and `completion_retire_in_txn/4`, at exact
+  product commit `6ae34287aa4864b8fe6fabfc96166d02b9827a89`). Product ruling
   `att_e7b138b6-fb9e-4fc5-a00e-b016390a2e25` keeps Main assignable and admits only an
   explicit retain self-disposition for that exact root session.
 - `Assignments.open_count/2` already defines the session-level open-assignment count
-  (`assignments.ex:211-220`).
+  (`lib/tightbeam/assignments.ex` `open_count/2`, at exact product commit
+  `6ae34287aa4864b8fe6fabfc96166d02b9827a89`).
 - The work-item bracket is not this rail. It counts assignments for one work item and
-  targets the work-item's user owner (`work_items.ex:503-537`). This rail counts
-  assignments for one child session and targets the session's living lineage parent.
-- Active lineage resolution already exists as a row-only walk. It skips retired
-  ancestors and distinguishes a parentless session from an exhausted lineage
-  (`productions/bubble.ex:332-365`).
+  targets the work-item's user owner (`lib/tightbeam/work_items.ex`
+  `open_assignments?/2` and `arm_slate_in_txn/2`). This rail counts
+  assignments for one child session, snapshots the effective reporting parent, and
+  routes an unanswered request through the same-owner spawner chain to the owner user.
+- Exact main `6ae34287aa4864b8fe6fabfc96166d02b9827a89` implements the one parent-selection
+  contract in `Org.effective_parent_in_txn/2`: a non-null `operationalParent` returns
+  unchanged with source `explicit`; null returns the owner's canonical Main key with
+  source `owner_main`; the resolver never reads `spawnedBy` and never writes. The current
+  contract is the initial snapshot source for the reviewed completion-only rail. The
+  current composed database stamp is `coordination-fabric-v1-phase1-v15`.
 - The ordinary wake store is durable and at-least-once; `turns.wakeId` provides the
-  exactly-once enqueue backstop (`wakes.ex:104-200`; `ledger.ex:1-18,99-148`).
-- Wake delivery can re-resolve a stale lineage target at act time, but the current
-  generic ladder reads no ancestor owner and can therefore return a foreign-owner rung
-  (`supervision.ex:735-770,2680-2695`; `gateway.ex:1313-1353`). R5 and R7 add the owner
-  pin only for completion-linked routing.
+  exactly-once enqueue backstop (`lib/tightbeam/wakes.ex` `schedule_in_txn/2`;
+  `lib/tightbeam/ledger.ex` `@ddl` and `enqueue_in_txn/2`).
+- Ordinary wake delivery can re-resolve a stale lineage target
+  (`lib/tightbeam/supervision.ex` `ladder_target/3`;
+  `lib/tightbeam/gateway.ex` `delivery_target/3`). R7 disables that behavior
+  for completion-linked wakes: exact parent and report-to incarnation keys never
+  retarget.
 - The current assignment-change wire event is a post-commit best-effort callback and
-  cannot carry this guarantee (`assignments.ex:691-709`; `gateway.ex:5631-5648`).
+  cannot carry this guarantee (`lib/tightbeam/gateway.ex` `emit_assignment_change/3`).
 - The current retired-strand parent prompt is also post-commit and has no durable wake
-  row (`supervision.ex:1928-1961`). It is evidence, not a reusable guarantee.
+  row (`lib/tightbeam/supervision.ex` `notify_stranded_ancestor/2`). It is evidence, not a reusable guarantee.
 - The CLI exposes only `harness-process list`; it exposes no park/relaunch action
-  (`cli/src/args.rs:513-514,1488-1501`). The existing internal harness park records do not
-  authorize inventing that missing operator primitive (`harness_process.ex:202-315`).
+  (`cli/src/args.rs` `HELP_TEMPLATE`, the `"harness-process"` dispatch arm, and
+  `parse_harness_process`, at exact product commit
+  `6ae34287aa4864b8fe6fabfc96166d02b9827a89`). The existing internal harness park records do not
+  authorize inventing that missing operator primitive (`lib/tightbeam/harness_process.ex`
+  `begin_park/2`, `complete_park/2`, and `park/2`).
 
 ### Revalidation rulings for the five post-review hunks
 
 1. **Adopt with the R11 boundary.** The ordinary three-choice request applies to a
    non-root child. The exact root Main follows its separate retain-only contract. An
-   ordinary same-owner sibling still cannot act; R11's typed recipient, owner-matched
-   ancestor, and owner-user checks remain authoritative.
+   ordinary same-owner sibling and an explicit report-to recipient cannot act; R11's
+   current-recipient and owner-user checks remain authoritative.
 2. **Adopt.** R11's generic-retire gate applies only after a call reaches that precedence
    step. Root park and root retire refuse earlier. The handler identifies generic-retire
    intent wakes through the existing deterministic id seam; it does not rely on the word
@@ -113,18 +177,77 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
    that owner. This amendment adds no retired-session credential or verb exception.
 2. **F2 — carry the authenticated device user as a typed principal.** The device DELETE
    route already authenticates a device row before it constructs generic retirement
-   (`wire/router.ex:235-252,433-443`). It must place
+   (`lib/tightbeam/wire/router.ex` `DELETE /api/streams/:key` and `retire_target/4`). It must place
    `principal={:user, device.user_id}` on that call. Gateway retirement must derive the
    owner and the durable acting principal from the typed principal, not from `origin`.
    R3, R12, R13, A14, and A21 specify and verify this path.
 
+### Amendment rulings for SQLite vocabulary and routing
+
+1. **Use existing cancellation reasons.** Generation replacement uses `superseded`,
+   terminal request disposal uses `obligation_disposed`, and an exact delivery target
+   that cannot accept a completion wake uses `target_unresolvable`. The rejected
+   completion-specific reason names add no domain meaning.
+2. **Add only `completion_transition`.** A completion row's typed terminal state,
+   decision, acting principal, and terminal timestamp remain meaningful if wake delivery
+   or lifecycle-event storage changes. `completion_transition` therefore names stable
+   disposition evidence in `wake_cancellations`. It points to the completion row, not to
+   an opaque `lifecycle_events` id.
+3. **Do not add `lifecycle_event`.** It names a storage table rather than an event in the
+   product. Existing lifecycle rows remain observability mirrors; no cancellation
+   authority depends on them.
+4. **Bump and recreate.** Adding `assignments.completionReportToSessionKey` and widening
+   the closed wake-cancellation source/disposition checks changes existing table shapes.
+   The revised build reserves `coordination-fabric-v1-phase1-v16` after current v15. A database stamped with another
+   shape is refused before DDL or feature writes and must be moved aside and recreated.
+   In-place migration remains declined because Mike's waiver selected recreation and
+   current-main reconciliation changes only the allocated stamps, not that policy.
+5. **Route only from durable rows.** A non-root terminal transition's immutable initial
+   parent snapshot is exactly the result of `Org.effective_parent_in_txn/2` for the
+   holder. An unanswered open request later walks only stored same-owner `spawnedBy`
+   links under R9. The optional completion commission channel is exactly the card's
+   `completionReportToSessionKey`. `openedBySession`, `openedByUser`, the create verb,
+   roles, prompt text, and report-to provide no implicit action route.
+6. **Split cancellation authority by the owning action.** R7 delivery refusal is owned
+   by `tightbeam:wake-scheduler`. R8 deadline reissue is owned by
+   `tightbeam:completion-escalation`, including its replacement cancellation when the
+   current recipient cannot accept the next notice. Both use existing reason
+   `target_unresolvable` and name the canceled wake as the `scheduler_delivery` source.
+   This preserves truthful requester identity without adding a reason. It records the
+   writer's smallest-contract disposition of withdrawn request
+   `dr_52983a36-5c27-425f-9383-472108c09bce` under Mike's 2026-08-25 RULE YOUR OWN
+   directive.
+7. **Keep one typed delivery-failure marker.** R15 already requires
+   `completion_escalation_undeliverable` for each exact-target delivery refusal. Its
+   detail names `channel=parent|report-to` and `resolution=target-unresolvable`, so the
+   existing marker remains truthful without adding a domain event or deleting specified
+   observability. This records the writer's smallest-contract disposition of withdrawn
+   request `dr_2195043c-a970-422b-90c9-789e998755b3` under that directive.
+8. **Delete the diagnostic parent-copy foreign keys.** A selected effective-parent key
+   can name a missing row. That is required dirt, not a valid session relation. The
+   completion row must preserve that dangling observed key while it records
+   `parent-unavailable`. Therefore
+   `immediateParentSessionKey` and `parentSessionKey` are non-null text copies without
+   `REFERENCES sessions(sessionKey)`. Child, cause, and report-to fields retain their
+   session foreign keys. This is the sole F1 correction from
+   `att_9d9af9f6-a194-4965-a5d8-d529e6de4395` and `art_635358a2`.
+9. **Preserve fired notice truth.** A delivered prompt wake is `fired`, so a later retain
+   records no cancellation for that notice. Retain still cancels the pending deadline
+   and any notice that has not delivered. A22 asserts `wake_fired` for the two delivered
+   notices and `wake_canceled` for the pending deadline.
+
 ## Non-Goals
 
 - No automatic retain, park, retire, reassignment, or reparenting.
+- No role fallback, assignment-opener inference, or create-ceremony inference. An open
+  action request climbs only the same-owner `spawnedBy` chain under R8-R9. A
+  `notice-only` completion never climbs.
+- No disposition delegation through `report-to`. The optional declaration adds one
+  informational delivery only.
 - No new park, relaunch, stop, recycle, or process-kill contract. Work item
   `wi_6937890c-6ba6-48b7-a9d2-4eb4510fe245` owns that primitive.
 - No change to work-item causal parent derivation, `createdInTurnSeq`, `jobRef`, or the
-  topology projection in `Toplines` (`toplines.ex:435-573,650-710`).
+  topology projection in `Toplines` (`lib/tightbeam/toplines.ex` `list/2` and `get/2`).
 - No replacement for the work-item routed/slate brackets. A work item with zero open
   assignments and a session with zero open assignments are different facts.
 - No replacement for fault bubbling, supervision prods, strand handling, role fallback,
@@ -134,29 +257,33 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
 - No new scheduler, delivery worker, retry process, standing fact, role, or socket frame.
 - No retroactive completion notices for assignments already closed before this table
   exists.
-- No downgrade preservation after the first completion row exists. Forward migration
-  and rollback before feature use are the supported database-version boundary.
-- No notice for progress, surrender, revoke, or retire interruption. The shared
-  ownerless-terminal fallback work item
-  `wi_3d6d13a0-c4cf-4370-88a1-b407c41ff7c1` owns expansion beyond completion.
+- No in-place schema migration or downgrade preservation. The ruled boundary is named
+  shape refusal followed by database recreation.
+- No empty-epoch request for progress, cannot-proceed, retirement interruption, or a
+  terminal mutation that leaves another assignment open.
+- No active-surrender restoration or dead surrender branch. Current 0.2 cannot produce
+  that transition. If surrender returns, a separate spec amendment must add and verify
+  the third trigger case before release.
 - No user-interface design.
 
 ### Deletion assessment
 
-ADD wins because a durable parent-facing completion and a session-slate disposition
-request do not exist. DELETE loses because deleting child completion or parent
-accountability would violate the work model. ACCEPT loses because an event-log-only
-failure would leave no addressed request and no acknowledgment path.
+ADD wins for G1/G2 because the current durable completion row does not represent a
+revocation-triggered empty epoch or a bounded recipient climb. The revision extends that
+one row and producer instead of creating a second rail. DELETE loses because removing
+the current completion notice/request would violate the work model. ACCEPT loses because
+the observed revoked and indefinitely ignored states remain unaddressed.
 
-The added mechanism is one completion table, one wake-membership table, and one producer.
+The mechanism remains one completion table, one wake-membership table, one nullable
+assignment-card declaration, and one producer.
 The membership table makes a completion wake mechanically identifiable after the
 completion row advances to a later generation or terminal state. ADD wins because the
 current-only wake ids cannot identify a delayed callback for an older generation. DELETE
 loses because removing the stale-delivery guard permits an obsolete request to reach a
 parent. ACCEPT loses because an unclassified pending callback can create a false current
 request. The table stores membership only; it does not duplicate wake state, timing,
-routing, or cancellation. The mechanism reuses the wake scheduler, lineage resolver,
-existing assignment count, existing retire path, and the future park primitive.
+routing, or cancellation. The mechanism reuses the wake scheduler, existing assignment
+count, existing retire path, and the future park primitive.
 
 The deadline consumer needs one wake-owned in-transaction fired CAS. ADD wins because
 the current internal-consumer callback has no such public seam. DELETE loses because a
@@ -169,7 +296,8 @@ lifecycle disposition when one session works across several items.
 
 The existing generic `decision_requests` table is not reused. Its closed `statute` and
 `effort` kinds, authorization, outcomes, waiver semantics, and consumption lifecycle
-serve different invariants (`escalation.ex:27-94,292-321`). Extending that central
+serve different invariants (`lib/tightbeam/escalation.ex` `@decision_request_ddl`,
+`resolve/3`, `escalate/4`, and `consume/2`). Extending that central
 mechanism would widen more surface than the required completion lifecycle. The focused
 row below carries both the notice and its optional disposition request.
 
@@ -179,42 +307,73 @@ loses because forbidding Main assignments contradicts that ruling. ACCEPT loses 
 an unactionable self-addressed request would not provide the required retain outcome.
 The branch does not grant self-disposition to an ordinary child.
 
+The completion row adds `parentResolutionSource`. ADD wins because a later reparent can
+change the source session while the completion route must remain immutable audit truth.
+DELETE and ACCEPT lose because recomputation cannot prove whether the close selected an
+explicit stored parent or Owner Main.
+
 ## Terms
 
 - **Child session**: the assignment holder named by `assignments.holderKey` on the
-  assignment closed by the completion attest. It is one session incarnation, not a role.
-- **Completion cause**: the committed `attests` row with `kind='completion'`, joined
-  through `assignments.closingAttestId`. The cause principal is
-  `session:<attests.bySession>`.
-- **Immediate parent**: `sessions.spawnedBy` on the child session. It can be absent or
-  retired. This fact never changes when the notice routes elsewhere.
-- **Capable agent parent**: the first session in the child's `spawnedBy` lineage whose
-  session row has `state='active'` and the child's `ownerUserId`. A foreign-owner row is
-  a boundary, not an eligible parent. “Capable” means addressable by an active session
-  row; Tightbeam does not infer model quality, intent, attention, or likely compliance.
-  The existing lineage resolver numbers active ancestors, so the nearest eligible active
-  ancestor is active rung 1 even when one or more retired ancestors lie between it and
-  the child (`supervision.ex:735-770,2680-2695`). Completion routing adds the owner check
-  that the generic resolver lacks.
-- **Main fallback**: the owner's built-in Main session, used as the notification
-  recipient only when the lineage contains no capable agent parent. Main fallback does
-  not create or change a work-item parent edge.
+  assignment closed by the admitted terminal cause. It is one session incarnation, not
+  a role.
+- **Terminal cause**: the immutable row that caused the assignment close. Completion
+  uses the committed `attests` row with `kind='completion'`. Revocation uses the
+  committed `assignment_revocations` row for the exact assignment generation. The
+  record stores `causeKind='attest'|'revocation'`, the exact `causeId`, the terminal
+  outcome, and the typed cause principal. Active surrender is not a terminal cause in
+  0.2 and has no branch in this revision.
+- **Effective reporting parent**: the exact session incarnation key returned by
+  `Org.effective_parent_in_txn/2` for the child inside the close transaction. A non-null
+  `sessions.operationalParent` returns with source `explicit`; null returns the owner's
+  canonical Main key with source `owner_main`. It is the immutable search seed and audit
+  snapshot, not permanent disposition authority after the request advances. The resolver does
+  not read `spawnedBy`, climb, judge eligibility, or write.
+- **Exact parent**: shorthand in this spec for the effective reporting parent selected
+  and copied into the completion row by the terminal transaction. A later reparent does
+  not rewrite that snapshot. Only the separately stored current recipient carries
+  session disposition authority.
+- **Parent snapshot fields**: the legacy-named `immediateParentSessionKey` and
+  `parentSessionKey` columns. Each stores the exact selected effective reporting parent,
+  including root-self. `parentResolutionSource` stores `explicit` or `owner_main` from
+  the same resolver call.
+- **Explicit report-to**: the optional exact session incarnation stored as
+  `assignments.completionReportToSessionKey` when the card is created through
+  `assign|dispatch --report-to <session-key>`. The target must then be active and owned
+  by the child's owner. The immutable declaration authorizes one informational
+  completion copy. It does not authorize a disposition.
+- **Parent unavailable**: the non-root child's selected effective reporting parent names
+  no active session, names a session with another owner, or cycles to the child. Tightbeam records the exact
+  observed class. For an action-needed request, R9 walks from that snapshot toward a
+  living same-owner ancestor or the owner-user root. For `notice-only`, no fallback
+  notice exists.
 - **Root Main holder**: a child session whose row has `isBuiltIn=1` and whose
   `sessionKey` equals `Org.personal_session_key(ownerUserId)`. The exact key and built-in
   marker must both match. A custom session with a Main-like name is not a root Main.
 - **Owner pin**: `ownerUserId` copied from the child session by the close transaction.
-  Initial routing, reissue routing, and act-time routing return only a session whose
-  row carries this owner. A foreign ancestor is a hard lineage boundary, not a rung to
-  skip or a recipient.
-- **Completion record**: one `completion_escalations` row keyed by the closing attest.
-  It contains the cause, the initial routing ruling, the current delivery generation,
-  and the optional disposition lifecycle.
+  Parent and report-to admission require their exact session rows to carry this owner.
+  A foreign-owned declared target is ineligible, not a cue to search elsewhere.
+- **Completion/empty-epoch record**: one `completion_escalations` row keyed by the
+  terminal cause. A completion can be `notice-only` or can open an empty epoch.
+  Revocation creates a row only when it opens an empty epoch. The row contains the cause,
+  immutable initial routing snapshot, current escalation recipient, action generation,
+  and disposition lifecycle.
 - **Completion wake membership**: one `completion_escalation_wakes` row for each notice
   or deadline wake that the completion producer arms. It maps a durable wake id to one
   completion id, generation, and literal kind. Wake state and timing remain in `wakes`.
-- **Receipt acknowledgment**: a turn with `wakeId = currentNoticeWakeId` reaches
-  `status='delivered'`. It proves that the current recipient ran the notice turn. It
-  does not choose a disposition.
+- **Current action-notice wake**: the wake named by the legacy column
+  `currentParentNoticeWakeId`. After G2 advances the request, this wake targets the
+  current recipient and need not target the immutable parent snapshot. The column name
+  does not grant parent authority.
+- **Current-recipient receipt acknowledgment**: a turn joined through
+  `currentParentNoticeWakeId` reaches `status='delivered'`. It proves that the current
+  session recipient ran the notice turn. At the owner-user root, delivery through the
+  user's Main stream provides the existing user-delivery receipt. Neither receipt chooses
+  a disposition.
+- **Report-to receipt acknowledgment**: a turn joined through `reportToNoticeWakeId`
+  reaches `status='delivered'`. It proves that the declared informational copy ran. It
+  grants no disposition authority. When report-to equals the parent target, the
+  report-to projection shares the parent wake instead of creating a duplicate.
 - **Disposition acknowledgment**: an authorized `completion-disposition` call commits
   `status='acknowledged'` or the root-only `status='retained_root'`, with one decision and
   the acting typed principal.
@@ -223,12 +382,46 @@ The branch does not grant self-disposition to an ordinary child.
   `{:user, userId}`. Storage serializes them as `session:<sessionKey>` and
   `user:<userId>`. The wire router constructs the value from the accepted credential;
   Gateway does not reconstruct it from `origin`.
-- **Empty epoch**: the close transaction that changes the child's open-assignment count
-  from one to zero. Its identity is the closing attest id. A later assignment supersedes
-  that epoch; a later one-to-zero transition creates a different completion record.
+- **Empty epoch**: one terminal transaction that changes the child's open-assignment
+  count from one-or-more to zero. Its identity is the terminal cause kind plus cause id.
+  A later assignment supersedes that epoch. A later one-or-more-to-zero transition creates
+  another row even when it closes the same reopened assignment.
+- **Current escalation recipient**: exactly one typed principal stored on an open request:
+  either an active, owner-matched session selected for the current rung, or the owner user
+  at the terminal root rung. This principal is the only session recipient authorized to
+  disposition the row; the owner user retains owner authority at every rung.
+- **Owner-user root carrier**: `Org.personal_session_key(ownerUserId)`, used only to
+  carry the ordinary prompt wake to the owner user's stream. The stored recipient and
+  disposition authority are the owner user, not that Main session. A missing or inactive
+  carrier is named delivery dirt; it does not transfer authority or close the request.
+- **Living capable authority**: for deterministic routing, either the owner user or an
+  active, owner-matched session that is not the child, has not already received this
+  request, and can therefore pass R11 authorization. R5's root-self Main is the sole
+  session exception before it advances. This term describes stored
+  eligibility; the substrate does not infer attention, skill, or the correct disposition.
+- **Action generation**: the zero-based count stored in legacy field `generation` for
+  action-notice scheduling attempts. Generation zero is the initial attempt. Each
+  successful deadline transaction that reissues to the same recipient or advances to a
+  new recipient increments it once before it tries to arm the replacement. The value
+  still advances when the selected owner-user root has no eligible carrier, but no wake
+  or `completion_escalation_reissued` marker falsely claims delivery in that case.
+  `notice-only` and report-to wakes use generation zero and never advance.
+- **Recipient generation**: the zero-based count of recipient changes for one request.
+  Generation zero is the first eligible recipient selected from the effective-parent
+  search seed, which can already be an ancestor or the owner user. Each later change to
+  another session or the owner-user root increments it once. Same-recipient reissues do
+  not increment it.
+- **Recipient reissue count**: the number of notices issued after the first notice to the
+  current recipient. It starts at zero and increments only for a same-recipient reissue.
+  A recipient change resets it to zero.
+- **Recipient reissue limit**: the non-negative `prod_limit` value copied into the request
+  when an empty epoch opens. The default is 3. It bounds waiting; it does not classify a
+  recipient or select a disposition. With the default, one initial notice plus three
+  reissues gives one recipient four notices before the next deadline climbs.
 - **Reissue deadline**: a finite retry time copied from
   `:escalation_decision_deadline_ms` (default 86,400,000 ms). It bounds when Tightbeam
-  repeats an open action-needed notice. It does not decide that a recipient failed.
+  repeats or advances an open action-needed notice. It does not decide that a recipient
+  failed.
 - **Retain**: acknowledge the request and leave the session and harness lifecycle
   unchanged.
 - **Retained root**: the terminal `status='retained_root'`, `decision='retain'` outcome
@@ -239,76 +432,108 @@ The branch does not grant self-disposition to an ordinary child.
 - **Retire**: acknowledge in the same database transaction that commits the existing
   session-retire state transition. Existing cascade, interruption, wire removal, and
   post-commit reaping behavior remains authoritative
-  (`gateway.ex:5022-5103,5174-5289`; `org.ex:517-625`).
+  (`lib/tightbeam/gateway.ex` `retire_result/3`, `retire_cascade_in_txn/8`,
+  `retire_session_in_txn/7`, and `reap_retired_sessions/3`;
+  `lib/tightbeam/org.ex` `retire_in_txn/4`, at exact product commit
+  `6ae34287aa4864b8fe6fabfc96166d02b9827a89`).
 - **Typed wake cancellation**: a call to `Wakes.cancel_in_txn/2` whose closed requester,
   reason, durable source, and outcome fields produce one cancellation row. This rail does
   not update a pending wake directly. Reissue, supersession, acknowledgment, retirement,
   and stale-delivery refusal each name their exact cause and process principal through
-  this seam (`wakes.ex:290-352,478-516`).
+  this seam (`lib/tightbeam/wakes.ex` `cancel_in_txn/2`, `authorize_cancel/2`,
+  `validate_cancellation/5`, and `commit_cancellation/3`).
 
 ## Assumptions
 
 1. The database owner serializes each mutation transaction.
 2. A completion attest can close one open assignment exactly once. Losing terminal
    races roll back the attest (`attest-v1.md:181-196,272-280`).
-3. Session rows persist after retirement, and `spawnedBy` preserves incarnation
-   lineage (`org.ex:65-90,505-565`).
-4. Each non-Main child and each lineage ancestor has the same `ownerUserId`. A corrupt
-   cross-owner lineage is dirt; the resolver reports it and falls back to the child's
-   owner Main instead of disclosing across owners.
+3. Session rows persist after retirement. `spawnedBy` preserves the durable creation
+   provenance that R9 alone can walk for an unanswered action request
+   (`lib/tightbeam/org.ex` `@ddl`, `create_in_txn/2`, and `effective_parent_in_txn/2`).
+4. Initial parent-notice admission requires the selected effective parent to carry the
+   child's `ownerUserId` and not equal the non-root child. A missing, inactive,
+   foreign-owned, or self-cycling snapshot is dirt; the
+   producer reports it, creates no wake for that target, and applies R9's typed
+   same-owner search for an action request. A `notice-only` completion does not search.
 5. The owner's built-in Main is permanent under the current retire rail
-   (`gateway.ex:5042-5052`). A missing Main row is nevertheless handled as an
-   undeliverable fallback record, not fabricated as a session.
+   (`lib/tightbeam/gateway.ex` `retire_result/3` and `completion_retire_in_txn/4`, at
+   exact product commit `6ae34287aa4864b8fe6fabfc96166d02b9827a89`). Root Main has no ordinary parent; R5 preserves its explicit
+   retain-only self-request without making Main a fallback for another child.
 6. `Wakes.schedule_in_txn/2` can arm a prompt or internal deadline wake inside the
-   assignment-close transaction (`wakes.ex:104-200`).
+   assignment-close transaction (`lib/tightbeam/wakes.ex` `schedule_in_txn/2`).
 7. Prompt wake delivery uses the existing projection and turn pipeline. Aware and
    unaware clients can both read the ordinary message payload
-   (`wire/payloads.ex:110-139`).
+   (`lib/tightbeam/wire/payloads.ex` `server_message/1`).
 8. `wi_6937890c-6ba6-48b7-a9d2-4eb4510fe245` will define a safe, authorized park
    operation and its durable success result. This spec does not assume its function or
    wire name.
 9. Successful device authentication returns a device row with a non-empty `user_id`.
    The existing stream ownership check admits only a target session owned by that user
-   (`wire/router.ex:235-252,433-443`).
+   (`lib/tightbeam/wire/router.ex` `DELETE /api/streams/:key` and `retire_target/4`).
 
 ## Invariants
 
-### R1 — One durable record per completion
+### R1 — One durable record per admitted terminal cause
 
 For each assignment completion committed after `CompletionEscalation.ensure_schema/1`
-has succeeded, exactly one `completion_escalations` row exists. The assignment has
-`outcome='completed'` and a non-null `closingAttestId`. The completion row's
-`dedupeKey` is `completion:<closingAttestId>`. A unique constraint on
-`closingAttestId` and a unique constraint on `assignmentId` make a second record
-unrepresentable. A partial unique index on `childSessionKey` where `status='open'`
-makes two live disposition requests for one child unrepresentable. Historical
-`notice-only`, `acknowledged`, `retained_root`, and `superseded` rows can coexist.
+has succeeded, exactly one `completion_escalations` row exists. For each revocation that
+changes the holder's open-assignment count from one-or-more to zero, exactly one row
+exists. A revocation that leaves another assignment open creates no row. Active
+surrender is absent from the 0.2 producer and creates no branch here.
 
-For each wake id stored in `currentNoticeWakeId` or `deadlineWakeId`, exactly one
-`completion_escalation_wakes` membership row exists with the same completion id and
-generation. No other completion can claim that wake id. Historical membership rows stay
-after the completion advances or terminalizes.
+The row's `dedupeKey` is `terminal:<causeKind>:<causeId>`. Completion stores
+`causeKind='attest'`, `causeId=closingAttestId`, and `outcome='completed'`. Revocation
+stores `causeKind='revocation'`, `causeId=revocationId`, null `closingAttestId`, and
+`outcome='revoked'`. A unique constraint on `(causeKind,causeId)` makes replay of one
+terminal cause unrepresentable. `assignmentId` is intentionally non-unique. If a closed
+assignment reopens and later closes again, the later terminal cause creates a distinct
+row when R1 admits that outcome; each earlier row remains immutable durable history.
+A partial unique index on `childSessionKey` where `status='open'` makes two live
+disposition requests for one child unrepresentable. Historical `notice-only`,
+`acknowledged`, `retained_root`, and `superseded` rows can coexist.
 
-### R2 — Atomic close, record, and first notice
+For each wake id stored in `currentParentNoticeWakeId`, `reportToNoticeWakeId`, or
+`deadlineWakeId`, exactly one `completion_escalation_wakes` membership row exists with
+the same completion id and the action generation recorded when that wake was inserted.
+Every parent-notice membership carries its
+typed delivery recipient. An action-notice or deadline membership also carries the
+recipient generation and reissue count that the request stored when it inserted that
+membership; later request advances do not rewrite history. A `notice-only` parent membership
+carries null recipient counters. A report-to membership carries no action recipient. No other completion can claim that
+wake id. Historical membership rows stay after the request advances or terminalizes.
 
-When R5 resolves an existing recipient, the completion attest insert, guarded
-assignment close, completion-record insert, first notification wake insert, and notice
-membership insert commit in one database transaction or all roll back. An open request's
-deadline wake and membership also commit in that transaction. When R5 returns
-`main-unavailable`, that same transaction commits the completion record and named
-lifecycle failure with no notification wake. No post-commit callback creates the
-initial notice or repairs the named failure. This follows the transactional outbox
-pattern already required for decision notifications
-(`escalation-delivery-v1.md:33-48,93-131`).
+### R2 — Atomic terminal transition, record, and first notice
+
+For completion, the attest insert, guarded assignment close, completion-record insert,
+each admitted first notice wake, and membership insert commit in one database transaction or
+all roll back. When R5 admits a distinct explicit report-to recipient, its informational
+wake and membership commit in that transaction too. For a zero-producing revocation,
+the revocation row, revocation-generation row, guarded assignment close, empty-epoch
+record, first admitted action notice, and membership commit in the revocation transaction
+or all roll back. Each open session-recipient request's deadline wake and membership
+commit with it. An owner-user-root request has no deadline under R4.
+
+If initial selection or R9 reaches the owner-user root, the same transaction attempts to
+arm the request through the existing wake-to-user outbox target. If that carrier is
+missing or inactive, the request commits with the owner user as current recipient, null
+current notice and deadline, and the named `owner-carrier-unavailable` failure marker.
+The owner can still act through the read/command path. Report-to availability never changes the
+action-request result. No post-commit callback creates or repairs an initial request.
+This follows the transactional outbox pattern already required for decision notifications
+(`escalation-delivery-v1.md:33-48,93-151`).
 
 ### R3 — Cause and principal are explicit
 
-The record stores `closingAttestId`, `assignmentId`, nullable `workItemId`,
-`childSessionKey`, literal outcome `completed`, `causeBySession`, `ownerUserId`,
-`rootMainHolder`, `immediateParentSessionKey`, `remainingOpenAssignments`, and the
-initial routing fields. The notification origin is
-`process:tightbeam`; the cause principal is `session:<causeBySession>`. No domain field
-derives a principal from prose or an untyped origin string.
+The record stores `causeKind`, `causeId`, nullable `closingAttestId`, nullable
+`revocationId`, `assignmentId`, nullable `workItemId`, `childSessionKey`, the exact
+terminal `outcome`, exactly one typed cause principal, `ownerUserId`,
+`rootMainHolder`, `immediateParentSessionKey`, `parentResolutionSource`,
+`remainingOpenAssignments`, the exact parent/report-to routing fields, and the current
+recipient fields. The notification origin is `process:tightbeam`. Completion's cause
+principal is `session:<attests.bySession>`. Revocation's cause principal is exactly
+`user:<revokedByUser>` or `session:<revokedBySession>`. No domain field derives a
+principal from prose or an untyped origin string.
 
 Each successful generic retirement carries one typed caller principal into the shared
 retirement transaction. The device `DELETE /api/streams/:key` route constructs
@@ -320,176 +545,254 @@ assignment interruption, or `Org.retire_in_txn/4`. It does not derive either the
 the acting principal from `call.origin`. A call without one admitted typed form returns
 the existing generic-retire `not_found` result before idempotency or lifecycle mutation.
 
-### R4 — Session emptiness is checked in the close transaction
+### R4 — Each terminal mutation detects its own empty epoch
 
-After the guarded close update, the producer runs:
+After a guarded terminal update changes one assignment from open to closed, the shared
+producer runs in that same transaction:
 
 ```sql
 SELECT count(*) FROM assignments
 WHERE holderKey = ?1 AND state = 'open'
 ```
 
-If the result is nonzero, the row has `status='notice-only'`. If the result is zero,
-the row has `status='open'`, a non-null `actionDeadlineAt`, and a non-null internal
-`deadlineWakeId`. The internal deadline wake uses
+The guarded update proves that the count before the update was one-or-more. A zero result
+therefore proves the event itself without a time threshold or a second snapshot. If a
+completion returns nonzero, its row has `status='notice-only'`. If completion or
+revocation returns zero, the row has `status='open'`. A selected session recipient has a
+non-null `actionDeadlineAt` and internal `deadlineWakeId`; the owner-user root has
+neither. A nonzero revocation returns without creating a
+completion-escalation row or wake. The internal deadline wake uses
 `sessionKey=childSessionKey`, `consumer='completion_disposition_deadline'`,
 `origin='process:tightbeam'`, `dueAt=actionDeadlineAt`, the deterministic id from R8,
 null `assignmentId`, and null `work_item_id`. Its required `sessionKey` is storage
 correlation; the internal consumer does not deliver a turn to the child. The count is
 per child session, not per work item. The producer stores that historical result as
-`remainingOpenAssignments`; later assignment changes do not rewrite it.
+`remainingOpenAssignments`; later assignment changes do not rewrite it. A session that
+starts and remains at zero never enters this seam.
 
-### R5 — Routing uses lineage facts, then Main fallback
+### R5 — Initial routing preserves parent truth and commission separation
 
-The close transaction records the immediate parent, walks `spawnedBy`, and selects the
-first active same-owner ancestor. It records `resolutionKind='lineage'` and the rung.
-If none exists, it selects the existing active owner Main and records
-`resolutionKind='main-fallback'` and null rung. If no active owner Main row exists,
-whether the row is absent or inactive, it records `resolutionKind='main-unavailable'`
-and writes a lifecycle event. An empty-slate row remains an open action request whose
-deadline can retry routing. A row with work remaining stays `notice-only` and queryable
-as a named undeliverable completion. The producer never inserts a wake or turn for a
-fabricated or inactive session key.
+For a non-root child, the close transaction calls `Org.effective_parent_in_txn/2` and
+copies its exact `session_key` result to `immediateParentSessionKey` and
+`parentSessionKey`. It copies the returned source to `parentResolutionSource`. It creates
+the parent notice only when that exact row exists,
+has `state='active'`, has the stored owner pin, and does not equal the non-root child. It records
+`parentRouteStatus='scheduled'`. A missing, inactive, or foreign-owned exact
+parent records `parentRouteStatus='unavailable'`, writes
+`completion_escalation_undeliverable` with the exact reason
+`parent-missing|parent-inactive|parent-owner-mismatch|parent-cycle`. It does not resolve a role or
+inspect assignment-opener fields. A null `operationalParent` selects Owner Main inside
+the shared resolver; no consumer-local Main fallback exists. A `notice-only` row creates
+no replacement notice and remains queryable as a named undeliverable completion.
 
-The producer does not call `Roles.resolve/2`. Role fallback is office routing and would
-erase the distinction between a causal parent and Main fallback
-(`roles.ex:139-156`).
+For an open request, the producer passes that immutable parent snapshot to R9's initial
+selector. If the
+exact parent is active and owner-matched, recipient rung zero is that session. If it is
+retired, R9 walks its stored `spawnedBy` links nearest-first. If it is missing,
+foreign-owned, cyclic, or has no eligible same-owner ancestor, R9 selects the owner-user
+root. The action notice targets the selected current recipient, while the original
+parent fields and `parentRouteStatus` remain unchanged. At the owner-user root, the
+producer requires an active, owner-matched personal-Main carrier before it arms the wake.
+If that carrier is unavailable, it applies R2's named no-delivery result.
 
-For a root Main holder, the producer takes the root branch before it walks `spawnedBy`.
-The active owner Main selected by this rule is the child itself. The row records
-`initialResolutionKind='main-fallback'`,
-`currentResolutionKind='main-fallback'`, null lineage rungs, and the exact child key as
-both recipient keys. R2 and R4 create the same notice and open request used for another
-empty child; the producer does not retain it automatically.
+Assignment creation admits optional `reportToSessionKey` only when that exact session is
+active and has the holder's owner. It stores the value immutably as
+`assignments.completionReportToSessionKey`; omission stores null. Completion copies the
+field to `reportToSessionKey`. At close, the producer first revalidates that exact row.
+An absent, inactive, or foreign-owned row records
+`reportToRouteStatus='unavailable'` and creates no report-to wake. An eligible row that
+equals the admitted parent or root-self target records
+`reportToRouteStatus='shared-parent'` and creates no duplicate wake. Any other eligible
+exact target receives one generation-0 informational notice and records
+`reportToRouteStatus='scheduled'`. Null records
+`reportToRouteStatus='not-declared'`. Report-to applies only to a completion row. A
+revocation empty epoch uses that same closed `not-declared` value, copies no report-to
+target, and creates no commission wake. Report-to has no deadline and is never reissued.
+
+The principal already authorized to create the assignment is the only declaration
+authority; `--report-to` grants no broader assignment-open authority. A missing,
+inactive, or foreign-owned declared session makes `assign` or `dispatch` return
+`invalid_report_to` with `reportToSessionKey=<submitted-key>` and commit no assignment,
+effect, file, marker, supervision, work-item-bracket, or idempotency result. Replay of a
+successful idempotent create returns the original card and cannot change the declaration.
+`reopen-assignment` preserves it exactly.
+
+For a root Main holder, the producer takes the root branch before ordinary target
+eligibility. It requires the shared resolver's fixed-point result to equal the child key,
+records `parentResolutionSource='owner_main'`,
+`immediateParentSessionKey=childSessionKey`, `parentSessionKey=childSessionKey`,
+`parentRouteStatus='root-self'`, and
+creates the self-addressed completion notice. When the close empties Main's slate, R2
+and R4 create the retain-only open request; a nonempty result remains `notice-only`. The
+producer does not retain Main automatically. Root-self is an explicit root contract, not Main fallback for a child.
+After the stored reissue limit, R9 advances the request to the owner-user root through
+that same Main stream and changes the current authorized principal from the Main session
+to the owner user.
 
 ### R6 — Work-item parentage is immutable here
 
 The producer reads `assignments.workItemId` for correlation. It does not write any
 `work_items` field, creation-context field, assignment reference, or `Toplines` edge.
-Main is a delivery fallback only.
+Neither exact parent delivery nor explicit report-to changes work-item parentage.
 
-### R7 — Notice delivery uses the ordinary durable wake path
+### R7 — Notice delivery uses exact durable targets
 
-When R5 resolves a recipient, the initial notice wake has:
-
-- `wakeId = completion:<closingAttestId>:notice:0`;
-- `consumer='prompt'`;
-- `origin='process:tightbeam'`;
-- `dueAt=now`;
-- `sessionKey=currentRecipientSessionKey`;
-- `targetGate=1`;
-- `reresolve='lineage'`, `reresolveSeed=childSessionKey`, and the recorded active rung
-  when `resolutionKind='lineage'`;
-- `reresolve='lineage'`, `reresolveSeed=childSessionKey`, and `reresolveRung=1` when
-  `resolutionKind='main-fallback'`; this gate is used only if the planned Main becomes
-  ineligible before delivery;
-- null `assignmentId` deliberately;
-- null `work_item_id` deliberately.
+The first completion notice or empty-epoch action notice has `wakeId =
+completion:<cause-token>:parent-notice:<generation>`, where `cause-token` is
+`attest:<attest-id>` or `revocation:<revocation-id>`. A distinct completion report-to
+notice has `wakeId = completion:attest:<attest-id>:report-to-notice`. Each uses
+`consumer='prompt'`, `origin='process:tightbeam'`, `dueAt=now`, `targetGate=1`, null
+`assignmentId`, and null `work_item_id`. A `notice-only` parent wake targets the exact
+admitted `parentSessionKey`. An action notice targets the current session recipient, or
+targets `Org.personal_session_key(ownerUserId)` as the existing carrier for the
+owner-user root. Report-to `sessionKey` is the exact admitted `reportToSessionKey`.
+Each wake has null `targetRole`, null `reresolve`, null `reresolveSeed`, and null
+`reresolveRung`. Generic role or lineage resolution cannot change that wake's target. A
+later deadline can create a new generation with another target only through R8-R9.
 
 The completion row, not `wakes.assignmentId`, carries assignment correlation. Current
 code treats each process-origin prompt wake with an `assignmentId` as supervision-owned
-and can suppress it when `work-blocked` stands (`wakes.ex:1210-1285`). Leaving that
+and can suppress it when `work-blocked` stands
+(`lib/tightbeam/wakes.ex` `suppressed_by_recognition?/2`). Leaving that
 carrier null prevents this completion notice from being misclassified. Leaving
 `work_item_id` null prevents the generic wake-cancellation projection from treating a
-session-lifecycle request as work-item liveness. The exact prompt below still carries
-the assignment and work-item ids. The completion row supplies both typed joins through
-`currentNoticeWakeId`.
+session-lifecycle request as work-item liveness. The exact prompts below still carry the
+assignment and work-item ids. The completion row supplies both typed joins through wake
+membership.
 
 For a notice wake joined through `completion_escalation_wakes`,
 `Gateway.deliver_prompt_in_txn/5` calls the completion producer before generic target
 resolution. The producer locks the decision to current rows inside that delivery
-transaction. It admits a message and turn only when the wake row still has
-`state='pending'`, the completion row still has
-`currentNoticeWakeId=<delivering-wake-id>`, and the completion status is `open` or
-`notice-only`. If one predicate fails, the transaction inserts no message or turn. If
-the wake is still pending, the producer cancels it through R8's typed
-`completion_delivery_ineligible` command before returning. The check and the delivery or
-cancellation action are one database transaction. The ordinary scheduler can select a
-pending row earlier; that snapshot grants no delivery authority
-(`wakes.ex:1166-1204`; `gateway.ex:978-1135`).
+transaction. It admits a `notice-only` parent message and turn only when the wake remains
+pending, equals `currentParentNoticeWakeId`, and the exact parent or root-self row remains
+active and owner-pinned. It admits an open action message and turn only when the wake is
+current and its membership's typed recipient, recipient generation, and reissue count
+equal the request row. A session recipient must remain active and owner-pinned. An
+owner-user recipient must equal `ownerUserId`; its carrier must equal the owner's
+personal Main key and remain active and owner-matched. It admits a
+report-to message and turn only when the wake remains pending, equals
+`reportToNoticeWakeId`, the report-to declaration still matches the copied assignment
+field, the completion status is `open` or `notice-only`, and the exact report-to row
+remains active and owner-pinned.
 
-The stored `ownerUserId` is the owner pin. If the recorded recipient is active and has
-the pinned owner, the transaction uses it without another fallback lifecycle event. If
-that recipient is absent, inactive, or foreign-owned, the transaction applies the wake's
-lineage gate. The lineage walk stops at the first foreign-owner ancestor; it does not
-return that ancestor or traverse through it. When the same-owner lineage is exhausted,
-the transaction selects the existing active pinned-owner Main and records
-`completion_escalation_fallback`. A foreign boundary also records
-`completion_escalation_cross_owner_lineage`. If no active pinned-owner Main exists, the
-transaction records `completion_escalation_undeliverable`, cancels the still-pending
-current notice through the same typed `completion_delivery_ineligible` command, and
-delivers no message or turn. That cancellation makes the R14 receipt `canceled`, not
-`inconsistent`;
-the scheduler's later fired update cannot match the canceled wake. The owner check,
-fallback selection, and message/turn insert or typed wake cancellation are one database
-transaction, so the checked target cannot change between selection and use
-(`gateway.ex:1013-1057,1313-1353`; `wakes.ex:333-352`).
+If a target predicate fails, the same transaction inserts no message or turn and
+cancels the still-pending wake with existing reason `target_unresolvable`, source kind
+`scheduler_delivery`, source id equal to the wake id, requester
+`tightbeam:wake-scheduler`, and outcome `no_replacement`. The check and delivery or
+cancellation are indivisible. The scheduler's earlier selection grants no delivery
+authority. Cancellation makes the R14 receipt `canceled`, not `inconsistent`; its later
+fired update cannot match (`lib/tightbeam/wakes.ex` `mark_fired/2`;
+`lib/tightbeam/gateway.ex` `deliver_prompt_in_txn/5`). No completion
+delivery path climbs, falls back, retargets, or rewrites the card declaration.
+An owner-user carrier failure writes R15's `owner-root`/`owner-carrier-unavailable`
+detail. A generation-0 notice whose typed recipient equals the immutable parent snapshot
+writes the `parent` delivery-refusal detail. Any other session action notice writes the
+`recipient` detail, and the informational copy writes `report-to`. The request remains
+open at the owner-user root if its carrier fails; the owner retains read and disposition
+authority, and no higher principal exists.
 
-This completion-aware check handles a recipient that retires after close and before
-delivery; it does not change the policy for non-completion wakes. The delivered turn's
-`sessionKey` is the actual recipient. The completion record preserves its planned
-resolution; act-time rerouting does not overwrite the initial or current routing facts.
+If the exact target remains eligible but the wake is no longer current, a still-pending
+historical action wake is canceled with `superseded` and the current action wake as its
+replacement, or with `target_unresolvable` when no replacement exists. If the request is
+terminal, a still-pending action or report-to wake is canceled with
+`obligation_disposed` and the terminal `completion_transition`. These are recovery
+guards for inconsistent residue; ordinary transitions already cancel the wakes in their
+own transaction.
 
 ### R8 — Stable request and retry dedupe
 
-`dedupeKey` never changes. Each routing generation uses deterministic wake ids:
+`dedupeKey` never changes. Each action generation uses deterministic wake ids:
 
 ```text
-completion:<closingAttestId>:notice:<generation>
-completion:<closingAttestId>:deadline:<generation>
+completion:<cause-token>:parent-notice:<generation>
+completion:attest:<attest-id>:report-to-notice
+completion:<cause-token>:deadline:<generation>
 ```
 
-The completion row stores the current generation, current deadline wake id, and the
-nullable current notice wake id from R5. Tightbeam extends the closed typed-cancellation
-vocabulary only for this rail:
+The row stores the current action generation, current typed recipient, recipient
+generation, recipient reissue count, frozen recipient reissue limit, current deadline
+wake id, nullable current action-notice wake id, and nullable one-shot report-to wake id.
+Each transition to `acknowledged`, `retained_root`, or `superseded` cancels or consumes
+the pending deadline and clears both `deadlineWakeId` and `actionDeadlineAt`. It
+preserves the last typed recipient, recipient counters, notice ids, and wake membership
+as terminal audit truth.
+It copies `Application.get_env(:tightbeam, :prod_limit, 3)` when the empty epoch opens and
+refuses a non-integer or negative value before mutation. The copied value does not change
+after restart or a later config edit. Tightbeam reuses the existing cancellation reasons
+and the stable `completion_transition` source/disposition classification:
 
-- requester `{kind='process', id='tightbeam:completion-escalation'}` can use reasons
-  `completion_generation_replaced` and `completion_request_disposed`;
-- requester `{kind='process', id='tightbeam:wake-scheduler'}` can use reason
-  `completion_delivery_ineligible`;
-- durable source kind `lifecycle_event` accepts only a lifecycle row whose subject
-  joins the canceled wake through `completion_escalation_wakes`;
-- for reason `completion_generation_replaced`, that lifecycle row has kind
-  `completion_escalation_reissued`; for reason `completion_request_disposed`, it has
-  kind `completion_escalation_superseded` or `completion_escalation_acknowledged`;
-- source kind `scheduler_delivery` accepts only the canceled wake id itself for reason
-  `completion_delivery_ineligible`;
-- disposition kind `completion_transition` accepts only the same joined lifecycle row
-  used as the command's durable source;
-- `completion_generation_replaced` accepts `replacement` or `no_replacement`;
-  `completion_request_disposed` accepts `disposition`; and
-  `completion_delivery_ineligible` accepts `no_replacement` from source kind
-  `scheduler_delivery`.
+- requester `{kind='process', id='tightbeam:wake-scheduler'}` can use existing reason
+  `target_unresolvable` only for R7's exact delivery refusal;
+- requester `{kind='process', id='tightbeam:completion-escalation'}` can use existing
+  reasons `superseded`, `obligation_disposed`, and `target_unresolvable`; its
+  `target_unresolvable` authority applies only when R8 cannot arm a replacement action
+  notice during deadline reissue;
+- reason `superseded` uses causal source kind `wake`, names the replacement action wake,
+  and has outcome `replacement`;
+- reason `target_unresolvable` uses causal source kind `scheduler_delivery`, names the
+  canceled wake itself, and has outcome `no_replacement`; its requester is the wake
+  scheduler for R7 delivery and the completion-escalation process for R8 reissue;
+- reason `obligation_disposed` uses causal source and disposition kind
+  `completion_transition`, names the same completion id in both fields, and has outcome
+  `disposition`;
+- a `completion_transition` source/disposition validates only when the completion row is
+  terminal (`acknowledged`, `retained_root`, or `superseded`), carries the corresponding
+  acting or supersession fields, and owns the canceled wake through
+  `completion_escalation_wakes`.
 
-No other requester gains those reasons. This is the cause/principal rail for each wake
-that this mechanism withdraws; a raw `UPDATE wakes SET state='canceled'` is outside the
-design.
+No completion-specific reason, `lifecycle_event` source, or opaque event-log id is
+admitted. `completion_transition` is justified because the typed terminal completion
+row remains a domain fact if scheduler and event-log implementations change. The
+proposed `completion_generation_replaced` and `completion_request_disposed` merely
+renamed existing `superseded` and `obligation_disposed` facts. The proposed
+`completion_delivery_ineligible` narrowed the existing `target_unresolvable` delivery
+fact. The proposed `lifecycle_event` named storage rather than a domain event. No other
+requester/reason compatibility pair gains authority. A raw
+`UPDATE wakes SET state='canceled'` remains outside the design.
 
-A reissue transaction CASes the current `deadlineWakeId`. It computes the next routing
-generation and writes the `completion_escalation_reissued` lifecycle source. It then
-arms the replacement deadline and, when routing resolves a recipient, the replacement
-notice. While the old notice is still the row's current notice, the transaction cancels
-that notice through `completion_generation_replaced`, pointing to the new notice or to
-`no_replacement` for `main-unavailable`. It does not try to cancel an old notice that is
-already fired or canceled. A `replacement` outcome is valid only when the replacement
-wake membership names the same completion, the next generation, and kind `notice`.
-The transaction then updates the completion row to the new generation and wake ids and
-marks the source deadline fired through `Wakes.fire_internal_in_txn/4`. A refused
-cancellation of a pending old notice or a refused deadline-fire CAS raises and rolls
-back each replacement row, lifecycle row, completion-row change, and deadline
-consumption.
+A deadline transaction CASes the current `deadlineWakeId`. It computes the next action
+generation. When it arms a replacement notice, it writes the existing
+`completion_escalation_reissued` observability mirror with the resulting recipient
+generation, reissue count, and typed recipient. If it reaches the owner-user root but
+cannot arm the carrier, it writes only R15's typed owner-carrier-undeliverable marker;
+it does not claim that a notice was reissued. It never reissues or replaces the
+report-to notice.
+
+For one recipient, the first notice has `recipientReissueCount=0`. While the count is
+less than `recipientReissueLimit` and the same session remains active and owner-matched,
+the deadline transaction increments the count and arms one replacement notice plus one
+replacement deadline for that same recipient. When the count equals the limit, or when
+the session is no longer eligible, the transaction advances under R9 instead of
+reissuing. A recipient change increments `recipientGeneration`, resets
+`recipientReissueCount=0`, and arms one first notice for the new recipient. Reaching the
+owner-user root arms one first owner notice and no replacement deadline.
+Notice delivery does not reset either counter and does not acknowledge the request.
+Only R11-R13 terminalize it; a later empty epoch starts a new row with fresh counters.
+
+While the old action notice remains current and pending, the transaction cancels it with
+`superseded` pointing to the replacement action wake. A `replacement` outcome is valid
+only when the replacement membership names the same completion and the next action
+generation. If no replacement notice can be armed, the transaction cancels a pending old
+notice with `target_unresolvable` and `no_replacement`. The transaction updates the row
+to the new generation and recipient fields, sets the current action-notice and deadline
+fields to null, and marks the source deadline fired through
+`Wakes.fire_internal_in_txn/4`. A refused cancellation or deadline-fire CAS rolls back
+each replacement row, lifecycle row, completion-row change, and deadline consumption.
 
 A stale or replayed deadline writes and arms zero rows. Database serialization gives a
 delivery-versus-reissue race two results: delivery commits first and the old wake is no
-longer pending, or reissue cancels first and R7 refuses the old callback. No two notice
-generations for one completion remain pending after commit. Each reissued notice uses the
-R7 wake fields with its current generation and current resolution. `turns.wakeId UNIQUE`
-prevents a duplicate turn for one notice generation (`ledger.ex:1-18,99-148`).
+longer pending, or reissue cancels first and R7 refuses the old callback. No two
+action-notice generations for one request remain pending after commit. Each reissued action
+notice uses R7's exact-target wake fields. `turns.wakeId UNIQUE` prevents a duplicate
+turn for one action-notice generation (`lib/tightbeam/ledger.ex` `@ddl` and
+`enqueue_in_txn/2`). Membership history makes the
+visited recipient set and each count reset replayable without mutable hidden state.
 
 ### R9 — Deadline reissues; it does not judge
 
-When the internal deadline fires, the transaction re-reads the request, the child
-session, the child open-assignment count, the recorded recipient, and the source wake.
+When the internal deadline fires, the transaction re-reads the request, child session,
+child open-assignment count, current typed recipient, immutable parent snapshot,
+historical recipient memberships, and source wake.
 The handler acts only when the source wake is still pending, still equals the row's
 `deadlineWakeId`, and the row remains `status='open'`. A scheduler snapshot does not
 bypass that check. A callback that fails one predicate writes and arms zero rows.
@@ -501,35 +804,58 @@ bypass that check. A callback that fails one predicate writes and arms zero rows
 - child is retired: set `status='superseded'`,
   `supersededReason='child-retired'`, store `supersededAt=now`, consume the deadline,
   and arm nothing;
-- request remains open and child remains active and empty: re-resolve from current
-  rows, reissue the same request, and arm the next deadline.
+- request remains open, child remains active and empty, current recipient is an eligible
+  session, and its reissue count is below the stored limit: reissue the same request to
+  that session and arm the next deadline;
+- request remains open, child remains active and empty, and the current session is
+  ineligible or has exhausted its reissue limit: walk `spawnedBy` nearest-first from that
+  session. An ineligible current session writes R15's exact recipient-undeliverable
+  marker; limit exhaustion does not. Skip retired same-owner rows. Select the first active same-owner session not
+  present in historical recipient membership and not equal to the child. A missing link,
+  foreign-owner link, nil link, child link, repeated key, or exhausted finite row set ends the session walk and selects the
+  owner user. Do not inspect roles, assignment openers, report-to, or prompt text;
+- current recipient is the owner user: no deadline exists, so this callback state is
+  inconsistent residue and writes or arms zero rows.
 
 Each successful branch marks the source deadline fired through
 `Wakes.fire_internal_in_txn/4` in the same transaction. A branch that moves the request
-to `superseded` writes its typed lifecycle source and cancels any pending current notice
-through `completion_request_disposed`. A refused cancellation or deadline-fire CAS
+to `superseded` writes its observability mirror and cancels any pending parent or
+report-to notice through `obligation_disposed` with source and
+disposition `completion_transition`. A refused cancellation or deadline-fire CAS
 rolls back the request transition and deadline consumption.
 
-Elapsed time never means the parent is incapable or that retire is correct. A retired
-recipient is an observable event and re-resolution skips it. An active recipient is
-re-notified, not silently climbed past because a timer elapsed.
+Elapsed time never means a recipient is incapable or that retire is correct. The stored
+count only bounds how long one session remains the current recipient. Advancing changes
+the authorized mind, not the requested decision. At the owner-user root, the request
+remains open until an authorized disposition, a new assignment, or retirement settles
+it. Ordinary at-least-once wake delivery keeps the root notice pending until durable
+acceptance while its permanent carrier remains eligible. R7 records and cancels a root
+notice if corrupt state later makes that carrier ineligible. The completion producer
+schedules no infinite root reminders.
 
-### R10 — Assignment-open race supersedes in the opening transaction
+### R10 — Assignment open or reopen supersedes in its transaction
 
-Every successful `assign` and `dispatch` insert for a child session calls the one
-`supersede_open_for_assignment_in_txn/3` seam after the assignment, effect, and file rows
-exist and before the supervision transition. The seam changes an open completion request
-for that child to `superseded/new-assignment`. It first writes the supersede lifecycle
-source. It then cancels the deadline and any pending current notice through
-`completion_request_disposed`, with disposition `completion_transition`, in that same
-transaction. The row stores the new assignment id and transaction timestamp as
-`supersededAt`. The lifecycle row records that id and its typed opener principal. A
-refused cancellation raises and rolls back the assignment insert and the request
-transition (`assignments.ex:918-1057`).
+Every successful `assign` and `dispatch` insert and every successful
+`reopen-assignment` transition for a child session calls the one
+`supersede_open_for_assignment_in_txn/3` seam. An insert calls it after the assignment,
+effect, and file rows exist and before the supervision transition
+(`lib/tightbeam/assignments.ex` `open_assignment_in_txn/6`). A reopen calls it after the guarded assignment update
+changes the outcome to `open` and before the
+supervision transition. The seam changes an open completion request for that child to
+`superseded/new-assignment`. It first writes the typed completion transition and its
+lifecycle observability mirror. It then cancels the deadline and any pending parent or
+report-to notice through `obligation_disposed`, with source and disposition
+`completion_transition`, in that same transaction. The row stores the opened or
+reopened assignment id and transaction timestamp as `supersededAt`. The lifecycle row
+records that id and the typed principal that opened or reopened the assignment. A
+refused cancellation raises and rolls back the assignment insert or guarded reopen
+update and the request transition.
 
-If a new assignment and a disposition race, database serialization permits one result:
+If assignment opening or reopening and a disposition race, database serialization
+permits one result:
 
-- assignment wins: disposition returns `request_superseded` and enacts no disposition;
+- opening or reopening wins: disposition returns `request_superseded` and enacts no
+  disposition;
 - retain wins: the later assignment commits through the existing open path;
 - retire wins: the later assignment fails the existing active-holder interlock;
 - park wins: the future park contract defines and enforces the assignment interlock.
@@ -540,18 +866,19 @@ If a new assignment and a disposition race, database serialization permits one r
 session or user principal. Process and remedy principals are refused.
 
 A session principal is authorized when it is active at action time, has the stored
-owner pin, is not the child, and is the recorded current recipient, the actual
-current-generation notice recipient joined through `currentNoticeWakeId`, or an active
-ancestor above the child.
-The actual-recipient clause lets an owner Main selected by R7 act without rewriting the
-planned routing facts. A user principal is authorized only when it owns the child. An
-admin from another owner can read the record under R15 but cannot choose a lifecycle
-disposition.
+owner pin, is not the child, and its exact session key equals
+`currentRecipientSessionKey`. A report-to recipient, sibling, assignment opener, role
+holder, unvisited ancestor, or previous recipient gains no authority. Advancing the
+recipient atomically removes the prior session's authority and grants it to the new
+session. A user principal is authorized only when it owns the child; the owner can act
+at every rung. An admin from another owner can read the record under R15 but cannot
+choose a lifecycle disposition.
 
-One self-disposition exception exists. The exact active root Main holder passes the
-session-principal check for its own completion row. Its explicit `retain` reaches R12.
-Its `park` and `retire` calls reach the root refusal below. No other child session passes
-authorization for its own request.
+One self-disposition exception exists. Before a root Main request advances, the exact
+active root Main holder is its current session recipient and can retain its own row. Its
+`park` and `retire` calls reach the root refusal below. After the request advances to the
+owner-user root, Main loses session authority and the owner user remains authorized. No
+other child session passes authorization for its own request.
 
 Before a call can commit acknowledgment, the handler performs authorization,
 `status='open'`, child-active, and zero-open-count checks in that same transaction. It
@@ -574,7 +901,7 @@ The action handler uses this refusal precedence:
 2. A missing completion id returns `unknown_completion`.
 3. A process or remedy principal returns `principal_not_allowed`.
 4. A principal outside the authorization rule above returns `not_authorized`; this
-   check precedes request-state disclosure. An active, owner-pinned exact
+   check precedes request-state disclosure. An active, owner-pinned current
    `actedBySession`, or the owner `actedByUser`, is authorized on an `acknowledged` or
    `retained_root` row only for the identical replay in step 5.
 5. An identical terminal replay returns the original record. Another call on an
@@ -597,8 +924,8 @@ The action handler uses this refusal precedence:
    ```
 
    The `decision` value is the submitted `park` or `retire`. The handler leaves the
-   completion row, deadline wake, current notice wake, session row, and harness state
-   unchanged. It calls neither the park dependency nor the retire preflight and writes
+   completion row, deadline wake, parent notice wake, report-to notice wake, session row,
+   and harness state unchanged. It calls neither the park dependency nor the retire preflight and writes
    no completion lifecycle event.
 9. If a pending generic-retire intent wake exists for the child or its active subtree,
    a disposition that reaches this step returns `retire_deferred` with the R12 response
@@ -620,10 +947,12 @@ The action handler uses this refusal precedence:
 - `retain`: for an ordinary child, commit `status='acknowledged'` and
   `decision='retain'`. For a root Main holder, commit `status='retained_root'` and
   `decision='retain'`. Both branches store the acting principal and `actedAt`, cancel the
-  deadline and any pending current notice through `completion_request_disposed`, and
+  deadline and any pending parent or report-to notice through `obligation_disposed`
+  with source and disposition `completion_transition`, and
   mutate no session, harness, assignment, or work-item row. The transaction writes the
-  acknowledgment lifecycle source before those cancellations. A refused cancellation
-  rolls back the lifecycle row and terminal completion state. Before the root branch
+  terminal completion transition and its acknowledgment lifecycle mirror before those
+  cancellations. A refused cancellation rolls back the lifecycle row and terminal
+  completion state. Before the root branch
   writes `retained_root`, it verifies `isBuiltIn=1` and the exact owner personal-session
   key in the same transaction. Only an explicit authorized call reaches either branch.
 - `retire`: use the existing retire mutation seam. In the action transaction, the
@@ -631,21 +960,26 @@ The action handler uses this refusal precedence:
   gives the exact root Main its specific response; a non-root built-in dirt row receives
   the existing generic `denied` result and no lifecycle mutation. The current gateway
   then extracts one DB-only subtree/critical-lease preflight from
-  `retire_cascade_in_txn/6`; the generic retire verb and completion disposition both call
-  it (`gateway.ex:5042-5052,5174-5233`). If no target-subtree lease is active, the current
-  parent-last cascade calls the same `retire_session_in_txn/6` path. Both entry points
+  `retire_cascade_in_txn/8`; the generic retire verb and completion disposition both call
+  it (`lib/tightbeam/gateway.ex` `retire_result/3`, `completion_retire_in_txn/4`, and
+  `retire_cascade_in_txn/8`, at exact product commit
+  `6ae34287aa4864b8fe6fabfc96166d02b9827a89`). If no target-subtree lease is active, the current
+  parent-last cascade calls the same `retire_session_in_txn/7` path. Both entry points
   supply the typed caller principal required by R3. The shared retirement handler derives
   the owner and serialized acting principal from that value once, before the transaction,
   and passes the serialized principal through the cascade. That path calls the
   completion retirement seam before `Org.retire_in_txn/4`, because Org's current
   retirement transition cancels target-gated wakes after the session state update
-  (`gateway.ex:5259-5270`; `org.ex:540-625`). The completion seam writes its
-  acknowledgment lifecycle source, cancels its deadline and pending notice through
-  `completion_request_disposed`, and stores `decision='retire'` before Org sees the
+  (`lib/tightbeam/gateway.ex` `retire_session_in_txn/7`;
+  `lib/tightbeam/org.ex` `retire_in_txn/4` and `retire_active_in_txn/4`, at exact product
+  commit `6ae34287aa4864b8fe6fabfc96166d02b9827a89`). The completion seam writes its
+  acknowledgment lifecycle mirror, cancels its deadline and pending parent or report-to
+  notice through `obligation_disposed` with source and disposition
+  `completion_transition`, and stores `decision='retire'` before Org sees the
   remaining wakes. Request acknowledgment and session retirement therefore commit
   together. Existing post-commit broadcast, supervision notification, workspace archive,
   and adapter reap remain unchanged. If a lease is active, completion disposition leaves
-  the completion request, its deadline, its current notice, and each session row
+  the completion request, its deadline, its parent and report-to notices, and each session row
   unchanged; schedules no `w_retire_...` intent wake; writes
   `completion_escalation_retire_deferred`; and returns:
 
@@ -668,16 +1002,18 @@ The action handler uses this refusal precedence:
   primitive's durable success condition. A park-operation failure leaves the request open
   and records the failure. No placeholder park implementation is permitted.
 
-No scheduler, sweep, notification terminal, or fallback path writes a disposition.
+No scheduler, sweep, notification terminal, unavailable-target path, or report-to path
+writes a disposition.
 No path writes `retained_root` except the explicit retain branch above.
 
 ### R13 — Retirement race closes the request truthfully
 
 The existing retire transaction calls the completion seam for each retiring session.
 If an open empty-slate request exists, explicit retirement acknowledges it as
-`decision='retire'` with the retire call's typed principal. It writes the acknowledgment
-lifecycle source and cancels its deadline and any pending current notice through
-`completion_request_disposed` before the session state transition. These actions share
+`decision='retire'` with the retire call's typed principal. It writes the typed terminal
+completion transition and acknowledgment lifecycle mirror, then cancels its deadline
+and any pending parent or report-to notice through `obligation_disposed` with source and
+disposition `completion_transition` before the session state transition. These actions share
 the retirement transaction. A refused typed cancellation rolls back retirement.
 The device generic-retire path records `actedByUser=device.user_id`; an agent
 generic-retire path records `actedBySession=sessionKey`. The transaction passes the same
@@ -687,17 +1023,29 @@ If the generic retire verb defers on a critical lease, no session retirement occ
 so the request remains open and its existing deadline continues. The generic retire
 response and intent wake remain governed by the existing retire contract. R11 prevents
 a conflicting completion disposition while that intent wake remains pending.
-If retirement wins before completion, the assignment becomes revoked and the later
-completion loses with `assignment_closed`; no completion record appears. If completion
-wins first, the same retire transaction acknowledges the record. No request remains
-open for a retired child.
+Retirement interruption calls the shared terminal seam after each guarded revocation in
+its deterministic assignment order. Earlier revocations with work remaining create no
+row. The revocation that changes the count to zero creates one open row, and the later
+retirement acknowledgment seam terminalizes that same row as `acknowledged/retire` in
+the transaction before session retirement. Its initially armed notice and deadline are
+canceled in that transaction; no request becomes externally visible as open.
+
+If retirement wins before a concurrent completion, the assignment becomes revoked, the
+later completion loses with `assignment_closed`, and the zero-producing revocation row
+records the retirement cause and acknowledgment. If completion wins first, the same
+retire transaction acknowledges that completion row. No request remains open for a
+retired child.
 
 ### R14 — Receipt and action acknowledgment remain distinct
 
-The read projection derives `receipt` from the wake and optional turn whose wake id is
-the record's `currentNoticeWakeId`. It maps rows without inference:
+The read projection derives `request.receipt` from `currentParentNoticeWakeId`.
+`routing.parent.receipt` derives from the generation-0 parent-notice membership only
+when its recipient is the immutable parent snapshot; otherwise it is `not-created`.
+`reportTo.receipt` derives from `reportToNoticeWakeId`, or from that immutable parent
+receipt when `reportToRouteStatus='shared-parent'`. Each wake-backed receipt maps rows
+without inference:
 
-- null `currentNoticeWakeId` -> `state='not-created'`, `turnSeq=null`;
+- null wake id -> `state='not-created'`, `turnSeq=null`;
 - pending wake and no turn -> `state='pending'`, `turnSeq=null`;
 - canceled wake and no turn -> `state='canceled'`, `turnSeq=null`;
 - existing turn -> its exact `queued|running|delivered|canceled|failed|failed_unknown`
@@ -708,31 +1056,36 @@ The fired wake row and absent joined turn are the durable evidence for `inconsis
 The read path writes no lifecycle event. Repeated reads return the same projection
 without mutating `lifecycle_events`.
 
-Earlier generations remain available through their wake/turn rows and lifecycle trace;
-they do not overwrite current-generation receipt.
+Earlier action-recipient generations remain available through membership, wake, turn,
+and lifecycle rows. They do not overwrite `request.receipt` or the immutable initial
+parent receipt. Report-to has one generation.
 
 Receipt does not close an action-needed request. Only R11-R13 do. Conversely, an
-authorized action can acknowledge before its notice turn delivers; the pending notice
-is canceled through R8's typed seam in the action transaction because its content is
+authorized action can acknowledge before either notice turn delivers; each pending
+notice is canceled through R8's typed seam in the action transaction because its content is
 then stale. The joined wake-cancellation row exposes the exact requester, reason, source,
 outcome, cause principal, and cancellation time; the receipt state stays a mechanical
 projection of wake and turn rows.
 
 ### R15 — Observability is durable and replayable
 
-The completion row and joined assignment, attest, session, wake, and turn rows are the
-source of truth. The producer writes these exact lifecycle kinds with
+The completion row and joined assignment, attest or revocation, session, wake, and turn
+rows are the source of truth. The producer writes these exact lifecycle kinds with
 `subject=<completion-id>`:
 
 - `completion_escalation_opened` in the close transaction;
-- `completion_escalation_reissued` for each successful generation CAS;
+- `completion_escalation_reissued` for each successful generation CAS that arms a
+  replacement action notice;
 - `completion_escalation_superseded` for each transition to `superseded`;
 - `completion_escalation_acknowledged` for each first transition to `acknowledged` or
   `retained_root`;
-- `completion_escalation_fallback` when routing selects Main;
-- `completion_escalation_undeliverable` for each `main-unavailable` generation and each
-  R7 act-time route with no pinned-owner Main;
-- `completion_escalation_cross_owner_lineage` when R5 or R7 rejects a foreign ancestor;
+- `completion_escalation_undeliverable` for an unavailable initial parent, an ineligible
+  current recipient, an unavailable owner-user carrier, and each R7 exact-target delivery
+  refusal;
+- `completion_escalation_cross_owner_lineage` when R5 or R9 observes a foreign-owned
+  link; it reports dirt, excludes that link, and routes the open request to the owner-user
+  root without granting the foreign owner visibility through that lineage. R15's
+  independent admin audit rule remains unchanged;
 - `completion_escalation_state_inconsistent` for R11's inactive-child dirt;
 - `completion_escalation_retire_deferred` when R12 observes an active critical lease;
 - `completion_escalation_park_failed` when the external park operation does not commit.
@@ -742,25 +1095,32 @@ For the completion ids selected into a `work-item-trace`, JobTrace joins
 wakes through the existing `wake_scheduled`, `wake_fired`, and `wake_canceled` entry
 shapes and ranks. This explicit membership join is required because completion wakes
 deliberately carry null direct work and assignment fields. A current or historical
-completion cancellation names one of R8's three completion reasons and the exact
-lifecycle or scheduler source that authorized it. The trace does not infer a
+completion cancellation names R8's existing truthful reason and the exact typed
+completion, wake, or scheduler source that authorized it. The trace does not infer a
 cancellation cause from the completion status.
 
 The lifecycle `detail` is exactly:
 
 - opened: null;
-- reissued: `generation=<decimal> principal=process:tightbeam:completion-escalation`;
+- reissued:
+  `generation=<decimal> recipientGeneration=<decimal> recipientReissueCount=<decimal> recipient=<session:session-key|user:user-id> principal=process:tightbeam:completion-escalation`;
 - superseded by assignment: `reason=new-assignment`;
 - superseded by retired child:
   `reason=child-retired principal=process:tightbeam:completion-escalation`;
 - ordinary acknowledged: `decision=<retain|park|retire>`;
 - retained root: `decision=retain outcome=retained_root`;
-- fallback:
-  `resolution=main-fallback generation=<decimal> principal=process:tightbeam:completion-escalation`;
-- undeliverable:
-  `resolution=main-unavailable generation=<decimal> principal=process:tightbeam:completion-escalation`;
-- cross-owner lineage:
-  `foreignSessionKey=<session-key> principal=process:tightbeam:completion-escalation`;
+- initial parent unavailable at close:
+  `channel=parent resolution=parent-unavailable reason=<parent-missing|parent-inactive|parent-owner-mismatch|parent-cycle> generation=<decimal> principal=process:tightbeam:completion-escalation`;
+- current session recipient ineligible at deadline:
+  `channel=recipient resolution=recipient-ineligible reason=<recipient-missing|recipient-inactive|recipient-owner-mismatch> generation=<decimal> principal=process:tightbeam:completion-escalation`;
+- owner-user carrier unavailable at scheduling or R7 delivery:
+  `channel=owner-root resolution=target-unresolvable reason=owner-carrier-unavailable generation=<decimal> principal=process:tightbeam:completion-escalation`;
+- parent, session current-recipient, or report-to target refused at R7 delivery:
+  `channel=<parent|recipient|report-to> resolution=target-unresolvable reason=target-unresolvable generation=<decimal> principal=process:tightbeam:completion-escalation`;
+- cross-owner initial parent:
+  `parentSessionKey=<session-key> principal=process:tightbeam:completion-escalation`;
+- cross-owner R9 link:
+  `recipientPathSessionKey=<session-key> principal=process:tightbeam:completion-escalation`;
 - state inconsistent:
   `reason=child-not-active principal=<session:session-key|user:user-id>`;
 - retire deferred:
@@ -768,29 +1128,37 @@ The lifecycle `detail` is exactly:
 - park failed:
   `reason=<park_dependency_unavailable|park_operation_failed> principal=<session:session-key|user:user-id>`.
 
-Observability joins the event subject back to typed rows to project closing attest,
+Observability joins the event subject back to typed rows to project the terminal cause,
 child session, cause principal, acting principal, decision, and reason. No decision path
 parses prompt or event prose. A `new-assignment` supersede joins
 `supersededByAssignmentId` to its typed opener principal.
 
 Every lifecycle marker therefore carries cause and principal without guessing. Opened
-joins the closing attest and its holder principal. Reissued joins the prior deadline
-wake and names the completion process. Assignment supersession joins the new assignment
+joins the attest or revocation cause and its typed principal. Reissued joins the prior
+deadline wake and names the completion process. Assignment supersession joins the new assignment
 and its typed opener. Acknowledgment joins the terminal completion row and its exactly
-one acting principal. The remaining process markers name the completion process in
+one acting principal. `opened`, `reissued`, `superseded`, and `acknowledged` are stable
+domain transitions because each remains meaningful if wake scheduling and event-log
+storage change. Undeliverable, cross-owner, inconsistent, deferred, and park-failed are
+operational observations, not cancellation-authority types. The remaining process markers name the completion process in
 their exact detail. The three refused-action markers copy the already-authorized typed
 caller into their exact detail at write time. Detail remains observability only; no
 authorization, routing, transition, or read-visibility decision parses it.
 
-`completion-notices --status open|all [--session <child>]` returns records visible to
-the owner user, an admin, the child, the active owner-pinned recorded recipient, the
-active owner-pinned actual current-generation notice recipient, and active sessions in
-its owner-matched lineage.
-An `acknowledged` or `retained_root` row remains visible to an exact `actedBySession` only
-while that same session incarnation is active and owner-pinned. Retirement removes that
-session's read and replay authority. The owner user and an admin retain their ordinary
-read authority. A role, a replacement incarnation, or a sibling gains no visibility from
-`actedBySession`. `--status open` selects only `status='open'`; `all` selects each status.
+`completion-notices --status open|all [--session <child>]` returns an owner-matched row
+to the owner user, an admin, and the active owner-pinned child. The active owner-pinned explicit
+report-to recipient can read its completion copy in every status. For `notice-only`, the
+active owner-pinned initial parent can read. For `open`, the active owner-pinned current
+session recipient can read. A prior escalation recipient loses read access when the
+request advances unless another listed rule grants access. Report-to visibility grants
+no disposition authority.
+
+An `acknowledged` or `retained_root` row is also visible to its exact
+`actedBySession` only while that same session incarnation remains active and
+owner-pinned. Retirement removes that session's read and replay authority. A session
+that was current when the owner user acted gains no terminal-read exception. A role, a
+replacement incarnation, or a sibling gains no visibility from `actedBySession`.
+`--status open` selects only `status='open'`; `all` selects each status.
 Except for the explicit admin rule, the query exposes no row whose `ownerUserId` differs
 from the caller's owner.
 
@@ -809,8 +1177,10 @@ and at most one terminal entry:
 - retained root: `id=<completion-id>:retained_root`, `at=actedAt`,
   `phase='retained_root'`, when status is `retained_root`.
 
-Each entry contains `completionId`, `assignmentId`, nullable `workItemId`,
-`closingAttestId`, `childSessionKey`, `causePrincipal`, `currentStatus`, nullable
+Each entry contains `completionId`, `assignmentId`, nullable `workItemId`, `causeKind`,
+`causeId`, nullable `closingAttestId`, nullable `revocationId`, `outcome`,
+`childSessionKey`, `causePrincipal`, `currentStatus`, nullable `currentRecipient`,
+`recipientGeneration`, `recipientReissueCount`, `recipientReissueLimit`, nullable
 `decision`, nullable `actingPrincipal`, nullable `supersededReason`, and nullable
 `supersededByAssignmentId`. `actingPrincipal` is exactly
 `session:<actedBySession>`, `user:<actedByUser>`, or null. Existing JobTrace type order
@@ -824,16 +1194,44 @@ opaque `detail`. JobTrace exposes `detail`; it does not parse it.
 
 The rank map remains closed. `Map.fetch!/2` continues to raise for an unranked type. The
 two new ranks preserve the relative order of each existing type
-(`job_trace.ex:15-53`).
+(`lib/tightbeam/job_trace.ex` `@type_rank` and `build/2`).
 
 ### R16 — Wire compatibility and exact payload
 
 No socket frame type changes. The notification is an ordinary stored `message` with
 `role='user'`, `sender='process:tightbeam'`, and the existing
 `[from process:tightbeam]` provenance stamp. Existing clients render readable text and
-aware clients retain the same sender anti-forgery rule (`wire/payloads.ex:10-31,110-139`).
+aware clients retain the same sender anti-forgery rule
+(`lib/tightbeam/wire/payloads.ex` `server_message/1`).
 
-The unstamped prompt body is exactly:
+For an open request, the unstamped current-recipient prompt body is exactly:
+
+```text
+Child assignment slate became empty.
+completionId=<completion-id>
+assignmentId=<assignment-id>
+workItemId=<work-item-id-or-none>
+childSessionKey=<session-incarnation-key>
+causeKind=<attest|revocation>
+causeId=<cause-id>
+closingAttestId=<attest-id-or-none>
+revocationId=<revocation-id-or-none>
+outcome=<completed|revoked>
+causePrincipal=<session:session-key|user:user-id>
+immediateParentSessionKey=<session-key>
+parentResolutionSource=<explicit|owner_main>
+parentRoute=<effective-parent|parent-unavailable|root-self>
+reportToSessionKey=<session-key-or-none>
+remainingOpenAssignments=<decimal-count>
+actionNeeded=true
+recipientPrincipal=<session:session-key|user:user-id>
+recipientGeneration=<decimal>
+recipientReissueCount=<decimal>
+recipientReissueLimit=<decimal>
+```
+
+A `notice-only` completion preserves this predecessor prompt byte-for-byte and contains
+no recipient fields:
 
 ```text
 Child completion recorded.
@@ -844,14 +1242,16 @@ childSessionKey=<session-incarnation-key>
 closingAttestId=<attest-id>
 outcome=completed
 causePrincipal=session:<child-session-key>
-immediateParentSessionKey=<session-key-or-none>
-recipientResolution=<lineage:rung-N|main-fallback>
-remainingOpenAssignments=<decimal-count>
-actionNeeded=<true|false>
+immediateParentSessionKey=<session-key>
+parentResolutionSource=<explicit|owner_main>
+parentRoute=<effective-parent|parent-unavailable|root-self>
+reportToSessionKey=<session-key-or-none>
+remainingOpenAssignments=<positive-decimal-count>
+actionNeeded=false
 ```
 
-When `actionNeeded=false`, the prompt ends after that line. For an ordinary non-root
-child with `actionNeeded=true`, it appends exactly this final line:
+For an ordinary non-root child with an open request, the action prompt appends exactly
+this final line:
 
 ```text
 Choose retain, park, or retire with `tightbeam completion-disposition <completion-id> --decision <retain|park|retire>`. Tightbeam will not choose or auto-retire.
@@ -867,36 +1267,72 @@ Choose retain with `tightbeam completion-disposition <completion-id> --decision 
 An explicit root `park` or `retire` call still returns R11's
 `root_lifecycle_unsupported` response without invoking a lifecycle primitive.
 
+The unstamped body of a distinct explicit report-to notice is exactly:
+
+```text
+Child completion copied by explicit report-to.
+completionId=<completion-id>
+assignmentId=<assignment-id>
+workItemId=<work-item-id-or-none>
+childSessionKey=<session-incarnation-key>
+closingAttestId=<attest-id>
+outcome=completed
+causePrincipal=session:<child-session-key>
+immediateParentSessionKey=<session-key>
+parentResolutionSource=<explicit|owner_main>
+parentRoute=<effective-parent|parent-unavailable|root-self>
+reportToSessionKey=<report-to-session-key>
+remainingOpenAssignments=<decimal-count>
+actionNeeded=<true|false>
+This report is informational. It grants no disposition authority.
+```
+
+Assignment `assign`, `dispatch`, and `assignments` JSON adds the camelCase key
+`reportToSessionKey`, always present with a string or null. The CLI accepts exactly
+`--report-to <session-key>` on `assign` and `dispatch`. Omission stores null. No reopen,
+attest, or disposition command accepts this flag.
+
 The read/command JSON object uses camelCase:
 
 ```json
 {
   "id": "cn_...",
-  "dedupeKey": "completion:att_...",
+  "dedupeKey": "terminal:attest:att_...",
   "assignmentId": "asg_...",
   "workItemId": "wi_...",
   "childSessionKey": "agent:... s_...",
   "rootMainHolder": false,
+  "causeKind": "attest",
+  "causeId": "att_...",
   "closingAttestId": "att_...",
+  "revocationId": null,
   "outcome": "completed",
   "remainingOpenAssignments": 0,
-  "cause": {"bySession": "agent:... s_...", "principal": "session:agent:... s_..."},
-  "parent": {
-    "immediateSessionKey": "agent:... s_...",
-    "initialRecipientSessionKey": "agent:... s_...",
-    "initialResolution": "lineage",
-    "initialLineageRung": 1,
-    "currentRecipientSessionKey": "agent:... s_...",
-    "currentResolution": "lineage",
-    "currentLineageRung": 1,
-    "actualNoticeSessionKey": null
+  "cause": {"bySession": "agent:... s_...", "byUser": null, "principal": "session:agent:... s_..."},
+  "routing": {
+    "parent": {
+      "sessionKey": "agent:... s_...",
+      "resolutionSource": "explicit",
+      "routeStatus": "scheduled",
+      "receipt": {"state": "pending", "turnSeq": null}
+    },
+    "reportTo": {
+      "sessionKey": "agent:... s_...",
+      "routeStatus": "scheduled",
+      "sharesParentNotice": false,
+      "receipt": {"state": "pending", "turnSeq": null}
+    }
   },
-  "receipt": {"state": "pending", "turnSeq": null},
   "request": {
     "status": "open",
     "decision": null,
     "deadlineAt": 1786330000000,
     "generation": 0,
+    "currentRecipient": "session:agent:... s_...",
+    "recipientGeneration": 0,
+    "recipientReissueCount": 0,
+    "recipientReissueLimit": 3,
+    "receipt": {"state": "pending", "turnSeq": null},
     "actedBySession": null,
     "actedByUser": null,
     "actedAt": null,
@@ -908,47 +1344,72 @@ The read/command JSON object uses camelCase:
 }
 ```
 
-`actualNoticeSessionKey` is the `sessionKey` of the turn joined through
-`currentNoticeWakeId`; it is null until that turn exists. This keeps the stored planned
-recipient distinct from the act-time recipient after gateway re-resolution. For
-the prompt, `recipientResolution` is the schedule-time planned resolution for that wake
-generation; only `actualNoticeSessionKey` reports an act-time reroute. For
-`notice-only`, `request.status` is `notice-only` and its deadline/action fields are
-null. For a retained root, `request.status` is `retained_root`, `decision` is `retain`,
+`routing.parent.routeStatus` is `scheduled`, `unavailable`, or `root-self` and describes
+only the immutable initial parent snapshot. Prompt `parentRoute` maps those values to
+`effective-parent`, `parent-unavailable`, and `root-self`, respectively.
+`request.currentRecipient` is the typed
+principal that can act at the current rung.
+`routing.reportTo` is null when no declaration exists. Otherwise its `routeStatus` is
+`scheduled`, `shared-parent`, or `unavailable`. `sharesParentNotice` is true only for
+`shared-parent`, and that object's receipt equals the parent receipt. A scheduled
+report-to has its own receipt. An unavailable parent or report-to has
+`receipt.state='not-created'`. For `notice-only`, `request.status` is `notice-only` and
+its deadline, recipient, and action fields are null. For a retained root,
+`request.status` is `retained_root`, `decision` is `retain`,
 `rootMainHolder` is true, and the acting fields name the explicit caller. For an
-ordinary child, `rootMainHolder` is false. For missing `workItemId` or parent fields,
-JSON uses null; prompt text uses `none`. No key is conditionally omitted.
+ordinary child, `rootMainHolder` is false. The parent object always carries a non-null
+`sessionKey` and `resolutionSource='explicit'|'owner_main'`. For missing `workItemId`,
+JSON uses null and prompt text uses `none`. An `acknowledged`, `retained_root`, or
+`superseded` request has `deadlineAt=null`; it preserves the last typed recipient and
+recipient counters as terminal audit fields. No key is conditionally omitted.
 
 ### R17 — Compatibility and migration
 
-`completion_escalations` is a new table created by its own `ensure_schema/1`; the schema
-composition registers it after `Assignments`. Existing stamped databases create the
-table additively. No existing table is altered, rebuilt, sniffed, or repaired. No schema
-shape bump is required because the new build creates the table without reinterpreting
-an existing column (`schema.ex:7-37,622-646`).
+Current v15 already creates `completion_escalations` and
+`completion_escalation_wakes`, registers their schema after `Assignments`, stores
+`assignments.completionReportToSessionKey`, and admits `completion_transition` in the
+closed `wake_cancellations` source/disposition checks. G1/G2 widens the two completion
+tables with typed terminal-cause and recipient-routing fields; it does not add a second
+rail or cancellation value. SQLite cannot widen those existing shapes through
+`CREATE TABLE IF NOT EXISTS`. Under Mike's waiver, Schema
+reserves successor stamp `coordination-fabric-v1-phase1-v16` after exact current-main
+stamp `coordination-fabric-v1-phase1-v15`. A database carrying v15 or any other stamp is
+refused by name before schema-module DDL or feature queries run. Tightbeam does not
+alter, rebuild, sniff, copy, or repair it. The operator moves it aside and lets this
+build create a fresh database, as the existing shape refusal instructs
+(`lib/tightbeam/schema.ex` `@shape` and `check_shape/1`, at exact product commit
+`6ae34287aa4864b8fe6fabfc96166d02b9827a89`).
 
-The release backfills no rows and arms no notices for historical completions. The first
-post-release completion is the first eligible cause. Before that first row, rollback
-leaves an empty unused table and no new-consumer wake. After the first row exists,
-downgrade to a build that does not register `completion_disposition_deadline` is
-unsupported: current `Wakes` cancels an unknown internal consumer as
-`consumer_unavailable` (`wakes.ex:1181-1198,1306-1332`). Register the new internal
-consumer beside `effort_probe` and `effort_deadline` in the gateway child specification,
-not in `Wakes` (`gateway.ex:292-300`). This spec makes no post-use downgrade preservation
-claim.
+The release migrates and backfills no rows. Recreation starts with no assignments,
+completion rows, or historical notices. The first admitted terminal transition in the
+recreated database is the first eligible cause. Historical zero-session reconciliation
+is outside this runtime producer. Downgrade means restoring a database created by
+the downgraded build; a build that does not carry the exact stamp refuses this database.
+Preserve the registered internal consumer beside `effort_probe` and `effort_deadline` in
+the gateway child specification, not in `Wakes` (`lib/tightbeam/gateway.ex` `children_after_preflight/1`
+and its internal-consumer map).
 
-The gateway and Rust CLI add `completion-notices` and `completion-disposition`. Because
+The gateway and Rust CLI retain `completion-notices`, `completion-disposition`, and
+optional `reportToSessionKey`/`--report-to` on assignment creation. This revision extends
+their existing prompt and JSON projections without adding a command. Because
 the package is pre-1.0 and currently requires exact CLI/gateway versions, the release
-bumps both together (`cli_compatibility.ex:1-38`). Old Clawline clients remain compatible
+bumps both together (`lib/tightbeam/cli_compatibility.ex` `check/2`). Old Clawline clients remain compatible
 because the wire frame is unchanged.
 
 ### R18 — One mutation seam
 
 `Tightbeam.Productions.CompletionEscalation` is the only module that inserts or updates
-`completion_escalations` or inserts `completion_escalation_wakes`. Assignment close/open
-and retirement call its in-transaction functions. The deadline consumer and public verbs
-delegate to it. A source-closure test fails if production SQL mutates either table
-anywhere else.
+`completion_escalations` or inserts `completion_escalation_wakes`. Assignment completion
+and revocation call its one `open_terminal_in_txn` function immediately after their
+guarded close. Assignment open/reopen and retirement call its other in-transaction
+functions. The deadline consumer and public verbs delegate to it. A source-closure test
+fails if production SQL mutates either table anywhere else or if an admitted terminal
+path bypasses the shared function.
+
+`Assignments` is the only owner of
+`assignments.completionReportToSessionKey`. It writes that field only in the card-create
+transaction and never updates it. `CompletionEscalation` copies the declaration into its
+own record at close; it never mutates the assignment card.
 
 `Wakes` remains the only owner of typed cancellation validation and cancellation rows.
 `EventLog` remains the only owner of lifecycle insertion. The completion producer calls
@@ -957,16 +1418,28 @@ of message/turn delivery and session-retire orchestration. These boundaries let 
 completion producer choose no disposition while keeping its tables behind one mutation
 seam.
 
-The close path runs the producer inside the same transaction, so no committed completion
-can lack its dependent record. When routing resolves, it also cannot lack its first
-notice or notice membership. An open request cannot lack its deadline or deadline
-membership. `main-unavailable` is the only no-notice result and carries its named
-lifecycle marker. No recovery sweep is required for this edge. The ordinary wake
-scheduler supplies crash recovery after commit.
+Each admitted terminal path runs the producer inside the same transaction. A completion
+cannot lack its dependent record. A zero-producing revocation cannot lack its request
+and either its first admitted notice/membership or R2's named root-carrier failure. A nonzero revocation creates none of those
+rows. Every open session-recipient request has a deadline and deadline membership; an
+owner-user-root request deliberately has no deadline. `parent-unavailable` preserves
+the initial routing failure while R9 finds the current action recipient. Report-to
+omission or unavailability never changes the action route. No recovery sweep is required
+for this edge. The ordinary wake scheduler supplies crash recovery after commit.
 
 ## Architecture
 
 ### Record shape
+
+The recreated `assignments` table retains exactly:
+
+```sql
+completionReportToSessionKey TEXT NULL REFERENCES sessions(sessionKey)
+```
+
+`assign` and `dispatch` validate the declared target as active and owner-matched in the
+same transaction that inserts the card. No update or reopen seam changes this immutable
+field.
 
 `completion_escalations` contains:
 
@@ -974,28 +1447,39 @@ scheduler supplies crash recovery after commit.
 CREATE TABLE completion_escalations (
   id                        TEXT PRIMARY KEY,
   dedupeKey                 TEXT NOT NULL UNIQUE,
-  assignmentId              TEXT NOT NULL UNIQUE REFERENCES assignments(id),
+  causeKind                 TEXT NOT NULL CHECK (causeKind IN ('attest','revocation')),
+  causeId                   TEXT NOT NULL,
+  assignmentId              TEXT NOT NULL REFERENCES assignments(id),
   workItemId                TEXT NULL REFERENCES work_items(id),
   childSessionKey           TEXT NOT NULL REFERENCES sessions(sessionKey),
   remainingOpenAssignments INTEGER NOT NULL CHECK (remainingOpenAssignments >= 0),
-  closingAttestId           TEXT NOT NULL UNIQUE REFERENCES attests(id),
-  outcome                   TEXT NOT NULL CHECK (outcome = 'completed'),
-  causeBySession            TEXT NOT NULL REFERENCES sessions(sessionKey),
+  closingAttestId           TEXT NULL UNIQUE REFERENCES attests(id),
+  revocationId              TEXT NULL UNIQUE REFERENCES assignment_revocations(id),
+  outcome                   TEXT NOT NULL CHECK (outcome IN ('completed','revoked')),
+  causeBySession            TEXT NULL REFERENCES sessions(sessionKey),
+  causeByUser               TEXT NULL REFERENCES users(userId),
   ownerUserId               TEXT NOT NULL REFERENCES users(userId),
   rootMainHolder            INTEGER NOT NULL CHECK (rootMainHolder IN (0,1)),
-  immediateParentSessionKey TEXT NULL REFERENCES sessions(sessionKey),
-  initialRecipientSessionKey TEXT NULL REFERENCES sessions(sessionKey),
-  initialResolutionKind     TEXT NOT NULL CHECK (
-    initialResolutionKind IN ('lineage','main-fallback','main-unavailable')
+  immediateParentSessionKey TEXT NOT NULL,
+  parentSessionKey          TEXT NOT NULL,
+  parentResolutionSource    TEXT NOT NULL CHECK (
+    parentResolutionSource IN ('explicit','owner_main')
   ),
-  initialLineageRung        INTEGER NULL CHECK (initialLineageRung IS NULL OR initialLineageRung >= 1),
-  currentRecipientSessionKey TEXT NULL REFERENCES sessions(sessionKey),
-  currentResolutionKind     TEXT NOT NULL CHECK (
-    currentResolutionKind IN ('lineage','main-fallback','main-unavailable')
+  parentRouteStatus         TEXT NOT NULL CHECK (
+    parentRouteStatus IN ('scheduled','unavailable','root-self')
   ),
-  currentLineageRung        INTEGER NULL CHECK (currentLineageRung IS NULL OR currentLineageRung >= 1),
+  reportToSessionKey        TEXT NULL REFERENCES sessions(sessionKey),
+  reportToRouteStatus       TEXT NOT NULL CHECK (
+    reportToRouteStatus IN ('not-declared','scheduled','shared-parent','unavailable')
+  ),
   generation                INTEGER NOT NULL DEFAULT 0 CHECK (generation >= 0),
-  currentNoticeWakeId       TEXT NULL UNIQUE REFERENCES wakes(wakeId),
+  currentRecipientSessionKey TEXT NULL REFERENCES sessions(sessionKey),
+  currentRecipientUserId    TEXT NULL REFERENCES users(userId),
+  recipientGeneration       INTEGER NULL CHECK (recipientGeneration >= 0),
+  recipientReissueCount     INTEGER NULL CHECK (recipientReissueCount >= 0),
+  recipientReissueLimit     INTEGER NULL CHECK (recipientReissueLimit >= 0),
+  currentParentNoticeWakeId TEXT NULL UNIQUE REFERENCES wakes(wakeId),
+  reportToNoticeWakeId      TEXT NULL UNIQUE REFERENCES wakes(wakeId),
   deadlineWakeId            TEXT NULL UNIQUE REFERENCES wakes(wakeId),
   actionDeadlineAt          INTEGER NULL,
   status                    TEXT NOT NULL CHECK (
@@ -1011,80 +1495,160 @@ CREATE TABLE completion_escalations (
   supersededByAssignmentId  TEXT NULL REFERENCES assignments(id),
   supersededAt              INTEGER NULL,
   createdAt                 INTEGER NOT NULL,
-  CHECK (causeBySession = childSessionKey),
-  CHECK (dedupeKey = 'completion:' || closingAttestId),
+  CHECK ((causeBySession IS NOT NULL) != (causeByUser IS NOT NULL)),
+  UNIQUE (causeKind, causeId),
+  CHECK (dedupeKey = 'terminal:' || causeKind || ':' || causeId),
   CHECK (
-    (initialResolutionKind = 'lineage' AND initialRecipientSessionKey IS NOT NULL AND initialLineageRung IS NOT NULL)
+    (causeKind = 'attest' AND causeId = closingAttestId
+      AND closingAttestId IS NOT NULL AND revocationId IS NULL
+      AND outcome = 'completed' AND causeBySession = childSessionKey)
     OR
-    (initialResolutionKind = 'main-fallback' AND initialRecipientSessionKey IS NOT NULL AND initialLineageRung IS NULL)
-    OR
-    (initialResolutionKind = 'main-unavailable' AND initialRecipientSessionKey IS NULL AND initialLineageRung IS NULL)
+    (causeKind = 'revocation' AND causeId = revocationId
+      AND revocationId IS NOT NULL AND closingAttestId IS NULL
+      AND outcome = 'revoked' AND remainingOpenAssignments = 0
+      AND reportToSessionKey IS NULL AND reportToRouteStatus = 'not-declared'
+      AND reportToNoticeWakeId IS NULL)
   ),
   CHECK (
-    (currentResolutionKind = 'lineage' AND currentRecipientSessionKey IS NOT NULL AND currentLineageRung IS NOT NULL)
+    (parentRouteStatus = 'scheduled' AND rootMainHolder = 0
+      AND parentSessionKey IS NOT NULL
+      AND parentSessionKey IS immediateParentSessionKey
+      AND (
+        remainingOpenAssignments = 0
+        OR currentParentNoticeWakeId IS NOT NULL
+      ))
     OR
-    (currentResolutionKind = 'main-fallback' AND currentRecipientSessionKey IS NOT NULL AND currentLineageRung IS NULL)
+    (parentRouteStatus = 'unavailable' AND rootMainHolder = 0
+      AND parentSessionKey IS immediateParentSessionKey
+      AND (
+        (remainingOpenAssignments >= 1 AND currentParentNoticeWakeId IS NULL)
+        OR remainingOpenAssignments = 0
+      ))
     OR
-    (currentResolutionKind = 'main-unavailable' AND currentRecipientSessionKey IS NULL AND currentLineageRung IS NULL)
+    (parentRouteStatus = 'root-self' AND rootMainHolder = 1
+      AND parentResolutionSource = 'owner_main'
+      AND immediateParentSessionKey = childSessionKey
+      AND parentSessionKey = childSessionKey
+      AND (
+        remainingOpenAssignments = 0
+        OR currentParentNoticeWakeId IS NOT NULL
+      ))
   ),
   CHECK (
-    (currentResolutionKind = 'main-unavailable' AND currentNoticeWakeId IS NULL)
+    (reportToRouteStatus = 'not-declared'
+      AND reportToSessionKey IS NULL AND reportToNoticeWakeId IS NULL)
     OR
-    (currentResolutionKind != 'main-unavailable' AND currentNoticeWakeId IS NOT NULL)
-  ),
-  CHECK (
-    rootMainHolder = 0
-    OR (
-      initialResolutionKind = 'main-fallback'
-      AND initialRecipientSessionKey = childSessionKey
-      AND currentResolutionKind = 'main-fallback'
-      AND currentRecipientSessionKey = childSessionKey
-    )
+    (reportToRouteStatus = 'scheduled'
+      AND reportToSessionKey IS NOT NULL AND reportToNoticeWakeId IS NOT NULL
+      AND reportToSessionKey IS NOT parentSessionKey)
+    OR
+    (reportToRouteStatus = 'shared-parent'
+      AND reportToSessionKey IS NOT NULL AND reportToNoticeWakeId IS NULL
+      AND parentRouteStatus IN ('scheduled','root-self')
+      AND reportToSessionKey IS parentSessionKey)
+    OR
+    (reportToRouteStatus = 'unavailable'
+      AND reportToSessionKey IS NOT NULL AND reportToNoticeWakeId IS NULL)
   ),
   CHECK (
     status = 'notice-only'
       AND remainingOpenAssignments >= 1
+      AND currentRecipientSessionKey IS NULL AND currentRecipientUserId IS NULL
+      AND recipientGeneration IS NULL AND recipientReissueCount IS NULL
+      AND recipientReissueLimit IS NULL
       AND decision IS NULL AND actionDeadlineAt IS NULL AND deadlineWakeId IS NULL
       AND actedBySession IS NULL AND actedByUser IS NULL AND actedAt IS NULL
       AND supersededReason IS NULL AND supersededByAssignmentId IS NULL AND supersededAt IS NULL
     OR status = 'open'
       AND remainingOpenAssignments = 0
-      AND decision IS NULL AND actionDeadlineAt IS NOT NULL AND deadlineWakeId IS NOT NULL
+      AND ((currentRecipientSessionKey IS NOT NULL) != (currentRecipientUserId IS NOT NULL))
+      AND recipientGeneration IS NOT NULL AND recipientReissueCount IS NOT NULL
+      AND recipientReissueLimit IS NOT NULL
+      AND (
+        (currentRecipientSessionKey IS NOT NULL
+          AND currentParentNoticeWakeId IS NOT NULL
+          AND actionDeadlineAt IS NOT NULL AND deadlineWakeId IS NOT NULL)
+        OR
+        (currentRecipientUserId = ownerUserId
+          AND actionDeadlineAt IS NULL AND deadlineWakeId IS NULL)
+      )
+      AND decision IS NULL
       AND actedBySession IS NULL AND actedByUser IS NULL AND actedAt IS NULL
       AND supersededReason IS NULL AND supersededByAssignmentId IS NULL AND supersededAt IS NULL
     OR status = 'acknowledged'
       AND rootMainHolder = 0
       AND remainingOpenAssignments = 0
-      AND decision IS NOT NULL AND actionDeadlineAt IS NOT NULL AND deadlineWakeId IS NULL
+      AND decision IS NOT NULL AND actionDeadlineAt IS NULL AND deadlineWakeId IS NULL
       AND ((actedBySession IS NOT NULL) != (actedByUser IS NOT NULL)) AND actedAt IS NOT NULL
       AND supersededReason IS NULL AND supersededByAssignmentId IS NULL AND supersededAt IS NULL
     OR status = 'retained_root'
       AND rootMainHolder = 1
       AND remainingOpenAssignments = 0
-      AND decision = 'retain' AND actionDeadlineAt IS NOT NULL AND deadlineWakeId IS NULL
+      AND decision = 'retain' AND actionDeadlineAt IS NULL AND deadlineWakeId IS NULL
       AND ((actedBySession IS NOT NULL) != (actedByUser IS NOT NULL)) AND actedAt IS NOT NULL
       AND supersededReason IS NULL AND supersededByAssignmentId IS NULL AND supersededAt IS NULL
     OR status = 'superseded'
       AND remainingOpenAssignments = 0
-      AND decision IS NULL AND actionDeadlineAt IS NOT NULL AND deadlineWakeId IS NULL
+      AND decision IS NULL AND actionDeadlineAt IS NULL AND deadlineWakeId IS NULL
       AND actedBySession IS NULL AND actedByUser IS NULL AND actedAt IS NULL AND supersededAt IS NOT NULL
       AND (
         (supersededReason = 'new-assignment' AND supersededByAssignmentId IS NOT NULL)
         OR
         (supersededReason = 'child-retired' AND supersededByAssignmentId IS NULL)
       )
+  ),
+  CHECK (
+    status = 'notice-only'
+    OR (
+      ((currentRecipientSessionKey IS NOT NULL) != (currentRecipientUserId IS NOT NULL))
+      AND recipientGeneration IS NOT NULL
+      AND recipientReissueCount IS NOT NULL
+      AND recipientReissueLimit IS NOT NULL
+      AND (currentRecipientUserId IS NULL OR currentRecipientUserId = ownerUserId)
+      AND (
+        currentRecipientSessionKey IS NULL
+        OR (rootMainHolder = 1 AND currentRecipientSessionKey = childSessionKey)
+        OR (rootMainHolder = 0 AND currentRecipientSessionKey != childSessionKey)
+      )
+    )
   )
 );
 CREATE INDEX completion_escalations_child_status
   ON completion_escalations(childSessionKey, status);
+CREATE INDEX completion_escalations_assignment
+  ON completion_escalations(assignmentId);
 CREATE UNIQUE INDEX completion_escalations_one_open_child
   ON completion_escalations(childSessionKey) WHERE status = 'open';
 
 CREATE TABLE completion_escalation_wakes (
-  wakeId       TEXT PRIMARY KEY REFERENCES wakes(wakeId),
-  completionId TEXT NOT NULL REFERENCES completion_escalations(id),
-  generation   INTEGER NOT NULL CHECK (generation >= 0),
-  kind         TEXT NOT NULL CHECK (kind IN ('notice','deadline')),
+  wakeId                 TEXT PRIMARY KEY REFERENCES wakes(wakeId),
+  completionId           TEXT NOT NULL REFERENCES completion_escalations(id),
+  generation             INTEGER NOT NULL CHECK (generation >= 0),
+  kind                   TEXT NOT NULL CHECK (kind IN ('parent-notice','report-to-notice','deadline')),
+  recipientGeneration    INTEGER NULL CHECK (recipientGeneration >= 0),
+  recipientReissueCount  INTEGER NULL CHECK (recipientReissueCount >= 0),
+  recipientSessionKey    TEXT NULL REFERENCES sessions(sessionKey),
+  recipientUserId        TEXT NULL REFERENCES users(userId),
+  CHECK (
+    kind = 'report-to-notice'
+      AND generation = 0
+      AND recipientGeneration IS NULL AND recipientReissueCount IS NULL
+      AND recipientSessionKey IS NULL AND recipientUserId IS NULL
+    OR
+    kind = 'parent-notice'
+      AND (
+        (generation = 0
+          AND recipientGeneration IS NULL AND recipientReissueCount IS NULL
+          AND recipientSessionKey IS NOT NULL AND recipientUserId IS NULL)
+        OR
+        (recipientGeneration IS NOT NULL AND recipientReissueCount IS NOT NULL
+          AND ((recipientSessionKey IS NOT NULL) != (recipientUserId IS NOT NULL)))
+      )
+    OR
+    kind = 'deadline'
+      AND recipientGeneration IS NOT NULL AND recipientReissueCount IS NOT NULL
+      AND recipientSessionKey IS NOT NULL AND recipientUserId IS NULL
+  ),
   UNIQUE (completionId, generation, kind)
 );
 CREATE INDEX completion_escalation_wakes_completion
@@ -1095,9 +1659,16 @@ CREATE INDEX completion_escalation_wakes_completion
 `Org.personal_session_key(ownerUserId)` in the close transaction. The DDL does not embed
 the Main key format. The action seam rechecks both inputs before it writes
 `retained_root`. This keeps topology in `Org.personal_session_key/1`, its existing single
-home (`org.ex:1035-1042`). The DDL makes a root holder's initial and current recipient
-the child itself through `main-fallback`; a root row cannot be represented as a lineage
-request.
+home (`lib/tightbeam/org.ex` `personal_session_key/1`, at exact product commit
+`6ae34287aa4864b8fe6fabfc96166d02b9827a89`). The DDL makes a root holder's parent target the child itself
+through `root-self`; it does not make Main a fallback for another child.
+
+`immediateParentSessionKey` and `parentSessionKey` deliberately have no session foreign
+key. They are immutable diagnostic copies of the shared resolver's selected effective
+parent key, which can name a missing row under R5. `parentResolutionSource` preserves
+whether selection used the explicit stored parent or Owner Main. Their checks still require the two copies to match for
+an ordinary child. `childSessionKey`, `causeBySession`, and `reportToSessionKey` retain
+their session foreign keys because each must name an existing row when stored.
 
 Each schedule operation inserts its wake row before its membership row in the same
 transaction. A notice or deadline without membership rolls back the producer call. The
@@ -1114,7 +1685,7 @@ Completion uses this total order in the existing assignment transaction:
 2. Insert the completion attest.
 3. Guarded-update the assignment to `closed/completed` and verify one changed row.
 4. Fetch the closed assignment.
-5. Call `CompletionEscalation.open_in_txn/3` only for `kind='completion'`.
+5. Call `CompletionEscalation.open_terminal_in_txn/4` with the attest cause.
 6. Arm the existing work-item slate bracket.
 7. Derive the current disposition liveness trigger.
 8. Commit the existing supervision terminal-disposition transition.
@@ -1122,19 +1693,42 @@ Completion uses this total order in the existing assignment transaction:
 10. Append the existing completion and assignment markers.
 11. Commit.
 
-Steps 5-10 preserve the current 0.1.7 relative order of steps 6-10. The new producer
+Steps 5-10 preserve the current relative order of steps 6-10. The shared producer
 enters immediately after the guarded close so each later failure rolls back the
-completion row and, when routing resolves, the first notice with the attest and
+completion row and each admitted initial notice with the attest and
 assignment close
-(`assignments.ex:1130-1200`). A surrender follows the existing path without step 5.
+(`lib/tightbeam/assignments.ex` `apply_lifecycle_attest/5`, at exact product commit
+`6ae34287aa4864b8fe6fabfc96166d02b9827a89`).
 
-The new producer cannot reject a truthful completion because delivery is unavailable.
-If Main is absent, it commits `main-unavailable` and the lifecycle record. A database
+Revocation uses this total order in the existing revocation transaction:
+
+1. Read and authorize the open assignment generation.
+2. Insert the revocation and revocation-generation rows.
+3. Guarded-update the assignment to `closed/revoked` and verify one changed row.
+4. Fetch the closed assignment.
+5. Call the same `open_terminal_in_txn/4` with the revocation cause.
+6. Run the existing work-item slate, supervision, interruption, and lifecycle effects in
+   their current relative order.
+7. Commit.
+
+The shared function performs R4's count before deciding whether to insert. A nonzero
+revocation returns without a completion row or wake. A zero-producing revocation commits
+its request with the revocation and close. A later failure in either branch rolls the
+entire revocation transaction back.
+The 0.2 line has no active-surrender transaction to join. If that mutation returns, its
+separately reviewed implementation must call the same terminal seam and add the third
+cause shape and fixtures before release.
+
+The shared producer cannot reject a truthful terminal mutation because delivery is unavailable.
+If the exact parent is unavailable, it commits `parent-unavailable` and the lifecycle
+record. A database
 write failure rolls back the entire terminal transition, as any failure inside the
 existing atomic close does.
 
-Assignment-open calls the supersede seam after it inserts assignment, effect, and file
-rows and before it commits the supervision transition. Retirement calls the
+Assignment opening by `assign` or `dispatch` calls the supersede seam after it inserts
+the assignment, effect, and file rows and before it commits the supervision transition.
+`reopen-assignment` calls the same seam after its guarded update changes the assignment
+to `open` and before it commits the supervision transition. Retirement calls the
 acknowledgment seam before `Org.retire_in_txn/4` changes the session state and performs
 typed target-wake cancellation. Before that transaction, Gateway resolves the owner and
 serialized acting principal from `call.principal` under R3. These calls share the caller's
@@ -1142,7 +1736,7 @@ transaction.
 
 ### Deadline consumer
 
-Register one internal wake consumer, `completion_disposition_deadline`, in the Gateway
+Preserve the internal wake consumer, `completion_disposition_deadline`, in the Gateway
 child specification. Its handler calls `CompletionEscalation.reissue_in_txn/2`. The
 current wake id is the CAS token. The handler marks the source deadline fired, updates or
 closes the request, and arms replacement wakes in one transaction. It runs no model and
@@ -1150,56 +1744,56 @@ invokes no session lifecycle action.
 
 ### Typed cancellation integration
 
-Add `EventLog.lifecycle_with_id_in_txn/4` as the lifecycle insert that returns its row
-id; keep the existing `lifecycle_in_txn/4` return contract unchanged. The completion
-producer serializes the positive integer id as base-10 text and uses it as the
-`lifecycle_event` cause and `completion_transition` disposition id in R8 cancellation
-commands. The validators match it with `CAST(lifecycle_events.id AS TEXT)`; they do not
-parse lifecycle detail.
+Keep `EventLog.lifecycle_in_txn/4` unchanged. Lifecycle rows mirror completion events for
+observability; cancellation validation does not use their ids or parse their detail.
 
-Extend `Wakes` with R8's three reason values, the two named process requesters, the
-`lifecycle_event` source, and the `completion_transition` disposition. For
-`completion_generation_replaced` and `completion_request_disposed`, the validator joins
-the lifecycle subject to `completion_escalations`, proves that the canceled wake is that
-row's current notice or deadline, and applies R8's reason-specific lifecycle kind. For a
-`replacement` outcome, it also proves the replacement membership names the same
-completion, the next generation, and kind `notice`. For
-`completion_delivery_ineligible`, the validator requires a notice membership but does
-not require the wake to remain current; this admits a delayed callback from a historical
-generation. The existing `scheduler_delivery` source validator continues to require its
-source id to equal the canceled wake id. A completion cancellation command that fails
-one check returns `false`; each completion caller converts `false` to a transaction
-failure. Existing cancellation reasons, requesters, and compatibility pairs stay
-unchanged (`wakes.ex:290-352,478-516,599-606,651-789`).
+Preserve the existing `Wakes` integration: source and disposition kind
+`completion_transition`; process requester `tightbeam:wake-scheduler` can use existing
+reason `target_unresolvable` for R7 completion delivery; let process requester
+`tightbeam:completion-escalation` use existing reasons `superseded`,
+`obligation_disposed`, and `target_unresolvable` for R8 production; retain only the
+exact compatibility pairs in R8. For `obligation_disposed`, the validator joins the
+source/disposition completion id to `completion_escalations`, proves a typed terminal
+state and its required terminal fields, and proves that the canceled wake belongs to
+that completion. For a `superseded` replacement, it proves that the replacement
+membership names the same completion, the next generation, and kind `parent-notice`.
+For `target_unresolvable`, the existing `scheduler_delivery` source validator requires
+its source id to equal the canceled wake id and a completion membership. The
+`tightbeam:wake-scheduler` pair admits a delayed R7 callback from either exact completion
+channel. The `tightbeam:completion-escalation` pair admits only R8's pending historical
+action notice when reissue cannot arm its replacement. A completion cancellation
+command that fails one check returns `false`; each completion caller converts `false`
+to a transaction failure. Existing reason meanings and every unrelated requester and
+compatibility pair remain unchanged (`lib/tightbeam/wakes.ex` `cancel_in_txn/2`,
+`authorize_cancel/2`, `validate_cancellation/5`, `durable_source/6`,
+`validate_disposition/3`, and `commit_cancellation/3`).
 
-Add `Wakes.fire_internal_in_txn/4` as the wake-owned CAS that changes one pending wake
+Preserve `Wakes.fire_internal_in_txn/4` as the wake-owned CAS that changes one pending wake
 with the expected internal consumer to `fired` and sets `firedAt`. It returns `true` only
 when one row changes. The completion producer uses this seam for deadline consumption;
 it never updates `wakes.state` directly.
 
 ### Exact implementation surfaces
 
-- New: `lib/tightbeam/productions/completion_escalation.ex`.
-- Register schema after `Assignments` in `lib/tightbeam/schema.ex`.
-- Call close/open seams from `lib/tightbeam/assignments.ex`.
-- Call retire acknowledgment from the canonical transaction in
-  `lib/tightbeam/gateway.ex` before `Org.retire_in_txn/4`; preserve the existing
-  post-commit retire completion path.
-- Enforce R7 in gateway delivery for notice wakes joined through
-  `completion_escalation_wakes`; leave non-completion wake rerouting outside this change.
-- Register the internal deadline consumer in `lib/tightbeam/gateway.ex` composition.
-- Extend typed cancellation in `lib/tightbeam/wakes.ex` and add the id-returning lifecycle
-  insert in `lib/tightbeam/event_log.ex`.
-- Add read/action handlers in `lib/tightbeam/gateway.ex` and typed routing in the router.
-- Add `principal: {:user, device.user_id}` to the authenticated device DELETE call in
-  `lib/tightbeam/wire/router.ex`. Make generic retirement in
-  `lib/tightbeam/gateway.ex` require and consume R3's typed caller principal. Preserve
-  `origin` only as presentation and existing event context.
-- Add Rust CLI args/dispatch/help for the two commands.
-- Add R15's completion, lifecycle, and membership-linked wake/cancellation projections
-  to `JobTrace`; expose lifecycle detail as opaque text. Do not parse that detail, add a
-  `CausalEvents` kind, or change work-item parent derivation.
-- Add `test/completion_escalation_test.exs` and the source-closure assertion.
+- Extend `lib/tightbeam/productions/completion_escalation.ex` with the shared terminal
+  seam, typed current-recipient state, bounded reissue, and R9 walk.
+- Call that terminal seam from completion and revocation transactions in
+  `lib/tightbeam/assignments.ex`; preserve existing report-to, open/reopen, and
+  retirement seams.
+- Recreate the v16 completion tables through `lib/tightbeam/schema.ex`; preserve the
+  existing registration point and shape-refusal policy.
+- Extend existing completion-linked delivery in `lib/tightbeam/gateway.ex` for typed
+  session and owner-user recipients; preserve exact non-reresolving wake targets and the
+  existing deadline consumer.
+- Preserve existing cancellation pairs in `lib/tightbeam/wakes.ex` and EventLog's
+  insertion contract; add no reason, source, disposition, or lifecycle kind.
+- Extend the existing read/action projections and prompt payloads in Gateway and the Rust
+  CLI. Preserve command names, report-to flags, typed retirement principal, and wire
+  frame.
+- Extend existing `JobTrace` completion entries with R15's cause and recipient fields;
+  keep lifecycle detail opaque and preserve its ranks.
+- Extend `test/completion_escalation_test.exs` and the source-closure assertion with
+  A25-A28 and the amended G2 cases.
 
 No source edit is authorized by this artifact. These are handoff surfaces for a later,
 independently reviewed implementation assignment.
@@ -1210,37 +1804,41 @@ Each acceptance case uses the real SQLite DB, real assignment handler, real wake
 real gateway delivery transaction, and real turn ledger. A hand-written notification
 object is not a fixture.
 
-Traceability is two-way: R1→A1,A2,A4; R2→A2,A3; R3→A5,A14,A21; R4→A1,A2; R5→A5-A8,A23,A24;
-R6→A7,A19; R7→A6,A8-A10,A17,A23; R8→A4,A10-A14,A17; R9→A8,A11; R10→A12;
-R11→A14,A16,A24; R12→A13-A15,A24; R13→A14; R14→A10,A17,A18;
-R15→A5,A12-A14,A18,A22-A24; R16→A2,A24; R17→A20; and R18→A21. Each acceptance
+Traceability is two-way: R1→A1,A2,A4,A12,A25; R2→A2,A3,A8,A25; R3→A5,A14,A21,A25; R4→A1,A2,A4,A25,A28; R5→A5-A8,A23,A24;
+R6→A7,A19; R7→A6,A8-A10,A17,A23; R8→A4,A10-A14,A17,A26; R9→A6,A8,A11,A23,A24,A27; R10→A12;
+R11→A11,A13,A14,A16,A24,A26; R12→A13-A15,A24; R13→A14; R14→A10,A17,A18;
+R15→A5,A6,A8,A11-A14,A18,A22-A27; R16→A2,A8,A24,A25; R17→A20,A25; and R18→A21,A25. Each acceptance
 case points back to the named requirement or exact contract it verifies.
 
 ### A1 — Completion with work remaining
 
-Given child `C` has two open assignments and active parent `P`, when `C` completes the
-first assignment, then the handler commits the attest, closed assignment, one completion
-row, one generation-0 prompt wake, and its notice membership in one transaction. The row
+Given child `C` has two open assignments, active exact parent `P`, and no report-to
+declaration, when `C` completes the first assignment, then the handler commits the
+attest, closed assignment, one completion row, one generation-0 parent prompt wake, and
+its `parent-notice` membership in one transaction. The row
 is `notice-only`, stores `remainingOpenAssignments=1`, repeats that value in the exact
 prompt, and has no deadline wake or deadline membership.
 
 ### A2 — Empty epoch opens one action request
 
-Given `C` has one open assignment and active same-owner parent `P`, when `C` completes
-it, then the same transaction commits one `status='open'` completion row, one due prompt
+Given `C` has one open assignment, active exact same-owner parent `P`, and no report-to
+declaration, when `C` completes it, then the same transaction commits one
+`status='open'` completion row, one due parent prompt
 wake, and one internal deadline wake whose `sessionKey`, consumer, origin, due time,
 deterministic id, null `assignmentId`, and null `work_item_id` match R4. It commits one
-notice and one deadline membership row for generation 0. The completion row stores
+`parent-notice` and one deadline membership row for generation 0. The completion row stores
 `remainingOpenAssignments=0`. The JSON projection matches R16, and the prompt matches
 R16 byte-for-byte after substituting ids/timestamps.
 
 ### A3 — Rollback proves the outbox boundary
 
-Given `C` has an active parent, run two fixtures in which a temporary SQLite trigger
-aborts either the generation-0 completion notice insert or its membership insert. When
-`C` files completion in either fixture, then the attest, assignment close, completion
-row, notice wake, deadline wake, work-item slate wake, and both completion wake
-memberships all roll back. The markers, current liveness trigger, supervision
+Given `C` has an active exact parent and a distinct explicit report-to, run six
+fixtures in which a temporary SQLite trigger aborts the generation-0 action notice, the
+generation-0 deadline, the report-to notice, or each corresponding membership insert.
+Run one fixture for each of those six inserts. When
+`C` files completion in any fixture, then the attest, assignment close, completion
+row, both notice wakes, deadline wake, work-item slate wake, and each completion wake
+membership all roll back. The markers, current liveness trigger, supervision
 transition, and effort cancellation also leave no committed row or state change. After
 removing the trigger, one retry commits exactly one of each applicable row in the R2
 transaction order.
@@ -1248,63 +1846,120 @@ transaction order.
 ### A4 — Replay and terminal race dedupe
 
 Given two concurrent completion calls for one open assignment whose child has an active
-same-owner parent, when both run, then one returns success and one returns
-`assignment_closed`; one attest, one completion row, one generation-0 notice wake and
-membership, and one generation-0 deadline wake and membership exist. No orphan attest,
+same-owner exact parent and distinct explicit report-to, when both run, then one returns
+success and one returns `assignment_closed`; one attest, one completion row, one
+generation-0 parent notice and membership, one report-to notice and membership, and one
+generation-0 deadline wake and membership exist. No orphan attest,
 completion row, wake, or membership row exists. A corruption fixture that tries to
 insert a second `status='open'` row for the same child fails the partial unique index.
 
+Given completion and revocation race for the same open assignment generation, exactly
+one guarded close wins. If completion wins, its attest-cause row commits and revocation
+returns `assignment_closed` without a revocation row. If revocation wins, its
+revocation-cause row commits and completion returns `assignment_closed` without an
+attest row. The winner's post-close count alone determines `notice-only`, `open`, or no
+revocation escalation row. No race produces two terminal causes or two open requests.
+
+Given `C` has two open assignments and concurrent terminal calls close different
+assignments, serialize one completion and one revocation in both commit orders. The
+first committed close observes one remaining assignment. If it is the completion, it
+creates one `notice-only` row; if it is the revocation, it creates no escalation row.
+The second committed close alone observes zero and creates the one open empty-epoch
+request for its terminal cause. Exactly one request is open, and no lost update,
+duplicate empty epoch, or partial-index conflict occurs.
+
 ### A5 — Parent routing and recorded cause
 
-Given `C.spawnedBy=P` and `P` is active, when `C` completes, then the record names `P` as
-immediate parent and initial recipient, `resolutionKind='lineage'`, rung 1, the exact
-closing attest, assignment, work item, outcome, child incarnation, cause session, and
-owner. The stored message sender is `process:tightbeam`. The opened lifecycle event and
-typed `work-item-trace` entry carry the same completion id, closing attest, child, cause
-principal, and work item. The trace entry has `type='completion_escalation'`,
-`phase='opened'`, `at=createdAt`, and the R15 id. The lifecycle row has
-`kind='completion_escalation_opened'`, `subject=<completion-id>`, null detail, and a
-paired `completion_escalation_event` trace entry.
+Given `C.operationalParent=P`, `P` is active and owner-matched, and the assignment omits
+`--report-to`, when `C` completes, then the record stores `P` in both parent snapshot
+fields and records `parentResolutionSource='explicit'`,
+`parentRouteStatus='scheduled'` and
+`reportToRouteStatus='not-declared'`, and stores the exact closing attest, assignment,
+work item, outcome, child incarnation, cause session, and owner. Exactly one parent
+notice targets `P`; neither `openedBySession` nor `openedByUser` creates another notice.
+The opened lifecycle event and typed `work-item-trace` entry carry the same completion
+id, closing attest, child, cause principal, and work item. The trace entry has
+`type='completion_escalation'`, `phase='opened'`, `at=createdAt`, and the R15 id. The
+lifecycle row has `kind='completion_escalation_opened'`,
+`subject=<completion-id>`, null detail, and a paired
+`completion_escalation_event` trace entry.
 
-### A6 — Dead parent is skipped from rows, not time
+### A6 — Dead initial parent preserves truth and the request climbs
 
-Given immediate parent `P1` is retired and same-owner ancestor `P2` is active, when `C`
-completes, then initial routing selects `P2` at active rung 1. Given an initially active
-immediate parent `P1` retires after the close but before wake delivery while same-owner
-`P2` remains active, when the wake fires, then act-time re-resolution delivers to `P2`
-at active rung 1; the record preserves `P1` as its initial and current planned recipient,
-the turn names `P2` as actual recipient, and the R16 projection exposes both values
-without overwriting one.
+Given selected explicit parent `P1` is retired and same-owner ancestor `P2` and owner Main
+`M` are active, when `C` completes, then the row preserves `P1`, records
+`parentRouteStatus='unavailable'`, creates no notice for `P1`, selects `P2` as current
+recipient generation 0, and writes the exact parent-inactive undeliverable marker with
+R15's parent channel detail. It does not select `M` while `P2` remains eligible.
+Given `P1` is initially active
+but retires after close and before delivery while `P2` and `M` remain active, when the
+wake fires, then the delivery transaction cancels that exact wake with
+`target_unresolvable`, inserts no message or turn, and writes R15's exact parent
+delivery-refusal detail. When the current deadline fires, one transaction selects `P2`,
+increments recipient generation, resets its reissue count, and arms the replacement
+notice and deadline. The owner user can read and disposition the open request throughout.
 
-### A7 — Main fallback preserves work-item parentage
+### A7 — Explicit report-to is the only commission channel
 
-Given no active lineage ancestor and active owner Main `M`, when `C` completes, then one
-notice targets `M`, the record says `main-fallback`, and the before/after values of
-`work_items.createdInTurnSeq`, the creation turn's `jobRef`, the completing assignment's
-`workItemId` and `reviewsAssignmentId`, and the `Toplines` parent projection are
-identical. No assignment row is created or reparented; only the completing assignment's
-specified terminal fields change under R1-R2. This fixture cross-links
-`wi_3d6d13a0-c4cf-4370-88a1-b407c41ff7c1` and asserts that fallback is delivery only.
+Given assignment opener `O`, active exact parent `P`, and a distinct active same-owner
+session `R`, when `O` creates the card with `--report-to R` and `C` completes, then the
+close transaction creates one parent notice for `P` and one informational report-to
+notice for `R`. `R` can read the row but receives `not_authorized` from each disposition.
+Given the otherwise identical card omits `--report-to`, completion creates no notice for
+`O` or `R`, even when `O` is an active same-owner session. Given the declaration names
+`P`, completion creates one parent notice, records `shared-parent`, and creates no
+duplicate report-to wake. In each fixture, work-item parentage and `Toplines` are
+byte-identical before and after except for the completing assignment's specified
+terminal fields.
 
-### A8 — Missing Main fails loudly without fabricating
+Given `--report-to` names a missing, inactive, or foreign-owned session, when `assign`
+and `dispatch` each run, then each returns `invalid_report_to`, names the submitted key,
+and commits none of the rows listed in R5. Given a successful idempotent dispatch is
+replayed with another `--report-to`, then the idempotency conflict behavior is unchanged
+and the original card declaration remains immutable. Assignment JSON always projects
+the original string or null.
 
-Given corrupt fixture state has no active lineage ancestor and the owner Main row is
-absent or inactive, when completion commits, then it records `main-unavailable`, writes
-one `completion_escalation_undeliverable` event, inserts no prompt wake to an absent or
-inactive Main key, and leaves an empty-slate request open and queryable with its internal
-deadline armed and `receipt.state='not-created'`. Given
-the child instead has another open assignment, the same fixture commits `notice-only`,
-inserts no prompt or deadline wake, and remains queryable as the named undeliverable
-completion. Each failure writes `completion_escalation_undeliverable`. Given owner Main
-becomes
-active before the open request's deadline, the deadline transaction routes generation 1
-to Main and arms its replacement deadline. Given Main remains absent, the deadline
-records another named failure, arms only the replacement deadline, and inserts no turn.
-Given active Main `M` is the planned `main-fallback` recipient and becomes inactive
-before delivery, when a same-owner ancestor is then active, the owner-pinned act-time
-gate delivers to that ancestor and records it as actual recipient. Given no same-owner
-ancestor is active, the same gate writes one undeliverable event, cancels the notice
-wake, inserts no message or turn, and projects `receipt.state='canceled'`.
+### A8 — Parent and report-to absence are explicit
+
+Given a non-root child has a null stored parent and an eligible Owner Main, when
+completion commits, then the record targets that Main, stores
+`parentResolutionSource='owner_main'`, and does not take the unavailable path. Given the
+selected explicit parent is missing, inactive, or foreign-owned, then completion records
+`parentRouteStatus='unavailable'`, writes
+the exact R5 reason, creates no notice for that target, and leaves an empty-slate request
+open and queryable. R9 selects the nearest eligible same-owner ancestor or the owner-user
+root as its current recipient; a session recipient has a deadline and an owner-user-root
+recipient does not. `routing.parent.receipt.state='not-created'` continues to describe
+the immutable initial route.
+The missing-parent fixture runs with `PRAGMA foreign_keys=ON`, copies the dangling
+effective-parent key into both diagnostic parent fields, and commits successfully.
+Given a non-root child resolves to itself, then the row records
+`parentRouteStatus='unavailable'` with `parent-cycle`, sends no notice to the child, and
+selects the owner-user root.
+
+Given the selected Owner Main and therefore the owner-user wake carrier is missing or
+inactive in corrupt fixture state, then completion stores the owner user as current
+recipient generation 0, leaves current notice and deadline null, and writes the exact
+`owner-carrier-unavailable` marker. The owner user can read and disposition the request;
+no session principal gains authority and no scheduler invents another carrier.
+Given the owner-root notice instead commits while the carrier is active and corrupt
+fixture state makes that carrier inactive before delivery, then R7 cancels that notice
+with `target_unresolvable`, inserts no message or turn, and writes the same exact
+owner-root marker. The request stays open with the owner user as its terminal recipient,
+no deadline or higher fallback appears, and the owner retains read and disposition
+authority.
+
+No role, opener, or report-to target receives an inferred action notice. Given the child instead
+has another open assignment, the row is `notice-only`, has no deadline, and remains
+queryable. Given a distinct report-to declaration becomes inactive before close, then
+the row records `reportToRouteStatus='unavailable'`, creates no report-to wake, and does
+not change the parent result. Given report-to instead names the exact parent and that
+row becomes inactive before close, then both routes record `unavailable`; the report-to
+route does not record `shared-parent`. Given an admitted parent or report-to retires
+after close but before delivery, R7 cancels only that channel's wake with
+`target_unresolvable` and writes the exact R15 delivery-refusal detail with the
+corresponding channel. A report-to notice never redirects. An open action request can
+advance only when its deadline transaction applies R9.
 
 ### A9 — Crash recovery
 
@@ -1321,17 +1976,26 @@ the wake stays pending and no turn exists. After the dependency heals, a later t
 commits one message and turn. Given synthetic legacy residue leaves that wake pending
 after the turn committed, when the scheduler retries, then `turns.wakeId` prevents a
 second turn and the wake settles without duplicate parent content. Given the scheduler
-selects a pending notice and another transaction makes that generation ineligible before
-the delivery transaction starts, when the delayed callback runs, then R7 inserts no
-message or turn. If the wake is still pending, the same transaction cancels it with
-reason `completion_delivery_ineligible`, source kind `scheduler_delivery`, requester
-`tightbeam:wake-scheduler`, and outcome `no_replacement`.
+selects a pending action-recipient or report-to notice and the exact target retires before the
+delivery transaction starts, when the delayed callback runs, then R7 inserts no message
+or turn. If the wake is still pending, the same transaction cancels it with existing
+reason `target_unresolvable`, source kind `scheduler_delivery`, requester
+`tightbeam:wake-scheduler`, and outcome `no_replacement`, and writes R15's exact
+delivery-refusal detail for that channel.
 
-### A11 — Deadline is a reminder, not a verdict
+### A11 — Four ignored notices advance without deciding
 
-Given an open empty-slate request whose active parent has not acted, when its deadline
-fires, then generation increments once, the same active parent receives one reissued
-notice, one replacement deadline is armed, and no decision or session lifecycle changes.
+Given an open empty-slate request whose exact active parent `P1` has not acted and whose
+stored reissue limit is the default 3, the initial notice records recipient generation 0
+and reissue count 0. Deliver that notice without a disposition. When three consecutive
+deadlines each fire and each replacement notice delivers without a disposition, then
+`P1` has four delivered receipts: the initial notice plus reissues with counts 1, 2, and
+3. One next deadline remains armed, and no decision or session lifecycle changes. When that deadline
+fires and eligible same-owner ancestor `P2` exists, one transaction selects `P2`, records
+recipient generation 1 and reissue count 0, arms `P2`'s first notice and deadline, removes
+`P1`'s disposition and read authority, and grants disposition authority to `P2`. The
+unchanged request remains open.
+
 Given generation 0 remains pending without a turn because delivery failed, when its
 deadline fires, then the same transaction arms generation 1 and its membership, records
 them as the replacement outcome while it cancels generation 0, and commits with exactly
@@ -1341,14 +2005,24 @@ delayed delivery callback starts afterward, the delivery transaction observes th
 generation 0 is canceled and no longer current, and inserts no generation-0 message or
 turn. If delivery commits first, generation 0 has one turn before generation 1 is armed.
 
-### A12 — New assignment supersedes atomically
+Given the current session recipient is unavailable when the deadline fires, then the
+transaction does not spend another reissue on it. It records the delivery failure,
+selects the next eligible same-owner unvisited ancestor, or selects the owner-user root
+when no such session exists. A pending old notice is canceled through R8. The report-to
+notice count remains one or zero exactly as generation 0 established; no report-to
+notice is reissued. At the owner-user root, one ordinary at-least-once user notice stays
+pending until durable delivery while its permanent carrier remains eligible. No deadline
+exists, and the substrate records no
+retain, park, or retire decision.
+
+### A12 — Assignment open or reopen supersedes atomically
 
 Given an open empty-slate request, when a new assignment to `C` commits, then that same
 transaction marks the request `superseded/new-assignment`, cancels the deadline and any
-pending current notice through typed `completion_request_disposed` cancellations, and
+pending parent or report-to notice through typed `obligation_disposed` cancellations, and
 records the new assignment id, `supersededAt`, and typed opener principal. Each
-cancellation points to the supersede lifecycle row through source kind `lifecycle_event`
-and disposition kind `completion_transition`. If any attempted pending-wake cancellation
+cancellation points to the terminal completion row through source and disposition kind
+`completion_transition`. If any attempted pending-wake cancellation
 is refused, then the assignment insert, effect/files, supersede lifecycle row, request
 transition, and all cancellation rows roll back.
 A concurrent disposition loses with `request_superseded` if assignment-open commits
@@ -1358,12 +2032,26 @@ the superseded status and inserts no message or turn. If delivery commits first,
 turn precedes the supersede transaction. No pending notice or later deadline presents
 the stale request.
 
+Given completed assignment `A` left completion row `H0` open and `C` has no other open
+assignments, when
+`reopen-assignment A` commits, then that same transaction changes `A` to `open`, marks
+the request `superseded/new-assignment`, stores `A` as `supersededByAssignmentId`,
+records the typed reopen principal in the lifecycle row, and performs the same deadline
+and notice cancellations. The assignment's immutable report-to declaration does not
+change. If any attempted pending-wake cancellation is refused, then the guarded reopen
+update, supersede lifecycle row, request transition, and all cancellation rows roll
+back, so `A` remains completed and `H0` remains open. When `A` later completes again,
+the handler creates row `H1` with the same `assignmentId`, a distinct
+`closingAttestId` and `dedupeKey`, and `status='open'`. Row `H0` remains immutable
+`superseded/new-assignment` history. Exactly two completion rows exist for `A`, and only
+`H1` is open.
+
 ### A13 — Retain
 
-Given an open request and authorized parent `P`, when `P` chooses retain, then the request
+Given an open request and authorized current recipient `P`, when `P` chooses retain, then the request
 becomes `acknowledged/retain`, records `actedBySession=P`, cancels pending notice/deadline
-wakes through typed `completion_request_disposed` cancellations sourced from the
-acknowledgment lifecycle row, and changes no session, harness, assignment, or work-item
+wakes through typed `obligation_disposed` cancellations sourced from the terminal
+`completion_transition`, and changes no session, harness, assignment, or work-item
 row. Identical replay by `P` while `P` remains active and owner-pinned returns the same
 record. A different choice is refused. If `P` retires first, the same session key cannot
 read the terminal row or replay the decision.
@@ -1372,16 +2060,17 @@ lifecycle row commits.
 
 ### A14 — Retire and race
 
-Given an open request and authorized parent `P`, when `P` chooses retire, then request
+Given an open request and authorized current recipient `P`, when `P` chooses retire, then request
 acknowledgment and the existing retire database transition commit together. Existing
 cascade/interruption, typed target-wake cancellation, wire removal, and post-commit reap
 run once. The completion deadline and pending notice cancellations point to the
-acknowledgment lifecycle source. Given any attempted completion-wake cancellation is
-refused, the request, session, assignment, ordinary retirement wakes, and lifecycle rows
-remain unchanged. Given retire and
-completion race before the assignment closes, either completion wins and retire
-acknowledges its request, or retire wins and completion returns `assignment_closed` with
-no completion row. Given the target subtree has an active critical lease, when `P`
+typed terminal `completion_transition`. Given any attempted completion-wake cancellation
+is refused, the request, session, assignment, ordinary retirement wakes, and lifecycle
+rows remain unchanged. Given retire and completion race before the assignment closes,
+either completion wins and retire acknowledges its completion row, or retire wins and
+completion returns `assignment_closed` while the zero-producing retirement revocation
+row commits directly as `acknowledged/retire`. Exactly one terminal-cause row exists and
+no request remains open. Given the target subtree has an active critical lease, when `P`
 chooses retire through `completion-disposition`, then the response exactly matches R12,
 the request remains `open`, no session or request field changes, no `w_retire_...` wake
 is scheduled, and one `completion_escalation_retire_deferred` event exists. After the
@@ -1429,17 +2118,17 @@ row and park-operation failure leaves the request open.
 ### A16 — Authorization matrix
 
 Given one completion request, when each listed principal separately calls
-`completion-disposition`, then the recorded current recipient, the actual
-current-generation recipient, another active same-owner ancestor, and the owner user can
-act while each session principal is active and owner-pinned. The initial Main-fallback
-fixture and the R7 act-time Main-fallback fixture prove that Main can read and act without
-rewriting the planned recipient. An ordinary child acting on its own row, a sibling, an
-admin user from another owner, a
+`completion-disposition`, then the exact active owner-pinned current session recipient
+and the owner user can act. The explicit report-to recipient, a previous recipient, an
+unvisited active same-owner ancestor, assignment opener, owner Main when it is not the
+current recipient, ordinary child acting on
+its own row, a sibling, an admin user from another owner, a
 different-owner session/user, a process principal, a remedy principal, and each retired
 session principal are refused without
 changing the request. Each refusal code and the R11 precedence is asserted. The read
 matrix separately calls `completion-notices` and proves that the owner user, an admin,
-the child, both typed recipient forms, and owner-matched lineage can read the row while a sibling and every non-admin
+the active child, current session recipient, and explicit report-to can read the row while a
+previous recipient, undeclared opener, sibling, other ancestor, and every non-admin
 different-owner principal receive no row. Given `P` acknowledges retain and later
 retires, the exact retired session key `P` cannot read that acknowledged row or replay
 the identical retain decision. The owner user and an admin can still read it. The owner
@@ -1451,18 +2140,20 @@ the same role and each sibling cannot read or replay either row.
 
 ### A17 — Receipt differs from action
 
-Given a notice turn delivers, then the read projection says `receipt=delivered` while the
-request remains open. Given an authorized action commits before notice delivery, then the
-action transaction cancels the stale pending notice and the request is acknowledged.
-Given the scheduler selected that notice before acknowledgment commits, when its delayed
+Given an action-recipient or report-to notice turn delivers, then `request.receipt` or
+that report-to channel says `state='delivered'` while the request remains open. Given an authorized
+action commits before either notice delivery, then the action transaction cancels each
+stale pending notice and the request is acknowledged. Given the scheduler selected one
+notice before acknowledgment commits, when its delayed
 delivery callback starts afterward, the delivery transaction observes the acknowledged
 status and inserts no message or turn. If delivery commits first, its turn precedes the
 acknowledgment transaction. No test treats a delivered turn as a retain decision.
 
 ### A18 — Notice-only completion remains visible
 
-Given A1 and a notice terminal of delivered, failed, canceled, or `failed_unknown`, when
-`completion-notices --status all` runs, then it returns the completion with that exact receipt state.
+Given A1 and a parent notice terminal of delivered, failed, canceled, or
+`failed_unknown`, when `completion-notices --status all` runs, then it returns the
+completion with that exact parent receipt state.
 Queued, running, pending-without-turn, and canceled-without-turn fixtures map exactly as
 R14 requires. A fired-without-turn dirt fixture returns `inconsistent`; two consecutive
 reads leave the lifecycle row count unchanged. No deadline or action request is created.
@@ -1473,20 +2164,23 @@ not duplicate it.
 
 Given one completion empties both child `C` and work item `W`, when the close commits,
 then the completion notice/request and the work-item slate wake both exist. The first is
-session lifecycle addressed to a parent; the second is intent disposition addressed to
+session lifecycle addressed to the current recipient; the second is intent disposition addressed to
 the user owner. Each completion wake carries null `work_item_id` and null
 `assignmentId`; the completion row holds its correlations. A later assignment supersedes
 the completion request through R10 and cancels the work-item slate wake through its
 existing bracket seam. Neither cancellation is authorized by the other mechanism's row.
 
-### A20 — Compatibility and additive schema
+### A20 — Compatibility and shape refusal
 
-Given a current stamped database with no `completion_escalations` table, when the new
-build boots, then it creates the table without altering existing tables or arming
-historical notices. Given no completion row has been recorded, then rollback leaves no
-pending new-consumer wake. Given a completion row exists, then the compatibility matrix
-marks downgrade to a gateway without `completion_disposition_deadline` unsupported; no
-test claims that old gateway preserves or ignores the pending deadline. Current ordinary
+Given a database stamped `coordination-fabric-v1-phase1-v15`, including one whose
+`wake_cancellations` table carries the old closed checks, when the new build boots, then
+Schema refuses it before any DDL, assignment query, cancellation insert, or completion
+producer call. The error names both stamps and says to move the database aside and let it
+be recreated. Given an empty database, when the new build boots, then it stamps
+`coordination-fabric-v1-phase1-v16` before table creation and creates the new assignment,
+cancellation, and completion shapes. A fixture inserts and validates each R8
+compatibility pair against the real recreated SQLite schema. The build performs no
+ALTER, table copy, data migration, or historical completion backfill. Current ordinary
 message/prompt-turn payload goldens remain byte-identical.
 
 ### A21 — Closure law
@@ -1494,8 +2188,9 @@ message/prompt-turn payload goldens remain byte-identical.
 Given the release-candidate source tree, when the AST/source closure test runs, then it
 proves that only
 `Tightbeam.Productions.CompletionEscalation` mutates `completion_escalations` and
-`completion_escalation_wakes`; every assignment completion path calls its in-transaction
-open seam; every assignment-open path calls its supersede seam; retirement calls its
+`completion_escalation_wakes`; every assignment completion path and every assignment
+revocation path calls its shared in-transaction terminal seam; every assignment-open
+path calls its supersede seam; retirement calls its
 retire acknowledgment seam; and no completion-table mutation occurs in a post-commit
 callback. The same test proves that only the explicit authorized retain
 branch writes `status='retained_root'`; that branch tests both `isBuiltIn=1` and the
@@ -1509,48 +2204,67 @@ device DELETE constructs `principal={:user, device.user_id}`; generic retirement
 its owner and serialized principal from `call.principal`; each successful retirement
 passes that serialized principal through assignment interruption, completion
 acknowledgment, and Org retirement; and none of those paths derives a principal from
-`call.origin`.
+`call.origin`. It also proves that a nonzero revocation leaves no
+completion-escalation row, a zero-producing revocation cannot commit without one, and no
+initial-zero sweep or activation hook opens a request. It also proves that this revision
+adds no active-surrender write, terminal producer branch, cause value, or fixture and
+does not weaken the existing surrender-refusal tests.
+
+The closure test also proves that only `Assignments` writes
+`completionReportToSessionKey`, only card creation accepts `reportToSessionKey`, and no
+path derives it from `openedBySession`, `openedByUser`, a role, or create-verb identity.
+It proves that every immutable initial parent target and resolution source equal the
+result of `Org.effective_parent_in_txn/2` for the holder in that transaction; only R9's
+request-routing walk reads `spawnedBy`, and no path implements a second Main fallback,
+that parent/report-to wakes carry no reresolution fields, that report-to never reaches
+the disposition authorization branch, and that the completion producer adds no new
+cancellation reason or `lifecycle_event` source.
 
 ### A22 — Real smoke
 
-Given one real gateway with two real agent sessions in a parent/child lineage, when a
-real assignment is dispatched, the child files completion, and the parent retains, then
-the smoke captures the actual stored message, turn, wake, completion row, CLI read
+Given one real gateway with exact parent `P`, child `C`, distinct explicit report-to `R`,
+and same-owner opener `O`, when a real assignment is dispatched with `--report-to R`,
+`C` files completion, both notice turns deliver, and `P` retains, then the smoke captures
+both actual stored
+messages, turns, wakes, the completion row, assignment projection, CLI read
 response, visibility results for the R15 matrix, typed opened and acknowledged
 `work-item-trace` entries, and retain acknowledgment response. It also captures the
 opened and acknowledged lifecycle rows, their
-`completion_escalation_event` trace entries, and the membership-linked
-`wake_canceled` entries for the retained request's notice and deadline. Compare those
+`completion_escalation_event` trace entries, the membership-linked `wake_fired` entries
+for the delivered parent and report-to notices, and the membership-linked
+`wake_canceled` entry for the still-pending deadline. It proves retain creates no
+cancellation row for either fired notice. It proves `R` can read but cannot act and that `O` receives no inferred
+delivery. Compare those
 outputs to R15-R16 after replacing only generated ids/timestamps. Passing unit tests
 without this smoke does not satisfy the rail.
 
 ### A23 — Cross-owner lineage fails closed
 
-Given corrupt fixture state points `C.spawnedBy` at an active session owned by another
-user while the child's owner Main `M` is active, when `C` completes, then the resolver
-writes one `completion_escalation_cross_owner_lineage` event, sends no wake or readable
-row to the foreign
-session or user, routes the completion to `M` as `main-fallback`, and preserves the
-foreign `spawnedBy` fact for diagnosis. Given `M` is also absent or inactive, the result
-is the R5 `main-unavailable` named failure rather than cross-owner disclosure.
+Given corrupt fixture state points `C.operationalParent` at an active session owned by another
+user while the child's owner Main `M` is active, when `C` completes, then the completion
+producer writes one `completion_escalation_cross_owner_lineage` event, sends no wake or readable
+row to the foreign session or non-admin user through that lineage, records
+`parentRouteStatus='unavailable'`, and preserves the foreign
+selected effective-parent fact for diagnosis. It selects the owner-user root through
+the existing user-wake carrier without granting the foreign session or `M` session
+disposition authority.
 
-Given same-owner `P1` is the planned recipient, foreign-owner `P2` is its ancestor, and
+Given same-owner `P1` is the exact parent, foreign-owner `P2` is its ancestor, and
 `P1` retires before delivery, when the notice wake fires, then the delivery transaction
-does not deliver to or traverse through `P2`. It writes the exact R15 cross-owner event
-and fallback event, and delivers to active pinned-owner Main `M`; the turn names `M` as
-actual recipient and the completion row preserves `P1` as planned recipient. If `M` is
-absent, it writes the exact R15 undeliverable event and inserts no message or turn for
-`P2` or a fabricated Main key. The current notice wake becomes `canceled`, the R14
-receipt is `canceled`, and repeated reads add no lifecycle event.
+does not deliver to or inspect `P2`. It cancels the exact `P1` wake with
+`target_unresolvable` and preserves `P1` as the initial parent target. When the deadline
+advances, the walk stops at the foreign link and selects the owner-user root. It inserts
+no message or turn for `P2` or a fabricated key. Repeated reads add no lifecycle event
+and grant no non-admin cross-owner visibility through that lineage.
 
 ### A24 — Root Main retains explicitly
 
 Given exact built-in Main `M` holds one open assignment and the scheduler is stopped,
 when `M` completes that assignment, then the close transaction creates the normal
 `status='open'` row with `remainingOpenAssignments=0`, addresses the generation-0 notice
-to `M` as `main-fallback`, and arms the deadline. Before delivery,
+to `M` as `root-self`, and arms the deadline. Before delivery,
 `completion-notices --status open` called as `M` returns that row with
-`receipt.state='pending'`, null acting fields, and null decision. The session and harness
+`routing.parent.receipt.state='pending'`, null acting fields, and null decision. The session and harness
 remain active; no automatic retain occurs. The stored notice uses R16's exact root
 retain-only action line and does not advertise park or retire.
 
@@ -1571,10 +2285,65 @@ and then retire, then each response matches R11 with
 and completion lifecycle-event count remain unchanged. Neither the park nor the retire
 seam is called.
 
+Given `M` ignores its initial notice plus the stored maximum reissues, when the next
+deadline fires, then the request advances once to the owner-user root, stores that typed
+recipient and the incremented recipient generation, arms one user notice through the
+personal Main carrier, removes the deadline, and removes `M`'s session disposition
+authority. The owner user can still choose retain; the substrate chooses nothing.
+
 Given an ordinary non-built-in child `C` has an open completion request, when exact `C`
 submits retain, park, and retire in sequence, then each call returns `not_authorized` and
 the request, wakes, session, harness, and completion lifecycle-event count remain
 unchanged.
+
+### A25 — Revocation detects the same empty epoch
+
+Given child `C` has two open assignments, when an authorized user revokes the first,
+then the revocation and close commit without a completion-escalation row or wake because
+one assignment remains open. Given `C` has one open assignment, when an authorized user
+revokes it, then the revocation row, revocation-generation row, closed assignment, one
+open completion-escalation row, its current-recipient notice, and its deadline commit in
+one transaction. The row stores `causeKind='revocation'`, the exact revocation id,
+`outcome='revoked'`, and `causePrincipal=user:<id>`. A session-principal revocation stores
+the exact session principal instead. A forced failure at the first action-notice wake,
+the deadline wake, or either corresponding membership insert rolls back the revocation
+and close. Replaying the revoked generation creates
+nothing. Reopening and revoking again creates one different empty epoch keyed by the new
+revocation-generation cause.
+
+### A26 — Retry state survives restart and config change
+
+Given a request copied reissue limit 3 and reached recipient generation 1, reissue count
+2, when the gateway restarts and `prod_limit` changes to 1, then the read projection and
+next deadline still use stored limit 3. Replaying any consumed deadline creates no row.
+One live deadline advances the count once. A concurrent disposition either commits first
+and the deadline writes nothing, or the deadline commits first and the disposition
+rechecks the new current recipient before authorization. No restart, replay, or race
+creates two current recipients or more than one pending current notice.
+
+### A27 — Chain termination and privacy
+
+Given a chain contains retired rows, then R9 skips them nearest-first. Given the next
+link is missing, foreign-owned, nil, the child, already visited, or cyclic, then the same deadline
+transaction terminates the session walk and selects the owner-user root. It never reads
+a foreign row's `spawnedBy` beyond the boundary and never grants a foreign session or
+non-admin user delivery, read, or action authority through that lineage. R15's explicit
+admin audit read remains available. Membership history records every armed action notice
+and deadline with its typed recipient, action generation, recipient generation, and
+reissue count. Each selected session rung therefore has both memberships. An owner-root
+rung has one notice membership and no deadline; if its carrier is unavailable, the
+current completion row and exact undeliverable marker record that selected rung without
+inventing either membership. Owner/admin trace can reconstruct the walk after restart
+without prompt parsing; no previous recipient can read or act solely because it appears
+in that history.
+
+### A28 — Initial-zero is not a proxy transition
+
+Given an active session starts with zero assignments and no terminal mutation runs,
+when startup, activation, scheduler, and read paths execute, then none creates an empty
+epoch, request, wake, or lifecycle marker. Initial-zero is a different condition that
+requires its own evidence, detector, activation boundary, and separately authorized
+proposal.
 
 ## Open Questions
 
@@ -1584,22 +2353,31 @@ unchanged.
    retain/park/retire feature must not release until A15 uses the ratified real park
    interface. This spec does not name that interface.
 2. **BLOCKING IMPLEMENTATION GATE — independent successor review.** The predecessor
-   `art_a22ba0ec`, SHA-256 `cd1a9a99…`, received reviewed-clean verdict
-   `att_4f59063a-f3e5-4697-9957-1e2c0787fada` against old source `95aefa…`.
-   Recon verdict `att_eeb27cd2-b27a-4e79-af19-435fd1f564b4` found current-source drift
-   and required this successor against release `6c13efc…`. Verdict
-   `att_35dc33fc-660c-4989-b78d-56eab886a1e7` then requested F1 and F2 changes against
-   exact artifact `art_46d2f24b`, SHA-256 `96bbca96…`. This canonical amendment resolves
-   both findings. No implementation scope can start until a linked independent reviewer
-   files `reviewed-clean` against the new exact artifact hash and release commit. On
-   `changes-requested`, amend this canonical file before responding and publish another
-   hash. The reviewed artifact retains this gate text; the linked verdict row resolves it
-   without changing reviewed bytes.
-3. **NON-BLOCKING — wider terminal coverage.** Completion is the only terminal admitted
-   by this rail. Surrender, revoke, canceled, and failed assignment outcomes remain with
-   `wi_3d6d13a0-c4cf-4370-88a1-b407c41ff7c1`. That owner can later supersede this scope
-   with one shared terminal-notice design; this spec does not pre-approve that expansion.
+   remains reviewed history. Current implementation evidence is exact main
+   `6ae34287aa4864b8fe6fabfc96166d02b9827a89`. Mike's G1/G2 request changes this spec
+   before any implementation reconciliation. No implementation scope can start until
+   the product owner opens one different-session review and that reviewer files
+   `reviewed-clean` against this candidate's exact artifact hash. On
+   `changes-requested`, amend this canonical file first and publish another hash. The
+   reviewed artifact retains this gate text; the linked verdict resolves it without
+   changing reviewed bytes.
+3. **NON-BLOCKING DECIDED EXCLUSION — initial zero.** Accepted decision request
+   `dr_d255b817-1541-460e-8549-bc55a9e7aa1f`, with exact recorded rationale delivered
+   in `s_904edadd-16b9-41ba-81cf-680eb8c86c3a`, keeps a session that never held an
+   assignment outside this revision. It made no one-or-more-to-zero transition. Adding
+   it here would widen the scoped request and require a different detector and activation
+   boundary. A28 makes the exclusion executable rather than implicit. A future need for
+   never-staffed-session escalation requires a separate evidence-backed proposal.
+4. **NON-BLOCKING DECIDED EXCLUSION — active surrender.** Later accepted decision
+   request `dr_518d5591-57b8-4a73-8aeb-6634afb334a1`, with exact recorded rationale
+   delivered in `s_904edadd-16b9-41ba-81cf-680eb8c86c3a`, is authoritative for this
+   conflict. Tightbeam 0.2 deliberately deleted active surrender; current Assignments
+   closes lifecycle attests as completed, and tests refuse new surrender writes. This
+   revision therefore implements completion and revocation only. It neither restores a
+   product behavior nor adds dead code for a transition 0.2 cannot emit. Historical
+   surrendered rows receive no runtime backfill here. If surrender returns to 0.2, a
+   separately authorized amendment must add the third cause, seam call, and fixtures.
 
-Operating pattern taught by this spec: none. The new commands and production do not
-exist in release 0.1.7. Guidance must not teach them before implementation and release
+Operating pattern taught by this spec: none. The G1/G2 revision does not exist in exact
+current implementation source `6ae34287aa4864b8fe6fabfc96166d02b9827a89`. Guidance must not teach it before implementation and release
 (wisdom 20 and 21).

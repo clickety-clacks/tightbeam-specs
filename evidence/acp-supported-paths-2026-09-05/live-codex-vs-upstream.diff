@@ -1,0 +1,68 @@
+--- evidence/npm-codex-1.1.4/package/dist/index.js	1985-10-26 08:15:00.000000000 +0000
++++ /home/mike/.tightbeam/adapters/node_modules/@agentclientprotocol/codex-acp/dist/index.js	2026-09-03 05:55:36.000000000 +0000
+@@ -23400,6 +23400,7 @@
+   terminalCommandOutputIds = /* @__PURE__ */ new Set();
+   agentMessagePhases = /* @__PURE__ */ new Map();
+   activeSubAgentActivities = /* @__PURE__ */ new Set();
++  subAgentActivityCallIds = /* @__PURE__ */ new Map();
+   constructor(connection, sessionState) {
+     this.connection = connection;
+     this.sessionState = sessionState;
+@@ -23441,10 +23442,20 @@
+           sessionUpdate: "session_info_update",
+           title: notification.params.threadName ?? null
+         };
+-      case "thread/status/changed":
++      case "thread/status/changed": {
++        const childToolCallId = this.subAgentActivityCallIds.get(notification.params.threadId);
++        if (childToolCallId && ["idle", "systemError", "notLoaded"].includes(notification.params.status.type)) {
++          return {
++            sessionUpdate: "tool_call_update",
++            toolCallId: childToolCallId,
++            status: notification.params.status.type === "idle" ? "completed" : "failed",
++            _meta: { codex: { subagentTerminated: { agentThreadId: notification.params.threadId, threadStatus: notification.params.status } } }
++          };
++        }
+         return this.createCodexSessionInfoUpdate({
+           threadStatus: notification.params.status
+         });
++      }
+       case "thread/archived":
+         return this.createCodexSessionInfoUpdate({
+           archived: true
+@@ -23504,6 +23515,7 @@
+       case "item/fileChange/outputDelta":
+       case "item/fileChange/patchUpdated":
+       case "account/updated":
++        return this.createCodexSessionInfoUpdate({ accountUpdated: notification.params });
+       case "fs/changed":
+       case "mcpServer/startupStatus/updated":
+       case "serverRequest/resolved":
+@@ -23632,6 +23644,7 @@
+         return createContextCompactionStartUpdate(event.item);
+       case "subAgentActivity":
+         this.activeSubAgentActivities.add(event.item.id);
++        this.subAgentActivityCallIds.set(event.item.agentThreadId, event.item.id);
+         return createSubAgentActivityUpdate(event.item, "in_progress", "tool_call");
+       case "sleep":
+       case "userMessage":
+@@ -26023,7 +26036,8 @@
+       config: await this.createSessionConfig(request.cwd, additionalDirectories, request.mcpServers ?? []),
+       cwd: request.cwd,
+       modelProvider: await this.getResumeModelProvider(),
+-      threadId: request.sessionId
++      threadId: request.sessionId,
++      developerInstructions: request._meta?.developerInstructions
+     });
+     onSubscribed?.();
+     const codexModels = await this.fetchAvailableModels();
+@@ -26071,7 +26085,8 @@
+     const response = await this.codexClient.threadStart({
+       config: await this.createSessionConfig(request.cwd, additionalDirectories, request.mcpServers),
+       modelProvider: this.getModelProvider(),
+-      cwd: request.cwd
++      cwd: request.cwd,
++      developerInstructions: request._meta?.developerInstructions
+     });
+     const codexModels = await this.fetchAvailableModels();
+     if (codexModels.length === 0) {

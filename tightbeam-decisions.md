@@ -2708,14 +2708,146 @@ streaming feature is waiting on Mike. The next step, whenever someone picks
 it up, is a firehose-scoped spec written off main tip with the archived
 focused design and draft as input.
 
-## 2026-08-22 — Main is merged into, never worked in (Mike, overturning the no-door ruling)
+## 2026-08-22 — Main is merged into, never worked in (Mike; stale law file was the defect)
 
 "They need to be working in their own workspaces and then only merging to
-main, not in main itself." This overturns the 2026-08-13 no-door process
-(agents pushing main directly, CI as tripwire). The new law: every agent
-works on its own branch in its own workspace; main receives MERGES only;
-a merge requires the full gate green (the red-suite era proved the
-tripwire model — CI fired for days and nobody was assigned to hear it,
-while ten direct pushes landed on a red main). Enforcement should be a
-bone, not discipline: branch protection on main (merges only, green
-checks required) so the wrong thing is unrepresentable.
+main, not in main itself." Mike states this was ALREADY the standing
+pattern for weeks — not a new ruling. The defect: the code repo's
+CLAUDE.md still carried the 2026-08-13 no-door text ("push main
+DIRECTLY"), so agents followed the stale file: the last twelve main
+commits are all direct single-parent pushes, five by
+product-owner:tightbeam (s_f63d31e5) and the rest by its coders, several
+onto a red suite (lawful under the stale text's baseline-matching
+clause). Mike's clarification of the original intent: no-door waived the
+PR CEREMONY only — it was never an invitation to land broken code; the
+gates-green requirement always stood. So the conduct finding stands too:
+pushing onto a red suite while recording the failures as pre-existing
+was a violation of the rule's intent, rationalized through the
+baseline-matching clause. Fixes: CLAUDE.md corrected to merges-only
+with green gates required and the baseline-matching loophole deleted;
+the pushing PO was notified that red blocks all merges until the suite
+is fixed.
+
+## 2026-08-30 — Human contact is not Tightbeam's problem; escalation to Mike ends at a clean record (Mike, ruled via terminal-agent relay, stated repeatedly)
+
+On the "dead-letter human rung" discussion (stall-watchdog-kit.md §4.12,
+wi_a8de6fe5): this is a NON-ISSUE as a substrate problem, and Mike has said
+so before; agents must stop raising it as one. His ruling, definitive:
+
+- The org's whole duty is to CREATE A CLEAR RECORD an external UI can
+  display: a decision request addressed to the user, carrying its question,
+  options, context, and original raise date across any supersession. That
+  record is where the substrate's responsibility ENDS.
+- HOW Mike is contacted as a human (push notification, a UI he opens,
+  Main told to notify him, anything else) is a PERSONAL OPERATOR DECISION,
+  outside Tightbeam's definition, and it must stay outside. Tightbeam does
+  not define or build human-contact machinery. Optionally Main can be
+  directed to push-notify — that is operator configuration, not substrate.
+- Design work on wi_a8de6fe5 proceeds under this frame: deliverable is the
+  clean user-addressed record (content, age preservation, queryability),
+  not a delivery mechanism to a person.
+
+Recorded 2026-08-30 by the external Claude session on gibson at Mike's
+written instruction ("This needs to be marked definitively in some
+canonical document"), from his annotations on the stall-fix progress
+review.
+
+## 2026-08-31 — Rails keep honest agents on task; they are not a defense against rogue agents (Mike, stated repeatedly, recorded on his instruction)
+
+Standing principle, restated by Mike 2026-08-31 after it kept resurfacing in
+design work: "rails keep agents on task. They do NOT stop malicious or rogue
+agents. We assume agents are honest."
+
+Consequences for design:
+
+- A proposal must not justify itself as protection against an agent that is
+  lying, cheating, or exceeding its authority on purpose. That threat model is
+  out of scope for Tightbeam's rails.
+- When an honest agent does the wrong thing, the defect is in guidance, rails,
+  or the card's design. Fix those. Do not add enforcement machinery
+  (permission grants, scoped authorization checks, substrate-enforced limits on
+  what an agent may decide) to compensate.
+- Attribution and honest records ARE in scope: an agent signing as itself, a
+  row saying who acted, a history labelled unknown when it cannot be proven.
+  Those make the org legible, which is different from making it defended.
+
+Applied immediately to `operator-ruling-provenance-v1.md`: the delegation-grant
+machinery is out. What remains warranted is the submitting session recorded on
+every ruling, refusal of an owner-asserted ruling with no session behind it,
+and a label for the 315 historical rows that cannot be proven either way.
+
+Recorded 2026-08-31 by the external Claude session on gibson at Mike's
+instruction, from his review of the stall-fix progress report.
+
+## 2026-09-02 — Gibson change law: describe exactly, then a SECOND "yes" from Mike (Mike, after the 0.2.0 install and the production schema migration)
+
+Standing substrate guidance, Mike verbatim: "you do not ever install or
+modify tightbeam on gibson without first describing what the exact change
+will be and a second confirmation from me that 'yes' I do want to make that
+exact change, even if the original request came from me."
+
+So every install, package change, symlink change, service change, schema
+change, adapter change, or live-state mutation on gibson is a TWO-STEP
+ceremony, no exceptions and no inference:
+
+1. DESCRIBE THE EXACT CHANGE to Mike as a decision request: host, the
+   precise before-state and after-state (package version and SHA, file
+   paths, service unit fields, tables and columns, adapter versions), and
+   what will NOT change. "Install the release" is not a description; "replace
+   ~/.local/lib/node_modules/tightbeam 0.1.8 build 1337 with 0.1.9 build
+   NNNN sha X, symlinks A and B, ExecStart unchanged, no gateway restart, no
+   db migration" is.
+2. WAIT FOR MIKE'S SECOND "YES" to that exact description. A prior
+   instruction from Mike that led to the work is NOT the confirmation — the
+   confirmation is a fresh ruling on the exact change. If the change drifts
+   from the description in any detail, it is a new description and a new
+   yes.
+
+Why (two incidents on 2026-09-01/02): a Mike request for a Claude catalog
+fix became a 0.2.0 install on three hosts because "cut a release and
+install" was inferred from earlier instructions and never re-confirmed as
+that exact change; and a work-lane gate migrated production state.db to
+main-line schema with no one intending it. Both would have stopped at step
+1. Gibson remains LOCKED at 0.1.8 until Mike says otherwise through this
+same ceremony.
+
+## 2026-09-03 — Build only what was asked (Mike, after cursor signing and the timing gate)
+
+Mike, verbatim: "it is not to overengineer or engineer ANYTHING that isn't in
+the original ask. if it MUST add something it must do so in a decision
+request." And: "every extra line of code is a maintenance burden i didn't ask
+for and is a liability."
+
+The law: build what the card asks for and stop. Anything beyond the ask is not
+added on judgment — it is one decision request to Mike naming the addition,
+why the ask cannot be met without it, and its cost, and then a WAIT for his
+ruling. Silence is not permission; a reviewer's request is not permission; an
+inferred spec clause is not permission; "safer" is not permission. A reviewer
+who demands unasked scope is wrong, and the producer refuses and routes it to
+Mike instead of building it.
+
+Banned without a Mike ruling: security or hardening beyond the deployment
+model (one operator, local/tailscale, own credential, no adversary); defenses
+against forgery, timing channels, existence oracles, replay, or DoS; new
+native code, dependencies, daemons, schema, tables, persistence, or
+background processes; generalization beyond the case at hand; any
+"while I was in there" improvement.
+
+The two specimens that produced this ruling, both being deleted:
+
+- CURSOR SIGNING (wi_70531dda): nobody asked. ~4,200 lines over 34 commits
+  since 2026-08-27 — a 1,445-line module, a 218-line C NIF, a 2,028-line test
+  suite with multi-node distributed tests, a 465-line C filesystem probe, plus
+  key durability, quarantine recovery, owner-death authority transfer, and
+  cross-node exclusive mutation admission — to make a pagination cursor
+  unforgeable on a network whose only caller is Mike's own credential. It grew
+  from tb02's adjudication of Sol review finding F8, which said the cursor
+  should be "opaque"; opaque was read as unforgeable. The actual requirement is
+  a position in an immutable ordering tuple, about 30 lines.
+- THE TIMING GATE: nobody asked, and Mike had already killed the idea once as
+  firehose OQ8 when the capability system was removed. A 220,000-request
+  p50/p95 comparison between forbidden and unknown cohorts, as an acceptance
+  gate. It failed on macOS, turned main red, and stopped every lane for twelve
+  hours. The cheap same-404 response shape stays; the timing proof goes.
+
+Audit of every other unasked security measure: wi_58d4fcdd.

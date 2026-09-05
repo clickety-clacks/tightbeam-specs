@@ -1,6 +1,11 @@
-# Event firehose v1 — state-change notifications over ws (product spec, r6)
+# Event firehose v1 — state-change notifications over ws (product spec)
 
-Status: DRAFT r6, 2026-08-22. r6 folds the adjudicated Sol review-gate
+Status: CANONICAL r6, 2026-08-25. r6 includes the landed source-invalidation
+notices for durable Topline mutations and independently committed subagent
+markers. These notices make the composed Toplines and ExecutionMap REST views
+refreshable from each matching committed source change. They add no
+ExecutionMap class and no rebuildable source resource. r6 also folds the
+adjudicated Sol review-gate
 findings (review-gate-observability-2026-08-21.md): row versions +
 always-upsert (F7), seq heartbeat (F6), revocation closes sockets (F12),
 visibility-change rebuild (F11), pre-delete authorization (F18), class
@@ -29,6 +34,15 @@ This deletes replay, cursors, tail, history pages, epochs, event storage,
 and retention — most of r2/r3's machinery. Untargeted (0.2.0 or later).
 When build work starts it branches from main tip.
 
+G1 current-main composition successor, 2026-08-27: PROPOSED. Add the canonical
+transcript `messageType` discriminator to the shared projection used by
+`message.created` and matching REST rows on base
+`277bb5031a06270aabbc57e3c222cbd2ec89bc73`. Exact candidate `b53b1f5f`
+passed the G1 behavior review; verdict `att_adea7aeb` and report
+`art_a3fc1d81` requested only current-main composition. Product-owner
+disposition `att_e0a20ce9` preserves F1/F2. This successor changes no notice
+envelope, source-invalidation mapping, G4 error, or G8 authority label.
+
 Revision history: r3.1 multiplexed subscriptions; r3 freshness-not-truth +
 retention; r2.1 client workflows; r2 the nine r1 review comments; r1 the
 firehose rescope of the archived focused design. Their carried-forward
@@ -55,6 +69,17 @@ Authority and inputs:
   past. The recon proves a Clawline-class chat client stands on queries
   plus this subscription — its gaps are blocking findings against the
   query surface.
+- Mike's firehose gap remediation ruling, message
+  `s_fe001c27-c509-4cf6-8866-47defe5eaa21` (2026-08-27), accepts recon verdict
+  `att_556f55ae-f1d2-4c83-b55d-9daf06aae929` and report `art_1d389e8e`.
+  It makes G2 session freshness a read-side firehose prerequisite and leaves
+  the G3 write contract outside this amendment.
+- Firehose client-buildability recon verdict
+  `att_556f55ae-f1d2-4c83-b55d-9daf06aae929` and report `art_1d389e8e`
+  identify G1. Mike's 2026-08-27 remediation ruling adopts it as a slice-2
+  prerequisite. Prior product commit
+  `505b56aa29f151faab7cd9618ca1bba922cff357` supplies the additive values
+  and compatibility behavior.
 - Superseded input: the archived focused design and draft (specs repo
   archive/) contributed the durable-row/cursor/pump replay machinery that
   r4 removes. observability-v1.md r4's doorbell contract ("frames are
@@ -65,15 +90,53 @@ Authority and inputs:
 - Related card: wi_bdf9a537 (gateway behind tailscale serve) — transport
   posture this endpoint would inherit.
 
-## Position — the state model is the entity
+G2 session-freshness landing, 2026-08-27: adds sessions to the complete
+rebuildable-state mapping. It adds `session.updated`, fixes the session
+projection mutation seam, and makes cold start, reconnect, and gap recovery
+decidable for session models. It changes no session field, visibility grant,
+socket protocol, write surface, target, or release authority.
+
+## Spec homing
+
+The canonical firehose spec lives only in the `tightbeam-specs` repository as
+`event-firehose-v1.md`. Canonical r6's coupled set is
+`event-firehose-v1.md`, `rest-state-api-v1.md`, and
+`rest-state-api-v1-wire-schema.md`; a change to an R8 or R8b mapping, its R9
+dependency, its filter value, or its wire type lands those coupled files in
+one reviewed revision. Recon documents, adjudication ledgers, artifact rows,
+transcripts, worktrees, and review reports are authority evidence, not
+canonical custody. The source-invalidation companion landed with REST r4 at
+`0139d9a71180a7175965473fade9b183d2b57601`.
+
+G1 uses the same exact canonical set. A change to the transcript-message
+projection, `message.created` mapping, or `messageType` wire contract lands all
+three files in one reviewed revision.
+
+## Assumptions
+
+AS1. The gateway already authenticates its existing credentials through the
+chat socket's in-band exchange. C2 reuses that exchange and adds no credential
+type.
+
+AS2. The REST companion ships each R9 snapshot read before the matching
+freshness class. Firehose A7 falsifies this assumption if a consumer cannot
+rebuild the displayed slice after reconnect.
+
+AS3. The REST companion ships the R7 sessions collection, detail route, and
+serializer before `session.spawned`, `session.updated`, or `session.retired`.
+Firehose A4 and A5 falsify this assumption if a consumer cannot rebuild its
+visible sessions after cold start, reconnect, or a detected gap.
+
+## Invariants — the state model is the entity
 
 P1. Tightbeam's truth is the state db: durable rows, queryable. A client's
 job is to hold a model of the slice it displays, built from the query
 surface (CLI verbs, HTTP reads: transcript, toplines, work-item and
 assignment reads).
 
-P2. The subscription exists only to tell the client that an aspect of that
-state changed, promptly, so the client updates its model without polling.
+P2. The subscription exists only to tell the client, through D1's post-commit
+handoff, that an aspect of state changed, so the client updates its model
+without polling.
 
 P3. Missed notices are HARMLESS by design. A subscription feeds from the
 moment of subscription; nothing earlier is available on the socket, ever.
@@ -86,20 +149,21 @@ P4. This makes the wrong architecture unrepresentable: the stream cannot
 be a client's prime model or its history source, because the socket
 simply does not carry the past.
 
-P5. HOW clients read state is under active recon (Mike-ordered in this
-review): direct SQL against the db is not a product interface; the CLI
-exists to make common things easy for agents, not to re-create SQL; bulk
-model-building reads likely belong on a formal REST surface exported
-directly to clients. The recon recommends the CLI-vs-REST split and the
-shape of that REST state API given the full internal schema; this spec
-may grow a companion REST-API section (or a sibling spec) from its
-findings.
+P5. The adopted `rest-state-api-v1.md` companion owns how clients read state.
+Direct SQL against the db is not a product interface. The CLI makes common
+agent reads concise and does not re-create SQL. Clients build bulk models from
+the companion REST surface.
+
+P6. `messageType` is the sole public message-kind discriminator for transcript
+messages. `role` keeps authorship direction and `sender` keeps provenance. A
+firehose adapter does not add `message_type`, `messageKind`, `kind`, or another
+message-kind alias.
 
 ## Goal
 
 G1. Tightbeam SHALL provide one WebSocket endpoint that notifies connected
-consumers, promptly after commit, that state changed — with enough in the
-notice to update a model of that state without a follow-up query in the
+consumers through D1's post-commit handoff that state changed — with enough in
+the notice to update a model of that state without a follow-up query in the
 common case.
 
 G2. Every state-changing commit SHALL produce a notice to every connected
@@ -136,11 +200,19 @@ N7. No webhooks, SSE, or polling interface in v1.
 
 N8. This spec does not authorize implementation.
 
+N9. G2 does not define the G1 message discriminator, the G3 write
+contract, the G4 error envelope, the G5 transcript reconciliation, the G6
+decision-state subset, the G7 detail-route set, or the G8 authority labels.
+
+Operating-guidance impact: none. Canonical r6 extends the existing
+source-class registry and creates no cross-repository agent rule.
+
 ## Terms
 
-T1. **Notice** — one frame telling a subscriber that a state change
-committed: its class, its reference ids, and the changed row's recorded
-content in full.
+T1. **Notice** — one frame telling a subscriber that a state change committed.
+An R8 rebuildable-state notice carries its class, refs, and full canonical
+public projection. An R8b source invalidation carries its class, refs, and
+natural source version only.
 
 T2. **Class** — the change's namespaced kind string from §The class
 registry. The set is OPEN; new mechanisms mint new classes and amend the
@@ -159,28 +231,58 @@ T5. **Read marker** — a user-scoped "seen through here" position stored as
 a substrate row (§Read markers). Not a stream concept; its changes merely
 broadcast like any other state change.
 
-## The event vocabulary law
+T6. **Source invalidation notice** — an `op:"observe"` notice from the exact
+durable commit that makes a composed REST view stale. It is a refetch trigger,
+not a rebuildable resource or a direct model upsert. Its R8b mapping fixes its
+class, source seam, refs, natural version, visibility, and payload.
+
+T7. **Message type** — the nullable classification stored at the message write
+seam and exposed as `messageType` in the canonical transcript-message
+projection. Current writers emit `assistant`, `substrate`, `marker`, or
+`agent`. The serializer omits `messageType` when the stored classification is
+null. A client accepts an unrecognized string; a missing or unrecognized value
+means `assistant` for message-type presentation. `role` still carries
+authorship direction.
+
+T8. **Session projection mutation** — a committed change that makes one
+canonical R7 session field other than `rowVersion` differ for one
+`sessionKey`. The comparison uses the complete serialized item with
+`rowVersion` excluded. It does not infer change from a verb name, timer, or
+declared effect list.
+
+T9. **Session mechanical status** — the R7 `mechanicalStatus` string preserves
+the existing `Tightbeam.Gateway.session_status/2` `run.state` projection. Its
+closed values are `idle` and `running`. Its only mutable input is the committed
+count of this session's turn rows whose `status` is `queued` or `running`:
+zero maps to `idle`; a positive count maps to `running`.
+
+## Architecture — the event vocabulary law
 
 V1. Every state-changing commit SHALL emit its notices as part of the
 commit path (post-commit, nonblocking to the transaction): a change with
 no notice class is a defect the registry test catches (A1).
 
+This amendment adds one class and one mutation seam because deleting sessions
+would remove the core Clawline model, while accepting stale session bytes would
+violate the ruled freshness-only architecture.
+
 V2. Classes are namespaced `area.happening`, lowercase, dot-separated. The
 registry below is part of this spec. A class name never changes meaning.
 
-V3. **RULED (Mike), refined r5:** the notice payload is the resource's
-CANONICAL PUBLIC PROJECTION — the full recorded product fields and user
-content, unredacted after authorization, sufficient to update a displayed
+V3. **RULED (Mike), refined r5:** an R8 rebuildable-state notice payload is the
+resource's CANONICAL PUBLIC PROJECTION — the full recorded product fields and
+user content, unredacted after authorization, sufficient to update a displayed
 model without a follow-up query. "Unredacted" never means raw rows: the
 db stores credentials (session cliToken, device token, harness
 identityToken) and no projection ever carries a storage secret. One
 serializer per resource owns the projection; REST detail and notice
 payload are byte-equivalent (A6).
 
-V4a. Every payload carries the row's monotonically increasing version
-(`rowVersion`, or the resource's natural one: `updatedAt`, seq). Clients
-apply notices and snapshot rows by LAST-VERSION-WINS upsert — "dedupe"
-does not exist as a concept (M1).
+V4a. Every R8 payload carries the row's monotonically increasing version
+(`rowVersion`, or the resource's natural one: `updatedAt`, seq). Clients apply
+R8 notices and snapshot rows by LAST-VERSION-WINS upsert — "dedupe" does not
+exist as a concept (M1). An R8b payload carries only its positive
+`sourceVersion`; T6 forbids applying it as a row upsert.
 
 V4. Notice shape:
 
@@ -200,19 +302,30 @@ V4. Notice shape:
 }
 ```
 
-`resource` and `op` (`upsert` | `delete`) spare model code from parsing
-class strings. A delete carries the final public projection as its
+`resource` and `op` (`upsert` | `delete` | `observe`) spare model code from
+parsing class strings. A delete carries the final public projection as its
 tombstone payload and the client removes the key — required because some
 rows hard-delete today (roles).
 
 `refs` SHALL always include the resource's primary id (per the R8
 mapping); other reference ids appear when the change has them. One
-schemaVersion keeps one meaning; widening bumps it. Observational
-classes (R5, R6) use `op: "observe"` and omit `resource`.
+schemaVersion keeps one meaning; widening bumps it. Observational classes
+(R5, R6) and source invalidation classes (R8b) use `op: "observe"` and omit
+`resource`. An observational notice is audit. A source invalidation notice is
+a closed-world composed-view refetch trigger; it never masquerades as a row
+the query surface can rebuild.
 
 V5. Payload rows SHALL carry the same primary ids the query surface
 returns for the same rows, so a client can match a notice against fetched
 state (the correlation seam; recon wi_9fdc0c07 verifies it).
+
+V5a. The `message.created` payload is the exact shared R7 transcript-message
+item. Its `messageType` value comes from the stored discriminator; neither the
+firehose adapter nor the serializer derives it from `content`, `sender`, or a
+first-line convention. A null stored discriminator omits the key from both
+surfaces. The notice carries `refs.messageId` equal to payload `id` and
+`refs.sessionKey` equal to payload `sessionKey`. The matching REST row and
+notice payload expose the same present or omitted `messageType` bytes.
 
 ## The class registry (initial enumeration, derived from main tip)
 
@@ -225,10 +338,11 @@ in payload), `attest.filed` (kind and verdictKind in payload).
 R2. Attention and escalation:
 `wake.scheduled`, `wake.fired`, `wake.canceled`, `prod.fired`,
 `turn.started`, `turn.ended`, `decision_request.opened`,
-`decision_request.ruled`, `decision_request.withdrawn`.
+`decision_request.ruled`, `decision_request.withdrawn`,
+`operator_ruling.provenance_recorded`.
 
 R3. Org shape:
-`session.spawned`, `session.retired`, `role.created`, `role.bound`,
+`session.spawned`, `session.updated`, `session.retired`, `role.created`, `role.bound`,
 `role.removed`, `user.added`, `device.approved`, `device.denied`,
 `device.revoked`.
 
@@ -237,6 +351,11 @@ R4. Records: `artifact.recorded`, `read_marker.updated` (RM3).
 R4b. Conversation: `message.created` — without it a chat client cannot be
 lively (M4 promised message classes; recon wi_9239a7f1 caught the
 registry gap).
+
+R4c. Composed-view invalidation sources: `topline.created`,
+`topline_work_membership.linked`, `topline_work_membership.unlinked`, and
+`subagent_marker.appended`. R8b is their complete mapping. There is no
+`execution_map.*` class.
 
 R5. Dispatch (OBSERVATIONAL-ONLY): `verb.accepted`, `verb.denied` — one
 per gateway verb call, with the verb name, origin, and principal in
@@ -266,13 +385,51 @@ correlation contract). A class without a row is a red build.
 
 | Class | Resource | Op | Primary notice ref | Serializer | Version and emission | Visibility and convergence | A1/A6 coverage |
 |---|---|---|---|---|---|---|---|
+| `session.spawned`, `session.updated`, `session.retired` | `sessions` | `upsert` | `sessionKey` | exact shared R7 session serializer | The session projection mutation seam allocates the next durable session `rowVersion` in the same transaction as the changed projection. First materialization selects `session.spawned`; an `active` to `retired` state transition selects `session.retired`; each other changed item selects `session.updated`. One commit selects one class. A no-change request emits none. | REST AU4 session visibility. Consumers apply last-version-wins by `sessionKey`. The payload `sessionKey` equals `refs.sessionKey`. | A1 covers the mutation seam and class selection. A6 verifies byte equivalence with `GET /api/sessions/:sessionKey`. |
 | `condition_fact.filed` | `condition facts` | `upsert` | `factId` | exact shared R7 condition-fact serializer | The condition fact `id` is its append-only natural version; its `rowVersion` equals `id`. Each successful insertion into `condition_facts` emits one notice after commit. An idempotent filing that returns the existing fact emits none. | `GET /api/facts` visibility. Consumers apply last-version-wins by `factId`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 | `critical_lease.updated` | `critical state` | `upsert` | `sessionKey` | exact shared R7 critical-state serializer | The item uses R7 critical-state `rowVersion`. Each committed change to the R7 item for one `sessionKey` emits one notice after commit. A replay or idempotent request that leaves the item and `rowVersion` unchanged emits none. | `GET /api/critical-state` admin-only visibility. Consumers apply last-version-wins by `sessionKey`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
+| `operator_ruling.provenance_recorded` | `operator ruling provenance` | `upsert` | `decisionRequestId`, `sessionKey` | `Tightbeam.Escalation.public_operator_ruling_provenance_item/1`, the exact shared R7 operator-ruling-provenance serializer | The terminal mutation allocates the decision-request row's next positive `rowVersion`. Each successful post-epoch ruling emits one notice after commit. A refusal, pre-epoch row, migration, or replay that leaves the terminal row unchanged emits none. | `GET /api/decision-requests/:id/operator-ruling-provenance` visibility: operator-request owner user or admin. Consumers apply last-version-wins by `(requestId,rowVersion)`. Payload `requestId` equals `refs.decisionRequestId`; payload `submittingSessionKey` equals `refs.sessionKey`. | A1 covers the class, emission seam, resource, op, and refs. A6 verifies the complete payload is byte-equivalent to the REST detail item. |
+| `message.created` | `transcript messages` | `upsert` | `messageId`, `sessionKey` | exact shared R7 transcript-message serializer | The item uses its R7 `rowVersion`. Each newly committed transcript message emits one notice after commit; an idempotency replay that returns the existing row emits none. | `GET /api/sessions/:sessionKey/messages` visibility. Consumers correlate by `messageId` and apply last-version-wins by `(payload.id, payload.rowVersion)`. | A1 covers the class and both refs. A6 verifies the complete item, including conditional `messageType` omission, is byte-equivalent to the matching REST row. |
 
-R9. Composed views (toplines, coordination-share, digest-members, org)
-have no notices of their own. Each composed REST resource DECLARES its
-underlying state classes; a client refreshes the view when a matching
-notice arrives. The REST spec carries the per-view dependency lists.
+R8b. Source invalidation classes are deliberately not R8 rebuildable-state
+rows. Each emits `op:"observe"`, omits `resource`, and carries exactly
+`payload:{"sourceVersion":I}`, where `I` is a positive JSON integer. A client
+never applies this payload as state; after visibility and subscription filters
+allow it, the client refetches each composed REST view that lists the class in
+its closed R9 dependencies.
+
+| Class | Exact successful source commit | Required refs | Source version and `occurredAt` | Visibility before filters | Emission |
+|---|---|---|---|---|---|
+| `topline.created` | `Tightbeam.Toplines.create/2` inserts the `toplines` row and its `topline_events(kind='topline_created')` row in one transaction | `toplineId` | `sourceVersion` is that Topline's positive `topline_events.seq`; `occurredAt` is its `eventAt` | the REST AU4 Toplines owner-or-admin predicate on the committed Topline | exactly once after a new commit; an idempotency replay emits none |
+| `topline_work_membership.linked` | `Tightbeam.Toplines.link_work/2` inserts `topline_work_memberships`, touches the parent Topline, and inserts `topline_events(kind='work_linked')` in one transaction | `toplineId`, `membershipId`, `workItemId` | `sourceVersion` is the positive sequence of that `topline_events` row; `occurredAt` is its `eventAt` | the REST AU4 Toplines owner-or-admin predicate on the parent Topline | exactly once after a new commit; a refusal or idempotency replay emits none |
+| `topline_work_membership.unlinked` | `Tightbeam.Toplines.unlink_work/2` ends `topline_work_memberships`, touches the parent Topline, and inserts `topline_events(kind='work_unlinked')` in one transaction | `toplineId`, `membershipId`, `workItemId` | `sourceVersion` is the positive sequence of that `topline_events` row; `occurredAt` is its `eventAt` | the REST AU4 Toplines owner-or-admin predicate on the parent Topline after commit | exactly once after a new commit; a refusal or idempotency replay emits none |
+| `subagent_marker.appended` | `Tightbeam.SubagentMarkers.append/3` or `append_in_txn/2` inserts one `subagent_markers` row | `markerId`, `sessionKey`; `assignmentId` and `workItemId` when the marker has a non-null assignment that resolves to a work item | `markerId` is the inserted positive row id encoded as a canonical base-10 string without leading zeros; `sourceVersion` is the same id as a positive JSON integer; `occurredAt` is marker `at` | the marker inherits its non-null parent assignment's AU4 grant and requires the resolved work item's AU4 grant; a null, unresolved, or denied assignment yields no delivery to that principal | exactly once after `Txn.changes(txn) == 1`; `INSERT OR IGNORE` returning the existing marker emits none |
+
+The marker mapping derives authorization only from existing assignment and
+work-item grants. It creates no principal behavior. The Topline mappings expose
+no new Topline field or serializer. These four notices carry only the refs and
+source version needed to invalidate a composed view; the authorized REST
+composition remains the only rebuild path.
+
+R8b filter values are closed. `classes` matches the notice's literal class by
+S2 prefix. `sessionKey` and `workItemId` match only the equal literal ref when
+that ref is present in the mapping row; an absent ref is no match. Thus
+`sessionKey` has a value only for `subagent_marker.appended`, and `workItemId`
+has a value only for the two membership classes and for a marker whose
+non-null assignment resolves to a work item. The R8b refs object contains
+exactly the refs named by its mapping row and omits every absent optional ref.
+Each mapping omits `origin` and `principal`; a subscription that supplies
+either filter does not match an R8b notice. Visibility still runs first, so a
+hidden source never reaches this matcher. A composed-view client subscribes
+to the R9 class prefixes and adds only ref filters for which these rules define
+a value; the matcher derives no ref or filter value from an owner, mutation
+actor, authenticated principal, or other row.
+
+R9. Composed views (toplines, execution map, coordination-share,
+digest-members, org) have no notices of their own. Each composed REST resource
+DECLARES its underlying state and source-invalidation classes; a client
+refreshes the view when a matching notice arrives. The REST spec carries the
+per-view dependency lists.
 
 R10. Visibility-affecting classes (`role.bound`, `role.removed`,
 `user.promoted`, `device.revoked`, `session.retired`, `user.added`) are
@@ -352,9 +509,27 @@ between building the model and receiving the first notice — subscribing
 first closes it, and the worst case becomes duplicate records, never
 missed ones. Therefore the client's model-build algorithm SHALL be
 IDEMPOTENT under duplicate records — implemented as last-version-wins
-upsert on (id, rowVersion) (V4a): an older version over a newer one is a
+upsert on (primary id, rowVersion) (V4a), where a session's primary id is
+`sessionKey`: an older version over a newer one is a
 no-op, anything applied twice converges. Plain drop-by-id is FORBIDDEN
 (it silently keeps stale rows).
+
+M4's conversation-specific snapshot-to-buffer cut is a client-state critical
+section. The session reads before and after the REST message snapshot must
+match in both `rowVersion` and `clearedThroughSeq`; that accepted `rowVersion`
+is the snapshot coverage watermark. The client detaches a finite buffered
+prefix, discards covered session versions, resolves higher versions in order,
+marks the prefix consumed, and publishes the candidate in that critical
+section. Notices above the cut remain buffered and are processed in
+connection-sequence order. M4 defines when a higher session version invalidates
+the candidate instead of entering the model as an upsert.
+
+M1b. Apply only R8 `upsert` and `delete` payloads directly to the model under
+M1. For each allowed R8b `observe` notice, refetch every currently held R9 view
+that declares the class and replace that composed snapshot. The client does
+not compare `sourceVersion` with `dependencyVersion` and does not apply the
+R8b payload as an entity. Repeating one R8b notice may repeat the refetch and
+cannot change the resulting snapshot bytes at a quiescent source state.
 
 M2. On ANY doubt — reconnect, seq skip (T4), gateway restart, or plain
 suspicion — rebuild: re-snapshot the displayed slice and keep applying
@@ -387,8 +562,27 @@ broker-stored consumer-group offsets.
 
 M4. A chat client: model from the transcript read (paginated,
 before/after); send via wake; watch `wake.scheduled` and the turn/message
-classes update the model; deep scroll-back pages the transcript read.
+classes update the model; watch `session.*` for picker, engine, identity,
+history-barrier, retirement, and mechanical-status freshness; deep scroll-back
+pages the transcript read.
 Whether every piece stands on today's query surface is recon wi_9fdc0c07.
+
+A chat client builds conversation state from the canonical REST
+`GET /api/sessions/:sessionKey/messages` read and may reach it through the
+`transcript` CLI wrapper. Deep scroll-back passes REST's opaque
+`page.oldestCursor` as `before`. The client sends via wake and watches
+`wake.scheduled`, the turn/message classes, and `session.*` as supplied by the
+separate recon-finding-G2 prerequisite. After the client chooses a
+`sessionKey`, it subscribes to `message.created` and the `session.` prefix for
+the selected key before reading conversation state. On reconnect, a
+seq skip, or a session history-boundary change, it applies M2: subscribe first
+and rebuild the displayed slice from a cursorless REST tail. It does not
+request notice replay, use a stream cursor, or treat an `after` page as gap
+recovery. REST R5d and `transcript-verb-v1.md` carry the history and wrapper
+acceptance. The closed M1 cut, covered-version comparison, and the mandatory
+rebuild for every newer different-boundary session notice are specified by
+`transcript-verb-v1.md` steps 3 through 8 and A5. Recon wi_9fdc0c07 remains the
+demand evidence.
 
 ## Delivery semantics
 
@@ -435,11 +629,33 @@ A1. Every state-changing verb on main tip emits notices whose classes
 match §The class registry, both directions — a test diffs the verb table
 and emitted classes against the registry.
 
+The same table covers every R8b source commit. It fails if a successful new
+Topline or marker commit emits no mapped class, emits more than the one mapped
+class, or if a refusal, idempotency replay, or ignored duplicate emits one.
+
 For `condition_fact.filed` and `critical_lease.updated`, the A1 table names
 the shared AU4 visibility function for the R8 resource and tests one allowed
 and one denied principal. The REST detail and firehose fan-out invoke that
 same function; the allowed principal receives the committed notice and the
 denied principal receives neither detail nor notice.
+
+For sessions, the A1 table drives first materialization, display-name change,
+adoption change, archetype, identity or override change, engine or host change,
+history-barrier change, mechanical-status change, and retirement through the
+single projection mutation seam. Given a successful commit, when any R7 item
+field other than `rowVersion` changes, then the same transaction advances
+`rowVersion` and selects
+exactly one of `session.spawned`, `session.updated`, or `session.retired` by
+the R8 rule. Given unchanged serialized bytes, then it advances no version and
+emits no session state notice. The test fails if any writer can change a
+mutable input to the R7 session item outside this seam.
+
+For the T9 input, the table commits these cases: zero qualifying turns to one,
+one to zero, one to two, two to one, `queued` to `running`, and a change wholly
+outside the `queued`/`running` set. Only zero to positive and positive to zero
+change `mechanicalStatus`, advance the session `rowVersion`, and select
+`session.updated`. The other cases emit their mapped turn notices and no
+session notice from the T9 input.
 
 A2. A subscriber receives a notice for a matching commit made after its
 registration cut, and never one from before it.
@@ -454,19 +670,93 @@ A3. A filtered subscriber receives exactly the matching notices; a change
 matching several of a connection's subscriptions arrives once per
 matching subscription, each tagged.
 
-A4. M1 converges: subscribe-then-snapshot-then-apply reaches a model
-identical to a fresh query at any quiescent moment, duplicates dropped
-via V5's shared ids.
+For each session class, a table tests the closed filter rules: its literal
+class matches the `session.` prefix; `refs.sessionKey` matches only the equal
+`sessionKey` filter; and `origin` and `principal` never match. The visibility
+predicate runs before the matcher, and a denied session invokes no matcher and
+emits no frame.
+
+For each R8b class, a table tests the closed filter rules: its literal class
+matches the correct prefix; each present `sessionKey` or `workItemId` ref
+matches only the equal filter; each absent ref does not match; and `origin`
+and `principal` never match. The visibility predicate runs before the matcher,
+and a denied source invokes no matcher and emits no frame.
+
+A4. M1 converges: subscribe-then-snapshot-then-apply reaches a model identical
+to a fresh query at a quiescent moment. Reapplying the same R8 notice converges
+through V4a last-version-wins. Receiving the same R8b source version twice may
+cause two refetches and cannot mutate the model directly.
+
+Given a client that receives `subscription_ready` for `session.`, when it pages
+`GET /api/sessions` while one session changes concurrently, then applying the
+buffered session notice and snapshot items by `(sessionKey,rowVersion)` yields
+the same session collection as a fresh quiescent read. The outcome is the same
+whether the snapshot item or notice arrives first.
 
 A5. Kill the gateway mid-stream: clients detect the close, resubscribe,
 rebuild, and converge again (M2). Force a slow consumer into 4008: same.
 
-A6. For every state (non-observational) class, the notice payload and the
-REST detail item are BYTE-EQUIVALENT after removing envelope fields — one
+Given a client that misses `session.updated`, when a later sequence or
+heartbeat exposes the gap, then the client resubscribes, pages the visible
+sessions collection, and converges from that snapshot plus live notices.
+
+Given a disconnect after a session change, reconnect uses the same
+resubscribe-and-snapshot sequence and reaches the same result.
+
+A6. For every R8 rebuildable-state class, the notice payload and the REST
+detail item are BYTE-EQUIVALENT after removing envelope fields — one
 serializer owns both (V3). Verified per class by a table-driven test that
 also names each class's resource, op, and primary-key mapping. And no
 public projection anywhere contains cliToken, a device token, an
 identityToken, or a secret host-env value.
+
+The G7 comparators for resources that previously had collection-only reads are
+exactly these addressable detail routes:
+
+| R8 resource | Detail comparator |
+|---|---|
+| attests | `GET /api/attests/{payload.id}` |
+| roles | `GET /api/roles/{payload.name}` |
+| transcript messages | `GET /api/sessions/{payload.sessionKey}/messages/{payload.id}` |
+| condition facts | `GET /api/facts/{payload.id}` |
+| critical state | `GET /api/critical-state/{payload.sessionKey}` |
+| operator ruling provenance | `GET /api/decision-requests/{payload.requestId}/operator-ruling-provenance` |
+| host environment | `GET /api/host-env/{payload.host}/{payload.harness}/{payload.name}` |
+
+Each comparator invokes the same resource query, AU4 visibility predicate,
+and public serializer as its collection and R8 publisher. The REST adapter
+adds only the shared detail envelope. A REST-local projection or a second item
+shape fails A6.
+
+For an upsert class, A6 compares the live detail `item` with the notice
+payload. For `role.removed`, the delete commit invokes the same roles
+serializer on the last pre-delete projection with the new delete
+`rowVersion`; A6 compares that serializer output with the tombstone payload.
+After commit, `GET /api/roles/:name` returns the ordinary unknown
+`404 not_found`. The firehose does not create REST history or a second role
+shape.
+
+Given one newly committed message for each current `messageType` value and one
+historical message whose stored discriminator is null, when an authorized
+client fetches the rows and receives their `message.created` notices, then
+each notice payload is byte-equivalent to its matching fetched item. Each
+notice also has `refs.messageId == payload.id` and
+`refs.sessionKey == payload.sessionKey`. The historical item and payload omit
+`messageType`; neither emits `messageType:null`.
+
+Given equal message content across those fixtures, when REST and firehose
+serialize them, then each surface preserves the stored discriminator. The test
+fails if either surface parses content or calls a route-local serializer.
+
+Given a matching fetched item and notice payload with an unrecognized nonempty
+`messageType`, when a conforming client reads either item, then it accepts the
+item and treats its message type as `assistant`. Given a matching pair that
+omits `messageType`, the client does the same. Neither fallback changes `role`.
+
+R8b source invalidations are outside A6 because they expose no rebuildable
+resource. A table-driven test instead requires their exact `op`, absent
+`resource`, refs, one-key payload, source version, commit cut, and visibility
+predicate. It then proves the matching R9 composed view changes after refetch.
 
 For `condition_fact.filed` and `critical_lease.updated`, the A6 test uses
 the R8 shared serializer, primary ref, and version fields to apply older,
@@ -475,16 +765,26 @@ and one `sessionKey`. It proves per-resource last-version-wins convergence to
 the R7 item: condition facts use equal integer `id`, `refs.factId`, and
 `rowVersion`; critical state uses its R7 `rowVersion`.
 
+For each session class, the A6 test requires `resource:"sessions"`,
+`op:"upsert"`, equal payload and ref `sessionKey`, and the exact R7 session
+bytes returned by `GET /api/sessions/:sessionKey`. Older, duplicate, and newer
+snapshot items and notices applied in both orders converge by the session
+`rowVersion`.
+
 A7. The feature-smoke drives one real external consumer (ATC or a script)
 end to end: cold build from queries, live updates via subscription,
 forced reconnect, rebuild, convergence.
 
 ## Open questions for Mike
 
-None. The read-marker question (r4's MQ1) is RULED 2026-08-21: substrate
-rows, per §Read markers. Everything earlier is resolved or mooted by the
-state-model ruling: auth (existing credential), payloads (full row),
-retention and storage and cursor encoding (no event storage exists),
-table fold (no new table exists). The load-bearing unknown is no longer
-in this spec — whether the query surface suffices is recon wi_9fdc0c07's
-question.
+None. The read-marker question (r4's MQ1) is RULED 2026-08-21: substrate rows,
+per §Read markers. Everything earlier is resolved or mooted by the state-model
+ruling: auth uses the existing credential; R8 rebuildable payloads carry the
+full canonical row; R8b carries only its exact invalidation version; no event
+storage, retention, or cursor exists. The adopted REST companion owns the
+query surface.
+
+The source-invalidation amendment is ruled by
+`att_d5b0a440-bd51-498f-8b96-e6512fedf68f`: preserve marker-backed `fanOut`
+and durable Toplines, map their exact source commits, and add no
+ExecutionMap notice class.

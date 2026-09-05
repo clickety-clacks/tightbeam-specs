@@ -1,0 +1,17 @@
+{
+  "method": "static literal comparison; no product code executed",
+  "source": "/Users/mike/acp-supported-paths-recon/asg_a48b66c3/claude.ex",
+  "bundle": "/Users/mike/acp-supported-paths-recon/asg_a48b66c3/acp-agent.js",
+  "replacements": [
+    {
+      "index": 1,
+      "before_count": 0,
+      "after_count": 0
+    },
+    {
+      "index": 2,
+      "before_count": 0,
+      "after_count": 0
+    }
+  ]
+}

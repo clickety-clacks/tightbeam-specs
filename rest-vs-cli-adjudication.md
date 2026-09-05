@@ -1,6 +1,13 @@
-# REST vs CLI — the state-read adjudication (tb02, r2 — reconciled)
+# REST vs CLI — the state-read adjudication (tb02)
 
-Status: r2, 2026-08-21 — RECONCILED with recon wi_9239a7f1's report
+Status: CANONICAL r2, 2026-08-21. r2 is the adopted three-plane authority
+input for `rest-state-api-v1.md` canonical r4. Mike's 2026-08-25 ruling in
+message `s_21b93fdd-5e62-4ed9-ac7e-923697463936` supersedes only r2's contrary
+`asUser` query-parameter prohibition; canonical REST r4 owns that current
+transport behavior. The read-plane, write-plane, and CLI-sugar rulings remain
+unchanged.
+
+r2 reconciled recon wi_9239a7f1's report
 (NFS shared/specs/tightbeam/rest-state-api-recon.md; recon accepted the
 three-plane ruling and its inventory corrections are adjudicated in).
 Accepted from the recon: coordination-share and digest-members are pure
@@ -13,14 +20,26 @@ small /api/org document; first-class bulk /api/attests, /api/wakes,
 state resource); canonical public projections with secrets structurally
 excluded; notices carry resource+op with delete tombstones; keyset-only
 pagination on immutable orders (the transcript precedent), whitelist
-filters, no fields/sort/include/join params; bearer-credential auth with
-no asUser query parameter. Rejected: nothing material. The recon's
+filters, no fields/sort/include/join params; and the then-current
+bearer-credential rule with no `asUser` query parameter. The status paragraph
+above marks that last clause's later, scoped supersession. Rejected: nothing
+material. The recon's
 "Formal REST contract" section (envelopes, pagination rules, filter
 tables, resource routes, projection minima, migration order, acceptance
-proofs) is ADOPTED as the baseline for the REST spec. Spec-side folds
-landed as event-firehose-v1.md r5. Adjudicated by tb02 per Mike's ruling
+proofs) was adopted as the baseline for the REST spec, subject to the scoped
+`asUser` supersession above. Spec-side folds landed as event-firehose-v1.md
+r5. Adjudicated by tb02 per Mike's ruling
 that recon output is input to my classification. Feeds
 event-firehose-v1.md P5.
+
+## Spec homing
+
+The canonical CLI/query adjudication lives only in the `tightbeam-specs`
+repository as `rest-vs-cli-adjudication.md` canonical r2. It is an authority
+input, not a coupled custody companion for REST r4. Canonical
+`rest-state-api-v1.md` owns current query routes, transport, authorization,
+and wire behavior. A worktree, report, transcript, or artifact row is evidence,
+not canonical custody.
 
 ## The decision rule
 
@@ -58,7 +77,7 @@ convenience) and the data moves to/lands on a REST resource.
 | work-item-trace | GET /api/work-items/:id/trace | composed resource |
 | assignments / assignment-get | GET /api/assignments, /api/assignments/:id | today's /api/work reconciles into this naming |
 | attests | GET /api/assignments/:id/attests | |
-| transcript | GET /api/sessions/:key/messages?before&after&limit | pagination precedent from transcript.ex |
+| transcript | GET /api/sessions/:key/messages?before&after&limit | REST R5/R5d owns opaque cursor and history-boundary semantics; the CLI wrapper owns no data contract |
 | inspect | GET /api/sessions/:key | |
 | artifacts / artifact-get | GET /api/artifacts, /api/artifacts/:id (+ existing /download/:asset_id) | |
 | decision-requests / decision-request | GET /api/decision-requests, /:id | |
@@ -107,8 +126,10 @@ GET /api/wakes/:wakeId/digest-members.)
   plane computes the projection. CLI wrapper stays because agents live in
   it.
 - **transcript**: REST with before/after pagination; the chat client's
-  model build is the canonical consumer (spec M4). CLI wrapper stays for
-  agents reading a colleague's conversation.
+  model build is the canonical consumer (spec M4). The CLI wrapper stays for
+  agents reading a colleague's conversation and passes REST's opaque cursors
+  through unchanged. It does not retain the superseded message-id cursor or
+  candidate/message projection.
 - **work-item-trace**: REST composed resource; the CLI wrapper stays.
 - **attend**: verb — it changes attention state. **coordination-share
   and digest-members**: r2 correction — pure reads (gateway.ex confirms
