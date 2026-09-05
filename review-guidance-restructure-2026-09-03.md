@@ -105,7 +105,7 @@ Accept a rejected finding only with evidence.
 ## Substrate procedures
 
 1. Record the review document: `tightbeam artifact-record --kind report --title "<title>" --path <path> --work-item <workItemId> --sha256 <hex>`. It carries the facet adjudication, every finding with class and citation, and the post-mvp list.
-2. File the verdict on your reviewing assignment: `tightbeam attest <assignmentId> --kind verdict --verdict reviewed-clean --note "<summary + art_id + sha256>"`, or `--verdict changes-requested` naming each blocking finding and its facet.
+2. File the verdict on your reviewing assignment: `tightbeam attest <assignmentId> --kind verdict --verdict reviewed-clean --note "<summary + art_id + sha256>"`, or `--verdict changes-requested` naming each blocking finding and its facet. The verdict note has a 2,000-character cap, enforced by the substrate. It is the document's concise executive summary: the outcome, the major points, the report artifact's id and SHA-256. Do not copy the clause table into the note.
 3. Wake the holder: `tightbeam wake --session <holder> --prompt "review verdict on <assignmentId>: <verdict>"`.
 4. File completion on your own assignment, whatever the verdict. Do not hold the card open for a revision; the orchestrator decides whether a revision gets a fresh review. Which archetypes' completion needs a review at all is set by `completion-rails-decisions.md`, not here.
 
@@ -113,6 +113,15 @@ Four rows, all yours.
 
 A producer may contest one blocking finding as unneeded for the ask. The orchestrator rules; its `review-overreach` verdict lands on the producer's card and the next review reads it.
 ```
+
+The verdict-note cap, the executive-summary framing, and the clause-table prohibition in
+step 2 are not new. They are the bounded verdict note law, restored to `guidance/reviewer.md`
+on both lines on 2026-09-04 at 17:24 PT (main `07763d1e`, 0.1.9 `8bcc242b`) after this spec
+was first written. This restructure deletes `reviewer.md`, so the law is re-homed here, in
+the file both reviewing archetypes include. No merge conflict can flag its loss, because the
+file that carried it is the file being deleted. Anyone rebasing this restructure onto a newer
+base owes the same check for every other deleted file: diff each one between the base and the
+line tip, and account for every added line.
 
 ## File: guidance/reviewer-code.md
 
