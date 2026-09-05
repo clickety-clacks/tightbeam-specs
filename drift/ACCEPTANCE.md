@@ -1,0 +1,17 @@
+# Drift MVP acceptance examples
+
+These examples make SPIRIT.md's existing outcomes checkable. They add no new feature or deployment authority. Use real GUI and external-harness interaction for final acceptance; unit tests can establish the core contract earlier.
+
+1. **Writing together:** human writes text/Markdown, saves, selects a sentence and asks a question. Their external agent reads the exact selected text plus context, replies, points elsewhere and suggests a replacement. Human accepts one suggestion and declines another. Both participants can edit, point, comment, reply, suggest and resolve with visible authorship.
+2. **One human caret:** while the human has a selection and keyboard focus, change the agent's selection and point-out. The human's caret/selection and focus remain unchanged. A subsequent keyboard event edits where the human expects. The two selections remain distinguishable.
+3. **Exact passages across representations:** use a document with repeated sentences, an emoji and combining-mark text before the selected passage. Compare the human's selected text with what the service and external agent return. Nearby insertions/deletions preserve the intended passage; deletion of the passage becomes visibly detached/deleted. No fallback silently binds the thread to an identical sentence elsewhere. The technical spec owns the indexing convention and boundary behavior.
+4. **Stale edits:** let the agent read a revision, then change the document as the human. Applying the agent's stale replacement must refuse visibly and preserve the newer text. Refetch and submit a fresh edit. Retrying an acknowledged durable action must not duplicate its effect.
+5. **Saving and interruption:** persist text, a question, a reply and a suggestion; restart and recover them. Interrupt a save around its acknowledgement boundary. Anything reported as saved must survive; an incomplete write must not corrupt the prior durable state. Recoverable local writing and unsaved/error status must match the technical contract. Do not claim arbitrary unacknowledged keystrokes survived without evidence.
+6. **Reconnect and waiting:** disconnect the agent, create a question, reconnect from its prior event cursor and recover the question. An active external harness uses the adapter's wait result to read and answer it. Record the actual harness/command and distinguish active waiting from waking an idle harness. Reconnect must not duplicate durable replies or resurrect obsolete presence as current.
+7. **Deployment configuration:** demonstrate the same workflow with colocated components and with separate client/service locations. Show configured endpoint, bind address, storage and connection settings using disposable data and credentials. Verify access denial and permitted access against the eventual approved trust model. No live Gibson install is implied by this test.
+
+## Evidence and limits
+
+For each run record the exact candidate, test host, commands, actual inputs, expected/observed behavior and relevant logs or captures. The Qt spike art_114d275d supplies preliminary overlay/focus evidence only; it is not persistent-anchor, recovery or end-to-end acceptance.
+
+Pending dr_fb76ce2a governs toolkit/trust choices. License and publication remain independent of private implementation. No rich-text fidelity, Markdown preview, office-suite feature or automatic idle-harness wake is introduced here.
