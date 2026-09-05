@@ -150,6 +150,8 @@ Line coverage: not a gate; a percentage is not a finding.
 ## Substrate procedures: code
 
 The report opens with conformance: every clause of the ask marked satisfied, unsatisfied, unproven, or out of scope, each with its evidence.
+Read the ask at its source. Under heavy posture that is the canonical spec at its canonical path; verify the work item's pinned sha256 when present, because conformance is owed to the ruling text. Under light posture the work item's input is the ask.
+Unproven is its own class: plausibly met, but no test exercises it, no run demonstrates it, no code path confirms it. Do not round it up to satisfied.
 Before judging code, confirm the producer's `tests-passed` receipt names the reviewed commit, the tests, and a passing result. A weak or false receipt is blocking.
 Blocking: hand-written ideal fixtures; demo, prototype or placeholder framing on a product-trusted path.
 Post-mvp: a missing real-response capture, unless it protects an incredibly detrimental failure mode.
@@ -182,3 +184,29 @@ A hole on a concept the MVP is built on is blocking. A hole on a facet the ask s
 State what operating pattern the spec teaches agents: an explicit "none", or the manual amendment landing with it.
 Wake the spec-writer with the verdict.
 ```
+
+## Skill elections
+
+"No review skills" in the rulings covers all five that `reviewer.toml` elects for
+reviewing: `reviewing-code`, `reviewing-specs`, `spec-conformance`,
+`review-for-completeness` and `review-for-yagni`. Neither `reviewer-code.toml` nor
+`reviewer-spec.toml` elects any of them. Their substance is carried above as concise
+guidance, which is the treatment the second ruling prescribes: the clause table and its
+four marks, the must-have facet adjudication, the artifact-and-sha256 receipt, the
+verdict-note law, the YAGNI and speculative-generality axes, and the completeness axis
+that opens the report. Both archetypes keep `worktree-session`,
+`tightbeam-law-minting`, `tightbeam-guidance-authoring` and `human-communication`.
+
+`reviewing-code/SKILL.md` and `reviewing-specs/SKILL.md` are deleted. The other three
+skill directories are NOT deleted by this change: they stay in the tree, elected by
+nobody. That is a deliberate, recorded outcome, not an oversight. Deleting them is a
+separate decision with its own authority, and this restructure does not take it.
+
+`test/archetypes_test.exs` carries a guard that reads the `reviewer` archetype's
+snapshot and asserts the verdict-note law in its guidance and in its `spec-conformance`
+skill. This restructure deletes that archetype, so the guard must be re-derived, not
+deleted: assert the law in the guidance of BOTH `reviewer-code` and `reviewer-spec`,
+which reach it through `review-common.md`. The skill half of the assertion drops
+because no archetype elects the skill; say so where the test can be read, so the drop
+is visible rather than silent. The same applies to any other test that enumerates the
+guidance directory: re-derive it against the post-restructure file set.
