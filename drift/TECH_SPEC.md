@@ -16,9 +16,12 @@ not replace the Spirit. Work: `wi_9069f091-53a7-41ff-8b7b-a7d07c188bde`.
 Code home: private `clickety-clacks/drift`. Spec home: this file on
 `clickety-clacks/tightbeam-specs` main.
 
-Draft status: landed for custody; scheduled cold digest precedes review/build
-handoff. [ACCEPTANCE.md](ACCEPTANCE.md) at `ea101a4` supplies the PO's acceptance
-examples; the checks below implement those outcomes.
+Slice status: [CORE_CONTRACT.md](CORE_CONTRACT.md) is the normative, independently
+reviewable slice 1 contract. It supersedes this draft's core state, commands,
+anchors, and durable-recovery clauses. The whole-loop text below remains a draft
+for the later editor/adapter/topology slices; it adds no gate to core review or
+implementation. [ACCEPTANCE.md](ACCEPTANCE.md) at `ea101a4` supplies the PO's
+acceptance examples; the checks below implement those outcomes.
 
 ## Non-Goals
 
