@@ -138,13 +138,13 @@ interpret the description or mint the class.
 3. A stored notice turn's terminal state is the proof that a session could or
    could not receive the escalation. `delivered` proves a living authority;
    `failed`, `failed_unknown`, and `canceled` do not.
-4. The frozen four-class `0.1.9` port on assignment
-   `asg_8187716c-2e0a-4b6a-be73-e68fa73c429e` is
-   `f655a000ef50e4416f45c83b0e822843aed86980`, parent
-   `c3299e3a75dab21ed2839822d8ad207514f92782`. It keeps schema stamp
-   `identity-universal-root-render-v1-019`. The `0.1.9` product candidate for
-   this contract must use the reviewed and landed `f655a000...` as its direct
-   first parent and apply the closed predecessor-shape rule in ARC-08.
+4. At the start of each implementation attempt, each target line has one exact
+   protected branch tip and that tip declares one exact current schema stamp.
+   The producer can read both values and the complete harness-health objects at
+   that tip without changing product state. Historical commits and schema
+   stamps remain evidence of prior behavior; none is a permanent parent or
+   predecessor for a later candidate. ARC-08 binds each candidate to the
+   values read for that execution attempt.
 5. Product `main` baseline `3e1dc56e...` contains the reviewed repair series at
    `31c91a7a...` and already recognizes the four added named classes.
 6. The system clock supplies integer UTC epoch milliseconds. SQLite transaction
@@ -729,23 +729,43 @@ copying rows with new columns null, rebuilding indexes and triggers, validating
 counts and foreign keys, swapping tables, creating the four new tables, and
 advancing the stamp. It never sniffs DDL to guess a predecessor.
 
-The target stamps are `harness-health-other-v1-main` and
-`harness-health-other-v1-019`. Main accepts only
-`coordination-fabric-v1-phase1-v15` and its exact harness-health objects.
+The target stamps remain `harness-health-other-v1-main` and
+`harness-health-other-v1-019`. Before a product edit, the producer reads and
+records each line's protected parent, predecessor stamp, and complete admitted
+predecessor object sets. After the candidate commit exists, the producer seals
+one immutable evidence tuple for each line:
 
-The `0.1.9` migration accepts stamp
-`identity-universal-root-render-v1-019` only when every harness-health column,
-index, trigger, and constraint matches one of two closed layouts from the
-declared commit chain: the two-class persisted layout at `c3299e3a...`, or the
-six-class fresh-database layout at `f655a000...`. Those layouts differ only in
-the `failureClass` checks: the first admits `auth-dead|rate-limit-dead`; the
-second also admits `adapter_unavailable|model_unavailable|task_crash|interrupted-outcome-unknown`.
-The migration does not infer a predecessor from a subset of objects. It
-compares the complete canonical object set to these two declared layouts,
-rebuilds either one to the same seven-class target, and records
-`harness-health-other-v1-019`. The candidate report binds the implementation to
-direct parent `f655a000...` and records which admitted database layout each
-migration fixture used.
+```text
+(line, candidateCommit, protectedParentCommit, predecessorSchemaStamp,
+ acceptedPredecessorObjectSetSha256[], targetSchemaStamp)
+```
+
+`protectedParentCommit` is the execution-time protected branch tip and is the
+candidate's direct first parent. `predecessorSchemaStamp` is the exact stamp
+declared by that parent. Each object-set digest covers the complete canonical
+harness-health columns, indexes, triggers, and constraints in one admitted
+fixture. Main records its one complete predecessor layout. `0.1.9` records the
+protected parent's exact retained two-class persisted layout and exact
+six-class fresh-database layout. The digest list is sorted lexicographically.
+Those two layouts differ only in the
+`failureClass` checks: the persisted layout admits
+`auth-dead|rate-limit-dead`; the fresh layout also admits
+`adapter_unavailable|model_unavailable|task_crash|interrupted-outcome-unknown`.
+
+Each line accepts only the evidence tuple's one predecessor stamp and its
+enumerated complete object-set digests. It performs one copy migration from
+that predecessor to the reviewed seven-class target shape and its existing
+target stamp. The producer preserves every product byte between the reviewed
+named-class landing and the protected parent except the exact changes required
+by this contract. The migration does not walk a commit or stamp chain, accept
+a wildcard predecessor, infer a predecessor from a subset of objects, or
+restamp objects without performing the copy migration.
+
+Before exact-pair review and again before landing, custody re-reads both
+protected branch tips and their declared predecessor stamps. A mismatch makes
+the pair stale: neither candidate may land. The producer must rebuild from the
+new exact protected tips, record new evidence tuples, and obtain a new
+different-session exact-pair review.
 
 Missing, unknown, partially migrated, or conflicting objects cause
 `harness_health_other_schema_conflict` and abort startup before Supervision,
@@ -911,15 +931,19 @@ meaning requires a canonical amendment and exact-revision review first.
     case or internal whitespace, when admitted, then their digests differ and
     they do not recur. Given descriptions that differ only in leading or
     trailing whitespace, their trimmed bytes and digests match.
-18. **OTH-AC-18 — Migration and rollback.** On main, given its exact predecessor
-    fixture with open and resolved six-class incidents, when the migration runs,
-    then counts, ids, foreign keys, facts, and old response bytes remain exact;
-    new columns are null; the target stamp is exact. On `0.1.9` at direct parent
-    `f655a000...`, run the same assertions once against the exact `c3299e3a...`
-    two-class persisted layout and once against the exact `f655a000...`
-    six-class fresh layout. Each forced migration barrier rolls back to its
-    predecessor. Unknown, mixed, partial, or target-stamp-with-bad-object
-    fixtures refuse before supervision starts.
+18. **OTH-AC-18 — Migration and rollback.** On main, given the exact predecessor
+    stamp and complete object-set fixture recorded for its execution-time
+    protected parent, when the migration runs, then counts, ids, foreign keys,
+    facts, intervening bytes, and old response bytes remain exact; new columns
+    are null; the target stamp is exact. On `0.1.9`, run the same assertions once
+    against each recorded complete predecessor layout: the retained two-class
+    persisted layout and the six-class fresh layout. Each forced migration
+    barrier rolls back to its recorded predecessor. An unrecorded stamp,
+    unrecorded object-set digest, mixed or partial object set, wildcard or
+    chain-walk attempt, silent restamp, or target stamp with a bad object
+    refuses before supervision starts. Before review and landing, change either
+    protected tip or predecessor stamp; then the pair is stale, neither
+    candidate lands, and new candidates require a fresh exact-pair review.
 19. **OTH-AC-19 — Authoritative consumer discovery.** Given the prodder, session
     garbage collector, both exact manifests, and compiler tracer on each line,
     when the static gate compiles every production `.ex` file, then the ten
@@ -946,10 +970,10 @@ meaning requires a canonical amendment and exact-revision review first.
     documentation fixture to fail before packaging. The two packaged section
     byte sequences are identical.
 22. **OTH-AC-22 — Cross-line parity.** Run OTH-AC-01 through OTH-AC-21 against
-    targetless candidates based on the exact admitted `0.1.9` four-class port
-    and current `main`. The observable outcomes, refusal codes, privacy,
+    targetless candidates based on the exact execution-time protected parents
+    recorded by ARC-08. The observable outcomes, refusal codes, privacy,
     idempotency, expiry, and review/promotion semantics match. Only the declared
-    parent adapter and schema stamps differ.
+    parent adapter, predecessor object sets, and schema stamps differ.
 
 ## Open Questions
 
