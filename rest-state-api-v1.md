@@ -1418,8 +1418,10 @@ and returns no serialized JSON. `Tightbeam.StateResources.work_item` is the
 sole public work-item serializer and emits the exact R7 item. Canonical REST
 collection and detail routes, CLI mutation readback, mutation result adapters,
 and the Publisher payload builders for `work_item.*` call these seams.
-`Tightbeam.RestEnvelope` wraps canonical REST results and errors in R4e/R4c
-and remains the sole work-items envelope encoder. A caller does not query a
+The existing `Tightbeam.Wire.Router.state_collection_envelope` and
+`Tightbeam.Wire.Router.state_detail_envelope` functions, together with existing
+Router error handling, wrap canonical REST results and errors in R4e/R4c and
+remain the sole work-items envelope encoder. A caller does not query a
 second row shape, construct a work-item map, omit an R7 field, or substitute a
 legacy composite or error envelope.
 
