@@ -531,9 +531,11 @@ durable_row_delivery        {turn|wake, rowIdArgOrdinal, bindingProjection}
 lifecycle_notification      {assignment|review|decision, rowIdArgOrdinal, bindingProjection}
 lifecycle_notification      {other_review_v1, 7}
 adapter_session_maintenance {literalMethod}
+credential_terminal_park_v1 {1, 2, 3}
 ```
 
-Each excluded caller invokes
+Except for the transactionless `credential_terminal_park_v1` contract below,
+each excluded caller invokes
 `HarnessHealth.verify_non_prod_sink_in_txn/4` immediately before the sink in the
 same branch. It passes `txn`, the manifest entry, the per-invocation
 `proofValue`, and the exact sink arguments. `proofValue` is the sealed dispatch
@@ -631,7 +633,8 @@ AST of the named caller. It applies these deterministic rules:
   that literal at the ACP request call. The runtime verifier recursively rejects
   a request map or list that contains a `prompt` key or field.
 
-The runtime verifier and `non_prod_sink_call/4` write no row. They return
+The transaction-owned runtime verifier and `non_prod_sink_call/4` write no row.
+They return
 `invalid_non_prod_exclusion` before the sink when a principal, delivered row,
 notification row, row kind, method, prompt-absence, token-binding, or token-use
 check fails. The compiler gate returns the same refusal when the manifest shape,
@@ -762,6 +765,100 @@ remain unchanged. It creates no new authority or durable delivery facility.
 Deleting escalation loses the requested living-authority behavior; accepting
 the impossible equality leaves it undeliverable, so this bounded construction
 proof replaces that equality only at the existing seam.
+
+#### Credential terminal parking — One transactionless proof
+
+Owner disposition `att_6c73eac1-3d7c-444d-89a0-542c0fa37391` adds exactly one
+closed reason, `credential_terminal_park_v1`, with literal `proofSpec={1,2,3}`.
+It applies only to this emitted call site on both lines:
+
+```text
+{Tightbeam.Credentials, :handle_call, 3,
+ :command_request, Tightbeam.CommandEdge, :request, 4, 1}
+```
+
+The ordinals select the existing callback's request, `from`, and state arguments.
+The request must be `{:mark_terminal,provider,evidence}`. The proof uses no
+database transaction, committed row, dispatch seal, or binding projection.
+No other call site or command kind can use this reason. The ten action-sink
+tuples and every other exclusion's proof rules remain unchanged.
+
+**Compiler proof.** The trace must prove this sink branch unreachable from
+every ARC-06 prod root, including paths through a manifested consumer. Its
+control flow must imply `Credentials.terminal_evidence?(provider,evidence)`
+returned true for the same callback arguments; the existing false branch of
+`not terminal_evidence?(provider,evidence)` qualifies. Preserve the existing
+pending-request and metadata guards before construction. The compiler requires
+the exact existing `%CommandEdge.CredentialPark{}` construction:
+
+| Command field | Only admitted source |
+|---|---|
+| `provider` | callback request's `provider` |
+| `machine` | callback state's `machine` |
+| `adapter_keys` | `Map.fetch!(state.park_targets,provider)` |
+| `observed_at` | the existing `System.system_time(:millisecond)` sample at construction |
+
+Capture that time sample once at its existing evaluation point. Pass it
+unchanged to the command and proof; do not resample it or add an age threshold.
+The unchanged sink arguments must be
+`[state.park_edge, command, provider, state.park_requests]` in that order.
+The compiler checks the complete struct, the edge, the provider label, and the
+request-id collection, not just the request tree's argument-two-through-four
+leaves. A caller-created Boolean or classification tag is not a predicate
+result. A substituted request, state, time sample, command field or sink
+argument fails the static proof.
+
+**Named runtime seam.** Add
+`HarnessHealth.verify_credential_terminal_park/4(manifestEntry,proofValue,sinkArgs,callback)`
+and `HarnessHealth.credential_terminal_park_call/4(token,sinkTuple,sinkArgs,callback)`.
+These are the verifier/wrapper for this reason only; they do not take a fake
+transaction or delegate to the transaction-owned verifier. `proofValue` is
+`{request,from,state,observedAt}` from the compiler-proved sources above.
+The verifier reruns the unchanged `Credentials.terminal_evidence?/2` on those
+exact provider/evidence values. It requires true, exact typed equality of the
+four sink arguments to the captured state/provider/constructed command, and
+the exact manifest tuple and proofSpec. Revalidation uses the existing
+classifier, not a cached verdict or caller-declared terminal label. It does
+not claim a new origin-authentication guarantee for provider evidence.
+
+The caller binds the single-sink callback before verification and passes that
+same function value to the verifier and wrapper. On success the verifier
+returns `{:ok,token}`: one opaque, single-use token bound to this process and
+callback invocation, the manifest, request/evidence, `from`, state, captured
+timestamp, callback identity, and all four exact sink arguments. Only the
+verifier may mint it. Private process-local consumption bookkeeping lasts only
+for the immediate verifier/wrapper pair; it is not a row, table or persistent store.
+On the verifier's `{:ok,token}` branch, the compiler permits no token escape,
+return, message send, further branch, mutation or replacement argument before
+wrapper invocation. The failure branch returns the named error reply below.
+The wrapper checks its bound literal sink tuple, callback identity and
+arguments, consumes the token before invoking the callback once, and returns
+the sink's result unchanged. Its callback contains exactly the named `CommandEdge.request/4`
+call with those arguments; a nested callback or second sink fails compilation.
+Reuse, an invented token, another process/invocation, or a binding mismatch
+returns `{:error,:invalid_non_prod_exclusion}` before a sink call. Verifier
+failure returns that same error tuple and issues no token. The compiler requires
+private invocation bookkeeping to be cleared on the owning `handle_call/3`
+exit, including an exception before consumption; no token remains live for a
+later callback. An exception from the sink propagates unchanged and does not
+make the token reusable.
+
+**Behavior and refusal boundary.** A valid proof adds no effect beyond the
+existing one command request. Preserve classifier thresholds, command values,
+the request's provider label, the `{:pending,request_ids}` result, the callback's
+replies and pending-state updates, and the existing metadata-write order.
+The current gate, capture and metadata write occur before this proof; a proof
+refusal does not undo, repeat or extend them. Report that refusal through the
+callback's `{:reply,{:error,:invalid_non_prod_exclusion},state}` without
+dispatching or adding pending-request state.
+Non-terminal input retains the existing `{:reply,:ok,state}` path without
+entering the proof. Existing pending and already-settled paths likewise keep
+their results and emit no extra command. No new log, prompt, row, table,
+transaction, scheduler, credential mutation, or named-class repair behavior is
+introduced. The proof checks an existing action; it does not park credentials
+through a second action seam. Deleting the call loses the existing repair;
+accepting it without proof leaves an unclassified sink, so neither closes the
+authorized inventory requirement.
 
 An authorized `harness-health-resolve-other` mutation requires `incidentId`,
 `observedState`, `exactProbe`, `outputDigest`, `recoveryConditionDigest`,
@@ -1061,6 +1158,31 @@ meaning requires a canonical amendment and exact-revision review first.
     harness-up predicate. Run every ARC-06 positive and negative fixture on
     `0.1.9` and main. Each proof result, refusal code, and legitimate non-prod
     no-pause result must match across the two lines.
+    For `credential_terminal_park_v1`, run this exact fixture set on both lines:
+    (a) the existing captured logged-out Codex account event's `params`, provider
+    `openai`, and a first-transition state dispatch one unchanged CredentialPark;
+    repeat with metadata `park_pending=true` to prove the existing recovery path;
+    (b) existing in-flight and already-settled states retain their original
+    reply/state/metadata trace and dispatch no additional command;
+    (c) the logged-in capture, unknown evidence, and a forged
+    `{"classification":"terminal"}` label retain the non-terminal no-op;
+    forcing any of these into the verifier refuses; changing the proof's evidence
+    from the guarded callback evidence fails compiler data-flow;
+    (d) change the provider, each of the four command fields, edge, provider
+    label, and request-id collection one at a time: compiler substitution or
+    runtime mismatch refuses before dispatch;
+    (e) remove true-predicate branch dominance or add a prod-root path: compiler
+    refusal; (f) a stale entry yields `stale_non_prod_exclusion`, a duplicate
+    entry yields `duplicate_non_prod_exclusion`, and applying this reason to a
+    second call site yields `invalid_non_prod_exclusion`; (g) change one sink
+    argument after token issuance, inject a nested callback or second sink,
+    invent a token, use it from another invocation/process, or reuse a consumed
+    token: compiler or runtime refusal as specified above. Unless a named
+    manifest refusal applies, the refusal is `invalid_non_prod_exclusion`.
+    Runtime refusals create no command or proof-owned persistent effect; assert
+    the original pre-proof metadata effects are neither undone nor repeated.
+    Positive fixtures compare command values, results and metadata transitions
+    with the exact predecessor, excluding only ephemeral proof bookkeeping.
 20. **OTH-AC-20 — Quiet-path silence and observability.** Given no active
     incident, repeated gate calls write nothing. Given one denied candidate,
     repeated identical calls produce one redacted suppression event. Given an
