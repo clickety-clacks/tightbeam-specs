@@ -242,9 +242,7 @@ is correctly the owner's.
 Stated separately because each is a thing believed true of the world today, not
 a thing this document makes true. If one is false, the design above it moves.
 
-**A18. The four code refs this document reads.** Numbered last and placed first,
-because every per-ref claim below depends on it. The repository carries THREE
-branches, not two, and the artifact production runs is none of their tips.
+**A18. The four code refs this document reads.**
 
 | Ref | What it is | Commit, as of 2026-09-05 |
 |---|---|---|
@@ -253,29 +251,9 @@ branches, not two, and the artifact production runs is none of their tips.
 | `0.1.8` | a FROZEN branch pointer, 85 commits behind `0.1.9` | `2ff4ed2a`, 2026-08-22 |
 | `v0.1.8+1337` | the release gibson runs today | `fdb3db5`, 2026-08-22 |
 
-`0.1.8` is a strict ancestor of `0.1.9`, so they are one line and not two:
-`0.1.9` is that line's live tip and `0.1.8` is a bookmark left behind on it.
-`v0.1.8+1337` sits BETWEEN them, three commits ahead of the `0.1.8` pointer.
-Gibson's `/version` reports build 1337, sha `fdb3db5`, version 0.1.8. **There is
-no branch named `0.1.x`.**
-
-Two consequences this document depends on.
-
-First, **"the released line" is ambiguous, and this document no longer uses that
-phrase or "the mainline"**. The frozen `0.1.8` pointer and the running release
-`v0.1.8+1337` are byte-identical in `escalation.ex`, `execution_map.ex`, and
-`effort_checkin.ex` — but they DIFFER in `assignments.ex`, which is R6's only
-target. A claim true of the `0.1.8` pointer is therefore not automatically true
-of production, and the one place they diverge is the one place this document
-makes its boldest per-ref claim.
-
-Second, every per-ref claim below names a ref from this table, and a claim that
-holds on only some refs says which. A builder must not generalise a claim from
-one ref to another; where this document has done so it was wrong, and A6, A9,
-and OQ-6 record the corrections.
-
-Verified 2026-09-05 by reading each ref with `git cat-file -p` and comparing the
-extracted files. No code was run and no host was touched.
+Ancestry, verified 2026-09-05: `0.1.8` < `v0.1.8+1337` < `7090a630` < `0.1.9`,
+all one line, so the running release is a tag sitting three commits ahead of the
+frozen `0.1.8` pointer and is not the tip of any branch.
 
 **A1.** `decision_requests` carries `assignmentId`, `raiserSessionKey`,
 `withdrawnBy`, and `withdrawnReason` columns, and its CHECK constraint refuses
