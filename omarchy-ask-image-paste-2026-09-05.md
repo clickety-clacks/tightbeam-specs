@@ -7,6 +7,8 @@ Owner: `asg_65fcb778-db77-4cca-b847-c9de302fd700`, product-owner:ask.
 Mike approved “Use proposed behavior” on decision
 `dr_5f23b38b-5ff7-40e7-8933-f21739e8e59f`, superseding `dr_30264895`.
 This records the durable owner brief and that ruling; it adds no scope.
+Mike's subsequent September 5 directive changes the test target to nacelle.
+That directive supersedes every earlier osanwe test-location instruction.
 Repository baseline: `a6351b0e5fb0816dbaccc1180c318bd955196023` (v0.7.0).
 
 ## Spirit
@@ -61,9 +63,21 @@ archive, or temporary file. Existing lifecycle and permission invariants in
 
 ## Evidence and acceptance
 
-Use worker-owned checkouts on osanwe. Keep the shared source and installed
-plugin untouched. Test on a supported isolated desktop; unavailable access is
-a blocker to report, not permission to reconfigure the host.
+Nacelle is the test target for this project and image-paste work, including
+live desktop and system-harness testing. Do not perform those tests or deploy
+test builds on osanwe. Use a worker-owned checkout and a supported isolated
+desktop on nacelle, while keeping shared source and installed plugins untouched.
+
+Discover nacelle's actual checkout paths and environment before testing. The
+historical osanwe source path `/home/mike/Projects/omarchy-ask` and installed
+plugin path `/home/mike/.config/omarchy/plugins/clickety-clacks.ask` are handoff
+context only; they are not nacelle paths. Record the actual host, paths,
+candidate identity, desktop and system-harness prerequisites in the evidence.
+
+If nacelle access or prerequisites are missing, report the exact failed probe
+or missing prerequisite. Do not substitute osanwe or another host, assimilate
+a host, reconfigure it, or change credentials. The location directive does not
+authorize deployment to an installed plugin or any other live-state mutation.
 
 Require fresh real image-understanding responses from system Codex and Claude,
 not readiness, capability advertisements, or metadata echoes. Cover screenshot,
@@ -73,6 +87,8 @@ close/pin ownership and late clipboard results. Keep screenshots free of private
 content. Record dated commands/results, exact commit/diff hashes, limits, and
 which checks are new versus historical. `docs/model-verification.md` and
 `docs/reviews/2026-09-04-native-attention.md` are historical baselines only.
+Earlier osanwe test results remain historical handoff evidence and do not
+satisfy the required fresh nacelle desktop and system-harness acceptance.
 
 Implementation assignment: `asg_9acc5352-3b86-4df6-8c29-a6957d32d06c`.
 Orchestrator: `asg_a12431d5-bd1e-4443-9e39-35e3ce94670a`.
