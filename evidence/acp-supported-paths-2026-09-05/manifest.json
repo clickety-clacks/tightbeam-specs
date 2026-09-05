@@ -1,0 +1,16 @@
+{
+  "codex": {
+    "upstream_sha256": "4602784c5896fbf05a7d89b09655bacc768d0bf281e0d03a10333ff81da45268",
+    "patched_sha256": "3dab8130a30e5f817a9c3039d64f922475af71f9483be45475eeeba1d4eb7123",
+    "patch_count": 6,
+    "idempotent": true,
+    "syntax": true
+  },
+  "claude": {
+    "upstream_sha256": "0eeabe7242f82b2a27bd9a98c9812ff7fb29c4a67c1d289947b88bcacceb8548",
+    "patched_sha256": "844a645254de10277119f17230bad17cc0fd1c381f064eced4dd69f00d24a223",
+    "patch_count": 2,
+    "idempotent": true,
+    "syntax": true
+  }
+}

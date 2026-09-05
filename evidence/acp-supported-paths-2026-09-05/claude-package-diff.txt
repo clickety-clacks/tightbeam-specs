@@ -1,0 +1,2 @@
+Files evidence/npm-claude-0.66.0/package/dist/acp-agent.js and /home/mike/.tightbeam/adapters/node_modules/@agentclientprotocol/claude-agent-acp/dist/acp-agent.js differ
+Only in /home/mike/.tightbeam/adapters/node_modules/@agentclientprotocol/claude-agent-acp: node_modules

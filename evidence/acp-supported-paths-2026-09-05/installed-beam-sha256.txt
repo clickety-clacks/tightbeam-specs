@@ -1,0 +1,8 @@
+236448f6f0111fcb7dfb9d6403ab17e460fbf76d8e8c953485b8ffa123c80c0b  /home/mike/.local/lib/node_modules/tightbeam/release/lib/tightbeam-0.1.8/ebin/Elixir.Tightbeam.BuildStamp.beam
+57b37ce265ded8a313519f66977ac899245b2e1b50afed0a217e4a83997fe100  /home/mike/.local/lib/node_modules/tightbeam/release/lib/tightbeam-0.1.8/ebin/Elixir.Tightbeam.Gateway.beam
+5b0b8405315d1e034a913995bff3acd04b3c3e3243b3c6b98ee3c4b2e54d05b5  /home/mike/.local/lib/node_modules/tightbeam/release/lib/tightbeam-0.1.8/ebin/Elixir.Tightbeam.Harness.Codex.beam
+a6c9c7b6082731e0a6db5abff80436622776ae91ad55cf6cfa666a3bd0a2a447  /home/mike/.local/lib/node_modules/tightbeam/release/lib/tightbeam-0.1.8/ebin/Elixir.Tightbeam.Harness.Claude.beam
+9d6ab9ed8c2005d8bbd2ba8eee1c5bbabd310ead846f706aaae4445759c2b093  /home/mike/.local/lib/node_modules/tightbeam/release/lib/tightbeam-0.1.8/ebin/Elixir.Tightbeam.Harness.AdapterPatch.beam
+f6e1bdcd53c884647351d1f6a0ce300516b3335e6acd2f8305ad16b60ac029a6  /home/mike/.local/lib/node_modules/tightbeam/release/lib/tightbeam-0.1.8/ebin/Elixir.Tightbeam.Acp.Adapter.beam
+a8eefed2a8958fb54fd8e23a8b79fdc1aac7bb143e66a6a91257b9afa86a5700  /home/mike/.local/lib/node_modules/tightbeam/release/lib/tightbeam-0.1.8/ebin/Elixir.Tightbeam.SubagentMarkers.beam
+abe22bb5720a774f32bdf726337ff32a20b38c320467f5cb6fcdee0ccba3c5b2  /home/mike/.local/lib/node_modules/tightbeam/release/lib/tightbeam-0.1.8/ebin/Elixir.Tightbeam.Spinup.beam

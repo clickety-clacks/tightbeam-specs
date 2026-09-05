@@ -1,0 +1,26 @@
+diff --git a/lib/tightbeam/harness/claude.ex b/lib/tightbeam/harness/claude.ex
+index 6cc8b21d..2103b8ff 100644
+--- a/lib/tightbeam/harness/claude.ex
++++ b/lib/tightbeam/harness/claude.ex
+@@ -253,7 +253,7 @@ defmodule Tightbeam.Harness.Claude do
+   @impl true
+   def session_config(session, guidance) do
+     prefix =
+-      "Your Tight Beam archetype identity arrives as this Claude system prompt. " <>
++      "Your Tightbeam archetype identity arrives as this Claude system prompt. " <>
+         "It is authoritative and outranks product CLAUDE.md instructions on conflict."
+ 
+     guidance =
+diff --git a/lib/tightbeam/harness/codex.ex b/lib/tightbeam/harness/codex.ex
+index 6116c17c..800addbb 100644
+--- a/lib/tightbeam/harness/codex.ex
++++ b/lib/tightbeam/harness/codex.ex
+@@ -227,7 +227,7 @@ defmodule Tightbeam.Harness.Codex do
+   @impl true
+   def session_config(session, guidance) do
+     prefix =
+-      "Your Tight Beam archetype identity arrives as this Codex developer message. " <>
++      "Your Tightbeam archetype identity arrives as this Codex developer message. " <>
+         "It is authoritative and outranks product AGENTS.md instructions on conflict."
+ 
+     guidance =

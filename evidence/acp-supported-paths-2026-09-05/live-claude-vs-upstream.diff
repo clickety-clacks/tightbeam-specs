@@ -1,0 +1,49 @@
+--- evidence/npm-claude-0.66.0/package/dist/acp-agent.js	1985-10-26 08:15:00.000000000 +0000
++++ /home/mike/.tightbeam/adapters/node_modules/@agentclientprotocol/claude-agent-acp/dist/acp-agent.js	2026-09-03 06:49:54.000000000 +0000
+@@ -2159,11 +2159,24 @@
+                                     (session.activeTurn.spawnedTaskIds ??= new Set()).add(message.task_id);
+                                 }
+                                 break;
+-                            case "task_notification":
+-                                // The task settled — no further tool calls can originate
+-                                // from it, so its registry entry can be dropped.
++                            case "task_notification": {
++                                // The task settled — emit the correlated child-termination
++                                // carrier before dropping its parent tool-use bookkeeping.
++                                const record = session.liveBackgroundTasks.get(message.task_id);
++                                if (record?.isSubagent) {
++                                    await sendUpdate({
++                                        sessionId: message.session_id,
++                                        update: {
++                                            sessionUpdate: "tool_call_update",
++                                            toolCallId: record.parentToolUseId,
++                                            status: "completed",
++                                            _meta: { claudeCode: { subagentTerminated: { taskId: message.task_id, status: "completed" } } },
++                                        },
++                                    });
++                                }
+                                 session.liveBackgroundTasks.delete(message.task_id);
+                                 break;
++                            }
+                             case "task_updated":
+                                 // terminal-status task_updated patch and a (deduplicated)
+                                 // task_notification when a task settles, but only the patch is
+@@ -2173,6 +2186,18 @@
+                                 if (message.patch.status === "completed" ||
+                                     message.patch.status === "failed" ||
+                                     message.patch.status === "killed") {
++                                    const record = session.liveBackgroundTasks.get(message.task_id);
++                                    if (record?.isSubagent) {
++                                        await sendUpdate({
++                                            sessionId: message.session_id,
++                                            update: {
++                                                sessionUpdate: "tool_call_update",
++                                                toolCallId: record.parentToolUseId,
++                                                status: message.patch.status === "completed" ? "completed" : "failed",
++                                                _meta: { claudeCode: { subagentTerminated: { taskId: message.task_id, status: message.patch.status } } },
++                                            },
++                                        });
++                                    }
+                                     session.liveBackgroundTasks.delete(message.task_id);
+                                 }
+                                 break;
