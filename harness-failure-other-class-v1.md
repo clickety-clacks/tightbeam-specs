@@ -113,6 +113,8 @@ interpret the description or mint the class.
   typed values must be exact. `constant` names one sink-request-tree path and
   its exact literal value. Together, the clauses must name every actionable
   request leaf exactly once.
+  ARC-06's `other_review_v1` proof instead uses its closed construction checks;
+  it does not extend this projection language or leave a leaf unproved.
 - **Recovery-condition digest**: lowercase hexadecimal SHA-256 of the exact
   UTF-8 bytes of the normalized recovery condition stored by admission.
 - **Living authority**: the first active ancestor of the source session under
@@ -409,6 +411,7 @@ A session route creates one notice turn with deterministic identities
 `wakeId=other-review:<incidentId>:<target>` and
 `requestRef=other-review:<incidentId>`. The notice contains the incident id,
 harness, host, description digest, expiry time, and a restricted read pointer.
+Its exact construction proof is ARC-06 F3 `other_review_v1`.
 It contains no sensitive evidence text. `delivered` makes that session the
 review custodian. `failed`, `failed_unknown`, `canceled`, target retirement, or
 an enqueue race appends the terminal route result and selects the next rung.
@@ -505,7 +508,8 @@ scheduled sweep, requested sweep, terminal notification, and every function in
 the pinned turn-end schedule. The collector must add its step beneath one of
 these roots; Non-Goal 6 forbids another timer or patrol. The tracer follows
 local and remote calls from those roots. A dynamic handler invocation on a
-root-reachable path is forbidden outside `prod_shape_act_in_txn/6`.
+root-reachable path is forbidden outside `prod_shape_act_in_txn/6`, except the
+statically resolved single-sink wrapper callback of F3 `other_review_v1` below.
 
 The tracer emits every production call site to the closed sink vocabulary as
 `{callerModule,callerFunction,callerArity,sinkKind,sinkModule,sinkFunction,
@@ -525,6 +529,7 @@ token. Its closed shapes are:
 interactive_user_request    {dispatchCallArgOrdinal, bindingProjection}
 durable_row_delivery        {turn|wake, rowIdArgOrdinal, bindingProjection}
 lifecycle_notification      {assignment|review|decision, rowIdArgOrdinal, bindingProjection}
+lifecycle_notification      {other_review_v1, 7}
 adapter_session_maintenance {literalMethod}
 ```
 
@@ -534,7 +539,10 @@ same branch. It passes `txn`, the manifest entry, the per-invocation
 `proofValue`, and the exact sink arguments. `proofValue` is the sealed dispatch
 call for `interactive_user_request`, the row id selected by `rowIdArgOrdinal`
 for either row reason, and the literal method for
-`adapter_session_maintenance`. The verifier constructs the sink request tree
+`adapter_session_maintenance`. For `other_review_v1`, it is the existing
+Gateway caller's argument seven (`opts`), unchanged; the closed checks below
+replace row-id/projection checks only for this literal variant.
+The verifier constructs the sink request tree
 from the entry's sink tuple and exact arguments, then returns a single-use proof
 token. The caller passes that token, the same literal sink tuple, the same exact
 arguments, and a zero-arity callback to `HarnessHealth.non_prod_sink_call/4`.
@@ -610,8 +618,9 @@ AST of the named caller. It applies these deterministic rules:
   `enqueue_in_txn/2`, `schedule_in_txn/2`, or `retarget_in_txn/3` call other than
   the sink named by the entry. The named sink cannot itself be one of those
   three row writers.
-- `lifecycle_notification` requires one committed assignment, review, or
-  decision row id selected by `rowIdArgOrdinal`. The runtime verifier reads that
+- The projection form of `lifecycle_notification` requires one committed
+  assignment, review, or decision row id selected by `rowIdArgOrdinal`.
+  The runtime verifier reads that
   exact row through a separate read-only database connection, matches its table
   kind, and evaluates the projection from that row to every actionable leaf of
   the exact notification request. The compiler trace also requires the caller
@@ -656,6 +665,103 @@ unknown reason, attempted exclusion of a manifested consumer, or proof failure
 returns the declared refusal. These compiler-derived calls, proof checks, exact
 manifests, and closed projections discover a new action call before
 classification.
+
+#### F3 amendment — Cause-bound other review construction (one-page contract)
+
+**Authority and boundary.** Ruling `dr_52a463ba-f313-4fe1-b8c3-875fc9c258db`
+reopens F3 only. `{other_review_v1,7}` applies only to a branch-local
+`Ledger.enqueue_in_txn/2` call in the existing
+`Gateway.append_and_enqueue_in_txn/7` following
+`Projection.append_in_txn/2`. It adds no entrypoint, sink tuple, table, stored
+request, or scheduler. Each lexical sink call still has exactly one manifest
+entry; other delivery branches retain their own proofs. This variant replaces
+the committed-row, primary-key-equality, and root-unreachability requirements
+only for this construction. It does not waive proof of any request leaf.
+
+**Cause in the owning transaction.** The verifier selects exactly one existing
+review/incident/route join whose incident id constructs `opts[:request_ref]`
+and whose incident id and target construct `opts[:wake_id]` using ARC-04's two
+literal formats. It reads through `txn`, not a separate connection. The review
+references that incident; its current route ordinal selects this pending
+session route with no notice turn yet. The route target is the ARC-04-selected
+active same-owner recipient. The incident is `other` and retains its authorized
+ARC-01 opening observation, cause and principal. Missing, ambiguous, unrelated,
+foreign-owner, superseded, or settled cause fails. An expired or resolved
+incident remains eligible for its unfinished route. ARC-03 may use its
+uncommitted incident and review; later ARC-04 routing requires those two rows
+committed. Both use the current transaction's selected route, including a new
+next-rung route. The compiler admits this branch only from those admission
+and routing paths, never from a manifested prod-shaped consumer. A supervision
+or turn-end root may reach it solely through that cause-bound routing path.
+
+**Exact construction.** Let `i` be the incident id, `t` the selected target,
+`w="other-review:"<>i<>":"<>t`, and `r="other-review:"<>i`. Define `p` as
+`"[from process:tightbeam]\n\n"` followed by compact JSON of the ordered array
+`[i,harness,host,descriptionDigest,expiresAt,{"incidentId":i}]`, using the joined
+incident values. The final object is the restricted detail-read pointer; it
+confers no read authority. JSON escaping is required; no evidence text, suffix,
+caller-chosen formatting, or additional member is permitted. The string's
+`\n` notation denotes newline bytes. This fixed constructor is not a general
+expression language or a parsing-based claim of authority.
+
+| Exact enqueue leaf | Required proof |
+|---|---|
+| `session_key` | `t` from the selected route |
+| `wake_id`, `request_ref` | `w`, `r` from the two fixed constructors |
+| `origin`, and main's `principal` | literal `process:tightbeam` |
+| `prompt` | exact `p` |
+| `role_ref`, `assignment_id`, `job_ref` | literal null |
+| `role_fallback` | literal false |
+| main's `client_message_id` | exact `w` |
+| `message_id` | the Projection return proof below |
+
+The sink tuple is literal. These are the complete existing line-specific
+request maps; an extra, missing, or changed leaf fails. The existing Projection
+input must be exactly target `t`, role `user`, content `p`, sender and device id
+`process:tightbeam`, client-message id `w`, and empty attachments; main's two
+reply-reference fields are null. The compiler follows this input into the
+existing Projection call and requires its `{:appended,message}` return's
+`message.id` to flow unchanged into the enqueue request. The verifier reads
+that message through the same `txn` and matches its identity, target, role, content,
+sender, device id, client-message id, attachments and reply references to the
+proved construction. Thus a generated id is proved as an exact construction
+result, not misrepresented as a review field or an arbitrary trusted leaf.
+
+**Atomicity and retry.** The existing verifier and single-use wrapper run
+immediately before the enqueue. No branch, mutation, or argument substitution
+may intervene. A proof failure aborts the owning transaction with
+`invalid_non_prod_exclusion`, rolling back the appended echo as well. The
+opening still commits incident, review, route, echo and turn together; later
+routes commit their echo, turn and route linkage together. Existing wake-id
+dedupe runs first: an exact existing notice reuses its turn and does not append
+or invoke the sink again; conflicting identity/content fails. Publish and lane
+nudge remain after commit through `Gateway.complete_delivery/2`. Rollback
+leaves no partial cause or echo; restart reads the existing route and turn.
+Only actual terminal delivery changes custody under ARC-04. The shared harness
+gate continues suppressing prods while this proved notification proceeds.
+
+**Compiler/runtime acceptance cost, on each line.** Extend the existing F3
+compiler and verifier with this one literal variant and the exact construction
+above. Add one branch-local manifest entry at the existing Gateway sink, with
+unchanged ordinal/data flow, Projection-return provenance and once-only leaf
+coverage. Run positive fresh-opening, next-rung, expired-incident, and restart
+replay fixtures while the recipient's harness is paused. At every OTH-AC-14
+barrier, retain the existing atomicity assertions. Negative fixtures mutate
+each map leaf separately and inject an unrelated message return, mismatched opts,
+missing/wrong-owner/settled cause, raw evidence, extra content, changed ordinal,
+intervening mutation, token reuse, or a manifested-prod path. Each fails before
+a turn commits; runtime failure also leaves no echo. Existing ordinary-row
+fixtures still reject an uncommitted proof row. Both lines require identical
+outcomes; main additionally proves its two enqueue leaves and reply references.
+No product result is claimed by these spec checks.
+
+**Noncoverage and subtraction.** This proof does not cover other lifecycle
+notices, promotion notices, owner alerts, interactive calls, scheduled wakes,
+adapter work, arbitrary constructors, or another sink. Their accepted rules
+remain unchanged. It creates no new authority or durable delivery facility.
+Deleting escalation loses the requested living-authority behavior; accepting
+the impossible equality leaves it undeliverable, so this bounded construction
+proof replaces that equality only at the existing seam.
 
 An authorized `harness-health-resolve-other` mutation requires `incidentId`,
 `observedState`, `exactProbe`, `outputDigest`, `recoveryConditionDigest`,
