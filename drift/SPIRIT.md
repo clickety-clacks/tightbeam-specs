@@ -37,10 +37,10 @@ No embedded model runtime, mandatory MCP foundation, paid AI bundle, or mandator
 
 ## Open product choices
 
-- Document format: dr_d9f53dfc-4e05-49fe-b353-17cdb2f6efb1 asks plain text/Markdown versus rich text from day one. Blocks the document representation and format-dependent implementation. Does not block repository discovery or disposable editor feasibility.
+- Document format is resolved: Mike ruled **Plain text/Markdown first** in dr_d9f53dfc-4e05-49fe-b353-17cdb2f6efb1. The first version edits and saves text/Markdown; rich-text fidelity is outside this slice. The format hold is removed. This does not independently require rendered Markdown preview.
 - Exact license remains undecided. Blocks declaring a license or public release under one; does not block private development.
 - Delivery installation requires a concrete reviewed candidate and an explicit deployment decision. Not a development gate.
 
 ## Product path
 
-Discover the canonical repository and existing intent before changing code. Test independent highlights, anchored interaction, and typing focus in a bounded Qt/Quickshell feasibility slice. Resolve document format, then land a buildable technical spec under this Spirit. Implement the smallest complete writing loop, obtain fresh independent review, and return real workflow evidence to the product owner before main. The orchestrator owns engineering choices, staffing, and per-slice posture; the product owner owns product choices and acceptance.
+The canonical code home is clickety-clacks/drift, recorded by its delivery orchestrator in art_16a2904a; it remains private development custody. Test independent highlights, anchored interaction, and typing focus in the bounded Qt/Quickshell feasibility slice. With plain text/Markdown confirmed, land a lean buildable technical spec under this Spirit and progress work independent of any remaining toolkit or access-control decisions. Implement the smallest complete writing loop, obtain fresh independent review, and return real workflow evidence to the product owner before main. The orchestrator owns engineering choices, staffing, and per-slice posture; the product owner owns product choices and acceptance.
