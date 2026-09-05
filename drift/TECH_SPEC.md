@@ -50,7 +50,10 @@ compaction policies. These are not acceptance requirements for this slice.
   submitted display name, supplies durable authorship.
 - **Anchor**: document ID, original revision/range, original selected text, and
   derived current range or an explicit detached reason. Retained revision text
-  supplies surrounding context. A thread's anchor refers to a nonempty passage.
+  supplies its context fingerprint: the exact original quote and surrounding
+  text, recoverable by revision/range without a second stored copy. It records
+  provenance, not a fuzzy-search key. A thread's anchor refers to a nonempty
+  passage.
 - **Thread**: durable anchor, ordered authored messages, and open/resolved state.
   A question is an ordinary message in a thread, not a separate delivery system.
 - **Suggestion**: durable proposed replacement for a nonempty anchored passage,
@@ -188,7 +191,8 @@ length `n`, transform through the ordered revision chain:
 These rules exclude boundary insertions from the original passage: insertion at
 its start shifts it forward; insertion at its end leaves it unchanged. Verify
 the mapped text equals the original quote. A missing revision chain or mismatch
-detaches with `unverifiable`. Duplicate text elsewhere is irrelevant; exact edit
+detaches with `unverifiable`; a non-unique mapping reports `ambiguous` and chooses
+no candidate. Duplicate text elsewhere is irrelevant; exact edit
 history identifies the occurrence. A detached anchor stays detached even if
 matching text later returns. The MVP offers a new thread or suggestion on a
 new explicit selection, not automatic reattachment.
@@ -216,6 +220,13 @@ converts toolkit positions to protocol scalar offsets in both directions.
 Wrapping and scrolling change geometry only. They do not change passage identity.
 Acceptance: an emoji before the selected sentence, line wrapping, and scrolling
 leave GUI and CLI selecting the same sentence (A2).
+
+Reserve the native editor selection for the local human; collaborator ranges
+are separate overlay records. The spike observed Qt's
+`QTextDocument.contentsChange(position, removed, added)` as a local delta source.
+If Qt is selected under Q1, adapt those deltas to the protocol convention;
+another toolkit must expose equivalent deltas. Widget cursor movement is not
+the service's durable anchor decision (spike report section 5; A2).
 
 The GUI submits local edits in order with at most one outstanding text command
 per document. It may coalesce adjacent local typing into a replacement, but must
@@ -395,15 +406,15 @@ Gibson installation.
   Quickshell was unavailable; this is not full writing-loop evidence. The report
   lives at `racter:/home/clu/.tightbeam/work/d9274efe5684/drift-editor-spike/REPORT.md`.
   Existing request `dr_fb76ce2a-bca9-46da-8115-3472275e2394` covers toolkit/trust
-  choices; follow its ruling
-  with the PO and orchestrator. Build the neutral editor/service boundary above.
+  choices. The PO owns the toolkit decision; the orchestrator applies that
+  ruling. Build the neutral editor/service boundary above.
 - **Q2 — NON-BLOCKING: remote access-control mechanism.** Options for the PO
   include a protected private tunnel with participant credentials, TLS with
   application credentials, or mutual TLS with participant mapping. These are
   options, not selections or permission to deploy. The PO chooses connection
   trust/access specifics through existing `dr_fb76ce2a` before split access is
-  accepted. Work independent of
-  that mechanism proceeds against I6. No unauthenticated network fallback.
+  accepted. Work independent of that mechanism proceeds against I6.
+  No unauthenticated network fallback.
 - **Q3 — NON-BLOCKING: license.** PO/user chooses. Private development proceeds;
   declaring a license or releasing under one awaits that choice.
 
