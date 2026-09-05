@@ -38,6 +38,12 @@ different-session review before implementation or landing. It also keeps the
 separate canonical-spec cleanup at `18af4f1df74fc9d71969ecc20ae227d9fc5d2a10`
 behind the reviewed-clean successor.
 
+Cleanup inventory addendum `art_4499cc87` found a downstream contradiction in
+`observability-v1.md`: that file classified never-started sessions as `:noop`
+even though they now reach the revision stamp. This file owns the identity-apply
+outcome classification. `observability-v1.md` retains only the generic emission
+rule that follows a successful revision stamp.
+
 The controlling decision says that identity apply does not merit transition
 machinery. Tightbeam updates its owned skill files in each selected session's
 native skill location and records the source revision. Tightbeam then tells a
@@ -62,6 +68,11 @@ release, and two-YES laws remain authoritative. Where an older
 file requires an atomic apply switch, adapter or model revision readback, an
 identity generation, an adapter extension, or quiescence, this file supersedes
 that requirement.
+
+For `observability-v1.md`, this file decides which selected session reaches the
+revision stamp and the `:applied` result. `observability-v1.md` decides the
+best-effort event emission that follows that stamp; it does not classify a
+session from whether the harness session has started.
 
 The authorized product lines are exactly `0.1.9` and `main`, where `main` is
 the `0.2.0` integration line. Live `0.1.8` is locked and excluded.
@@ -422,7 +433,8 @@ response includes C in `applied` with B as the response `identityRevision`.
 Assert that the existing writer creates the native skill directory and
 materializes C's Tightbeam-owned skill files from B. Assert that apply stamps C
 with B after writer success. Assert that apply makes no adapter lifecycle call
-and submits no nudge for C.
+and submits no nudge for C. Assert that C's successful revision stamp selects
+the existing observability `:applied` branch rather than a start-status rule.
 
 **A-02 — Running turn and nudge (R-05 through R-07, I-03, I-05).** Hold the
 selected session's turn in running state. Apply B. Assert no turn-status
