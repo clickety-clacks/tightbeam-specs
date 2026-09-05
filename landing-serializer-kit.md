@@ -15,6 +15,16 @@ Status: a stopgap, recorded 2026-09-05. It costs no substrate work and can be
 adopted today. It removes the collision. It does not remove the cost of a
 collision, which is a substrate change and a separate decision.
 
+**Revision 2, 2026-09-05.** The first revision was adopted by around twenty lanes
+within an hour of being written, and two of them improved it. Section 2 now names
+the single-writer shape, which the first revision missed entirely and which is
+probably the more common one; a lane running one producer on its own branch
+pointed that out unprompted. Section 5 now says what a good carry-forward rule
+contains, because leaving the question open turned out to mean lanes answered it
+privately. Section 8 records the ruling our own organization made. Nothing in
+revision 1 was wrong, and no directive changed; if you adopted it, you do not
+need to re-adopt, only to read sections 2 and 5 again.
+
 ---
 
 ## 1. The prompt — give this to the agent
@@ -80,6 +90,26 @@ The cause is not capability and not judgement. Each lane is told to drive its ow
 work to completion. Nothing says what to do when two lanes want the same branch.
 Coordinating a shared resource is nobody's stated job until you make it someone's.
 
+### Two shapes, and the second one is easy to miss
+
+The description above is the **contended** shape: several producers composing
+against one tip at the same time. It is the shape that produces the alarming
+numbers, so it is the one that gets written about.
+
+The other shape is more common and quieter. **One producer owns its own feature
+branch and is the sole writer to it.** There is no race for the branch at all.
+The exposure is a gap in time: the tip of the *integration* branch moves between
+the moment a verdict is recorded and the moment the work is landed, and again
+when the work is later carried to a second integration branch. Nobody is
+competing. The base still moved, and the verdict is still bound to a commit.
+
+Do not conclude you are safe because you have one writer. Ask instead: **between
+approval and landing, can the thing I will land onto change?** If yes, you have
+the problem, and sections 4 to 6 apply to you unchanged. The single-writer lane
+is easier, because there is no ordering to arbitrate and no resource to
+re-allocate; it is only the moved-base question, and that is the part this note
+answers most cheaply.
+
 ---
 
 ## 3. Allocate a base, and write it down
@@ -100,6 +130,13 @@ Two supporting rules make the allocation mean something:
   it.
 - **The allocation is a promise you keep.** If you re-allocate a resource that a
   live lane is holding, you have caused the collision yourself.
+
+In a single-writer lane there is nothing to arbitrate, so the allocation moves
+to where the exposure actually is: **name the exact candidate commit in the
+review card itself**, as the SHA the verdict will be bound to. Then the reviewer,
+the producer, and you are all holding the same fact, and a later "the tip moved"
+is a question about a recorded base rather than an argument about what was
+approved.
 
 ---
 
@@ -145,9 +182,33 @@ byte-identical to the reviewed diff against the old base. If it is, the reviewed
 substance survived the move and only the commit id changed. Re-run the hosted
 gates at the new SHA, because those genuinely do test a different tree.
 
-Whether an existing verdict row may be carried forward on that proof is your
+Whether an existing verdict row may be **carried forward** on that proof is your
 organization's rule, not this note's. Record the proof either way; it is what a
 future rule would be applied to.
+
+If your organization has not ruled it yet, someone will have to, because this is
+the case where the money is. Do not let a lane decide it privately in the middle
+of a landing. Four conditions are worth putting in whatever rule you write, and
+they are portable:
+
+1. **Proof, not assertion.** A recorded patch identity, computed and quoted. "I
+   checked and it is the same" is not the proof; it is a claim that a proof
+   exists.
+2. **Clean replay only.** If the rebase produced a conflict, a manual hunk, or
+   needed a three-way merge, the bytes are not the reviewed bytes and nothing
+   carries. This is the condition that gets skipped.
+3. **Hosted gates never carry.** A byte-identical change against a different
+   base is a different tree, and a different tree can behave differently. Re-run
+   them on the exact commit that lands, every time. Carrying a review is a
+   statement about human judgement of a diff; carrying a test result is a
+   statement about a machine that was never run.
+4. **Cite what you carried.** Name the original verdict by its record id, beside
+   the new commit and the proof. A carried verdict that looks like a fresh one
+   is worse than no rule at all, because nobody downstream can audit it.
+
+And whoever rules it should write the ruling somewhere the lanes can read, not
+only where it was decided. A ruling that only its author can quote gets
+re-derived by everyone else, differently each time.
 
 ### The move is a fast-forward and takes a resource you allocated
 
@@ -283,6 +344,43 @@ and proved patch identity before re-gating:
 It landed. The patch-identity proof is what made the rebase safe to reason about;
 under today's rules it still bought a re-gate, which is the residual cost section
 7 names.
+
+**The carry-forward question, ruled.** Section 5 leaves this to the reader's
+organization. Ours ruled it the day the kit was written, and the ruling is
+recorded here because a rule nobody can quote is a rule everyone re-derives. A
+review verdict carries across a fast-forward that touches the reviewed files, on
+all four of the conditions in section 5 and none of them waived: recorded
+patch-id equality rather than a prose claim; clean replay only, so any conflict
+or manual hunk voids it; hosted gates re-run green on the exact landed commit
+every time; and the carried verdict cited by its original record id beside the
+new commit and the proof.
+
+Two things about that ruling are worth copying along with its content. It was
+made by a delegate under a standing delegation rather than by the owner
+personally, and it says so, because the record shows only the owner's name and a
+reader who cannot tell the difference will over-weight it. And it was written out
+and handed to every lane that had adopted the kit, rather than left in the
+decision row, because in our system the decision row's rationale field is not
+something a reading agent can fetch.
+
+**The single-writer shape, reported by a lane.** The gap that produced revision 2,
+in that lane's own words:
+
+> Lane shape note for your specimens: I run one producer as sole writer to its
+> own feature branch, so my collision surface is the review-to-landing seam and
+> the eventual integration, not producer-vs-producer.
+
+It was also the only lane of roughly twenty that verified the artifact before
+adopting it, checking the file's hash against the published one rather than
+trusting the pointer it was handed. Both of those are the same habit, and it is
+the habit this whole note is about.
+
+**A correction, kept visible.** The findings document this kit came from
+originally described the lease table as an unused landing lock ready to adopt.
+That was wrong, for the reasons in section 6, and it was caught by reading the
+module rather than the schema. The correction landed in that document rather than
+being quietly overwritten. Guidance that spreads by being handed around needs its
+errors to spread the same way.
 
 ## Related
 
