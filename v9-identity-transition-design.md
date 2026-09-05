@@ -263,12 +263,14 @@ selected apply commands; lifecycle changes arise only from roster actions.
    dispositions. The operator stops the rollout if an active reviewer still needs
    the retiring catalog name or a default setting still selects it. An active
    session's retirement requires completed or lawfully transferred obligations.
-   The operator can now create each authorized successor from the already published
-   new archetype using ordinary spawn/assign/wake operations. The roster records
-   predecessor and successor keys, explicit role/work handoffs, and which prior
-   per-session customizations the owner elects for a successor through supported
-   spawn inputs. The old row's overrides remain intact; they are not erased by
-   repoint or silently copied into another role.
+   The operator creates, assigns, and wakes no successor during this partial
+   five-edit prefix. A successor's first turn must follow step 7 below; the prefix
+   does not yet contain the final V9 rules and cross-role references. An old
+   obligation may transfer to an existing owner only when that recorded handoff
+   can safely wait for the final publication and later successor. Otherwise the
+   old holder finishes the obligation before retirement. The old row's overrides
+   remain intact; they are not erased by repoint or silently copied into another
+   role.
    Retire the explicitly selected old reviewers before removing their manifest;
    retain their original archetype fields, overrides, and history. If the default
    setting names `reviewer`, the packet names an owner-selected installed replacement
@@ -286,13 +288,23 @@ selected apply commands; lifecycle changes arise only from roster actions.
    at the corresponding recovery state below.
 6. The operator invokes `tightbeam identity apply '<exact key>'` for each roster
    entry selected for refresh. Publication remains recorded independently from
-   each file-refresh result. New reviewer sessions provision from the new catalog;
-   apply cannot change an old session's archetype into a new one.
+   each file-refresh result. If a selected refresh fails, the sequence stops at
+   A5's corresponding outcome before creating any successor. An explicitly empty
+   refresh selection needs no apply command. Apply cannot change an old session's
+   archetype into a new one.
+7. Only after final relearn succeeds, step 5 verifies exact content and receipt,
+   and step 6 completes the selected refreshes, the operator creates each
+   authorized successor using ordinary spawn, then assign, then wake. The new
+   session provisions from the verified final catalog. The roster records its
+   predecessor and successor keys, explicit role/work handoffs, and any prior
+   per-session customizations the owner elects through supported spawn inputs.
+   This ordering governs the successor's first turn; a later apply is not a
+   substitute for it and cannot repair an already composed partial-prefix context.
 
 The preparation prefix's revisions and final relearn revision are separately
-recorded. Refresh successor sessions that were created during the prefix only if
-the owner selects them for final-content refresh. Receipt membership follows the
-actual merge rule in A2, including for customized manifests created in the prefix.
+recorded. The prefix creates identity files, not successor sessions. Receipt
+membership follows the actual merge rule in A2, including for customized manifests
+created in the prefix.
 This sequence does not make publication of the five additions and subsequent
 deletions atomic.
 
@@ -340,9 +352,10 @@ stale census. No fleet freeze or automatic classification is introduced.
 | Files and stamp succeed; reread submission fails | Files/stamp updated; reread not submitted | Report that partial outcome. Retry is a later explicit decision, not automatic model-context recovery. |
 | Apply succeeds | Writer succeeded; reread submitted if resident | No claim that the model consumed the update. Retired/missing selectors report no match. |
 
-Existing per-file edits can restore retained guidance/manifests and recreate the
-old reviewer files. They cannot delete the new manifests through the current edit
-CLI, restore arbitrary rules, or restore an exact prior receipt. Whole-bundle
+Existing per-file edits can restore retained guidance and valid retained manifests
+whose elected skills and include dependencies are present. They cannot delete the
+new manifests through the current edit CLI, restore arbitrary rules, or restore an
+exact prior receipt. Whole-bundle
 unlearn is destructive outside this slice. Relearn has no saved-input selector;
 reinstalling an old bundle is a separate live/runtime action. Exact catalog
 reversal is **not promised**, under the owner's explicit limitation acceptance.
@@ -350,15 +363,22 @@ No raw ref reset, database edit, service restart, or new seam supplies an invers
 
 The limited repair packet can contain `identity edit <fragment> --file <saved-file>`
 and `identity edit <archetype> --manifest --file <saved-manifest>` for a concrete
-valid forward repair, with the before/after hashes of each input. Restore an old
-fragment before a manifest that includes it. Validate the entire candidate tree in
-the fixture first. Each edit publishes independently and may itself fail; it is
+valid retained-file repair, with the before/after hashes of each input and proof
+that its dependencies are present. Validate the entire candidate tree in the
+fixture first. Each edit publishes independently and may itself fail; it is
 not an atomic rollback. Leave new manifests and receipt membership present when
 the existing commands cannot remove them. If the observed failure has no covered
 repair, report it as unrecovered and return it to the existing owner; accepting
 that limitation does not authorize another live action. Old retired sessions stay
-retired even if their old guidance is recreated. Existing transcripts, assignments,
-and overrides remain the preserved historical evidence.
+retired. Existing transcripts, assignments, and overrides remain the preserved
+historical evidence.
+
+Restoration of the saved old-reviewer manifest after final skill removal is
+**unrecovered**, outside this covered repair set. That manifest elects
+`reviewing-code` and `reviewing-specs`; the final relearn removes both skills, and
+existing validation rejects those absent elections. This design declines adding
+skill restoration or inventing a changed old-reviewer manifest to broaden recovery.
+Its packet therefore contains no saved-old-reviewer-manifest restore command.
 
 ### A6. Future command and content evidence
 
@@ -433,9 +453,9 @@ success. These are proposed cases, not passed tests or live compatibility eviden
 | F2 | Given exact proposed new input and unrelated custom files/settings, when the five preparation edits and real relearn path run, then each prefix is valid, the final diff is A2, both new manifests preserve I2, and shared include rendering uses the three accepted bodies in their intended roles. Exercise a clean merge as well as F3's conflict path. | I1–I2, A2–A3 |
 | F3 | Given the captured modified old reviewer and obsolete skills, when import encounters deletion/rename conflicts, then the observed conflict list is recorded; abort preserves prior live, while reviewed resolution preserves named customizations and records actual receipt ownership. | I2, A5 |
 | F4 | Given invalid resolved include/election bytes, when resolve validates, then no successful publication is reported. Record actual refs, worktree, and error; compare with the branch of A5 that ran. | I1, I6 |
-| F5 | Given active and retired old reviewers with overrides/history, when the proposed lifecycle disposition and publication run, then history remains at the old keys, retired rows retain overrides, and no active row depends on a deleted archetype. Verify transcript access using the real supported path. | I3, Q2 |
+| F5 | Given active and retired old reviewers with overrides/history, when the lifecycle disposition and publication run, then history remains at the old keys, retired rows retain overrides, and no active row depends on a deleted archetype. Verify transcript access using the real supported path. Command/turn records show no successor creation, assignment, or first turn before final publication, exact content verification, and completion of selected refreshes. | I3, Q2, A3 |
 | F6 | Given two eligible sessions and one selected key, when apply runs, then only that key receives file/stamp/nudge effects. A writer failure and a reread-submission failure produce the distinct A5 outcomes. | I4–I5 |
-| F7 | Given publication failures before and after live advancement, when a covered limited repair runs, then compare the actual catalog, receipt, customization hashes, and session rows with its promised state. For a failure outside the covered repair set, record the unrecovered state and verify that the sequence stops before refresh; do not invent a rollback command. | Q3, A5 |
+| F7 | Given publication failures before and after live advancement, when a covered limited repair runs, then compare the actual catalog, receipt, customization hashes, and session rows with its promised state. Given final removal of both reviewing skills, the repair packet names saved-old-reviewer-manifest restoration as unrecovered and contains no command attempting it. For a failure outside the covered repair set, record the unrecovered state and verify that the sequence stops before refresh; do not invent a rollback command. | Q3, A5 |
 | F8 | Given the complete packet and successful fixture, when another reader checks it from Git objects, then each command/input/result is bound, actual revision is observed rather than predicted, and there is no model-consumption claim. | I6, A6 |
 
 The later builder adds these finite cases to the existing identity/gateway tests
