@@ -104,8 +104,9 @@ legacy dispatch read.
   REST, a retained CLI wrapper, and an overlapping firehose state notice
   use that function. R3b and R6c own ExecutionMap, Toplines, and sessions;
   the other listed resources use their shared StateResources serializers.
-  Unqualified `query_*` and item names in the ownership table denote those
-  StateResources seams; the named owner supplies storage selection.
+  Except for the R3b/R6c resource-specific functions, unqualified `query_*`
+  and item names in the ownership table denote StateResources seams; the
+  named owner supplies storage selection.
 - **Resolved principal**: the principal returned by D1's unchanged existing
   bearer and `asUser` resolver before a resource query runs.
 - **Resolved user id**: the stable user id carried by a resolved user
@@ -258,7 +259,8 @@ does not restate or fork the projection.
 
 `before`, `after`, `limit`, and `asUser` are D1 transport parameters, not
 resource filters. Different listed resource filters are conjunctive. Repeated
-values for one listed filter are disjunctive. A repeated singleton transport
+values for one listed filter are disjunctive, except that canonical R6a
+rejects repeated ExecutionMap roster filters. A repeated singleton transport
 parameter is invalid. An unlisted query key returns `400 invalid_filter`.
 
 | Resource | Allowed collection filters |
@@ -530,7 +532,7 @@ A missing numbered case fails conformance.
    download GET, then each route reaches its listed query seam and no listed
    route is absent.
 3. **Shared ownership.** Given instrumentation on the router and resource
-    seams, when a collection and detail for one resource run, then both invoke
+   seams, when a collection and detail for one resource run, then both invoke
    the listed query owner, visibility predicate, and one public serializer;
    the router emits no item field itself.
 4. **Closed wire shape.** Given each R7/R7a D2 item with randomized input map
@@ -593,11 +595,12 @@ A missing numbered case fails conformance.
 17. **Firehose byte parity.** Given each notice-backed D2 resource and its
     matching REST detail, when the REST envelope is removed, then item JSON
     bytes equal notice payload bytes and primary ids equal notice refs.
-18. **Composed dependencies.** Given one mutation for each listed dependency
-    and one unlisted state class, when each composed view refetches, then each
-    listed mutation changes `dependencyVersion`, the unlisted class leaves it
-    unchanged, and dependency extraction equals this spec's closed set or the
-    reviewed canonical ExecutionMap closure's closed set, as applicable.
+18. **Composed dependencies.** Given one mutation that changes a visible
+    source entry for each listed dependency and one unlisted state class,
+    when each composed view refetches, then each changed source entry changes
+    `dependencyVersion`, the unlisted class leaves it unchanged, and
+    dependency extraction follows canonical R9, including Toplines R9b and
+    ExecutionMap R9a. A hidden-source mutation leaves the digest unchanged.
 19. **Facts and critical state.** Given allowed and denied principals plus
     older, duplicate, and newer snapshots and notices, when facts and critical
     state rebuild, then the fact id, notice ref, and row version are equal JSON
@@ -623,8 +626,9 @@ A missing numbered case fails conformance.
     hidden node that both match each allowed flat, tree, or subtree filter,
     and an assignment selection with a hidden assignment or hidden node, when
     the routes run, then visibility executes before every allowed filter and
-    before assignment or node serialization; an unlisted or roster filter
-    returns `400 invalid_filter`.
+    before assignment or node serialization; an unlisted filter, repeated
+    roster filter, or roster filter on assignment selection returns
+    `400 invalid_filter`.
 25. **Exact session-name lookup.** Given sessions with equal and near-match
     display names, when `/api/sessions?displayName=<exact>` runs after the
     reviewed `wi_835a72aa-c88b-421b-a34c-41d23032c7c7` canonical closure
