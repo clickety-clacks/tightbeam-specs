@@ -814,9 +814,23 @@ verification and deterministic lost-response recovery.
 
 ### 6.4 Migration and compatibility law
 
-The new schema stamp is exactly `visitor-principal-v3-v1`. Its one accepted
-predecessor is exactly `coordination-fabric-v1-phase1-v5`. No unstamped or
-other stamped shape can enter this migration.
+The new schema stamp remains exactly `visitor-principal-v3-v1`. Its one direct
+predecessor is exactly `coordination-fabric-v1-phase1-v21`, the schema at
+allocated Tightbeam main `f4b68f078d3767cede71572aa88c4516372867cf`.
+This predecessor preserves the intervening schema rather than reconstructing
+the historical v5 shape. The target stays unchanged because the visitor
+principal contract does not change; no v22 rung or visitor fields/tables are
+added by this refresh. Authority for this bounded amendment is `dr_44be05e3`;
+the amendment requires independent review before implementation resumes.
+
+Existing boot compatibility for `coordination-fabric-v1-phase1-v19` and
+`coordination-fabric-v1-phase1-v20` remains: the existing migrations first
+advance those shapes through v20 to v21, with their existing validation and
+transaction boundaries. Only then may the visitor migration begin. Neither
+v19 nor v20 is a direct visitor predecessor. Failure in that existing chain
+prevents entry to the visitor migration. No unstamped or other stamped shape,
+including v5, can enter the visitor migration. This amendment does not add a
+boot path for a shape the allocated source already refuses.
 
 Before creating visitor rows or advertising visitor support, one
 `foreign_key_rebuild` transaction shall verify the predecessor stamp, preflight
@@ -847,9 +861,20 @@ authorized repair. A keyring failure returns `visitor_keyring_unavailable`
 before the database transaction. Any DDL, validation, or stamp failure rolls
 back the complete transaction to the predecessor stamp and schema.
 
+Here rollback means rollback of the visitor transaction to v21, preserving
+the v21 rows, columns, indexes, triggers, foreign keys, checks, principal-duty
+provenance, and artifact-digest invariants, except for the ten expressly listed
+identity backstops when the visitor transaction succeeds. It does not undo
+already committed v19-to-v20 or v20-to-v21 migrations, restore a v5 database,
+restore keyring files, or undo changes outside that transaction. A refusal
+before entry to the visitor transaction likewise leaves any already committed
+pre-visitor migration intact. There is no reverse migration after a successful
+visitor commit; downgrade remains a refusal, not a data-restoration operation.
+
 A database already stamped `visitor-principal-v3-v1` is validated and never
-rebuilt again. A new binary accepts that stamp and the one predecessor only. An
-old binary at the source baseline sees `visitor-principal-v3-v1` as unknown and
+rebuilt again. A new binary accepts that stamp, its direct v21 predecessor,
+and v19/v20 only through the existing boot chain described above. An
+old binary at the allocated v21 source baseline sees `visitor-principal-v3-v1` as unknown and
 refuses at boot; downgrade never rewrites or drops visitor bytes. Existing user,
 agent, device, CLI, and socket requests retain their pre-visitor request and
 response bytes when served by the new binary. Visitor discovery appears only
@@ -1009,7 +1034,7 @@ Each case is deterministic and maps back to the named invariants.
 Given one fixture with a missing referenced user in each listed legacy column,
 when the migration runs, then it returns `identity_backstop_orphans`, reports
 each offending primary key, leaves stamp
-`coordination-fabric-v1-phase1-v5`, and leaves the schema byte-for-byte
+`coordination-fabric-v1-phase1-v21`, and leaves the schema byte-for-byte
 unchanged. At every injected rebuild and validation failure, the same
 predecessor schema and stamp remain. Given the repaired fixture and valid
 keyring, when the migration runs twice, then both runs succeed, the stamp is
@@ -1017,6 +1042,14 @@ exactly `visitor-principal-v3-v1`, all listed foreign keys are active and
 restrictive, and an
 `agent_identity/3` request naming a nonexistent `asUser` refuses before its
 domain handler records any effect.
+
+Run the same visitor-failure cases after existing v19 and v20 boot fixtures
+reach v21. A failed visitor transaction retains their completed v21 state;
+it does not restore their original v19/v20 stamp. A failure in an existing
+boot migration obeys that migration's original rollback contract and never
+starts the visitor transaction. Successful migration preserves every
+intervening invariant described in section 6.4 and adds only the previously
+specified visitor schema and ten identity backstops.
 
 **A2 — External intermediary attribution (`I1`, `I2`, `I6`).**
 
