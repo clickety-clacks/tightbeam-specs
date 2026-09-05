@@ -24,15 +24,19 @@ either as revision readback or strict confirmation.
 
 Exact-revision review `att_78debb7c-d39a-4157-94e7-f4a0927b6461` and report
 `art_3819fece` found one selection hole: an active session that has never
-started has no current harness-session pointer. R-02, R-11, and A-01 preserve
-that session's pre-change no-op result without creating a home or sending a
-prompt.
+started has no current harness-session pointer. A successor called that path a
+pre-change no-op based on historical source. Exact target-line review
+`att_701f0cc0-d4ee-45e7-b07c-a8176b2d7753` and report `art_a7f546df` proved
+that both current target lines instead materialize skill files and stamp the
+session without adapter work. R-02, R-03, R-06, R-11, and A-01 preserve the
+current target behavior. The controlling decision supplies no authority to
+delete it.
 
 The controlling decision says that identity apply does not merit transition
-machinery. Tightbeam updates its owned skill files in a started selected
-session's existing harness home. Tightbeam then tells that session to re-read
-the files on a best-effort basis. Apply supplies no strict confirmation that
-later work uses the new guidance.
+machinery. Tightbeam updates its owned skill files in each selected session's
+native skill location and records the source revision. Tightbeam then tells a
+started selected session to re-read the files on a best-effort basis. Apply
+supplies no strict confirmation that later work uses the new guidance.
 
 This authority supersedes owner ruling
 `att_8aaff8d4-aba0-44c4-be19-7099eba49fce` where that ruling required atomic
@@ -58,12 +62,12 @@ the `0.2.0` integration line. Live `0.1.8` is locked and excluded.
 
 ## Goal
 
-Update the Tightbeam-owned skill files of each selected existing session that
-has started from the current published identity. After a successful file
-update, record that source in the session's existing `identityRevision` field.
-Then submit an ordinary prompt that tells the session to re-read its Tightbeam
-skills. Preserve the existing no-op result for a selected active session that
-has never started.
+Update the Tightbeam-owned skill files of each selected existing session from
+the current published identity. After a successful file update, record that
+source in the session's existing `identityRevision` field. Then submit an
+ordinary prompt that tells a started selected session to re-read its Tightbeam
+skills. For a selected session that has never started, preserve the existing
+materialize-and-stamp path without adapter work or a prompt.
 
 This path is best effort. It does not prove which skill text is in the model's
 current context. A running turn is not a refusal. Identity apply does not define
@@ -106,8 +110,10 @@ how a workflow obtains strict confirmation.
 - **Selected session:** One active Tightbeam session named by the command. For
   `--all`, each session in the command's initial active-session set is a
   separate selected session.
-- **Existing harness home:** The workdir and native harness-home structure that
-  the selected session already uses. Apply does not create or replace it.
+- **Existing harness home:** The session workdir and native harness-home
+  location derived by the existing placement contract. The existing
+  materializer creates missing native skill directories inside this
+  location. Apply defines no alternate home.
 - **Tightbeam-owned skill file:** A skill file that the existing served-identity
   projection contract assigns to Tightbeam. Existing reserved `tightbeam__*`
   ownership and native Codex or Claude skill discovery rules continue to apply.
@@ -117,7 +123,7 @@ how a workflow obtains strict confirmation.
 - **Revision stamp:** The selected session's existing `identityRevision` field.
   It records the source of the last skill-file update whose writer returned
   success. It is not adapter readback and does not prove model context.
-- **Re-read nudge:** An ordinary Tightbeam prompt that tells the selected
+- **Re-read nudge:** An ordinary Tightbeam prompt that tells a started selected
   session that its Tightbeam skills changed and asks it to re-read them. Apply
   submits it after the revision stamp commits. Prompt acceptance, delivery,
   acknowledgment, and compliance are best effort.
@@ -213,21 +219,21 @@ that names no session shall receive no file update and no nudge. Each target
 line shall preserve its pre-change missing-session and retired-session result.
 
 A selected active session that has no current harness-session pointer because it
-has never started shall take the pre-change no-op path. Apply shall leave that
-session's files and `identityRevision` unchanged. Apply shall submit no nudge for
-that session. The success response shall include that session's key in
-`applied`, matching the pre-change result.
+has never started shall run the R-03 renderer and writer. After writer success,
+apply shall run the R-05 revision stamp. Apply shall perform no adapter
+lifecycle operation for that session. Apply shall submit no nudge for that
+session. The success response shall include that session's key in `applied`
+after the writer and stamp succeed.
 
 Apply shall resolve `tightbeam/live` once before target file I/O. Every selected
-session that runs the writer shall use that Git object as its render source.
-Apply shall use the same Git object as the success response revision for an
-R-02 no-op. Apply shall not accept a revision argument, move `tightbeam/live`,
-or retarget itself after a later publication.
+session shall use that Git object as its render source. Apply shall use the same
+Git object as the success response revision. Apply shall not accept a revision
+argument, move `tightbeam/live`, or retarget itself after a later publication.
 
-**R-03 — Use the existing skill projection.** For each selected session, apply
-shall either take the R-02 no-op path or call the target line's existing
+**R-03 — Use the existing skill projection.** For each selected session that
+R-02 does not exclude from update, apply shall call the target line's existing
 served-identity renderer and projection writer for the Tightbeam-owned
-skill-file subset. The writer path shall use that session's existing workdir,
+skill-file subset. The writer shall use that session's existing workdir,
 harness, archetype, and native harness-home skill location.
 
 The existing projection contract shall continue to control exact paths,
@@ -262,8 +268,8 @@ revision. The gateway shall not obtain the value from an adapter, vendor
 process, model, prompt, or file watcher.
 
 **R-06 — Submit one explicit nudge after the stamp.**
-After the stamp commits, apply shall submit this exact ordinary prompt to that
-session:
+After the stamp commits for a selected session with a current harness-session
+pointer, apply shall submit this exact ordinary prompt to that session:
 
 ```text
 Your Tightbeam-owned skill files changed to identity revision <revision>.
@@ -276,6 +282,9 @@ reload your current model context.
 Apply shall not convert this prompt into adapter metadata. It shall not wait for
 an answer or interpret an answer as confirmation. Ordinary Tightbeam prompt
 ordering controls when the session receives the nudge.
+
+Apply shall submit no prompt for an R-02 never-started session because it has no
+current harness session.
 
 If prompt submission fails, the skill-file update remains in place. The command
 shall return a failure for that selected session. The revision stamp also
@@ -331,9 +340,9 @@ response shall remain:
 
 A started session shall enter `applied` only after its skill-file update,
 revision stamp, and prompt submission return success. A never-started session
-shall enter `applied` only through the R-02 no-op path. `identityRevision` shall
-identify the R-02 source revision. It shall not claim that an adapter, running
-turn, or model context uses that revision.
+shall enter `applied` only after its skill-file update and revision stamp return
+success. `identityRevision` shall identify the R-02 source revision. It shall
+not claim that an adapter, running turn, or model context uses that revision.
 
 Identity status shall describe `identityRevision` as the source of the last
 successful Tightbeam skill-file update. The gateway shall not read a loaded
@@ -376,7 +385,7 @@ remain in force. This specification authorizes no live identity edit or apply.
 
 | Controlling ruling | Requirements | Acceptance |
 | --- | --- | --- |
-| Update started selected-session skill files; preserve never-started no-op | R-02 through R-04 | A-01, A-03, A-04 |
+| Update selected-session skill files; preserve never-started materialize and stamp | R-02 through R-05 | A-01, A-03, A-04 |
 | Send an explicit best-effort re-read nudge | R-06 through R-08 | A-02, A-04 |
 | Running turn is allowed | R-04, R-07 | A-02, A-03 |
 | Apply supplies no strict confirmation; external procedures are out of scope | R-09 | A-05 |
@@ -387,20 +396,22 @@ remain in force. This specification authorizes no live identity edit or apply.
 
 ## Acceptance
 
-**A-01 — Selected-session update and never-started no-op (R-02 through R-05,
+**A-01 — Selected-session update and never-started path (R-02 through R-05,
 I-01, I-02).** Give two active sessions different workdirs and Tightbeam skill
 sentinels. Publish revision B that adds, changes, and removes elected Tightbeam
 skills. Apply only session A. Assert that session A's Tightbeam-owned skill
 files reconcile to B through the existing projection writer. Assert that
 session B and every non-owned path remain byte-for-byte unchanged. Assert that
-apply creates no new root, home, manifest, or discovery rule. Assert that
-session A records B only after the writer succeeds.
+apply creates no apply-specific root, alternate home, manifest, or discovery
+rule. Assert that session A records B only after the writer succeeds.
 
 Give session C active state with no current harness-session pointer because it
-has never started. Apply C. Assert that the response includes C in `applied`
-with B as the response `identityRevision`. Assert that apply does not run the
-writer, change C's stored `identityRevision`, create a harness home, or submit a
-nudge for C.
+has never started. Remove C's native skill directory. Apply C. Assert that the
+response includes C in `applied` with B as the response `identityRevision`.
+Assert that the existing writer creates the native skill directory and
+materializes C's Tightbeam-owned skill files from B. Assert that apply stamps C
+with B after writer success. Assert that apply makes no adapter lifecycle call
+and submits no nudge for C.
 
 **A-02 — Running turn and nudge (R-05 through R-07, I-03, I-05).** Hold the
 selected session's turn in running state. Apply B. Assert no turn-status
