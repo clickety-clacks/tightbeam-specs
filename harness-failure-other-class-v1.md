@@ -532,9 +532,12 @@ lifecycle_notification      {assignment|review|decision, rowIdArgOrdinal, bindin
 lifecycle_notification      {other_review_v1, 7}
 adapter_session_maintenance {literalMethod}
 credential_terminal_park_v1 {1, 2, 3}
+acp_boot_maintenance_v1    {initialize|session_new|model_config|session_mode}
+acp_boot_prompt_v1         {1, 2}
 ```
 
-Except for the transactionless `credential_terminal_park_v1` contract below,
+Except for the transactionless `credential_terminal_park_v1`,
+`acp_boot_maintenance_v1`, and `acp_boot_prompt_v1` contracts below,
 each excluded caller invokes
 `HarnessHealth.verify_non_prod_sink_in_txn/4` immediately before the sink in the
 same branch. It passes `txn`, the manifest entry, the per-invocation
@@ -860,6 +863,191 @@ through a second action seam. Deleting the call loses the existing repair;
 accepting it without proof leaves an unclassified sink, so neither closes the
 authorized inventory requirement.
 
+#### Existing ACP boot chain — Closed transactionless proofs
+
+Owner disposition `att_e467d925-d2a0-4145-9550-eb13dea7d384` authorizes only
+the existing boot chain enumerated in `art_95deea90`. These proofs do not change
+`adapter_session_maintenance`, F3, or `credential_terminal_park_v1`. A boot
+prompt is not maintenance. Neither new reason uses a database transaction,
+Dispatch seal, committed row, or caller-declared boot flag.
+
+**Closed compiler inventory.** Each row below expands to the complete tuple
+`{Tightbeam.Acp.Adapter,caller,arity,:acp_request,Tightbeam.Acp.Conn,:request,4,ordinal}`.
+The compiler admits exactly these candidate tuples and literal proofSpec values:
+
+| Caller / arity / ordinal | Reason | proofSpec | Literal method at sink |
+|---|---|---|---|
+| `boot / 3 / 1` | `acp_boot_maintenance_v1` | `{initialize}` | `initialize` |
+| `gate_attestation / 3 / 1` | `acp_boot_maintenance_v1` | `{session_new}` | `session/new` |
+| `gate_attestation / 3 / 2` | `acp_boot_maintenance_v1` | `{model_config}` | `session/set_config_option` |
+| `gate_attestation / 3 / 3` | `acp_boot_maintenance_v1` | `{session_mode}` | `session/set_mode` |
+| `gate_prompt / 2 / 1` | `acp_boot_prompt_v1` | `{1,2}` | `session/prompt` |
+
+The predecessor has one method-variable request callback in
+`gate_attestation/3`, ordinal 1. Specialize it into three literal-method
+branches in the table's order, with unchanged parameters, connection, timeout,
+return value and callers. Each branch's inner zero-arity sink callback contains
+one literal `Conn.request/4`. Model and optional effort remain separate dynamic
+invocations of the same `model_config` lexical site. This specialization neither
+adds an ACP request nor admits a runtime method allowlist. No old variable-method
+entry remains. The ten sink tuples themselves do not change.
+
+Trace the existing `handle_continue({:boot,...},nil)` through `boot/3`,
+`gate/2`, `gate_attestation/3`, and `gate_prompt/2`, including the exact
+statically resolved model callback and Task closure. Prove these excluded
+branches unreachable from each ARC-06 prod root. Reject another entry path,
+caller, callback substitution or method. The separate integer-timeout clause's
+`apply_model_to_session/4` request callback is not called by this boot chain:
+`gate_attestation/3` passes its own function to the function-taking clause.
+That separate lexical site receives no new exclusion here.
+
+**Complete argument and result provenance.** The compiler and runtime bind all
+four arguments, including the connection and exact fourth-argument keyword
+list `[timeout: :infinity]`. Parameter maps contain exactly the following
+fields; extra fields fail proof:
+
+| Stage | Parameters and only admitted sources | Required predecessor result |
+|---|---|---|
+| initialize | `%{protocolVersion: 1, clientCapabilities: %{fs: %{readTextFile: false, writeTextFile: false}}}`; conn from this boot's successful `Conn.start_link/1` | connection construction succeeded |
+| session_new | `%{cwd: probe_cwd, mcpServers: []}`; probe_cwd from existing `Keyword.fetch(opts,:probe_cwd)` success branch | initialize returned `{:ok,%{"protocolVersion" => 1}}` under the existing map pattern |
+| model_config, first invocation | `%{sessionId: sid, configId: "model", value: Model.to_ref(probe_model)}` | session_new returned `{:ok,result}`; sid is exactly `result["sessionId"]` |
+| model_config, optional second invocation | `%{sessionId: sid, configId: state.preset.effort_config, value: probe_model.effort}` | first model request succeeded through the existing `map_model_refusal/1`; existing `if effort` branch is taken |
+| session_mode | `%{sessionId: sid, modeId: state.preset.permission_mode}` | the actual existing model helper returned `{:ok,_applied_model}` |
+| prompt | `%{sessionId: sid, prompt: [%{type: "text", text: @gate_prompt}]}` | session_mode returned `{:ok,_}` |
+
+`state.conn` is the same constructed conn throughout; state.preset is the
+existing boot preset and probe_model is the existing `Keyword.fetch!` result
+from the probe-present path. Preserve their evaluation points and Elixir
+truthiness rules. Do not fetch probe_model on the probe-absent path or introduce
+a new session-id type check: the source uses the existing response access and
+model helper as written. Each failed predecessor takes its existing error path,
+without issuing a later-stage token. Preserve main's model-readback fallback
+`{:ok,model_ref}` and 0.1.9's `{:error,:model_readback_unavailable}`.
+
+Pin `@gate_prompt` to these exact UTF-8 bytes (one line):
+
+```text
+Run exactly this command with your shell tool (no other arguments): tightbeam-gate-probe . If the command is refused or blocked by anything, report the exact refusal message you received, verbatim, then stop; do not retry or work around it.
+```
+
+No appended text, second content block, alternate content type or additional
+prompt field qualifies. Maintenance stages retain the recursive rejection of a
+`prompt` key or field in a map or list. A substituted connection, session id,
+source value, helper result, parameter leaf or option fails compiler provenance
+or runtime equality before dispatch.
+
+**Boot-owned runtime evidence.** Add
+`HarnessHealth.with_acp_boot_proof/2(conn,callback)` at the original boot
+invocation immediately before initialize. It invokes the existing body once,
+returns its result unchanged, and clears its private process-local context on
+return, throw, exit or exception. Only a compiler-proved connection construction
+can enter it; recursive/reentrant entry refuses. The context has a fresh opaque
+boot reference and owns the conn, stage and actual response records. It is not
+a table, row, database transaction, persistent store or authorization for another
+adapter operation. No new process, timer or ACP request maintains it.
+
+At the existing gate-attestation entry,
+`HarnessHealth.bind_acp_boot_gate/3(state,probe_cwd,probe_model)` binds the
+compiler-proved source values once to the initialized context. It checks
+state.conn against that context. Preserve the existing evaluation and failure
+order. Wrap the existing model-helper invocation once in
+`HarnessHealth.capture_acp_boot_model/1(callback)`: the compiler permits only
+that exact helper call with its unchanged arguments and gate request function.
+This observer records the actual helper return in the context and returns it
+unchanged. It cannot fabricate a success marker or repeat a helper request.
+
+For each maintenance request use
+`HarnessHealth.verify_acp_boot_sink/4(manifestEntry,proofValue,sinkArgs,callback)`
+and `HarnessHealth.acp_boot_sink_call/4(token,sinkTuple,sinkArgs,callback)`.
+proofValue is the current private boot reference plus the literal stage. The
+verifier rechecks its owning process/invocation, exact manifest/proofSpec,
+permitted next stage, actual preceding response or helper-return record,
+source-derived arguments and recursive prompt absence. It returns `{:ok,token}`
+only for those exact values. Each token binds the boot reference, process,
+dynamic stage invocation, lexical tuple, complete arguments and actual callback
+function identity. The wrapper rechecks those bindings, consumes once before
+the request, records that request's actual result into the context, and returns
+the result unchanged. A second model-config token exists only for the existing
+effort branch after the first result; it is a new token, never a reused one.
+
+On a successful verification branch permit only the immediate wrapper call:
+no argument replacement, further branch, message send, token escape or mutation
+may intervene. Its callback has exactly one admitted sink; nested callbacks and
+second sinks fail compilation. Verifier/wrapper refusal is
+`{:error,:invalid_non_prod_exclusion}` with no ACP request. Feed that result into
+the existing stage's result handling, including initialize_failed or the gate's
+turn_error path. Preserve sink exceptions and never revive a consumed token.
+
+**Ownership across the existing prompt Task.** A parent-owned maintenance token
+cannot cross into the Task. Inside the unchanged `gate_prompt/2` entry,
+`HarnessHealth.prepare_acp_boot_prompt/2(conn,sid)` reads the private successful
+mode-stage context, checks both arguments, and prepares exactly one opaque
+handoff reference. It retains a private snapshot of the successful chain and
+complete prompt arguments. Only this existing Task closure captures that
+reference, conn, sid and its original parent; the compiler rejects any other
+copy, return or publication of the reference. Success returns `{:ok,handoffRef}`;
+refusal returns `{:error,:invalid_non_prod_exclusion}`. On preparation refusal,
+gate_prompt returns its existing `{:error,:turn_error,"",[]}` error shape
+without starting a Task or dispatching a request.
+
+After the existing `Task.start/1` returns its child pid, the parent calls
+`HarnessHealth.bind_acp_boot_prompt_task/2(handoffRef,childPid)` once. The compiler
+proves childPid is that exact start result. This binder reads the private
+snapshot, binds it to this parent boot and child pid, transfers it in one private
+handoff message keyed by the opaque reference, and consumes the parent's pending
+handoff. Binding returns `:ok` or `{:error,:invalid_non_prod_exclusion}`. On
+binding refusal, the generated cleanup sends a private refusal keyed by the
+captured reference to the original Task pid, so that child follows its error
+result send without a request; it does not send to a substituted binder argument.
+The message never goes through ACP, a turn, a wake, or a log.
+
+Before constructing its sink callback, that child calls
+`HarnessHealth.accept_acp_boot_prompt/4(handoffRef,parent,conn,sid)` once. It accepts
+only after compiler-inserted Task entry has installed the expected reference,
+parent, conn and sid directly from the captured closure in child-private state.
+No other entry may initialize that state. An uninitialized call or unequal
+argument refuses immediately, before receiving a message. The receiver accepts
+only the matching reference captured by its compiled closure, its own bound pid,
+the captured parent, conn and sid, and the sealed snapshot sent by the binder.
+The reference is the capability: it is minted only by prepare, kept in the
+parent's private pending entry and the one child closure, and sent only by bind.
+A caller-created map, boot flag or arbitrary message cannot create it. Reject
+malformed matching-reference messages and forged, duplicate, transferred or
+mismatched handoffs. Success returns `{:ok,handoffRef}`; receipt records
+consumption in the child until Task exit. Without a matching message, wait
+without issuing a token or request. Monitor the parent only during this
+handoff wait; parent death before handoff returns the named proof refusal and
+clears the wait state. A keyed private refusal returns the same proof refusal.
+Add no deadline. Clear an untransferred handoff on boot
+exit or failed Task.start; preserve the predecessor Task.start failure behavior.
+
+The child then uses the same named boot verifier/wrapper with reason
+`acp_boot_prompt_v1` and proofValue equal to its accepted handoff reference.
+The runtime verifier reads the child-owned snapshot, rechecks its bound process,
+boot, conn, sid, completed predecessor stages, exact prompt bytes and all four
+arguments, and mints a new single-use token for this child callback only.
+The wrapper consumes it before the existing request; result or proof refusal
+flows through the unchanged `{:gate_attestation_prompt_done,sid,result}` send.
+An acceptance failure skips verification/request and uses that same error send.
+Keep the parent destination, wait-loop notification matching, marker check,
+output collection, raw-update limit and existing success/error outcomes.
+The child clears proof state on return or exception. A transferred handoff
+permits only this one child call; it cannot restart boot, outlive Task exit,
+issue a retry, or authorize another connection/session. Ordinary connection
+closure and ACP result handling remain the predecessor's responsibility.
+
+**Cost and noncoverage.** Both lines add one ephemeral context per boot, one
+literal callback specialization, one model-result observer, one token per
+existing request, and one private parent-to-existing-Task handoff per attestation.
+They perform zero new ACP requests, database operations, prompts, timers or
+durable writes. Without probe_cwd, initialize still runs and no prompt handoff
+exists. The proof attests the existing local boot chain and request bytes; it
+does not authenticate provider content, assert prompt success before a response,
+change the boot marker, extend timeouts, normalize line-specific results, or
+classify another adapter call. Other transactionless sites still require their
+own already-admitted proof or a separately authorized amendment. None may be
+omitted from compiler inventory to make this revision pass.
+
 An authorized `harness-health-resolve-other` mutation requires `incidentId`,
 `observedState`, `exactProbe`, `outputDigest`, `recoveryConditionDigest`,
 `recoverySatisfied`, `observedAt`, `worldStatus`, `cause`,
@@ -1183,6 +1371,35 @@ meaning requires a canonical amendment and exact-revision review first.
     the original pre-proof metadata effects are neither undone nor repeated.
     Positive fixtures compare command values, results and metadata transitions
     with the exact predecessor, excluding only ephemeral proof bookkeeping.
+    For the two ACP boot reasons, run these named fixtures on both lines:
+    `boot_initialize_only` (probe_cwd absent: exactly initialize, unchanged ready
+    result); `boot_prompt_no_effort` and `boot_prompt_with_effort` (the exact
+    request sequence, parameters, connection, session, timeout, prompt bytes and
+    original result message); `boot_model_readback_line_parity` (main retains
+    its successful fallback, 0.1.9 retains its refusal and emits no later mode or
+    prompt); `boot_predecessor_failures` (initialize, session/new, first model,
+    optional effort and mode failure each retain the predecessor's outcome and
+    suppress later stages); `boot_prompt_results` (marker, no marker, ACP error,
+    exit and mixed-session updates preserve the existing wait-loop outcomes).
+    Add `boot_wrong_site_or_root`, `boot_dynamic_method`,
+    `boot_callback_substitution`, `boot_forged_response_or_helper_result`,
+    `boot_wrong_stage_or_replay`, `boot_cross_connection_or_session`,
+    `boot_each_argument_leaf`, `boot_nested_maintenance_prompt`,
+    `boot_changed_prompt_bytes_or_blocks`, `boot_token_forgery_or_reuse`,
+    `boot_task_handoff_forgery_or_transfer`, `boot_task_handoff_replay`,
+    `boot_parent_exit_before_handoff`, and `boot_exception_cleanup` negatives.
+    Change each connection, parameter leaf, method and timeout independently;
+    inject a second sink, nested sink callback, out-of-order stage, forged boot
+    flag, response substituted after its real request, token from another boot
+    or process, wrong child pid or result parent, and duplicate handoff. Each
+    fails compiler provenance or runtime binding before the affected request
+    with `invalid_non_prod_exclusion`; legitimate earlier requests are not
+    undone or repeated. Stale and duplicate manifest entries retain their named
+    refusal codes. Assert cleanup after success, refusal, parent death and
+    exceptions; no token authorizes a second request. Positive fixtures compare
+    exact predecessor request/result traces, excluding only private proof
+    bookkeeping and the one handoff message. All original proof-family fixtures
+    must retain their results, including maintenance prompt rejection.
 20. **OTH-AC-20 — Quiet-path silence and observability.** Given no active
     incident, repeated gate calls write nothing. Given one denied candidate,
     repeated identical calls produce one redacted suppression event. Given an
