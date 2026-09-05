@@ -1,3 +1,37 @@
+# RETIRED — Relearn and identity-apply workflow
+
+**Retired 2026-09-04 under Mike's operator ruling
+`dr_07bdef13-45ae-435f-bc79-b2dc6b0a5ebf` (ruled `1787708624624`, fact `1459`).**
+
+The ruling reads, in Mike's words: "this does not merit contract machinery.
+Guidance updates are files in the harness home; a live session gets told to
+reread them, best effort; when it actually matters that a session is on the new
+guidance, reload the session. No effect IDs, no atomic switch, no revision
+readback, no adapter extension spec. The reviewed strict identity-apply Terms
+are dropped and the heavyweight candidate is not to be rolled out or maintained;
+keep only whatever trivially serves the file-update-plus-nudge path."
+
+This file IS that heavyweight candidate. Its contract is structurally the killed
+machinery — effect IDs and creation epochs, an `invoke`/`status` effect-recovery
+contract, atomic reload replacement with rollback, prior-context snapshot and
+readback, an admission fence, `runner-stop`/`reload` effect phases, adapter
+generation tokens, and reset/reload of sessions with running turns. None of it
+was ever implemented: `0.1.9` at `81c91e2a` and `main` at `1c1110ca` contain no
+effect ID, admission fence, prior-context, runner-stop, reload adapter, identity
+generation, or revision readback. Retiring it removes a spec-only surface, not a
+shipped behavior.
+
+It is kept here as a record. It is not authority, and it is not maintained. Do
+not build from it, cite it as a requirement, or refine it.
+
+**Live home for `tightbeam identity apply`:** `immediate-identity-apply-v1.md`
+(candidate pending independent exact-revision review at the time of this
+retirement). Ownership, publication, `identity edit`, `relearn`, and the
+credential and installation laws of `served-identity-home-projection-v1.md`
+remain authoritative and are untouched by this retirement.
+
+---
+
 # Relearn and identity-apply workflow
 
 **Status:** spec-approved after cold digest under owner ruling

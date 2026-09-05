@@ -244,8 +244,12 @@ four verbs:
 - **`tightbeam identity status`** — report only: the `live` revision, per-session revisions,
   staleness, and conflict state (`relearn-conflicted` with the conflicting paths). It never repairs
   and never mutates.
-- **`tightbeam identity apply [<session>|--all]`** — move sessions onto the current `live` revision
-  via the §9 bounce-and-resume. There is no in-place patch of a running session.
+- **`tightbeam identity apply [<session>|--all]`** — update each selected session's Tight-Beam-owned
+  skill files from the current `live` revision, stamp that revision, then send an ordinary
+  best-effort re-read prompt. Turn state is not a precondition, and there is no strict confirmation
+  that a session read the new bytes. Mike's ruling `dr_07bdef13` removed the bounce, the
+  turn-boundary refusal, and every transition primitive from this verb;
+  `immediate-identity-apply-v1.md` is its sole home and governs its behavior in full.
 
 §6 teaches these verbs to the agent; the verb named there is `tightbeam identity edit`.
 
@@ -254,9 +258,9 @@ four verbs:
 Provisioning resolves `tightbeam/live` **once** and reads every artifact — composed guidance and all
 elected skill bodies — through that single immutable commit, so guidance and skills can never
 straddle a publication. Each session records that revision. A session whose stamp is behind `live`
-is reported `identity-stale` by `identity status`; `identity apply` refreshes it through the §9
-bounce. Customizations therefore reach NEW sessions at their next start and existing sessions when
-applied.
+is reported `identity-stale` by `identity status`; `identity apply` refreshes it by the skill-file
+update and re-stamp of `immediate-identity-apply-v1.md`. Customizations therefore reach NEW sessions
+at their next start and existing sessions when applied.
 
 ## 4. Racelessness — asymmetric (Codex runtime vs Claude setup-token)
 
@@ -337,7 +341,7 @@ direct writes to `identity/` remain outside the model.
 | `tightbeam identity edit <archetype> [--manifest \| --skill <name> [--rm]]` | default: `identity/guidance/<archetype>.md`; `--manifest`: `identity/archetypes/<archetype>.toml` (elections, `where`, defaults — boot-equivalent validation; a manifest that would fail `load!` is REFUSED without commit); `--skill`: `identity/skills/<name>/SKILL.md` (add/update; `--rm` removes, refusing while any archetype elects it) | writes the target, commits on `main` (author recorded), fast-forwards `tightbeam/live` |
 | `tightbeam identity status [<archetype>]` | live revision, per-session revisions, staleness, conflict state; with an archetype, also prints its composed guidance as delivered | report-only; never mutates |
 | `tightbeam identity relearn [--abort\|--resolve]` | §3 re-learn | clean-tree precondition → upstream import → merge into `main`; publishes `live` only on success; `conflict` leaves `live` unmoved |
-| `tightbeam identity apply [<session>\|--all]` | session refresh | moves sessions onto current `live` via the §9 bounce |
+| `tightbeam identity apply [<session>\|--all]` | session refresh | updates Tight-Beam-owned skill files from current `live`, stamps the revision, then sends a best-effort re-read prompt; no turn-boundary precondition and no strict confirmation (`immediate-identity-apply-v1.md`) |
 
 Path resolution is against the Tight-Beam-owned `identity/` tree (never a repo path). Only a
 SUCCESSFUL identity-content mutation (`edit`; a `relearn` that merges cleanly or is `--resolve`d)
@@ -502,10 +506,8 @@ required to be present.
    guidance, skills, and revision stamp all come from the single OID resolved at provisioning
    start. Additionally: a SUCCESSFUL `live` advance causes NO automatic refresh — an open session's
    materialized skills, delivered guidance, and stamp are byte-identical before and after the
-   publication until `identity apply` runs; and `apply` itself is proven to close/reopen only the
-   harness session (same workdir, same history pointer), recompose guidance AND skills from one
-   resolved OID, update the stamp, and leave the shared Codex runtime process untouched (same OS
-   pid before and after).
+   publication until `identity apply` runs. `apply`'s own acceptance is not stated here — it lives
+   in `immediate-identity-apply-v1.md`, which owns that verb per `dr_07bdef13`.
 14. **Per-machine credential isolation.** With two machine contexts, assert each onboards
    independently, each runtime is launched with only its local credential, and no credential bytes
    traverse the placement/control channel between them (fail-on-revert against the transport
@@ -517,11 +519,14 @@ No non-destructive/drain/rollback machinery is required (greenfield; killing/bou
 acceptable; sessions are durable and resume). The rule is the ratified B2 model:
 - **Guidance/skill changes** touch **session workdirs / the injected identity on next session**, not
   the shared home → nothing bounces AUTOMATICALLY; new sessions pick the changes up at start.
-  **`identity apply [<session>|--all]` is the explicit per-session refresh**: at a turn boundary,
-  close the harness session, re-materialize skills and recompose guidance from ONE resolved
-  `tightbeam/live` OID, re-open the harness session on the same workdir and history pointer, and
-  update the session's revision stamp. For Codex this closes/reopens the THREAD only — the shared
-  runtime process is not restarted. §8.13's single-OID rule applies to the re-provision.
+  **`identity apply [<session>|--all]` is the explicit per-session refresh, and it does NOT bounce.**
+  Per Mike's ruling `dr_07bdef13`, apply is an ordinary file update plus a nudge: replace the
+  session's Tight-Beam-owned skill files from the current `live` revision, stamp that revision, then
+  send a best-effort re-read prompt. It does not close the harness session, does not recompose
+  non-file guidance, does not wait for or refuse on a running turn, and returns no strict
+  confirmation. A workflow that strictly depends on a session being on new guidance uses an existing
+  external reload or session-replacement boundary, not apply. `immediate-identity-apply-v1.md` is
+  the single home for this verb; nothing else in this section applies to it.
 - **Codex auth / hook change in the shared home** → written atomically (write-temp-rename onto the
   store backing file for the credential, per §9b link topology; direct for hook artifacts); when a
   running runtime must pick it up, the runtime/adapter is **bounced and resumed** (reads fresh state

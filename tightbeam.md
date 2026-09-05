@@ -517,8 +517,9 @@ the session as the HARNESS'S OWN instruction channel over ACP `_meta` (codex
 file — and elected skills materialize at the SESSION CWD under the reserved
 `tightbeam__*` namespace, which org identity may not claim. Each session
 stamps the live revision it materialized from; `identity apply` is the
-explicit bounce-and-resume onto current live, and staleness is visible in
-`identity status`. Shared `{harness, machine}` homes carry only credentials,
+explicit per-session refresh — it updates those Tight-Beam-owned skill files
+from current live, stamps the revision, then sends a best-effort re-read
+prompt — and staleness is visible in `identity status`. Shared `{harness, machine}` homes carry only credentials,
 rails, `.tightbeam/`, and substrate baseline skills — harness-owned durable
 state survives regeneration byte-identical.
 
