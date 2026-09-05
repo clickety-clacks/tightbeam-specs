@@ -494,10 +494,11 @@ serializer. `Tightbeam.StateVisibility.execution_map_node_visible?/3` composes
 the existing AU4 predicates named in AU4a. Assignment selection first calls
 `Tightbeam.StateVisibility.execution_map_assignment_visible?/3`, then the node
 predicate. Neither predicate grants authority of its own.
-`Tightbeam.Wire.Router.rest_read/3`, `Tightbeam.RestCursor`, and
-`Tightbeam.RestEnvelope` remain the one route, cursor, and outer-envelope
-adapters. Route code does not query rows, build a node, copy a visibility rule,
-or encode an envelope.
+The existing D1 `Tightbeam.Wire.Router` request, cursor, and outer-envelope
+handling supplies the transport adapter. These references require no new
+module or function. Resource route clauses delegate to that shared handling;
+they do not query rows, build a node, copy a visibility rule, or duplicate
+envelope encoding.
 
 R3c. These are the complete G7 detail routes. Each route addresses one
 existing R8 public item by the same canonical key carried in the notice and
