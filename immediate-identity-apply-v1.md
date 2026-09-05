@@ -32,18 +32,6 @@ session without adapter work. R-02, R-03, R-06, R-11, and A-01 preserve the
 current target behavior. The controlling decision supplies no authority to
 delete it.
 
-Product adjudication `att_945c674e-e7bb-401c-87b7-0f6713232119` accepts that
-preservation and requires this exact successor to clear a fresh
-different-session review before implementation or landing. It also keeps the
-separate canonical-spec cleanup at `18af4f1df74fc9d71969ecc20ae227d9fc5d2a10`
-behind the reviewed-clean successor.
-
-Cleanup inventory addendum `art_4499cc87` found a downstream contradiction in
-`observability-v1.md`: that file classified never-started sessions as `:noop`
-even though they now reach the revision stamp. This file owns the identity-apply
-outcome classification. `observability-v1.md` retains only the generic emission
-rule that follows a successful revision stamp.
-
 The controlling decision says that identity apply does not merit transition
 machinery. Tightbeam updates its owned skill files in each selected session's
 native skill location and records the source revision. Tightbeam then tells a
@@ -68,11 +56,6 @@ release, and two-YES laws remain authoritative. Where an older
 file requires an atomic apply switch, adapter or model revision readback, an
 identity generation, an adapter extension, or quiescence, this file supersedes
 that requirement.
-
-For `observability-v1.md`, this file decides which selected session reaches the
-revision stamp and the `:applied` result. `observability-v1.md` decides the
-best-effort event emission that follows that stamp; it does not classify a
-session from whether the harness session has started.
 
 The authorized product lines are exactly `0.1.9` and `main`, where `main` is
 the `0.2.0` integration line. Live `0.1.8` is locked and excluded.
@@ -390,11 +373,6 @@ state mutation.
 until a fresh independent reviewer files reviewed-clean for this exact canonical
 commit and file SHA-256.
 
-The separate canonical-spec cleanup candidate
-`18af4f1df74fc9d71969ecc20ae227d9fc5d2a10` shall remain unlanded until that
-review returns reviewed-clean. An authorized canonical-spec landing shall place
-this file before the cleanup or include both in the same merge.
-
 The later implementation shall produce equivalent candidates and tests on both
 target lines. The same independent review round shall cover both candidates.
 The landing shall include both reviewed candidates in one authorized sequence
@@ -414,7 +392,7 @@ remain in force. This specification authorizes no live identity edit or apply.
 | Existing revision bookkeeping is not readback or confirmation | R-05, R-09, R-11 | A-01, A-04, A-05 |
 | No atomic, effect, generation, adapter, root, or quiescence machinery | Non-Goals, R-04, R-08, R-12 | A-04, A-07 |
 | Treat non-file guidance separately | R-09, R-10 | A-05, A-06 |
-| Exactly `0.1.9` and `main/0.2.0`; reviewed spec before cleanup; indivisible product landing | R-13, R-14 | A-08 |
+| Exactly `0.1.9` and `main/0.2.0`; indivisible landing | R-13, R-14 | A-08 |
 
 ## Acceptance
 
@@ -433,8 +411,7 @@ response includes C in `applied` with B as the response `identityRevision`.
 Assert that the existing writer creates the native skill directory and
 materializes C's Tightbeam-owned skill files from B. Assert that apply stamps C
 with B after writer success. Assert that apply makes no adapter lifecycle call
-and submits no nudge for C. Assert that C's successful revision stamp selects
-the existing observability `:applied` branch rather than a start-status rule.
+and submits no nudge for C.
 
 **A-02 — Running turn and nudge (R-05 through R-07, I-03, I-05).** Hold the
 selected session's turn in running state. Apply B. Assert no turn-status
@@ -500,12 +477,6 @@ show one authorized both-line sequence. Negative evidence shall show no feature
 commit or execution on live `0.1.8` and no implementation before exact-spec
 reviewed-clean, installation, release, target move, or live identity action
 before the existing gates and later two YES decisions.
-
-Canonical-spec landing evidence shall show that cleanup candidate
-`18af4f1df74fc9d71969ecc20ae227d9fc5d2a10` remained unlanded until this exact
-canonical commit and file SHA-256 received reviewed-clean. If an authorized
-canonical-spec landing includes the cleanup, the history shall place this file
-before the cleanup or include both in the same merge.
 
 ## Open Questions
 
