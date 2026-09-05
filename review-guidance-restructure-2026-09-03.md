@@ -210,3 +210,15 @@ which reach it through `review-common.md`. The skill half of the assertion drops
 because no archetype elects the skill; say so where the test can be read, so the drop
 is visible rather than silent. The same applies to any other test that enumerates the
 guidance directory: re-derive it against the post-restructure file set.
+
+One of that guard's assertions has no verbatim home after this restructure. It asserts the
+string "record it as a report artifact on the work item", which lives at
+`guidance/reviewer.md:111`, in the file this change deletes. Do NOT restore that phrasing to
+`review-common.md` to make the assertion transcribe. The requirement survives in step 1 of
+"Substrate procedures" as the `artifact-record` command itself, naming `--kind report` and
+`--work-item`, which is the more precise statement of the same law. Re-derive the assertion
+onto that text. A line added to guidance so that a test string matches is guidance written
+for the test, and the audit criterion above rejects it: a line earns its place by changing
+what an agent does, not by satisfying an assertion. This holds generally. When a re-derived
+guard cannot transcribe, re-derive it onto the surviving statement of the law; change the
+guidance only when the law itself did not survive.
