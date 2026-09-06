@@ -1,6 +1,6 @@
 # Row-driven wakes: technical specification (0.1.9)
 
-Revision 2 — gap rulings incorporated; cold digest pending before review handoff.
+Revision 3 — cold digest complete; ready for independent spec review, not implementation.
 
 Work item: `wi_fbcdf1a9-d3fc-4f17-ae1a-eb38ebc9facd`.
 Spec assignment: `asg_26e06eec-4d09-4ecc-bb43-251acb9d82ac`.
@@ -169,6 +169,11 @@ Wakes while allowing the operation. Matching notice rules do not short-circuit s
 deny rules or change the operation's authority. An ad hoc wait's RHS is this notice with
 its target and continuation already bound. Do not activate the commented doorbell in
 `priv/kungfu/agentic-engineering/rules/engineering.toml:126`. Acceptance: A1, D3.
+For loaded notice rules, extend the existing rule schema with `[rule.notice]`: exactly
+one of `target_role` or `target_session`, plus nonblank `prompt`. Reuse existing target
+resolution and whole-field/prompt binding tokens; reject unknown keys or unsupported
+tokens at load. Require this table for `effect="notice"`; reject it for other effects.
+For ad hoc waits the persisted target/prompt supply that same RHS, with no TOML lookup.
 
 **A-R3.** Expose a transaction-aware evaluation entry so registration and authoritative
 recognition read one committed snapshot; do not call the DB GenServer recursively from
@@ -195,6 +200,11 @@ The MVP supports one identity/selector per named domain in a predicate; the arti
 review facts share one artifact-revision binding. Conditions retain `{fact,op,value}`
 and the existing operators `eq ne gt gte lt lte in not_in`. `in` expresses alternatives
 within a disposition set. It does not add an OR expression language.
+On `row-commit`, a loaded rule's existing `verb` selects the originating mutation verb;
+the changed-row context supplies its domain bindings. An ad hoc wait uses its own stored
+bindings instead. A callback carrying several changed rows evaluates each relevant
+candidate with one consistent committed snapshot; it does not splice fact values from
+different snapshots into an AND.
 
 Default terminal builders expand to ordinary conditions:
 
@@ -291,8 +301,8 @@ references, evaluate admission, capture T and legacy cursor if applicable, persi
 and sidecar, and evaluate both firing paths in the same transaction. Return wake id,
 recognition path or null, and eligibility. Refusal leaves neither wake nor sidecar.
 If success holds, recognize success; otherwise if the resolver is terminal, recognize
-path reconsideration with reason resolver-terminal. A terminal resolver is the immediate-evaluation exception to the
-open-resolver rule, not an accepted unresolved dependency. Mechanically admitted unresolved
+path reconsideration with reason resolver-terminal. A terminal resolver is the
+immediate-evaluation exception to the open-resolver rule, not an accepted unresolved dependency. Mechanically admitted unresolved
 dependencies start provisional with their named verifier; relief may start at registration
 under policy, independently of after-turn prod coverage. Acceptance: B1–B4, A3, V1.
 
@@ -302,6 +312,10 @@ same snapshot, stamp success and include the resolver's actual terminal disposit
 An AND's unsatisfied member cannot suppress the terminal path. Recognition is durable
 before delivery eligibility and remains latched if later state changes; delivery is a
 notification to reread current state, not a claim that the older snapshot still holds.
+The first recognition is immutable. Later verification evidence remains on its attest,
+but does not overwrite an earlier firing or produce a second notification. A verification
+challenge that wins recognition ends coverage under B-R8. A later cancellation can still
+cancel undelivered notification under B-R4.
 Acceptance: B5–B9.
 
 **B-R4 — eligibility and once-only delivery.** An originating turn is eligible when its
@@ -332,7 +346,10 @@ condition facts, including internal producers. An internal business transition d
 owner from the owning business row. Resolve legacy provenance through its recorded
 session/user origin and owning references, not scope spelling. Historical system facts
 without a unique owner do not qualify for cross-tenant matching: migration reports their
-ids and refuses an ambiguous conversion rather than assigning them to the current caller.
+ids and refuses their owner attribution rather than assigning them to the current caller.
+That refusal leaves those historical rows unscoped; it does not block conversion of
+unrelated rows. Unscoped facts cannot satisfy an owner-bound wake. A pending legacy wake
+retains its fallback when no safely scoped fact matches.
 Migration preserves closed rows and the registration cursor; it does not manufacture
 business facts for assignments, artifacts, reviews or work items. Acceptance: L2–L3.
 
@@ -341,8 +358,10 @@ names `verificationRef={kind:"assignment",id:"V"}`. V must already exist, be ope
 owner-scoped, with a recorded holder admitted by the verification TOML. Record the holder,
 the selected policy name, and `verificationState=provisional` on the wake. The registrant
 supplies the obligation; the engine does not staff or create a verifier. Registration's
-notice summons that holder once with wake id, exact predicate, necessity and requested
-judgment, through ordinary Wakes. The existing assignment lifecycle supervises V.
+notice summons that holder once if the dependency remains unresolved after immediate
+evaluation, with wake id, exact predicate, necessity and requested judgment, through
+ordinary Wakes. Already-recognized truth does not summon a verifier for an ended wait.
+The existing assignment lifecycle supervises V.
 
 The same fallback dueAt bounds provisional waiting; no second verification timer or
 cadence default is added. Policy must name an actual verification transition and cannot
@@ -376,14 +395,16 @@ Acceptance: V1–V4. The added state uses existing wake/attest rows and mutation
 `supervision.ex:3132` and holder-oldest selection at `:1313` with per-obligation
 evaluation. A queued/running continuation joins through `turns.wakeId` to the admitted
 wake's matching `assignmentId` and `obligationRef`. A prose assignment mention does not
-join. Pending coverage requires T terminal and a coherent admitted sidecar. Evaluate
+join. Pending coverage requires T terminal (or no originating turn) and a coherent
+admitted sidecar. Evaluate
 coverage and prod claim in one transaction so a competing continuation cannot be ignored
 between the check and action. Watermarks follow the same obligation scope. C1–C4 verify it.
 
 **C-R2 — sidecar.** Extend `controllerOrigin` with `holder_continuation`, and add exactly
 that coherent branch to `schema.ex:288` and its insert trigger at `:684`. This branch
 requires a prompt wake, matching open assignment, authenticated authorized registrant,
-captured turn (or explicit null for registration outside a turn) and matching obligationRef. It carries neither a charged prod generation
+captured turn (or explicit null for registration outside a turn) and matching obligationRef.
+It carries neither a charged prod generation
 nor a fabricated `wakeKind=prod`. Existing scheduled and retirement branches retain
 their checks. The sidecar's pending→settled transition follows delivery/cancellation;
 the ledger join supplies coverage after enqueue. Acceptance: C1–C4, C8.
@@ -468,7 +489,8 @@ syntax and are unique across the loaded rule/policy set. Purpose is exactly
 Verification-admission declarations additionally require the `verification` inline table
 shown above with exactly those three keys and literal values. Other purposes reject that
 table. This MVP summons the named verifier at registration and uses the existing fallback;
-`never` or an omitted verification transition fails policy loading. No `effect`, remedy or check script is valid
+`never` or an omitted verification transition fails policy loading. No `effect`, remedy
+or check script is valid
 inside a policy. Unknown keys/facts, unsupported purpose, empty conditions, duplicate
 names and type errors fail loading with file/policy/condition location. Conditions AND-fold;
 multiple declarations for one purpose qualify if any one matches. No matching declaration
@@ -506,8 +528,9 @@ deny_when = [
 ```
 
 The gateway computes holder/lineage facts from recorded sessions and assignment ownership.
-It rechecks admission inside registration to prevent a stale preliminary dispatch read
-from granting coverage. Who qualifies is TOML policy; tenant isolation, valid references,
+It rechecks admission conditions inside registration to prevent a stale preliminary
+dispatch read from granting coverage, without executing notice/remedy effects twice.
+Who qualifies is TOML policy; tenant isolation, valid references,
 mandatory fallback, coherent sidecar and typed transitions remain substrate constraints.
 The shipped policy must implement the accepted matrix, not merely provide a configuration
 example. Tests replace policy in an isolated org to prove qualification follows TOML.
@@ -613,8 +636,9 @@ Traceability: G-A implements A-R1–A-R4 (A1–A4, V5); G-B implements B-R1–B-
 policy and the operating amendment (D1–D3, V4). Cross-cutting invariants are cited by each case.
 Build order is G-A → G-B → G-C → G-D through the same implementation seam.
 
-Spec handoff requires this canonical file in tightbeam-specs main, exact SHA-256 artifact
-row, a completed cold digest, and an independent spec review. The orchestrator returns
+Review handoff requires this canonical file in tightbeam-specs main, exact SHA-256 artifact
+row, and a completed cold digest. Build handoff additionally requires independent spec
+review to pass. The orchestrator returns
 the review verdict to the spec expert. After a clean review, bind the work item's
 implementation specRef/hash to those reviewed bytes. Implementation then returns remote
 gate evidence and fresh independent code review to the orchestrator; final Spirit
