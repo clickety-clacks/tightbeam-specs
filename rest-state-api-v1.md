@@ -1055,7 +1055,7 @@ remain outside this table.
 | `wake.scheduled`, `wake.fired`, `wake.canceled` | wakes | upsert | `wakeId` |
 | `prod.fired`, `turn.started`, `turn.ended` | turns | upsert | `turnSeq` |
 | `decision_request.opened`, `decision_request.ruled`, `decision_request.withdrawn` | decision requests | upsert | `decisionRequestId` |
-| `session.spawned`, `session.harness_changed`, `session.retired` | sessions | upsert | `sessionKey` |
+| `session.spawned`, `session.updated`, `session.harness_changed`, `session.retired` | sessions | upsert | `sessionKey` |
 | `role.created`, `role.bound` | roles | upsert | `role` |
 | `role.removed` | roles | delete | `role` |
 | `user.added`, `user.promoted` | users | upsert | `userId` |
@@ -1085,7 +1085,11 @@ exact R7 serializer as their REST resources, per `art_4a1cce6e`.
 R8c. `session.harness_changed` maps one successful committed
 `tune set_harness` mutation whose prior and resulting resident harnesses
 differ. It uses resource `sessions`, op `upsert`, primary ref `sessionKey`, and
-the committed R7 session item. A refusal, rollback, or effective no-op emits no
+the committed R7 session item; that commit emits no duplicate `session.updated`.
+Rename and other established public session changes retain their existing
+`session.updated` mapping to the same resource, operation, ref, and serializer.
+Creation and retirement retain `session.spawned` and `session.retired` respectively.
+A refusal, rollback, or effective no-op emits no
 class and does not increment `rowVersion`. The G9 serializer, protocol-2
 encoder, R8 registry entry, publisher, and mutation handler become routable in
 one activation boundary; no current-producer interval admits the mutation or

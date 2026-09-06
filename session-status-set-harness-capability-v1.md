@@ -182,13 +182,15 @@ copy the complete `setHarness` object from the canonical session item; they do n
 construct it. No new client adopts the M5 route. [AC4]
 
 SH6. The rebuildable session state classes that carry this capability are exactly
-`session.spawned`, `session.harness_changed`, and `session.retired`. Each maps to resource
+`session.spawned`, `session.updated`, `session.harness_changed`, and `session.retired`. Each maps to resource
 `sessions`, operation `upsert`, primary ref `sessionKey`, and the shared R7 session
-serializer. `session.harness_changed` represents one successful `tune set_harness`
-commit whose prior and resulting resident harness values differ. A no-change replay,
+serializer. `session.updated` preserves the existing notice for rename and other
+established public session changes. `session.harness_changed` represents one successful
+`tune set_harness` commit whose prior and resulting resident harness values differ;
+that commit emits no duplicate `session.updated`. A no-change replay,
 refusal, or rolled-back transaction emits no session state notice. Retirement emits
-`session.retired`, not `session.harness_changed`. This amendment does not assign a
-class to another pre-existing session mutation. [AC6]
+`session.retired`, and creation emits `session.spawned`; neither emits
+`session.updated` or `session.harness_changed`. [AC6]
 
 SH7. A session mutation writes its item change and higher `rowVersion` in one
 transaction. After commit, it invokes the existing best-effort firehose publisher
@@ -196,7 +198,7 @@ once with the matching SH6 class and committed post-mutation item. If the publis
 and fan-out remain healthy through that handoff, fan-out accepts one matching notice.
 A crash after commit can lose the notice as allowed by firehose D1; authorized REST
 remains the rebuild source. A healthy `tune set_harness` handoff carries
-`session.harness_changed` whose `harness`, model fields,
+exactly one `session.harness_changed` and no duplicate `session.updated`; its `harness`, model fields,
 `capabilities.setHarness`, and `rowVersion` equal the next authorized REST detail
 item. The old resident option becomes enabled and the new resident option becomes
 disabled in that payload. [AC6, AC9]
@@ -396,15 +398,17 @@ AC6 — Firehose mapping, ordering, idempotency, and restart (SH6, SH7, SH9)
 - Given one successful session creation, one rename, one harness switch, and one
   retirement while the publisher and fan-out remain healthy through each handoff,
   when the registry and post-commit handoff run, then the observed session
-  state-notice sequence is exactly `session.spawned`, `session.harness_changed`, and
-  `session.retired` in commit order; the rename emits no session state notice. Each
+  state-notice sequence is exactly `session.spawned`, `session.updated`,
+  `session.harness_changed`, and `session.retired` in commit order; the rename emits
+  `session.updated`, and the harness switch emits no duplicate `session.updated`. Each
   emitted frame uses resource `sessions`, operation `upsert`, primary ref
   `sessionKey`, and the matching post-commit R7 item.
 - Given a harness switch from `claude` to `codex` whose publisher and fan-out remain
   healthy through handoff, when its transaction commits, then
   the one `session.harness_changed` payload has the higher `rowVersion`, resident harness
   `codex`, disabled `codex` option, enabled `claude` option, and a `setHarness` value
-  semantically equal to the next authorized REST detail item.
+  semantically equal to the next authorized REST detail item; no `session.updated`
+  notice accompanies that commit.
 - Given a duplicate no-change mutation, a named refusal, and a rollback, when the
   publisher runs, then none emits a session state notice or changes `rowVersion`.
 - Given a committed session item, when the service restarts without a session or
