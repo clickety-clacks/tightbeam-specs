@@ -2,6 +2,26 @@
 
 ## Authority
 
+### Latest narrow delivery directive
+
+Mike explicitly authorizes delivery of the submitted-image-retention fix to
+installed Ask on **osanwe**, superseding the no-osanwe-deployment restriction
+for this fix only. Preserve multiple submitted images beside their message
+after submission and completion, retry semantics, and per-conversation cleanup.
+Verify the exact newer retention candidate, obtain the existing independent
+review, and install only its tested narrow file set without losing active
+conversations. Do not restart or close an active conversation to install it.
+Record exact candidate, tests, review, deployment files and before/after hashes.
+Unrelated recovery-panel/error changes must not hitchhike into this install.
+
+Mike clarified that “pin/unpin” was a test-description mistake: preserve
+existing pin transitions; do not add unpin or change Super+comma. The former
+unpin question is closed. Candidate `9e8fc078` is superseded, not final evidence.
+Use existing coder/reviewer custody and preserve local diff `art_40b9a588`.
+Nacelle remains the acceptance-test host. The narrow osanwe install and its
+necessary retention verification are authorized; no public release, gateway,
+service, unrelated-project, or general deployment changes are authorized.
+
 Work item: `wi_10cba12a-30a5-4b69-8d46-5a1f479cd9e6`.
 Owner: `asg_65fcb778-db77-4cca-b847-c9de302fd700`, product-owner:ask.
 Mike approved “Use proposed behavior” on decision
