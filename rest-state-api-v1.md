@@ -1028,8 +1028,9 @@ A composed item carries `dependencyVersion` as described in R9 instead. No
 adapter may add a storage column or a caller-selected field.
 
 For transcript messages, “exactly” applies after the conditional R7m rule.
-`messageType` is optional, not a nullable public key, and is the sole R7 key
-that an adapter conditionally omits.
+`messageType` is optional, not a nullable public key, and is the sole
+conditionally omitted transcript-message key. Decision requests apply the
+agent-only return-field condition in the table note below.
 
 | Resource | Canonical item fields |
 |---|---|
@@ -1045,7 +1046,7 @@ that an adapter conditionally omits.
 | turns | `seq`, `sessionKey`, `messageId`, `wakeId`, `origin`, `prompt`, `roleRef`, `roleFallback`, `assignmentId`, `jobRef`, `model`, `thinkingLevel`, `modelContext`, `harness`, `replyAttention`, `status`, `owner`, `adapterGen`, `requestRef`, `error`, `createdAt`, `startedAt`, `endedAt`, `publishedAt`, `rowVersion` |
 | artifacts | `artifactId`, `kind`, `title`, `description`, `createdBySession`, `workItemId`, `parentSession`, `originPath`, `contentSha256`, `recordedMessageId`, `recordedTurnEvidence`, `state`, `home`, `createdAt`, `updatedAt`, `rowVersion` |
 | assets | `assetId`, `ownerUserId`, `mimeType`, `size`, `filename`, `createdAt`, `rowVersion` |
-| decision requests | `id`, `kind`, `raiserId`, `raiserSessionKey`, `ownerUserId`, `assignmentId`, `expecterSessionKey`, `expecterUserId`, `lineageRung`, `effortGeneration`, `deadlineWakeId`, `raisedAt`, `deadlineAt`, `statuteName`, `question`, `options`, `context`, `status`, `decision`, `rationale`, `ruledBy`, `ruledAt`, `consumedAt`, `withdrawnBy`, `withdrawnReason`, `withdrawnAt`, `askedOfRole`, `answer`, `answeredBy`, `answeredAt`, `rowVersion` |
+| decision requests | `id`, `kind`, `raiserId`, `raiserSessionKey`, `ownerUserId`, `assignmentId`, `expecterSessionKey`, `expecterUserId`, `lineageRung`, `effortGeneration`, `deadlineWakeId`, `raisedAt`, `deadlineAt`, `statuteName`, `question`, `options`, `context`, `status`, `decision`, `rationale`, `ruledBy`, `ruledAt`, `consumedAt`, `withdrawnBy`, `withdrawnReason`, `withdrawnAt`, `askedOfRole`, `answer`, `answeredBy`, `answeredAt`, `returnedBy`, `returnReason`, `returnedAt`, `rowVersion` |
 | operator ruling provenance | `requestId`, `authorityPrincipal`, `state`, `submittingSessionKey`, `ruledAt`, `rowVersion` |
 | read markers | `userId`, `scopeKey`, `marker`, `updatedAt`, `rowVersion` |
 | roles | `name`, `boundSessionKey`, `ownerUserId`, `createdAt`, `updatedAt`, `rowVersion` |
@@ -1058,6 +1059,35 @@ that an adapter conditionally omits.
 | coordination share | `sessionKey`, `from`, `to`, `turns`, `wakeTurns`, `classedTurns`, `coordinationTurns`, `summons`, `algedonic`, `byClass`, `share`, `dependencyVersion` |
 | digest members | `wakeId`, `prompt`, `class`, `classElection`, `createdAt`, `dependencyVersion` |
 | work-item trace | `workItem`, `assignments`, `causalChildren`, `attribution`, `dependencyVersion` |
+
+Decision-request table note — agent return. For `kind:"agent"`, the shared
+query retains stored `returned_by`, `return_reason`, and `returned_at`.
+The canonical item contains `returnedBy`, `returnReason`, and `returnedAt`,
+in that order after `answeredAt` and before `rowVersion`. Before return, all
+three keys are present with null values. After the accepted return, `status`
+is `"returned"`, the first two values are the stored strings, and `returnedAt`
+is the stored positive integer. For non-agent kinds, the canonical item omits
+all three keys and does not admit `status:"returned"`. All existing fields
+retain their order and meaning. Legacy response shapes remain unchanged.
+
+The existing sole decision-request query, `Tightbeam.StateResources.decision_request/1`
+serializer, and `Tightbeam.StateResources.encode_item/3` ordered encoder supply
+this item to canonical REST and notices; no caller builds another projection.
+Preserve an existing stored `rowVersion` when supplied. Otherwise preserve the
+existing natural-version derivation, including `returned_at` for agent rows
+alongside the existing answered, withdrawn, consumed, ruled, and raised
+sources. This companion adds no timestamp fabrication, storage, backfill,
+sequence, version floor, or stronger advancement policy. A failure of the
+existing derivation to satisfy existing version authority must be reported
+against that authority, not repaired with an invented mechanism.
+
+Given a stored agent return, canonical query and ordered REST/notice item
+encoding retain its return triplet and the version from those existing
+sources. The accepted idempotent retry retains the same result. Given an
+agent row before return, both encodings retain the null triplet; given a
+non-agent row, both omit it. Existing non-agent and legacy bytes remain
+unchanged. Authority: `att_1a51f90d-5b31-4824-beab-0a070f8cb342` and
+`att_31523b79-c3e9-4950-9053-b30fb6cd75e6`.
 
 R7m. The transcript-message write seam assigns `messageType` without parsing
 message content. Current assignments are exact:
