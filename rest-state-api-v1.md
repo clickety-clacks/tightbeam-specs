@@ -1073,21 +1073,41 @@ retain their order and meaning. Legacy response shapes remain unchanged.
 The existing sole decision-request query, `Tightbeam.StateResources.decision_request/1`
 serializer, and `Tightbeam.StateResources.encode_item/3` ordered encoder supply
 this item to canonical REST and notices; no caller builds another projection.
-Preserve an existing stored `rowVersion` when supplied. Otherwise preserve the
-existing natural-version derivation, including `returned_at` for agent rows
-alongside the existing answered, withdrawn, consumed, ruled, and raised
-sources. This companion adds no timestamp fabrication, storage, backfill,
-sequence, version floor, or stronger advancement policy. A failure of the
-existing derivation to satisfy existing version authority must be reported
-against that authority, not repaired with an invented mechanism.
+Decision-request `rowVersion` is the existing stored positive integer on
+both product lines. The existing authorized upgrade initializes valid,
+previously unversioned rows to 1; new inserts start at 1. Existing versioned
+rows retain their stored values. The existing `decision_requests_r7_row_version`
+changed-field trigger covers every canonical R7 field other than `rowVersion`,
+including agent `returnedBy`, `returnReason`, and `returnedAt`. A committed
+mutation that changes any of those fields advances the stored version by
+exactly 1 atomically with the change. An unchanged retry or no-op leaves the
+version unchanged. The shared query, serializer, and ordered encoder read that
+stored integer. They do not derive a version from timestamps or substitute a
+fallback. A missing, null, non-integer, or non-positive stored version produces
+`500 projection_invalid` without a partial canonical item. This extends the
+existing changed-field detector; it adds no second allocator.
 
-Given a stored agent return, canonical query and ordered REST/notice item
-encoding retain its return triplet and the version from those existing
-sources. The accepted idempotent retry retains the same result. Given an
+Given a stored agent row with `rowVersion:v`, when an accepted return changes
+its canonical R7 fields and commits, then canonical query and ordered REST/notice
+encoding retain its stored return triplet and `rowVersion:v+1`, even when the
+return occurs in the same millisecond as the prior change. The accepted unchanged
+retry retains the same triplet and version. Given a change to any other canonical
+decision-request R7 field, the same existing detector advances the stored version
+once; a no-op does not. Initialization and upgrade cases verify the stored value 1
+for valid previously unversioned rows and new inserts, preserve existing versions,
+and verify rejection of malformed stored versions instead of timestamp fallback.
+
+Given an
 agent row before return, both encodings retain the null triplet; given a
 non-agent row, both omit it. Existing non-agent and legacy bytes remain
 unchanged. Authority: `att_1a51f90d-5b31-4824-beab-0a070f8cb342` and
 `att_31523b79-c3e9-4950-9053-b30fb6cd75e6`.
+Version authority: `att_24e0e18c-261c-4253-a9bc-37621e93fb2c`,
+`att_e8698224-3109-4004-957a-e5fa376c4d31`, and
+`att_82ba72b0-2d84-4fc0-a2b9-aa90c737065d` govern both main and 0.1.9.
+Corrective ruling `att_d0c0d903-9eef-4713-bba6-edfb73c1e0d4` supersedes the
+fallback wording previously derived from `att_1a51f90d`; return-field authority
+and agent-only status behavior remain unchanged.
 
 R7m. The transcript-message write seam assigns `messageType` without parsing
 message content. Current assignments are exact:
