@@ -305,22 +305,6 @@ or Qt spike alone does not prove it. No live installation follows from these tes
 
 ## Open Questions
 
-- **Q1 — NON-BLOCKING: toolkit.** PO-owned decision path:
-  `dr_fb76ce2a-bca9-46da-8115-3472275e2394`. Standalone Qt Quick is a recommendation,
-  not a selection. Spike `art_114d275d`, SHA-256
-  `be59ae69a4d6346def0d0a809c372126285c6a9d958646358f852871c0482f86`, reports 12
-  offscreen assertions on racter using Qt/PySide6 6.11.2: independent overlays,
-  focus preservation, wrap/scroll and local deltas. Quickshell was unavailable,
-  not disproven. Report: `racter:/home/clu/.tightbeam/work/d9274efe5684/drift-editor-spike/REPORT.md`.
-  The neutral boundary and service work proceed; final toolkit integration uses
-  the eventual ruling. No toolkit recommendation becomes format authority.
-- **Q2 — SETTLED: trust/access.** Mike approved the ruled request
-  `dr_fb76ce2a-bca9-46da-8115-3472275e2394`: standalone Qt Quick; one trusted
-  workspace, separately revocable participant tokens, and encrypted remote
-  access. SPIRIT.md records the ruling and supersedes pending toolkit/trust
-  language here. Transport libraries and the encryption mechanism are engineering
-  choices within that boundary. W6 can proceed; implementation and disposable
-  verification are authorized, not live deployment or publication.
 - **Q3 — NON-BLOCKING: license.** PO/user choice. Private development proceeds;
   a license declaration or release under one awaits the choice.
 - **Q4 — NON-BLOCKING: core review maintenance.** Review `art_3f66108f`

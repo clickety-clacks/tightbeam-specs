@@ -265,8 +265,8 @@ are engineering choices within this contract. The private fixture's trusted
   actor context is not approval of a product trust model.
 
 **NON-BLOCKING, later slices:** final editor toolkit and remote trust/access
-mechanism remain PO-owned under existing
-`dr_fb76ce2a-bca9-46da-8115-3472275e2394`; license also remains undecided. These
+are settled by ruled `dr_fb76ce2a-bca9-46da-8115-3472275e2394` as recorded in
+[SPIRIT.md](SPIRIT.md); license remains undecided. These
 questions live with the later editor/adapter/topology draft in
 [TECH_SPEC.md](TECH_SPEC.md). Neither their answer nor that draft's completion
 gates independent review and implementation of this core.
