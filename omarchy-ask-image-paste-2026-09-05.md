@@ -31,15 +31,20 @@ regex/diagnostic repair, or broader composer redesign belongs in this slice.
 
 ## Approved behavior
 
+Mike's September 6 clarification below supersedes any earlier wording that
+could imply single-image prompts or disposal of submitted transcript images.
+
 1. Accept pasted screenshot/browser image data and copied image files, with
-   removable thumbnails. Preserve ordinary text paste. Send text and image
-   blocks together over ACP.
+   removable thumbnails. Repeated paste appends multiple images to the same
+   draft. Preserve ordinary text paste. Send all images and text together over ACP.
 2. Attachments suppress launcher results and activation. Image paste in file,
    repository, or window search mode (`@`, `^`, `%`) leaves that mode and keeps
    its query as ordinary prompt text. Removing the last draft image restores
    normal search. Return with attachments sends to the agent.
 3. Submitted thumbnails stay visible and locked during the answer. Successful
-   completion clears the submitted attachment copy. Any failure, including one
+   completion clears composer attachments only. Submitted images remain visible
+   alongside their message for the lifetime of the chat. Composer clearing must
+   not delete images or resources still needed by the transcript. Any failure, including one
    after partial output, preserves original text and images for explicit retry.
    Never automatically resend or overwrite later typed or steering text.
 4. Reject new image paste during an active answer with a useful wait message.
@@ -50,7 +55,25 @@ regex/diagnostic repair, or broader composer redesign belongs in this slice.
    resize or convert images.
 6. Keep data and asynchronous clipboard results owned by their conversation.
    Pinning retains ownership; a result arriving after close cannot populate a
-   new overlay. Clear app-owned copies at close and clean any temporary files.
+   new overlay. Clean resources only when no draft, in-flight send, or transcript
+   needs them, or when the conversation closes. No durable transcript archive.
+
+## Adapter launch and existing selector
+
+Mike explicitly includes correction of the intrusive pre-existing recovery panel
+and the missing ACP adapter launch. His screenshot reports `codex-acp ENOENT`
+at the installed adapter path, alongside “Start new session” and “Choose harness”.
+That error identifies a missing adapter executable; it does not establish that
+the system Codex harness is missing. Diagnose the actual install/launch failure
+on the authorized nacelle test target and fix it there. Do not bundle the system
+harness again or conceal the failure with extra controls. Necessary errors must
+be concise and user-facing, without raw internal paths.
+
+Ask and its Super+comma harness selector were already delivered. Preserve that
+existing selector and shortcut unchanged; image paste does not expand it.
+Address the unwanted duplicate harness-selection/recovery panel controls without
+removing the selector. These additions predate image work; do not attribute their
+origin to image paste. This bounded correction is not a broader UI redesign.
 
 ## Bounded implementation
 
@@ -80,10 +103,17 @@ a host, reconfigure it, or change credentials. The location directive does not
 authorize deployment to an installed plugin or any other live-state mutation.
 
 Require fresh real image-understanding responses from system Codex and Claude,
+including actual understanding of multiple distinct images in one prompt,
 not readiness, capability advertisements, or metadata echoes. Cover screenshot,
 browser, and file-manager copies; removal and retry; overlay and pinned mode;
 ordinary text paste and steering; failure retention without loss of newer text;
 close/pin ownership and late clipboard results. Keep screenshots free of private
+content. Verify repeated-paste append/removal, all images sent together, rendered
+transcript images after composer clearing and later turns, failure/retry resource
+retention, pin/unpin, and cleanup after conversation close. Include adapter-launch
+success, concise failure behavior, and unchanged Super+comma selector behavior.
+Earlier single-image evidence alone does not satisfy this clarified acceptance.
+Keep screenshots free of private
 content. Record dated commands/results, exact commit/diff hashes, limits, and
 which checks are new versus historical. `docs/model-verification.md` and
 `docs/reviews/2026-09-04-native-attention.md` are historical baselines only.
