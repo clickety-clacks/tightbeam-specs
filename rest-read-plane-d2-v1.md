@@ -3,8 +3,18 @@
 Status: build specification candidate for
 `wi_ea98345b-51f4-4fae-b7df-3670c0d54f6b`.
 
+Resource-scoped start-gate amendment: review candidate on active work item
+`wi_cb5734eb-c175-4815-8763-882d69dfa9bf`, assignment
+`asg_a41c244e-8043-4aae-b85e-c219fc47438a`. The historical work item above
+remains closed. This amendment changes only D2 code-start evidence; it grants
+no product start before independent review and canonical spec landing.
+
 Authority:
 
+- Resource-scoped start ruling `att_a707f2ca-3f2a-4976-ad43-f718710dcd01`:
+  a named resource slice may start after its complete canonical prerequisites
+  and owner-allocated hunks are proved. This does not waive a dependency or
+  satisfy the gate for another resource, full D2 delivery, or D3.
 - Historical review baseline: `rest-state-api-v1.md` r3, artifact `art_971f45b5`, reviewed
   commit `8b96e512688cc3c010c33c96d1ba622e543c7206`, SHA-256
   `49b86ec874283c523001be7449b1e14aef47ca72932955445638ce6443aad754`.
@@ -55,9 +65,10 @@ review evidence record its containing commit and content SHA-256. A worktree,
 artifact pointer, product-repository copy, or conversation is not an amendment
 authority.
 
-The changed review set is this file and the narrow R3b companion correction
-in `rest-state-api-v1.md`. Review it against current canonical D1, REST,
-wire schema, firehose, the accepted closures above, and the adopted
+The resource-scoped start-gate amendment changes only this file. The earlier
+composition also changed the narrow R3b companion in `rest-state-api-v1.md`;
+those canonical bytes remain unchanged. Review this amendment against current
+canonical D1, REST, wire schema, firehose, the accepted closures above, and the adopted
 shared-serializer contract `art_b1995a26`. The D2 code-start set also
 includes D1's final reviewed canonical spec and integration and the reviewed
 canonical landings for `wi_835a72aa-c88b-421b-a34c-41d23032c7c7` and
@@ -129,10 +140,12 @@ legacy dispatch read.
    introduce the transport and sibling collection APIs named by old D2.
 3. The product tables provide the immutable public natural keys and timestamps
    named in the cursor table below.
-4. The firehose integration provides the canonical serializers, durable
-   stored rows, write seams, and `rowVersion` values for its D2 overlap
-   resources before D2 product code starts. This includes the read-marker row
-   and set/clear seam, which do not exist on the pre-integration product base.
+4. Before a named D2 resource slice starts, canonical product integration
+   provides the shared query and serializers, durable stored rows, write
+   seams, and version sources on which that slice depends. A slice that reads
+   or depends on read markers requires their durable row and set/clear seam;
+   another slice may proceed only with evidence that these are not its
+   dependencies. Missing prerequisites continue to block their dependent slices.
 5. The reviewed canonical result of
    `wi_835a72aa-c88b-421b-a34c-41d23032c7c7` fixes the Toplines list and
    session `displayName` filter contract before D2 product code starts.
@@ -145,7 +158,8 @@ legacy dispatch read.
 
 1. D2 product code starts only after D1 has an independently reviewed-clean
    build spec and canonical green `main` contains D1's independently
-   reviewed-clean implementation.
+   reviewed-clean implementation. Each named resource slice additionally
+   passes its complete Code-start gate and has an explicit owner hunk allocation.
 2. D2 product code starts only after both named REST contract-closure work
    items have independently reviewed canonical landings and every overlapping
    clause in this file conforms to their exact bytes.
@@ -176,28 +190,55 @@ legacy dispatch read.
 12. D2 responses inherit D1's status, error envelope, authentication, and
     cache contract. `/download/:assetId` is the sole non-JSON success.
 13. D2 introduces no product state and therefore introduces no mutation seam.
+14. A slice start or completion does not complete D2. The full route inventory,
+    numbered acceptance cases, and final reviewed canonical integration remain
+    required. D3-R1's complete canonical D2 dependency and D3-R10's removal
+    gates remain unchanged.
 
 ## Architecture
 
 ### Code-start gate
 
-Before a product edit, the implementer records these five proofs:
+Before a product edit, the implementer names the resource slice and its exact
+routes, records the owner's allocated source hunks, and records these five
+proofs for the exact canonical product base:
 
 1. D1's exact spec path, content SHA-256, and independently reviewed-clean
    verdict.
 2. The exact D1 implementation commit and independently reviewed-clean
    verdict.
-3. A green canonical `main` containing that D1 commit and the integrated
-   shared firehose serializers, durable D2 rows, write seams, and version
-   sources, including read markers.
+3. An exact green canonical product `main` SHA containing that reviewed D1
+   commit and the selected slice's complete integrated prerequisites. For each
+   resource in the slice, evidence names its canonical shared query, public
+   serializer and ordered encoder, stored rows, write seams, and version
+   sources, with the independently reviewed commits, canonical readback, and
+   passing gates on that exact base. The evidence follows dependencies used
+   for visibility, nested reads, notices, and composed views as well as direct
+   storage reads. Read-marker rows, set/clear writes, and version sources are
+   required wherever that dependency set includes read markers. An omitted
+   resource requires source evidence that the selected slice does not depend
+   on it; calling the slice independent is not proof.
 4. The reviewed canonical commit, SHA-256, and verdict for
    `wi_835a72aa-c88b-421b-a34c-41d23032c7c7`.
 5. The reviewed canonical commit, SHA-256, and verdict for
    `wi_3874a61f-288b-4b54-ac8a-da9234a910a2`.
 
-A missing proof stops D2 code. A private D1, contract-amendment, or firehose
-branch does not satisfy the gate. If a reviewed dependency changes a shared
-name or contract listed here, amend and review this file before code starts.
+A missing proof or hunk allocation stops edits for the selected slice. An
+independently complete slice need not wait for unrelated resource prerequisites;
+the slices that depend on missing prerequisites remain blocked. A private D1,
+contract-amendment, or firehose branch, a held import, source presence alone,
+or local test results do not substitute for reviewed canonical proof. Conditional
+hunk allocation alone does not authorize product start. This amendment itself
+must be independently reviewed and canonical before this start rule is used.
+If a reviewed dependency changes a shared name or contract listed here, amend
+and review this file before code starts.
+
+The owner allocation identifies the product base, resource routes, and allowed
+hunks in shared files. It preserves other holders' query, serializer, and Router
+ownership; it does not permit whole-file replacement or consumption of held
+changes. Before editing against a changed base, refresh the resource evidence
+and obtain owner allocation for that base. Slice readiness adds no endpoint,
+storage, serializer, gate mechanism, target, export, or release authority.
 
 ### Shared dispatch and ownership
 
@@ -523,10 +564,32 @@ mix test test/rest_read_plane_d2_conformance_test.exs test/router_test.exs test/
 ```
 
 A missing numbered case fails conformance.
+Slice acceptance covers each applicable case below and records which remaining
+resources and cases are still owed. Final D2 acceptance covers the complete
+inventory and every numbered case on the reviewed canonical integration; a
+slice report cannot substitute for that result or open D3-R1 or D3-R10.
 
 1. **Code-start gate.** Given D1 lacks one required reviewed-clean or
    canonical-green proof, when the D2 implementer runs preflight, then
    preflight fails before a product source edit.
+1a. **Independent slice.** Given reviewed canonical D1 and both contract
+    closures, an exact green canonical base proving every artifact-slice
+    prerequisite, source evidence that the slice does not depend on read
+    markers, and owner-allocated artifact hunks, when preflight runs with
+    read-marker integration absent, then only that artifact slice may start.
+    Read-marker-dependent slices remain blocked. This fixture is not evidence
+    that the current product artifact slice already meets those conditions.
+1b. **Missing slice dependency.** Given a selected slice lacks one required
+    canonical query, serializer, stored row, write seam, version source,
+    exact-base green receipt, or hunk allocation, when preflight runs, then
+    that slice remains unedited. Private reviewed bytes, held imports, and
+    local passing tests do not change that result. A changed product base
+    requires refreshed evidence and owner allocation before an edit.
+1c. **Full delivery retained.** Given one slice passes its applicable cases
+    while another D2 resource remains incomplete, when final D2 acceptance or
+    D3 start is proposed, then the missing inventory and acceptance evidence
+    prevents a full D2 completion claim and D3-R1 remains closed. D3-R10 still
+    requires its complete M4/M6/M7 and caller-census receipts.
 2. **Route inventory.** Given the D2 route table, when a table-driven router
    test issues each collection, detail, nested, composed, metadata, and
    download GET, then each route reaches its listed query seam and no listed
@@ -640,8 +703,9 @@ A missing numbered case fails conformance.
     resource query.
 27. **Read-marker storage gate.** Given canonical `main` lacks the durable
     `(userId,scopeKey)` row, set/clear write seam, or monotonic version source,
-    when D2 preflight runs, then it fails before `Tightbeam.ReadMarkers` query
-    code is added.
+    when preflight selects read markers or a slice dependent on them, then it
+    fails before that slice's product code is added. An unrelated slice can
+    start only with the complete evidence required by the Code-start gate.
 28. **Read-marker detail identity.** Given two owners and an admin each have a
     marker with the same `scopeKey`, when the admin user credential calls the
     detail route directly and the org bearer then calls it once through
