@@ -37,6 +37,7 @@ No embedded model runtime, mandatory MCP foundation, paid AI bundle, or mandator
 
 ## Open product choices
 
+- Toolkit and trust are resolved by Mike's approval of `dr_fb76ce2a-bca9-46da-8115-3472275e2394`: standalone Qt Quick; one trusted workspace whose invited human and agent participants can read/edit its documents; separately revocable participant tokens; encrypted remote access. No per-document sharing roles in this MVP. Configuration remains required. This authorizes implementation and disposable verification, not live credentials, network exposure, installation, deployment or publication. This ruling supersedes pending-toolkit/trust language in CORE_CONTRACT.md, TECH_SPEC.md and ACCEPTANCE.md. Transport libraries, packaging and the encryption mechanism are engineering choices within this approved boundary.
 - Document format is resolved: Mike ruled **Plain text/Markdown first** in dr_d9f53dfc-4e05-49fe-b353-17cdb2f6efb1. The first version edits and saves text/Markdown; rich-text fidelity is outside this slice. The format hold is removed. This does not independently require rendered Markdown preview.
 - Exact license remains undecided. Blocks declaring a license or public release under one; does not block private development.
 - Delivery installation requires a concrete reviewed candidate and an explicit deployment decision. Not a development gate.
