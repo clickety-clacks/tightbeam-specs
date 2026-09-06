@@ -1454,9 +1454,9 @@ query boundary. It receives the resolved principal and normalized selection,
 applies the existing AU4 work-item visibility predicate before exposing a row,
 and returns no serialized JSON. `Tightbeam.StateResources.work_item` is the
 sole public work-item serializer and emits the exact R7 item. Canonical REST
-collection and detail routes, CLI mutation readback through the existing
-canonical GET, and the Publisher payload builders for `work_item.*` call
-these seams.
+collection and detail routes, separately requested explicit CLI REST reads
+under the existing D3 migration, and the Publisher payload builders for
+`work_item.*` call these seams.
 The existing `Tightbeam.Wire.Router.state_collection_envelope` and
 `Tightbeam.Wire.Router.state_detail_envelope` functions, together with existing
 Router error handling, wrap canonical REST results and errors in R4e/R4c and
@@ -1469,13 +1469,24 @@ responses retain their existing compatibility shapes and write authorization.
 They retain `deliverableContract`, `deliverable`, `cardProductOwner`, and
 `closure` where those responses currently expose them. These enriched mutation
 results are outside closed R7 item parity; they need not equal canonical
-readback or notice payloads after envelope removal. CLI mutation readback
-obtains its canonical item through the existing GET rather than treating the
-enriched write response as that item. Raw dispatch clients require no new
-read solely for this parity contract. This distinction adds no R7 field,
-endpoint, flag, serializer, wrapper, or create/disposition deliverable migration.
+readback or notice payloads after envelope removal. CLI mutation readback means
+the caller separately requests an explicit CLI REST read through the existing
+canonical GET under D3 (`cli-direct-rest-read-migration-v1.md`). The mutation
+command retains its current stdout and failure behavior; it performs no
+automatic GET or additional request for this readback contract. Raw dispatch
+clients require no new read solely for this parity contract. This distinction
+adds no R7 field, endpoint, flag, serializer, wrapper, or create/disposition
+deliverable migration.
 Authority: owner mutation-compatibility ruling
-`att_fa03387e-6b5d-4214-aaa1-42b227cd7df8`.
+`att_fa03387e-6b5d-4214-aaa1-42b227cd7df8` and explicit CLI readback ruling
+`att_8c453190-5376-45be-9169-9a951d2d7835`.
+
+B2 covers shared canonical GET/notice item parity and the retained write
+compatibility assertions. The explicit CLI read migration and its parity
+acceptance remain an outstanding D3 obligation under
+`asg_ae464dcd-98db-4251-bcc7-74aa779b18a6` within Firehose portfolio
+`asg_34c16cdf-8195-4a73-a7e7-88b2dfbc7674`. B2 completion does not complete or
+waive full Firehose CLI parity.
 
 ## Requirements — auth and visibility
 
@@ -1685,9 +1696,11 @@ removal.
 For each `work_item.*` class, the test also proves that REST detail and the
 Publisher notice obtain the item through SR9 and produce byte-identical item
 bytes after removal of their allowed outer transport envelopes. Separate
-seam-identity cases prove that canonical REST collection and CLI mutation
-readback through the existing canonical GET also call SR9. Separate
-compatibility cases retain the existing create/update/disposition response
+seam-identity cases prove that canonical REST collection also calls SR9. D3
+acceptance separately proves that a caller-requested explicit CLI REST read
+through the existing canonical GET calls SR9; that CLI parity obligation
+remains outstanding when B2 completes. Separate compatibility cases retain
+the existing create/update/disposition response
 assertions and PATCH no-op assertions, including the enriched fields named in
 SR9. They compare those responses with their existing compatibility contract,
 not with the closed R7 item. Canonical parity cases do not replace or remove
@@ -2168,9 +2181,11 @@ shared serializer encodes the row, then it returns `500 projection_invalid`
 and emits no partial item.
 
 A55. Given one AU4-visible work item with `priority:4`, when canonical REST
-collection and detail, CLI mutation readback through the existing canonical
-GET, and a matching `work_item.*` Publisher path read it, then each caller
-invokes SR9.
+collection and detail and a matching `work_item.*` Publisher path read it,
+then each caller invokes SR9. Given the same item, when the caller separately
+requests an explicit CLI REST read under D3, then that read invokes SR9 through
+the existing canonical GET. D3 retains this CLI parity acceptance after B2
+completes.
 The item bytes are equal after removal of each allowed outer transport
 envelope. The REST collection and detail responses use the exact R4e success
 envelopes. For every R4c condition admitted by either canonical work-item
@@ -2187,7 +2202,10 @@ not replace the response with a closed R7 item. For a committed public R7
 change, separate canonical GET readback and the matching notice use the closed
 R7 item without those enrichment fields; their item bytes match each other.
 The raw dispatch caller needs no additional read to preserve its compatibility
-response.
+response. Given the caller runs a CLI mutation without separately requesting
+readback, when the mutation completes, then the CLI retains its existing
+mutation stdout and failure behavior and sends no automatic GET or additional
+request for readback.
 
 Given a work-item update request, including PATCH, whose resulting public R7
 item is unchanged, when the mutation completes, then `rowVersion` remains
