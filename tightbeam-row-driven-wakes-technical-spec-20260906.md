@@ -1,6 +1,6 @@
 # Row-driven wakes: technical specification (0.1.9)
 
-Revision 4 — review B1 corrected; cold digest pending before bounded rereview.
+Revision 5 — B-R8 verifier-notice attribution clarified; clarification digest pending.
 
 Work item: `wi_fbcdf1a9-d3fc-4f17-ae1a-eb38ebc9facd`.
 Spec assignment: `asg_26e06eec-4d09-4ecc-bb43-251acb9d82ac`.
@@ -365,6 +365,26 @@ evaluation, with wake id, exact predicate, necessity and requested judgment, thr
 ordinary Wakes. Already-recognized truth does not summon a verifier for an ended wait.
 The existing assignment lifecycle supervises V.
 
+**Verifier-notice attribution (build-time ruling).** The ordinary verifier-notice wake
+carries `assignmentId=V.id` and `obligationRef={kind:"assignment",id:V.id}`; its target
+is V's recorded holder and its work-item attribution derives from V. The resulting
+ledger turn inherits V through the existing wake-attribution seam. The originating
+dependency wake still belongs to the waiting assignment A; never copy A's assignment
+link onto the verifier notice or leave the verifier notice unlinked to avoid classification.
+
+Assignment attribution does not make a wake a supervision control wake. This notice
+remains an ordinary notification: do not mint a prod/escalation controller, charge or
+refund a prod rung, or consume a supervision entitlement for it. Narrow Wakes' existing
+`process:tightbeam + assignmentId` supervision-owned discriminator to require coherent
+supervision-controller provenance from the existing sidecar/controller lifecycle.
+Preserve actual supervision controllers' existing suppression and settlement behavior.
+The ordinary verifier notice must not enter that controller-only branch merely because
+it has process origin and V attribution. Coverage, if qualified under C-R1/G-D, concerns
+V alone and remains separate from controller ownership and evidence of advancement.
+Acceptance: V6. Source basis at `f303dce7`: `wakes.ex:2602` documents the broad heuristic;
+`gateway.ex:1611` admits controllers by sidecar, while `gateway.ex:1721` inherits wake
+assignment attribution independently. This clarification requires no new controller type.
+
 The same fallback dueAt bounds provisional waiting; no second verification timer or
 cadence default is added. Policy must name an actual verification transition and cannot
 select `never`. Extend verdict attests with nullable `waitId REFERENCES wakes(wakeId)`
@@ -389,7 +409,7 @@ coverage ends or transfers to ordinary ready-now continuation coverage. Resoluti
 not change the recorded verification state to confirmed. No class bypasses verification
 indefinitely; silence reaches dueAt and existing verifier-assignment supervision remains
 active. These facts establish accountability, not semantic proof that inference is right.
-Acceptance: V1–V4. The added state uses existing wake/attest rows and mutation seams.
+Acceptance: V1–V4, V6. The added state uses existing wake/attest rows and mutation seams.
 
 ### G-C: coverage and effort
 
@@ -641,9 +661,10 @@ below stand for rows created by those seams. `H1` and `H2` are distinct SHA-256 
 | V3 (I11) | Given W and another wait X, when a verdict is bound to X or filed by someone other than V's holder, then it does not confirm W. Given V closes without confirmation or remains silent through W's dueAt, then W leaves provisional waiting through reconsideration or fallback, never an invented confirmation. Existing supervision still owns V's unfinished obligation. |
 | V4 (I11) | Given a TOML class omits verification or selects never, when loading/registering, then it cannot admit a permanently unverified dependency. Given R resolves while W is provisional, then W fires and relief ends, but the record does not claim verified necessity. |
 | V5 (I3) | Given legacy unbound artifact/verdict rows, when the additive schema ships, then their new fields remain null and original completion-rail results stay unchanged. New wait predicates reject unbound review evidence. Partial artifact/hash pairs and mismatched/cross-owner producer links refuse at their existing write seams. |
+| V6 (I8,I11) | Given waiting assignment A and verifier assignment V, when A registers an unresolved dependency, then the single ordinary verifier-notice wake carries assignmentId and obligationRef for V, targets V's holder, and enqueues a turn attributed to V and V's work item. It creates no prod/escalation controller and changes no prod count or entitlement. With a standing work-blocked fact for V's holder, the ordinary notice still follows ordinary delivery instead of controller-only suppression/refund; an actual supervision control wake retains its existing handling. Any coverage earned by the verifier notice/turn applies to V, not A or another assignment. |
 
 Traceability: G-A implements A-R1–A-R4 (A1–A4, V5); G-B implements B-R1–B-R8
-(B1–B12, L1–L3, V1–V3); G-C implements C-R1–C-R4 (C1–C8, V1–V2); G-D implements
+(B1–B12, L1–L3, V1–V3, V6); G-C implements C-R1–C-R4 (C1–C8, V1–V2, V6); G-D implements
 policy and the operating amendment (D1–D3, V4). Cross-cutting invariants are cited by each case.
 Build order is G-A → G-B → G-C → G-D through the same implementation seam.
 
@@ -682,3 +703,9 @@ re-decide them:
 - **Q4 — NON-BLOCKING: additional row domains.** The required domains above implement the
   accepted examples. New observable domain facts can extend the existing fact seam;
   observation producers and their semantics require their own authority.
+- **Build clarification — RESOLVED:** coder question `s_95f116fc-788d-4c32-956a-6dc08ef6e75d`
+  exposed the implicit verifier-notice attribution in B-R8. The notice carries V's
+  assignment link; controller ownership comes from existing typed controller provenance.
+  Leaving the notice unlinked loses accountable turn attribution. Treating the link as
+  a prod would permit suppression/refund of ordinary verification mail. The ruling
+  separates the two existing concerns without a new controller type or subsystem.
