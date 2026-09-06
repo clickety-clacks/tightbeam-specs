@@ -152,6 +152,7 @@ Do not infer cross-line runtime equivalence from the guidance pair's acceptance.
 | Relearn imports seed plus each learned bundle, then performs a three-way Git merge and refreshes receipts. | [identity.ex:658–709, 725–867, 1113–1147](https://github.com/clickety-clacks/tightbeam/blob/f4b68f078d3767cede71572aa88c4516372867cf/lib/tightbeam/identity.ex#L658) | Shipped deletions can remove old reviewer files; modified deletions become conflicts. There is no CLI argument to select an arbitrary captured bundle or restrict import to V9. |
 | Abort requires a pending merge. Resolve validates, stages, and commits its resolution. | [identity.ex:682–709](https://github.com/clickety-clacks/tightbeam/blob/f4b68f078d3767cede71572aa88c4516372867cf/lib/tightbeam/identity.ex#L682) | Conflict resolution is the existing exception for file edits inside identity. It is not authority to make raw Git edits outside a real conflict. |
 | Publication creates a candidate before advancing live; the ref move precedes law reload and the final accepted marker. | [gateway.ex:3637–3698, 3793–3873](https://github.com/clickety-clacks/tightbeam/blob/f4b68f078d3767cede71572aa88c4516372867cf/lib/tightbeam/gateway.ex#L3637), [identity.ex:1525–1549](https://github.com/clickety-clacks/tightbeam/blob/f4b68f078d3767cede71572aa88c4516372867cf/lib/tightbeam/identity.ex#L1525) | A failed response is not proof that live stayed old. No new atomicity promise follows from existing marker code. |
+| Spawn selects from the currently loaded archetypes and rechecks that the archetype exists when creating the row. | [gateway.ex:5630–5657, 5832–5841](https://github.com/clickety-clacks/tightbeam/blob/f4b68f078d3767cede71572aa88c4516372867cf/lib/tightbeam/gateway.ex#L5630) | Another authorized actor can spawn during the separately published prefix. The operator's roster check does not prevent that race; A4 requires a later recensus and stop outcome. |
 | Repoint accepts retired sessions (and special permanent sessions) but clears overrides and identity stamps. | [gateway.ex:3901–4008](https://github.com/clickety-clacks/tightbeam/blob/f4b68f078d3767cede71572aa88c4516372867cf/lib/tightbeam/gateway.ex#L3901), [org.ex:1396–1430](https://github.com/clickety-clacks/tightbeam/blob/f4b68f078d3767cede71572aa88c4516372867cf/lib/tightbeam/org.ex#L1396) | Repoint is not a preservation-safe automatic classification operation. |
 | Unlearn checks even retired session references; ordinary relearn has no corresponding reference-release call. | [org.ex:1434–1536](https://github.com/clickety-clacks/tightbeam/blob/f4b68f078d3767cede71572aa88c4516372867cf/lib/tightbeam/org.ex#L1434), [gateway.ex:3670–3788](https://github.com/clickety-clacks/tightbeam/blob/f4b68f078d3767cede71572aa88c4516372867cf/lib/tightbeam/gateway.ex#L3670) | Relearn's ability to delete a manifest does not prove existing sessions remain operable. |
 | Retirement keeps history; apply selects active rows and writes files before stamps and reread submission. Status renders the current archetype for active sessions. | [org.ex:971–1040](https://github.com/clickety-clacks/tightbeam/blob/f4b68f078d3767cede71572aa88c4516372867cf/lib/tightbeam/org.ex#L971), [gateway.ex:4018–4050, 4194–4330](https://github.com/clickety-clacks/tightbeam/blob/f4b68f078d3767cede71572aa88c4516372867cf/lib/tightbeam/gateway.ex#L4194) | Do not delete the manifest while active reviewer sessions depend on it. Retired transcript access and runnable-session access must be distinguished. |
@@ -285,14 +286,18 @@ selected apply commands; lifecycle changes arise only from roster actions.
    abandon that pending merge. Do not manufacture a conflict to obtain an editor.
 5. The operator records the resulting live OID, catalog, file-content comparison,
    and receipt. Any difference from the approved content packet ends this sequence
-   at the corresponding recovery state below.
+   at the corresponding recovery state below. After these checks pass and before
+   any refresh or successor action, the operator performs A4's post-publication
+   recensus. A raced or unproven roster stops this sequence at A5; successful
+   publication alone does not permit steps 6–7.
 6. The operator invokes `tightbeam identity apply '<exact key>'` for each roster
    entry selected for refresh. Publication remains recorded independently from
    each file-refresh result. If a selected refresh fails, the sequence stops at
    A5's corresponding outcome before creating any successor. An explicitly empty
    refresh selection needs no apply command. Apply cannot change an old session's
    archetype into a new one.
-7. Only after final relearn succeeds, step 5 verifies exact content and receipt,
+7. Only after final relearn succeeds, step 5 verifies exact content, receipt, and
+   the post-publication roster,
    and step 6 completes the selected refreshes, the operator creates each
    authorized successor using ordinary spawn, then assign, then wake. The new
    session provisions from the verified final catalog. The roster records its
@@ -302,7 +307,8 @@ selected apply commands; lifecycle changes arise only from roster actions.
    substitute for it and cannot repair an already composed partial-prefix context.
 
 The preparation prefix's revisions and final relearn revision are separately
-recorded. The prefix creates identity files, not successor sessions. Receipt
+recorded. The operator uses the prefix only to create identity files; concurrent
+session creation is checked under A4 rather than presumed absent. Receipt
 membership follows the actual merge rule in A2, including for customized manifests
 created in the prefix.
 This sequence does not make publication of the five additions and subsequent
@@ -337,6 +343,27 @@ Before final catalog-removal publication, the roster accounts for each observed 
 the operator reconciles any new old-reviewer row instead of proceeding from a
 stale census. No fleet freeze or automatic classification is introduced.
 
+After final relearn and exact content/receipt verification, and before any refresh
+or successor action, recensus the existing session rows and their assignment,
+wake, and turn records against the approved roster. Account for active `reviewer`
+rows and `reviewer-code`/`reviewer-spec` rows created or active since the initial
+capture, including any subsequently retired row. Record exact keys, owners,
+archetypes, obligations, and creation/wake/turn state and its ordering against
+the observed publication records. A late active old reviewer or a new reviewer
+created, assigned, or woken under the partial prefix is a raced partial-publication
+outcome, even if that new reviewer is now idle or retired. Stop before steps 6–7.
+Missing records or indeterminate ordering also stop the sequence as unproven;
+absence from the original roster is not permission to refresh or adopt the row.
+
+Return the affected rows and obligations to their existing owners for explicit
+finish/transfer/retire disposition under I3. No automatic retirement or apply
+repairs an already composed partial-prefix context. The stopped packet does not
+resume itself; a later owner-approved continuation must account for those rows
+and repeat the content and roster checks before selecting refreshes or clean
+successors. If existing lifecycle operations cannot complete that disposition,
+record it as unrecovered. This recensus reports observed rows; it adds no admission
+fence, freeze, or guarantee against subsequent concurrent action.
+
 ### A5. Forward, failure, and recovery truth
 
 | Observed boundary | Truth to record | Supported next step / explicit limit |
@@ -347,6 +374,8 @@ stale census. No fleet freeze or automatic classification is introduced.
 | Merge validation or pre-merge hook fails in the inspected rollback branch | That branch aborts merge and restores upstream; live remains prior | Record exact error and refs; revise the input through its owner. Other Git/I/O failures need their own observed state, not this branch's guarantee. |
 | Candidate commit exists, but publication returns conflict or marker failure | Main may contain candidate while live differs or remains prior | Record refs, response, and owning assignment; stop this rollout and return the observed failure to that owner. There is no standalone publish-candidate retry. This is an accepted unrecovered outcome, not a claim that old state was restored. |
 | Live advances, then law reload or final response fails | Publication may be partial; an error is not proof of reversal | Stop subsequent rollout commands and record the observed failure for the owning assignment. Use a limited per-file repair only if the packet's exact supported command and preconditions cover it. No `--abort` can undo committed publication. |
+| Post-publication recensus finds a late active old reviewer or partial-prefix new-reviewer creation/assignment/wake | Raced partial-publication outcome: catalog publication may have succeeded, but the roster condition failed | Record exact affected rows and evidence; STOP before refresh or successor actions. Existing owners disposition obligations and rows under A4. Neither apply nor merge abort repairs this state. |
+| Recensus cannot establish the relevant rows or their ordering | Publication is recorded separately; roster condition is unproven | STOP before refresh or successors; return missing evidence to the owner. Do not infer a clean census or claim rollout completion. |
 | Publication succeeds; no sessions selected | New catalog published; existing contexts unchanged | This is publication success, not org rollout completion. |
 | File writer fails during apply | Publication unchanged; files may be partially written; no new successful stamp from that failed writer | Record `apply_failed` and the exact key. A later explicit retry uses then-current live; verify that it still matches the packet. |
 | Files and stamp succeed; reread submission fails | Files/stamp updated; reread not submitted | Report that partial outcome. Retry is a later explicit decision, not automatic model-context recovery. |
@@ -400,7 +429,9 @@ The preparer supplies one immutable report containing:
 4. Real fixture capture provenance and each verification result below. Bind exact
    expected content before execution; record actual command output, exit status,
    observed OIDs, and Git-object content checks afterwards.
-5. Separate publication and per-session results. Identify any missing evidence
+5. Separate publication and per-session results, including the post-publication
+   recensus, its comparison with the approved roster, and any raced or unproven
+   stop outcome with exact row/turn references. Identify any missing evidence
    plainly. Do not infer a future Git OID or model uptake from file hashes/stamps.
 
 ### A7. Reuse, deletion, and limitation acceptance
@@ -453,7 +484,7 @@ success. These are proposed cases, not passed tests or live compatibility eviden
 | F2 | Given exact proposed new input and unrelated custom files/settings, when the five preparation edits and real relearn path run, then each prefix is valid, the final diff is A2, both new manifests preserve I2, and shared include rendering uses the three accepted bodies in their intended roles. Exercise a clean merge as well as F3's conflict path. | I1–I2, A2–A3 |
 | F3 | Given the captured modified old reviewer and obsolete skills, when import encounters deletion/rename conflicts, then the observed conflict list is recorded; abort preserves prior live, while reviewed resolution preserves named customizations and records actual receipt ownership. | I2, A5 |
 | F4 | Given invalid resolved include/election bytes, when resolve validates, then no successful publication is reported. Record actual refs, worktree, and error; compare with the branch of A5 that ran. | I1, I6 |
-| F5 | Given active and retired old reviewers with overrides/history, when the lifecycle disposition and publication run, then history remains at the old keys, retired rows retain overrides, and no active row depends on a deleted archetype. Verify transcript access using the real supported path. Command/turn records show no successor creation, assignment, or first turn before final publication, exact content verification, and completion of selected refreshes. | I3, Q2, A3 |
+| F5 | Given active and retired old reviewers with overrides/history, when the lifecycle disposition and publication run without interference, then history remains at the old keys, retired rows retain overrides, and no active row depends on a deleted archetype. Verify transcript access using the real supported path. Command/turn records show no successor creation, assignment, or first turn before final publication, exact content verification, post-publication recensus, and completion of selected refreshes. In separate fixture runs, use a second authorized actor to (a) create/assign/wake a new reviewer during the published prefix and (b) create an old reviewer after the final pre-publication census but before relearn removes its manifest. In each run the post-publication recensus detects the exact raced rows/turn state, records the raced partial-publication outcome, preserves history/overrides and obligations, and stops before any refresh or designated successor action. Missing or ambiguous ordering evidence produces the unproven stop outcome. | I3–I4, Q2, A3–A5 |
 | F6 | Given two eligible sessions and one selected key, when apply runs, then only that key receives file/stamp/nudge effects. A writer failure and a reread-submission failure produce the distinct A5 outcomes. | I4–I5 |
 | F7 | Given publication failures before and after live advancement, when a covered limited repair runs, then compare the actual catalog, receipt, customization hashes, and session rows with its promised state. Given final removal of both reviewing skills, the repair packet names saved-old-reviewer-manifest restoration as unrecovered and contains no command attempting it. For a failure outside the covered repair set, record the unrecovered state and verify that the sequence stops before refresh; do not invent a rollback command. | Q3, A5 |
 | F8 | Given the complete packet and successful fixture, when another reader checks it from Git objects, then each command/input/result is bound, actual revision is observed rather than predicted, and there is no model-consumption claim. | I6, A6 |
