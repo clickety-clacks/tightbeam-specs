@@ -1,6 +1,8 @@
 # Row-driven wakes: unified production-engine design (0.1.9)
 
-Revision 3 (canonical). Revises revision 2 (art_c7772427, specs@0c18c21) in place per
+Revision 4 (canonical). Folds the §4 binding correction from spirit-design-accepted
+att_6a34a1ed into revision 3 (specs@e4e39ff) in the same motion as spec drafting — no new
+general design round. Revision 3 revised revision 2 (art_c7772427, specs@0c18c21) per
 spirit-changes-required att_49ee3ba2 (R1-R3; architecture direction accepted, no restart).
 Revision 2 superseded the rejected slice art_ff24cdb7 per att_7785b8e6 (F1-F4 + hole
 rulings) and parent executive ruling att_1bd0c4d1. Work item
@@ -184,22 +186,35 @@ The suppression gate (gate_reason_in_txn supervision.ex:3132) is rebuilt per-obl
   cover until that turn completes (no duplicate prod — spirit turn-end rule l.127-131). If
   the turn completes without discharging the obligation and no new coverage exists,
   eligibility to prod resumes at the next evaluation.
-- **Dependency covers; a ready-now continuation does not.** A pending wait is covered state
-  ONLY while it is a justified unresolved dependency: the resolverRef obligation (§2) is
-  open, non-terminal, and owed by another accountable party. A wait whose success predicate
-  or resolver-terminal path is already recognized, or whose continuation is actionable now
-  without the dependency, is an actionable continuation — it burns effort normally and
-  suppresses nothing. Naming a resolver does not by itself buy coverage; scheduling never
-  renews the evidence budget. Which waits qualify as covered state is admission/effort RAIL
-  POLICY (rule TOML at the existing edges, §5), not engine behavior: the engine supplies
-  the facts (resolver open? owed by whom? recognized?), the rails decide the suppression.
+- **Prod coverage and effort accounting are separate axes** (binding correction,
+  att_6a34a1ed). A valid assignment-scoped pending after-turn wake — and its queued/running
+  delivery turn — suppresses duplicate prods for its obligation whether the wait is an
+  unresolved dependency or a ready-now continuation (agreed turn-end spirit rule l.127-131:
+  covering wakes suppress prods per obligation; this follows the spirit, not a new product
+  choice). What differs is EFFORT: only a justified unresolved dependency — resolverRef
+  obligation (§2) open, non-terminal, owed by another accountable party — qualifies for
+  wait-aware effort policy; a ready-now continuation burns effort normally. Naming a
+  resolver never renews the evidence budget. Which waits qualify for wait-aware effort
+  treatment is admission/effort RAIL POLICY (rule TOML at the existing edges, §5), not
+  engine behavior: the engine supplies the facts (resolver open? owed by whom?
+  recognized?), the rails decide.
+
+  Acceptance matrix:
+
+  | Wait state | Prod coverage | Effort accounting |
+  |---|---|---|
+  | Unresolved justified dependency | Covered | Wait-aware effort policy |
+  | Ready-now pending / queued / running continuation | Covered | Normal effort burn |
+  | Unrelated wake (no obligationRef match) | No coverage | Normal |
+  | Terminally failed continuation | Coverage ends | Existing recovery/accountability |
+
 - **Effort-check treatment**: effort_checkin (separate 4h-horizon budget, effect channels
-  counted at effort_checkin.ex:1229) treats a qualifying dependency wait (previous bullet)
-  as covered state — no effort burn and no prod for the covered obligation while the
-  dependency is live. Scheduling a wait remains coverage, never evidence of advancement:
-  receipt absorption (:2708-2716) and ladder resets (supervision.ex:1303 — progress prose
-  never resets) are NOT widened, and verification of advancement stays with the existing
-  rail policy.
+  counted at effort_checkin.ex:1229) applies wait-aware effort policy — no effort burn —
+  only to a qualifying dependency wait (matrix row 1); prod suppression is the separate
+  axis above and is not effort_checkin's to grant. Scheduling a wait remains coverage,
+  never evidence of advancement: receipt absorption (:2708-2716) and ladder resets
+  (supervision.ex:1303 — progress prose never resets) are NOT widened, and verification of
+  advancement stays with the existing rail policy.
 - **A failed continuation ends its coverage.** When a continuation turn fails — including
   death on model capacity (specimen 118975) — its queued/running coverage ends at that
   failure and the existing retry/failure accountability applies to the turn. Capacity
@@ -228,9 +243,9 @@ the typed state machine.
   reconsideration path (§3 path 2), legacy (kind,scope) compatibility routed through the
   unified evaluator, matcher retirement, two-path firing stamps.
 - **G-C — supervision coverage** (supervision.ex, effort_checkin.ex, sidecar schema):
-  per-obligation gate, holder_continuation origin, after-turn eligibility,
-  dependency-vs-actionable covered-state facts, effort-check coupling, failed-continuation
-  and capacity accountability, specimen regression tests.
+  per-obligation gate, holder_continuation origin, after-turn eligibility, the two-axis
+  coverage/effort matrix (§4), effort-check coupling, failed-continuation and capacity
+  accountability, specimen regression tests.
 - **G-D — admission + coverage TOML, guidance**: wake-verb admission rules and the
   covered-state suppression policy (§4) as rule TOML; operating-manual "Match the wake to
   what you wait on" gains the predicate instrument; migration note (compatibility, no
