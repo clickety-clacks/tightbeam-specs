@@ -21,13 +21,13 @@ durable event recovery. Its reviewed version is commit
 in `att_611a41fe`. This file extends that core; it does not redefine it.
 Core review/build proceeds independently of this file and its marked questions.
 
-This draft replaces the earlier whole-loop draft's duplicated core definitions.
+This specification replaces the earlier whole-loop draft's duplicated core definitions.
 Remaining build slices are: **2**, symmetric participation and agent adapter;
 **3**, toolkit-neutral writing/recovery GUI; **4**, configured split topology and
 access integration after the PO's choice. Each can be reviewed against its
 clauses below. Final product acceptance still requires the complete loop.
-Draft status: cold digest and independent review are not yet recorded for these
-remaining slices; the core's clean verdict does not cover them.
+Handoff status: writer's whole-spec digest complete; ready for independent
+remaining-slice review. The core's clean verdict does not cover these slices.
 
 ## Non-Goals
 
@@ -121,11 +121,12 @@ Core threads gain open/resolved state, initially open. Suggestions and thread
 resolution join durable snapshots and replay. Each successful state change adds
 one event with the affected object state; acceptance carries its text delta and
 anchor changes in that same event. Resolve's no-change success receives an
-idempotent receipt but no new event. The service checks suggestion status and
-text revision in the same transaction as acceptance/decline. Two decision attempts
+idempotent receipt and returns the current durable cursor but adds no event.
+The service checks suggestion status and text revision in the same transaction
+as acceptance/decline. Two decision attempts
 produce one terminal decision. Add errors `already_decided` and `anchor_detached`;
-neither changes text or decision state. Declining a detached pending suggestion
-is valid; accepting it fails visibly. Detached suggestions retain their text,
+both map to HTTP 409 and neither changes text or decision state. Declining a
+detached pending suggestion is valid; accepting it fails visibly. Detached suggestions retain their text,
 quote, author, and reason under the core anchor rules (W2, W4).
 
 Expose current presence and suggestions through document reads, with presence
@@ -204,6 +205,10 @@ and reports saved only after acknowledgement. A client-side UTF-8 save/export
 writes acknowledged source text to the user's chosen file. That file is not a
 second authoritative document store (W3).
 
+An acknowledgement or event echo of the GUI's own outstanding command advances
+the draft's base while preserving subsequent local typing. It is not a conflicting
+remote edit. Match it by command ID and deduplicate its event by cursor (W3).
+
 With no pending local text, apply an incoming replacement and map the local caret
 without changing focus. With pending text, preserve the draft and show that newer
 service text exists. Resolve any unknown submitted outcome before resubmission.
@@ -271,7 +276,9 @@ or Qt spike alone does not prove it. No live installation follows from these tes
   terminal decision. Retry a lost acknowledgement: no duplicate decision or edit.
 - **W3 — Writing and recovery (slice 3; P2/P3; PO 2–5).** Type into a blank
   document, autosave, explicitly save, reopen, and compare text. Save a UTF-8
-  file on the GUI machine. Keep typing during agent activity. Race an agent edit
+  file on the GUI machine. Keep typing during an outstanding save; its own
+  acknowledgement/echo preserves subsequent typing without a false conflict.
+  Keep typing during agent activity. Race an agent edit
   against a dirty GUI draft; inspect both preserved versions after refusal.
   Undo an unsent and a just-saved local edit; an intervening edit makes saved
   undo refuse without overwriting newer text. Restart the GUI after recovery
