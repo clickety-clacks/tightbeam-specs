@@ -1,6 +1,6 @@
 # Row-driven wakes: technical specification (0.1.9)
 
-Revision 1 — draft; Open Questions Q1–Q2 block affected clauses and review handoff.
+Revision 2 — gap rulings incorporated; cold digest pending before review handoff.
 
 Work item: `wi_fbcdf1a9-d3fc-4f17-ae1a-eb38ebc9facd`.
 Spec assignment: `asg_26e06eec-4d09-4ecc-bb43-251acb9d82ac`.
@@ -25,7 +25,13 @@ Controlling authority, in order:
    `tightbeam-row-driven-wakes-design-20260906.md`, SHA-256
    `fae821d5e9a4f89ff273b20902f8c810f11c125d3dc771e0296f59b8940e691a`, artifact `art_388a1997`.
    PO verdict `att_3eb744f2` on `asg_5ac4d197` and binding acceptance `att_6a34a1ed`.
-3. This document makes that design buildable; it does not reopen the accepted architecture.
+3. Orchestrator Gap-1/Gap-2 ruling, message `s_92a833e5-5a85-495b-b743-ca42318fa6ea`;
+   Gap-2 amendments `s_33d4038f-c57a-441f-a075-70534eada151` and, controlling,
+   `s_936bcb33-ffeb-4e53-a907-bda184a5c2c6` under parent fidelity ruling `att_ac0d162e`.
+   Mechanical admission and semantic verification are distinct. Every dependency needs
+   accountable verification/challenge; unresolved verification is explicitly provisional.
+   Resolver disposition proves resolution, not necessity. No permanently unverified class.
+4. This document makes that design buildable; it does not reopen the accepted architecture.
 
 Holds, verbatim from the assignment:
 
@@ -43,6 +49,9 @@ The specs-repository main landing is authorized. It is not a code-repository lan
 - No arming of the staged review-rounds doorbell. `notice` enables it but does not elect it.
 - No new progress/effect channel, effort-budget renewal from scheduling, or rewrite of
   closed work history. No removal of the existing typed recovery/accountability path.
+- Output/review provenance uses additive nullable columns and optional flags only: no
+  backfill, new table, subsystem or native code. Existing completion-rail review
+  qualification remains unchanged; the new revision binding serves wait predicates only.
 - No 0.2.0 work, release, installation, deployment, gateway restart, or production-data repair.
 - No fold/closure of another owner's cadence or prod-wording card. Design §7 controls
   reconciliation of `wi_2ef3d514`, `wi_fca19e0c`, `wi_c60c0189`, and `wi_c737aee7`.
@@ -55,13 +64,15 @@ The specs-repository main landing is authorized. It is not a code-repository lan
 | Resolver | The existing assignment or decision request that owes the awaited action. `resolverRef` is `{kind:"assignment"|"decision_request",id:<id>}`. Its holder/addressee comes from its row. |
 | Predicate | A nonempty list of the existing `{fact,op,value}` conditions, combined by AND, with explicit row bindings. It describes expected output, not the resolver's identity. |
 | Existing-row binding | An exact row id whose existence and tenant are checked at registration. An unknown or inaccessible id refuses registration. |
-| Future-output binding | A selector anchored to existing accountable work; its output row may be absent. Absence returns no match, not an invalid registration and not a success. Q1 controls the exact producer/review provenance. |
-| Recognition | The durable choice that success, resolver-terminal reconsideration, or silence fallback warrants one notification. Recognition can precede eligibility to deliver. |
+| Future-output binding | A selector anchored to existing accountable work; its output row may be absent. Absence returns no match, not an invalid registration and not a success. `producedByAssignmentId` identifies the producer. |
+| Recognition | The durable choice that success, reconsideration, or silence fallback warrants one notification. Reconsideration names resolver termination or the ruled verification cause. Recognition can precede eligibility to deliver. |
 | Originating turn | The registrant's running ledger turn T, captured by the gateway, never asserted by the caller. Its terminal transition permits delivery and coverage evaluation. |
 | Continuation | The registrant's prompt naming the action to take with the resulting state. It creates a fresh notification turn; it grants no authority to perform that action. |
 | Prod coverage | Suppression of another prod for the exact obligation, while a qualifying pending wake or its queued/running continuation already supplies the next turn. |
 | Effort relief | Exclusion of time spent in a policy-qualified unresolved dependency from the existing effort horizon. It preserves used budget and evidence watermarks. |
 | Policy qualification | A TOML condition list evaluated by the same Rules evaluator against substrate facts. It is distinct from predicate truth and from semantic proof of progress. |
+| Verification | A holder-filed judgment on an existing named verification assignment, bound to the exact wake. It confirms or challenges declared necessity; it is not inferred from the resolver's disposition. |
+| Provisional | An admitted unresolved dependency whose named verifier has not confirmed necessity. Its rows name that verifier and the pass/challenge transition that ends provisional status. |
 | Terminal | Assignment: `state=closed`, actual outcome `completed|surrendered|revoked`. Decision: status other than `open`, with integrity checks preserved. Work item: `closed|failed|iceboxed`. Turn: `delivered|canceled|failed|failed_unknown`. |
 
 An assignment has no `failed` outcome at the pinned source. A failed continuation is a
@@ -84,7 +95,8 @@ terminal and reports it literally. Neither clarification adds a state to the sou
 5. Artifact rows have a hash but no producing-assignment id
    (`lib/tightbeam/artifacts.ex:30`). Review qualification currently selects the newest
    holder-filed review conclusion across linked review cards, then tests independence;
-   it has no content-hash binding (`lib/tightbeam/assignments.ex:373`). Q1 is not assumed solved.
+   it has no content-hash binding (`lib/tightbeam/assignments.ex:373`). A-R4 adds the
+   ruled wait-specific provenance without changing that existing completion-rail query.
 6. `condition_facts` has no tenant column at this baseline
    (`lib/tightbeam/condition_facts.ex:61`). Legacy migration must establish tenant
    provenance or refuse ambiguous data; kind/scope equality cannot establish authority.
@@ -105,8 +117,9 @@ Each invariant names its acceptance cases; those cases are the implementation co
   An output pointer, work-item owner, prompt, or asserted responsible party cannot
   substitute for that row. A resolver already terminal causes immediate recognition
   instead of becoming an unresolved wait. See B1–B4.
-- **I4 — Two paths.** The success predicate and implicit resolver-terminal reconsideration
-  remain armed independently. Composition narrows only success. See B5–B8.
+- **I4 — Two paths.** Success and implicit reconsideration remain armed independently.
+  Reconsideration observes resolver termination; the later verification ruling also sends
+  verification challenge through this path. Composition narrows only success. See B5–B8, V2.
 - **I5 — Recognition is not delivery.** Registration evaluates both paths atomically with
   persistence. Delivery and coverage become eligible at T's terminal state. No elapsed-time
   proxy for T is allowed. See B2, B9, C1.
@@ -125,6 +138,10 @@ Each invariant names its acceptance cases; those cases are the implementation co
 - **I10 — Reconsideration, not permission.** A delivered prompt names the actual disposition
   and instructs the recipient to reconsider its named next action. It never turns
   withdrawn, failed, iceboxed, or merely terminal into approval. See B7, B8, D3.
+- **I11 — Verification stays accountable.** Every admitted dependency has an existing
+  verification obligation and a bounded verification transition. Pending verification
+  is labeled provisional; passing confirms; challenge ends coverage and relief. Resolver
+  success or rejection proves neither necessity nor advancement. See V1–V4.
 
 ## Architecture
 
@@ -134,7 +151,9 @@ Each invariant names its acceptance cases; those cases are the implementation co
 chokepoint, pass changed domain, exact row identity, principal and field transition to
 recognition after commit. The engine selects pending waits by intersecting fact domains,
 then evaluates their full predicates and resolver path. Domain indexing is candidate
-selection only. The existing scheduler tick sweeps pending waits after missed publication.
+selection only. Post-commit recognition runs before the database owner admits the next
+business mutation, with owner-local database access rather than a recursive GenServer
+call. The existing scheduler tick sweeps pending waits after missed publication.
 Acceptance: A1–A2, B12.
 
 The required producers are assignment opening/attests/closure/revocation; work-item
@@ -166,9 +185,9 @@ Required fact contracts (names below are the new public predicate vocabulary):
 | `assignment.state` | string | Exact `bindings.assignmentId`; `open|closed`. |
 | `assignment.outcome` | string or nil | Same row; actual outcome, nil while open. |
 | `decision_request.status` | string | Exact `bindings.decisionRequestId`; literal disposition. |
-| `artifact.present` | boolean | True only when the complete bound identity/selector matches a hashed artifact; false for absent future output. Q1 supplies provenance. |
+| `artifact.present` | boolean | True only when the complete bound identity/selector matches a hashed artifact; false for absent future output. A-R4 supplies provenance. |
 | `artifact.content_sha256` | string or nil | Hash of the same bound artifact; no cross-row pairing. |
-| `review.qualifying_verdict_kinds` | list of strings | Qualifying conclusion for the bound producer and exact artifact revision; Q1 supplies the recorded revision link. |
+| `review.qualifying_verdict_kinds` | list of strings | Qualifying conclusion for the bound producer and exact artifact revision, using A-R4's recorded revision link. |
 | `condition_fact.matches` | boolean | Legacy event selector: owner, kind, optional scope and `conditionAfterId`; event id must be strictly greater than its registration cursor. |
 
 Bindings are a separate validated object, not arbitrary SQL or interpolated fact names.
@@ -190,11 +209,52 @@ A caller can narrow work-item success to `closed`; resolver terminal reconsidera
 still fires when success becomes impossible through resolver termination. A4, B5–B8
 verify the fact semantics without requiring new domain producers.
 
+**A-R4 — additive output and review binding.** Add nullable
+`artifacts.producedByAssignmentId REFERENCES assignments(id)`. Populate it through
+`artifact-record --produced-by-assignment <id>`; omission leaves null rather than
+guessing among the filer's assignments. Validate that the referenced producer exists,
+is held by the filer, belongs to the artifact's work item and shares its owner.
+`Artifacts.record` remains the mutation seam. Existing artifact calls remain valid.
+
+Add nullable `attests.artifactId REFERENCES artifacts(artifactId)` and
+`attests.contentSha256`. `attest --kind verdict --artifact <id> --sha256 <hash>` supplies
+the pair, or omits both for a legacy verdict. Validate the hash against the named artifact
+and the artifact's typed producer against the review card's `reviewsAssignmentId`;
+reject a partial pair, mismatch or cross-owner link. `Assignments.attest` remains the
+mutation seam. Holder-filed and independent-review requirements still apply.
+No legacy artifact/attest is backfilled, and no existing completion gate changes.
+
+`bindings.artifact` is exactly one of:
+
+- `{ "artifactId": "art_A", "contentSha256": "H1" }`: the row must exist at registration;
+  the hash expectation can be false, but cannot silently select another artifact.
+- `{ "producedByAssignmentId": "P", "contentSha256": "H1" }`: P must exist; the output
+  can arrive later. The hash is optional only for a future output whose revision is
+  not yet fixed. Each candidate is a hashed artifact with that exact producer link.
+
+For future output, evaluate the artifact/review conjunction against one candidate artifact
+at a time; it succeeds if one candidate satisfies the entire conjunction. A review for
+H1 cannot combine with another artifact H2. If the hash is not known at registration,
+the matching artifact row and its hash supply the exact revision, and the stamp names
+both. The review verdict must still carry that exact id/hash; revision binding is never
+optional on the satisfying verdict.
+
+For a candidate revision, select the most recent holder-filed `reviewed-clean` or
+`changes-requested` conclusion among linked review cards whose typed artifact/hash
+binding matches that revision; order by verdict timestamp then rowid. Only a clean
+winner held independently of P qualifies. Unbound legacy verdicts cannot satisfy this
+fact. They continue to participate in the original completion-rail query exactly as
+before. A newer verdict for another revision is not a verdict on this revision.
+Acceptance: B4, B8, V5.
+
 ### G-B: durable waits, registration and delivery
 
 **B-R1 — request.** Extend `wake` with a structured `--predicate` JSON object and
 `--assignment <id>` for the covered obligation. The predicate object contains
-`conditions`, `bindings`, and `resolverRef`. Existing `--prompt` is the continuation;
+`conditions`, `bindings`, `resolverRef`, `necessity`, and `verificationRef`.
+`necessity` is nonblank declared dependency rationale, stored as audit evidence;
+`verificationRef` names an existing verification assignment under B-R8.
+Existing `--prompt` is the continuation;
 existing `--fallback-after` or `--at` supplies required `dueAt`. An actionable ready-now
 continuation uses `--after-turn` with `--assignment` and `--prompt`; it has no fabricated
 resolver or dependency. Its due time is registration time, held behind originating-turn
@@ -215,10 +275,11 @@ follow the repository's schema conventions):
 | `assignmentId`, `obligationRef` | Same exact assignment; required for new covering wakes. Existing unrelated wakes retain no coverage. |
 | `predicate` | Canonical validated conditions and row bindings; dependency mode only. |
 | `resolverRef` | Existing accountable assignment or decision request; dependency mode only. |
+| `necessity`, `verificationRef`, `verificationState` | Declared rationale, existing verifier assignment, and `provisional|confirmed|challenged`; dependency mode only. |
 | `originatingTurnSeq` | Captured running T, or null for an eligible registration outside a turn. |
 | `prompt` | Explicit continuation. |
 | `dueAt` | Mandatory fallback for dependency mode; immediate eligibility time for ready-now mode. |
-| recognition fields | Time, path (`success|resolver-terminal|fallback|after-turn`), predicate evidence, resolver disposition and triggering row transition. Null before recognition. |
+| recognition fields | Time, path (`success|reconsideration|fallback|after-turn`), reason (`resolver-terminal|verification-challenged|verification-terminal` for reconsideration), predicate evidence, disposition and triggering row transition. Null before recognition. |
 
 Wakes is the sole mutation seam for registration, recognition, typed cancellation and
 delivery. It inserts the wake and its coherent sidecar in one transaction. Existing
@@ -230,8 +291,10 @@ references, evaluate admission, capture T and legacy cursor if applicable, persi
 and sidecar, and evaluate both firing paths in the same transaction. Return wake id,
 recognition path or null, and eligibility. Refusal leaves neither wake nor sidecar.
 If success holds, recognize success; otherwise if the resolver is terminal, recognize
-resolver-terminal. A terminal resolver is the immediate-evaluation exception to the
-open-resolver rule, not an accepted unresolved dependency. Acceptance: B1–B4, A3.
+path reconsideration with reason resolver-terminal. A terminal resolver is the immediate-evaluation exception to the
+open-resolver rule, not an accepted unresolved dependency. Mechanically admitted unresolved
+dependencies start provisional with their named verifier; relief may start at registration
+under policy, independently of after-turn prod coverage. Acceptance: B1–B4, A3, V1.
 
 **B-R3 — subsequent recognition.** A relevant committed transition evaluates the full
 success predicate and the independent resolver-terminal path. When both hold in the
@@ -273,6 +336,40 @@ ids and refuses an ambiguous conversion rather than assigning them to the curren
 Migration preserves closed rows and the registration cursor; it does not manufacture
 business facts for assignments, artifacts, reviews or work items. Acceptance: L2–L3.
 
+**B-R8 — accountable verification, without an assessor subsystem.** A dependency request
+names `verificationRef={kind:"assignment",id:"V"}`. V must already exist, be open and
+owner-scoped, with a recorded holder admitted by the verification TOML. Record the holder,
+the selected policy name, and `verificationState=provisional` on the wake. The registrant
+supplies the obligation; the engine does not staff or create a verifier. Registration's
+notice summons that holder once with wake id, exact predicate, necessity and requested
+judgment, through ordinary Wakes. The existing assignment lifecycle supervises V.
+
+The same fallback dueAt bounds provisional waiting; no second verification timer or
+cadence default is added. Policy must name an actual verification transition and cannot
+select `never`. Extend verdict attests with nullable `waitId REFERENCES wakes(wakeId)`
+and optional `--wait <wakeId>` at the existing attest seam. For this contract,
+`wait-verified` and `wait-challenged` require that binding and a holder-filed verdict on
+V. The exact wake id pins the immutable predicate, resolver, version expectations,
+necessity and continuation; a verdict on another wait cannot qualify it.
+
+A `wait-verified` verdict changes provisional→confirmed and records its attest id.
+A `wait-challenged` verdict changes provisional/confirmed→challenged and recognizes
+reconsideration with reason `verification-challenged`. Ending V without a bound confirming
+verdict likewise recognizes reconsideration with reason `verification-terminal`; the
+engine does not invent a failed-necessity judgment. Those paths end coverage and effort
+relief immediately, retain the actual evidence, and deliver after T through the shared
+notification path. The challenged wake's resulting notification does not regain coverage
+merely by being queued/running. The agent can reconsider and register a new justified
+next transition. No resolver assignment is closed by this operation.
+
+Resolver-terminal reconsideration stays armed even while verification is pending or
+confirmed. At any success/fallback/resolver-terminal firing, relief ends and provisional
+coverage ends or transfers to ordinary ready-now continuation coverage. Resolution does
+not change the recorded verification state to confirmed. No class bypasses verification
+indefinitely; silence reaches dueAt and existing verifier-assignment supervision remains
+active. These facts establish accountability, not semantic proof that inference is right.
+Acceptance: V1–V4. The added state uses existing wake/attest rows and mutation seams.
+
 ### G-C: coverage and effort
 
 **C-R1 — scoped coverage.** Replace session-wide queued/running coverage at
@@ -286,16 +383,21 @@ between the check and action. Watermarks follow the same obligation scope. C1–
 **C-R2 — sidecar.** Extend `controllerOrigin` with `holder_continuation`, and add exactly
 that coherent branch to `schema.ex:288` and its insert trigger at `:684`. This branch
 requires a prompt wake, matching open assignment, authenticated authorized registrant,
-captured turn and matching obligationRef. It carries neither a charged prod generation
+captured turn (or explicit null for registration outside a turn) and matching obligationRef. It carries neither a charged prod generation
 nor a fabricated `wakeKind=prod`. Existing scheduled and retirement branches retain
 their checks. The sidecar's pending→settled transition follows delivery/cancellation;
 the ledger join supplies coverage after enqueue. Acceptance: C1–C4, C8.
 
-**C-R3 — separate effort policy.** A dependency qualifies only while its resolver is open,
-another accountable party owes it, no success/terminal/fallback recognition has occurred,
-and justification passes the TOML evidence rule (Q2). Ready-now pending/queued/running
-continuations remain covered but use normal effort. Scheduling does not reset an effort
-generation, extend the unused budget repeatedly, or count as progress. Acceptance: C5–C7.
+**C-R3 — separate effort policy.** Mechanical qualification requires an open accountable
+resolver, durable predicate/row identities/version expectations/necessity/resume action,
+successful immediate evaluation, and an accountable verifier under B-R8. The shipped
+policy admits other-party dependencies; self-block relief requires an explicit rail
+election over `resolver.owed_by_other=false`, not a compiled prohibition. Provisional
+and confirmed waits can receive relief, labeled distinctly. Relief starts at registration
+and ends at any firing or cancellation, including verification challenge. This timing
+does not advance after-turn prod-coverage eligibility. Ready-now pending/queued/running
+continuations use normal effort. Scheduling does not reset a generation, extend the
+unused budget repeatedly, or count as progress. Acceptance: C5–C7, V1–V4.
 
 Pause the existing effort horizon for the actual qualifying interval and preserve the
 remaining budget. When qualification ends, resume from that remainder, not a fresh
@@ -304,6 +406,8 @@ restart cannot lose a pause or grant it twice. Overlapping qualifying waits for 
 assignment exclude the union of their intervals, not their sum. The policy determines
 qualification; the engine measures the interval. Do not change configured horizon,
 multiplier, progress receipts, or effect-channel cursors. Acceptance: C6–C7.
+`EffortCheckin` owns those accounting mutations in its existing generation rows; use
+additive interval fields there, not a new accounting table or service.
 
 **C-R4 — failure.** Coverage from a queued/running continuation ends on any terminal
 turn state. If the obligation remains open and has no other covering wake, the next
@@ -328,6 +432,7 @@ when = [
   { fact = "wait.obligation_matches", op = "eq", value = true },
   { fact = "wait.admitted", op = "eq", value = true },
   { fact = "wait.after_turn_eligible", op = "eq", value = true },
+  { fact = "wait.coverage_valid", op = "eq", value = true },
   { fact = "wait.continuation_state", op = "in", value = ["pending", "queued", "running"] },
 ]
 
@@ -337,19 +442,33 @@ purpose = "wait-effort-relief"
 when = [
   { fact = "wait.obligation_matches", op = "eq", value = true },
   { fact = "wait.admitted", op = "eq", value = true },
-  { fact = "wait.after_turn_eligible", op = "eq", value = true },
   { fact = "wait.continuation_state", op = "eq", value = "pending" },
   { fact = "wait.recognized", op = "eq", value = false },
   { fact = "resolver.open", op = "eq", value = true },
   { fact = "resolver.owed_by_other", op = "eq", value = true },
-  { fact = "wait.justification_qualified", op = "eq", value = true },
+  { fact = "wait.declaration_complete", op = "eq", value = true },
+  { fact = "wait.verification_accountable", op = "eq", value = true },
+  { fact = "wait.verification_state", op = "in", value = ["provisional", "confirmed"] },
 ]
+
+[[policy]]
+name = "accountable-dependency-verifier"
+purpose = "wait-verification-admission"
+when = [
+  { fact = "verifier.open", op = "eq", value = true },
+  { fact = "verifier.holder_is_other", op = "eq", value = true },
+]
+verification = { trigger = "registration", terminal = "bound-verdict-or-obligation-terminal", fallback = "wake-due-at" }
 ```
 
 `policy` is an additional array-of-tables root in the existing rule files. Each table
-requires exactly `name`, `purpose`, and nonempty `when`. Names use the existing rule-name
+requires `name`, `purpose`, and nonempty `when`. Names use the existing rule-name
 syntax and are unique across the loaded rule/policy set. Purpose is exactly
-`wait-prod-coverage` or `wait-effort-relief`. No `effect`, remedy or check script is valid
+`wait-prod-coverage`, `wait-effort-relief` or `wait-verification-admission`.
+Verification-admission declarations additionally require the `verification` inline table
+shown above with exactly those three keys and literal values. Other purposes reject that
+table. This MVP summons the named verifier at registration and uses the existing fallback;
+`never` or an omitted verification transition fails policy loading. No `effect`, remedy or check script is valid
 inside a policy. Unknown keys/facts, unsupported purpose, empty conditions, duplicate
 names and type errors fail loading with file/policy/condition location. Conditions AND-fold;
 multiple declarations for one purpose qualify if any one matches. No matching declaration
@@ -361,7 +480,14 @@ queued/running for its ledger continuation; terminal otherwise. `wait.admitted` 
 to successful admission and coherent durable provenance, not to prompt wording.
 `resolver.open` is false for terminal or absent resolvers. `resolver.owed_by_other`
 compares the derived resolver principal to the covered assignment holder. An owner user
-is a distinct accountable party from that user's agent. Q2 defines justification evidence.
+is a distinct accountable party from that user's agent. `wait.declaration_complete` means
+the required stored fields passed registration validation; it never judges their prose.
+`wait.verification_accountable` reads B-R8's admitted verifier and its recorded transitions.
+`verifier.open` reads V's assignment state; `verifier.holder_is_other` compares V's
+recorded holder to the covered assignment's holder, not to a caller-supplied name.
+`wait.coverage_valid` is false after challenge or unverifiable terminal verification;
+otherwise it is true for a coherent pending wake or its queued/running continuation.
+Policy qualifiers expose truth, not a new effect channel or confirmation of advancement.
 
 Admission example, an ordinary loaded rule rather than a compiled self-block ban:
 
@@ -385,7 +511,9 @@ from granting coverage. Who qualifies is TOML policy; tenant isolation, valid re
 mandatory fallback, coherent sidecar and typed transitions remain substrate constraints.
 The shipped policy must implement the accepted matrix, not merely provide a configuration
 example. Tests replace policy in an isolated org to prove qualification follows TOML.
-See D1–D2 and Q2.
+See D1–D2 and V1–V4. No new default verifier selection exists: the registrant names the
+existing obligation, and the shipped TOML checks its holder is another party. Verification
+admission is mandatory for dependency registrations regardless of coverage/effort elections.
 
 Operating pattern established: **obligation-scoped after-turn continuation**. It applies
 when an agent ends a turn with an unfinished assignment. It does not replace timed
@@ -400,6 +528,9 @@ instrument, held for activation with G-D's shipped CLI; it is not current comman
 > action. Register its predicate, resolver, covered assignment, continuation and fallback
 > with `wake --assignment <id> --predicate '<object>' --fallback-after <duration>
 > --prompt "<action to reconsider with the result>"`.
+> Include declared necessity and the existing verification assignment in the predicate
+> object. Coverage is provisional until its holder verifies necessity. A challenge ends
+> that coverage and summons reconsideration.
 > A wake covers only the named obligation. Its queued or running continuation keeps that
 > coverage. Scheduling is a plan, not advancement. Read the actual disposition before
 > acting; delivery supplies no permission.
@@ -427,6 +558,12 @@ The following matrix is carried **verbatim from accepted design §4**:
   | Unrelated wake (no obligationRef match) | No coverage | Normal |
   | Terminally failed continuation | Coverage ends | Existing recovery/accountability |
 
+The later Gap-2 fidelity ruling makes admitted but unverified dependency coverage
+explicitly provisional. Its policy-qualified effort relief starts at registration;
+usable prod coverage still waits for T terminal. A verification challenge ends both.
+Neither the matrix's word "justified" nor resolver disposition is a machine proof of
+necessity. V1–V4 check this distinction.
+
 ### Executable cases
 
 Each case must exercise the real registration/evaluation/delivery or supervision seam
@@ -442,11 +579,11 @@ below stand for rows created by those seams. `H1` and `H2` are distinct SHA-256 
 | B1 (I3) | Given open assignment A held by S and open resolver R held by another accountable party, when S registers valid conditions, fallback and continuation for A, then one admitted wake and coherent sidecar persist. Given a work-item id or artifact pointer as resolverRef, then registration refuses. |
 | B2 (I3,I5) | Given output H1 and its qualifying review already exist while T runs, when an otherwise valid wait registers, then success recognition commits immediately with registration-snapshot evidence, no continuation turn exists yet, and T terminal permits exactly one enqueue. |
 | B3 (I3,I5) | Given R already surrendered, withdrawn or superseded and success false, when registration occurs during T, then resolver-terminal recognition commits immediately with the actual disposition, and delivery waits for T terminal. It never receives unresolved-dependency effort relief. |
-| B4 (I3) | Given R exists but its future output does not, when a producer-bound output predicate registers, then it remains pending. When a different assignment by the same holder on the same work item records an artifact, then no match occurs. R's exact bound output can satisfy it. Q1 governs executable binding. |
+| B4 (I3) | Given R exists but its future output does not, when a producer-bound output predicate registers, then it remains pending. When a different assignment by the same holder on the same work item records an artifact, then no match occurs. R's exact output linked by producedByAssignmentId can satisfy it. Repeat without a known hash: artifact and review must still match the same recorded id/hash. |
 | B5 (I4) | Given output H1 exists and the clean-review conjunct is false, when R terminates without the clean review, then the resolver-terminal path recognizes at that commit, before dueAt, regardless of the false conjunct. |
 | B6 (I4,I7) | Given success false and R closes as surrendered/revoked or its decision is withdrawn/superseded, when that transition commits, then one resolver-terminal notification becomes eligible after T, without advancing the clock to fallback. |
 | B7 (I4,I10) | Given default terminal predicates, when a work item becomes iceboxed or failed, an assignment surrendered, or a decision withdrawn, then success includes the actual disposition. A narrow work-item `closed` predicate does not call iceboxed success; if R then terminates it uses path 2. |
-| B8 (I4,I10) | Given producer P has an older clean review of H1 and the wait expects H2, when evaluating, then H1 cannot satisfy H2. Given an applicable later changes-requested conclusion, then the earlier clean conclusion cannot win. Terminal revocation/closure of R still triggers reconsideration. Q1 governs exact binding. |
+| B8 (I4,I10) | Given producer P has an older clean review of H1 and the wait expects H2, when evaluating, then H1 cannot satisfy H2. Given an applicable later changes-requested conclusion for H2, then the earlier clean H2 conclusion cannot win. Terminal revocation/closure of R still triggers reconsideration. A verdict lacking artifactId/contentSha256 cannot satisfy the exact-revision wait. |
 | B9 (I5) | Given recognition occurs during T and the observed row changes again before T ends, when the gateway restarts and T becomes terminal, then one notification carries the recorded recognition and prompts a reread. No notification is enqueued while T is running. |
 | B10 (I6) | Given success, resolver termination and fallback race, when their transactions serialize, then one recognition wins and `turns.wakeId` yields one continuation. Given cancellation commits first, then no later recognition or enqueue occurs. |
 | B11 (I7) | Given R stays open, no success occurs and dueAt passes, when the tick evaluates, then one fallback is recognized, stamped silence rather than success, and delivery still respects T. The fallback does not automatically rearm the wait. |
@@ -455,20 +592,25 @@ below stand for rows created by those seams. `H1` and `H2` are distinct SHA-256 
 | C2 (I8) | Given S holds A and B and has a valid pending dependency wake for A, when supervision evaluates both, then A is covered and B remains independently eligible. Repeat with a ready-now pending wake, and with A's queued/running continuation; the result is unchanged. |
 | C3 (I8) | Given the executive specimen shape (`w_9639742e`, `w_181be052`: prose named work but assignmentId was null), when fixtures register the equivalent new wakes with typed A/B scope, then prods corresponding to 118974/118975/118976 are suppressed only for the covered obligations. Legacy null/prose-only wakes earn no new coverage. |
 | C4 (I8) | Given A's continuation is queued, then running, when successive supervision evaluations occur, then no duplicate prod is issued. When it completes with A open and no next wake, then prod eligibility resumes at the next evaluation. |
-| C5 (I8) | Given two otherwise equivalent covering wakes, one justified unresolved dependency and one ready-now continuation, when effort is accounted, then only the first receives relief. Self-owed R does not qualify as another-party dependency. |
+| C5 (I8) | Given two otherwise equivalent covering wakes, one policy-qualified unresolved dependency and one ready-now continuation, when effort is accounted, then only the first receives relief. Self-owed R does not qualify under the shipped other-party policy; an isolated explicit self-block rail election can qualify it, with accountable verification still required. |
 | C6 (I9) | Given an effort generation with used budget U and unchanged effect cursors, when a wait registers, is replaced, or is recognized, then U and cursors do not reset and no effect is credited. A qualifying interval pauses only the remaining horizon; ending it resumes the same remainder. |
 | C7 (I8,I9) | Given overlapping qualifying intervals and a gateway restart, when relief is reconciled, then their union is excluded once and used effort survives. When success, terminal reconsideration, cancellation or fallback occurs, then relief ends even while the continuation stays covered. |
 | C8 (I9) | Given a covered continuation dies on model capacity, failed or failed_unknown, when its terminal row commits, then its coverage ends, A remains open, no effect/refusal/progress credit is created, and existing recovery handles the failure. An independently valid open dependency covers only on its own merits. |
 | D1 (I1,I8) | Given valid qualification TOML, when its condition changes in an isolated fixture and policy reloads, then coverage/effort qualification follows that policy without a binary change. Neither policy change can permit a cross-tenant read or waive a missing fallback. |
-| D2 (I3,I8) | Given holder, ancestor and unrelated same-owner registrants, when each registers an obligation wake, then the shipped admission rule admits the first two and refuses the third. A well-formed but unjustified claimed dependency fails effort qualification; it cannot renew evidence budget. Q2 supplies the verification record. |
+| D2 (I3,I8) | Given holder, ancestor and unrelated same-owner registrants, when each registers an obligation wake, then the shipped admission rule admits the first two and refuses the third. A complete declaration is mechanically eligible but remains provisional; it does not establish necessity or renew evidence budget. A bound verifier challenge ends its relief and coverage. |
 | D3 (I10) | Given compiled CLI help/parser and the amended manual example, when the example runs in an isolated remote org, then it registers the documented rows and delivers a notification with the prompt intact. Staged doorbell remains unarmed; no cadence configuration changes. |
 | L1 (I1) | Given a legacy kind/scope wake with cursor N, when fact N already exists, then it does not fire. When same-owner matching fact N+1 is recorded, then Rules recognizes it. Omitted scope retains wildcard semantics. A code inspection finds no independent authoritative matcher in Wakes. |
 | L2 (I2) | Given identical kind/scope in two tenants, when a fact arrives for B, then A's wake remains pending. Given an old system fact with ambiguous owner provenance, migration reports/refuses that ambiguity and never silently grants A visibility. |
 | L3 (I1,I6) | Given an upgrade fixture with pending legacy condition wakes, ordinary timed wakes, canceled/fired wakes and delivery retries, when migrated and restarted, then pending work retains cursor/fallback/identity, closed history is unchanged, and deliveries use the retained shared path. |
+| V1 (I11) | Given valid unresolved R and open named verifier V, when registration succeeds, then the wake durably records necessity, exact predicate/bindings, V/holder, selected policy, provisional status and bounded verification transitions. The existing notice summons V's holder once. Relief starts at registration under policy; coverage waits for T terminal. Missing V refuses dependency registration. |
+| V2 (I4,I11) | Given provisional W, when V's holder files wait-verified bound to W, then W becomes confirmed without resetting effort. When that holder files wait-challenged, then coverage/relief end and W recognizes reconsideration with the challenge attest id, even if the success conjunction is false. The queued challenge notification does not restore coverage. |
+| V3 (I11) | Given W and another wait X, when a verdict is bound to X or filed by someone other than V's holder, then it does not confirm W. Given V closes without confirmation or remains silent through W's dueAt, then W leaves provisional waiting through reconsideration or fallback, never an invented confirmation. Existing supervision still owns V's unfinished obligation. |
+| V4 (I11) | Given a TOML class omits verification or selects never, when loading/registering, then it cannot admit a permanently unverified dependency. Given R resolves while W is provisional, then W fires and relief ends, but the record does not claim verified necessity. |
+| V5 (I3) | Given legacy unbound artifact/verdict rows, when the additive schema ships, then their new fields remain null and original completion-rail results stay unchanged. New wait predicates reject unbound review evidence. Partial artifact/hash pairs and mismatched/cross-owner producer links refuse at their existing write seams. |
 
-Traceability: G-A implements A-R1–A-R3 (A1–A4); G-B implements B-R1–B-R7
-(B1–B12, L1–L3); G-C implements C-R1–C-R4 (C1–C8); G-D implements policy and
-the operating amendment (D1–D3). Cross-cutting invariants are cited by each case.
+Traceability: G-A implements A-R1–A-R4 (A1–A4, V5); G-B implements B-R1–B-R8
+(B1–B12, L1–L3, V1–V3); G-C implements C-R1–C-R4 (C1–C8, V1–V2); G-D implements
+policy and the operating amendment (D1–D3, V4). Cross-cutting invariants are cited by each case.
 Build order is G-A → G-B → G-C → G-D through the same implementation seam.
 
 Spec handoff requires this canonical file in tightbeam-specs main, exact SHA-256 artifact
@@ -480,21 +622,20 @@ acceptance precedes integration and does not itself lift the protected-ref landi
 
 ## Open Questions
 
-- **Q1 — BLOCKING: exact output/review provenance.** The accepted design requires future
-  output of an exact assignment and a verdict over an exact `contentSha256`. The pinned
-  schema has neither an artifact→producer-assignment link nor a review-verdict→revision
-  link. `createdBySession + workItemId` and `reviewsAssignmentId` alone are insufficient
-  when a holder has several assignments or a producer has multiple revisions. Raised
-  in progress `att_e4e85a8f-31e3-4d22-baf6-1d5cc4e746ea`, wake `w_8d5c3712` to the
-  orchestrator. Proposed minimum: typed provenance at existing artifact-record/attest
-  seams. Await the owning ruling before specifying that mutation contract. Blocks exact
-  artifact/review facts and B4/B8, not engine or coverage drafting.
-- **Q2 — BLOCKING: semantic justification evidence.** Resolver existence/open state and
-  another accountable party prove an action is owed, not that this work depends on it.
-  The accepted design assigns qualification to rails without naming the evidence those
-  rails read. The same attest/wake asks the orchestrator to identify the durable evidence
-  contract. No assessor subsystem or self-asserted necessity flag is assumed. Blocks
-  `wait.justification_qualified`, final effort policy and D2/C5 qualification cases.
+No blocking questions remain. Resolved rulings are retained so later readers do not
+re-decide them:
+
+- **Q1 — RESOLVED:** opener message `s_92a833e5-5a85-495b-b743-ca42318fa6ea`
+  authorizes A-R4's additive nullable producer and revision links, with no backfill or
+  completion-rail changes. The source gap was recorded in `att_e4e85a8f`.
+  Deleting exact revision binding loses a required acceptance case; accepting approximate
+  holder/work-item provenance permits stale or unrelated output. Those alternatives lost.
+- **Q2 — RESOLVED:** the same initial ruling, superseded on necessity by messages
+  `s_33d4038f-c57a-441f-a075-70534eada151` and `s_936bcb33-ffeb-4e53-a907-bda184a5c2c6`
+  under `att_ac0d162e`, supplies B-R8 and C-R3. Mechanical admission precedes semantic
+  confirmation; accountable verification is mandatory and provisional status explicit.
+  The existing obligation/attest/wake seams suffice. A new assessor subsystem was declined;
+  permanently unverified classes and treating resolver disposition as proof were rejected.
 - **Q3 — NON-BLOCKING: legacy deprecation horizon.** Follow design §8: indefinite syntax
   compatibility until separately ruled. No forced migration deadline.
 - **Q4 — NON-BLOCKING: additional row domains.** The required domains above implement the
