@@ -486,12 +486,23 @@ disabled until the migration has added and validated the identity foreign keys
 listed in Architecture. An orphan preflight refuses the complete migration;
 it never performs a partial rebuild or creates a placeholder row.
 
-**I17 — Checked `asUser`.** Every `agent_identity/3` path carrying `asUser`
-looks up that exact user before a domain handler runs. A session-scoped
-`asUser` also proves that the session owner user exists. Missing rows return a
-typed authentication refusal and create no domain effect. This is an ordinary
-agent-path repair only. Visitor authentication has no `asUser` selector and
-cannot construct an authoritative user actor.
+**I17 — Transport identity and checked broker identity.** Ordinary AU2 reads
+and dispatch retain self-declared transport identity: `agent_identity/3` does
+not assert that an `asUser` row exists. Commit
+`c09cf0693507226b3d5c8806c43666ef491b71cb` deliberately superseded the general
+existence check introduced by `a0299e8c`; this Visitor contract does not
+restore that check or change ordinary AU2 behavior.
+
+Transport identity is not authorization for a Visitor broker operation.
+The existing CLI-token, checked-`asUser`, and owner/admin requirements for
+`visitor-invitation-create` and `visitor-broker-revoke` in section 6.5 remain
+unchanged. Their checked-user boundary is before Visitor broker dispatch,
+not a universal check on ordinary AU2 dispatch. A15's typed authentication
+refusal for a nonexistent broker `asUser`, before Visitor dispatch and with
+no Visitor audit, remains required; ordinary AU2 acceptance cannot bypass it.
+This distinction adds no check architecture or refusal type. Visitor
+authentication has no `asUser` selector and cannot construct an authoritative
+user actor.
 
 **I18 — Agent anatomy does not leak.** A visitor access session cannot satisfy
 an ordinary session foreign key and cannot acquire `operationalParent`, typed
@@ -1039,9 +1050,12 @@ unchanged. At every injected rebuild and validation failure, the same
 predecessor schema and stamp remain. Given the repaired fixture and valid
 keyring, when the migration runs twice, then both runs succeed, the stamp is
 exactly `visitor-principal-v3-v1`, all listed foreign keys are active and
-restrictive, and an
-`agent_identity/3` request naming a nonexistent `asUser` refuses before its
-domain handler records any effect.
+restrictive. Ordinary AU2 unknown-user reads and dispatch retain the existing
+behavior established by `c09cf0693507226b3d5c8806c43666ef491b71cb`; this case
+does not require a universal user-existence check. Visitor broker operations
+still satisfy the checked-user and authorization requirements of section 6.5
+and A15 at the boundary defined in I17. Their guarantees are not relaxed by
+ordinary AU2 transport acceptance.
 
 Run the same visitor-failure cases after existing v19 and v20 boot fixtures
 reach v21. A failed visitor transaction retains their completed v21 state;
