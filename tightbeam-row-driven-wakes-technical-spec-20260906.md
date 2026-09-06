@@ -1,6 +1,6 @@
 # Row-driven wakes: technical specification (0.1.9)
 
-Revision 3 — cold digest complete; ready for independent spec review, not implementation.
+Revision 4 — review B1 corrected; cold digest pending before bounded rereview.
 
 Work item: `wi_fbcdf1a9-d3fc-4f17-ae1a-eb38ebc9facd`.
 Spec assignment: `asg_26e06eec-4d09-4ecc-bb43-251acb9d82ac`.
@@ -356,7 +356,9 @@ business facts for assignments, artifacts, reviews or work items. Acceptance: L2
 **B-R8 — accountable verification, without an assessor subsystem.** A dependency request
 names `verificationRef={kind:"assignment",id:"V"}`. V must already exist, be open and
 owner-scoped, with a recorded holder admitted by the verification TOML. Record the holder,
-the selected policy name, and `verificationState=provisional` on the wake. The registrant
+`selectedPolicyName` from G-D's deterministic selection, and `verificationState=provisional`
+on the wake in the registration transaction. That policy name records the admission
+cause and remains unchanged by later policy reloads. The registrant
 supplies the obligation; the engine does not staff or create a verifier. Registration's
 notice summons that holder once if the dependency remains unresolved after immediate
 evaluation, with wake id, exact predicate, necessity and requested judgment, through
@@ -496,6 +498,15 @@ names and type errors fail loading with file/policy/condition location. Conditio
 multiple declarations for one purpose qualify if any one matches. No matching declaration
 means no qualification. Candidate selection never substitutes for condition evaluation.
 
+For each purpose and one evaluation snapshot, select the matching declaration whose
+unique validated name is smallest in ascending bytewise order. Loader order, file order,
+and declaration order do not break ties or affect selection. An empty matching set has
+no selected policy and does not qualify. B-R8 persists the selected
+`wait-verification-admission` name as `selectedPolicyName`; other purposes use the same
+selection when reporting a policy cause. Overlap still grants qualification once and
+does not multiply notices, coverage or effort relief. This uses existing unique names;
+it introduces no priority field, extra registry, or overlap refusal. Acceptance: V1.
+
 Each policy query binds one candidate wake, one obligation and one owner, with a fresh
 fact cache. `wait.continuation_state` is pending for an uncanceled, undelivered wake;
 queued/running for its ledger continuation; terminal otherwise. `wait.admitted` refers
@@ -625,7 +636,7 @@ below stand for rows created by those seams. `H1` and `H2` are distinct SHA-256 
 | L1 (I1) | Given a legacy kind/scope wake with cursor N, when fact N already exists, then it does not fire. When same-owner matching fact N+1 is recorded, then Rules recognizes it. Omitted scope retains wildcard semantics. A code inspection finds no independent authoritative matcher in Wakes. |
 | L2 (I2) | Given identical kind/scope in two tenants, when a fact arrives for B, then A's wake remains pending. Given an old system fact with ambiguous owner provenance, migration reports/refuses that ambiguity and never silently grants A visibility. |
 | L3 (I1,I6) | Given an upgrade fixture with pending legacy condition wakes, ordinary timed wakes, canceled/fired wakes and delivery retries, when migrated and restarted, then pending work retains cursor/fallback/identity, closed history is unchanged, and deliveries use the retained shared path. |
-| V1 (I11) | Given valid unresolved R and open named verifier V, when registration succeeds, then the wake durably records necessity, exact predicate/bindings, V/holder, selected policy, provisional status and bounded verification transitions. The existing notice summons V's holder once. Relief starts at registration under policy; coverage waits for T terminal. Missing V refuses dependency registration. |
+| V1 (I11) | Given valid unresolved R and open named verifier V, when registration succeeds, then the wake durably records necessity, exact predicate/bindings, V/holder, selectedPolicyName, provisional status and bounded verification transitions. Given both `a-verifier` and `z-verifier` match verification admission, register with their file/declaration orders reversed in a second fixture: each wake records `a-verifier` and summons V's holder once. A later reload does not rewrite either stored admission name. With neither policy matching, registration refuses without a wake. Relief starts at registration under policy; coverage waits for T terminal. Missing V refuses dependency registration. |
 | V2 (I4,I11) | Given provisional W, when V's holder files wait-verified bound to W, then W becomes confirmed without resetting effort. When that holder files wait-challenged, then coverage/relief end and W recognizes reconsideration with the challenge attest id, even if the success conjunction is false. The queued challenge notification does not restore coverage. |
 | V3 (I11) | Given W and another wait X, when a verdict is bound to X or filed by someone other than V's holder, then it does not confirm W. Given V closes without confirmation or remains silent through W's dueAt, then W leaves provisional waiting through reconsideration or fallback, never an invented confirmation. Existing supervision still owns V's unfinished obligation. |
 | V4 (I11) | Given a TOML class omits verification or selects never, when loading/registering, then it cannot admit a permanently unverified dependency. Given R resolves while W is provisional, then W fires and relief ends, but the record does not claim verified necessity. |
@@ -660,6 +671,12 @@ re-decide them:
   confirmation; accountable verification is mandatory and provisional status explicit.
   The existing obligation/attest/wake seams suffice. A new assessor subsystem was declined;
   permanently unverified classes and treating resolver disposition as proof were rejected.
+- **Review B1 — RESOLVED:** verdict `att_621e21e8` / report `art_2c42d897` exposed
+  unspecified selected-policy provenance under overlapping matches. G-D now selects the
+  bytewise-smallest matching name per purpose/snapshot; B-R8 persists that admission cause
+  and V1 proves order independence. Deleting provenance loses required accountability;
+  accepting unspecified iteration order loses reproducibility. Existing unique names
+  supply the ordering without adding a priority mechanism or rejecting valid overlap.
 - **Q3 — NON-BLOCKING: legacy deprecation horizon.** Follow design §8: indefinite syntax
   compatibility until separately ruled. No forced migration deadline.
 - **Q4 — NON-BLOCKING: additional row domains.** The required domains above implement the
