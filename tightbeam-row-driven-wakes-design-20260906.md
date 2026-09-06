@@ -1,9 +1,11 @@
 # Row-driven wakes: unified production-engine design (0.1.9)
 
-Revision 2 (canonical). Supersedes the rejected slice art_ff24cdb7
-(sha256 8c63467c9015…) per spirit-changes-required att_7785b8e6 (F1-F4 + hole rulings) and
-parent executive ruling att_1bd0c4d1. Work item wi_fbcdf1a9-d3fc-4f17-ae1a-eb38ebc9facd,
-assignment asg_d5b51707, orchestrator:row-driven-wakes-019. Posture-heavy (filed).
+Revision 3 (canonical). Revises revision 2 (art_c7772427, specs@0c18c21) in place per
+spirit-changes-required att_49ee3ba2 (R1-R3; architecture direction accepted, no restart).
+Revision 2 superseded the rejected slice art_ff24cdb7 per att_7785b8e6 (F1-F4 + hole
+rulings) and parent executive ruling att_1bd0c4d1. Work item
+wi_fbcdf1a9-d3fc-4f17-ae1a-eb38ebc9facd, assignment asg_d5b51707,
+orchestrator:row-driven-wakes-019. Posture-heavy (filed).
 Spirit: tightbeam-wait-spirit-20260906-mike.md
 sha256 ba377391d80433b735aca88ae5a104d9add82de86f8bc5e6c93f18fe62753964.
 Evidence: four read-only static inspections of branch 0.1.9 tip f303dce plus parent report
@@ -64,23 +66,40 @@ supervision gate rework (§4), schema (wait columns + sidecar origin). No blocke
 assessor-budget subsystem, no data-defined query language beyond the existing grammar, no new
 GenServers, no rewrite of closed history.
 
-## 2. Accountable resolver (F2)
+## 2. Accountable resolver: obligation, not output (F2, R1)
 
-A satisfying-state stamp is reporting, not accountability. Each ad hoc wait names, at
-registration, **what it waits on and who owes it**:
+A satisfying-state stamp is reporting, not accountability. The awaited **output** commonly
+does not exist yet at registration — an artifact id cannot be named before the artifact is
+produced. So a wait separates two things it previously conflated:
 
-- `resolverRef` — the awaited row: a decision_request id, assignment id, work item id, or
-  artifact id. Registration refuses a wait with no awaited row (physics: the row must exist
-  and be non-terminal at registration, else immediate evaluation §3 fires now).
-- The responsible party is derived from that row, not asserted: a decision request's
-  addressee, an assignment's holder, a work item's owner. The wait links the request/work
-  that must move — wisdom 14, no intent in limbo: absence is detectable because the wait
-  points at the exact obligation whose silence is the problem.
+- `resolverRef` — the **existing obligation that owes the action**: a decision_request id
+  or an assignment id with an accountable holder/addressee. This row must exist and be
+  non-terminal at registration (else immediate evaluation §3 fires now). A work item id or
+  an artifact pointer is NOT a valid resolverRef on its own: a work-item owner or a pointer
+  to bytes proves no one currently owes an action. A wait over work-item disposition still
+  names, as resolver, the open assignment (or decision request) through which that
+  disposition is owed.
+- **Expected output identity** lives in the predicate, not the resolverRef: the success
+  conditions (§3) describe the awaited output — the artifact this assignment produces, a
+  known contentSha256 when the revision is already fixed, a work-item disposition, a review
+  verdict. The predicate may reference rows that do not exist yet; the resolver obligation
+  must exist now.
+- The responsible party is derived from the resolver row, not asserted: a decision
+  request's addressee, an assignment's holder. The wait links the request/work that must
+  move — wisdom 14, no intent in limbo: absence is detectable because the wait points at
+  the exact obligation whose silence is the problem.
+- **Revision binding for reviews**: a review-verdict condition binds to the exact output
+  revision under review (the linked review card's verdict over the artifact revision's
+  contentSha256), never merely "the producer assignment has a clean review" — a producer
+  assignment is reused across revisions and a stale round must not satisfy a wait on the
+  current one (qualifying_review_verdict_kinds assignments.ex:373-405 is already
+  latest-round-authoritative; the wait predicate carries the revision identity alongside).
 - `continuation` — the explicit actionable next step, authored at registration, delivered as
   the wake prompt. "Re-read rows" alone is not a continuation; the prompt states what the
   agent will do with the resolved state.
-- Firing stamps predicate + resolverRef + the satisfying transition (row, field, old→new)
-  into the delivered prompt, extending the existing "[woke: …]" stamping.
+- Firing stamps which path fired (§3) + predicate + resolverRef + the satisfying transition
+  (row, field, old→new) into the delivered prompt, extending the existing "[woke: …]"
+  stamping.
 - Truthful observation remains the producer's duty: the resolver's own row transition is the
   observation. Nothing manufactures facts on the waiter's behalf.
 
@@ -88,9 +107,27 @@ Reconsideration, not permission (carried from wi_fca19e0c): the fired wake is a 
 turn. The agent re-reads the rows and decides; a firing never authorizes an action, and the
 continuation prompt is an instruction to reconsider with named context, not a grant.
 
-## 3. Terminal-complete predicates and exact binding (F3)
+## 3. Terminal-complete predicates and exact binding (F3, R2)
 
-Waits resolve on **terminal disposition, never success-only**:
+Every wait has **two independent firing paths**, and both are always armed:
+
+1. **Success predicate** — the registrant's composed conditions (AND-fold over the fact
+   grammar) describing the awaited outcome.
+2. **Resolver-terminal reconsideration** — implicit, engine-supplied, never composed away:
+   the wait ALSO fires when the resolverRef obligation reaches any terminal state without
+   the success predicate holding — assignment surrendered/revoked/failed, decision request
+   withdrawn/superseded, review verdict revoked out from under a partially-satisfied
+   conjunction. An AND like "artifact hash present AND clean review" can otherwise stay
+   false forever once the reviewer revokes or the producer fails; the waiter must be woken
+   for reconsideration at that known terminal moment, not stranded. The stamp names which
+   path fired and the terminal disposition.
+
+`dueAt` is the fallback for **silence only** — a resolver that neither succeeds nor
+terminates. It is never the sole detection of a known terminal failure: a terminal
+resolver transition fires path 2 at its own commit (row-commit edge, §1), not at dueAt.
+
+Success predicates over the named domains resolve on **terminal disposition, never
+success-only**:
 
 - Decision predicate: satisfied when decision_requests.status leaves `open` —
   ruled | withdrawn | superseded (the DDL already carries the enum, escalation.ex:53-135;
@@ -104,20 +141,24 @@ Waits resolve on **terminal disposition, never success-only**:
   **Iceboxed never silently reads as completed**: the stamp carries the actual state, and the
   registrant may compose a narrower wait (e.g. state in [closed]) — but the default terminal
   wait covers all three so no disposition strands a waiter.
-- Exact revision binding: artifact waits bind artifact id and contentSha256, not kind-level
-  existence; review waits bind the linked review card and its qualifying holder-filed verdict
-  for the exact assignment (qualifying_review_verdict_kinds assignments.ex:373-405 — already
-  independence-aware and latest-round-authoritative), not "some clean review exists".
+- Exact revision binding: artifact conditions bind artifact identity and contentSha256, not
+  kind-level existence; review conditions bind the qualifying holder-filed verdict to the
+  exact output revision per §2 (never a producer assignment reused across revisions, never
+  "some clean review exists").
 - Composition uses the rule grammar as-is: multiple conditions AND-fold; in/not_in bounds
   disposition sets. Registration-time validation refuses conditions over unknown facts.
-- Immediate registration evaluation: the wait is evaluated inside its scheduling transaction;
-  already-terminal state fires now rather than parking a wait on a past event.
+  Composition narrows the success predicate only; it never disarms path 2.
+- Immediate registration evaluation: both paths are evaluated inside the scheduling
+  transaction; an already-satisfied predicate or already-terminal resolver is **recognized**
+  now rather than parking a wait on a past event. Delivery of that recognition follows §4's
+  after-turn eligibility (recognition at registration, delivery at the originating turn's
+  end — no mid-turn interruption, no lost firing).
 
 Quota/credential/capability predicates require net-new observation rows (no quota table;
 credentials.ex is filesystem-only) — observations remain producer responsibilities per the
 spirit; the fact seam admits them later without engine change.
 
-## 4. Obligation-specific coverage and after-turn eligibility (F4)
+## 4. Obligation-specific coverage and after-turn eligibility (F4, R3)
 
 The suppression gate (gate_reason_in_txn supervision.ex:3132) is rebuilt per-obligation:
 
@@ -136,20 +177,36 @@ The suppression gate (gate_reason_in_txn supervision.ex:3132) is rebuilt per-obl
   a named acceptance scenario: a holder with a pending wait whose obligationRef matches the
   obligation is not prodded for it.
 - **After-turn eligibility, specified**: a wake armed during turn T becomes eligible for
-  delivery and for coverage evaluation when T reaches a terminal turn state. A covering wake
+  delivery and for coverage evaluation when T reaches a terminal turn state. Recognition
+  and delivery are distinct moments (§3): satisfaction may be recognized at registration or
+  at any row commit, while delivery waits for the originating turn's end. A covering wake
   delivered into a queued/running continuation turn for the same obligation continues to
   cover until that turn completes (no duplicate prod — spirit turn-end rule l.127-131). If
   the turn completes without discharging the obligation and no new coverage exists,
   eligibility to prod resumes at the next evaluation.
-- **Effort-check treatment of legitimate waits**: effort_checkin (separate 4h-horizon budget,
-  effect channels counted at effort_checkin.ex:1229) treats a pending ad hoc wait with a
-  named resolver covering the obligation as covered state — no effort burn and no prod for
-  the covered obligation while the dependency is live. Scheduling a wait remains coverage,
-  never evidence of advancement: receipt absorption (:2708-2716) and ladder resets
-  (supervision.ex:1303 — progress prose never resets) are NOT widened.
-- **Capacity failure is neither refusal nor progress** (specimen 118975): a turn that dies on
-  model capacity discharges nothing — it neither credits an effect channel nor cancels
-  coverage nor counts as an answer to a prod. It leaves the obligation exactly as it was.
+- **Dependency covers; a ready-now continuation does not.** A pending wait is covered state
+  ONLY while it is a justified unresolved dependency: the resolverRef obligation (§2) is
+  open, non-terminal, and owed by another accountable party. A wait whose success predicate
+  or resolver-terminal path is already recognized, or whose continuation is actionable now
+  without the dependency, is an actionable continuation — it burns effort normally and
+  suppresses nothing. Naming a resolver does not by itself buy coverage; scheduling never
+  renews the evidence budget. Which waits qualify as covered state is admission/effort RAIL
+  POLICY (rule TOML at the existing edges, §5), not engine behavior: the engine supplies
+  the facts (resolver open? owed by whom? recognized?), the rails decide the suppression.
+- **Effort-check treatment**: effort_checkin (separate 4h-horizon budget, effect channels
+  counted at effort_checkin.ex:1229) treats a qualifying dependency wait (previous bullet)
+  as covered state — no effort burn and no prod for the covered obligation while the
+  dependency is live. Scheduling a wait remains coverage, never evidence of advancement:
+  receipt absorption (:2708-2716) and ladder resets (supervision.ex:1303 — progress prose
+  never resets) are NOT widened, and verification of advancement stays with the existing
+  rail policy.
+- **A failed continuation ends its coverage.** When a continuation turn fails — including
+  death on model capacity (specimen 118975) — its queued/running coverage ends at that
+  failure and the existing retry/failure accountability applies to the turn. Capacity
+  failure is neither refusal nor progress nor permanent coverage: it discharges nothing,
+  credits no effect channel, and answers no prod; the obligation returns to evaluation
+  exactly as it was. The pending dependency wait itself continues to cover only if its
+  resolver obligation genuinely remains open.
 
 ## 5. Admission policy in rails; tenant safety in substrate
 
@@ -167,14 +224,17 @@ the typed state machine.
 - **G-A — engine unification** (rules.ex): row-commit edge, notice effect, new row facts,
   evaluator entry for wait instances. The load-bearing goal; everything else consumes it.
 - **G-B — waits in Wakes** (wakes.ex, schema, chokepoints): registration + immediate eval +
-  storage (resolverRef, obligationRef, continuation), legacy (kind,scope) compatibility
-  routed through the unified evaluator, matcher retirement, firing stamps.
+  storage (resolverRef, obligationRef, continuation), the implicit resolver-terminal
+  reconsideration path (§3 path 2), legacy (kind,scope) compatibility routed through the
+  unified evaluator, matcher retirement, two-path firing stamps.
 - **G-C — supervision coverage** (supervision.ex, effort_checkin.ex, sidecar schema):
-  per-obligation gate, holder_continuation origin, after-turn eligibility, effort-check
-  coupling, capacity-failure neutrality, specimen regression tests.
-- **G-D — admission TOML + guidance**: wake-verb admission rules; operating-manual "Match the
-  wake to what you wait on" gains the predicate instrument; migration note (compatibility,
-  no forced migration).
+  per-obligation gate, holder_continuation origin, after-turn eligibility,
+  dependency-vs-actionable covered-state facts, effort-check coupling, failed-continuation
+  and capacity accountability, specimen regression tests.
+- **G-D — admission + coverage TOML, guidance**: wake-verb admission rules and the
+  covered-state suppression policy (§4) as rule TOML; operating-manual "Match the wake to
+  what you wait on" gains the predicate instrument; migration note (compatibility, no
+  forced migration).
 
 Sequential G-A → G-B → G-C (one seam, one coder path); G-D follows. Remote regressions per
 goal on eezo/racter via scripts/verify_mix.sh unmodified, host named in each attest; fresh
