@@ -262,7 +262,7 @@ mutate this field.
 | sessions | sessionKey, displayName, kind, ownerUserId, origin, spawnedBy, handle, archetype, identityName, identityRevision, harness, provider, model, thinkingLevel, modelContext, host, state, mechanicalStatus | orderIndex, clearedThroughSeq, createdAt, updatedAt, rowVersion | isBuiltIn, adopted | overrides `O<SessionOverrides>`, capabilities `O<SessionCapabilities>` | ownerUserId, spawnedBy, handle, identityName, identityRevision, provider, model, thinkingLevel, modelContext, host, clearedThroughSeq, overrides |
 | transcript messages | id, sessionKey, role, messageType, content, sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, llmVisibleMessageId, assignmentId, jobRef, harness, provider, model, effort | seq, at, attentionTier, turnSeq, rowVersion | — | attachments `A<O<Attachment>>`, context `J` | sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, assignmentId, jobRef, harness, provider, model, effort, turnSeq, context |
 | work items | id, title, specRefName, specRefSha256, ownerUserId, state, failReason, routingWakeId, slateWakeId, createdByUser, createdBySession | createdInTurnSeq, createdAt, priority, rowVersion | isBug, createdContextKnown | — | specRefName, specRefSha256, ownerUserId, failReason, routingWakeId, slateWakeId, createdByUser, createdBySession, createdInTurnSeq |
-| assignments | id, subject, holderKey, holderRole, openedByUser, openedBySession, state, outcome, closedByUser, closedBySession, closingAttestId, workItemId, reviewsAssignmentId, holderHarness, holderProvider, effectKind, derivedStatus | openedAt, closedAt, rowVersion | holderFallback | files `A<S>` | holderRole, openedByUser, openedBySession, outcome, closedAt, closedByUser, closedBySession, closingAttestId, workItemId, reviewsAssignmentId, holderHarness, holderProvider |
+| assignments | id, subject, holderKey, holderRole, openedByUser, openedBySession, state, outcome, closedByUser, closedBySession, closingAttestId, revocationReason, workItemId, reviewsAssignmentId, holderHarness, holderProvider, effectKind, derivedStatus | openedAt, closedAt, rowVersion | holderFallback | files `A<S>` | holderRole, openedByUser, openedBySession, outcome, closedAt, closedByUser, closedBySession, closingAttestId, revocationReason, workItemId, reviewsAssignmentId, holderHarness, holderProvider |
 | attests | id, assignmentId, kind, verdictKind, note, bySession, byUser, producer, producerCommand, byHarness, byProvider | ts, rowVersion | — | commitRefs `A<O<CommitRef>>` | verdictKind, note, bySession, byUser, producer, producerCommand, byHarness, byProvider, commitRefs |
 | wakes | wakeId, sessionKey, targetRole, origin, prompt, consumer, state, reresolve, reresolveSeed, conditionKind, conditionScope, firedBy, creatorSessionKey, workItemId, assignmentId, class, classElection, deliveryRule | dueAt, createdAt, firedAt, reresolveRung, conditionAfterId, canceledAt, targetGate, rowVersion | rumination, digest, summon | — | targetRole, prompt, firedAt, reresolve, reresolveSeed, reresolveRung, conditionKind, conditionScope, conditionAfterId, firedBy, creatorSessionKey, workItemId, assignmentId, canceledAt, class, classElection, deliveryRule |
 | turns | sessionKey, messageId, wakeId, origin, prompt, roleRef, roleFallback, assignmentId, jobRef, model, thinkingLevel, modelContext, harness, owner, requestRef, error, status | seq, replyAttention, adapterGen, createdAt, startedAt, endedAt, publishedAt, rowVersion | — | — | messageId, wakeId, roleRef, roleFallback, assignmentId, jobRef, model, thinkingLevel, modelContext, harness, owner, adapterGen, requestRef, error, startedAt, endedAt, publishedAt |
@@ -274,6 +274,14 @@ mutate this field.
 | devices | deviceId, userId, claimedName, status, platform, model | createdAt, rowVersion | — | — | claimedName, platform, model |
 | facts | kind, scope, origin | id, ts, rowVersion | — | — | scope |
 | critical state | sessionKey, reason | startedAt, expiresAt, hardDeadline, updatedAt, rowVersion | — | — | none |
+
+Assignment `revocationReason` follows
+[`assignment-revocation-reason-v1.md`](assignment-revocation-reason-v1.md):
+the field is a JSON string for a revoked assignment and JSON null for an open,
+completed, or surrendered assignment. A revoked assignment exposes the stored
+reason for its current close generation; historical migrated revocations retain
+the explicit `legacy_unknown` sentinel. The R7 key order places the field after
+`closingAttestId`.
 
 ### Decisions and composed resources
 
