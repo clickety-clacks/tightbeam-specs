@@ -89,7 +89,8 @@ archive, or temporary file. Existing lifecycle and permission invariants in
 Nacelle is the test target for this project and image-paste work, including
 live desktop and system-harness testing. Do not perform those tests or deploy
 test builds on osanwe. Use a worker-owned checkout and a supported isolated
-desktop on nacelle, while keeping shared source and installed plugins untouched.
+desktop on nacelle. Preserve shared source and installed plugins except for
+Mike's explicitly authorized nacelle adapter install/launch correction above.
 
 Discover nacelle's actual checkout paths and environment before testing. The
 historical osanwe source path `/home/mike/Projects/omarchy-ask` and installed
@@ -100,15 +101,16 @@ candidate identity, desktop and system-harness prerequisites in the evidence.
 If nacelle access or prerequisites are missing, report the exact failed probe
 or missing prerequisite. Do not substitute osanwe or another host, assimilate
 a host, reconfigure it, or change credentials. The location directive does not
-authorize deployment to an installed plugin or any other live-state mutation.
+authorize general deployment or other live-state mutation. The subsequent
+adapter install/launch correction is authorized only on the nacelle test target.
 
 Require fresh real image-understanding responses from system Codex and Claude,
 including actual understanding of multiple distinct images in one prompt,
 not readiness, capability advertisements, or metadata echoes. Cover screenshot,
 browser, and file-manager copies; removal and retry; overlay and pinned mode;
 ordinary text paste and steering; failure retention without loss of newer text;
-close/pin ownership and late clipboard results. Keep screenshots free of private
-content. Verify repeated-paste append/removal, all images sent together, rendered
+close/pin ownership and late clipboard results. Verify repeated-paste
+append/removal, all images sent together, rendered
 transcript images after composer clearing and later turns, failure/retry resource
 retention, pin/unpin, and cleanup after conversation close. Include adapter-launch
 success, concise failure behavior, and unchanged Super+comma selector behavior.
