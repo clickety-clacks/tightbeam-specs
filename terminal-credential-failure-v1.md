@@ -291,6 +291,24 @@ current human administrator. In the current org, that audience includes `user:mi
 An unavailable personal session may delay transport, but it must not erase the durable
 statement. Delivery is deduplicated per `{statement, administrator}`.
 
+While the incident is open, a committed transition that makes an administrator's personal
+session available, registers its active replacement, or grants administrator eligibility
+must reconcile that administrator's pending standing delivery. Eligibility is the current
+org administrator status at the delivery transaction; losing that status prevents further
+delivery without deleting history. Gaining it while the incident is open creates or finds
+the same per-administrator projection and attempts delivery to the current personal
+session. An unavailable target leaves that projection pending for the next named edge.
+
+Reconciliation must use the current canonical statement, including all committed redirect
+observations, rather than an opening-time text snapshot. The stable dedupe key contains
+the statement id and administrator user id, never the personal-session incarnation.
+Appending the high-attention message and recording its delivery identity must commit
+together. Concurrent edges, restart, and publisher replay must find that identity instead
+of appending a duplicate. A replacement session must expose the existing logical statement
+through the current personal-session projection, not create a second administrator
+delivery. If the incident resolves before pending delivery commits, reconcile it as resolved
+and do not deliver an obsolete open-incident warning.
+
 Readiness must render the current statement for every open incident, including when some
 other harness remains runnable and the first line is `READY`. Doctor must render the same
 statement before any affected-key probe. Doctor must treat an affected local harness as
@@ -421,6 +439,15 @@ The incident owner derives one standing-statement view from incident and redirec
 The high-attention administrator delivery, runtime readiness, doctor human output, and
 doctor JSON output must use that view. They must not maintain independent message text.
 
+Use the existing org/session lifecycle transactions, durable delivery projections, and
+transactional message publication to perform I5 reconciliation after each named committed
+eligibility or personal-session transition. On gateway startup, reconcile pending
+projections against current eligibility and active personal sessions once, so a crash
+after the lifecycle commit cannot lose delivery. Check eligibility, incident state,
+canonical text, target, and dedupe identity in the same delivery transaction. Publish its
+committed message through the existing publisher; publisher failure must not erase that
+message or its identity. This adds no timer, polling loop, or separate retry framework.
+
 Doctor must open the existing org database read-only before live catalog collection. It
 must exclude each open key from provider collection and render its durable terminal row.
 It may continue current checks for unaffected keys. Running doctor must never claim,
@@ -527,6 +554,23 @@ statement bytes with the literal `<adminUserId>` placeholder. Doctor JSON contai
 same bytes in its canonical-statement field and keeps recipient metadata in separate
 fields. No surface interpolates either administrator's id. Publisher retry does not
 create a second logical projection for either administrator.
+
+Given Mike's personal session is unavailable when the incident opens, then his projection
+remains pending. After a lawful redirect changes the canonical text, when a committed
+personal-session availability or active-replacement transition occurs, then exactly one
+high-attention message with the current canonical bytes becomes visible to Mike. Repeat
+with a crash after the lifecycle commit but before reconciliation: startup delivers the
+pending message. Repeat with a crash after message commit but before publication:
+publisher replay exposes the same message identity. Concurrent lifecycle events, repeated
+startup, publisher replay, and later session replacement create no second logical
+administrator delivery; the current personal-session projection exposes the statement.
+
+Given a user becomes an administrator while the incident is open, then that committed
+eligibility transition creates or finds the user's projection and delivers the current
+statement if the personal session is available, otherwise leaves it pending. Revoking
+eligibility before delivery prevents the append; restoring eligibility reconciles the
+same projection without duplicating a prior delivery. If the incident resolves while
+delivery is pending, then later availability or startup produces no stale open warning.
 
 Given another harness can run, then readiness may remain `READY` and doctor may retain
 its current successful exit, but both outputs contain the terminal statement as a blocked
