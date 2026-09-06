@@ -8,6 +8,10 @@ commands. This document is the living answer to "which commands exist": the
 surface is exactly what has a named consumer, and growing it means amending this
 enumeration FIRST.
 
+G9 setHarness capability successor, 2026-08-28: PROPOSED. The `list` session
+result below joins the five-file canonical candidate set named in
+`session-status-set-harness-capability-v1.md`.
+
 ## The demand rule
 
 A command family is in the surface iff a shipped consumer instructs its use. The
@@ -50,6 +54,25 @@ Agent-facing (demanded by the shipped engineering-kungfu kernels/skills):
   coverage practice).
 - **config (get / set)** — org settings incl. default-archetype
   (kungfu-template-v1 root-archetype apply; feature smoke drives it).
+
+### `list` session-result contract
+
+The `tightbeam list` result contains `sessions`, an array of the canonical REST
+R7 session items in canonical order. Each current-producer entry has exactly
+these fields in this order:
+
+`sessionKey`, `displayName`, `kind`, `orderIndex`, `isBuiltIn`, `adopted`,
+`ownerUserId`, `origin`, `spawnedBy`, `handle`, `archetype`, `overrides`,
+`identityName`, `identityRevision`, `harness`, `provider`, `model`,
+`thinkingLevel`, `modelContext`, `host`, `clearedThroughSeq`, `state`,
+`createdAt`, `updatedAt`, `mechanicalStatus`, `capabilities`, `rowVersion`.
+
+`capabilities` is the REST-wire `SessionCapabilities` object, and
+`sessions[*].capabilities.setHarness` is semantically equal to the value on
+canonical REST, M5 session status, session-control, and matching session
+firehose representations. A reader accepts a pre-G9 entry that omits
+`capabilities`; a current producer does not omit it. The `list` request bytes
+and command surface do not change.
 
 Operator-facing (demanded by operating ceremonies and the smoke):
 - **kungfu-list** — enumerate the kungfu bundles this build ships, with each bundle's

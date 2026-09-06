@@ -27,7 +27,7 @@ error and G8 authority-label contracts.
 
 G2 session-freshness amendment candidate, 2026-08-27: session item keys and
 types remain unchanged. The complete item, including materialized
-`mechanicalStatus`, is the versioned value shared by REST and the three
+`mechanicalStatus`, is the versioned value shared by REST and the registered
 `session.*` firehose classes.
 
 Operator-ruling-provenance candidate, 2026-08-31: add the closed public
@@ -38,6 +38,12 @@ the existing decision-request item.
 Work-item priority/shared-seam candidate, 2026-09-01: add required integer
 `priority` in the R7 position immediately before `rowVersion`. Its value is in
 the inclusive range 0 through 8. This adds no other field or wire change.
+
+G9 setHarness capability successor, 2026-08-28: PROPOSED. Add the required
+current-producer session `capabilities` object and its closed `setHarness`
+union. The five-file candidate set is this file, `rest-state-api-v1.md`,
+`event-firehose-v1.md`, `cli-surface-v1.md`, and
+`session-status-set-harness-capability-v1.md`.
 
 ## Encoding rules
 
@@ -65,6 +71,12 @@ the new `mechanicalStatus` and session `rowVersion` atomically. The serializer
 reads that stored value; it does not count turns or compute the field from
 another mutable input.
 
+A build-owned harness-catalog change follows G9 SH10 in
+`session-status-set-harness-capability-v1.md`: it requires a gateway release
+and a fresh authorized REST rebuild, whose capability value is authoritative
+even when the session `rowVersion` did not change. A running producer does not
+hot-reload that catalog, so it is not a mutable input within that build.
+
 The condition-fact projection `id`, firehose notice `refs.factId`, and natural
 version are positive JSON integers with the same numeric value.
 `facts.rowVersion` equals `facts.id`. A decimal string is invalid for any of
@@ -79,6 +91,10 @@ same library path for REST, CLI, and firehose.
 For transcript messages, “exactly” applies after the conditional
 `messageType` rule below. `messageType` is the sole key that the encoder may
 omit conditionally.
+
+A current-producer session encoder always emits `capabilities`. A compatibility
+reader accepts a pre-G9 session item that omits that key; this reader rule does
+not permit a current producer to omit it.
 
 Maps whose keys are product data encode keys in ascending Unicode code-point
 order. Set-like arrays sort by the tuple named below. Sequence arrays preserve
@@ -119,6 +135,14 @@ typed J below and still passes SR2/SR6 secret exclusion.
   `{harness:S|null, model:O<ModelPreference>|null}`.
 - `Containment`: `{fs:S, network:S}`.
 - `SessionOverrides`: `{skillsAdd:A<S>, guidanceExtra:S|null}`.
+- `HarnessOption`: `{title:S,value:S,enabled:B}`. `title` equals `value`.
+- `SetHarnessUnsupported`: `{supported:false,reason:S}`; `reason` is exactly
+  `session is not active` or `no alternate harness is registered`.
+- `SetHarnessSupported`:
+  `{supported:true,options:A<O<HarnessOption>>}`.
+- `SessionCapabilities`:
+  `{setHarness:O<SetHarnessUnsupported>|O<SetHarnessSupported>}`. The
+  unsupported form has no `options`; the supported form has no `reason`.
 - `DecisionOption`: `{label:S}`.
 - `ToplineMembership`: `{id:S, toplineId:S, workItemId:S,
   ownerUserId:S, linkReason:S, linkedActor:O<Actor>, linkedAt:I,
@@ -232,7 +256,7 @@ mutate this field.
 
 | Resource | Strings | Integers | Booleans | Arrays / objects | Nullable |
 |---|---|---|---|---|---|
-| sessions | sessionKey, displayName, kind, ownerUserId, origin, spawnedBy, handle, archetype, identityName, identityRevision, harness, provider, model, thinkingLevel, modelContext, host, state, mechanicalStatus | orderIndex, clearedThroughSeq, createdAt, updatedAt, rowVersion | isBuiltIn, adopted | overrides `O<SessionOverrides>` | ownerUserId, spawnedBy, handle, identityName, identityRevision, provider, model, thinkingLevel, modelContext, host, clearedThroughSeq, overrides |
+| sessions | sessionKey, displayName, kind, ownerUserId, origin, spawnedBy, handle, archetype, identityName, identityRevision, harness, provider, model, thinkingLevel, modelContext, host, state, mechanicalStatus | orderIndex, clearedThroughSeq, createdAt, updatedAt, rowVersion | isBuiltIn, adopted | overrides `O<SessionOverrides>`, capabilities `O<SessionCapabilities>` | ownerUserId, spawnedBy, handle, identityName, identityRevision, provider, model, thinkingLevel, modelContext, host, clearedThroughSeq, overrides |
 | transcript messages | id, sessionKey, role, messageType, content, sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, llmVisibleMessageId, assignmentId, jobRef, harness, provider, model, effort | seq, at, attentionTier, turnSeq, rowVersion | — | attachments `A<O<Attachment>>`, context `J` | sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, assignmentId, jobRef, harness, provider, model, effort, turnSeq, context |
 | work items | id, title, specRefName, specRefSha256, ownerUserId, state, failReason, routingWakeId, slateWakeId, createdByUser, createdBySession | createdInTurnSeq, createdAt, priority, rowVersion | isBug, createdContextKnown | — | specRefName, specRefSha256, ownerUserId, failReason, routingWakeId, slateWakeId, createdByUser, createdBySession, createdInTurnSeq |
 | assignments | id, subject, holderKey, holderRole, openedByUser, openedBySession, state, outcome, closedByUser, closedBySession, closingAttestId, workItemId, reviewsAssignmentId, holderHarness, holderProvider, effectKind, derivedStatus | openedAt, closedAt, rowVersion | holderFallback | files `A<S>` | holderRole, openedByUser, openedBySession, outcome, closedAt, closedByUser, closedBySession, closingAttestId, workItemId, reviewsAssignmentId, holderHarness, holderProvider |
@@ -307,6 +331,9 @@ mutate this field.
   `(model, effort, context-or-empty)`; MCP servers by name; documents by path.
 - transcript attachments preserve stored attachment ordinal. Assignment files,
   decision options, and opaque J arrays preserve author order.
+- `SessionCapabilities.setHarness.options` preserves registered harness-catalog
+  order. It contains each registered harness exactly once; the resident harness
+  is disabled and each other harness is enabled.
 - topline memberships sort by `(linkedAt, id)`; concerns by `(createdAt, id)`.
 - ExecutionMap flat items, assignment-selected items, forest roots, siblings,
   and children sort by source `(createdAt,id)`. `closingAttests` sorts by

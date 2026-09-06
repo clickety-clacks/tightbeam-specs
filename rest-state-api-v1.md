@@ -30,6 +30,12 @@ query, visibility, serializer, and outer-envelope seams. This amendment adds
 no R7/R7a field, R8 class, authorization grant, REST-local projection, or
 second wire shape.
 
+G9 setHarness capability successor, 2026-08-28: PROPOSED under Mike ruling
+`dr_7f4b03d9-d37f-4889-a118-8be67e9eae45` option A. Add the closed session
+`capabilities.setHarness` projection and matching
+`session.harness_changed` R8 class. The exact behavior contract is
+`session-status-set-harness-capability-v1.md`.
+
 G4 error-contract successor, 2026-08-26: PROPOSED. This amendment applies one
 closed typed error envelope to the canonical `/api` read routes in R2, R3, and
 R3a. It changes no success envelope, resource label, R7/R7a item, R8/R8b
@@ -156,6 +162,12 @@ Its exact candidate set is this file, `rest-state-api-v1-wire-schema.md`, and
 The work-item priority/shared-seam amendment changes the R7 item and its wire
 type without changing an R8 mapping or firehose frame. Its exact candidate set
 is this file and `rest-state-api-v1-wire-schema.md`.
+G9 changes the session projection, session R8 mapping, compatibility alias,
+firehose protocol and class registry, and CLI `list` result. Its exact
+candidate set is this file, `rest-state-api-v1-wire-schema.md`,
+`event-firehose-v1.md`, `cli-surface-v1.md`, and
+`session-status-set-harness-capability-v1.md`; all five land in one reviewed
+revision.
 `rest-state-api-r3-adjudication.md`, `rest-vs-cli-adjudication.md`, and
 `topline-map-v1.md` remain authority inputs, not custody companions for this
 contract. A worktree, artifact row, transcript, adjudication ledger, or review
@@ -1024,7 +1036,7 @@ that an adapter conditionally omits.
 | org | `id`, `archetypes`, `hosts`, `modelCatalog`, `dependencyVersion` |
 | harness catalog | `harness`, `provider`, `models`, `capabilities`, `dependencyVersion` |
 | hosts | `host`, `rowVersion` |
-| sessions | `sessionKey`, `displayName`, `kind`, `orderIndex`, `isBuiltIn`, `adopted`, `ownerUserId`, `origin`, `spawnedBy`, `handle`, `archetype`, `overrides`, `identityName`, `identityRevision`, `harness`, `provider`, `model`, `thinkingLevel`, `modelContext`, `host`, `clearedThroughSeq`, `state`, `createdAt`, `updatedAt`, `mechanicalStatus`, `rowVersion` |
+| sessions | `sessionKey`, `displayName`, `kind`, `orderIndex`, `isBuiltIn`, `adopted`, `ownerUserId`, `origin`, `spawnedBy`, `handle`, `archetype`, `overrides`, `identityName`, `identityRevision`, `harness`, `provider`, `model`, `thinkingLevel`, `modelContext`, `host`, `clearedThroughSeq`, `state`, `createdAt`, `updatedAt`, `mechanicalStatus`, `capabilities`, `rowVersion` |
 | transcript messages | `id`, `seq`, `sessionKey`, `role`, `messageType`, `content`, `at`, `sender`, `deviceId`, `clientMessageId`, `replyToMessageId`, `replyToClientMessageId`, `llmVisibleMessageId`, `attachments`, `attentionTier`, `turnSeq`, `assignmentId`, `jobRef`, `harness`, `provider`, `model`, `effort`, `context`, `rowVersion` |
 | work items | `id`, `title`, `specRefName`, `specRefSha256`, `isBug`, `ownerUserId`, `state`, `failReason`, `routingWakeId`, `slateWakeId`, `createdByUser`, `createdBySession`, `createdInTurnSeq`, `createdContextKnown`, `createdAt`, `priority`, `rowVersion` |
 | assignments | `id`, `subject`, `holderKey`, `holderRole`, `holderFallback`, `openedByUser`, `openedBySession`, `openedAt`, `state`, `outcome`, `closedAt`, `closedByUser`, `closedBySession`, `closingAttestId`, `revocationReason`, `workItemId`, `reviewsAssignmentId`, `holderHarness`, `holderProvider`, `files`, `effectKind`, `derivedStatus`, `rowVersion` |
@@ -1065,6 +1077,16 @@ for message-type presentation; it does not change `role`. Readers do not reject
 the item or parse `content`. For a non-null source, the R7 serializer copies the
 stored string. REST, CLI wrappers, and `message.created` call that one
 serializer; an adapter does not construct another transcript-message map.
+
+R7e. The session `capabilities` value is the closed object whose sole key is
+`setHarness`. The wire companion owns its exact unsupported and supported
+forms. After AU4 visibility selects the session row, the one R6c session
+serializer derives this value only from that row and the build-owned registered
+harness catalog. REST collection and detail, CLI `list`, M5
+`/api/session-status`, the session-control response, and session R8 notices use
+that serializer or copy its complete `setHarness` value. They do not inspect
+credential, provider, model, identity, adapter-readiness, turn, or prior
+capability state.
 
 R7a. The SQ2 admin resources have these additional closed-world projections.
 Nested `documents` entries contain exactly `path`, `content`, and `sha256`.
@@ -1169,7 +1191,7 @@ remain outside this table.
 | `prod.fired`, `turn.started`, `turn.ended` | turns | upsert | `turnSeq` |
 | `decision_request.opened`, `decision_request.ruled`, `decision_request.withdrawn` | decision requests | upsert | `decisionRequestId` |
 | `operator_ruling.provenance_recorded` | operator ruling provenance | upsert | `decisionRequestId` + `sessionKey` |
-| `session.spawned`, `session.updated`, `session.retired` | sessions | upsert | `sessionKey` |
+| `session.spawned`, `session.updated`, `session.harness_changed`, `session.retired` | sessions | upsert | `sessionKey` |
 | `role.created`, `role.bound` | roles | upsert | `role` |
 | `role.removed` | roles | delete | `role` |
 | `user.added`, `user.promoted` | users | upsert | `userId` |
@@ -1211,7 +1233,10 @@ REST detail item are byte-equivalent under A6.
 
 The session projection mutation seam uses one class per committed item change.
 First materialization selects `session.spawned`. An `active` to `retired`
-transition selects `session.retired`. Each other change to an R7 item field
+transition selects `session.retired`. A successful `tune set_harness` commit
+whose prior and resulting resident harnesses differ selects only
+`session.harness_changed`, with no duplicate `session.updated`.
+Each other change to an R7 item field
 other than `rowVersion` selects `session.updated`. The seam stores the changed
 item and its next durable `rowVersion` atomically. Post-commit publication
 carries that exact version.
@@ -1219,6 +1244,19 @@ A request whose complete serialized item, excluding `rowVersion`, is unchanged
 leaves `updatedAt` and `rowVersion` unchanged and emits no session state notice.
 `refs.sessionKey`, `payload.sessionKey`, and the REST item `sessionKey` are
 equal. Sessions soft-retire and therefore use no delete operation.
+
+R8c. `session.harness_changed` maps one successful committed
+`tune set_harness` mutation whose prior and resulting resident harnesses
+differ. It uses resource `sessions`, op `upsert`, primary ref `sessionKey`, and
+the committed R7 session item; that commit emits no duplicate `session.updated`.
+Rename and other established public session changes retain their existing
+`session.updated` mapping to the same resource, operation, ref, and serializer.
+Creation and retirement retain `session.spawned` and `session.retired` respectively.
+A refusal, rollback, or effective no-op emits no
+class and does not increment `rowVersion`. The G9 serializer, protocol-2
+encoder, R8 registry entry, publisher, and mutation handler become routable in
+one activation boundary; no current-producer interval admits the mutation or
+serves the G9 session shape without the publisher.
 
 SQ2 admits every admin row above. They enter the REST/firehose A6 overlap and
 use the same admin-only visibility function. Archetypes, guidance, and rails
@@ -1619,10 +1657,18 @@ ATC off direct SQLite. M8. After M4, M6, and M7 parity acceptance passes,
 remove the listed aliases and every legacy dispatch read path. Dispatch write
 verbs remain. No breaking removal lands before its client moves.
 
+During M5, `/api/session-status` copies the complete R7e `setHarness` object
+to `capabilities.setHarness`; it does not derive a compatibility-only value.
+The session-control response copies the same value to
+`status.capabilities.setHarness`. Their other legacy fields remain unchanged.
+
 SQ4 is ruled REST-first: M2 ships before M3. The firehose is the freshness
 plane, while REST is the rebuildable state source. A client must be able to
 snapshot supported state before it relies on live notices. This sequencing
-ruling does not change projections, authorization, or serializer identity.
+ruling does not change projections, authorization, or serializer identity. G9
+may build its REST serializer before its firehose publisher, but neither the G9
+session shape nor `tune set_harness` becomes routable until the complete R8c
+activation boundary is present.
 
 ## Acceptance
 
@@ -2012,11 +2058,15 @@ Given the same visible-detail request with `If-None-Match` and
 `If-Modified-Since`, when the route runs, then it ignores those conditional
 headers and returns the same `200` item instead of `304`.
 
-A44. Given first materialization, a non-retirement item change, and an
+A44. Given first materialization, an item change other than a changed-harness
+commit or retirement, and an
 `active` to `retired` transition for one session, when each transaction
 commits, then the mapping selects exactly `session.spawned`, `session.updated`,
 and `session.retired`, respectively. Each notice uses resource `sessions`, op
 `upsert`, primary ref `sessionKey`, and the R7 session serializer.
+Given a successful `tune set_harness` commit whose resident harness changes,
+then the mapping selects exactly `session.harness_changed` and no duplicate
+`session.updated`, using the same resource, operation, ref, and serializer.
 
 A45. Given a change to a session item field other than `rowVersion`, when REST
 detail and its notice payload are encoded, then their item bytes are equal and
@@ -2152,6 +2202,20 @@ comparison does not use the enriched write response. For each committed public
 R7 change, the test requires exactly one notice in the corresponding R8
 work-item class and retains the existing create/update/disposition assertions.
 
+A56. Given one authorized session in each unsupported and supported G9 case,
+when the suite reads REST collection and detail, CLI `list`, M5
+session status, a session-control response, and a matching session R8 notice,
+then each current representation has the exact R7e shape and every extracted
+`setHarness` value is semantically equal. A pre-amendment fixture that omits the
+field remains accepted by a current reader. Given a committed changed-harness
+mutation whose publisher and fan-out remain healthy through handoff, the row
+change and higher `rowVersion` are observable and fan-out accepts one
+`session.harness_changed` notice after the same activation boundary. A crash
+after commit can lose that notice; the next authorized REST rebuild returns the
+committed row. A boot missing any G9 registry, encoder, serializer, or publisher
+member routes no G9 firehose upgrade, `tune set_harness` request, or current G9
+session representation.
+
 ## Open questions — Spirit questions for Mike
 
 G4 has no open questions. R4c closes its error variants, status map, headers,
@@ -2164,6 +2228,10 @@ compatibility, correlation, and shared-serializer behavior.
 G7 has no open question. The G4 general error envelope is a delivery
 dependency, not an unruled behavior; no G7 route ships before that envelope is
 canonical.
+
+G9 has no open question. `session-status-set-harness-capability-v1.md` closes
+the capability forms, derivation, representation equality, protocol refusal,
+recovery, and atomic activation boundary.
 
 SQ1. **RULED 2026-08-25 — transport existing `asUser`.** Remove the
 prohibition on an `asUser` GET parameter. It only transports the CLI's
@@ -2189,7 +2257,9 @@ SQ4. **RULED 2026-08-23 — REST-first.** Build the shared M1 seams, ship M2
 REST as the rebuildable state source, then ship the M3 firehose freshness
 plane. Mike's direct auto-adjudication message
 `s_75aeaab2-94e1-4a80-ab87-004570ec75a9` is the ruling authority. The ruling
-does not change projections, authorization, or serializer identity.
+does not change projections, authorization, or serializer identity. For G9,
+build order remains REST-first, but R8c forbids activation of the new session
+shape or mutation handler before its matching firehose publisher is active.
 
 SQ5. **Open; non-blocking because v1 remains bearer-only.** Tailnet identity:
 wi_bdf9a537 (gateway behind tailscale serve) would

@@ -43,6 +43,12 @@ passed the G1 behavior review; verdict `att_adea7aeb` and report
 disposition `att_e0a20ce9` preserves F1/F2. This successor changes no notice
 envelope, source-invalidation mapping, G4 error, or G8 authority label.
 
+G9 setHarness capability successor, 2026-08-28: PROPOSED under Mike ruling
+`dr_7f4b03d9-d37f-4889-a118-8be67e9eae45` option A. Add
+`session.harness_changed`, session capability payloads, notice schema 2, and
+firehose protocol 2. The exact behavior contract is
+`session-status-set-harness-capability-v1.md`.
+
 Revision history: r3.1 multiplexed subscriptions; r3 freshness-not-truth +
 retention; r2.1 client workflows; r2 the nine r1 review comments; r1 the
 firehose rescope of the archived focused design. Their carried-forward
@@ -112,6 +118,11 @@ G1 uses the same exact canonical set. A change to the transcript-message
 projection, `message.created` mapping, or `messageType` wire contract lands all
 three files in one reviewed revision.
 
+G9's exact candidate set is this file, `rest-state-api-v1.md`,
+`rest-state-api-v1-wire-schema.md`, `cli-surface-v1.md`, and
+`session-status-set-harness-capability-v1.md`. All five land in one reviewed
+revision.
+
 ## Assumptions
 
 AS1. The gateway already authenticates its existing credentials through the
@@ -123,7 +134,8 @@ freshness class. Firehose A7 falsifies this assumption if a consumer cannot
 rebuild the displayed slice after reconnect.
 
 AS3. The REST companion ships the R7 sessions collection, detail route, and
-serializer before `session.spawned`, `session.updated`, or `session.retired`.
+serializer before `session.spawned`, `session.updated`, `session.harness_changed`,
+or `session.retired`.
 Firehose A4 and A5 falsify this assumption if a consumer cannot rebuild its
 visible sessions after cold start, reconnect, or a detected gap.
 
@@ -289,7 +301,7 @@ V4. Notice shape:
 ```json
 {
   "type": "change",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "subscriptionId": "chat-s_775f",
   "seq": 4213,
   "class": "attest.filed",
@@ -315,6 +327,11 @@ schemaVersion keeps one meaning; widening bumps it. Observational classes
 a closed-world composed-view refetch trigger; it never masquerades as a row
 the query surface can rebuild.
 
+A pre-G9 protocol-1 producer emits notice `schemaVersion:1`. A G9 current
+producer accepts only protocol 2 and emits notice `schemaVersion:2` for every
+class. The protocol gate in E1 prevents a protocol-1 reader from receiving a
+schema-2 frame.
+
 V5. Payload rows SHALL carry the same primary ids the query surface
 returns for the same rows, so a client can match a notice against fetched
 state (the correlation seam; recon wi_9fdc0c07 verifies it).
@@ -326,6 +343,17 @@ first-line convention. A null stored discriminator omits the key from both
 surfaces. The notice carries `refs.messageId` equal to payload `id` and
 `refs.sessionKey` equal to payload `sessionKey`. The matching REST row and
 notice payload expose the same present or omitted `messageType` bytes.
+
+V6. The G9 session serializer, protocol-2/schema-2 encoder,
+`session.harness_changed` registry entry, post-commit publisher, and
+`tune set_harness` mutation handler become routable in one server activation
+boundary. Activation closes each established protocol-1 socket with D4 code
+`1012` before routing the G9 surfaces. Rollback closes each established
+protocol-2 socket with `1012` before accepting protocol 1. If any member is
+unavailable, that server instance accepts no G9 firehose upgrade or
+`tune set_harness` request and serves no current-producer session shape.
+There is no interval in which a changed-harness commit can succeed without its
+registered publisher.
 
 ## The class registry (initial enumeration, derived from main tip)
 
@@ -342,7 +370,7 @@ R2. Attention and escalation:
 `operator_ruling.provenance_recorded`.
 
 R3. Org shape:
-`session.spawned`, `session.updated`, `session.retired`, `role.created`, `role.bound`,
+`session.spawned`, `session.updated`, `session.harness_changed`, `session.retired`, `role.created`, `role.bound`,
 `role.removed`, `user.added`, `device.approved`, `device.denied`,
 `device.revoked`.
 
@@ -385,7 +413,7 @@ correlation contract). A class without a row is a red build.
 
 | Class | Resource | Op | Primary notice ref | Serializer | Version and emission | Visibility and convergence | A1/A6 coverage |
 |---|---|---|---|---|---|---|---|
-| `session.spawned`, `session.updated`, `session.retired` | `sessions` | `upsert` | `sessionKey` | exact shared R7 session serializer | The session projection mutation seam allocates the next durable session `rowVersion` in the same transaction as the changed projection. First materialization selects `session.spawned`; an `active` to `retired` state transition selects `session.retired`; each other changed item selects `session.updated`. One commit selects one class. A no-change request emits none. | REST AU4 session visibility. Consumers apply last-version-wins by `sessionKey`. The payload `sessionKey` equals `refs.sessionKey`. | A1 covers the mutation seam and class selection. A6 verifies byte equivalence with `GET /api/sessions/:sessionKey`. |
+| `session.spawned`, `session.updated`, `session.harness_changed`, `session.retired` | `sessions` | `upsert` | `sessionKey` | exact shared R7 session serializer | The session projection mutation seam allocates the next durable session `rowVersion` in the same transaction as the changed projection. First materialization selects `session.spawned`; an `active` to `retired` state transition selects `session.retired`; a successful `tune set_harness` commit whose prior and resulting resident harnesses differ selects only `session.harness_changed`, with no duplicate `session.updated`; each other changed item, including rename, selects `session.updated`. One commit selects one class and invokes its post-commit publisher once. A healthy D1 handoff emits one notice; a crash can lose it. A refusal, rollback, or no-change request emits none. | REST AU4 session visibility. Consumers apply last-version-wins by `sessionKey` and rebuild after loss. The payload `sessionKey` equals `refs.sessionKey`. | A1 covers the mutation seam and class selection. A6 verifies byte equivalence with `GET /api/sessions/:sessionKey`. |
 | `condition_fact.filed` | `condition facts` | `upsert` | `factId` | exact shared R7 condition-fact serializer | The condition fact `id` is its append-only natural version; its `rowVersion` equals `id`. Each successful insertion into `condition_facts` emits one notice after commit. An idempotent filing that returns the existing fact emits none. | `GET /api/facts` visibility. Consumers apply last-version-wins by `factId`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 | `critical_lease.updated` | `critical state` | `upsert` | `sessionKey` | exact shared R7 critical-state serializer | The item uses R7 critical-state `rowVersion`. Each committed change to the R7 item for one `sessionKey` emits one notice after commit. A replay or idempotent request that leaves the item and `rowVersion` unchanged emits none. | `GET /api/critical-state` admin-only visibility. Consumers apply last-version-wins by `sessionKey`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 | `operator_ruling.provenance_recorded` | `operator ruling provenance` | `upsert` | `decisionRequestId`, `sessionKey` | `Tightbeam.Escalation.public_operator_ruling_provenance_item/1`, the exact shared R7 operator-ruling-provenance serializer | The terminal mutation allocates the decision-request row's next positive `rowVersion`. Each successful post-epoch ruling emits one notice after commit. A refusal, pre-epoch row, migration, or replay that leaves the terminal row unchanged emits none. | `GET /api/decision-requests/:id/operator-ruling-provenance` visibility: operator-request owner user or admin. Consumers apply last-version-wins by `(requestId,rowVersion)`. Payload `requestId` equals `refs.decisionRequestId`; payload `submittingSessionKey` equals `refs.sessionKey`. | A1 covers the class, emission seam, resource, op, and refs. A6 verifies the complete payload is byte-equivalent to the REST detail item. |
@@ -469,7 +497,6 @@ one connection:
 ```json
 {
   "type": "subscribe",
-  "protocolVersion": 1,
   "subscriptionId": "chat-s_775f",
   "filters": {
     "classes": ["attest.", "work_item."],
@@ -480,6 +507,9 @@ one connection:
   }
 }
 ```
+
+The protocol version appears only as the WebSocket upgrade query parameter in
+E1. A subscribe frame does not repeat it.
 
 S2. `filters` and every field in it are optional; `classes` match by
 prefix; multiple given fields are conjunctive; no filters means
@@ -610,10 +640,27 @@ exists to lose.
 
 ## Errors and close codes
 
-E1. The client states `protocolVersion` in the upgrade request itself
-(query parameter on the ws path); an unsupported version is refused `426`
-before the upgrade completes. Auth failures happen in-band after upgrade
-(C2), not at the HTTP layer.
+E1. The client states `protocolVersion` in the upgrade request itself as a
+query parameter on the ws path. A pre-G9 producer accepts only `1`; a G9
+current producer accepts only `2`. At the start of each protocol-offer episode
+defined by the G9 companion, a reader forms `[2,1]`, removes versions for which
+it has no decoder, and offers each remaining version at most once. A missing or
+rejected value receives HTTP `426` with an empty body before upgrade. The
+refusal creates no WebSocket, subscription, close frame, or sequence and
+applies no notice. T4 defines no resume cursor or replay token, so no cursor can
+advance. The reader makes one authorized `GET /api/sessions` rebuild, removes
+the rejected version, and immediately offers the next plan entry. It stops
+automatic upgrades when the plan is empty. After a successful upgrade it
+subscribes first, receives `subscription_ready`, takes a fresh authorized REST
+snapshot, and starts the new connection's sequence. Auth failures happen
+in-band after a successful upgrade (C2), not at the HTTP layer.
+
+E1a. The accepted protocol fixes the notice schema: protocol 1 requires
+`schemaVersion:1`, and protocol 2 requires `schemaVersion:2`; no separate
+schema negotiation exists. On another value the reader applies neither that
+notice nor a later notice on the connection, closes with standard code `1002`,
+performs one authorized `GET /api/sessions` rebuild, ends the protocol-offer
+episode, and makes no automatic reconnect.
 
 E2. After upgrade, one error frame shape
 `{"type":"error","code":"...","message":"..."}` with the single code
@@ -645,8 +692,11 @@ history-barrier change, mechanical-status change, and retirement through the
 single projection mutation seam. Given a successful commit, when any R7 item
 field other than `rowVersion` changes, then the same transaction advances
 `rowVersion` and selects
-exactly one of `session.spawned`, `session.updated`, or `session.retired` by
-the R8 rule. Given unchanged serialized bytes, then it advances no version and
+exactly one of `session.spawned`, `session.updated`, `session.harness_changed`,
+or `session.retired` by the R8 rule. A successful `tune set_harness` commit whose
+resident harness changes selects `session.harness_changed` and no duplicate
+`session.updated`; rename and the other existing public changes retain
+`session.updated`. Given unchanged serialized bytes, then it advances no version and
 emits no session state notice. The test fails if any writer can change a
 mutable input to the R7 session item outside this seam.
 
@@ -774,6 +824,41 @@ snapshot items and notices applied in both orders converge by the session
 A7. The feature-smoke drives one real external consumer (ATC or a script)
 end to end: cold build from queries, live updates via subscription,
 forced reconnect, rebuild, convergence.
+
+A8. Given a protocol-1-only reader and a G9 producer, when its episode runs,
+then it offers protocol 1 once, receives HTTP `426` with an empty body, observes
+no socket, close frame, subscription, sequence, cursor, or notice, takes one
+authorized `GET /api/sessions` snapshot, exhausts its plan, and makes no further
+automatic upgrade. Given a dual-capable reader and a pre-G9 producer, when its
+episode runs, then it offers 2, receives the empty `426`, rebuilds once, offers
+1 once, subscribes, receives ready, takes a separate fresh post-ready snapshot,
+and accepts schema 1. Given a
+dual-capable reader and a G9 producer, when its episode runs, then it offers 2
+once, subscribes, receives ready, takes its fresh post-ready snapshot, and
+accepts schema 2. Given that reader has an established protocol-1 connection
+to a pre-G9 producer, when G9 activates, then the server closes it with `1012`
+and the resulting episode follows that protocol-2 path.
+
+Given either a protocol-1 connection with a notice whose schema version is not
+1 or a protocol-2 connection with a notice whose schema version is not 2, when
+the reader receives it, then it applies no part of that or a later notice,
+closes with `1002`, performs one authorized `GET /api/sessions` rebuild, ends
+the episode, and makes no automatic reconnect.
+
+Given a rollback closes a dual-capable protocol-2 connection with `1012`, when
+the next episode runs, then the reader offers 2, receives the empty `426`,
+makes the one refusal rebuild, offers 1 once, subscribes, receives ready, takes
+a separate fresh post-ready snapshot, and accepts schema 1.
+
+Given any missing V6 member, when the server activation gate runs, then no G9
+firehose upgrade, `tune set_harness` request, or current G9 session representation
+becomes routable. Given all members, when one changed-harness mutation commits,
+and the publisher and fan-out remain healthy through handoff, then fan-out
+accepts exactly one `session.harness_changed` notice with the committed R7
+session payload; no activation interval admits the commit without that
+publisher being installed and routable. If the publisher or fan-out crashes
+after commit before handoff completes, zero notice is permitted and the next
+authorized REST rebuild converges to the committed row.
 
 ## Open questions for Mike
 
