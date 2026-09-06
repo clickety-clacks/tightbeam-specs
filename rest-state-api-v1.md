@@ -1416,14 +1416,28 @@ query boundary. It receives the resolved principal and normalized selection,
 applies the existing AU4 work-item visibility predicate before exposing a row,
 and returns no serialized JSON. `Tightbeam.StateResources.work_item` is the
 sole public work-item serializer and emits the exact R7 item. Canonical REST
-collection and detail routes, CLI mutation readback, mutation result adapters,
-and the Publisher payload builders for `work_item.*` call these seams.
+collection and detail routes, CLI mutation readback through the existing
+canonical GET, and the Publisher payload builders for `work_item.*` call
+these seams.
 The existing `Tightbeam.Wire.Router.state_collection_envelope` and
 `Tightbeam.Wire.Router.state_detail_envelope` functions, together with existing
 Router error handling, wrap canonical REST results and errors in R4e/R4c and
-remain the sole work-items envelope encoder. A caller does not query a
-second row shape, construct a work-item map, omit an R7 field, or substitute a
-legacy composite or error envelope.
+remain the sole work-items envelope encoder. A canonical read or notice caller
+does not query a second row shape, construct a work-item map, omit an R7 field,
+or substitute a legacy composite or error envelope.
+
+Existing dispatch/write create, update (including PATCH), and disposition
+responses retain their existing compatibility shapes and write authorization.
+They retain `deliverableContract`, `deliverable`, `cardProductOwner`, and
+`closure` where those responses currently expose them. These enriched mutation
+results are outside closed R7 item parity; they need not equal canonical
+readback or notice payloads after envelope removal. CLI mutation readback
+obtains its canonical item through the existing GET rather than treating the
+enriched write response as that item. Raw dispatch clients require no new
+read solely for this parity contract. This distinction adds no R7 field,
+endpoint, flag, serializer, wrapper, or create/disposition deliverable migration.
+Authority: owner mutation-compatibility ruling
+`att_fa03387e-6b5d-4214-aaa1-42b227cd7df8`.
 
 ## Requirements — auth and visibility
 
@@ -1625,8 +1639,13 @@ removal.
 For each `work_item.*` class, the test also proves that REST detail and the
 Publisher notice obtain the item through SR9 and produce byte-identical item
 bytes after removal of their allowed outer transport envelopes. Separate
-seam-identity cases prove that canonical REST collection, CLI mutation
-readback, and each work-item mutation result adapter also call SR9.
+seam-identity cases prove that canonical REST collection and CLI mutation
+readback through the existing canonical GET also call SR9. Separate
+compatibility cases retain the existing create/update/disposition response
+assertions and PATCH no-op assertions, including the enriched fields named in
+SR9. They compare those responses with their existing compatibility contract,
+not with the closed R7 item. Canonical parity cases do not replace or remove
+that compatibility coverage.
 A3. Closed-world projection proof: every collection and detail item has
 exactly its R7 keys and no others. The secret-exclusion sweep rejects
 `cliToken`, device `token`, `identityToken`, credential paths, environment
@@ -2099,8 +2118,9 @@ shared serializer encodes the row, then it returns `500 projection_invalid`
 and emits no partial item.
 
 A55. Given one AU4-visible work item with `priority:4`, when canonical REST
-collection and detail, CLI mutation readback, a mutation result adapter, and a
-matching `work_item.*` Publisher path read it, then each caller invokes SR9.
+collection and detail, CLI mutation readback through the existing canonical
+GET, and a matching `work_item.*` Publisher path read it, then each caller
+invokes SR9.
 The item bytes are equal after removal of each allowed outer transport
 envelope. The REST collection and detail responses use the exact R4e success
 envelopes. For every R4c condition admitted by either canonical work-item
@@ -2108,13 +2128,29 @@ route, a fixture that triggers only that condition uses the matching R4c
 work-items error envelope. No canonical response contains the legacy
 `workItem`, `assignments`, or `cursor` keys.
 
-Given a work-item update request whose resulting public R7 item is unchanged,
-when the mutation completes, then `rowVersion` remains unchanged and no
-`work_item.updated` notice exists. Given an update that changes `priority`
-from 4 to 5 and commits, then the mutation returns the SR9 item with the next
-stored `rowVersion` and publishes one `work_item.updated` notice after commit.
-The notice payload bytes equal the returned item bytes, and a duplicate notice
-does not exist.
+Given existing create, update (including PATCH), and disposition response
+fixtures that expose `deliverableContract`, `deliverable`, `cardProductOwner`,
+and `closure`, when the corresponding write completes, then the existing
+compatibility response shapes, field values, and write-authorization assertions
+still pass. The test retains those fields where previously exposed and does
+not replace the response with a closed R7 item. For a committed public R7
+change, separate canonical GET readback and the matching notice use the closed
+R7 item without those enrichment fields; their item bytes match each other.
+The raw dispatch caller needs no additional read to preserve its compatibility
+response.
+
+Given a work-item update request, including PATCH, whose resulting public R7
+item is unchanged, when the mutation completes, then `rowVersion` remains
+unchanged and no `work_item.updated` notice exists, while the existing
+compatibility response and PATCH no-op assertions still pass. Given an update
+that changes `priority` from 4 to 5 and commits, then the write retains its
+compatibility response, canonical GET readback returns the SR9 item with the
+next stored `rowVersion`,
+and the Publisher emits exactly one `work_item.updated` notice after commit.
+The notice payload bytes equal the canonical readback item bytes. The
+comparison does not use the enriched write response. For each committed public
+R7 change, the test requires exactly one notice in the corresponding R8
+work-item class and retains the existing create/update/disposition assertions.
 
 ## Open questions — Spirit questions for Mike
 
