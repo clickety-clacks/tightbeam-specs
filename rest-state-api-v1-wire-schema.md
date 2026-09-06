@@ -89,8 +89,9 @@ The encoder emits no insignificant whitespace. It escapes JSON strings by the
 same library path for REST, CLI, and firehose.
 
 For transcript messages, “exactly” applies after the conditional
-`messageType` rule below. `messageType` is the sole key that the encoder may
-omit conditionally.
+`messageType` rule below. It is the sole transcript-message key that the
+encoder may omit conditionally. Decision requests apply the agent-only
+return-field condition below.
 
 A current-producer session encoder always emits `capabilities`. A compatibility
 reader accepts a pre-G9 session item that omits that key; this reader rule does
@@ -225,8 +226,10 @@ ExecutionMap success and error response sets exactly the application headers
 Fields not listed under “nullable” are required and non-null. Enum fields use
 the domains in the next section.
 
-The transcript-message `messageType` key is the sole exception to required
-presence. It is optional and non-null when present.
+The transcript-message `messageType` key is optional and non-null when present.
+The decision-request return triplet is present only for `kind:"agent"`, as
+defined by the decision-request table note below. These are the only
+conditional-presence exceptions.
 
 The decision-request `deadlineAt` key is present in its R7 position.
 Its value is null exactly when `kind` is `agent`. Its value is a positive
@@ -276,13 +279,27 @@ mutate this field.
 
 | Resource | Strings | Integers / numbers | Booleans | Arrays / objects | Nullable |
 |---|---|---|---|---|---|
-| decision requests | id, kind, raiserId, raiserSessionKey, ownerUserId, assignmentId, expecterSessionKey, expecterUserId, deadlineWakeId, statuteName, question, status, decision, rationale, ruledBy, withdrawnBy, withdrawnReason, askedOfRole, answer, answeredBy | lineageRung, effortGeneration, raisedAt, deadlineAt, ruledAt, consumedAt, withdrawnAt, answeredAt, rowVersion | — | options `A<O<DecisionOption>>`, context `J` | raiserId, raiserSessionKey, ownerUserId, assignmentId, expecterSessionKey, expecterUserId, deadlineWakeId, deadlineAt (only when kind is agent), statuteName, decision, rationale, ruledBy, ruledAt, consumedAt, withdrawnBy, withdrawnReason, withdrawnAt, askedOfRole, answer, answeredBy, answeredAt, context |
+| decision requests | id, kind, raiserId, raiserSessionKey, ownerUserId, assignmentId, expecterSessionKey, expecterUserId, deadlineWakeId, statuteName, question, status, decision, rationale, ruledBy, withdrawnBy, withdrawnReason, askedOfRole, answer, answeredBy, returnedBy, returnReason | lineageRung, effortGeneration, raisedAt, deadlineAt, ruledAt, consumedAt, withdrawnAt, answeredAt, returnedAt, rowVersion | — | options `A<O<DecisionOption>>`, context `J` | raiserId, raiserSessionKey, ownerUserId, assignmentId, expecterSessionKey, expecterUserId, deadlineWakeId, deadlineAt (only when kind is agent), statuteName, decision, rationale, ruledBy, ruledAt, consumedAt, withdrawnBy, withdrawnReason, withdrawnAt, askedOfRole, answer, answeredBy, answeredAt, context, returnedBy/returnReason/returnedAt (agent only, before return) |
 | operator ruling provenance | requestId, authorityPrincipal, state, submittingSessionKey | ruledAt, rowVersion | — | — | submittingSessionKey |
 | toplines | id, ownerUserId, title, state, dependencyVersion | createdAt, updatedAt, closedAt, activeWorkCount, openConcernCount | — | createdActor `O<Actor>`, workMemberships `A<O<ToplineMembership>>`, concerns `A<O<Concern>>` | closedAt |
 | execution map node | id, title, specRefName, specRefSha256, state, failReason | finishedAt, jobs, startedAt, openDecisionRequests, fanOut, sinceProgressMs | bracket1Armed | origin `O<ExecutionMapOrigin>`, creationContext `O<ExecutionMapCreationContext>`, parent `O<ExecutionMapParent>`, assignments `O<ExecutionMapAssignmentCounts>`, attests `O<ExecutionMapAttestCounts>`, closingAttests `A<O<ExecutionMapClosingAttest>>`, turns `O<ExecutionMapTurns>`, minds `A<O<ExecutionMapMind>>`, active `O<ExecutionMapActive>` | specRefName, specRefSha256, failReason, finishedAt, startedAt, fanOut, minds |
 | coordination share | sessionKey, dependencyVersion | from, to, turns, wakeTurns, classedTurns, coordinationTurns, summons, algedonic, share `N` | — | byClass `M<I>` | share |
 | digest members | wakeId, prompt, class, classElection, dependencyVersion | createdAt | — | — | class, classElection |
 | work-item trace | dependencyVersion | — | — | workItem `O<work items>`, assignments `A<O<assignments>>`, causalChildren `A<S>`, attribution `O<Attribution>` | none |
+
+
+Decision-request table note — agent return. The R7 key order places
+`returnedBy`, `returnReason`, and `returnedAt` immediately after `answeredAt`
+and before `rowVersion`. An agent item before return includes the null triplet.
+An agent item after return has `status:"returned"`, stored string `returnedBy`,
+stored string `returnReason`, and stored positive integer `returnedAt`.
+Non-agent items omit all three keys. A missing agent key, a non-null pre-return
+value, a null or wrongly typed post-return value, or a non-positive returned
+timestamp is invalid and produces `500 projection_invalid` with no partial
+item. A non-agent item containing any return key or `status:"returned"` is
+invalid. The existing shared query/serializer/ordered encoder and version
+source rules in the REST decision-request table note apply identically to
+canonical REST and notices; legacy response shapes remain unchanged.
 
 ## Enum domains
 
@@ -304,7 +321,10 @@ mutate this field.
   `tool-call-observed|session-concurrent|none`.
 - device status: `allowlisted|pending|denied`.
 - decision kind: `statute|effort|agent`; decision status:
-  `open|ruled|consumed|withdrawn|superseded|answered`.
+  `open|ruled|consumed|withdrawn|superseded|answered|returned`.
+  `returned` is valid only for `kind:"agent"`; statute and effort retain their
+  existing status domain. This adds no transition or change to accepted retry
+  behavior.
 - operator-ruling-provenance state: `recorded|unknown`.
   `submittingSessionKey` is a non-null string exactly when state is `recorded`
   and is null exactly when state is `unknown`.
