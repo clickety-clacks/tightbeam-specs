@@ -59,6 +59,12 @@ This failure is lost recognition, not demonstrated cross-tenant leakage. Preserv
 
 The inspected late-ruling tests122-129 check marker presence, and generic schema tests255-295 check unattributed process rows. Add focused proof that the right tenant recognizes fresh and safely migrated markers; another tenant cannot; ambiguous historical rows remain unrecognized; and ruling replay, successor carry and occurrence counts remain correct. Independent source review must assess the correction and the existing late-ruling/WakeRails transaction conditions.
 
+## Subsequent replay diagnosis on the frozen tree
+
+A bounded external source read identified the cause of both executed failures. `late_ruling_receipt_rows_in_txn/3` at `assignments.ex:1727` selects 13 fields ending in `commitRefs, ts`, then calls `attest/1`. The composed decoder at2573 expects 16 fields ending in `commitRefs, artifactId, contentSha256, waitId, ts`. First insertion avoids this query; replay reaches the incompatible row shape. The transaction wrapper reports the exception but is not the cause established by this read.
+
+Select the real three additional columns before `ts`, as the ordinary attest query at467 already does. Preserve the transaction wrapper, row-commit callbacks and result map. Do not manufacture null fields, add a permissive fallback decoder or swallow the exception. Lead sent this exact source-backed diagnosis to the existing composer in `w_0c427fb8-0be2-4d81-8c4a-601991c6bb73`. No correction or new test is claimed by the diagnosis.
+
 ## Lead handoff and custody
 
 Lead hash-verified the external report as `788fbff5762b180c4015596ee1ea536d791621b6eef20319f93b24d58e1cebb6` and returned the terminal result plus semantic findings directly to sole composer s_76613413 through `w_81ab5f9c-dee4-4bab-a710-b8ffb7e2520c`. The verification freeze is released to that existing source owner. No source edits or second run were performed by the lead or verifier. Existing Rust299/0 remains attributed to the frozen pre-correction tree.
