@@ -1,0 +1,907 @@
+[
+  {
+    "item": "wi_b4a5efd8-46de-4454-8024-5e1d66ec4898",
+    "disposition": "CHOICE",
+    "latest_attest": [
+      "att_611af951-330b-4c76-a740-5a96bd91d6e0",
+      "asg_23c56126-7f3a-4a8e-a851-a73530af7e1c",
+      "Modern-source comparison complete at origin/main 832b0253e130171ff2d07e116dd7ffecfa74b685 in owned readiness-current clone. Blockers persist: feature_smoke.exs:2424 counts queued/running only; :2346 discards retire result; :2245 sweeps all open work. Current UPGRADE lacks rejected readiness addition. Attempt to atomically dispatch the one parented round-two source repair with key readiness-repair-round2-dr2082 was refused before card creation: rule_denied implementation-dispatch-requires-posture; requires posture-light or posture-heavy verdict with reasoning on this work item. No successor or dispatch was created. Full recovered ruling is accepted; missing-fields hold is resolved. Requesting the real parent to supply posture and commission this bounded repair; not requesting a new spec or decision. Existing source clone is read-only so far; no runtime executed. Initial stale /home/mike/src/tightbeam path was absent; comparison used a fresh remote clone instead."
+    ],
+    "open_custody": [
+      [
+        "asg_e4397429-ff33-4e95-bb65-5d95105b5518",
+        "agent:main:clawline:mike:main"
+      ],
+      [
+        "asg_23c56126-7f3a-4a8e-a851-a73530af7e1c",
+        "agent:main:clawline:mike:main s_201d541f"
+      ]
+    ]
+  },
+  {
+    "item": "wi_113d569f-7aff-412b-aec3-0c21f2e87f40",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_ac0eed13-65f1-439f-80de-87f7b6d1753a",
+      "asg_19d32a78-e2e0-47af-98ea-50327ee7ae35",
+      "Fallback custody recheck found material superseding evidence. Placement owner att_b78b5b70 records Mike05:30: placement is NOT targeted for019; prior placement reservation is not authority to import it or impose a product prerequisite. Any unavoidable semantic requirement must return to Mike. PO att_b260214a records prerequisite23504c43 and G-C32911d0c accepted, and G-D admission659f2779 independently clean att_d3c34dd6/source accepted. Thus historical missing-B1/source-clean wording is superseded, but accepted source is not successor hunk release. Latest PO att_2fd05e2f reports exact659f2779 route evidence art_6ee4f91a for existing D3 owner/park disposition; all holds remain. No exact delivery successor predecessor/registry/hunk allocation or separate main election was found in these owner rows. Preserve accepted WakeRails obligation-scoped watermarks, sidecars and atomic relief; exclude unlanded placement values on019 absent explicit justified authority. Both WIPs remain untouched. No edits/tests/rebase/review or external action replay. Existing coordinator must supply exact successor allocation; this receipt corrects stale dependency wording, not composition clearance."
+    ],
+    "open_custody": [
+      [
+        "asg_70ab4afc-ac6a-4e50-a2b5-5e828d6ab372",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_abbd8e46-bd4b-4e8e-b6ac-0925a2bc3129",
+        "agent:main:clawline:mike:main s_27cfe337"
+      ],
+      [
+        "asg_19d32a78-e2e0-47af-98ea-50327ee7ae35",
+        "agent:main:clawline:mike:main s_fd3a9283"
+      ]
+    ]
+  },
+  {
+    "item": "wi_d3f86caa-1266-4017-b58e-d74fa9b1721e",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_9621f554-d38a-446e-9d1c-12b05af0adb7",
+      "asg_ac40a706-37c5-42b3-9fd5-b7e5f07ab604",
+      "Receipt of owner:stall-fix-recovery continue instruction: live open custody verified on s_0cd749fc. Continue preserves owner and existing scope; it is not integration or host-change authority. Command guard: latest att_0c67d722 records tested local candidates 8a213da1 and 619aa98e and a refused private-remote push. Mike Sept 2 restart supersedes the older opaque restart decision. Next required evidence is approval of the exact destination/payload under the recorded refusal; no duplicate implementation."
+    ],
+    "open_custody": [
+      [
+        "asg_ac40a706-37c5-42b3-9fd5-b7e5f07ab604",
+        "agent:main:clawline:mike:main s_0cd749fc"
+      ]
+    ]
+  },
+  {
+    "item": "wi_65477046-0932-4973-b19f-17822625d0f8",
+    "disposition": "CHOICE",
+    "latest_attest": [
+      "att_cc299dee-b15f-47ab-8df4-ee90914653aa",
+      "asg_4e5e7dca-1d5c-4732-88dc-cc38f049bef1",
+      "COMPLETED SEPARATE CARD-3 HOLD COORDINATION. Exact hold is filed in att_6d702615: main 634cf977 contains neither reviewed candidate; Card 1 d925ea3d and Card 2 92d74e08 do not contain each other; Card 3 depends on both; no integration, landing-order, or combined-base authority exists. Mike owns the required targetless-reconciliation-base or landing-order decision before Card 3 dispatch. Custody asg_b1f1f006 remains open as sole custody. All spec, topology, evidence, and runtime/live-action holds remain preserved. No other row or product/runtime state changed."
+    ],
+    "open_custody": [
+      [
+        "asg_b1f1f006-cb9e-4a2b-bfb7-36d4feaed53c",
+        "agent:main:clawline:mike:main s_d2f42da0"
+      ]
+    ]
+  },
+  {
+    "item": "wi_ddd80184-9cf7-4612-8a0a-ac610b5b7b10",
+    "disposition": "CHOICE",
+    "latest_attest": [
+      "att_0ca2b717-94bb-4dbe-a623-548a15054ceb",
+      "asg_00068f0e-948c-4fb9-ada2-a2f8abc6609a",
+      "Actual allocated CLI composition implemented/tested in owned Racter clone at2c8ff12d. Added local deploy verify-payload --release-manifest FILE --payload DIR command, deploy module registration, parse arm, main local execution and dispatch-isolation/exhaustiveness arms; no gateway discovery. Success reports only payload_verified/entries, not release trust, signature or deployment approval. Shared diff exactly args.rs25added/0deleted, dispatch.rs7/0, main.rs7/0; existing arms/helpers preserved. New deploy/mod.rs and deploy_cli.rs tests. Racter focused --test deploy_cli --test deploy_read_only:2+9passed/0failed exit0, log /tmp/card2a-cli-00068f0e.nDVTSJ/gate.log. New CLI tests invoke real compiled binary on scratch files; check unchanged input bytes, no org-base creation, changed-payload refusal and invalid/mutating/identity grammar. Existing args::tests46passed/0failed exit0, log /tmp/card2a-cli-parser-00068f0e.nQTM03/gate.log; diff check clean. Initial rustfmt lacked edition2024 and refused a child parse; corrected explicit edition restored only39additive shared lines, no unrelated final diff. SHA args c2858f08, main2a303d0a, dispatch4b1f7a51, mod d8d4c280, CLI test1726f805 (full hashes in command output). Remaining: full status/authorization/packaging and discoverability integration; existing help helpers/surface contract unchanged under allocation. No full readiness claimed. ring/Cargo hold and packaging-transfer/Card2B/publication/runtime holds preserved; no commit/push, no Gibson tests."
+    ],
+    "open_custody": [
+      [
+        "asg_fd58593e-10d0-40f8-a7bf-d3bbcacff48f",
+        "agent:main:clawline:mike:main s_d2f42da0"
+      ],
+      [
+        "asg_00068f0e-948c-4fb9-ada2-a2f8abc6609a",
+        "agent:main:clawline:mike:main s_aea65d6a"
+      ]
+    ]
+  },
+  {
+    "item": "wi_a9a31ae2-0d08-4e33-8b9b-9fe3d72684f0",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_e46dfb4e-17b0-4332-85f5-d36d34bd7a96",
+      "asg_45771fe1-24c7-42fb-b7a2-4073ae052b72",
+      "Consumed exact CI-owner disposition att_77385133-3f41-4800-acfb-9df8bbc43203. Current remote main2c8ff12d/default ci.yml blobcc87d204 confirmed unchanged, test fetch-depth2/packages0. Preserved0191fc9875e requires nonshallow full history and6c13efcb ancestry, so route is statically incompatible before product gates. Main911523bb uses HEAD-parent only: this defect does not apply, not passing-proof claim. Precise remaining obligations: existing CI owner resolves full-history checkout compatibility under existing correction custody; satellite owner establishes exact preserved-pair workflow_dispatch scope after compatible installed readback. No matching pair approval found: dr_7450e12f authorizes different7eaf0c50/c5cfa27f; manifest approval cannot transfer. Keep both original Eezo-green candidates/artifacts frozen; no satellite successor until route settled. No attribution of main CONTRIBUTING to019b299 lacking that file, no retired release-candidate alias or internal PR route. Source/proof coordination grants no satellite CLI installation or runtime authority. No new request, run, test replay, export, ref change or producer in this consumption."
+    ],
+    "open_custody": [
+      [
+        "asg_45771fe1-24c7-42fb-b7a2-4073ae052b72",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ]
+    ]
+  },
+  {
+    "item": "wi_809821f8-e72b-41d8-b4b5-af28c7e670a6",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_213d71d0-48ff-404d-998b-3753a2632335",
+      "asg_a12d6873-9b00-4924-b3c8-674582fd7973",
+      "Fresh owned source fetch: main634cf977 and019b299457d. 8b02dfc8 is ancestor of main; final producer att_058cb046 reports exact clean review/hosted33943697279. Earlier019 b12b69e6917598dd9ae1536e000077717c1e2484 is NOT ancestor of019. Current019 has no lib/tightbeam/productions/completion_escalation.ex or test/completion_escalation_test.exs and no named completion integration in Assignments/Schema/Supervision. Preserved b12 pair delta is19files5303+/50-, not just final2file generation fix. Read att_4dfd143e literally: NOT-CARRIED applies main v18->v19 empty-table/Keyring migration, not blanket exclusion of prior019 completion behavior. Therefore main delivered, overall closeout withheld for real019 scope/custody reconciliation; no duplicate main, migration import or reviewed-candidate-as-landed claim. Next recover exact earlier019 reviewed contract/current shape and shared ownership, then bounded current-base recovery only if standing scope permits without new migration policy; otherwise exact required choice. No product edit/run/live mutation."
+    ],
+    "open_custody": [
+      [
+        "asg_a12d6873-9b00-4924-b3c8-674582fd7973",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ]
+    ]
+  },
+  {
+    "item": "wi_56bee7ce-c2dd-4724-9c87-3c45b588b438",
+    "disposition": "CHOICE",
+    "latest_attest": [
+      "att_474c1f4f-d569-4d1c-a166-dfd9f44e1158",
+      "asg_dcd41617-296d-4456-8faf-b1d3052bbf64",
+      "REPEATED LOCAL FAILURE ESCALATED after third false no-filing prod. Decision request dr_a365041a-471e-4a15-af87-6b9acf55271c records the scope conflict: this custody card must remain open while predecessor asg_4aa61dde is open; completion or surrender would abandon custody, while a continuation wake violates the card. Evidence is att_f53f924d, att_1567fe2c, att_c56e9864 plus process messages s_8c783ba5, s_b47fa905, s_61b8c2d4. HOLD for the user ruling. No wake, product/spec/source/review/target/release/runtime, lifecycle mutation, decision retry, or Surf/history contact occurred."
+    ],
+    "open_custody": [
+      [
+        "asg_4aa61dde-ec3f-461d-b64a-42ef10c2c1b5",
+        "agent:main:clawline:mike:main s_45f22849"
+      ],
+      [
+        "asg_dcd41617-296d-4456-8faf-b1d3052bbf64",
+        "agent:main:clawline:mike:main s_7c782106"
+      ]
+    ]
+  },
+  {
+    "item": "wi_0abae0fd-80ec-48e2-bf61-96e611342f03",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_e8f07bbf-ebef-455b-b278-15521b450688",
+      "asg_6b3247e4-8858-4b21-8e30-e8bb33e6dcbb",
+      "SCHEDULED DEPENDENCY READBACK, NEW MATERIAL EVIDENCE. Producer latest att_ac0eed13-65f1-439f-80de-87f7b6d1753a records that Mike excludes placement from 0.1.9; accepted prerequisite 23504c43, G-C 32911d0c, and independently clean G-D 659f2779 supersede older missing-source wording, but do not supply wake-delivery successor hunk release, exact predecessor/registry allocation, separate main election, revised pushed tips, tests, or readiness. R11/R12/R13 and migration composition therefore remain unresolved. I routed no review and performed no clone, edit, gate, rebase, target, or runtime action. Cancellation stays frozen and asg_933e6f72 retains wire-test custody. Per owner att_274beb69, existing upstream subscriptions remain the continuation mechanism; I created no duplicate timer poll and will act only on fresh exact pushed reviewed-clean seams."
+    ],
+    "open_custody": [
+      [
+        "asg_933e6f72-db8c-4ed6-9f94-504f97984051",
+        "agent:main:clawline:mike:main s_fcdd77af"
+      ],
+      [
+        "asg_7f8f901f-4855-4f31-919a-080c0c53403e",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_6b3247e4-8858-4b21-8e30-e8bb33e6dcbb",
+        "agent:main:clawline:mike:main s_0184755c"
+      ]
+    ]
+  },
+  {
+    "item": "wi_1100e078-2479-4d1b-8549-d65f7a82fd3d",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_f53d8c2f-27dc-48d6-b99d-b7f49387077b",
+      "asg_12ad80a0-d77d-41e1-b72f-123985a1814f",
+      "Fallback w_93e971bd consumed. Read only producer and owner authorization receipts newer than att_6a7417d9 (1788796578392): both returned empty lists. No new authorization resolves approval refusal att_706f58e9. Exact atomic publication and report registration remain blocked awaiting direct user approval visible to the executing approval layer. No retry, registration, gate, cleanup, candidate edit, remote or live-state mutation occurred."
+    ],
+    "open_custody": [
+      [
+        "asg_6e38dfeb-4cd5-4394-b9fc-8e01b388f7a8",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_12ad80a0-d77d-41e1-b72f-123985a1814f",
+        "agent:main:clawline:mike:main s_ab902f61"
+      ]
+    ]
+  },
+  {
+    "item": "wi_236e5efa-b5a2-49b4-b6d5-9dcbe5e9fdad",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_4bff4bd3-d664-4d66-8d5d-e040414b9676",
+      "asg_e32bb9d9-9b55-4787-8e97-c3542f5f4f0b",
+      "Successor custody audit consumed: sole holder asg_f627fbdf / s_cb647d0b owns clean, pushed candidates main b101c3de3270369a18ae28182d2e1c87cddd568a and 0.1.9 52e0f01b5a5c651d017de0fe5fcf100f3c1197fb; predecessor clones remain read-only. No gate or source side effect occurred. Exact blocker: remote tips advanced to main 634cf9775398ec28ed443bd217c9a9b36b105de6 and 0.1.9 b299457d5c95dd6e161ed9b1de70b4450b5166b7. Current source overlaps candidate lifecycle seams in assignments, supervision, org, gateway, schema, router, and CLI wake validation; current WakeRails ownership and 0.1.9 compatibility are unproven. One Racter or Eezo persistent-log gate is therefore not authorized until a bounded shared-seam reconciliation disposition. No Gibson test/toolchain repair, duplicate producer, rebase, migration widening, host action, or live mutation."
+    ],
+    "open_custody": [
+      [
+        "asg_e32bb9d9-9b55-4787-8e97-c3542f5f4f0b",
+        "agent:main:clawline:mike:main s_74b2df1e"
+      ],
+      [
+        "asg_f627fbdf-3624-4823-90d5-35fefc39a2cf",
+        "agent:main:clawline:mike:main s_cb647d0b"
+      ]
+    ]
+  },
+  {
+    "item": "wi_a2536c19-800a-483b-a1e0-3c8d1b7c5d35",
+    "disposition": "OPERATIONS",
+    "latest_attest": [
+      "att_9d114e4c-d07d-4a00-a11c-709e240a11f1",
+      "asg_53b378a4-3eb7-4e07-b4c3-a8159321cefa",
+      "CORRECTION AND AUTHORITATIVE CONTROLLER DISPOSITION. Supersedes truncated att_8ad3679e, which ended after the words this controllers because of caller shell quoting; ignore that incomplete note. PRESERVE CUSTODY; EXECUTABLE PATROL HOLD. Exact 2026-09-08 read: old asg_d01062f7-254e-4e54-be65-716b27a84229 is CLOSED/revoked by mike; sole custody successor asg_53b378a4-3eb7-4e07-b4c3-a8159321cefa remains OPEN. Preserve disposition att_8e4191be, Wave 5 map att_7357c2eb, tally art_2b3edb82, field guide art_63b6d5d7, and every explicit no-action hold. The temporary patrol remains conditionally authorized because its stop condition is not proven: supervision population bytes landed main f58319ab under att_614d35c3, but the historical owner remains open and no complete false-positive, handoff, and restart proof was found; deterministic-liveness work item wi_4ef0bb82 remains open with current owner-coordination asg_ad812a5f. Current overlap asg_fd85aaaf is an active Dependency Wake Patrol only; it does not replace the full relief-stall duty. No executable successor was opened: the old full-population census conflicts with the absolute no-census controller boundary, Wave 5 already used its two fresh one-mandate sessions s_d2f42da0 and s_d08bf0c1, and adding the wider duty to asg_fd85aaaf would widen and duplicate that lane. Capable controlling owner is product-owner:tightbeam-codex-sol-relief on s_fde9b2be, which owns both fix coordination and dependency-patrol oversight; it must issue a separately authorized non-census patrol boundary or obtain an explicit Mike scope ruling. Never use Subspace revision 06."
+    ],
+    "open_custody": [
+      [
+        "asg_53b378a4-3eb7-4e07-b4c3-a8159321cefa",
+        "agent:main:clawline:mike:main s_d2f42da0"
+      ]
+    ]
+  },
+  {
+    "item": "wi_0488b06a-0950-4356-84b7-c56e413a6bbe",
+    "disposition": "CHOICE",
+    "latest_attest": [
+      "att_48a0973d-d9b1-44f8-a9c2-fb961546bc55",
+      "asg_f20668e0-1f14-4da2-b58c-cf40636a67a3",
+      "Artifact shared-owner receipt fallback fired without a matching receipt fact. I did not poll, restaff, infer artifact ownership, release affected-edit holds, or touch active121722. Existing artifact boundary remains controlling: editable-body must not rewrite captured bytes, digest, verified flag, RELEASED custody, recordedMessageId, or recordedTurnEvidence; any shared payload/provenance overlap still needs explicit owner reconciliation."
+    ],
+    "open_custody": [
+      [
+        "asg_32e29021-2d9c-47f8-82b8-93a28db45dc2",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_f20668e0-1f14-4da2-b58c-cf40636a67a3",
+        "agent:main:clawline:mike:main s_74b2df1e"
+      ],
+      [
+        "asg_77f7d7d8-8405-4f34-a8ff-3437ad713542",
+        "agent:main:clawline:mike:main s_0e18aea3"
+      ]
+    ]
+  },
+  {
+    "item": "wi_a57dee58-7dc6-43e4-b36d-a45959e64ad6",
+    "disposition": "EXCLUDED",
+    "latest_attest": [
+      "att_7290af4e-f9e1-40fa-813c-d1a7d3c4ed4a",
+      "asg_3cf6e187-af6c-4f19-a550-22ae9956aced",
+      "21:49 patrol closeout disposition: product remains DELIVERED main-only under att_614d35c3, producer completion att_1db7d263 and clean att_e1d29a09/art_cb9a8fc8; Mike fresh ancestry confirms landed f58319ab remains ancestor of origin/main2c8ff12d. No019 port or new engineering work. Fresh supported assignments full projection verifies this historical owner is OPEN, effectKind=code, reviewsAssignmentId=null, openedByUser=mike; these are actual projected fields, not inference from subject. Existing coordination exemption does not establish eligibility for this code-classified historical row. No supported changed closeout path established by this read; do not repeat unchanged completion refusal, relabel, fabricate review, or inherit all descendant verdicts. Preserve exact original review and delivery evidence. Link lifecycle-only specimen to existing wi_903851ac-e8ea-418d-9c73-29ab4a9f4698 review-on-integration/owner closure question and historical wi_032f11a6-2ab2-41b6-ab04-41b06a35cf18 context; the latter has explicit superseded/hold disposition asg_4c2f068f, so this link authorizes no repair/reopen or archetype policy revival. Current status: delivered product, historical code-classified owner closeout blocked; exclude from unfinished engineering. No completion retry, source/review/target/runtime action. Existing patrol only, no Subspace adoption."
+    ],
+    "open_custody": [
+      [
+        "asg_3cf6e187-af6c-4f19-a550-22ae9956aced",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ]
+    ]
+  },
+  {
+    "item": "wi_cb5734eb-c175-4815-8763-882d69dfa9bf",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_c2f80f48-992f-4cee-aebc-84151dba9189",
+      "asg_acd48634-1818-4833-be86-f75cb5a7d356",
+      "Mike direct executive resumption reconciles broader scoped CI publication authority with historical LOCAL-ONLY correction card; dr_78e4fd99 read OPEN, no later refusal in that row, no commit-identity permission loop. Fresh fetch proves main2c8ff12d and clean local reviewed944feaa11078f02520d66eee10b4d4a5fee3ed20. One normal non-force push of exact944 to https://github.com/clickety-clacks/tightbeam.git refs/heads/main succeeded; remote ls-remote exact944. API ci.yml blob82410ee10c71fa0568488520fac9b96340f9b52b equals local reviewed blob; both test/package fetch-depth0. Sole automatic ci34191959200 exact head944 is IN_PROGRESS, no hosted-green claim. Preserve cleanatt_6b005a53/report1277df5b and9/9 plus mutant evidence; no new source/review/run/consumer dispatch or unrelated publication. Next collect same automatic Linux/macOS/packages to terminal, no retry."
+    ],
+    "open_custody": [
+      [
+        "asg_acd48634-1818-4833-be86-f75cb5a7d356",
+        "agent:main:clawline:mike:main s_7169b2a6"
+      ],
+      [
+        "asg_035c4d6e-c324-402b-a84c-be12b912c0d1",
+        "agent:main:clawline:mike:main s_2be02fca"
+      ],
+      [
+        "asg_3e085066-1e4b-437c-8f26-1013a7bb4f3b",
+        "agent:main:clawline:mike:main s_2be02fca"
+      ],
+      [
+        "asg_a914722b-68f7-41da-99b6-859241055c15",
+        "agent:main:clawline:mike:main s_7169b2a6"
+      ],
+      [
+        "asg_1a011ff5-af14-4af5-9789-cb8d301335a9",
+        "agent:main:clawline:mike:main s_2be02fca"
+      ],
+      [
+        "asg_75f2fd77-2931-45b1-8b2c-092723c8d40e",
+        "agent:main:clawline:mike:main s_49e64fb5"
+      ],
+      [
+        "asg_ce6d3f41-a2b7-4a90-9528-6474cac59d24",
+        "agent:main:clawline:mike:main s_2be02fca"
+      ],
+      [
+        "asg_e8c45eb9-ff21-48e9-86a0-abf9df9214d3",
+        "agent:main:clawline:mike:main s_7169b2a6"
+      ],
+      [
+        "asg_03078765-5b28-4cc8-b8df-9a87380033cd",
+        "agent:main:clawline:mike:main s_7169b2a6"
+      ]
+    ]
+  },
+  {
+    "item": "wi_54d54f16-8e8e-4895-8191-6bb64384bcb8",
+    "disposition": "SUPERSEDED",
+    "latest_attest": [
+      "att_1d6a8b4a-be21-4e0d-8e0d-95113cd7b889",
+      "asg_bfa7e90c-70a9-4fc7-928e-1c404ad2e866",
+      "Disposition fulfilled: readback confirms obsolete coordinator asg_bb531ba2-da1c-4a48-a053-58ef0f812e39 closed/revoked by root opener, resolving the sole lifecycle blocker; obsolete implementation was already surrendered. Preserve att_06304294,att_e8e5d247,att_0a677d60,att_9577f49a as historical evidence, not current open-custody claims. Canonical hosted-model-manifest-v1 supersedes forced re-probe/probe-timestamp behavior; only residual typed credential-rejected legibility remains on wi_afa7ef3b. No implementation, new decision, review, repository/target/install/live action. This completes compatibility disposition, not manifest delivery."
+    ],
+    "open_custody": []
+  },
+  {
+    "item": "wi_01811881-4dfb-47c1-a252-8496e8851194",
+    "disposition": "POST-INSTALL",
+    "latest_attest": [
+      "att_39d18df2-41ec-4714-9de3-c2d5c31ddd81",
+      "asg_d79e16cc-5f0b-4535-ad4b-babf7c6b38cd",
+      "Fallback checkpoint at 2026-09-04 16:18 PDT: wake w_4e5e935d-bcce-4414-a019-2b91c80c667b delivered by its fallback deadline, not by fact identity-include-fix-installed-on-gibson. Gibson still reports Tightbeam 0.1.8, so the wi_0c2f48b4 install condition remains false. Preserved identity commit 89a6879 and both inlined operating-manual sections. Made no identity, Git, release, runtime, deployment, or Shrdlu mutation. Renewed exactly one condition wake: w_33353790-e34e-411f-9b06-6ffb0e30dbe4, due 2026-09-05 16:18:40 PDT, for fact identity-include-fix-installed-on-gibson scoped to wi_0c2f48b4."
+    ],
+    "open_custody": [
+      [
+        "asg_d79e16cc-5f0b-4535-ad4b-babf7c6b38cd",
+        "agent:main:clawline:mike:main s_5be03e6a"
+      ]
+    ]
+  },
+  {
+    "item": "wi_4c64ab37-9ae7-4cb8-bc0e-720505b58f9c",
+    "disposition": "EXCLUDED",
+    "latest_attest": [
+      "att_cc3226aa-76f9-4cb7-975b-9067ba2d727f",
+      "asg_8ff1769d-2ad3-45c1-8c6d-b73f19a57fb7",
+      "Coordination-only shared-owner receipt requested by orchestrator:owner-backlog-02 for editable-body. This assignment owns sole MAIN-ONLY preserved stale-turn settlement recovery/comparison: feature0f030e3d386c9846f48067f5fff2b3e699809a7e against allocated832b0253e130171ff2d07e116dd7ffecfa74b685 in gibson:/home/mike/.tightbeam/work/e9ac39103cbb/recovery. No source edits exist from this recovery. Shared CLI args has textual conflicts; CLI dispatch and Elixir Dispatch original/composed stable patch IDs match, documented art_7b4389dd, not semantic/test proof. Gateway/Firehose comparison also preserved; no exclusive shared-file claim or authority over editable-body work is asserted. Schema/keyring/DeliverableContract remain held: inheritedv17 collides with mainv21; owner att_d6ff2228 confirms REST owns occupiedv22 via daf68e42/tree2b600827, with B2-first/REST ordering and no settlement slot or held-import authority. Preserve current unrelated behavior; future overlapping edits require owner reconciliation at exact allocated base. Reports art_3eb2136f/art_7b4389dd are comparison evidence, not candidates. Existing allocation subscription w_67eb87b3 remains;019 NOT-CARRIED. This receipt performs no edit, test, allocation, or new work."
+    ],
+    "open_custody": [
+      [
+        "asg_82daaf84-8f61-4535-b6f3-0c1965147800",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_8ff1769d-2ad3-45c1-8c6d-b73f19a57fb7",
+        "agent:main:clawline:mike:main s_350f09dd"
+      ]
+    ]
+  },
+  {
+    "item": "wi_b6edfacd-f580-48d0-a07b-f78e2fb0024c",
+    "disposition": "CHOICE",
+    "latest_attest": [
+      "att_9dd99743-c463-4287-a08b-5ff6133e0f06",
+      "asg_075f43c1-ecd8-433b-9491-7110f812fe66",
+      "Mike04:30 patrol: read sole producer asg_f46b25af and owner att_cafff675; no transfer inferred. Independently read-only recovered existing owned WIP at /home/mike/.tightbeam/work/e474b546ac16/timeout-refusal-observability-r2 HEAD005facd641ceba08dea62b2e55cbb5fa114d6855: six tracked modified files and three untracked files; binary tracked diff SHA2569f31c094397e5955a39ff3f04faffcb156fc779b2e8db6638708d89c39196d43; untracked diagnostics.ex371bfbb2a223f55a429760f6ca866c855f8ff913a1b62922f69be3e47e5a6f03, request_context.ex c9a77dc41502d09320cbc098f10e807965b0967b55fee4c1a3678dfaad66bd63, observability test4c85e226ad09013630a85fa16ca50f6a6594cd29771dcd12b317d84b50b5d7af. No frozen commit or current full-green evidence: final focused att_7472726e6/0, earlier full2153/0 predates final edits. Woke same holder via w_a627f4e3 to recover terminal logs and return actual authorized Racter/Eezo route or supported-transfer requirement before one persistent-log/exit-status full gate. dr_449d31c8 approval is known but superseded for Gibson location; no Gibson tests or widened budgets. Exact remaining gap is holder-specific non-Gibson execution/transfer authority, not old fixture approval. No source mutation, duplicate producer, transfer or live action."
+    ],
+    "open_custody": [
+      [
+        "asg_075f43c1-ecd8-433b-9491-7110f812fe66",
+        "agent:main:clawline:mike:main s_0cd749fc"
+      ],
+      [
+        "asg_f46b25af-0296-4f78-bf3a-1bed5c88d863",
+        "agent:main:clawline:mike:main s_6ec12cdf"
+      ]
+    ]
+  },
+  {
+    "item": "wi_66a50f81-cdfc-4251-8bb6-15197bcc998c",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_ef20b077-6179-43c8-9db1-82181c8ab390",
+      "asg_09bc6492-b27f-435d-91e5-19bbf04d1e9c",
+      "Slice2 current gate correction: D1c24b20a6 delivered with exact33860616705 Linux/macOS green, owner completionatt_976e66d9 and wi725 closed; stale D1/red-main/8cb waiting is not retained. Fresh main read2c8ff12d74c1e8e0060555b20ed351cf719f674b still StateResources query_message line796 delegates Projection.get; inspected local restoration1bfd0c0937f3450e9606842031ad0c2abc235de0 after3db44c17 adds pinned message/turn SQL, closed serializer and Publisher/tests in four files, retained by frozen daf68e42. This is concrete effective-source mapping, not missing-original-ancestry inference. Existing asg_a914722b owns missing delivery: current-base/shared-schema reconciliation, fresh exact combined review, lawful export, exact hosted proof and canonical readback remain absent; att_4a1094c3 local Mix2291 preformat and Rust285/package do not substitute. No canonical equivalent proved by current main query; no source import/export or tests repeated. Preserve Slice2f3f21015 and all broader subscription guarantees; no new producer/permission from D1 closure. Initial read approval timed out before process, one allowed retry succeeded."
+    ],
+    "open_custody": [
+      [
+        "asg_09bc6492-b27f-435d-91e5-19bbf04d1e9c",
+        "agent:main:clawline:mike:main s_7169b2a6"
+      ],
+      [
+        "asg_d511808c-6424-47b2-8dcb-8a8d85fe6c94",
+        "agent:main:clawline:mike:main s_30a0c717"
+      ]
+    ]
+  },
+  {
+    "item": "wi_a3485617-36e5-46ba-88ef-9e6f5d4cc5c8",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_8116e6df-34eb-4636-9d23-0a96964a2ba1",
+      "asg_f9318436-12c7-4abb-aec4-075444b5a171",
+      "Bounded acknowledgment: recorded the temporary Claude routing directive as art_e64471d1. Until Mike lifts it, skip claude-fable-5 and claude-fable-5-1 and use claude-opus-5 or claude-opus-4-8 at the specified effort; do not retry Fable rate_limit or treat it as a blocker; Codex routing is unchanged; this is not a guidance edit. No active descendants existed, so no relay wake was needed. G6 custody and owner hold att_64d78f02/dr_87325b2b remain unchanged; no work was duplicated."
+    ],
+    "open_custody": [
+      [
+        "asg_f9318436-12c7-4abb-aec4-075444b5a171",
+        "agent:main:clawline:mike:main s_5db5083f"
+      ]
+    ]
+  },
+  {
+    "item": "wi_0b159d6f-f07d-49fe-8447-a1e9bec1195e",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_2611cf02-e7b7-42fc-b3c0-afedabf35d78",
+      "asg_d24bd829-67ba-4999-8a54-7a249dfe5db6",
+      "Consume Mike preserve-reviewed-gate dr_87325b2b-af1f-4662-8649-5ad3b9771fdf; durable row now ruled, not pending. Preserve G6 no-wake/no-restaff disposition; historical red-main/D1absence in question is not current evidence. D1 port delivered/closedatt_976e66d9. Actual decision-request collection provider is asg_03078765/s7169; detail provider is asg_2a0feed7/s_c56b3c59, canonical shared decision query/serializer/version owner asg_a914722b/s7169 coordinated by s_2be02fca/asg_1a011ff5. Latest direct source read att_ef20b077 still localdaf68/restoration with no canonical equivalence/readback/hosted proof; G7 B2 shared gate also remains separately unproved. Next exact allocation requested from canonical owner: shared query/serializer predecessor, collection versus detail Router hunks, per-resource start proofs; no private gate waiver or new schema slot. No G6/coder wake or repeated dependency audit/tests."
+    ],
+    "open_custody": [
+      [
+        "asg_d24bd829-67ba-4999-8a54-7a249dfe5db6",
+        "agent:main:clawline:mike:main s_7169b2a6"
+      ],
+      [
+        "asg_2a0feed7-6f27-47ca-aaac-9919551d8cd0",
+        "agent:main:clawline:mike:main s_c56b3c59"
+      ]
+    ]
+  },
+  {
+    "item": "wi_55400080-1b28-4b8c-b863-0fd85a164161",
+    "disposition": "DELIVERED",
+    "latest_attest": [
+      "att_7d7c4258-001d-46de-bd2d-da07b6ef922f",
+      "asg_1c72fc55-e1f1-4ce3-9337-42dc3c189bb9",
+      "019 POLICY RECORD AMENDMENT under map62efbc3: O2 asg_915cc133 proposes selected019 early-review admission, preserving already delivered366de26a as valid historical bug fix. This DOES NOT cancel or alter remaining MAIN bef717c9 producer/integration/ledger custody or waive open dr_473e74a9 publication boundary. No implementation, review replay, descendant inheritance or target action from record reconciliation."
+    ],
+    "open_custody": [
+      [
+        "asg_1c72fc55-e1f1-4ce3-9337-42dc3c189bb9",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_7b209084-118e-4e66-83b1-c3cc3f276cfa",
+        "agent:main:clawline:mike:main s_409b69ab"
+      ],
+      [
+        "asg_a02ec9c1-ba2d-4c2e-93dd-76ea18c795a1",
+        "agent:main:clawline:mike:main s_409b69ab"
+      ]
+    ]
+  },
+  {
+    "item": "wi_a00bca2e-ffab-43ca-808d-f172d9eee0e7",
+    "disposition": "CHOICE",
+    "latest_attest": [
+      "att_88341c98-160b-4dc4-99c5-30528aec2f8d",
+      "asg_a3d1e5d2-fb1f-422e-aa0f-36e512f26637",
+      "Delivered requested local immutable approval packet setharness-approval-packet.kzv551mE.tar SHA256151c506882c5cd5f99bf413aaaeb16da5af1f85a0ac97260f64b764a6f9b26a0. Contains exact reviewed d5286322 tracked base archive, full three-file successor overlay including untracked firehose_session_reader_test.exs, individual hashes, original refused push command/reason and second refusal. Proposed only (not executed): existing holder creates absent /home/clu/setharness-asg-a3d1e5d2-kzv551mE on clu@racter, scp this packet to packet.tar, hash verifies, extracts into fresh owned source; explicit approval required under preserved export hold, no alternate-transport bypass. Actual commands: local git archive/zip/tar/sha256sum/unzip listing and git diff --check only, no product tests/compile/format/transfer. Existing uncommitted edits and frozen reviewed commit preserved. No shipping-app discovery,019 work,bootstrap/runtime/release action or test-pass claim for successor."
+    ],
+    "open_custody": [
+      [
+        "asg_d9db7afc-d8be-4647-8ca2-af39aba4b99a",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_a3d1e5d2-fb1f-422e-aa0f-36e512f26637",
+        "agent:main:clawline:mike:main s_277e1b05"
+      ]
+    ]
+  },
+  {
+    "item": "wi_ff222e95-ecd4-4ba0-83cc-ddd9e2301e07",
+    "disposition": "OPERATIONS",
+    "latest_attest": [
+      "att_7a3e2365-6ee7-45cf-9cbd-655612bfcc8d",
+      "asg_21d1bcc6-50ca-479f-a2d6-e61b0e5e845e",
+      "Consumed explicit closure disposition from existing liveness owner product-owner:tightbeam-codex-sol-relief: dr_f5983b49 requires done-but-open/defect-routed. Specimen accepted on existing asg_ad812a5f; no supported live repair established. No third completion retry or bypass. Preserve completed recovery att_89b79159, owner acceptance att_d7d425da, already-closed original owner asg_54e860ca, and separate V9 work. Residual assignment remains open solely because the recorded lifecycle defect prevents closure. Next action only on owning-lane supported repair disposition; no new product work or duplicate defect lane."
+    ],
+    "open_custody": [
+      [
+        "asg_21d1bcc6-50ca-479f-a2d6-e61b0e5e845e",
+        "agent:main:clawline:mike:main s_daf5ef80"
+      ]
+    ]
+  },
+  {
+    "item": "wi_875fbdd5-6756-4149-b032-f055dc4f965c",
+    "disposition": "EXCLUDED",
+    "latest_attest": [
+      "att_d5869bc8-6b78-482e-9f81-4825124a02e3",
+      "asg_f18b443d-1410-4523-ba1d-42ea7e5fd39b",
+      "Consumed new owner escalation disposition att_4568a92e-85e7-4ae3-8a28-0c393d3f00b6. Scope correction: latest explicit Mike instruction excludes019 placement; historical dual-line assignment wording is superseded. Main only remains pending exact immutable predecessor/hunk allocation, not elected by old baseline832b0253 or accepted WakeRails source926774a3. Shared transaction/publication composition remains unresolved; existing-table CHECK activation also remains unapproved under preserved-storage restriction. Preserve source/evidence and sole assignment; no019 implementation, edits, baseline reruns, runtime migration or protected push. Owner owns activation reconciliation and main shared-hunk handoff. Consumed fallback subscription will be renewed for actual owner disposition."
+    ],
+    "open_custody": [
+      [
+        "asg_3dd97824-712f-43d1-8217-bd4e6a769ebb",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_cd858d20-f15c-4def-be39-1d65441e4224",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_f18b443d-1410-4523-ba1d-42ea7e5fd39b",
+        "agent:main:clawline:mike:main s_f80802e0"
+      ]
+    ]
+  },
+  {
+    "item": "wi_3ff94acf-cdc5-4714-8ddd-8aac80ec2966",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_675e0a99-6bb5-4b83-96fb-2fa497c051dd",
+      "asg_7711618b-6d7a-4abf-b4d6-e15435e343ca",
+      "2026-09-07 23:05 PT \u2014 Consumed new durable decision dependency from owner att_e3d53cf0. After duplicate check, the owner filed operator request dr_e2d98b25-43a0-4374-ac71-5ef6b16f8599 OPEN to ownerUser mike for the exact truthful internal retired-holder recovery actor/reason/actual-close-time exception; canonical refusal turn123649 is named. No ruling or authorization is claimed. This replaces the prior no-row state while preserving the same F9 boundary, focused Eezo 182/1, integrator bytes, frozen f6, and original Lane B 3430f8dc9fb626fcee6cb60c1d2d6b9f10f7c239 evidence. Provider acceptance and future 0.1.9 landing coordination remain separate. This lane did not duplicate the human request, edit, test, recompose, rerun, or review."
+    ],
+    "open_custody": [
+      [
+        "asg_87c3fe68-bc23-4dac-ae4f-15079929e381",
+        "agent:main:clawline:mike:main s_5ae8a4b5"
+      ],
+      [
+        "asg_34c16cdf-8195-4a73-a7e7-88b2dfbc7674",
+        "agent:main:clawline:mike:main s_5ae8a4b5"
+      ],
+      [
+        "asg_7711618b-6d7a-4abf-b4d6-e15435e343ca",
+        "agent:main:clawline:mike:main s_e72a9fe9"
+      ],
+      [
+        "asg_c8f9d0f8-7ac5-4287-8aec-91c19b59f0f3",
+        "agent:main:clawline:mike:main s_b0d2e367"
+      ],
+      [
+        "asg_552a9c2a-f64b-4196-a524-39ea6ea1618a",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_68b1f49e-ba7f-4343-94ed-6500a39dd7ba",
+        "agent:main:clawline:mike:main s_c5ca2bdc"
+      ]
+    ]
+  },
+  {
+    "item": "wi_4ef0bb82-7d16-4ddd-acff-54fbb516e80f",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_01ad3ba7-bc75-4f6c-a872-df638ec0e077",
+      "asg_9443e50a-38e1-4e8b-86b4-c58236bdb662",
+      "CONTINUATION SCHEDULED after Wave 6 refusal receipt att_513d1fef. Sole controller wake w_29e3883f is PENDING for exact re-read of asg_4aa61dde, asg_dcd41617, and open dr_a365041a. It forbids retrying the refused revocation, waking custody, starting Wave 7 while unchanged, product work, census/fan-out, extra sessions, target/release/runtime mutation, and Surf Ace/history contact."
+    ],
+    "open_custody": [
+      [
+        "asg_9443e50a-38e1-4e8b-86b4-c58236bdb662",
+        "agent:main:clawline:mike:main s_bb895f31"
+      ],
+      [
+        "asg_ad812a5f-a101-4df1-ad77-a505637ea3e7",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ]
+    ]
+  },
+  {
+    "item": "wi_3e1a8cf2-ddff-4885-b79e-32dd6d0ada27",
+    "disposition": "DELIVERED",
+    "latest_attest": [
+      "att_fadf1d25-95c9-4b9b-a61f-6bd704184117",
+      "asg_980639d8-c8ac-43cf-b0ea-8a4be42aa09d",
+      "Consumed existing reviewer att_8fd3a781 evidence-only result. Historical rollback proof is limited to verified release archives, three reported0.1.8 paths/catalog exits and Gibson PID/ExecStart unchanged within observed interval. Missing exact destination manifests/metadata, symlink bytes, contemporaneous unit hash/adapter baseline, satellite/test-host census and unrelated-mutation coverage prevent the requested full rollback verdict. Later PID change and adapter drift are unattributed, not proof of authorized pinback; exact dr_b0572b9c remains void. Original dual-branch catalog source delivery remains delivered, not reopened engineering. Bounded patrol evidence review is now exhausted; do not repeat it. Owner retains unresolved rollback verification: obtain an explicit bounded current-state read-only review scope/baseline if desired, acknowledging historical missing evidence cannot be reconstructed by present reads. All HALT/STOP/NO directives remain, no host action, restoration replay, new review lane or current-state certification."
+    ],
+    "open_custody": [
+      [
+        "asg_980639d8-c8ac-43cf-b0ea-8a4be42aa09d",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_dd66f64a-2812-4621-9942-b54a3f933d8c",
+        "agent:main:clawline:mike:main s_90376576"
+      ]
+    ]
+  },
+  {
+    "item": "wi_afa7ef3b-3dd0-49cc-870c-444b1eeaa7a8",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_5dcebf1b-15bb-4434-a3a3-9fd8a53a6cd1",
+      "asg_b79badbe-0273-4ec9-aab2-7a553e36a80d",
+      "Owner-directed ORIGINAL-RUN COLLECTION complete, mixed outcome preserved: main34141131609 attempt1 at24d5ff3207ecd46fea64b48e255a11f57aa741a9 passed Linux/macOS tests/packages and exact packaged-manifest comparison;01934141134400 attempt1 at3d94019277267cc4a13f85627d7b688a1631da1e failed both shallow-history public-rule checks before Mix/Rust/packages. Workflow2c8ff12d/blobcc87d204; publish skipped, no retry. Report art_46cca56d gibson:/home/mike/.tightbeam/work/45af0a3a0bf9/hosted-proof-original-pair-results.md SHA23baaa24e976c78f66306acebb8888927a7bbfe3f08f7fb28226bff2d2066e8f. Verification verdict covers evidence collection only, not product pair. Frozen pair, Eezo clones and artifacts preserved under owner custody direction. Continuation canceled; no polling or further action. CI compatibility stays with existing owner. No pair-verification/readiness, repair/retry/integration permission, release or live claim; endpoint/cache/adapter/version/context/T7 and integration gaps remain. Handoff complete to opener asg_6c9e3929."
+    ],
+    "open_custody": [
+      [
+        "asg_6c9e3929-7690-48b7-8cb3-8df96c5e7cc9",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ]
+    ]
+  },
+  {
+    "item": "wi_fb50d790-784e-4a9a-bc8d-d247a17a6a14",
+    "disposition": "CHOICE",
+    "latest_attest": [
+      "att_a59fd904-8435-4b10-8e31-03b5a3c1e35e",
+      "asg_0d028fc2-465c-43fa-b635-ed3c65eb2785",
+      "03:10 recovery actual custody result: read full original/recovery assignment and att_fcac003f, att_50dde675, att_1a09c28a plus artifact registry. Registered art_f2bdd5e3 path gibson:/home/mike/.tightbeam/work/edf6cd3839e9/live-base-dir-guard-blocker-correction.md and its parent directory are absent. Read-only work/archive inventory including hidden files found neither report nor named live-base-dir-guard-main/019 clone directories. Registry still records report SHA fb66a273caf2e85b5d6223cfeb9dbd180d6ca047c627ca6e70bf996e73c831d9. Preserved transcript explicitly admits original hash filing defect; recovery att_50dde675 independently reported six staged paths and measured0c61094d/53bda5b8, but current payload unavailable, so no independent six-path/encoding/behavior identity proof or corrected payload approval is justified yet. Exact next dependency: sanctioned archive/artifact-body locator for that report and original six-file staged streams. No transfer/apply/test/live-base access. Future gates use owned full isolated Racter clone, verified retained OTP28.5/Elixir1.19.5 Hex2.5.1 and approved process-local identity, not stale Gibson test instruction; current behavior coverage comparison remains pending recovered source."
+    ],
+    "open_custody": [
+      [
+        "asg_0d028fc2-465c-43fa-b635-ed3c65eb2785",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ]
+    ]
+  },
+  {
+    "item": "wi_137763eb-1373-41a8-bd55-776d85f84a6a",
+    "disposition": "EXCLUDED",
+    "latest_attest": [
+      "att_8c3ee2bb-cdcf-47e2-9b69-bc9c48901005",
+      "asg_17bc0803-8e1e-4d46-971c-2b62293e9fd2",
+      "Consumed owner att_7a9d5bbf and fully read/hash-verified clean review art_bdcbad94. Prepared operation art_669349ae SHA256bb29b65295ad5f7651917c8c8e0442bf841b78edf23b6f5c1d3423c9c370523c: repository https://github.com/clickety-clacks/tightbeam.git, exact refspec ace06dc3765c1dc80356912eea845fea1ece31c8:refs/heads/candidate/asg-17bc0803-a1, non-force. Read-only ls-remote: main remains parent2c8ff12d, destination absent; local clean. Includes prepared specs 0.2-build-ledger entry with source/review/test evidence and pending states. Ledger write/publication not performed; authorized specs owner/target unresolved. No publication refusal observed because no push/export attempted. Actual holds: explicit owner export disposition, ledger publication before integration, hosted exact-SHA Linux/macOS and macOS artifact, protected integration. Trust/protection acceptance untested, no bypass proposed. No duplicate tests/review."
+    ],
+    "open_custody": [
+      [
+        "asg_a5e45def-8dbc-4844-9c12-792297e96190",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_17bc0803-8e1e-4d46-971c-2b62293e9fd2",
+        "agent:main:clawline:mike:main s_4701276a"
+      ]
+    ]
+  },
+  {
+    "item": "wi_725a1bc6-f3e5-43a2-bcc8-1632a00defe0",
+    "disposition": "DELIVERED",
+    "latest_attest": [
+      "att_976e66d9-2385-4df5-9a84-577a52a59c6d",
+      "asg_f4cde132-3691-4abd-aae0-e188143bfa61",
+      "Bounded D1 port owner obligation completed: producer/review/guarded019 landing delivered c24b20a6586722642d9358078535dac941ffdf76 tree821b7f11cbf273dc272a03010f10e41e9a0977c3. Consumed original att_c90fceb6 exact source review, att_9176ba8f guarded landing/readback/reportart_17ce9c31 SHAeccf1b932d225d24dbf724004a301791a9e1ce689806121df6d78720190dd401, att_e55be01b exact landed hosted33860616705 Linux100983958609/mac100983958377 Mix/Rust green. Mike00:09 fresh ancestry confirms delivered commit remains on current019. Scoped work-item read verifies historical landingasg_81ba9646 CLOSED/revoked, not open as staleatt_942eed38 claimed; dr_909b796a ruled per Mike correction, no new authority inferred from rationale. Product delivery remains valid separately from revoked-row history and installed availability. No child remains open; no rebuild/review/port/reopen/run/push/install or live mutation. Full Firehose obligations outside this bounded D1 owner remain separate."
+    ],
+    "open_custody": []
+  },
+  {
+    "item": "wi_86165cfa-94a6-471c-b533-0055485fbed6",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_6226e965-9237-4969-872b-b8523e576b7a",
+      "asg_127a7548-518b-459e-90e3-680d00e2f4be",
+      "Mike00:30 custody correction: asg_b3acf3cc is closed/revoked, NOT preserved active producer; no other GC producer open. dr_f15ac5db is WITHDRAWN, not current dependency. Actual dependency asg_059b6ac3 on wi_089b8d3b remains provenance-held under exact owner audit today; P1/P2 versus P3/P4 boundary retained. Read git object f655a000ef50e4416f45c83b0e822843aed86980 and ancestry: already ancestor of current0197311707d, title Port failed-runner repair to0.1.9,16paths/2110+/113-. This is existing repair prerequisite, NOT proof session GC delivered. Preserve done repair bytes; GC remains both-line derived-row scope from reviewed spec71197221289cefd028578c78835317dbb096efd5 plus full dr_8b180723 remove-persistence ruling: no tables, deterministic existing wake keys, query membership, no autonomous retirement. One parented GC successor only after genuinely reviewed shared gate ready; no resurrection/restaff now. Next exact blocker is ruling delegation source or direct confirmation of existing P1/P2, then bounded amendment/review through shared-gate custody."
+    ],
+    "open_custody": [
+      [
+        "asg_127a7548-518b-459e-90e3-680d00e2f4be",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ]
+    ]
+  },
+  {
+    "item": "wi_089b8d3b-ed0f-4d09-8f6e-b238e3ed7af7",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_cc33593f-cae3-4fbf-9bae-3f1e073fca76",
+      "asg_059b6ac3-fe66-4d52-bb4b-91434955cb0e",
+      "New continuation readback: work-item timeline proves w_83f86766-2493-435e-b06a-6b40299f99c1 fired at 1788813808864; it is not a pending continuation, contrary to the historical pending description consumed from att_3a1a06a8. The 24-hour fallback w_6fbee808 was also delivered and consumed in att_6fed6673. No remaining continuation is established by these receipts. Product remains under owner provenance/scope hold; timed polling is not restarted under explicit dependency instruction. Await substantive owner authority disposition, with failed-turn reconciliation required before any authorized product resumption. No product edits, tests, pushes, target moves or duplicate policy request."
+    ],
+    "open_custody": [
+      [
+        "asg_9b584822-dd0b-40c9-8869-e84935dfbf63",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_059b6ac3-fe66-4d52-bb4b-91434955cb0e",
+        "agent:main:clawline:mike:main s_0df47c53"
+      ]
+    ]
+  },
+  {
+    "item": "wi_0736ac45-9ff8-43ac-a085-4d37e32ee224",
+    "disposition": "DELIVERED",
+    "latest_attest": [
+      "att_01d78ca2-de6b-47f1-a3e3-f1d2a0230d81",
+      "asg_219751c0-2c81-47d7-bc23-3b2665986b41",
+      "Bounded owner coordination outcome complete: retained independent review att_bf120fb9 and immutable evidence; actual atomic dual landing att_f78396f3 under att_670bf70a, mainfcf177fac07603eb9b3b71e94f019c2ff87d2716/019c831fccc3037f10825f09567d24172b0c6a8d736, exact hosted33988113460/33988113415 all jobs green. Owner att_258f4e02 already hash-verified landing report0988a37cdb1a218f8aa91b424e3c928a87f0d4f04eb872fa682de9f5c20814c1. Mike00:49 fresh ancestry confirms both retained in current2c8ff12d/b299457d. R12 closed/revoked solely as custody bookkeeping, not withdrawn delivery. No remaining source/review/landing outcome identified on this owner card. Installed/live guidance availability is separate and not claimed; no new engineering, review, gate, installation, live application or Subspace adoption. Preserve prior closure refusals/history and all original evidence."
+    ],
+    "open_custody": []
+  },
+  {
+    "item": "wi_b49455ae-207f-4ca7-a22b-7b4fe3f1d9cb",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_c14bbf72-89d1-46a1-848b-d6605ebd5d8d",
+      "asg_824a5b98-29de-4b0c-b0ab-1f174bc44bf4",
+      "Completed Mike exact-operation reconciliation. Fresh read-only source HEAD/parent/tree match a0358800/b299457d/a613184d and clean status; successful remote lookup shows current019 b299457d and no original candidate/asg-14e6970c-acp019-a0358800 ref; Eezo original /tmp/tb-acp019-a0358800-eezo-smoke absent including symlink check. No source or ownership reason requires renamed destinations. RETAIN original ref/scratch/node and existing dr_26a12757 export request unchanged. Existing dr_f0651378 remains sole Eezo request: exact staged reviewable wording now at /home/mike/.tightbeam/work/f8899f5cc784/acp019-reconciled-operation.md SHA2564d7a393a2f32c42f038b128bed5f1ac390d68aedb240facb0c8558894945df61. E2 candidate-owned install only; E3 separately explicit human onboarding with named human; E4 only after completed readiness; E5 explicit credential-bearing delete versus quarantine choice and owned PID stop. Revised packet technical guards preserved with original destination substitution. No new request, closed-card reopening, source rework/review, export/install/auth/provider/cleanup. Remaining decision is Mike explicit E1 and staged E2-E5 disposition on existing requests, not destination redesign."
+    ],
+    "open_custody": [
+      [
+        "asg_824a5b98-29de-4b0c-b0ab-1f174bc44bf4",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ]
+    ]
+  },
+  {
+    "item": "wi_7e25614b-a42d-4125-a48d-2991121039a6",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_eb578320-48e3-4758-bb7d-1335f7154068",
+      "asg_fb405bfd-07d2-4dfe-8afd-b7fcfa840696",
+      "New execution failure122419 adapter_unavailable shutdown follows122329; latest actual output remains att_6d1af7d7, no edits/runs and preflight held for report access plus shared allocation. Fresh read shows no pending full-assignment condition wake now, so do not repeat earlier pending-coverage claim. Preserve sole s_564d3150/asg_0c5231fd and source. Owner retains prerequisite resolution and must restore exact subscription/accountable delivery through supported route when actionable; no blind worker retry, duplicate staffing, report-transfer bypass or runtime change. Earlier122329 receipt attempt returned EOF and was not recorded; this receipt states current evidence only."
+    ],
+    "open_custody": [
+      [
+        "asg_fb405bfd-07d2-4dfe-8afd-b7fcfa840696",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_0c5231fd-7e39-4912-bb9c-a356147ca278",
+        "agent:main:clawline:mike:main s_564d3150"
+      ]
+    ]
+  },
+  {
+    "item": "wi_2aa19876-2a78-4c28-9862-6b2962888cee",
+    "disposition": "DELIVERED",
+    "latest_attest": [
+      "att_edec644b-1eea-48a9-8472-c5933023bccf",
+      "asg_536735af-140b-465b-8a62-ab8a6001ffcc",
+      "CORRECTION to att_58147def, point 4. I wrote \"No agent can rule it\". That is false as a general statement and I should not have generalised from one refusal.\n\nEffort decision requests raised today, by ruler: agents ruled 167, Mike ruled 31, 170 superseded, 10 still open. Top agent rulers: tightbeam-codex-sol-relief 58, ask-image-paste 25, surf-ace-codex 24, firehose-recovery-v2 21, atc 15. Clearing these is routine agent work, not an operator-only power.\n\nThe true rule: the effort DR's EXPECTER is the principal behind the card's opener. A card opened by an agent escalates to that agent, who can and mostly does clear it. A card opened by mike escalates to mike and only mike can re-arm it. My refusal was correct for dr_7fc366fe specifically, because asg_536735af was opened by mike.\n\nSo my provenance claim was also overstated. I said Mike hand-cranking the loop was what kept it alive and it stopped when he stopped. In fact the loop is mostly agent-cranked and is running.\n\nRecount at 17:08, and it did not grow: 10 parked brackets, not 11. They split EXACTLY five and five.\nAgent-expecter, clearable today, holder currently unwatched: dr_4aef356a and dr_78242fa2 (tightbeam-codex-sol-relief), dr_ebc90086 (visitor-identity-recovery-v2), dr_6c82203d (rest-state-api-v2), dr_ee2036d1 (expecter is the root Main session, bare key with no suffix, not this one; my effort-rule returned the same not_authorized. That session is active and took a turn at 17:07, so it can clear it; I woke it with the id).\nMike-expecter, only he can re-arm: dr_83e987f3, dr_737a9cec, dr_89239c27, dr_222192f5, dr_7fc366fe.\n\nI woke the three product owners with the mechanism and their own DR ids. That is the absorbable half and it was absorbable all along; I missed it by generalising.\n\nWhat SURVIVES unchanged and is still Mike's: the holder is never notified, so a parked agent cannot rescue itself, and five cards sit on his desk. That part of att_58147def stands."
+    ],
+    "open_custody": [
+      [
+        "asg_536735af-140b-465b-8a62-ab8a6001ffcc",
+        "agent:main:clawline:mike:main s_c71f88da"
+      ]
+    ]
+  },
+  {
+    "item": "wi_21c95808-791d-47e9-9e7d-15ccdfa36e56",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_7a6d962d-ab45-4e7c-85a1-a7abd35b1fa8",
+      "asg_015311fe-df0b-45b5-b0f9-3f7d7e08e74a",
+      "019 RECORD AMENDMENT under NEW map62efbc3 O2, not canceled adoption: retain sole remedy asg_70db0a12 and existing exact late-ruling-review -> WakeRails composed-predecessor -> remedy allocation dependency from att_df650133. O2 new owner asg_915cc133 retains missing-review owner notification/recovery/idempotence design; its proposed early-review policy does not allocate Assignments/Gateway/Wakes/RailRemedy hunks or authorize execution. Future shared composition must reconcile O2 terminal-work/no-stale-remedy acceptance with existing suppression ask, no second producer or duplicate emitter. Root remains remedy allocation principal; WakeRails PO releases composed predecessor. No change to frozen source, existing subscription or target/publication holds."
+    ],
+    "open_custody": [
+      [
+        "asg_015311fe-df0b-45b5-b0f9-3f7d7e08e74a",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_70db0a12-65d3-469f-91de-36b155c414fc",
+        "agent:main:clawline:mike:main s_7e3a85f6"
+      ]
+    ]
+  },
+  {
+    "item": "wi_9ea2c001-252e-4b5a-b571-6e023b819e54",
+    "disposition": "DELIVERED",
+    "latest_attest": [
+      "att_358a37bc-6e16-48ee-b1d2-496c65bf57c4",
+      "asg_028f1b7c-1707-4aae-9400-32cd4ed343dc",
+      "03:54 Mike recovery disposition: PRODUCT DELIVERED, OWNER BOOKKEEPING BLOCKED. One supported completion attempt still refused completion-requires-review; no completion row created. Existing sole exact-pair review asg_deb6de39-7e9e-44ac-8a9e-b59b8d27c332 correctly links closed completed producer asg_95999f4e-c404-485e-970c-a46b4fe27f81, not this owner card. Preserve att_eb75e71c/art_510df0a8, producer att_a0482f60 and landing art_472f7f3f; current ancestor evidence supplied by Mike confirms8bcc242b019/07763d1emain retained. Existing systemic family: wi_032f11a6-2ab2-41b6-ab04-41b06a35cf18 completion output-kind/nonproducing coordinators; related wi_903851ac-e8ea-418d-9c73-29ab4a9f4698 reviewed-commit merge-owner review inheritance. This is NOT newest-revoked-review selection or absent author review. No duplicate review/implementation, reclassification bypass, runtime change or failed-product claim. Supported lifecycle correction remains needed; do not rebuild delivered bytes."
+    ],
+    "open_custody": [
+      [
+        "asg_028f1b7c-1707-4aae-9400-32cd4ed343dc",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ]
+    ]
+  },
+  {
+    "item": "wi_54c952c3-fba0-4106-b727-a1d8146b7830",
+    "disposition": "OPERATIONS",
+    "latest_attest": [
+      "att_028af634-adc0-4f0c-a511-a49dc5a60b8f",
+      "asg_1765fa1e-2c70-4d66-89eb-be3729224b21",
+      "Material PR #30 event reconciled. GitHub still showed open non-draft PR #30 at exact head 54858cd508426d68cf0d3318e16ee9ded76080b0 over base fdb3db53b596d4114d06505b39a4c1836fba7564, with no existing review on that head. Independent review asg_37ebb29e completed changes-requested under verdict att_9eb884d6-c046-4776-8380-92e6624b3bc1 and completion att_a5af87bf-12e4-49c0-8636-c00922226c64; SHA-bound report art_46ffe59f has SHA-256 e5f9a6d2ed172d5b39e6ab007dcf6ba32b8b32297578a3bf235cee064b7d1a70. Live checks settled Linux success and macOS failure in run 34182823388. Published exactly one GitHub CHANGES_REQUESTED review 5137092635 bound to 54858cd5; durable URL receipt art_6bc7526b. No edit, push, merge, target, release, deploy, install, configuration, schema, credential, service, or live-state action occurred."
+    ],
+    "open_custody": [
+      [
+        "asg_dd77c018-f000-4084-99ff-77f8cbbacf79",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_1765fa1e-2c70-4d66-89eb-be3729224b21",
+        "agent:main:clawline:mike:main s_9744234f"
+      ]
+    ]
+  },
+  {
+    "item": "wi_60f879d9-f1cd-4461-82c7-7f1e922d75db",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_7e9ff1f5-848e-4718-af44-6b617006394e",
+      "asg_eb6d2279-5e7a-44ee-ae17-1c632c7e3f61",
+      "Commit-identity condition fallback fired without matching clearance. Read latest owner att_a4f7ba5d-2b44-445e-93e9-c4757dbdf0d5: explicitly preserves sole producer and green staged trees, names intended product author/committer as next boundary, but supplies no identity. Therefore no product commit, rerun, or target action. Tested evidence art_10f64184 remains intact as last verified custody. Original request w_aae40861 remains the bounded owner question; no duplicate human request. Continue on actual late-ruling-commit-identity-cleared fact only; fallback is delivery evidence, not identity authority."
+    ],
+    "open_custody": [
+      [
+        "asg_26d2def8-c0ff-4d59-851b-dfc2e7899f90",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_eb6d2279-5e7a-44ee-ae17-1c632c7e3f61",
+        "agent:main:clawline:mike:main s_d90f6b55"
+      ]
+    ]
+  },
+  {
+    "item": "wi_8b0cd02b-7e7c-4494-aeb4-0951316471d2",
+    "disposition": "DELIVERED",
+    "latest_attest": [
+      "att_1887e2e8-66ba-47cf-8a7b-46ea96047af6",
+      "asg_baa0046d-d016-41d8-a5c4-33efb6c34d06",
+      "Owner coordination complete. Fresh current rows show this is the only remaining open Bandit obligation. Consumed producer completion att_039a3db0-f14b-4e7b-80d5-7fea0901a081: atomic non-force dual landing019 f303dce752119a493030fcddbb1053ecbc314384 and main fb86cb48535042cc43bff9b83d4a966b35324829, exact guards and post-push readback. Independent pair review att_61aebebb-e360-41a8-b74e-89a46eafabfd and exact hosted34014735402/34014882117 green bind one-record Bandit1.12.1->1.12.5 delta, other bytes preserved. Mike ticket patrol reports fresh22:29UTC current0199e9eb50/main832b025 retain1.12.5 and landed commits as ancestors; attributed current readback, no new gate claim. No remaining implementation, review or integration obligation on this recovery item. Preserve evidence and historical predecessor records; no clone cleanup, rerun, restaff, release, install or runtime action. Closing owner coordination and work item only."
+    ],
+    "open_custody": []
+  },
+  {
+    "item": "wi_c737aee7-ccd3-411d-9fb6-e7909823cb58",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_0d9a93ab-48f9-45df-887d-82f363debae8",
+      "asg_9ebb810d-370b-477f-aa27-f17fb433c781",
+      "Authorized four-path rsync exited0; destination initial diff matched cc548116. Racter format check exit1; formatted only allocated files. Focused compile exposed generated test-name unquote error; corrected two names in existing Racter test file. Three-file suite then253 tests4fail exit2, all new progress assertions using wrong response shape. Corrected nested attest response assertion; focused matrix4tests4fail exit2 now proves successful progress attest retains assignment_open entitlement basis with correct1000/1234/4321 interval. Source Assignments progress branch appends attest marker and does not rearm; new test assumed otherwise. No product semantics changed. Full canonical gate NOT started. Exact formatted/corrected Racter patch preserved cadence-racter-focused-candidate.patch SHAacf734c1c13f504b70f9952d0f266538894f490bc721dd799484576c9f42d247; focused matrix log SHA24ea14dd9a7d1f874feeaa533df291c797af335f852c0798818de4813ad9bf13; suite log SHA35a2d5772b2f8d165b92960fd6c2d31906067da68fb6afdb957699f803e25421. Local original cc548116 preserved separately. Next reconcile regression with existing receipt semantics; any progress behavior addition remains outside bounded scope, no success or review readiness."
+    ],
+    "open_custody": [
+      [
+        "asg_d984ca20-b457-4194-9c09-30a72975a726",
+        "agent:main:clawline:mike:main s_0cd749fc"
+      ],
+      [
+        "asg_9ebb810d-370b-477f-aa27-f17fb433c781",
+        "agent:main:clawline:mike:main s_658f78a6"
+      ]
+    ]
+  },
+  {
+    "item": "wi_c60c0189-375a-4bce-bced-e80862d2a454",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_74f0b6e4-bf2a-4054-8a6a-6d59430f4f2e",
+      "asg_02fd384a-3a42-4e66-9606-24efbb915c0e",
+      "Mike patrol correction: directly consumed completed G-D source receipt att_5b83c324-94dc-42f2-8fca-188ad5b6c36c on asg_8bedd2be. Supersedes att_48d6cf2a actual-start-unobserved status: source delivery completed exact926774a30fb79df5c66015b118689b8be45aa350 preserving wording06603540/admission659f2779; explicit PO final source acceptance att_b8a06f7e on existing asg_5ac4d197, linked independent clean att_838e6b30 on full asg_2f542078-ea80-470e-970e-5e7a4f087405. Canonical gate att_3a34e5c6/art_7d23cf9b reports1850Mix+9doctests/296Rust0fail11existing skips. Bounded wording implementation/source-review responsibility is satisfied within accepted WakeRails source; no restart or repeated gates/review. Remaining target delivery belongs through existing WakeRails parent product-owner:row-driven-wake-refactor/asg_5ac4d197 per completion, full parent ID/target disposition requested for exact durable handoff, not new staffing. This card does not claim source landed/installed or elect integration targets. Abbreviated wi_fbcdf1a9 lookup refused unknown_work_item; no broad scan."
+    ],
+    "open_custody": [
+      [
+        "asg_02fd384a-3a42-4e66-9606-24efbb915c0e",
+        "agent:main:clawline:mike:main s_0cd749fc"
+      ]
+    ]
+  },
+  {
+    "item": "wi_b1bb275a-3ecc-46ac-b7e2-67ca5c33c456",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_bbc93a54-2667-47ee-b9f3-8bd94707c898",
+      "asg_1a9ad783-b11b-41ed-b3ce-32415c1fb973",
+      "Consumed new owner att_0ff4d296-f56d-4bde-8d6e-6b3b5c57ae78, which reports full-read/hash verification of art_af56da99 SHA256c31699c62bf40965aa9fb7bcb3a0f38d4c20aceb9d135195bedc036053ca8d10. Correct prior missing-cost-disclosure diagnosis: explicit bound N*33554432 logical bytes;100 max-size files3.125GiB;DB plus one full backup at least6.25GiB payload. WAL overhead is changed-page/checkpoint/reader dependent and expressly unmeasured. Accept attributed bounded cost disclosure, not physical benchmark/capacity proof; no new benchmark gate absent acceptance requirement. Intended supported readable regular-file payloads must capture exact bytes transactionally; unsupported pointers cannot claim captured durability or RELEASED, but do not widen content/fetch scope. Remaining implementation gap, if any, is an already-supported payload-bearing path uncaptured, not universal pointer capture. Owner identifies actual allocation dependencies as REST predecessor sequencing/WakeRails handoff and separate served no-unset constraint;40/0 remains old-base fixture proof. Direct artifact-get lookup refused unknown command; no independent artifact-byte verification claimed by this session. Preserve existing sole design/producer, no new implementation or cost loop."
+    ],
+    "open_custody": [
+      [
+        "asg_1a9ad783-b11b-41ed-b3ce-32415c1fb973",
+        "agent:main:clawline:mike:main s_0cd749fc"
+      ]
+    ]
+  },
+  {
+    "item": "wi_43ea22fa-833c-4f04-9a6a-b467ce77b2c8",
+    "disposition": "DELIVERED",
+    "latest_attest": [
+      "att_2b1b90da-739c-470c-94a5-2f0fabb4f34e",
+      "asg_0068c4c2-7cce-4ecf-94e4-5b94f88469f6",
+      "Owner delivery complete. Independently read full art_8c93b33c on Racter and verified SHA df513e245902d807e1d7dbcab0cae1179a1abd73dba3f357d777f8f3f91c9bc1. Consumed closed integration att_5c29f75a/source att_a278f7d0, clean exact pair review att_84143cec, authorized atomic dual landing and final ancestry/readbacks:019 b299457d5c95dd6e161ed9b1de70b4450b5166b7,main634cf9775398ec28ed443bd217c9a9b36b105de6. Original CI34078592535/34078591278 success Linux/macOS tests/artifacts, release publication skipped. Test-only proofs preserve existing server dismissal fix and Continue/rearm; no remaining owner implementation/review/integration obligation. No rerun, install, release or runtime action. Work-item census had only this owner open before completion."
+    ],
+    "open_custody": []
+  },
+  {
+    "item": "wi_fbcdf1a9-d3fc-4f17-ae1a-eb38ebc9facd",
+    "disposition": "INCLUDED",
+    "latest_attest": [
+      "att_935e7381-3801-478a-917f-c5c67f93b600",
+      "asg_5ac4d197-2234-43cd-b6de-1b057b26d889",
+      "Resumed delivery: consumed actual parent ordering att_3b3bec0e. Existing late-ruling asg_eb6d2279 latest receipt remains att_7e9ff1f5: product identity unresolved; earlier att_f71da42a binds tested019 tree3a862bef10609da671c1e3c1c2a457db11a5fe24/main d3c2a60a1d5b791fc1f8174e1376257ddc6d86fc, not committed/reviewed handoff. No subsequent exact late-ruling clean verdict located in durable read. Precise missing artifact is committed019 late-ruling candidate plus linked independent review and shared diff; not renewed product approval. Parent order accepted: reviewed late-ruling -> WakeRails composition/current019 ref+ancestry reconciliation -> cadence, with remedy/O2 owned separately. Frozen926774a3 verifier/row semantics retained, placement019 excluded. Existing s_658f78a6 now holds cadence asg_9ebb810d WIP, so do not reuse concurrently or overwrite its checkout. Return missing handoff to existing late-ruling owner and substantive release coordination for Morrow morrow-wakerails-20260907. No new producer, composition success, protected push or runtime claim."
+    ],
+    "open_custody": [
+      [
+        "asg_5ac4d197-2234-43cd-b6de-1b057b26d889",
+        "agent:main:clawline:mike:main s_f2851c4c"
+      ],
+      [
+        "asg_05359c03-bf1e-4086-9ece-9ee403bf8d18",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_d5b51707-c260-4758-9536-dae1d7951b69",
+        "agent:main:clawline:mike:main s_65fd0b23"
+      ]
+    ]
+  },
+  {
+    "item": "wi_0cacc050-cd1d-4d63-aec9-c450d523fa1f",
+    "disposition": "DELIVERED",
+    "latest_attest": [
+      "att_50222d1e-a3f4-4cb7-8abc-eca7d148989d",
+      "asg_74e5182e-0d4a-4474-a364-bfd6e9212938",
+      "Expired-decision custody disposition: fresh canonical read confirms dr_21764bb9-90b5-4fa9-82d5-55f9af1269da remains OPEN with null decision/rationale after producer deadline report. Expiry supplies no ruling. Exact unresolved main policy choice remains retaining Codex usage-limit classification while appending nested data.message to target failure text and sanitizing owner notices. Preserve sole open asg_0d0e75e4 and its existing evidence; no duplicate request, timed human polling, reassignment or main mutation.0197311707d delivery/verification is complete and must not replay. Accountable decision custody remains this owner under existing request; producer may remain at the genuine policy boundary without false completion or surrender. Resume only after actual ruling is read and scoped; no release/install/runtime authority."
+    ],
+    "open_custody": [
+      [
+        "asg_74e5182e-0d4a-4474-a364-bfd6e9212938",
+        "agent:main:clawline:mike:main s_fde9b2be"
+      ],
+      [
+        "asg_0d0e75e4-6abf-442a-a15d-8d05b101684f",
+        "agent:main:clawline:mike:main s_14f59e5e"
+      ]
+    ]
+  }
+]
