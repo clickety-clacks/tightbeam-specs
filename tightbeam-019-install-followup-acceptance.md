@@ -1,6 +1,6 @@
 # 0.1.9 installer follow-up acceptance
 
-8 September 2026. Backing requirements for existing work item `wi_0c8ebb58-ac04-4353-8ff9-d435e64c1e28` (key `mike-019-install-followup-seven-days`). Mike authorized this requirement in the ClipMesh discussion and transferred it to the stalls-and-churn lead. Reuse that item.
+8 September 2026. Backing requirements for existing work item `wi_0c8ebb58-ac04-4353-8ff9-d435e64c1e28` (key `mike-019-install-followup-seven-days`). Mike authorized this requirement in the ClipMesh discussion and transferred it to the stalls-and-churn lead. Main subsequently closed that coordination item and retained the unmet requirement in successor `wi_cb0a4962-9f07-420e-92eb-26686454d249`. Reuse the successor; preserve the original history.
 
 ## Purpose
 
@@ -27,4 +27,4 @@ A direct installer-scheduled wake needs no new installation-fact watcher. A watc
 
 A Tightbeam wake is a notification. It does not independently run an external forensic agent or guarantee delivery while the gateway is down. Keep the due obligation externally discoverable through retained records. An external patrol can adopt a due unassigned review item, but that independent engagement path still needs an owner and working trigger; this installer item does not silently claim to deliver it.
 
-The PO's coordination assignment `asg_e07250bb-b653-4310-a6cb-ffd223b22e39` retained these requirements but surrendered after the existing CI owner found no authorized installer. The work item remains open and unmet for attachment to future authorized installation work. No installation timestamp or actual seven-day wake exists in this handoff. Preserve that status until implementation and scheduling evidence change it.
+The PO's coordination assignment `asg_e07250bb-b653-4310-a6cb-ffd223b22e39` retained these requirements but surrendered after the existing CI owner found no authorized installer. Main turn 124270 then closed the original item and created iceboxed successor `wi_cb0a4962-9f07-420e-92eb-26686454d249`, currently without assignments, for attachment to future authorized installation work. The requirement remains unmet. This corrects the prior report that the original item was still open. No installation timestamp or actual seven-day wake exists in this handoff. Preserve that status until implementation and scheduling evidence change it.

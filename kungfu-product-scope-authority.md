@@ -1,5 +1,11 @@
 # Kung Fu product-scope authority
 
+## 0.1.9 governing amendment, 8 September 2026
+
+For the 0.1.9 work reconciled under `tightbeam-019-agent-judgment-plan.md` revision 16 and `tightbeam-019-work-reconciliation-2026-09-08.md`, the typed scope-acceptance, new product-owner-role binding and universal assignment-opening gates proposed below are superseded. Preserve product judgment with the user and accountable PO through timely opportunity, attributed disposition and owned recovery using existing records. Preserve explicit governing holds and independent technical acceptance. The historical specification and its completed review remain below as evidence of the earlier proposal, not instructions to implement the superseded mechanism for 0.1.9. This amendment does not silently alter another line's separately authorized work.
+
+## Historical specification
+
 Status: revised candidate for exact-tip review; not implementation or landing
 authority. This specification is based on Tightbeam
 `42c20cdcee81c632a26b663ab0521642ee4a7b7d` and tightbeam-specs
