@@ -1,5 +1,7 @@
 # Rails + Guidance — implementation roadmap (beginning to end)
 
+> Governing amendment, 8 September 2026: the [core operating principle](tightbeam.md#operating-principle-trust-record-and-agent-judgment) governs which rules are enforced. Mechanism capability and historical rollout examples do not justify a workflow restriction. Review existing engineering rules, tool guards and hard-coded checks together with guidance. The [0.1.9 enforcement assessment](tightbeam-019-enforcement-assessment-2026-09-08.md) records current findings and proposed rule dispositions; it does not change live enforcement.
+
 **NON-LOAD-BEARING.** This is a tracking document: phases, checkboxes, sequencing. The
 authority for every decision and design is its SPEC; dated ruling provenance lives in
 `tightbeam-decisions.md`. Where this document and a spec disagree, the spec wins. Nothing may

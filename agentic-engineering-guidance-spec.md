@@ -1,5 +1,20 @@
 # Agentic-Engineering Guidance — documentation spec
 
+## Governing amendment, 8 September 2026
+
+The [core operating principle](tightbeam.md#operating-principle-trust-record-and-agent-judgment)
+governs this bundle's guidance and enforcement together. Existing rules are subject
+to the same justification as new ones. Evidence-shaped workflow requirements can
+still overconstrain agents; a verdict token does not by itself prove current
+authority or good judgment. Mechanical expressibility is not a reason to enforce.
+
+The historical worked examples and enforcement mapping below describe earlier
+design choices, not a mandate to enforce every listed practice. The current
+[0.1.9 enforcement assessment](tightbeam-019-enforcement-assessment-2026-09-08.md)
+records the inspected rules and proposed dispositions. These proposals change no
+live rule and do not supersede explicit operator restrictions by implication.
+
+
 This is the **spec** for the guidance of the always-on substrate operating manual and the
 `agentic-engineering` kungfu bundle: what guidance exists, where it lives, who reads it,
 and the doctrines it must carry.
@@ -272,10 +287,9 @@ decides whether a rule is a rail or advisory guidance.
 
 ### The principle: rails check evidence, never behavior
 A rail never enforces what happens inside an agent — understanding, care, effort, intent.
-It enforces evidence: a fact that the behavior, done right, necessarily produces. The
-author's first question for any rule is "what evidence does following this rule leave
-behind, and who produces it?" A rule whose observance leaves no producible evidence is
-advisory guidance, not a rail.
+It enforces evidence: a fact that the behavior, done right, necessarily produces. The author's first question is what concrete action needs protection and why that
+protection warrants removing agent choice. Only then ask what evidence establishes
+the protection and who produces it. A producible fact alone does not justify a gate.
 
 ### The red-tape test
 A rail is a backstop and an aid, never process. A compliant agent experiences a rail as
@@ -286,9 +300,9 @@ nothing at all; a rail prices only the failure path. Every rail must pass all of
   commit, a review session's verdict, a build's emitted result — and the substrate derives
   facts from what it can observe. An agent attests judgment (a verdict, a surrender); it does
   not file descriptions of work the substrate can see.
-- **Remedy before deny.** Where a remedy can produce the missing evidence, the gate starts
-  the producer instead of bouncing the agent. Deny-and-wait is for evidence only the agent's
-  own work can produce.
+- **Agent-owned recovery.** A refusal names the missing protection and routes useful
+  evidence to the responsible agent. That agent chooses suitable review or recovery.
+  Automatic staffing is a separate policy choice, not a consequence of requiring evidence.
 - **Outcome verbs only.** Evidence-gates sit on ship, merge, and complete — the boundaries
   where defects escape — never on working verbs (edit, run, spawn, wake). Two exemptions: a
   commission-time check on a working verb is allowed when it is instantaneous and mechanical
@@ -311,7 +325,8 @@ it. A rail's definition — its TOML statute and its script — is a version-tra
 the rails repository, not an ad-hoc patch.
 
 ### The bar is accountability, not perfect prevention
-A rail does not have to be correct to be worth having; it has to be legible. A rail is a
+Legibility makes a wrong rail diagnosable; it does not justify blocking legitimate
+work. A rail needs a concrete protection and proportionate behavior. It is a
 registered artifact; its evaluations are derivable from the recorded verb events (every
 gated dispatch is already a row — predicate passes are not separately recorded, which keeps
 the hot path free); and every non-pass — deny, script error, timeout, a value outside the
@@ -408,11 +423,11 @@ advances on a clean review verdict. A change to a meta-rail — a rule governing
 rails — escalates to the user.
 
 ### The author decision: rail or advisory
-A rule is a rail when a script can return a verdict on it — a mechanical comparison, a gauge
-read, or a judgment delegated to a spawned judge. A rule is advisory when no script can decide
-it even by delegation: demo-data-is-not-proof, and the escalation triggers (subsystem de-scope,
-ambiguous requirement, CRITICAL review finding). Advisory rules live in the kernels and
-skills, where the agent recognizes them and acts.
+Use a rail for a justified protection over observable facts at the affected action.
+Use guidance for intent, approach, proportionality and quality judgments owned by
+agents. Delegating a judgment to another agent does not automatically justify
+making that delegation a mandatory gate. Inspect existing rules and their composed
+behavior before claiming a guidance change restores agency.
 
 ### The enforcement mapping
 The author decision applied to this bundle's guidance, rule by rule. "Edge" is where the rail

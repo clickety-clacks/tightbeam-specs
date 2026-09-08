@@ -1,5 +1,7 @@
 # Rails substrate-mechanism v1 — script guards, remedies, turn-end sweep, legibility, satisfiability
 
+> Governing amendment, 8 September 2026: the [core operating principle](tightbeam.md#operating-principle-trust-record-and-agent-judgment) governs which rules are enforced. Mechanism capability and historical rollout examples do not justify a workflow restriction. Review existing engineering rules, tool guards and hard-coded checks together with guidance. The [0.1.9 enforcement assessment](tightbeam-019-enforcement-assessment-2026-09-08.md) records current findings and proposed rule dispositions; it does not change live enforcement.
+
 Status: DRAFT r9 (Claude/Opus; hardened through the ensemble adversarial-review
 rounds). This is the substrate-mechanism spec referenced by
 `agentic-engineering-guidance-spec.md` §6

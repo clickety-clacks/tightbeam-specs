@@ -2883,3 +2883,29 @@ principle now states this authoring rule. Role guidance supplies intent,
 authority and local facts; professional knowledge is assumed. Mike assigned
 Gibson Codex the lead for the corresponding Subetha discussion, with domain
 owners considering the direction within their responsibilities.
+
+
+### 2026-09-08: existing enforcement is part of the agent-judgment review
+
+Mike clarified that rails already operate in the substrate and engineering kungfu;
+guidance changes cannot deliver the intended freedom while contrary rules still
+block the work. The governing principle now explicitly applies to composed
+existing enforcement. Gibson Codex's source and configured-rule assessment,
+with focused Subetha domain contributions, is recorded in
+`tightbeam-019-enforcement-assessment-2026-09-08.md`. Specific rule retirements and
+narrowing are proposals for the repair plan, not user approval of every proposed
+mechanical change or authority to alter live enforcement. The earlier claim that
+overrestriction is safely harmless has been corrected. Historical judgments retain
+their original scope; Wake Rails' existing product approval remains in place.
+
+
+### 2026-09-08: preserve the PO's opportunity to judge product spirit
+
+Mike clarified the purpose of spirit judgment: the PO is the seat of the product
+or work's intent and should correct even specifications that miss it. Whenever a
+spec is written, or other work needs conformance to that intent, the PO gets a
+meaningful opportunity to review the spec, code or other result. The enforcement
+assessment therefore conditions replacement of the broad historical-token spirit
+gate on preserving timely, visible PO involvement and correction. Removing the
+gate without that behavior would not satisfy the ruling. No new universal receipt
+ceremony or implementation is claimed by this document change.

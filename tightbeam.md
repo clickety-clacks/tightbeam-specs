@@ -27,6 +27,15 @@ an orchestrator a coherent technical result, and a product owner whether that
 result fulfills the user's intent. Higher-level asks concern broader outcomes
 and quality; they do not require repeating every lower-level task.
 
+The product owner is the seat of the product's spirit and intent. It can correct
+specifications as well as implementations when they fail the agreed intent.
+New or materially changed specifications, and other work raising an intent
+question, must reach the PO with a meaningful opportunity to review and influence
+the result. Coordination and communication make that opportunity visible and
+reliable. The PO judges conformance; a historical approval token does not stand
+in for current judgment. Corrections remain within the governing authority, and
+changes to the agreed product intent go to the person who owns that decision.
+
 Tightbeam supplies five supporting planes:
 
 | Plane | What Tightbeam provides |
@@ -62,6 +71,15 @@ agent. Being mechanically enforceable is not sufficient. Routine record formats,
 missing status prose or timer expiry must not become substitutes for judgment
 about the work. Named review or verification requirements can protect specific
 actions; they do not authorize the machinery to prescribe the whole workflow.
+
+### Guidance and enforcement must agree
+
+Apply this principle to the rules already in force, including engineering kungfu,
+harness tool guards and hard-coded lifecycle and supervision checks. Prose cannot
+authorize an action that a gate still refuses. Assess the behavior of their
+composition, name conflicting restrictions, and change the governing rules through
+the authorized mechanism. Preserve concrete authority, attribution and evidence
+protections; do not preserve an imposed workflow merely because it already exists.
 
 ### Guidance supplies what the agent needs to know here
 
@@ -1023,8 +1041,10 @@ strand a message, it is constitution; if reasonable orgs could differ, it
 is statute. And the composition rule that keeps the tiers safe together
 is DENY-ONLY: a statute may add restrictions, never grant a permission
 the constitution refuses. Data law can tighten the walls; nothing written
-in a file can drill through one. The worst a bad statute can do is
-over-restrict — loudly, safely — never under-restrict.
+in a file can drill through one. Deny-only composition prevents a statute from granting authority the constitution
+withholds. It does not make overrestriction harmless: a bad statute can block
+legitimate delivery or prevent recovery. Such restrictions are product defects
+to narrow or remove, with the responsible agents judging the affected work.
 
 ## Multi-user and devices
 
