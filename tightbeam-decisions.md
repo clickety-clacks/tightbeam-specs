@@ -2945,3 +2945,16 @@ analysis evaluates the whole system; responsible product agents and Mike decide
 what changes next. The proposal retains internal supervision for ordinary work
 and separates external findings from the subsequent product decision. No evaluator
 has been staffed or scheduled by this document change.
+
+
+### 2026-09-08: installer follow-up handoff reconciled with external forensics
+
+Mike transferred the ClipMesh discussion to the stalls-and-churn lead. The handoff
+reports his authorization for the existing 0.1.9 installer item to schedule a wake
+seven days after verified Gibson installation. This fixes the initial reminder
+anchor; actual treatment exposure remains evidence for the analysis. The lead
+selected Mike's user inbox as the reminder destination for external review and
+relayed that context to the PO already owning the installer item. The earlier
+release-owner recipient was an agent assumption. External execution and delivery
+during gateway outage remain separate capability gaps. No installation or future
+review wake was performed in this reconciliation.
