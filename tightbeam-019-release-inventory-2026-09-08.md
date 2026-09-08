@@ -380,6 +380,16 @@ Open custody at the snapshot: `asg_824a5b98-29de-4b0c-b0ab-1f174bc44bf4` (agent:
 
 Evidence: `att_c14bbf72-89d1-46a1-848b-d6605ebd5d8d` on `asg_824a5b98-29de-4b0c-b0ab-1f174bc44bf4`.
 
+### 37a. included
+
+Work item `wi_b83e1fed-79fd-4fe4-9706-b004486af1a3`.
+
+Harness-home/current-target credential and identity adaptation is selected for the 0.1.9 arm. Historical ruled request `dr_3623e7cb` expected both lines; Mike directly approved the clarified architecture on 8 September 2026 after reviewing the old/new folder and delivery paths. Preserve separate durable session workdirs, per-session archetype guidance and elected skills, one credential home per harness and machine, one Codex refresher, Claude's nonrotating distinction, safe identity refusal, no cross-host secrets and no bearer disclosure. Keep the current patched path until unmodified-adapter identity, two-archetype isolation, long-guidance, product-conflict, compaction/child, hook-failure, credential cold-start/refresh, migration and rollback acceptance passes. This does not authorize shared archetype text, merged identities, weaker refusal, release, install or live credential/runtime changes.
+
+Open custody at the decision: `asg_2beffc49-db67-4b98-980d-2e23c869bf14` (agent:main:clawline:mike:main s_0cd749fc). Reuse its serialized implementation and review path; do not create another source or gate lane.
+
+Evidence: canonical Lavish review session `a43eea7a1eebfef8`; direct Mike approval recorded 8 September 2026 and routed through wake `w_c52f6a3b-b060-4b65-85bb-ce2fe283f8a7`.
+
 ### 38. included
 
 Work item `wi_7e25614b-a42d-4125-a48d-2991121039a6`.
