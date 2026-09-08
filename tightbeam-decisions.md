@@ -2933,3 +2933,15 @@ It distinguishes choosing a testable implementation from claiming empirical
 success, and proposes using existing records and responsible agents rather than
 new worker reporting gates. Its initial hypotheses are proposals, not shipped
 changes or evidence of their success.
+
+
+### 2026-09-08: external forensics for Tightbeam's own improvement trials
+
+Mike questioned why the proposed evaluation would run inside Tightbeam instead
+of as external forensics. The lead revised the learning-loop proposal to use an
+external primary evaluator so the system's own gates, routing or failures do not
+control its assessment. Tightbeam supplies records and domain context; external
+analysis evaluates the whole system; responsible product agents and Mike decide
+what changes next. The proposal retains internal supervision for ordinary work
+and separates external findings from the subsequent product decision. No evaluator
+has been staffed or scheduled by this document change.
