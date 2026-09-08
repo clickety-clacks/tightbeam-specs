@@ -9,6 +9,60 @@ is, why it is, how it works, and what it refuses to be. The reasoning, spikes,
 and dated decisions that produced it live in `tightbeam-decisions.md` (non-
 normative); where that record and this spec disagree, this spec wins.
 
+## Operating principle: trust, record, and agent judgment
+
+**Agents run the work. Tightbeam makes their coordination, communication,
+accountability and responsibilities durable and visible. Control and judgment
+belong to the agents and the people who authorize them.**
+
+Adopted by Mike, 8 September 2026. This governs the specifications below,
+including law and supervision. It clarifies the earlier agent-first and
+"Prompt, don't prescribe" rulings.
+
+Agents own asks and choose how to deliver them within the authority granted.
+Responsibilities let them focus. Supervising agents judge the results, challenge
+the approach when needed, and remain accountable for their own supervision.
+Responsibility broadens up the agent graph: a worker owns a sound deliverable,
+an orchestrator a coherent technical result, and a product owner whether that
+result fulfills the user's intent. Higher-level asks concern broader outcomes
+and quality; they do not require repeating every lower-level task.
+
+Tightbeam supplies five supporting planes:
+
+| Plane | What Tightbeam provides |
+| --- | --- |
+| Coordination | Visible obligations, dependencies and ownership so agents can organize work and notice what needs attention. |
+| Communication | Addressed, durable delivery of messages and relevant changes across turns and failures. |
+| Accountability | Attributable actions, decisions, evidence and results that supervising agents can inspect and challenge. |
+| Responsibility | Recorded asks, delegated authority and ownership relationships at each agent's scope. Agents decide the organization's shape and who owns its work. |
+| Reliability | Deterministic record and delivery guarantees, reminders for missed obligations, and a route to a responsible agent when attention or delivery fails. |
+
+These are product responsibilities, not a requirement for five new components.
+The reliability plane supplies dependable mechanics. It does not determine what
+an observation means or choose an agent's next workflow action.
+
+**Trust, but record. Prompt, don't prescribe.** Capture ordinary execution where
+it is already observable. Agents record intent and judgments that execution alone
+cannot establish. Keep separate reporting work small. A record makes work
+inspectable; it does not certify quality. Supervisors use it to judge fulfillment,
+recover missed work and improve the approach at their own scope.
+
+The prodder belongs to the reliability plane. It is the gentle reminder when an
+agent misses something, not an adversary testing obedience. It states the unmet
+expectation and relevant evidence, then gives the accountable agent room to act.
+Repeated unchanged reminders should become less frequent while a bounded
+reassessment remains. Material changes, failed delivery and an approaching
+commitment can renew attention. If the holder cannot respond, bring the facts to
+a capable supervising agent. That agent decides what recovery is appropriate.
+
+Deterministic enforcement protects attributable records, reliable delivery and
+explicit authority boundaries. A workflow restriction additionally needs a
+concrete protection that justifies removing that choice from the accountable
+agent. Being mechanically enforceable is not sufficient. Routine record formats,
+missing status prose or timer expiry must not become substitutes for judgment
+about the work. Named review or verification requirements can protect specific
+actions; they do not authorize the machinery to prescribe the whole workflow.
+
 ## The Spirit
 
 Tightbeam is a patchbay: the smallest possible deterministic substrate through which one person and their agents talk, hire,
@@ -19,8 +73,8 @@ harness transcript is the only truth about a conversation; Tightbeam keeps a
 ledger, not a shadow, and when something fails it fails as a visible row with
 a reason, never as a mystery. Everything anyone does — human or agent — is
 one of a few verbs through one chokepoint, so the whole org is auditable,
-governable by deterministic law, and small enough for an agent to hold in its
-head and, if need be, rewrite. It manages nothing and observes everything.
+accountable through visible records and explicit authority, and small enough
+for an agent to hold in its head and, if need be, rewrite. It manages nothing and observes everything.
 And it will never grow to fit your use case: identity and judgment are data,
 enforcement is law, and every long-tail want is a skill, a fork you never PR
 back, or your own substrate built from this spec — because this document, not
@@ -50,11 +104,10 @@ harness improvement for free.
 
 Within that role, the most novel piece is not the chat gateway; it is the
 replacement for the hand-tended agent instruction file. Identity is compiled from declarative
-archetype manifests, and rules are split into two tiers: prose (skills and
-guidance) for judgment, and deterministic law (rails) for everything
-enforceable — because prose is not enforcement, and the emphatic all-caps
-rules people bury in instruction files exist precisely because inference
-skims them.
+archetype manifests. Guidance describes responsibilities and supports judgment;
+rails enforce justified protections over structured facts. The operating
+principle above governs which protections belong in rails. The ability to encode
+a preferred procedure is not a reason to make agents follow it.
 
 ## Where it sits
 
@@ -271,10 +324,12 @@ outside dispatch, or quietly grow a closed set?
 **T4 — Identity is data; law is layered.** Who an agent is = generated files
 (archetypes projected into harness homes). What binds = constitution (owner-
 only substrate mechanics) over rails (proposable, deterministic rules) over
-skills and guidance (prose). Prose is not enforcement. *Prevents:* reliance on
-inference obeying a rulebook it may skim. *Test:* is this rule about structured
-facts (railable) or about content and judgment (guidance)? Is enforcement
-being placed in prose?
+skills and guidance. The operating principle governs the choice to enforce.
+*Prevents:* both missing concrete protections and replacing agent judgment with
+an ever-growing rulebook. *Test:* what specific action or guarantee needs this
+protection, and why is recorded agent supervision insufficient? Only then ask
+whether the condition is a structured fact a rail can check. Content and
+judgment remain with agents.
 
 **T5 — Observe, don't manage.** No backpressure, no queue management, no self-
 healing cleverness — only bounded counting rules plus total visibility (queue
@@ -327,8 +382,9 @@ result rather than be woken by a fact?
 **The test, in order.** For any proposal: (1) must the substrate interpret
 content? → agent-side (T1). (2) Does it shadow or out-clever harness/delivery
 truth? → reject (T2). (3) Does it bypass dispatch or grow a closed set? → spec
-amendment or reject (T3). (4) Is it enforcement-in-prose? → make it a rail or
-accept it as guidance (T4). (5) Does it manage rather than observe? → reject
+amendment or reject (T3). (4) Does a concrete protection justify restricting
+agent choice? If so, enforce only its structured-fact boundary; otherwise leave
+it to accountable judgment (T4). (5) Does it manage rather than observe? → reject
 (T5). (6) Does it grow the core beyond one-sitting comprehension? → reject
 (T6). (7) Is it a long-tail capability? → skill, fork, or reference-impl
 derivative (T7). (8) Does it hold a cross-agent continuation or force an await?
@@ -930,13 +986,15 @@ on tool calls), and to the outside world through capability chokepoints
 (external actions gated on rail state or on tokens minted by rail actions).
 The result is defense in depth: gateway rails govern the org's verbs, compiled
 hooks govern each agent's hands, external chokepoints guard the crown jewels.
-Judgment stays with the agents; the substrate makes the *sequence* ungameable,
-not the substance.
+Judgment and workflow control stay with the agents. These mechanisms enforce
+the particular protected action's authority or evidence requirements; they do
+not make a preferred end-to-end sequence compulsory.
 
-The litmus between tiers: a rule that names structured facts (who, what state,
-what evidence, what count) can be a rail; a rule that requires understanding
-content or intent is guidance. Instruction files shrink to taste and judgment;
-everything enforceable becomes law that works even when the model skims.
+The litmus between tiers starts with purpose, not expressibility. A rail needs a
+concrete protection under the operating principle, then a condition over
+structured facts. Understanding intent, choosing an approach and judging quality
+belong to agents. Guidance should make the ask, authority and responsibility
+clear without turning every useful example into a mandatory procedure.
 
 Above all of it sits a line that must never blur: CONSTITUTION versus
 STATUTE. The constitution is the set of rules that make the substrate BE

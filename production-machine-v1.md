@@ -6,6 +6,15 @@ model-ringdown-pattern.md; its principle ("model choice is judgment, done by
 inference") is carried forward here, its mechanism (episodes, holds, ladder,
 verb) is deleted from the tree.
 
+## Governing purpose, 8 September 2026
+
+The [core operating principle](tightbeam.md#operating-principle-trust-record-and-agent-judgment) governs this engine.
+Determinism supplies reliable recognition, recording and delivery. It does not
+supply work judgment or workflow control. The prodder is a helpful reliability
+backstop; its policy lives in the supervision specification. The ability to
+express a condition and action does not establish that the product should
+require that behavior.
+
 ## The invariant
 
 The substrate is a Newell production machine: a recognize-act cycle over the

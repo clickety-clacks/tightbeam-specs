@@ -6,13 +6,28 @@ design-complete but unscheduled; implementation lanes deepen them to mechanism g
 take adversarial review) when cut. Where this spec assigns a seam to an existing mechanism
 spec, that spec governs the mechanism's internals.
 
+## Governing interpretation, 8 September 2026
+
+The [core operating principle](tightbeam.md#operating-principle-trust-record-and-agent-judgment) governs this constitution.
+Responsibilities focus agents on their asks; accountability lets supervising
+agents judge results at the appropriate scope. Neither a recorded action nor a
+delivered notification proves fulfillment. Supervisors remain responsible for
+responding to problems in the work they oversee.
+
+Attribution and obligation records make work visible. The assignment-as-capability
+requirement below does not turn every internal step into a new permission request;
+self-carding remains lawful. Patrol brings missed expectations to attention. It
+is not a verdict on diligence or a punitive countdown.
+
 ## 1. Constitutional guarantees (substrate — kungfu cannot waive these)
 
 1. **Attribution**: every act names WHO (principal) — shipped.
 2. **Obligation**: every MUTATION names under what obligation — the assignment-as-capability
    rail (§6). Read/query is free; mutation requires an open assignment.
-3. **Patrol**: every open assignment is supervised (prods on silent holders) — shipped
-   (attest-hygiene sweep), completed by §5.
+3. **Patrol**: every open assignment has a reliability backstop. When recorded
+   expectations lack coverage, a reminder brings the facts to the responsible
+   agent. Agent supervision determines the meaning and response; §5 preserves
+   the route when a holder cannot act.
 4. **Living escalation**: escalation always reaches a living authority — climb the spawner
    chain past dead links; the ORG OWNER (user) is the root and final backstop (§5).
 5. **Delivery mechanics** (wakes, mailboxes, chain-walk) are substrate; they carry no policy.

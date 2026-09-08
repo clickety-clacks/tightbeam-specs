@@ -2851,3 +2851,24 @@ The two specimens that produced this ruling, both being deleted:
   hours. The cheap same-404 response shape stays; the timing proof goes.
 
 Audit of every other unasked security measure: wi_58d4fcdd.
+
+
+## 2026-09-08: trust, record, and agent judgment
+
+Mike directed that the documents conform to a conspicuous governing statement
+in the core specification. His formulation adds coordination, communication,
+accountability and responsibility to agentic systems while leaving control and
+judgment to agents. Responsibility broadens up the agent graph; supervising
+agents hold agents accountable at their respective scopes using the record.
+He described the prodder as a gentle "angel-on-the-shoulder" when agents miss
+something, and suggested reliability or determinism as its plane.
+
+The normative home is [tightbeam.md, Operating principle](tightbeam.md#operating-principle-trust-record-and-agent-judgment).
+This entry preserves the ruling's provenance. It supersedes the blanket
+"everything enforceable" selection rule and the adversarial rationale for
+immediate repeated prods. Deterministic guarantees and explicit authority remain;
+workflow restrictions need a concrete protection that warrants removing agent
+choice. Related accountability, coordination and supervision documents are
+conformed to that principle. Historical decisions and sealed records retain
+their original wording. Document conformance does not claim implementation or
+change live operation.

@@ -20,6 +20,16 @@ rulings: integrator 2026-08-13, overridable.
 
 > "Tightbeam is a machined part for binding agents together, not duct tape."
 
+## Governing principle, 8 September 2026
+
+This design follows the [core operating principle](tightbeam.md#operating-principle-trust-record-and-agent-judgment).
+Its machinery supports recorded responsibility and agent-to-agent accountability.
+Agent judgment governs work at each scope. The prodder supplies reliability and
+recoverable attention. Neither its notices nor the ability to encode a rule
+establishes that an agent's approach is wrong. Role templates focus responsibility;
+they do not justify prescribing every step or seeking fresh permission for work
+already authorized.
+
 ## Goal
 
 Protect the org's scarcest resource — frontier-model attention — by shaping
@@ -154,10 +164,11 @@ rendering of classes (Clawline's business); 0.1.x-line behavior.
 
 ## Invariants (governing laws; r5 adds the fourth)
 
-1. **Agent-first.** Agents run the org. The substrate records truth, prods,
-   and executes named org-authored law; it never judges, never seizes
-   (adjudication deletion, 2026-08-05). The fabric below is a toolkit agents
-   wield and delegate to — never a frame inference lives inside.
+1. **Agent-first.** Agents run the org and supervise one another at their
+   respective scopes. The substrate records truth, delivers relevant changes and
+   supports their responsibility. Named law must satisfy the core operating
+   principle's protection test. The fabric is a toolkit agents use; it does not
+   choose their workflow or judge their results.
 2. **Attenuate interruption, never information.** Every message still lands
    in durable rows. The fabric shapes *when inference is spent*, never
    *what is recorded*. A wrong reflex costs latency, never truth.
@@ -291,6 +302,12 @@ v1 behaviour set (deliberately minimal):
 | `batcher` | creates the delivery wake at min(next turn boundary, class ceiling) | ceilings: §7 table | class → immediacy map |
 | `status-responder` | answers `status-query` from rows (toplines/trace) when the query is in its answerable scope; out-of-scope or rows-unavailable → files a named degradation row and routes the query to the desk (the cheapest mind), never silently drops (Phase 5; until then the desk answers from rows) | scope: toplines + trace reads | scope of auto-answerable queries |
 | `prodder` | starvation watermark over the WATERMARK POPULATION: any member quiet past its floor → escalate regardless of any gate. Population = open obligations (quiet = no attest) AND unanswered `input-needed`/`blocker` rows (quiet = no answer, consume, or summon since creation). A misclassified decision still enters the population the moment any mind re-classifies it upward; a decision misclassified `fyi` AND never re-classified is bounded by rumination audit (§9), not by the watermark — the fabric does not claim otherwise. (r5 rename, CR-001: was "avasarala" — the name moved up to the triage role, §5b; the bone keeps the legacy supervision name. Same watermark contract, same floors, same population — only the name.) | floors (pilot seed values; skeletal to change): 30 min for unanswered `input-needed`/`blocker`; 60 min attest-quiet for open obligations | thresholds per class/archetype |
+
+The prodder's watermark is a reliability signal, not a judgment that work is
+stalled. The floor guarantees reassessment and a route to responsible attention;
+it does not require repeated identical interruptions of the worker. Notice policy
+must honor valid dependency coverage and reduce unchanged repetition while
+preserving attention to material consequences. Agents interpret the facts.
 
 `wake-on-fact` (S1) already exists and is the subscription bone; this spec
 consumes it, not respecifies it.
@@ -521,7 +538,10 @@ spawns the orchestrator AND the orchestrator's desk, wires PO-desk to
 orchestrator-desk, and hands over the charter binding — minds decide, desks
 execute, from the very first hire (§4, §6).
 
-**The altitude rule:** the PO judges; the orchestrator coordinates. The
+**The altitude rule:** responsibility and quality judgment broaden up the graph.
+Each agent judges the result it owns and remains accountable for its supervision.
+In this engineering organization, the PO judges fulfillment of product intent;
+the orchestrator coordinates and judges the coherence of the technical result. The
 orchestrator owns the LIFETIME of its work items and their toplines —
 staffing, sequencing, review commissioning, dispositions — under the PO's
 spirit rulings. POs do not assign implementation cards directly. Ships as a

@@ -19,6 +19,16 @@ This spec is the authoritative bounded amendment for these clauses:
 Those documents remain authoritative outside the named clauses. This table resolves a
 conflict in favor of this spec; it does not authorize another behavior change.
 
+## Operating-principle amendment, 8 September 2026
+
+The [core operating principle](tightbeam.md#operating-principle-trust-record-and-agent-judgment) and
+[supervision reminder policy](supervision-v1.md#detection-and-reminder-policy)
+govern standing reminders too. A reaffirmation records continuing responsibility;
+it is not proof of productive work and must not become an obedience ritual.
+Notice timing must reduce unchanged repetition while preserving bounded
+reassessment. Existing receipt and entitlement records remain the mechanism;
+their existence alone does not justify another immediate reminder.
+
 ## Goal
 
 G1. Tightbeam represents ongoing accountable custody as a typed standing assignment
@@ -302,7 +312,7 @@ standing candidate with production kind `standing_accountability` and sends this
 prompt through the existing supervision wake seam:
 
 ```text
-Standing assignment <assignmentId> needs accountability reaffirmation. File reaffirmation, schedule a continuation, or file surrender. This is accountability prod <k> of <N>; a reply without a row escalates to your spawner.
+Standing responsibility <assignmentId> is due for reassessment. Please check whether its ownership, coverage and dependencies still reflect the work. Use the supported record or continuation for your decision. This reminder does not imply that the responsibility should be completed or that your work is deficient.
 ```
 
 The `attest` transaction accepts `kind = reaffirmation` only when the caller is the
@@ -311,7 +321,10 @@ attest, resets the standing assignment's existing prod counter, and re-arms its
 entitlement at `attest.ts + supervisionIntervalMs` in one transaction. A holder-filed
 progress attest performs the same standing-accountability reset after it stores the
 progress row. An accepted holder-created continuation uses the existing pending-wake
-gate. Empty prod answers advance the existing counter and escalation ladder.
+gate. A response without qualifying evidence leaves the recorded condition unresolved.
+Further reminder eligibility follows the amended supervision policy; an empty
+answer alone does not require another immediate interruption. The counter and
+lineage record attention attempts, not a judgment on the holder.
 
 The reaffirmation re-arm records `basisKind = standing_reaffirmation`,
 `basisId = <attestId>`, `cause = standing_reaffirmation`, and
@@ -508,7 +521,8 @@ a discrete assignment tries it, **then** the gateway returns
 gateway returns `assignment_closed`. Each refusal writes no attest, assignment
 transition, entitlement transition, wake, counter, or Firehose state event.
 
-**Given** a due standing assignment with prod limit 2, **when** two delivered
+**Given** a due standing assignment with prod limit 2 and reminder eligibility
+established under the amended policy for each claim, **when** two delivered
 standing-accountability prod turns end without a progress attest, reaffirmation attest,
 pending continuation, blocking fact, or terminal disposition, **then** direct evaluator
 calls produce tier 1, tier 2, and one escalation to the existing spawner rung. Each

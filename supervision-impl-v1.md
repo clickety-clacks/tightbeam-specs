@@ -1,5 +1,22 @@
 # Supervision impl v1 — reaction executor, prod counter, escalation ladder (implementation spec, r21)
 
+## Operating-principle amendment, 8 September 2026
+
+The [core operating principle](tightbeam.md#operating-principle-trust-record-and-agent-judgment) and
+[supervision reminder policy](supervision-v1.md#detection-and-reminder-policy)
+govern this implementation specification. Its earlier r21 state, transaction and
+lineage descriptions remain the engineering baseline, subject to later named
+amendments. They do not prove the new notification policy is implemented.
+Reminder eligibility and delivery must honor that policy before claiming
+conformance. An observed gap is a reason to help an agent reconsider, not a
+judgment of failure or a demand for a particular workflow action.
+
+The revised prompt and guidance below supersede their r21 strings. Any legacy
+`stalled` or `stalledAt` name records a detected condition or escalation event;
+it is not a conclusion about diligence or the quality of work. Immediate-repeat
+examples and tests below are historical r21 mechanism cases. They do not override
+the amended notification eligibility policy.
+
 ## r21 — the turn-end schedule (Flynn-ratified 2026-07-24)
 
 r20's sole-authority claim over the turn-end moment is REPLACED by schedule
@@ -333,10 +350,11 @@ camelCase column names; this spec still names attest columns by ROLE
 ("the opened-at column"), never by literal spelling — if a later attest
 revision renames anything, this spec follows attest, never the reverse.
 
-The deterministic backstop for the residency invariant: a resident must
-never end a turn with outstanding work and nothing on the record. Every
-turn-terminal leaves a terminal filing, a continuation, or it is STALLED —
-and a stall is an event the substrate reacts to. "Never silent" is a
+The deterministic backstop notices an open obligation with no recorded execution
+or covering continuation. This is a candidate for a helpful reminder, not a
+judgment that the agent failed. Reminder eligibility follows the amended
+supervision policy. The following describes the historical r21 delivery chain;
+its immediate repetition is superseded by that policy. "Never silent" is a
 LIVE/DEAD split, and that split is the core of the design (r11): a
 LIVE holder's stall CLAIMS exactly one wake, delivered to it while it
 remains live — and because a delivered wake provokes a turn whose
@@ -359,8 +377,8 @@ build.
 1. Stall detection at turn-terminal, event-driven: the gateway's own
    terminal transitions are the only steady-state trigger (plus a
    start-time recovery sweep — §The seam); zero polling, zero clocks.
-2. The prod: for a LIVE holder, exactly one CLAIMED neutral countdown
-   wake per stall event, delivered to it while it remains live
+2. The prod: for a LIVE holder, one claimed helpful reminder per policy-eligible
+   occurrence, delivered to it while it remains live
    (duplicates only across a crash boundary — accepted), origin
    `process:tightbeam`, satisfied only by state (rows), never by
    words. A RETIRED holder's stall claims no wake — its open
@@ -1340,16 +1358,14 @@ Delivery mechanics, a subsequent tick behind: a later WakeScheduler
 tick fires the row (`nudge: false` skipped the inline nudge),
 `deliver_prompt` stamps `[from process:tightbeam]` as the first line
 (sender = wake origin), and the enqueued turn is the prod's reply turn.
-When that turn ends with still no rows and nothing scheduled, its
-terminal is a NEW stall event → next prod, a tick later. No deliberate
-spacing — the delivery latency is delivery mechanics, not policy, and
-is EVENTUAL, not bounded by `TIGHTBEAM_WAKE_TICK_MS`: `deliver_due` is
-a serial pass that may synchronously call `LaneManager.ensure_lane`
-(wakes.ex, gateway.ex), and the next tick is scheduled only after that
-pass returns, so latency rides the scheduler's own throughput. What
-supervision guarantees is that its act phase never BLOCKS on delivery,
-not a per-tick SLA; delay would reward empty replies, and none is
-added.
+When that turn ends with no recorded change or covering continuation, its
+terminal permits reassessment under the amended supervision policy. It does not
+require an immediate next prod. Notification eligibility and repetition policy
+must be applied before claiming another delivered reminder. Delivery latency is
+separate from both that policy and scan cadence: a serial `deliver_due` pass may
+wait for `LaneManager.ensure_lane`, so a scan tick is not a delivery SLA. The
+act phase must still avoid blocking on delivery. The previous justification that
+spacing would reward empty replies is withdrawn by the operating-principle ruling.
 
 RACE WINDOW, ACKNOWLEDGED (TOCTOU): evaluation is asynchronous to the
 org. A turn enqueued between the step-3 `pending_count` read and the
@@ -1366,31 +1382,26 @@ is made.
 
 ## The prod wake (exact template)
 
-Origin `process:tightbeam`. Neutral, fact-stating, carries its own
-countdown. With `<id>` = assignment id, `<subject>` = assignment subject,
+Origin `process:tightbeam`. Helpful and fact-stating. Diagnostic counts remain
+in the record; the prompt carries no obedience countdown. With `<id>` = assignment id, `<subject>` = assignment subject,
 `<k>` = count, `<N>` = prod_limit:
 
-    Your turn ended with no filing and no continuation scheduled for
-    assignment <id> — "<subject>". File completion, schedule your
-    continuation, or file surrender. This is prod <k> of <N>; a reply
-    without a row escalates to your spawner.
+    Assignment <id>, "<subject>", remains open. The record shows no
+    current execution or covering continuation for it. Please reconsider
+    the next useful action within your authority. If work is waiting,
+    preserve its resolving condition and continuation; if the record is
+    incomplete, correct it through the supported path. You remain
+    responsible for the outcome.
 
-`<k>` counts DELIVERED prods (`prodCount + 1` at claim time) — a
-statute-denied attempt consumes no number, so the countdown the agent
-reads is always truthful. Both numbers are frozen in the outbox at
-the claim (`pendingK`/`pendingN`), and the delivered text renders
-from those stored values — never from live counters or live
-prod_limit (steps 8–9); the same holds for the escalation template's
-`<N>` and `<rung>`. A prod is satisfied only by STATE: a
-terminal filing closes the
-assignment (step 5 goes `:idle` via close), a scheduled continuation
-pauses (step 4), a progress attest resets the counters (step 6). A reply
-containing only words changes nothing and its terminal advances the
-count. Note the pinned consequence: a turn that files progress but ends
-with no continuation and the assignment still open is STILL a stall event
-— it draws prod 1 of a fresh countdown. Progress buys the counter back;
-only a filing-or-clock-bearing turn ends clean. That is the invariant,
-verbatim.
+The delivered-reminder count advances only for a delivered, policy-eligible
+notice; a statute-denied attempt consumes no number. Stored claim metadata remains
+available for truthful diagnostics and lineage handling, even when it is omitted
+from the prompt. Required evidence governs completion and continuation coverage;
+prose alone does not fabricate those facts. A response without qualifying evidence
+leaves the observed condition unresolved. It does not by itself justify another
+immediate interruption. Apply the amended reminder policy before the next claim.
+Historical counter-reset and coverage transitions remain mechanism behavior,
+subject to later amendments; they do not certify progress or fulfillment.
 
 ## The ladder (mechanical walk, Main terminus)
 
@@ -1730,12 +1741,10 @@ double-log.
 Append ONE bullet to `@builtin_comms` (lib/tightbeam/archetypes.ex),
 exactly:
 
-    - NEVER end a turn with outstanding work and nothing on the clock:
-      while you hold an open assignment, end every turn with a filing
-      (`tightbeam attest <id> --kind progress|completion|surrender`) or a
-      scheduled continuation wake to yourself. A turn that ends with
-      neither draws a prod; prods answered without rows escalate to your
-      spawner.
+    - Own the outcome and keep its next action or resolving dependency
+      recoverable in the record. Use the supported continuation when a
+      turn ends with work remaining. A reminder helps you notice missing
+      coverage; choose the next useful action within your authority.
 
 Add ONE built-in skill to `@builtin_skills`, name `tightbeam-dispatching`
 (operator edits win / delete-restores, like the existing three), content:
@@ -1751,17 +1760,16 @@ Add ONE built-in skill to `@builtin_skills`, name `tightbeam-dispatching`
     Done is rows, not prose: the assignment closes only by the holder's
     completion or surrender attest, or the operator's revoke.
 
-    Holding an assignment: every turn you end must leave a filing
-    (`tightbeam attest <id> --kind progress|completion|surrender
-    [--note "..."]`) or a continuation wake on the clock. Progress rows
-    reset the prod countdown; scheduled wakes pause it; words do
-    neither. If you stall, prods arrive from process:tightbeam and
-    escalate up your spawner chain after N misses.
+    Holding an assignment: preserve truthful progress and a supported
+    continuation or resolving dependency when work remains. You choose
+    the approach within your authority. Correct missing records without
+    inventing activity merely to satisfy a reminder.
 
-    Supervising: an escalation wake means your hire's assignment
-    stalled — N prods, no rows. Judgment is yours: read their stream,
-    wake them, re-staff, or ask the operator to revoke the assignment.
-    The substrate will not conclude why and will not act for you.
+    Supervising: a notice gives evidence that an expectation may need
+    your attention. Judge the situation at your scope, preserve valid
+    waiting and arrange useful recovery when needed. You remain
+    accountable for that supervision. Delivery of the notice is not
+    proof of recovery or fulfillment.
 
 ## What the substrate never does (invariants, acceptance lens)
 

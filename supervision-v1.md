@@ -8,62 +8,86 @@ retrospective — hand-run Sol lanes stalled silently (one 88-minute
 zero-file stall caught only by a manually-armed check), and the question
 "would tightbeam have improved this?" produced this design.
 
-## The invariant being supervised
+## Governing purpose, amended 8 September 2026
 
-A resident must never end a turn with outstanding work and nothing on
-the record: every turn-terminal leaves either a TERMINAL FILING
-(completion attest / surrender), a CONTINUATION (pending wake the agent
-scheduled), or it is STALLED. This is a residency norm (one line in
-orientation/guidance); supervision is its deterministic backstop.
+The [core operating principle](tightbeam.md#operating-principle-trust-record-and-agent-judgment) governs supervision.
+The prodder is a reliability backstop for agents who may miss an obligation or
+lose a continuation. It helps restore attention. It does not test obedience,
+classify intent or choose the next workflow action.
 
-## Core principle: idle is an edge, not a state
+An open obligation with no observed execution or valid continuation is a reason
+to bring the recorded facts to an agent. It is not proof that the agent gave up,
+that the work is poor, or that a particular next action is required. The holder
+judges how to proceed; supervising agents remain accountable for the broader
+outcome and for recovery when the holder cannot act.
 
-Nothing polls. The gateway itself produces the only event needed — a
-turn reaching terminal state — and the stall predicate rides that edge:
+## Detection and reminder policy
 
-    stalled(session) :=
-        turn just terminal for session
-      ∧ no running/queued turn for session
-      ∧ no pending wake targeting session
-      ∧ ≥1 open assignment held by session
+Detection uses durable execution, obligation, continuation and failure records.
+Existing wake coverage must be evaluated at the scope defined by its governing
+spec, including the approved Wake Rails obligation-specific coverage. Detection
+and notification frequency are separate responsibilities. An uncovered terminal
+event can invite reconsideration without requiring a fresh immediate prod.
 
-All conjuncts are ledger rows. Zero clocks, zero process inspection,
-zero interpretation. Supervision cost scales with activity (quiet org =
-zero evaluations); escalation latency scales inversely with misbehavior
-(empty replies are themselves the events that advance the counter).
+The prodder states the unmet expectation and available evidence. It may identify
+useful supported actions without making them an exhaustive command menu. A
+missing record receives a useful explanation and correction path. Ordinary
+execution should supply evidence wherever already observable; repeated status
+prose is not a substitute for progress and is not the goal of the reminder.
 
-## The prod lifecycle (event → prod → row ∨ counter++ → ladder → Main)
+Repeated unchanged reminders become less frequent while the next bounded
+reassessment remains covered. Material evidence, an approaching commitment,
+failed delivery or an unavailable resolver can renew attention. The mechanical
+policy responds to recorded facts and agent-supplied judgments; it does not infer
+meaning from prose. The agent evaluates consequences that require judgment.
+Valid waiting must not provoke invented activity or duplicate wakes.
 
-1. Stall event → ONE prod: a wake, origin `process:tightbeam`, neutral
-   fact-stating text carrying its own COUNTDOWN: "Your turn ended with
-   no filing and no continuation scheduled for assignment <X>. File
-   completion, schedule your continuation, or file surrender. This is
-   prod <k> of <N>; a reply without a row escalates to your spawner."
-2. A prod is satisfied only by STATE (rows), never speech:
-   - terminal filing (completion attest / surrender) → assignment closed;
-   - continuation wake scheduled → predicate false, prodding pauses (the
-     clock is the agent's again; the next stall is a fresh event);
-   - neither → the reply-turn's terminal is a new stall event →
-     immediate next prod. No spacing: delay would reward empty replies.
-3. Counter: per-assignment, counts consecutive prods without new
-   PROGRESS FACTS (new attest rows for the assignment; scheduling a wake
-   pauses but does not reset — pauses are not progress). Words never
-   reset anything.
-4. At N (policy; default 3): stop prodding the worker. LADDER:
-   a. wake the spawner (`spawned_by` lineage — nearest supervisor, has
-      context; judgment about why/what-next happens THERE, in an agent);
-   b. if the spawner is itself stalled/retired/unresponsive past its own
-      prod cycle → wake the assignment owner's Main (no-void terminus);
-   c. stamp the assignment `stalled` (a fact row) at first escalation.
-5. Everything — every prod, reply, escalation, stamp — is ledger rows.
+If the expectation remains unattended under the applicable bounded policy,
+bring the facts to a capable supervising agent through the existing lineage.
+This is assistance at a broader scope, not punishment. Supervision records
+what prompted the notice, delivery and response. A delivered notice does not
+fulfill the obligation or prove that supervision succeeded.
+
+This policy supersedes the former immediate prod-to-turn-to-prod requirement and
+its punitive countdown wording. It does not select a universal numeric interval
+or claim an installed implementation. Existing durable claiming, deduplication,
+coverage and lineage mechanisms remain engineering foundations. Reminder timing
+and the acceptance checks below must conform before an implementation can claim
+this policy. A fast scan interval is not a mandate to interrupt agents at that rate.
+
+## Reminder content
+
+For an uncovered discrete obligation, the notice conveys these facts:
+
+> Assignment <id>, "<subject>", remains open. The record shows no current
+> execution or covering continuation for it. Please reconsider the next useful
+> action within your authority. If work is waiting, preserve its resolving
+> condition and continuation; if the record is incomplete, correct it through
+> the supported path. You remain responsible for the outcome.
+
+Diagnostic counts may remain in the record. They are not an obedience score and
+must not become a threat in the agent's prompt. Exact evidence descriptions must
+match the observation and the applicable coverage rules.
+
+## Acceptance of the reliability policy
+
+- A missed continuation produces a useful reminder and the agent chooses the
+  next action. The system does not automatically restaff, close or resume work.
+- An unchanged justified wait retains its coverage. Repeated notices decrease
+  without losing bounded reassessment or a route to a capable supervisor.
+- New recorded evidence or consequences renew attention to the affected
+  obligation. Activity elsewhere does not hide its unmet expectation.
+- Failed reminder delivery remains visible and can reach a responsible agent.
+  Neither a fired wake nor a recorded response counts as fulfillment.
+- Missing or malformed evidence receives a supported correction. Required
+  verification and explicit authority boundaries remain intact.
 
 ## What the substrate never does
 
-Never concludes WHY (no "gave up" state, no inferred intent), never acts
-punitively on idleness (re-staffing is the supervisor's verb, by
-judgment), never reads reply content (rows or nothing), never injects
-standing reminders (prods are discrete addressed correspondence — the
-comms clock pillar — NOT the banned remind-tier context injection).
+The substrate never concludes why work is idle, judges the work's quality,
+punishes missing filings or silently chooses a workflow response. It delivers
+discrete addressed reminders and preserves truthful records. Agents decide
+whether to continue, revise, wait, arrange recovery or seek a decision.
 
 ## Forensics: demoted to diagnostics, off the critical path
 
