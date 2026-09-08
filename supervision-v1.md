@@ -132,15 +132,16 @@ To build, in order:
    facts, and later the check tier's review verdicts. Without it there
    is no "assignment open" fact for the predicate.
 2. REACTION EXECUTOR (first substrate acts-on-own-facts machinery):
-   at turn-terminal, evaluate the stall predicate; on true, perform the
-   prod wake as an ordinary audited verb call. Cascade-bounded by the
-   counter; all policy knobs (N, ladder shape) operator data.
+   evaluate the recorded condition and amended reminder eligibility;
+   when eligible, deliver an ordinary audited wake. Preserve bounded
+   reassessment and the lineage route. Policy determines notice frequency;
+   a detection event alone does not mandate an interruption.
 3. PROD COUNTER + LADDER: per-assignment counter columns/rows;
    escalation walk over spawned_by with the Main terminus; `stalled`
    stamp.
-4. GUIDANCE LINE: one sentence in orientation/comms — never end a turn
-   with outstanding work and nothing on the clock — plus the dispatching
-   skill teaching assignment/attest hygiene.
+4. GUIDANCE LINE: own the outcome and keep the next action or resolving
+   dependency recoverable, with a supported continuation when work remains.
+   The dispatching skill teaches the means without prescribing the approach.
 5. LATER (separate specs): check-tier completion gating (report-done
    refused without required fact rows), probe subcommand in the Rust
    CLI, ephemeral watcher, statute-expressed supervision policy.
