@@ -2872,3 +2872,14 @@ choice. Related accountability, coordination and supervision documents are
 conformed to that principle. Historical decisions and sealed records retain
 their original wording. Document conformance does not claim implementation or
 change live operation.
+
+
+### 2026-09-08: concise guidance for competent agents
+
+Mike directed applying the principle that modern agents need less guidance,
+focused on things they would not commonly know. His example was to say "meter
+cyclomatic complexity" without explaining the concept. The core operating
+principle now states this authoring rule. Role guidance supplies intent,
+authority and local facts; professional knowledge is assumed. Mike assigned
+Gibson Codex the lead for the corresponding Subetha discussion, with domain
+owners considering the direction within their responsibilities.

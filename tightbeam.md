@@ -63,6 +63,16 @@ missing status prose or timer expiry must not become substitutes for judgment
 about the work. Named review or verification requirements can protect specific
 actions; they do not authorize the machinery to prescribe the whole workflow.
 
+### Guidance supplies what the agent needs to know here
+
+Assume professional competence. State the ask, priorities, delegated authority
+and local facts the agent cannot reasonably know. Name the practice you want
+applied without reteaching it: "Meter cyclomatic complexity." Add a local tool,
+threshold or exception when relevant, not a definition of cyclomatic complexity.
+Keep detailed procedures only for unfamiliar system mechanics or a demonstrated
+local need. Evidence and design rationale belong in reference material, not in
+every agent's instructions.
+
 ## The Spirit
 
 Tightbeam is a patchbay: the smallest possible deterministic substrate through which one person and their agents talk, hire,
