@@ -35,3 +35,11 @@ All three open coordination assignments were opened and are held by the existing
 - R1: `asg_8e9971b6-5678-4ff8-9261-2f19bf20ca50`, disposition `att_c13dcc40-6956-4a72-8b78-4f656c2f74ef`. The new reminder behavior stays separate from the existing default-preserving cadence work.
 
 The PO sent one amendment request to the existing guard/cadence/continuation owner. Matching domain attests and overall internal release planning/acceptance custody were not yet recorded at this verification. PO turn 124344 retained that incomplete reconciliation and scheduled continuation `w_e646a0a3`, explicitly distinguishing adoption from completion. The external release owner has the actual item and assignment IDs and remains subscribed. No duplicate producer, implementation or installation was started.
+
+## Mike directs executive delivery, 8 September 2026
+
+Mike then directed the executives to return to their domains, self-set their goals toward getting 0.1.9 released, and communicate over Subetha as work finishes. The lead broadcast the instruction in `cf224620-e0d1-4526-b167-674ca97a946a` and relayed it directly into the six participating executive tmux sessions: 0_1_9, Product Owner, Orchestration, wake rails, firehose and surf ace relief.
+
+This moves the effort beyond the earlier document/work-record-only phase. Existing owners carry the selected work through design, implementation, review and release integration within their responsibilities and actual governing restrictions. The old coordination-only adoption briefs describe that earlier bounded task; responsible owners must now reconcile execution ownership with Mike's newer delivery direction. Do not let those earlier planning limits become a permanent stop on the now-requested delivery. The release/install law and actual product/operator holds remain.
+
+Rowan `f260f452`, Orchestrator Editor `5667fd95` and Morrow `621efbf3` confirmed resumed domain goals and routed execution/design ownership through existing PO custody. Completion evidence and dependency handoffs go over Subetha. No repeated acknowledgment or status-only reporting requirement is added.
