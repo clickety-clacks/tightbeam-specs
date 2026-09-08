@@ -2958,3 +2958,24 @@ relayed that context to the PO already owning the installer item. The earlier
 release-owner recipient was an agent assumption. External execution and delivery
 during gateway outage remain separate capability gaps. No installation or future
 review wake was performed in this reconciliation.
+
+
+### 2026-09-08: choose a production release design, then learn from use
+
+Mike clarified that 0.1.9 will be released for people to use and must embody our
+best-supported design. The learning loop is continuous product improvement;
+post-release observation does not replace implementation review, verification or
+release readiness. This corrects the earlier experiment/trial framing.
+
+The lead selected removal of both posture-token vetoes together with the existing
+small-fix path, replacement of heavy-by-default and blanket light ceremonies,
+ordinary recorded grounds and supervisor judgment about too much or too little
+process. The original anti-overprocessing purpose is retained. Future usage data
+will assess the prediction, not serve as a prerequisite for choosing the design.
+
+Canonical backing is `tightbeam-019-agent-judgment-plan.md`, with explicit
+guidance, engineering kungfu and substrate scope. Its pinned source findings do
+not establish today's remaining code delta. The installer requirement has its
+own backing in `tightbeam-019-install-followup-acceptance.md`; the existing work
+item remains open without an installer. No runtime or release change is made by
+these documents.
