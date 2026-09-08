@@ -42,6 +42,10 @@ Also replace feature-cycle step 0's blanket statement that every remaining step 
 
 Acceptance examples: incorrect validation under an existing contract goes directly to correction, focused verification and proportionate independent code review; a one-line authorization change gets scrutiny appropriate to its consequences; novel behavior or architectural uncertainty gets the necessary investigation, specification and PO opportunity. No extra spec or spirit rerun is created solely for ceremony. These are evaluation cases, not a fixed size threshold or proof an ungated alternative works.
 
+Conform the small-fix path across orchestrator, feature-cycle, coder and reviewer guidance. Preserve coder's use of an existing sufficient ask and routing of genuine uncertainty to its orchestrator. Replace the light-review bar of "nothing egregiously wrong" in feature-cycle and "pass unless something is egregiously wrong" in orchestrator guidance with proportionate review against the actual ask and consequences. Light work still requires intended behavior, data integrity and trust-boundary correctness; it does not permit accepting a known contract defect. Scope and depth may be smaller without treating substantive defects as acceptable.
+
+Kestrel's Firehose pair makes that concrete: an understood checkout-depth CI correction needs no new spec cycle merely because it touches infrastructure; a startup system-actor contract question can require product/security judgment even if its final patch is one line. The lead read the cited coder, reviewer-code and feature-cycle passages; the Firehose examples remain attributed domain observations, not reproduced trials.
+
 The two posture gates remain an unresolved replacement design, not unconditional deletions or a concluded decision to restore them unchanged. Evaluate the existing and proposed behavior against both underprocessing and overprocessing. This correction supersedes the revision 12 disposition and the earlier four-removals count.
 
 ### Preserve meaningful spirit review through supported records
@@ -64,6 +68,8 @@ Acceptance: a technically clean specification that misses intent reaches the PO 
 Acceptance: independent review can examine incomplete or failing work, and its findings remain linked and attributable. Known unmet acceptance requirements cannot be converted into a clean or ready claim. Review of policy/spec output is assigned to an appropriate specialist. Reconciliation that invalidates evidence triggers new judgment; a changed identifier alone does not automatically invalidate it.
 
 A linked reviewer can examine failing code and file findings or changes requested without inventing a passing-test receipt. That review does not qualify the producer as clean or complete. After fixes, applicable current verification and independent review of the changed result support clean acceptance. Preserve the latest linked review-conclusion semantics: an older clean verdict cannot override newer changes requested. The b299 consumer does not itself prove revision freshness or test truth; those remain explicit acceptance-design and verification obligations. No mandatory preliminary-review phase is proposed.
+
+Conform `reviewer-code.md`'s "Before judging code" passing-test instruction alongside the proposed admission-rule change. It must allow honest examination of failing code while preserving current verification at clean acceptance. Changing the TOML gate alone would leave the reviewer with a contrary instruction.
 
 This supersedes revision 09's broader conclusion to retain the admission gate unchanged. Its narrower source finding about recon remains correct. The new conclusion follows the expanded product question about agent-owned sequencing.
 
@@ -130,3 +136,5 @@ Spirit routing contributions: Rowan `4fdf4e60-7f93-4ec1-8ab8-b6bd1b608d2b` and `
 Orchestrator Editor's focused revision 11 follow-up `f055b9a8-c995-4cf1-9163-da28e2f1de6f` informs the linked failing-code acceptance case and explicit spec/code reviewer routing. It reports no further role-boundary objection, without claiming the remaining mechanisms are designed or installed.
 
 Orchestrator Editor's `21996d7e-992f-499c-979c-455888fd1cbb` identifies the blanket remaining-steps clause in feature-cycle and supplies the contrasting proportionality cases above. The contributor favors removing the veto with a positive small-fix duty and composed guidance changes; no observed trial of that alternative is claimed.
+
+Kestrel's `d57c0977-30b4-40b1-ae42-3a8ac1839176` supplies the Firehose proportionality pair and the requirement to retain substantive correctness under light review. The lead read the named source passages and added the companion reviewer instruction change. No observed post-change result is established.
