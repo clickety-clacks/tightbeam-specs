@@ -4,7 +4,7 @@
 
 ## Selected implementation boundary
 
-Use one nullable versioned reminderState value on the existing assignment, rather than a second obligation registry or delivery queue. Persist successful notification identity/time and the relevant evidence/consequence snapshot, next eligibility/backoff, and pending wake claim/epoch. Old rows with null state retain first-notice eligibility and existing reassessment. Keep existing qualified-wait, bounded-checkpoint and effort policy intact.
+Use one nullable versioned reminderState value on the existing assignment, rather than a second obligation registry or delivery queue. Add a nullable typed payload to existing condition facts for immutable consequence identity, as selected below. Persist successful notification identity/time and the relevant evidence/consequence snapshot, next eligibility/backoff, and pending consumer claim/epoch. Old rows with null state retain first-notice eligibility and existing reassessment. Keep existing qualified-wait, bounded-checkpoint and effort policy intact.
 
 Reuse the condition-fact path for an explicitly attributed consequence tied to the assignment. Validate the accountable issuer and a stable consequence key, revision and attention-request identity. Replaying or republishing the same request cannot reset backoff; a deliberate new owner attention request can. The producer must supply the supported command/API input and projection needed to use this contract. A design that relies on payload fields no authorized agent can submit does not meet acceptance. Do not infer semantic change from prose.
 
@@ -17,6 +17,30 @@ A later consequence stays eligible after an older pending notice succeeds. Requi
 The existing technical owner must bind exact schema migration/validation, condition admission and CLI/API handling, transactional wake claim, terminal callback and recovery seams. Source inspection may resolve these bounded engineering facts without another product policy round. Coordinate those files with WakeRails, remedy/O2 and the shared release base. Preserve current rows, unknown outcomes, actor attribution and unchanged cadence defaults. Test both success/rebind orders, late/duplicate callbacks, restart boundaries, pending-new-consequence ordering, unauthorized issuers, A/B isolation and required effort delivery.
 
 The existing parent must establish capable implementation and independent technical acceptance custody on R1, reusing an appropriate active assignment where one exists. The design assignment's completion alone does not deliver the feature. Do not silently expand the separately default-preserving cadence worker.
+
+## Source assessment dispositions, 06:43 UTC
+
+The lead read the complete independent engineering assessment `art_ec7b6ddf`, from assignment `asg_7b3044f9-3489-4c42-a6ab-cd5c6eec2acd`, and Morrow's two concrete recommendations. The assessment inspected b299 source without changing it or running tests. Its source findings replace earlier assumptions about existing payload and successor-wake support. They do not reopen the selected reminder timing.
+
+### F1. Preserve consequence identity on the existing fact
+
+Select one additive nullable payload column on `condition_facts`, alongside the assignment's `reminderState` column. For `obligation-consequence-changed`, validate and store the versioned semantic payload immutably with the attributed fact. It carries the obligation, consequence key, revision, explicit attention-request identity and supported explanatory evidence reference. Other existing fact kinds and old rows retain their current behavior with null payload. No separate fact-child registry or obligation queue is selected.
+
+The CLI/API must expose this narrow typed contract, validate the real calling principal and exact assignment authority, and retain idempotent semantic replay behavior. Fact creation and any corresponding current-state update must be atomic. Mutable assignment latest-state alone cannot replace the historical payload. Include the two additive columns in the exact composed predecessor's shape migration, fresh DDL and upgrade/rollback tests. This explicitly supersedes the earlier assumption that one assignment column was the entire schema change.
+
+### F2. Correlate the existing authorized recovery form
+
+Preserve both existing recovery forms. The typed rate-limit path may create a successor wake; an explicitly authorized terminal repair may create a successor turn without a wake. Do not force the latter into a new wake or invent generic automatic retries.
+
+Keep the original reminder intent/wake identity and immutable snapshot in the pending claim. Correlate its current consumer by the actual successor turn identity when there is no successor wake. In the existing authorized successor-creation transaction, conditionally advance the claim epoch and record the successor association. The implementation must define and test this association for both forms. A terminal callback must match the current claim epoch and consumer identity, not require every successor to have a wake ID. Historical predecessor identity remains available for reconciliation.
+
+If successful terminal processing commits first, successor rebinding cannot proceed. If rebinding commits first, a late predecessor callback cannot clear or advance the new claim. Duplicate success cannot advance twice. Unsupported or unknown recovery remains visibly pending with its responsible owner; absence of a success row does not authorize replay. These changes correlate already-authorized recovery and add no automatic recovery authority.
+
+### Actual terminal seam and next delivery
+
+The assessed b299 terminal CAS is `SessionLane.finalize/3` calling `Ledger.finish_in_txn/4`; the Gateway runner's `record_in_txn` closure runs only when the running-to-terminal update wins. Compose reminder success there, in that same transaction. The later supervision callback cannot provide that atomic guarantee. Reconcile these exact seams against the reviewed late-ruling/WakeRails/cadence composition before landing.
+
+F1 and F2 are now selected engineering dispositions. The existing owner should complete the bounded field/protocol specification and establish one implementation responsibility with allocated shared hunks. Independent preparation can proceed; exact migration shape and final integrated acceptance require the actual composed predecessor. Do not send Mike another numeric or schema-design question, repeat the completed assessment, or treat its report as implemented behavior. Preserve independent technical review and all actual publication/install restrictions.
 
 ## Attributed designer evidence
 
