@@ -1,10 +1,10 @@
 # Tightbeam 0.1.9 release inventory
 
-8 September 2026. Canonical reconciliation of the existing 50-item release seed plus the selected stalls/churn additions. This replaces the old nonexhaustive catch-all inventory. It is a working inventory with four target dispositions still under bounded reconciliation, not final accepted scope or release readiness.
+8 September 2026. Canonical reconciliation of the existing 50-item release seed plus the selected stalls/churn additions. This replaces the old nonexhaustive catch-all inventory. The lead has resolved the four remaining target dispositions from governing records. This is the selected inventory for owner acceptance and delivery; it is not release readiness.
 
 The external release owner prepared the dispositions from existing records and owner evidence, without a new census. The lead read all 50 disposition summaries and the proposed shared order. Historical item titles are not authority for new scope. Existing accepted features, explicit other-line commitments and implementation holds remain distinct from release safety acceptance.
 
-Included means an existing release commitment is retained, not that its source is delivered. Delivered means preserved baseline evidence, with composed regressions still required. Excluded means explicit other-line scope is preserved. Operations and post-install are separate ongoing obligations. Choice means target selection has not yet been established from the inspected governing records. A later lead disposition must resolve those entries before this becomes final release scope.
+Included means an existing release commitment is retained, not that its source is delivered. Delivered means preserved baseline evidence, with composed regressions still required. Excluded means other-line or expressly untargeted implementation scope is preserved outside this release. Operations and post-install are separate ongoing obligations. No unresolved choice category remains in this seed. Later contrary governing evidence must be reconciled explicitly.
 
 Current release coordination is `asg_2a9a7d9c-5393-43d4-83f6-2e5529d4ffc4` on `s_7169b2a6`; the external release owner assesses readiness and the lead maintains this canonical record. Source implementation remains with existing feature owners.
 
@@ -40,21 +40,21 @@ Open custody at the snapshot: `asg_ac40a706-37c5-42b3-9fd5-b7e5f07ab604` (agent:
 
 Evidence: `att_9621f554-d38a-446e-9d1c-12b05af0adb7` on `asg_ac40a706-37c5-42b3-9fd5-b7e5f07ab604`.
 
-### 4. choice
+### 4. excluded
 
 Work item `wi_65477046-0932-4973-b19f-17822625d0f8`.
 
-Deploy-safety Cards1-8 are not established as019-selected by this snapshot. Preserve staging/rollback safety as release acceptance; lead resolves target inclusion and Card1/Card2 reconciliation before Card3. Do not call this delivered.
+The separate eight-card deploy-safety implementation is excluded from 0.1.9. Bounded governing review found historical 0.1.x wording in deploy-safety.md and targetless Card1/Card2 reconciliation in att_6d702615, not a 0.1.9 commitment. Preserve its existing owner and unfinished work. Safe isolated staging, a restart-loadable prior release and truthful rollback evidence remain mandatory release acceptance. A concrete failure of those protections requires a bounded repair or release decision.
 
 Open custody at the snapshot: `asg_b1f1f006-cb9e-4a2b-bfb7-36d4feaed53c` (agent:main:clawline:mike:main s_d2f42da0).
 
 Evidence: `att_cc299dee-b15f-47ab-8df4-ee90914653aa` on `asg_4e5e7dca-1d5c-4732-88dc-cc38f049bef1`.
 
-### 5. choice
+### 5. excluded
 
 Work item `wi_ddd80184-9cf7-4612-8a0a-ac610b5b7b10`.
 
-Activation/deploy authorization portfolio has partial Card2A source on main. Preserve remaining packaging/ring/Card2B holds. Determine019 inclusion explicitly; no import from title or source progress.
+Activation/deploy management remains main implementation, excluded from 0.1.9. engineering-activation-consumer-main-v2.md explicitly selects main and later-main reconciliation; Card2A source and portfolio Card2B holds remain with their owners. Actual operator authority, exact artifact/host identity, outcome evidence and owner notification remain required for release operations.
 
 Open custody at the snapshot: `asg_fd58593e-10d0-40f8-a7bf-d3bbcacff48f` (agent:main:clawline:mike:main s_d2f42da0); `asg_00068f0e-948c-4fb9-ada2-a2f8abc6609a` (agent:main:clawline:mike:main s_aea65d6a).
 
@@ -80,11 +80,11 @@ Open custody at the snapshot: `asg_a12d6873-9b00-4924-b3c8-674582fd7973` (agent:
 
 Evidence: `att_213d71d0-48ff-404d-998b-3753a2632335` on `asg_a12d6873-9b00-4924-b3c8-674582fd7973`.
 
-### 8. choice
+### 8. excluded
 
 Work item `wi_56bee7ce-c2dd-4724-9c87-3c45b588b438`.
 
-Self-healing fleet convergence has unresolved trust/per-verb/custody/provenance and spec recovery. Lead must decide019 inclusion versus separately preserved fleet work; no automatic updater assumed from satellite compatibility.
+Automatic fleet convergence is excluded from 0.1.9. Governing att_a2a42b61 explicitly continues 0.2 and leaves unspecified work untargeted; existing trust, replay, custody and spec obligations remain. Included satellite CLI upgrade compatibility must deliver a verified supported upgrade path and truthful offline/unsupported behavior. Do not promise universal automatic first-contact repair.
 
 Open custody at the snapshot: `asg_4aa61dde-ec3f-461d-b64a-42ef10c2c1b5` (agent:main:clawline:mike:main s_45f22849); `asg_dcd41617-296d-4456-8faf-b1d3052bbf64` (agent:main:clawline:mike:main s_7c782106).
 
@@ -190,11 +190,11 @@ Open custody at the snapshot: `asg_82daaf84-8f61-4535-b6f3-0c1965147800` (agent:
 
 Evidence: `att_cc3226aa-76f9-4cb7-975b-9067ba2d727f` on `asg_8ff1769d-2ad3-45c1-8c6d-b73f19a57fb7`.
 
-### 19. choice
+### 19. excluded
 
 Work item `wi_b6edfacd-f580-48d0-a07b-f78e2fb0024c`.
 
-Timeout/refusal observability is explicitly targetless source, final full gate/host transfer incomplete. New internal DB-stall specimen strengthens acceptance need but does not elect this candidate into019. Lead resolves inclusion.
+The broader timeout/refusal diagnostics implementation remains expressly targetless and is excluded from 0.1.9 under governing owner asg_bbeb7f80 and spec asg_7fa3f063. Preserve its source and budgets. The observed DB-stall incident still requires safe queue recovery and useful, truthful failure evidence on the exact release candidate. If that acceptance exposes a missing capability, resolve that concrete defect rather than import the whole portfolio or waive acceptance.
 
 Open custody at the snapshot: `asg_075f43c1-ecd8-433b-9491-7110f812fe66` (agent:main:clawline:mike:main s_0cd749fc); `asg_f46b25af-0296-4f78-bf3a-1bed5c88d863` (agent:main:clawline:mike:main s_6ec12cdf).
 
@@ -434,7 +434,7 @@ Evidence: `att_028af634-adc0-4f0c-a511-a49dc5a60b8f` on `asg_1765fa1e-2c70-4d66-
 
 Work item `wi_60f879d9-f1cd-4461-82c7-7f1e922d75db`.
 
-Late-ruling staged019 tree3a862bef is tested, not committed/reviewed. Exact truthful product identity disposition is first shared-base handoff; then independent review and WakeRails composition. No unchanged test rerun required solely for commit identity.
+Late-ruling commit57bc449c9478ed37170e3fe9981f6fc0fa6cc457 now preserves tested tree3a862bef overb299. Parent att_637fa4e6 permits independent local019 review separately from main reconciliation, while retaining both-line completion. A linked clean review and shared-diff acceptance remain required before WakeRails composition. Commit identity and pair sequencing are resolved, not reasons to repeat work.
 
 Open custody at the snapshot: `asg_26d2def8-c0ff-4d59-851b-dfc2e7899f90` (agent:main:clawline:mike:main s_fde9b2be); `asg_eb6d2279-5e7a-44ee-ae17-1c632c7e3f61` (agent:main:clawline:mike:main s_d90f6b55).
 
@@ -454,7 +454,7 @@ Evidence: `att_1887e2e8-66ba-47cf-8a7b-46ea96047af6` on `asg_baa0046d-d016-41d8-
 
 Work item `wi_c737aee7-ccd3-411d-9fb6-e7909823cb58`.
 
-Cadence exact four-filecc548116 transfer is now owner-authorized by att_a5b60ef9. Existing worker tests and result still required; reconcile on WakeRails base, preserve legacy fallback/stored deadlines/retirement rearm acceptance.
+Cadence corrected patch885c5c70691d9366e70fe5e534a4aa1c07de23cacdaa65880055565052f642e6 over926 is reported green in att_3f5d72bf: focused253, full1855Mix plus9doctests and296Rust. Accepted holder tests-passed att_fe496318 records that same evidence without inventing a commit. Independent review remains required, including the unequal-interval parent-retirement rearm case. Release coordinator alone commissions that review after checking existing linkage.
 
 Open custody at the snapshot: `asg_d984ca20-b457-4194-9c09-30a72975a726` (agent:main:clawline:mike:main s_0cd749fc); `asg_9ebb810d-370b-477f-aa27-f17fb433c781` (agent:main:clawline:mike:main s_658f78a6).
 
@@ -524,17 +524,19 @@ Existing coordinator asg_2a9a7d9c owns delivery coordination; external release o
 
 First shared prerequisite is committed independently reviewed late-ruling019 candidate. Then reconcile WakeRails with current019 and b299 fixes, then cadence. Allocate parent-reactivation/cancellation/batching/artifact/GC and O2/remedy/R1 overlaps against that same transaction/schema/publication composition before conflicting landings. Independent guidance and design can proceed. Firehose/REST and ACP retain their exact operator/provider boundaries. G1 parser and O1/O2 projected guidance/rules/hooks receive combined acceptance.
 
-Freeze exact candidate, package and guidance identities only after all included clauses have delivery evidence and CHOICE rows are resolved. Required acceptance: isolated018 upgrade/migrations and durable work/decision/wake preservation; restart/unknown-effect/queued delivery; true scoped provider failure; internal DB-timeout/child-restart recovery without false provider classification; CLI/gateway/satellite compatibility; Linux/macOS tests and packages; fresh-agent spawn/answer/retire readiness without unrelated cleanup; live-base and staging safety; complete Firehose/REST/provider contract; actual packaged rules/hooks/current review evidence. Existing source tests do not prove combined candidate acceptance.
+Freeze exact candidate, package and guidance identities only after all included clauses have delivery evidence and owners have accepted the reconciled inventory. Required acceptance: isolated018 upgrade/migrations and durable work/decision/wake preservation; restart/unknown-effect/queued delivery; true scoped provider failure; internal DB-timeout/child-restart recovery without false provider classification; CLI/gateway/satellite compatibility; Linux/macOS tests and packages; fresh-agent spawn/answer/retire readiness without unrelated cleanup; live-base and staging safety; complete Firehose/REST/provider contract; actual packaged rules/hooks/current review evidence. Existing source tests do not prove combined candidate acceptance.
 
 CI correction prerequisite is independently verified: run34191959200 exact944feaa11078f02520d66eee10b4d4a5fee3ed20 completed success for Linux/macOS tests and both packages; publish-release skipped. This is not019 release publication.
 
-## Remaining explicit inclusion choices
+## Resolved implementation scope
 
-Rows 4, 5, 8 and19 retain unresolved implementation inclusion: deploy-safety portfolio, activation/deploy authorization, fleet self-healing, and the targetless timeout/refusal diagnostics contract. Release safety, actual authorization evidence, supported satellite compatibility and useful failure visibility remain required acceptance independently of electing those entire implementations. Their existing owner restrictions must be reconciled; older targetless labels are not automatically new human holds. Default-both carry alone does not import an entire unfinished portfolio.
+The lead accepts the external release owner's bounded governing findings for rows 4, 5, 8 and 19. These separate implementations stay outside 0.1.9. Their required safety, authority, compatibility and useful failure outcomes remain release acceptance. This cancels no work and claims no passing acceptance. The supporting read is preserved in `tightbeam-019-release-scope-findings-2026-09-08.md`; its source and missing-artifact limits remain explicit.
 
-Rows1,13,24 and31 were resolved by a bounded read of existing governing records, not new product scope. Required readiness acceptance and its authorized repair, editable body, serialized setHarness port and the both-line live-base guard stay included.
+Rows1,13,24 and31 were resolved from existing governing records as included: readiness acceptance and its authorized repair, editable body, serialized setHarness port and the both-line live-base guard. No main-only settlement/population/A1 or excluded placement enters019. Later external forensics never substitutes for pre-release acceptance.
 
-No main-only settlement/population/A1 or excluded placement enters019. Historical rollback uncertainty and operational patrol/owner bookkeeping remain recorded outside source readiness unless an actual release requirement depends on them. Later external forensics never substitutes for pre-release acceptance.
+## Reusable consumer evidence outside the seed
+
+Parallax reports exact Surf Ace source `cd4004c9376e465f27ffc2e6fe2954e2e5975280` completed independently reviewed Linux 17 and native macOS 18 soak plus Plumbus/Wayland run03. Coverage includes multiple panes, history, current no-loss reads, decoded pixels, churn, at least 60 minutes dwell, restart continuity and cleanup. Retain that evidence unless the final019 CLI/gateway contract changes or a regression appears. It does not satisfy the separate ACP export and fresh two-provider smoke obligations. This record attributes the existing consumer evidence; the lead did not rerun those tests.
 
 ## Subsequent lead dispositions and source provenance
 
@@ -547,3 +549,9 @@ R1 timing is selected in `tightbeam-019-reminder-policy-2026-09-08.md` at specs1
 The runtime acceptance includes the observed live018 DB timeout/internal-child restart incident. Do not classify internal DB failure as an external provider outage merely because several adapters report shutdown. Test restored queue delivery, truthful failed_unknown outcomes and absence of duplicate unsafe replay on the final019 candidate. Existing queues resumed without a systemd power action; that recovery is not final release proof.
 
 External draft SHA256 `f044872a8a42b1e09716cd9ecac94b31c73548a0e2f58e347bb479db5b453f4b`. Canonical evidence snapshot: `tightbeam-019-release-inventory-evidence-2026-09-08.json`, SHA256 `76c047f3c928c5c45442fab88e3d0cda56a01b2300177395b66a905ee9c64833`. It preserves attributed latest attests and open custody; it is historical evidence, not a rerun of tests or a live status view.
+
+## Recovery and design update, 06:34 UTC
+
+Later evidence supersedes the earlier pending-state paragraphs above. The late-ruling commit and local019 review disposition exist. Cadence transfer and full gate succeeded on corrected885c5c70; independent review remains. R1 timing and protocol are selected in `tightbeam-019-reminder-policy-2026-09-08.md` and `tightbeam-019-reminder-design-2026-09-08.md`; independent engineering assessment and implementation remain owed.
+
+Old O1 producer asg_5080cb0d and O2 designer asg_1c7f4951 are revoked; the old sessions are retired. Remedy asg_70db0a12 was also revoked for recovery, while parent asg_015311fe retains its outcome and predecessor holds. Actual PO spirit judgments att_5c8d3e31 and att_b065d235 now cover the canonical O1 composition and bounded O2 design. Prepared successors s_53f0dec0 and s_72795b26 still need actual held assignments and execution evidence at this read. Archived O2 report art_96871dce exists and must be assessed as predecessor output, not discarded because earlier snapshots found no result.
