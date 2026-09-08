@@ -24,6 +24,12 @@ In guidance-authoring, replace the separate instruction to ground every term at 
 
 Reconcile the elected tightbeam-dispatching skill and global operating manual with the selected policy. Replace per-turn liveness paperwork, fixed retirement sweeps and blanket refusal interpretations where they conflict with outcome ownership, evidence-based recovery and supported lifecycle. Remove the claim that repeated refusal proves the approach wrong, blanket escalation of every unresolved requirement to the user, and mandatory reporting headings or source citations for every ordinary statement. Preserve material evidence and actual decisions requiring the user. Preserve command semantics, actor attribution, unfinished obligations and output custody. This is included composition work, not a new independent implementation item.
 
+Replace the operating manual's mandatory new integration assignment for every returned completion with:
+
+> When returned work enables the next step, carry it forward under existing authority. Reuse capable integration custody; create it when needed. Preserve agreed target defaults and explicit exceptions. Record a genuine dependency and its responsible actor when delivery cannot proceed.
+
+Retain the actual line-default agreement and its representation in the manual. This correction avoids duplicate integration for delivered work and unnecessary integration of a completed specification or investigation. It does not cancel a promised second-line delivery or waive unfinished output custody.
+
 Update canonical wisdom and its projected indexes together with the law-minting corrections. Remove conflicting automatic enforcement-promotion and mandatory incident-marker doctrine at its source; an index-only edit cannot change the instruction it references. Preserve meaningful incident evidence and the protected authority/data-integrity boundaries. Carry required attribution and licenses when moving existing communication text into the shared always-on home.
 
 ## Provenance and verification limits
