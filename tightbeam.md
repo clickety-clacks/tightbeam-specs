@@ -87,6 +87,14 @@ investigation, specification and review should serve the work's uncertainty or
 consequences. The orchestrator chooses that scope; the PO resolves product-intent
 questions. Restoring agreed behavior does not itself create a new product choice.
 
+### Learn from the versions we try
+
+Treat guidance and policy changes as testable hypotheses. Preserve their purpose,
+actual deployed form, observed outcomes and subsequent judgments so future agents
+can keep, revise or reverse them with evidence. The [learning-loop proposal](tightbeam-learning-loop-v1.md)
+describes a lightweight practice using existing records and accountable review.
+It adds no worker receipt gate or automatic policy-changing authority.
+
 ### Guidance supplies what the agent needs to know here
 
 Assume professional competence. State the ask, priorities, delegated authority

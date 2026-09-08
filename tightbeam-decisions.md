@@ -2921,3 +2921,15 @@ must preserve proportionate orchestration and demonstrate both the small-fix pat
 and adequate scrutiny of uncertain or consequential work. Rowan clarified that
 restoring agreed behavior does not itself require a new PO decision or spec cycle;
 a changed product commitment does. No live posture rule changed.
+
+
+### 2026-09-08: record hypotheses, trials and outcomes for continuous improvement
+
+Mike emphasized that the current changes are theories to put into a Tightbeam
+version, then assess against future data. Future agents need the reasons, actual
+changes, outcomes and judgments so they can repeat this improvement process. The
+lead's proposed record and review practice is `tightbeam-learning-loop-v1.md`.
+It distinguishes choosing a testable implementation from claiming empirical
+success, and proposes using existing records and responsible agents rather than
+new worker reporting gates. Its initial hypotheses are proposals, not shipped
+changes or evidence of their success.
