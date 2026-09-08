@@ -2,6 +2,8 @@
 
 8 September 2026. Lead disposition after reading the complete archived predecessor design and a bounded independent review. This preserves useful prior work and identifies corrections for the existing successor designer. It is not implementation acceptance or a request to restart the design.
 
+Later disposition on 8 September: supported recovery returned the remaining design externally. The selected replacement is [O2 current acceptance and accountable review routing](tightbeam-019-o2-acceptance-and-routing-design-2026-09-08.md). This assessment and the historical draft below remain preserved as the reasoning and superseded proposal, not the current implementation instructions.
+
 Predecessor artifact `art_96871dce`, SHA256 `4541f6c50afc88534d6f3e7c8798f557d22088d6e8f3002af522195ad518c631`, was recovered from the retired session archive. Its unchanged text follows below. Claims about an active holder describe that historical draft, not current custody. O2 and remedy parent assignments retain their outcomes after the two old assignments were revoked for recovery.
 
 ## Required corrections
