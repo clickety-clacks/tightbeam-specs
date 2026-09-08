@@ -47,6 +47,8 @@ Acceptance: a technically clean specification that misses intent reaches the PO 
 
 Acceptance: independent review can examine incomplete or failing work, and its findings remain linked and attributable. Known unmet acceptance requirements cannot be converted into a clean or ready claim. Review of policy/spec output is assigned to an appropriate specialist. Reconciliation that invalidates evidence triggers new judgment; a changed identifier alone does not automatically invalidate it.
 
+A linked reviewer can examine failing code and file findings or changes requested without inventing a passing-test receipt. That review does not qualify the producer as clean or complete. After fixes, applicable current verification and independent review of the changed result support clean acceptance. Preserve the latest linked review-conclusion semantics: an older clean verdict cannot override newer changes requested. The b299 consumer does not itself prove revision freshness or test truth; those remain explicit acceptance-design and verification obligations. No mandatory preliminary-review phase is proposed.
+
 This supersedes revision 09's broader conclusion to retain the admission gate unchanged. Its narrower source finding about recon remains correct. The new conclusion follows the expanded product question about agent-owned sequencing.
 
 ### Preserve evidence while assessing coarse proxies
@@ -108,3 +110,5 @@ Domain contributions inform the lead's proposed composition. They are not approv
 Mike's subsequent clarification in this conversation is authoritative for the spirit requirement above. It was relayed to domain owners in `fc3dfe14-8728-4fd1-99cb-8cea088ef865`; it corrects any interpretation that retiring the blanket dispatch veto may remove meaningful PO review of product intent.
 
 Spirit routing contributions: Rowan `4fdf4e60-7f93-4ec1-8ab8-b6bd1b608d2b` and `87859dd5-19c6-40b4-afc9-d0dbfef5fba4`; Orchestrator Editor `22faa583-8ebb-4de3-b3b3-c26fdba4b375`. They establish a supported record route, not a completed automatic delivery guarantee.
+
+Orchestrator Editor's focused revision 11 follow-up `f055b9a8-c995-4cf1-9163-da28e2f1de6f` informs the linked failing-code acceptance case and explicit spec/code reviewer routing. It reports no further role-boundary objection, without claiming the remaining mechanisms are designed or installed.
