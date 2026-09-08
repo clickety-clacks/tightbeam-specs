@@ -38,6 +38,10 @@ Rowan's `c8a01020-ff8f-45f4-b9e7-2f2e18d17d27` clarifies the role boundary. The 
 
 Acceptance pair: an understood regression is corrected with proportionate verification and independent review, without a fresh discovery/spec cycle; a similarly small patch that changes a product commitment receives PO judgment. A small but consequential implementation can warrant substantial technical scrutiny. Size decides neither case. Expanding work requires a reason in its uncertainty or consequences; existing delegation and review records should make the choice inspectable without a separate mandatory form.
 
+Also replace feature-cycle step 0's blanket statement that every remaining step applies to light work. Select the delivery and review steps that the actual ask and protections require; do not preserve a full ceremony merely after skipping spec creation. Explain the choice when useful in the ordinary assignment brief, without a separate posture card or new required field. The current gates accept either historical light or heavy tokens equally; they cannot establish that the selected work is proportionate.
+
+Acceptance examples: incorrect validation under an existing contract goes directly to correction, focused verification and proportionate independent code review; a one-line authorization change gets scrutiny appropriate to its consequences; novel behavior or architectural uncertainty gets the necessary investigation, specification and PO opportunity. No extra spec or spirit rerun is created solely for ceremony. These are evaluation cases, not a fixed size threshold or proof an ungated alternative works.
+
 The two posture gates remain an unresolved replacement design, not unconditional deletions or a concluded decision to restore them unchanged. Evaluate the existing and proposed behavior against both underprocessing and overprocessing. This correction supersedes the revision 12 disposition and the earlier four-removals count.
 
 ### Preserve meaningful spirit review through supported records
@@ -124,3 +128,5 @@ Mike's subsequent clarification in this conversation is authoritative for the sp
 Spirit routing contributions: Rowan `4fdf4e60-7f93-4ec1-8ab8-b6bd1b608d2b` and `87859dd5-19c6-40b4-afc9-d0dbfef5fba4`; Orchestrator Editor `22faa583-8ebb-4de3-b3b3-c26fdba4b375`. They establish a supported record route, not a completed automatic delivery guarantee.
 
 Orchestrator Editor's focused revision 11 follow-up `f055b9a8-c995-4cf1-9163-da28e2f1de6f` informs the linked failing-code acceptance case and explicit spec/code reviewer routing. It reports no further role-boundary objection, without claiming the remaining mechanisms are designed or installed.
+
+Orchestrator Editor's `21996d7e-992f-499c-979c-455888fd1cbb` identifies the blanket remaining-steps clause in feature-cycle and supplies the contrasting proportionality cases above. The contributor favors removing the veto with a positive small-fix duty and composed guidance changes; no observed trial of that alternative is claimed.
