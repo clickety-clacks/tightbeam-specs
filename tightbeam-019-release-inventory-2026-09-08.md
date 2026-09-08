@@ -1,6 +1,6 @@
 # Tightbeam 0.1.9 release inventory
 
-8 September 2026. Canonical reconciliation of the existing 50-item release seed plus the selected stalls/churn additions. This replaces the old nonexhaustive catch-all inventory. It is a working inventory with eight target dispositions still under bounded reconciliation, not final accepted scope or release readiness.
+8 September 2026. Canonical reconciliation of the existing 50-item release seed plus the selected stalls/churn additions. This replaces the old nonexhaustive catch-all inventory. It is a working inventory with four target dispositions still under bounded reconciliation, not final accepted scope or release readiness.
 
 The external release owner prepared the dispositions from existing records and owner evidence, without a new census. The lead read all 50 disposition summaries and the proposed shared order. Historical item titles are not authority for new scope. Existing accepted features, explicit other-line commitments and implementation holds remain distinct from release safety acceptance.
 
@@ -10,11 +10,11 @@ Current release coordination is `asg_2a9a7d9c-5393-43d4-83f6-2e5529d4ffc4` on `s
 
 ## Existing seed dispositions
 
-### 1. choice
+### 1. included acceptance
 
 Work item `wi_b4a5efd8-46de-4454-8024-5e1d66ec4898`.
 
-Fresh-agent spawn/answer/retire readiness is required acceptance; targetless implementation currently compared on main. Lead must bind whether its repair enters019 or existing candidate demonstrates the same acceptance. Preserve current repair custody and posture refusal.
+Fresh-agent spawn/answer/retire is required release acceptance. Existing dr_2e882a79 authorizes the bounded smoke repair and second review; att_611af951 names the posture refusal. Carry that repair through its existing owner and bind any required019 change without a new readiness design. Historical targetless source is not proof integration is delivered.
 
 Open custody at the snapshot: `asg_e4397429-ff33-4e95-bb65-5d95105b5518` (agent:main:clawline:mike:main); `asg_23c56126-7f3a-4a8e-a851-a73530af7e1c` (agent:main:clawline:mike:main s_201d541f).
 
@@ -130,11 +130,11 @@ Open custody at the snapshot: `asg_53b378a4-3eb7-4e07-b4c3-a8159321cefa` (agent:
 
 Evidence: `att_9d114e4c-d07d-4a00-a11c-709e240a11f1` on `asg_53b378a4-3eb7-4e07-b4c3-a8159321cefa`.
 
-### 13. choice
+### 13. included
 
 Work item `wi_0488b06a-0950-4356-84b7-c56e413a6bbe`.
 
-Editable work-item body has current spec/amendment and artifact/shared-schema dependencies.019 target election is not established by the scoped records. Lead resolves inclusion; preserve source custody and specRef contract.
+Editable work-item body is included under existing delivery scope. Original owner asg_32e29021 has no main-only exception; att_8a745b78 allocates both main and019 for recovery and att_7fdb5a51 confirms body absent on both. Accepted dr_bf9c8fef corrects grammar/publication semantics. Preserve shared-schema/privacy/review obligations. Earlier metadata-only delivery does not exclude the body from019.
 
 Open custody at the snapshot: `asg_32e29021-2d9c-47f8-82b8-93a28db45dc2` (agent:main:clawline:mike:main s_fde9b2be); `asg_f20668e0-1f14-4da2-b58c-cf40636a67a3` (agent:main:clawline:mike:main s_74b2df1e); `asg_77f7d7d8-8405-4f34-a8ff-3437ad713542` (agent:main:clawline:mike:main s_0e18aea3).
 
@@ -240,11 +240,11 @@ Open custody at the snapshot: `asg_1c72fc55-e1f1-4ce3-9337-42dc3c189bb9` (agent:
 
 Evidence: `att_7d7c4258-001d-46de-bd2d-da07b6ef922f` on `asg_1c72fc55-e1f1-4ce3-9337-42dc3c189bb9`.
 
-### 24. choice
+### 24. included
 
 Work item `wi_a00bca2e-ffab-43ca-808d-f172d9eee0e7`.
 
-setHarness source packet is explicitly targetless/no019 work in current receipt. Full Firehose acceptance names this dependency; lead/owner must bind the required019 behavior and target election without inventing fixture transfer permission.
+setHarness is included under recorded dual-line staffing att_0a1df523 and019 preparation att_70ab6c3a. Preserve its independently reviewed main landing before the serialized019 port. Current stage-specific no019 execution is not permanent exclusion. Retain existing Firehose custody and actual transfer restrictions; do not revive failed wi_d2028c4a.
 
 Open custody at the snapshot: `asg_d9db7afc-d8be-4647-8ca2-af39aba4b99a` (agent:main:clawline:mike:main s_fde9b2be); `asg_a3d1e5d2-fb1f-422e-aa0f-36e512f26637` (agent:main:clawline:mike:main s_277e1b05).
 
@@ -310,11 +310,11 @@ Open custody at the snapshot: `asg_6c9e3929-7690-48b7-8cb3-8df96c5e7cc9` (agent:
 
 Evidence: `att_5dcebf1b-15bb-4434-a3a3-9fd8a53a6cd1` on `asg_b79badbe-0273-4ec9-aab2-7a553e36a80d`.
 
-### 31. choice
+### 31. included
 
 Work item `wi_fb50d790-784e-4a9a-bc8d-d247a17a6a14`.
 
-Live-base dev-build guard has missing report/source payload; no behavior proof. Release must protect live base. Lead resolves019 implementation election and source recovery; do not invent unavailable six-file bytes or relax install law.
+The live-base guard is already required on both lines: original asg_0d028fc2 explicitly says deliver one guard on both and land on main and019. Missing source custody is a delivery problem, not a new product inclusion choice. Recover existing evidence through its owner, preserve live-base protection and install law, and do not invent missing payload bytes.
 
 Open custody at the snapshot: `asg_0d028fc2-465c-43fa-b635-ed3c65eb2785` (agent:main:clawline:mike:main s_fde9b2be).
 
@@ -530,7 +530,9 @@ CI correction prerequisite is independently verified: run34191959200 exact944fea
 
 ## Remaining explicit inclusion choices
 
-Rows 1, 4, 5, 8, 13, 19, 24 and 31 require target/inclusion disposition: fresh-agent readiness repair, deploy-safety portfolio, activation/deploy authorization, fleet self-healing, editable body, timeout diagnostics, setHarness target election, and live-base guard recovery. Their product protections or compatibility needs may be required while these exact targetless/main-oriented implementations are not yet elected. Resolve this distinction from governing scope; do not silently drop the product requirement or import the entire portfolio.
+Rows 4, 5, 8 and19 retain unresolved implementation inclusion: deploy-safety portfolio, activation/deploy authorization, fleet self-healing, and the targetless timeout/refusal diagnostics contract. Release safety, actual authorization evidence, supported satellite compatibility and useful failure visibility remain required acceptance independently of electing those entire implementations. Their existing owner restrictions must be reconciled; older targetless labels are not automatically new human holds. Default-both carry alone does not import an entire unfinished portfolio.
+
+Rows1,13,24 and31 were resolved by a bounded read of existing governing records, not new product scope. Required readiness acceptance and its authorized repair, editable body, serialized setHarness port and the both-line live-base guard stay included.
 
 No main-only settlement/population/A1 or excluded placement enters019. Historical rollback uncertainty and operational patrol/owner bookkeeping remain recorded outside source readiness unless an actual release requirement depends on them. Later external forensics never substitutes for pre-release acceptance.
 
