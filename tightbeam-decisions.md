@@ -2909,3 +2909,15 @@ assessment therefore conditions replacement of the broad historical-token spirit
 gate on preserving timely, visible PO involvement and correction. Removing the
 gate without that behavior would not satisfy the ruling. No new universal receipt
 ceremony or implementation is claimed by this document change.
+
+
+### 2026-09-08: preserve the purpose of light/heavy posture
+
+Mike explained that posture was introduced because agents overused full spec and
+review cycles for small bug fixes. He challenged the lead's unconditional gate
+removal recommendation and rejected treating restoration of the old rule as a
+sufficient answer. The lead withdrew that recommendation. The proposed replacement
+must preserve proportionate orchestration and demonstrate both the small-fix path
+and adequate scrutiny of uncertain or consequential work. Rowan clarified that
+restoring agreed behavior does not itself require a new PO decision or spec cycle;
+a changed product commitment does. No live posture rule changed.

@@ -81,6 +81,12 @@ composition, name conflicting restrictions, and change the governing rules throu
 the authorized mechanism. Preserve concrete authority, attribution and evidence
 protections; do not preserve an imposed workflow merely because it already exists.
 
+Supervisors hold agents accountable for proportionate process as well as quality.
+An understood repair may use the existing ask as its specification. Additional
+investigation, specification and review should serve the work's uncertainty or
+consequences. The orchestrator chooses that scope; the PO resolves product-intent
+questions. Restoring agreed behavior does not itself create a new product choice.
+
 ### Guidance supplies what the agent needs to know here
 
 Assume professional competence. State the ask, priorities, delegated authority
