@@ -99,10 +99,25 @@ The integrated composer remains the single schema writer. O2 supplies nullable `
 
 ## Bounded external O1/G1 prose contribution
 
-The O1 source assignment `asg_4f49f573` is closed/revoked; the lead verified it had no running or queued turns. Its session remains active, so this is not a claim of whole-session retirement. The internal named-role carry spawn failed on quota. The lead produced an isolated patch artifact without editing or adopting the predecessor workspace, changing original authorship, or repeating implementation.
+The O1 source assignment `asg_4f49f573` is closed/revoked; the lead verified it had no running or queued turns. Its session remains active, so this is not a claim of whole-session retirement. The old executive exhausted its quota; the later named-role carry spawn separately failed with model_unavailable. These are distinct failures. The lead produced an isolated patch artifact without editing or adopting the predecessor workspace, changing original authorship, or repeating implementation.
 
 `tightbeam-019-o1-g1-worktree-prose-2026-09-08.patch`, SHA256 `1a1bbc0204d4e014b3411768e6bd396e447526fd42bf0327931ae83614dc6063`, changes only worktree-session step5. It removes the claim that every `git restore` is refused, states index-only unstaging is permitted by the selected G1 guard, and preserves protected discard and supported refusal handling. Apply it only as part of the composed G1 behavior.
 
 The input is the recovered O1 snapshot SHA256 `7d4d061dc96a38908f634318cc20497d600dcb4ecacb4afcea2d45e2df24bcdc`, full source diff SHA256 `48634aa90703c21f663e05b631a846b340efb36ef11a31c9b122ce9e757a65bb`. Exact original worktree-session Git blob is `16431cc9227a8c1eeefe2dc1e6cc03c2b5b128b7`; resulting file SHA256 is `3b96baaf423531d155c5666af997c36325e0b22c7e5dd7a1405bfb3cf05ce41d`. An independent external reviewer verified snapshot/diff reconstruction, all hashes and the exact step5-only transformation, and accepted its meaning. No product test was run for this prose contribution. Prior96/0 remains evidence for the earlier O1 bytes.
 
 Existing coordinator `asg_69fcd3a3` retains acceptance/carry and final integration. Lead contribution disposition was delivered as `w_c24b9ec2-83f8-4601-877b-c586012077a0`. This patch and its bounded review do not establish full O1 acceptance, installed guard behavior, target landing or publication permission.
+
+
+## External O1 source accepted, 8 September 2026
+
+The external lead accepted bounded carry after the prior source assignment was fenced and the coordinator held dd36 at preparation only. A single external author reconstructed the preserved snapshot in `racter:/home/clu/.cache/tightbeam-o1-external-carry-20260908`, retaining the original producer attribution and leaving its workspace unchanged. The first candidate `87837bee5a3db2439ee8fbd913e925bb249b439e` received changes requested, not acceptance.
+
+The corrected candidate is `0378a3d66b8756fbec3ca4d06e764a1dc9589ca9`, tree `6bb9778d64084f5039a948d31a076ab9d4d77f43`, parent `87837bee5a3db2439ee8fbd913e925bb249b439e`, ultimately based on `b299457d5c95dd6e161ed9b1de70b4450b5166b7`. Full patch SHA256 is `a27ced7fce61b54a2d4f57124d8ddc1b3d3fc36c7e7e6213a3e689f9a72be7b2`.
+
+The seven review corrections remove completion-as-review-request, restore truthful effect selection at assignment creation, distinguish explicit target pins from ordinary target movement, remove maximum-enforcement doctrine, make spec reflection judgment-driven, route product intent through the PO, and restore coverage of the still-supported review-count fact without restoring a shipped round-count gate. Shared effect instructions remain domain-neutral. The evidence fixture declares its actual effect.
+
+The same independent reviewer accepted the corrected source after inspecting the complete correction delta and retaining its full 41-file composition review. It verified patch and evidence hashes, recorded 97/0 focused results and successful assembly, and independently compared all 34 changed packaged files with immutable source. Rowan separately found no remaining PO-domain objection. These are external reviews, not fabricated Tightbeam holder verdicts or predecessor completion.
+
+Evidence is `racter:/home/clu/.cache/tightbeam-o1-external-carry-20260908-evidence/review-corrections-handoff.md`, SHA256 `e817c71fb64ca76819e49809a69edd41af1ef35158156d90300dd4b70ac6cba0`. Focused log SHA256 is `f33f2a1943e308163b184ab15d06da94e3352968fc604d96624853cf26537cdd`; assembly log SHA256 is `69aa47a295e9637f25a73ea2da63443bc3eb584a7c98aa588e3541e6e4a473cc`. Format and diff checks passed. No metadata-only test rerun was commissioned by the independent reviewer.
+
+Existing coordinator `asg_69fcd3a3` receives this immutable source and review for carry through the sole integrated composer. O2 admission, acceptance and routing coupling, the actual G1 classifier, and qualified WakeRails wait instructions remain final composition requirements. This is accepted local O1 source, not final integrated release acceptance, target landing, publication or installation.
