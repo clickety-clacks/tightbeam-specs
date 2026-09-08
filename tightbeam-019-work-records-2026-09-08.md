@@ -12,7 +12,7 @@ Created three open work items against the map at specs `62efbc3`, SHA256 `50a20b
 - O2: `wi_fcbc79fe-8b77-42d7-a5ba-0d890359d0f9`.
 - R1: `wi_d884d359-d1f2-4a1a-94c3-a8dbb90279ce`.
 
- No G1 item is needed: the existing blunt-command-guard item covers that scope and will receive an amendment. Current/successor assignment updates and actual adoption remain to be confirmed through existing PO owners. The lead sent PO wake `w_487041ed-892d-45bb-831b-ec4fd1194831` requesting parented ownership, exact existing-record amendments and integration/acceptance custody reconciliation. It was created pending; the request alone is not adoption evidence. No source/runtime mutation or new implementation execution has been initiated by this record reconciliation.
+ No G1 item is needed: the existing blunt-command-guard item covers that scope and will receive an amendment. The lead verified parented adoption on all three items. Existing-domain amendment receipts remain pending. The lead sent PO wake `w_487041ed-892d-45bb-831b-ec4fd1194831` requesting parented ownership, exact existing-record amendments and integration/acceptance custody reconciliation. It ran as turn 124342 and produced the verified adoption below. No source/runtime mutation or new implementation execution has been initiated by this record reconciliation.
 
 The original installer item is closed and its unmet need survives in iceboxed successor `wi_cb0a4962-9f07-420e-92eb-26686454d249`. Direct Main transcript turn 124270 and Patrol's independent read confirm the disposition. Canonical installer and learning documents have been corrected to reference that successor. The original was not reopened and no duplicate installer was created.
 
@@ -25,3 +25,13 @@ The lead retained CLI snapshots of open toplines and selected item/assignment re
 ## Whole-release custody finding
 
 The release owner reported `5ce67d6b-9739-4091-a02b-c6d4e90952d3`: no verified canonical whole-release manifest or overall final-candidate acceptance assignment was found in its bounded search. Existing feature/CI owners remain. Its local 51-entry patrol inventory is a seed containing completed and main-only work, not 51 release blockers. The lead asked the existing PO to identify/reuse whole-release custody or establish bounded planning responsibility, with a canonical included/excluded/deferred inventory and actual candidate acceptance ownership. This is pending, not proof that no differently named responsibility exists. The external release owner retains oversight.
+
+## Verified adoption, 8 September 2026
+
+All three open coordination assignments were opened and are held by the existing PO session `agent:main:clawline:mike:main s_fde9b2be`. The lead read their full subjects, opener/holder fields and attributed progress attests.
+
+- O1: `asg_4991dd81-07bc-4939-ae15-6571f2eb08ab`, disposition `att_cbf1a614-c279-41c2-839e-6580fec0d82b`. The current 0.1.9 spirit interpretation supersedes first-advancement auto-review/wait; the existing spirit item remains iceboxed without a duplicate producer.
+- O2: `asg_915cc133-51a4-471f-94a6-be7515f4a5e7`, disposition `att_d8acb6b8-769a-4628-9100-34783b36c359`. Preserve existing main custody and delivered 0.1.9 review infrastructure; new acceptance/routing design remains owed.
+- R1: `asg_8e9971b6-5678-4ff8-9261-2f19bf20ca50`, disposition `att_c13dcc40-6956-4a72-8b78-4f656c2f74ef`. The new reminder behavior stays separate from the existing default-preserving cadence work.
+
+The PO sent one amendment request to the existing guard/cadence/continuation owner. Matching domain attests and overall internal release planning/acceptance custody were not yet recorded at this verification. PO turn 124344 retained that incomplete reconciliation and scheduled continuation `w_e646a0a3`, explicitly distinguishing adoption from completion. The external release owner has the actual item and assignment IDs and remains subscribed. No duplicate producer, implementation or installation was started.
