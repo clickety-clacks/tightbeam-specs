@@ -1,5 +1,14 @@
 # Surf Ace E2E Admission Procedure V4.1 Contract
 
+## V4.2 full-soak acceptance override — 2026-09-09
+
+Read [the canonical full-soak platform contract](../surf-ace-full-soak-platform-contract.md)
+before this admission procedure. Every supported client and server platform,
+plus their shared-controller interoperability, is required for FULL PASS.
+One primary surface is sufficient only for a platform-specific phase or
+partial run. Missing platform coverage means INCOMPLETE full acceptance.
+The linked contract also supersedes legacy OpenClaw topology assumptions.
+
 ## Goal
 
 Provide a self-contained CLI-only E2E procedure that separates surface discovery from per-surface mutation admission, requires operation-covering proof inside the exact run-owned state root before the first mutation, and preserves the V4 endurance and evidence contract.
@@ -8,7 +17,7 @@ Provide a self-contained CLI-only E2E procedure that separates surface discovery
 
 - This bundle does not authorize a live E2E run.
 - This bundle does not authorize a product, source, package, installation, endpoint, deployment, or Tightbeam change.
-- This bundle does not require multi-surface execution.
+- This bundle's admission mechanism does not itself select the platform matrix; the V4.2 contract requires all supported platforms for FULL acceptance.
 - This bundle does not turn `pair.request` `capability_mismatch` into a source defect.
 - This bundle does not supply or derive migration material.
 
@@ -16,8 +25,8 @@ Provide a self-contained CLI-only E2E procedure that separates surface discovery
 
 - **Discovered candidate:** A surface returned by the current `surf-ace list` result. Discovery proves identity and current topology only.
 - **Admitted surface:** A discovered candidate whose exact `surfaceId`, controller fixture, run-owned state root, and gated operator have admission evidence that remains valid for the next target operation.
-- **Primary admitted surface:** The one admitted surface that carries the required multi-pane, repeated-push, capture, endurance, and bounded restart/recovery proof.
-- **Additional admitted surface:** An optional surface that passed the same admission gate independently.
+- **Primary admitted surface:** The admitted surface that carries one platform phase's multi-pane, repeated-push, capture, endurance, and bounded restart/recovery proof; repeat for every required platform.
+- **Additional admitted surface:** A surface that passed the admission gate independently; optional only when it adds no missing required platform or interoperability coverage.
 - **Already lockless:** The pre-existing compatibility state in which the exact surface/controller-fixture binding accepts every covered target operation without migration material. Discovery or successful operation on a different binding does not establish this state.
 - **Preflight executor:** The separately authorized session that runs the bounded preflight probe, proves operation coverage, restores the preflight baseline, and issues the immutable admission row for the exact run.
 - **Gated E2E operator:** The one designated session that may consume one admission row for one run after the preflight executor hands off custody.
@@ -43,7 +52,7 @@ Provide a self-contained CLI-only E2E procedure that separates surface discovery
 3. Immediately before each target operation, the gated operator verifies that every required admission-evidence field is present, unexpired, fixture-matching, state-root-matching, operator-matching, authority-valid, boundary-valid, and operation-covering. A failed check returns the surface to candidate state until a new admission row passes.
 4. The checklist admission log is the single seam that adds a surface to the admitted-target record.
 5. One admission row binds one gated operator and one run-owned state root. An operator change or state-root change invalidates the row until a new row passes.
-6. Required multi-pane work stays inside the primary admitted surface.
+6. Required multi-pane work runs inside each platform phase's primary admitted surface; the complete run covers the V4.2 matrix.
 7. Each additional targeted surface carries independent admission evidence.
 8. The operator applies explicit migration material only to its authorized surface and operation.
 9. A `pair.request` `capability_mismatch` ends the current fixture before mutation. A fresh fixture starts a new admission boundary: the operator performs fresh discovery and records a new passing admission row for each target surface before any target operation.

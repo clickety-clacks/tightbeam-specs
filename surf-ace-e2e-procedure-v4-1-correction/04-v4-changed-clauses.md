@@ -50,3 +50,12 @@ Red report `art_876f6fce` proved that V4 over-admitted a read-only same-epoch ro
 ## Unchanged endurance structure
 
 V4.1 retains V4 Pre-flight 0–3; Phases 1, 2, 2.5, 2.6, 3, 4, and 5; repeated pushes with per-push capture; two-pane and three-pane topology; ten churn cycles; the 60-minute churn dwell with 10-minute checkpoints; 2-minute checks; 5-, 15-, and 30-minute idle checkpoints; longitudinal 10-minute checks; the required bounded restart/recovery cycle; Aleph visual proof; invariant grading; failure capture; and final release judgment.
+# V4.2 acceptance correction — 2026-09-09
+
+[The canonical platform contract](../surf-ace-full-soak-platform-contract.md)
+supersedes this file's historical V4-to-V4.1 scope descriptions wherever they
+allow one primary client and optional remaining platforms to establish FULL
+acceptance. The contract, runbook, phase acceptance, checklist, and reporting
+now require all supported client and server platforms and shared-controller
+interoperability. Old execution receipts remain unchanged and scope-qualified.
+The bundle manifest includes the linked contract. No release/install is authorized.

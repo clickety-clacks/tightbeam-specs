@@ -1,5 +1,15 @@
 # Surf Ace Fleet Soak Procedure — Gibson CLI Control Plane
 
+## V4.2 platform and topology override
+
+Apply [the canonical full-soak platform contract](../surf-ace-full-soak-platform-contract.md)
+before these commands. Gibson may coordinate, but the CLI executes on the
+network-wide controller's host; display machines run clients, not mandatory
+per-machine controllers. OpenClaw is optional. Use the exact reviewed current
+CLI contract; historical invocation examples are not evidence of compatibility.
+Execute and record every supported client/server platform and pairing before
+FULL PASS. One primary platform is only a partial execution unit.
+
 ## Status and relationship to this bundle
 
 This document defines the command path for `02-fleet-soak-phases.md` and
@@ -238,12 +248,12 @@ Run this gate after the Electron cleanup and build-identity steps, but before Ph
 5. Require `ok: true` and a coherent discovered fleet.
 6. Stop `RED — BLOCKED: CLI_CONTROL_PLANE_UNAVAILABLE` if the CLI cannot execute, reach the approved controller endpoint, establish controller identity, or return coherent topology.
 7. Record each returned surface as a discovered candidate with its pane identities, stable identity, topology revision, product build, and observability level.
-8. Select one candidate as the required primary surface. Select additional candidates only when the run needs optional multi-surface coverage.
+8. Select a primary surface for each required client platform in the V4.2 matrix and identify every required shared-controller pairing; do not omit a platform because discovery or admission failed.
 9. For each selected candidate, require one of these evidence paths:
    - a separately authorized preflight executor runs the bounded reversible probe inside the exact run-owned state root, covers each planned first-boundary operation, restores the preflight baseline, and issues the immutable already-lockless row; or
    - the run records separate authority, exact explicit migration material, and supported CLI input location for that surface and operation.
 10. Admit the candidate only after step 9 passes. Exclude candidates without one of those two evidence bases. For the already-lockless path, the row must name the exact controller fixture, exact surface and pane, exact run-owned state root, exact gated operator, exact covered operations, issue time, expiry, restart validity, cleanup contract, rollback proof, and custody handoff.
-11. Perform all required multi-pane topology work inside the primary admitted surface. Treat multi-surface execution as optional. Apply this gate independently to each additional surface.
+11. Perform required multi-pane topology work within each required platform's admitted surface and execute shared-controller interoperability. Apply this gate independently to every surface. Only redundant coverage beyond the required matrix is optional.
 12. If any selected operation returns `pair.request` with `capability_mismatch`, stop before mutation. Preserve the request and response. Classify endpoint/procedure readiness. Clean the run-owned fixture and state at the terminal boundary. Route a fresh fixture. Treat it as a new admission boundary: repeat fixture verification, fresh `list` discovery, candidate selection, and steps 9–10 for every surface before any target operation. Do not retry, bypass the refusal, reuse an old fixture's admission row, invent migration material, or require a source change.
 
 After a restart, relaunch, gateway/provider bounce, network recovery, ownership handoff, or state-root change, run discovery again. Reuse admission only when the exact surface/controller-fixture binding is unchanged, the same gated operator still owns the run, the same state root remains in force, the row is not read-only, and the recorded admission evidence explicitly covers that boundary. Otherwise, treat the result as a candidate and repeat steps 7–10 before the next target operation. Never reuse admission across a fresh-fixture route; fresh discovery and a new admission-table row are mandatory even if a `surfaceId` repeats.
@@ -328,7 +338,7 @@ These adaptations apply throughout this bundle.
 | `GIB-CLI-07` | Electron cleanup and fault injection occur only on the host that owns the affected process | Keeps host mutation scoped to runtime ownership |
 | `GIB-CLI-08` | Gibson retains CLI inputs, outputs, receipts, reads, captures, and grading in the canonical artifact location | Keeps review evidence complete and accessible |
 | `GIB-CLI-09` | Each targeted surface needs durable lockless evidence or separately authorized explicit migration material | Prevents discovery or another surface's success from authorizing mutation |
-| `GIB-CLI-10` | Required topology and endurance proof runs inside one primary admitted surface; additional surfaces are optional and independently admitted | Preserves full multi-pane proof without manufacturing multi-surface readiness |
+| `GIB-CLI-10` | Required topology/endurance proof runs on each supported client platform; every server platform and client/server pairing is covered under V4.2 | One primary surface cannot establish FULL acceptance |
 
 ## Final report additions
 

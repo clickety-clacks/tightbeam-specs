@@ -1,5 +1,14 @@
 # Surf Ace Fleet Soak Procedure
 
+## V4.2 required platform coverage
+
+[The canonical full-soak platform contract](../surf-ace-full-soak-platform-contract.md)
+governs FULL acceptance. Repeat the required phases on every supported client
+platform, execute every supported server platform, and prove their shared-controller
+interoperability. References below to a primary surface mean the primary for
+one platform phase. Optional extra surfaces never waive required platform rows.
+The historical named fleet below is not the supported-platform matrix.
+
 > Purpose: catch the failures that only show up over time — disconnect/reconnect churn, ownership weirdness, topology drift, and recovery after pieces of the system go down and come back.
 >
 > This is the procedure to run whenever we change the Surf Ace protocol, provider/networking behavior, topology realization logic, ownership/locking behavior, or reconnect lifecycle.
@@ -85,7 +94,7 @@ If pane capture is blocked, record the returned `failureReason` and fall back to
 
 Select one discovered candidate as the primary surface. Before the first operation targets it, validate the complete already-lockless predicate in `00-v4-contract.md`: the immutable record must come from the separately authorized preflight executor, bind the exact surface/controller fixture, exact run-owned state root, exact gated operator, covered operations, verification result, rollback proof, handoff evidence, issuer, issue time, expiry, cleanup, restart validity, and artifact identity, and reject every read-only or cross-root or cross-operator row. Alternatively, record separately authorized explicit migration material and its supported CLI input location for that exact surface and operation. Exclude the candidate when neither basis exists.
 
-Run the required repeated pushes, capture proof, multi-pane topology, dwell checkpoints, and one bounded restart/recovery cycle inside the primary admitted surface. Multi-surface execution is optional. Apply the same admission gate independently to each additional targeted surface.
+Run required repeated pushes, capture proof, multi-pane topology, dwell checkpoints, and bounded restart/recovery on each required platform's admitted surface. Execute the V4.2 shared-controller matrix. Apply the same admission gate independently to every targeted surface.
 
 Immediately before each target operation, verify that the admission row is unexpired and covers the exact surface/controller fixture, exact run-owned state root, exact gated operator, current boundary, exact operation, and non-read-only status. If one check fails, return the surface to candidate state and record a new passing admission row before targeting it.
 
@@ -579,14 +588,16 @@ Every surface result should be graded:
 
 Overall protocol-change confidence should be based on the weakest important surface, not the happiest path.
 
-## Minimum release bar after protocol/runtime changes
+## Full-soak acceptance bar after protocol/runtime changes
 
-Do not call a protocol/runtime change ready unless all of the following are true:
+Apply the complete V4.2 support ledger and client/server matrix first. Missing
+coverage means INCOMPLETE regardless of a primary surface's grade. The checks
+below apply per required platform and cannot grant release authority.
 
 1. **The primary surface has independent admission evidence** that passes the complete already-lockless predicate in `00-v4-contract.md` or binds separately authorized explicit migration material to that exact surface.
 2. **The primary surface passes** baseline, repeated pushes with per-push capture proof, topology churn, chat history semantics when in scope, the 2/5/15/30-minute checkpoints, the 60-minute churn dwell, and one bounded restart/recovery cycle.
-3. **Required multi-pane proof stays inside the primary admitted surface.** A second surface is not required.
-4. **Each optional additional surface has independent admission evidence and an independent grade.** A result from the primary surface cannot admit or grade another surface.
+3. **Required multi-pane proof runs inside each platform's admitted surface.** All supported client/server platforms and shared-controller pairings are required under V4.2.
+4. **Every required surface has independent admission evidence and an independent grade.** Extra surfaces are optional only beyond complete coverage. A primary surface cannot admit or grade another surface.
 5. **Each included multi-window client passes** create/push/close churn plus the sustained churn soak; spontaneous yellow on an untouched green window is a release blocker unless a captured external precursor explains it.
 6. **Chat push history semantics pass** for at least two chat/session identities and after reconnect/restart when the change touches push provenance, history, target replay, or chat-originated content.
 7. No unresolved realized-vs-visible topology mismatch remains on an included fully observed surface.

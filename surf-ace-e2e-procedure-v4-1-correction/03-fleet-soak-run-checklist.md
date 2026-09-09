@@ -1,5 +1,27 @@
 # Surf Ace Fleet Soak Run Checklist
 
+## V4.2 platform coverage and report gate
+
+Complete the role-specific support ledger and every client/server pairing from
+[the canonical full-soak platform contract](../surf-ace-full-soak-platform-contract.md).
+Do not treat the historical named-host checklist as a complete support matrix.
+
+- **Pinned support-contract revision and product source:**
+- **Required client OS/architecture/device rows:**
+- **Required server OS/architecture and host-CLI rows:**
+- **Required client-by-server interoperability rows:**
+- **Exact packages, execution owners/cards, commands and evidence per row:**
+- **Missing/unexecuted/blocked/unreviewed rows and responsible existing owner:**
+- **Executed-scope result:** `Pass / Fail / Ungraded`
+- **Full-soak acceptance:** `PASS / INCOMPLETE`
+- **Independent complete-matrix review:**
+
+FULL PASS requires all supported platform rows and interoperability pairings
+to execute and pass review. One primary client, a build, or another host of
+the same OS cannot replace a missing row. Label narrower results PARTIAL.
+Missing supported coverage cannot be marked Out-of-scope. Preserve historical
+results with their actual tested platforms and limitations; never backfill.
+
 Use this checklist with `00-v4-contract.md`, `01-gibson-cli-control-plane.md`, and `02-fleet-soak-phases.md` whenever Surf Ace protocol, topology, ownership, reconnect, or restart behavior changes.
 
 
@@ -78,7 +100,7 @@ Final invariant sign-off:
   - [ ] Gateway / provider restart-path change
   - [ ] Reliability bug fix validation
   - [ ] Other:
-- **Procedure bundle:** `surf-ace-e2e-procedure-v4.1`
+- **Procedure bundle:** `surf-ace-e2e-procedure-v4.1` with V4.2 platform contract (record both revision hashes)
 - **Preflight executor:**
 - **Gated E2E operator:**
 - **Primary admitted surface:**
@@ -777,18 +799,19 @@ For each failure, record:
 - [ ] Each admission row records and passes every already-lockless schema/verifier field or every explicit-migration authority/material/scope/input field, including exact controller-fixture identity, expiry, cleanup, covered operations, and restart/recovery validity
 - [ ] Each target operation has a recorded immediately-prior check that its admission row was unexpired and covered the exact surface/controller fixture, exact state root, exact gated operator, current boundary, and operation
 - [ ] Each already-lockless row was issued by the separately authorized preflight executor after the bounded reversible probe restored the preflight baseline
-- [ ] Required multi-pane proof ran inside one admitted surface
-- [ ] Each additional surface was optional and independently admitted
+- [ ] Required multi-pane proof ran on each supported client platform
+- [ ] Each supported server platform and every required client/server pairing has executed evidence through the shared controller
+- [ ] Every targeted surface was independently admitted; only redundant coverage beyond the required platform matrix was optional
 - [ ] No migration material was invented, derived, broadened, or reused
 - [ ] No `pair.request` `capability_mismatch` was retried or bypassed
 - [ ] Any `capability_mismatch` stopped before mutation, produced endpoint/procedure-readiness classification, cleanup, and a fresh-fixture route
 - [ ] Any resumed fresh-fixture run performed fresh discovery and created a new passing admission row for every target surface before any target operation
 - [ ] Any changed post-restart binding was re-admitted before the next target operation
 
-### Release judgment
-- [ ] Ready
-- [ ] Changed but unverified
-- [ ] Not ready
+### Full-soak acceptance (not release authority)
+- [ ] FULL PASS: complete support matrix and all required pairings executed, passed, and independently reviewed
+- [ ] INCOMPLETE: list every missing, unexecuted, blocked, failed, ungraded, or unreviewed required row
+- [ ] PARTIAL result attached with its exact tested scope; not FULL acceptance
 
 ### Why
 

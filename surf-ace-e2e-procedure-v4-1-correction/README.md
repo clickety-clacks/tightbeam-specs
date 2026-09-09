@@ -1,5 +1,13 @@
 # Surf Ace Gibson CLI E2E procedure bundle V4.1
 
+## Current acceptance: V4.2
+
+First read [the canonical full-soak platform contract](../surf-ace-full-soak-platform-contract.md).
+It supersedes V4.1's one-primary/optional-platform FULL acceptance. All supported
+client and server platforms and their shared-controller pairings need executed
+evidence. Missing coverage means INCOMPLETE; narrower runs are PARTIAL.
+Preserve historical V4.1 results at their original revisions and tested scope.
+
 This bundle is the complete operator procedure for a Gibson-coordinated Surf Ace fleet soak.
 V4.1 repairs only the mutation-admission seam for the current Linux Racter path.
 Use the bundle documents in this order:
@@ -27,7 +35,7 @@ For case 1, the evidence must be an immutable record from a separately authorize
 
 Immediately before each target operation, the operator must verify that the admission row is unexpired and covers the current fixture, state root, operator, boundary, and operation. A failed check returns the surface to candidate state until a new admission row passes.
 
-The operator must use topology changes inside one admitted surface for the required multi-pane proof. Additional surfaces are optional. Each additional surface needs its own admission evidence before any operation targets it.
+The operator must use topology changes inside each platform phase's admitted surface for multi-pane proof. Repeat the phases and interoperability checks across the V4.2 required matrix. Extra surfaces are optional only beyond that coverage. Each surface needs its own admission evidence before any operation targets it.
 
 If `pair.request` returns `capability_mismatch`, the operator stops before mutation, preserves the response, classifies endpoint/procedure readiness, cleans the run-owned fixture and state, and routes a fresh fixture. The operator does not retry, bypass the refusal, invent migration material, or require a source change. A fresh fixture begins a new admission boundary. The operator must run fresh discovery and create a new passing admission row for every surface before the fresh fixture targets it.
 
@@ -60,7 +68,7 @@ The source paths are evidence provenance only. The operator does not need them t
 
 ## Bundle result
 
-The completed checklist and evidence determine the run grade. This procedure never grants release authority.
+The completed platform matrix, phase checklist, and independent evidence review determine FULL acceptance under V4.2. A passing primary surface alone produces only a partial result. This procedure never grants release authority.
 
 ## V4.1 source ruling
 
