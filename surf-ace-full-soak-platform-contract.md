@@ -74,9 +74,8 @@ or silently remove an existing advertised platform.
 | Client | iOS (phone) | Same declarations; `packages/ios/README.md` | Required |
 | Client | iPadOS (tablet) | Same declarations; `packages/ios/README.md` | Required separately from phone |
 | Client | visionOS / SurfAceSpatial | `packages/ios/README.md` names the native target and shared runtime; V4.1 fleet includes Cyberbrain | Account as required while advertised; a simulator build alone is not native executed soak evidence |
-| Server/controller + host CLI | Linux | `surf-ace-release-split-r5.md`, Release files, names the Linux x86_64 resident controller/CLI; controller README names Linux integration infrastructure | Required baseline row; the proposed release document is not a complete support policy |
-| Server/controller + host CLI | macOS | Accepted packaged central-server and combined-soak evidence on Eezo, including `art_2dc36698`, `art_7988dea4`; controller README names macOS infrastructure | Required baseline exercised configuration; client-on-macOS does not prove this role |
-| Server/controller + host CLI | Other OS/architectures/versions, including Windows | No complete server support enumeration established by the cited sources | Support-boundary unresolved: owner must supply the actual supported set; unknown is not unsupported or waived |
+| Server/controller + host CLI | Linux x86_64 | `surf-ace-release-split-r5.md`, Release files, names the Linux x86_64 resident controller/CLI; controller README names Linux integration infrastructure; Racter exact-source/runtime prerequisite `att_88bcb837` | Required server row; execute the actual packaged central server and matching host CLI, not allocator-only helper proof |
+| Server/controller + host CLI | macOS arm64 | Accepted packaged central-server and combined-soak evidence on Eezo, including `art_2dc36698`, `art_7988dea4`; controller README names macOS infrastructure | Required server row; client-on-macOS does not prove this role |
 
 Source links for audit:
 
@@ -89,9 +88,16 @@ Source links for audit:
 Do not use that narrower proposed release artifact list to drop Windows,
 Apple mobile clients, visionOS, or a currently supported server variant.
 Do not infer runtime support from Node/Electron portability or a directory.
-The product owner resolves inconsistencies against the actual support
-contract. Until the role-specific support set is complete and pinned,
-full-soak acceptance is INCOMPLETE, even if every available machine passes.
+For this pinned build, the required server matrix is Linux x86_64 and macOS
+arm64, as declared/built above. The cited contract and supported-build record
+do not establish a Windows server or another required server OS/architecture.
+Do not create an unknown-platform row or require open-ended support discovery
+before execution or acceptance. This is not a claim that other systems cannot
+run the code, and it does not waive a platform actually declared supported.
+Add a server row only when a concrete support declaration or supported-build
+record establishes it; cite that evidence and route the uncovered execution.
+Record exact OS/runtime versions actually tested without inventing requirements
+for every hypothetical version. Never pause already-known rows for that search.
 A support withdrawal requires explicit product authority, not a test waiver.
 
 ## Required execution and interoperability
@@ -188,9 +194,10 @@ alternatives, first execution, and material results in Tightbeam.
 | Eezo central fixture `asg_0ed9349e`, cleanup `art_3dc545ba` | Packaged macOS central fixture used by the recorded client runs; now stopped and cleaned | No current endpoint; not Linux server or all supported server variants; exact host-CLI/recovery/pairing coverage still requires ledger review |
 
 Missing evidence at this checkpoint: Windows, iOS, iPadOS, and visionOS
-client full sequences; Linux controller/host-CLI full sequence; complete
-server support enumeration; all required client/server interoperability
-pairings; and any remaining supported architecture/version variants.
+client full sequences; Linux controller/host-CLI full sequence; remaining
+macOS controller recovery/host-CLI obligations; and all required client/server
+interoperability pairings. The finite server matrix above replaces the earlier
+open-ended server-support-enumeration prerequisite under Mike's clarification.
 Linux/macOS historical client passes remain valid for their recorded scope,
 but are not retroactively widened or sufficient for the pending FULL pass.
 Fresh or reused evidence must identify the exact supported build and prove
