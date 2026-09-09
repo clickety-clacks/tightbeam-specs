@@ -4,6 +4,13 @@ Authority: Mike's direct all-supported-platform requirement and topology
 clarification, 2026-09-09. Canonical home: this file in
 `clickety-clacks/tightbeam-specs`, on `main`.
 
+Follow-through authority, same date: Mike authorizes the full all-platform
+soak and explicitly permits iPad simulators when physical iPad hardware is
+unavailable. Routine reversible test setup is authorized; lack of a separate
+older setup approval is not an execution blocker. Unrelated release,
+installation, deployment, and host service/security changes remain outside
+this request.
+
 ## Acceptance rule
 
 A **FULL soak PASS** requires executed, independently reviewed evidence for
@@ -109,8 +116,16 @@ A support withdrawal requires explicit product authority, not a test waiver.
    addresses, targeted content isolation, combined topology/readback, and
    reconnect identity continuity with multiple clients active together.
    Independent single-client runs alone cannot establish interoperability.
-5. Record native device versus simulator/emulator. Keep simulator results
-   partial for a native-device requirement. Use product pane capture/read
+5. Record native device versus simulator/emulator. For iPadOS, when physical
+   iPad hardware is unavailable, Mike explicitly authorizes an iPad simulator
+   to satisfy this soak's iPad platform row: execute the full required sequence
+   and interoperability, recording model, OS runtime, build/hash, commands,
+   hardware-unavailability basis, and simulator limitations. A build alone
+   never satisfies the row. This exception does not assert physical-device
+   coverage or automatically waive native iPhone or visionOS requirements.
+   Keep other simulator results partial for a native-device requirement unless
+   the applicable support contract or explicit authority allows substitution.
+   Use product pane capture/read
    and decoded pixels as authorized by Mike's 2026-09-08 ruling. Unrelated
    desktop overlays and Screen Recording permission are not prerequisites
    for direct capture. Never relabel direct capture as visible-screen proof.
@@ -156,6 +171,15 @@ endurance and Plumbus holders showed no open execution assignments. Thus
 missing-platform execution is **unassigned**, not silently in progress.
 Route those gaps through this existing ownership after reconciling current
 cards and venue authority. This documentation correction launches nothing.
+
+Follow-through checkpoint: Mike subsequently authorized execution on the
+same work item. Sole coordinator `operator:surf-ace-endurance` now holds
+`asg_f8fea8f2-6cfa-48b1-a3c9-632c25285958`. Reconcile and select existing
+capable operators, preserve useful accepted evidence, and execute uncovered
+rows without duplicate controllers or runs. The earlier unassigned statement
+records the preceding checkpoint, not a continuing hold. File the actual
+selected hardware/simulators, candidate hashes, failed operations and
+alternatives, first execution, and material results in Tightbeam.
 
 | Existing evidence | Actual scope preserved | Full-matrix gap |
 | --- | --- | --- |
