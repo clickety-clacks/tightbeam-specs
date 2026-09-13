@@ -995,9 +995,10 @@ re-query the stream; the accompanying process message carries the human explanat
 where one is needed.
 
 1. **Identity apply visibility.** In `identity_apply_session`, thread an internal
-   `:applied | :noop` distinction out of the per-session branch (never-started sessions
-   are `:noop` and emit NOTHING); after `Org.set_identity_revision/3` on the `:applied`
-   branch, best-effort push `stream_updated` for that session. No wire response change.
+   `:applied | :noop` distinction out of the per-session branch. The canonical
+   `immediate-identity-apply-v1.md` contract decides which selected session reaches
+   `Org.set_identity_revision/3` and the `:applied` branch. After that stamp,
+   best-effort push `stream_updated` for the session. No wire response change.
    `identity edit`/`relearn` publication stays silent — nothing live changed until
    apply.
 2. **Credential-parking visibility.** The park CLOSURE (runtime stop) is NOT the
@@ -1023,8 +1024,8 @@ where one is needed.
 
 ### Tests (extend §Tests)
 
-- identity-apply on a started session yields exactly one `stream_updated`; `:noop`
-  (never-started) yields none; `turn_in_progress` refusal yields none.
+- identity-apply that reaches `Org.set_identity_revision/3` yields exactly one
+  `stream_updated`; a `:noop` result yields none.
 - mark_terminal with N running provider-sessions yields N park messages + N
   `stream_updated`; a second mark_terminal for the same provider (already terminal)
   emits nothing and re-parks nothing.
