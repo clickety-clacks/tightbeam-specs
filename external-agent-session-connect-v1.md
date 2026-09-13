@@ -1,6 +1,8 @@
 # External-agent session connection v1
 
-Status: FROZEN PROTOCOL CANDIDATE for independent specification review.
+Status: FROZEN AMENDED PROTOCOL CANDIDATE for proportional independent
+specification review. Spirit is approved, the public command spelling is
+settled, and the integration line remains open under `dr_107b5cbc`.
 
 Work item: `wi_684f7f8f-08eb-43f4-bdad-adfac6338426`.
 
@@ -41,7 +43,9 @@ Spirit and authority sources, frozen for this candidate on 2026-09-13 UTC:
   `wi_684f7f8f-08eb-43f4-bdad-adfac6338426`, as read 2026-09-13;
 - product-owner assignment
   `asg_e3ec287b-14d6-41ad-91da-110573e91f95`, latest disposition
-  `att_d4c324b1-c63c-4ead-9298-e8bbfc8ca41e`;
+  `att_5b9f2770-42cf-4270-81a2-25555cb86d4a`, which approves this Spirit,
+  settles the command spelling, and authorizes private non-integrating
+  candidate development;
 - external-agent orchestrator disposition
   `att_525d1d0b-0689-45b5-977e-479705ca1ab9`;
 - external-agent orchestrator authority correction
@@ -60,12 +64,16 @@ Spirit and authority sources, frozen for this candidate on 2026-09-13 UTC:
 - Firehose Slice 2 source-line delivery
   `6c3392280ef7c2ae1fee780332ea00107f24d538` on `origin/0.1.9`,
   reviewed clean in `art_c892886e` and delivered in `art_18c62730`.
+- authoritative served Gibson execution rule, Mike 2026-09-01, as projected
+  to this spec writer on 2026-09-13: Gibson may compile and package only in
+  an exact-tip throwaway worktree; product tests and gates run on Eezo or
+  Racter, with the canonical Mix gate wrapper unmodified.
 
 ## Load-bearing terms
 
 **Connection command** — the one long-running CLI process defined here. The
-recommended spelling is `tightbeam session-connect --session <sessionKey>`;
-the product owner must settle the public spelling before CLI integration.
+settled public spelling is
+`tightbeam session-connect --session <sessionKey>`.
 
 **Selected session** — the one exact full `sessionKey` passed by `--session`.
 The command never changes this target and accepts no role, user, display-name,
@@ -212,9 +220,9 @@ before the next presentation and starts a cursorless replacement snapshot.
 
 ### R1 — invocation and fixed selection
 
-The connection command SHALL require exactly one full `--session
-<sessionKey>` selector and SHALL reject an omitted, empty, display-name,
-prefix, role, user, or multiple selector before gateway I/O.
+The `tightbeam session-connect` command SHALL require exactly one full
+`--session <sessionKey>` selector and SHALL reject an omitted, empty,
+display-name, prefix, role, user, or multiple selector before gateway I/O.
 
 Acceptance example: given `s_abc` and another readable session, when the
 caller invokes the command with `--session s_abc`, then every REST filter,
@@ -744,13 +752,28 @@ message or wake row, restores the socket, and shows the row in the new
 snapshot. Duplicate same-version rows are accepted under R9 and no current
 visible row is missing at quiescence.
 
-The R13-R15 proof SHALL run on an authorized non-Gibson test host under that
-repository's canonical isolated gate wrapper and SHALL name the host in its
-receipt. It SHALL NOT run Tightbeam product code or tests on Gibson.
+The R13-R15 proof and every product test or gate SHALL run on Eezo or Racter.
+The Mix gate SHALL use the repository's unmodified canonical
+`scripts/verify_mix.sh`; the repository-prescribed Rust gate SHALL run on one
+of those same authorized test hosts. The proof SHALL place the satellite CLI
+and its isolated non-production gateway on different hosts and SHALL name
+both hosts and the gate host in its receipt.
 
-Acceptance example: a receipt naming Eezo or Racter and the unmodified
-canonical wrapper is acceptable; a receipt whose product process or test host
-is Gibson fails regardless of its result.
+Acceptance example: a receipt shows the unmodified `scripts/verify_mix.sh`
+and the Rust gate ran on Eezo or Racter, identifies an Eezo-or-Racter
+satellite client and a different host for the isolated gateway, and reports
+R13-R15 from that topology. A receipt using Gibson for a product test, gate,
+gateway, or satellite process fails regardless of result.
+
+Gibson MAY compile and package the exact candidate only in an exact-tip
+throwaway worktree. That build/package permission does not permit a product
+test, gate, proof process, development gateway, or ad-hoc product execution
+on Gibson.
+
+Acceptance example: a Gibson receipt identifies the exact candidate commit,
+the disposable worktree, and only compile/package commands; any Gibson test,
+gate, gateway boot, CLI proof run, or other product execution fails this
+requirement.
 
 ## Non-goals
 
@@ -775,16 +798,19 @@ is Gibson fails regardless of its result.
 
 | Slice | Buildable outcome | Depends on | Current disposition |
 |---|---|---|---|
-| S1: CLI NDJSON shell | command parsing; R4/R5/R7/R11/R12 framing; one pinned discovery result; ordinary wake adapter | settled command spelling; existing Rust CLI discovery and dispatch | Protocol frozen here; command spelling awaits PO ruling. |
+| S1: CLI NDJSON shell | command parsing; R4/R5/R7/R11/R12 framing; one pinned discovery result; ordinary wake adapter | settled `tightbeam session-connect --session <sessionKey>` spelling; existing Rust CLI discovery and dispatch | Command spelling settled by PO `att_5b9f2770`; private non-integrating candidate work is authorized from recorded base `6c339228`. |
 | S2: credential-derived Firehose authentication | ChangeSocket composes existing active session-token authentication into that exact session principal; device tokens retain their existing user principal; organization CLI tokens have no selected-session read authority; exact selected-session filter | Firehose owner `asg_34c16cdf`; `session-tokens-v1`; REST AU1-AU4; current ChangeSocket source; no Visitor expansion | Required gap: current ChangeSocket evidence authenticates only `Devices.by_token`, while CLI discovery can yield session or organization credentials. No current source proves a CLI session/org token can authenticate ChangeSocket. `--as-user` is attribution only and cannot close the gap. The technical owner must compose existing session-token resolution; an organization token fails R3 rather than becoming a user; no credential or Visitor security lane is minted. |
-| S3: snapshot and live bridge | subscription-first four-resource snapshot; canonical S0/message/S1 boundary cut; `snapshotCycle` framing; buffered-prefix validation; canonical event wrapping; correlation; same-connection boundary rebuild; reconnect replacement | canonical Firehose r6; `transcript-verb-v1` steps 3–8; canonical REST/session/transcript/wake/turn routes on the selected line | Specs exist. Exact source availability, canonical subscribe wire, and shared serializers must be proved on the elected product line. |
-| S4: isolated integration and satellite proof | R13-R15 real bidirectional conversation and reconnect repair | reviewed S1-S3 candidate; assimilated satellite; isolated non-Gibson gateway; real harness credential on its owning host | Required before delivery acceptance; it grants no release or install authority. |
+| S3: snapshot and live bridge | subscription-first four-resource snapshot; canonical S0/message/S1 boundary cut; `snapshotCycle` framing; buffered-prefix validation; canonical event wrapping; correlation; same-connection boundary rebuild; reconnect replacement | canonical Firehose r6; `transcript-verb-v1` steps 3–8; canonical REST/session/transcript/wake/turn routes on the selected line | Specs exist. Candidate source availability, canonical subscribe wire, and shared serializers must be proved from recorded base `6c339228`; the elected integration line must satisfy the same proof before merge. |
+| S4: isolated integration and satellite proof | R13-R15 real bidirectional conversation and reconnect repair | reviewed S1-S3 candidate; Eezo/Racter gates; assimilated satellite; isolated gateway on a different host; real harness credential on its owning host | Required before delivery acceptance. Mix uses unmodified `scripts/verify_mix.sh`, the Rust gate runs on Eezo or Racter, and Gibson is compile/package-only in an exact-tip throwaway worktree. This grants no release or install authority. |
 
 Dependency availability on 2026-09-13:
 
 - Firehose Slice 2 is reviewed and present on source line `origin/0.1.9` at
   `6c3392280ef7c2ae1fee780332ea00107f24d538`; this is source availability,
-  not release authority.
+  not integration or release authority. PO `att_5b9f2770` authorizes private
+  non-integrating candidate development from that exact recorded base. The
+  base identifies bytes only; it implies no candidate branch or destination
+  branch.
 - Firehose portfolio owner `asg_34c16cdf-8195-4a73-a7e7-88b2dfbc7674`
   retains broader main/0.1.9 custody. This spec neither transfers it nor
   declares main equivalent.
@@ -806,27 +832,34 @@ Dependency availability on 2026-09-13:
   an authorization principal. `att_a740faef` keeps expanded Visitor
   schema/security work paused. This command supplies the concrete
   outside-agent use without authorizing that expansion.
-- The selected implementation line is not chosen by this spec. A dependency
-  branch, candidate commit, or Firehose delivery line is not target authority.
+- The integration line is not chosen by this spec. Operator request
+  `dr_107b5cbc` remains open between `0.1.9` and `main`. Private candidate
+  branching, implementation, and remote gates may proceed from recorded base
+  `6c339228`; no dependency ref, base commit, private candidate branch, or
+  Firehose delivery line is target authority.
 
-## Open questions — BLOCKING
+## Resolved product question
 
 ### BQ1 — public command spelling (product owner)
 
-Does the product owner accept the recommended
-`tightbeam session-connect --session <sessionKey>` spelling? The alternatives
+PO `att_5b9f2770` settles the public spelling as
+`tightbeam session-connect --session <sessionKey>`. The alternatives
 considered were `session-stdio` (precise but implementation-flavored),
 `session-stream` (suggests stdout-only), and `connect` (too broad for a growing
-CLI). This blocks only public CLI integration; the protocol and internal
-composition can be reviewed independently.
+CLI). No command-spelling question remains.
 
-### BQ2 — delivery line (delivery owner)
+## Open questions — BLOCKING
+
+### BQ2 — integration line (delivery owner)
 
 Which authorized product line receives implementation? Current evidence proves
 Firehose Slice 2 source availability on `origin/0.1.9` and retains a broader
-main obligation, but this assignment grants no target selection. This blocks
-source branching, product code, gates, and integration, not specification
-review.
+main obligation, but this assignment grants no target selection. PO
+`att_5b9f2770` authorizes private non-integrating candidate development and
+gates from exact recorded base `6c339228`; that base implies no branch.
+Operator request `dr_107b5cbc` asks whether `0.1.9` or `main` receives the
+feature. This question blocks integration only. It does not block private
+candidate branching, implementation, proportional review, or remote gates.
 
 ## Open questions — NON-BLOCKING
 
