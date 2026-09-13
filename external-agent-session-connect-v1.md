@@ -1,8 +1,9 @@
 # External-agent session connection v1
 
-Status: FROZEN AMENDED PROTOCOL CANDIDATE for proportional independent
-specification review. Spirit is approved, the public command spelling is
-settled, and the integration line remains open under `dr_107b5cbc`.
+Status: FROZEN HOST-NEUTRAL AMENDED PROTOCOL CANDIDATE for proportional
+independent specification review. Spirit is approved, the public command
+spelling is settled, and the integration line remains open under
+`dr_107b5cbc`.
 
 Work item: `wi_684f7f8f-08eb-43f4-bdad-adfac6338426`.
 
@@ -64,10 +65,15 @@ Spirit and authority sources, frozen for this candidate on 2026-09-13 UTC:
 - Firehose Slice 2 source-line delivery
   `6c3392280ef7c2ae1fee780332ea00107f24d538` on `origin/0.1.9`,
   reviewed clean in `art_c892886e` and delivered in `art_18c62730`.
-- authoritative served Gibson execution rule, Mike 2026-09-01, as projected
-  to this spec writer on 2026-09-13: Gibson may compile and package only in
-  an exact-tip throwaway worktree; product tests and gates run on Eezo or
-  Racter, with the canonical Mix gate wrapper unmodified.
+- product-owner host-neutral acceptance correction
+  `att_f1f3873b-5887-4168-9506-dc540241e9d6`, which requires the satellite
+  CLI and isolated non-production gateway to run on different authorized
+  hosts, with the actual hosts and revisions recorded as evidence, while each
+  holder's current served authority governs where that holder may execute;
+- external-agent orchestrator authority disposition
+  `att_7157418d-55ce-4bcb-8841-cfd319e72564`, which applies that holder's
+  served execution restriction to its own work without making the restriction
+  a product acceptance requirement.
 
 ## Load-bearing terms
 
@@ -715,29 +721,32 @@ contains a credential, stack trace, or unrelated row identifier.
 
 ## Satellite acceptance
 
-R13. GIVEN an assimilated satellite with the supported local CLI and a
-configured remote organization gateway, WHEN the command starts on that
-satellite, it SHALL use the existing discovery result and establish its
-WebSocket, REST, and wake requests through that remote gateway without
-starting, probing, or requiring a satellite-local gateway.
+R13. GIVEN an assimilated satellite running the supported local CLI on one
+authorized host and a configured remote organization gateway running as an
+isolated non-production instance on a different authorized host, WHEN the
+command starts on that satellite, it SHALL use the existing discovery result
+and establish its WebSocket, REST, and wake requests through that remote
+gateway without starting, probing, or requiring a satellite-local gateway.
 
 Acceptance example: given the gateway on host A and the CLI process on host B,
 when host B has no listening Tightbeam gateway, then the command on B still
 reaches `ready`, sends a wake, and receives the selected session's reply from A.
 
-R14. GIVEN one isolated non-production gateway, one real selected agent
-session, and one assimilated satellite on a different host, WHEN the satellite
-CLI sends two uniquely identified prompts through stdin, it SHALL emit each
-`send.accepted`, the corresponding wake and turn identifiers, and each real
-assistant `message.created` response through stdout without an external
-transcript poll.
+R14. GIVEN one isolated non-production gateway on an authorized host, one real
+selected agent session, and one assimilated satellite running the CLI on a
+different authorized host, WHEN the satellite CLI sends two uniquely
+identified prompts through stdin, it SHALL emit each `send.accepted`, the
+corresponding wake and turn identifiers, and each real assistant
+`message.created` response through stdout without an external transcript
+poll.
 
-Acceptance example: the evidence captures the satellite hostname, gateway
-hostname and endpoint, absence of a satellite-local gateway, CLI and gateway
-source revisions, selected session key, redacted discovered credential kind,
-two requestId-to-wakeId-to-turn-to-message chains, and parsed stdout frames.
-The replies are observed responses from the real harness, not synthetic
-fixtures.
+Acceptance example: the evidence names the actual satellite host, actual
+gateway host and endpoint, confirms that the hosts differ and that no gateway
+is listening on the satellite, names the exact CLI and gateway source
+revisions, describes the CLI-to-gateway topology, and captures the selected
+session key, redacted discovered credential kind, two
+requestId-to-wakeId-to-turn-to-message chains, and parsed stdout frames. The
+replies are observed responses from the real harness, not synthetic fixtures.
 
 R15. GIVEN the R14 conversation and a forced Firehose-only disconnect, WHEN a
 new durable selected-session change commits during the gap and the CLI
@@ -746,34 +755,30 @@ generation, a complete replacement snapshot for the new generation, the gap's
 current durable state, and `ready`; it SHALL emit no replay claim or stream
 cursor.
 
-Acceptance example: the proof drops only the WebSocket path while leaving the
-gateway's REST and wake paths available, commits a uniquely identifiable
-message or wake row, restores the socket, and shows the row in the new
-snapshot. Duplicate same-version rows are accepted under R9 and no current
-visible row is missing at quiescence.
+Acceptance example: under the same named host pair and exact source revisions
+as R14, the proof drops only the WebSocket path while leaving the gateway's
+REST and wake paths available, commits a uniquely identifiable message or wake
+row, restores the socket, and shows the row in the new snapshot. Duplicate
+same-version rows are accepted under R9 and no current visible row is missing
+at quiescence.
 
-The R13-R15 proof and every product test or gate SHALL run on Eezo or Racter.
-The Mix gate SHALL use the repository's unmodified canonical
-`scripts/verify_mix.sh`; the repository-prescribed Rust gate SHALL run on one
-of those same authorized test hosts. The proof SHALL place the satellite CLI
-and its isolated non-production gateway on different hosts and SHALL name
-both hosts and the gate host in its receipt.
+The R13-R15 proof SHALL place the satellite CLI and its isolated
+non-production gateway on different hosts, each authorized for the role it
+performs under the applicable current execution authority. Its receipt SHALL
+name the actual satellite host, gateway host, gateway endpoint, exact CLI and
+gateway source revisions, and any host that ran an acceptance gate, and SHALL
+describe the network topology that kept the gateway absent from the
+satellite. Host names and holder execution restrictions are evidence context;
+they are not product protocol behavior or a standing host assignment made by
+this specification.
 
-Acceptance example: a receipt shows the unmodified `scripts/verify_mix.sh`
-and the Rust gate ran on Eezo or Racter, identifies an Eezo-or-Racter
-satellite client and a different host for the isolated gateway, and reports
-R13-R15 from that topology. A receipt using Gibson for a product test, gate,
-gateway, or satellite process fails regardless of result.
-
-Gibson MAY compile and package the exact candidate only in an exact-tip
-throwaway worktree. That build/package permission does not permit a product
-test, gate, proof process, development gateway, or ad-hoc product execution
-on Gibson.
-
-Acceptance example: a Gibson receipt identifies the exact candidate commit,
-the disposable worktree, and only compile/package commands; any Gibson test,
-gate, gateway boot, CLI proof run, or other product execution fails this
-requirement.
+Acceptance example: a receipt names `satellite-1` as the CLI host,
+`gateway-2` as the isolated gateway host, the exact candidate revisions on
+both, the remote endpoint and connection path, and the actual authorized host
+for each reported gate; because `satellite-1` and `gateway-2` differ and the
+satellite has no local gateway, the topology passes. A receipt that omits the
+actual hosts or revisions, uses one host for both processes, or runs either
+process where the responsible holder lacks authority fails acceptance.
 
 ## Non-goals
 
@@ -801,7 +806,7 @@ requirement.
 | S1: CLI NDJSON shell | command parsing; R4/R5/R7/R11/R12 framing; one pinned discovery result; ordinary wake adapter | settled `tightbeam session-connect --session <sessionKey>` spelling; existing Rust CLI discovery and dispatch | Command spelling settled by PO `att_5b9f2770`; private non-integrating candidate work is authorized from recorded base `6c339228`. |
 | S2: credential-derived Firehose authentication | ChangeSocket composes existing active session-token authentication into that exact session principal; device tokens retain their existing user principal; organization CLI tokens have no selected-session read authority; exact selected-session filter | Firehose owner `asg_34c16cdf`; `session-tokens-v1`; REST AU1-AU4; current ChangeSocket source; no Visitor expansion | Required gap: current ChangeSocket evidence authenticates only `Devices.by_token`, while CLI discovery can yield session or organization credentials. No current source proves a CLI session/org token can authenticate ChangeSocket. `--as-user` is attribution only and cannot close the gap. The technical owner must compose existing session-token resolution; an organization token fails R3 rather than becoming a user; no credential or Visitor security lane is minted. |
 | S3: snapshot and live bridge | subscription-first four-resource snapshot; canonical S0/message/S1 boundary cut; `snapshotCycle` framing; buffered-prefix validation; canonical event wrapping; correlation; same-connection boundary rebuild; reconnect replacement | canonical Firehose r6; `transcript-verb-v1` steps 3–8; canonical REST/session/transcript/wake/turn routes on the selected line | Specs exist. Candidate source availability, canonical subscribe wire, and shared serializers must be proved from recorded base `6c339228`; the elected integration line must satisfy the same proof before merge. |
-| S4: isolated integration and satellite proof | R13-R15 real bidirectional conversation and reconnect repair | reviewed S1-S3 candidate; Eezo/Racter gates; assimilated satellite; isolated gateway on a different host; real harness credential on its owning host | Required before delivery acceptance. Mix uses unmodified `scripts/verify_mix.sh`, the Rust gate runs on Eezo or Racter, and Gibson is compile/package-only in an exact-tip throwaway worktree. This grants no release or install authority. |
+| S4: isolated integration and satellite proof | R13-R15 real bidirectional conversation and reconnect repair | reviewed S1-S3 candidate; applicable gates on authorized hosts; assimilated satellite; isolated gateway on a different authorized host; real harness credential on its owning host | Required before delivery acceptance. The receipt names the actual satellite, gateway, and gate hosts, exact CLI and gateway revisions, and two-host topology. Each holder follows its current served execution authority; this spec assigns no standing role to a named host and grants no release or install authority. |
 
 Dependency availability on 2026-09-13:
 
