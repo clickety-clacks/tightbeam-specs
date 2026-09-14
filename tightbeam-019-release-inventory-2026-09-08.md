@@ -536,6 +536,8 @@ First shared prerequisite is committed independently reviewed late-ruling019 can
 
 Freeze exact candidate, package and guidance identities only after all included clauses have delivery evidence and owners have accepted the reconciled inventory. Required acceptance: isolated018 upgrade/migrations and durable work/decision/wake preservation; restart/unknown-effect/queued delivery; true scoped provider failure; internal DB-timeout/child-restart recovery without false provider classification; CLI/gateway/satellite compatibility; Linux/macOS tests and packages; fresh-agent spawn/answer/retire readiness without unrelated cleanup; live-base and staging safety; complete Firehose/REST/provider contract; actual packaged rules/hooks/current review evidence. Existing source tests do not prove combined candidate acceptance.
 
+The release owner must execute [the 0.1.9 database migration rehearsal](release-019-database-migration-rehearsal.md) against a named, hash-verified 0.1.8 snapshot after the exact candidate is frozen and before declaring release readiness. Preserve the source snapshot and manifest through the release and rollback window. A synthetic fixture or a migration run against an unrecorded mutable copy does not satisfy this gate.
+
 CI correction prerequisite is independently verified: run34191959200 exact944feaa11078f02520d66eee10b4d4a5fee3ed20 completed success for Linux/macOS tests and both packages; publish-release skipped. This is not019 release publication.
 
 ## Resolved implementation scope
