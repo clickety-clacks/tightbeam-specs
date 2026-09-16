@@ -1,5 +1,7 @@
 # Tightbeam 0.1.9 release inventory
 
+Current maintained inventory: [0.1.9 current targets](tightbeam-019-current-targets.md), reconciled September 16 under Mike's direct instruction. This September 8 document remains the historical scope basis; later delivery is recorded in the maintained list.
+
 8 September 2026. Canonical reconciliation of the existing 50-item release seed plus the selected stalls/churn additions. This replaces the old nonexhaustive catch-all inventory. The lead has resolved the four remaining target dispositions from governing records. This is the selected inventory for owner acceptance and delivery; it is not release readiness.
 
 The external release owner prepared the dispositions from existing records and owner evidence, without a new census. The lead read all 50 disposition summaries and the proposed shared order. Historical item titles are not authority for new scope. Existing accepted features, explicit other-line commitments and implementation holds remain distinct from release safety acceptance.
