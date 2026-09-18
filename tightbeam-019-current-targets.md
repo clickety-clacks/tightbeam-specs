@@ -13,7 +13,7 @@ Mike directed the external release lead to perform this reconciliation because t
 - Three unelected additions are listed separately. They do not silently become release blockers.
 - Existing no-contact, publication and execution holds remain. Listing a dependency neither validates every historical permission interpretation nor authorizes a retry.
 
-This audit accounts for 73 records. 55 are included: 29 need delivery or evidence reconciliation and 26 have source delivery recorded. These are work records, not 29 independent unfinished features. Two final acceptance gates remain separate.
+This audit accounts for 73 records. 56 are included: 29 need delivery or evidence reconciliation and 27 have source delivery recorded. These are work records, not 29 independent unfinished features. Two final acceptance gates remain separate.
 
 ## Included work needing attention
 
@@ -308,6 +308,7 @@ Evidence: att_83f54f73-dfdc-4ba5-966c-518cd5969aad, att_dd00ee0e-d5d8-4186-9c0c-
 | Frugal coder selection | `wi_7bf3ceac-9600-427d-9312-b21cb5155e9e` | `897dec43`. Frugality guidance is delivered on .9 at 897dec43. |
 | Pi support | `wi_1a8d4b76-a395-4411-8ff3-11f364a81298` | `b6c355af`. Pi PR47 reconciliation landed through PR106 at b6c355af on September 15, 3:53 PM PT. Exact candidate CI and focused Pi checks passed. Broader fresh-org harness acceptance remains separate. |
 | Correct closed-assignment commit references | `wi_602bfcf4-30e2-4429-9f06-754a7ccb6ca3` | `5067b398`. Authorized CommitRef correction is delivered at 5067b398. The coordination item closed without erasing the landed result. |
+| Development-mode guard | `wi_fb50d790-784e-4a9a-bc8d-d247a17a6a14` | `4905d08a`. A development build now refuses to boot or migrate against a mismatched live base, delivered on .9 at 4905d08a. The mutual-exclusion apparatus was removed under Mike's 2026-09-17 option-B ruling, and dr_310f382f scoped this card to .9 only with no port to main. Final release acceptance for live-base protection, isolated staging and rollback is separate. |
 
 ## Final release acceptance
 
@@ -324,7 +325,6 @@ Evidence: att_83f54f73-dfdc-4ba5-966c-518cd5969aad, att_dd00ee0e-d5d8-4186-9c0c-
 
 ### Excluded
 
-- `wi_fb50d790-784e-4a9a-bc8d-d247a17a6a14`: Development-mode candidate da2a33b3 remains withheld under dr_92edd9e0. This does not waive final release acceptance for live-base protection, isolated staging or rollback.
 - `wi_65477046-0932-4973-b19f-17822625d0f8`: The separate eight-card deploy-safety implementation is excluded from 0.1.9. Bounded governing review found historical 0.1.x wording in deploy-safety.md and targetless Card1/Card2 reconciliation in att_6d702615, not a 0.1.9 commitment. Preserve its existing owner and unfinished work. Safe isolated staging, a restart-loadable prior release and truthful rollback evidence remain mandatory release acceptance. A concrete failure of those protections requires a bounded repair or release decision.
 - `wi_ddd80184-9cf7-4612-8a0a-ac610b5b7b10`: Activation/deploy management remains main implementation, excluded from 0.1.9. engineering-activation-consumer-main-v2.md explicitly selects main and later-main reconciliation; Card2A source and portfolio Card2B holds remain with their owners. Actual operator authority, exact artifact/host identity, outcome evidence and owner notification remain required for release operations.
 - `wi_56bee7ce-c2dd-4724-9c87-3c45b588b438`: Automatic fleet convergence is excluded from 0.1.9. Governing att_a2a42b61 explicitly continues 0.2 and leaves unspecified work untargeted; existing trust, replay, custody and spec obligations remain. Included satellite CLI upgrade compatibility must deliver a verified supported upgrade path and truthful offline/unsupported behavior. Do not promise universal automatic first-contact repair.
@@ -358,6 +358,7 @@ Evidence: att_83f54f73-dfdc-4ba5-966c-518cd5969aad, att_dd00ee0e-d5d8-4186-9c0c-
 - The canonical seed specifically retains a later .9 credential-backoff port. A newer exclusion of Main administration is not a specific withdrawal of that product obligation.
 - Added omitted live commitments for identity/secret separation, typed progress, PR93 isolation and landed CommitRef correction. Held implementation stays held.
 - The old dates in PDO F1-F4 are historical forecasts. This reconciliation does not renew them or claim a current ETA.
+- The development-mode guard is no longer excluded. Its September 16 row said candidate da2a33b3 was withheld under dr_92edd9e0. Guard source has since landed on .9 at 4905d08a, and dr_310f382f scoped the card to .9 only with no port to main, superseding the exclusion. The included count moves from 55 to 56 and source delivery from 26 to 27. Edited September 17, 2026 by product-owner:tightbeam; no other row was touched.
 
 ## Coverage audit
 
