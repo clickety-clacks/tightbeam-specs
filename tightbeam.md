@@ -1135,6 +1135,13 @@ lag the satellites.
 - **Spikes, conformance, patterns** — investigation reports and cross-cutting
   doctrine; advisory unless promoted into a contract.
 
+Current integration research:
+[Engram collection and agent attribution, September 19](engram-integration-recon-2026-09-19.md).
+Native transcript collection fits existing source configuration. Stable agent,
+archetype, and delegation attribution requires a metadata integration using the
+existing harness pointer history. This is a recon recommendation, not an
+implemented capability or a new normative contract.
+
 ### Capability spec status
 
 | Spec | Status |
