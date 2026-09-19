@@ -9,6 +9,11 @@ The research source is `../engram-integration-recon-2026-09-19.md`. Keep the HTM
 and that document consistent when revising the findings. These files need no
 build step.
 
+Published on September 19, 2026. Both docs pages were verified over public
+HTTPS against their source hashes. HTTP redirects to HTTPS, the apex root
+redirects to `/docs/`, and the existing blog remains available. Certbot's
+renewal timer is active.
+
 ## Hosting
 
 The site uses nginx on `tbing`, the server that also hosts `blog.tightbeam.ing`.
