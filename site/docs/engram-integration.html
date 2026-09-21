@@ -37,6 +37,7 @@ engram-tightbeam grep 'literal search term' --limit 25 --offset 25</pre>
 <p>Gibson's collector runs as the user service <code>engram-gibson-coverage.service</code>. It stages complete transcript records, feeds Engram, and catches up after restart. Check it with <code>systemctl --user status engram-gibson-coverage.service</code>. Do not launch a second watcher for each agent or task. Keep originals intact.</p>
 </section>
 <section><h2>Delegating from Codex or Claude to Tightbeam</h2>
+<div class="callout warn"><strong>Verification found two v0.2.5 gaps.</strong> Actual native Codex sender tool calls can lose their outgoing marker, and a received marker can lose its connection to code imported in a later append batch. Marker guidance is in place, but end-to-end delegation lineage is not yet verified. A focused Engram repair is underway. Collection and ordinary code queries continue to work.</div>
 <p>Generate a fresh UUIDv4 for each distinct handoff. Put the marker at the start of the actual task brief. Engram needs the same tag in the sender's recorded tool-call arguments and the recipient's delivered prompt.</p>
 <pre>python3 -c 'import uuid; print(uuid.uuid4())'</pre>
 <p>Copy the generated UUID into the subsequent tool call. The placeholder below is intentionally not a real marker to reuse.</p>

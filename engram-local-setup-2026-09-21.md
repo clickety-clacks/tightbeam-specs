@@ -23,3 +23,7 @@ Cross-host lineage requires both endpoints available to the query. Engram additi
 The prior Gibson full normalized-tape audit passed for 7586 tapes and 37288 code windows. Original-source queries covered 100 specimens across Codex/Claude reads/edits. All 102 discovered literal-query parser failures passed after v0.2.5 on snapshot and live installation. This is not whole-source adapter completeness and does not substitute for tests of the new hosts or actual nested handoffs.
 
 Detailed external-guidance receipts are on Gibson in ~/.local/state/engram-rollout-2026-09-21/external-guidance-receipts.json. Host and identity rollout results will update this document and the HTML before the final report.
+
+## Newly verified delegation defects
+
+The real outgoing Codex custom_tool_call marker was not indexed as sent by v0.2.5 although its recipient marker was indexed. A separate controlled append test found correct parent lineage for full ingest and missing lineage for the identical bytes ingested in marker-then-code batches. Both have reproducible evidence under Gibson ~/.local/state/engram-rollout-2026-09-21, marker-repro/result.json and append-repro/result-v3.json. The append v1/v2 fixture attempts had an invalid tool-result envelope and are not product findings. Repair work wi_d1b74590-b41e-40e0-90b4-06e4dd3102ea is assigned to the Engram PO. Do not claim marker guidance alone delivers end-to-end lineage.
