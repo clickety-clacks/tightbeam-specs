@@ -28,13 +28,13 @@ engram-tightbeam grep 'literal search term' --limit 25 --offset 25</pre>
 ~/.tightbeam/homes/gibson/claude/projects/**/*.jsonl</pre>
 <p>External sessions use <code>~/.codex/sessions</code> and <code>~/.claude/projects</code>. These also need collection when they delegate to Tightbeam. Claude subagent transcripts under projects are included. Scope collection to transcript directories; authentication files and other files under harness homes are not inputs.</p>
 <div class="table-wrap"><table><thead><tr><th>Host</th><th>Intended sources</th><th>Verified deployment</th></tr></thead><tbody>
-<tr><td>Gibson</td><td>Tightbeam Codex/Claude; external Codex/Claude</td><td id="host-gibson">Tightbeam collection active on v0.2.5. External-source expansion underway.</td></tr>
-<tr><td>Eezo</td><td>Tightbeam and external Codex/Claude</td><td id="host-eezo">Rollout underway; previous index and watcher are preserved during migration.</td></tr>
-<tr><td>Racter</td><td>Tightbeam and external Codex/Claude</td><td id="host-racter">Rollout underway.</td></tr>
-<tr><td>Osanwe</td><td>External Codex/Claude; Tightbeam roots only if present</td><td id="host-osanwe">Rollout underway; no Tightbeam transcript roots found in initial inspection.</td></tr>
+<tr><td>Gibson</td><td>Tightbeam Codex/Claude; external Codex/Claude</td><td id="host-gibson">Expanded collector active on v0.2.5. Tightbeam and external roots sampled; restart catch-up checked. Known recovered malformed histories remain documented.</td></tr>
+<tr><td>Eezo</td><td>Tightbeam and external Codex/Claude</td><td id="host-eezo">v0.2.5 collector installed and running. Initial 20,063-file backfill is still in progress; legacy store retained.</td></tr>
+<tr><td>Racter</td><td>Tightbeam and external Codex/Claude</td><td id="host-racter">v0.2.5 collector active. Initial 4,645 source files ingested without failure; all four roots sampled and restart checked.</td></tr>
+<tr><td>Osanwe</td><td>External Codex/Claude; Tightbeam roots only if present</td><td id="host-osanwe">v0.2.5 collector active. Initial 1,439 tapes from 1,452 files, with 13 non-transcript files skipped. Both roots sampled and restart checked.</td></tr>
 </tbody></table></div>
 <p id="rollout-note">The host rows distinguish setup still in progress from verified service operation. They do not claim that a historical backfill has finished merely because a watcher is running.</p>
-<p>Gibson's collector runs as the user service <code>engram-gibson-coverage.service</code>. It stages complete transcript records, feeds Engram, and catches up after restart. Check it with <code>systemctl --user status engram-gibson-coverage.service</code>. Do not launch a second watcher for each agent or task. Keep originals intact.</p>
+<p>Gibson's collector runs as the user service <code>engram-gibson-coverage.service</code>. It stages complete transcript records, feeds Engram, and catches up after restart. Check it with <code>systemctl --user status engram-gibson-coverage.service</code>. Racter and Osanwe use <code>engram-approved-transcripts.service</code>; Eezo uses LaunchAgent <code>ai.engram.approved-transcripts-v025</code>. On those three hosts, the isolated store and collector live under <code>~/.local/share/engram/coverage-v0.2.5</code> and the launcher is <code>~/.local/bin/engram-tightbeam</code>. Do not launch a second watcher for each agent or task. Keep originals intact.</p>
 </section>
 <section><h2>Delegating from Codex or Claude to Tightbeam</h2>
 <div class="callout warn"><strong>Verification found two v0.2.5 gaps.</strong> Actual native Codex sender tool calls can lose their outgoing marker, and a received marker can lose its connection to code imported in a later append batch. Marker guidance is in place, but end-to-end delegation lineage is not yet verified. A focused Engram repair is underway. Collection and ordinary code queries continue to work.</div>
@@ -52,7 +52,7 @@ engram-tightbeam grep 'literal search term' --limit 25 --offset 25</pre>
 </section>
 <section><h2>Delegating inside the org</h2>
 <p>Use the same convention for PO to PDO, PDO to worker, worker to specialist, or any other actual delegation. Each hop gets its own outgoing marker. Keep incoming context intact, but do not recycle the incoming UUID for the next hop. This lets Engram walk from the code change through successive delegations to the originating conversation.</p>
-<p id="org-status">Local Codex and Claude guidance on all four machines has been updated. The org-local identity change is assigned for application and verification. Shipped Tightbeam guidance is outside this change.</p>
+<p id="org-status">Local Codex and Claude guidance is updated on all four machines. The org-local operating manual is now updated through served identity; existing-session refresh is in progress. Shipped Tightbeam guidance is unchanged.</p>
 <p>Markers record provenance. They do not grant permission or replace Tightbeam's agent identities and durable work records. Newly loaded guidance applies to new turns or sessions according to harness behavior; editing a file does not prove a currently running turn has read it.</p>
 </section>
 <section><h2>Cross-host queries</h2>
