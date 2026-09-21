@@ -5,9 +5,7 @@ The index links to the Engram and Tightbeam integration report, adapted from
 the September 19, 2026 Lavish report. The separate Engram storage recommendations
 are excluded from this public page.
 
-The research source is `../engram-integration-recon-2026-09-19.md`. Keep the HTML
-and that document consistent when revising the findings. These files need no
-build step.
+The operating source is `../engram-local-setup-2026-09-21.md`. The original research is `../engram-integration-recon-2026-09-19.md` and is preserved publicly in `docs/engram-integration-research-20260919.html`. Keep the operating HTML and its source document consistent. These files need no build step.
 
 Published on September 19, 2026. Both docs pages were verified over public
 HTTPS against their source hashes. HTTP redirects to HTTPS, the apex root
