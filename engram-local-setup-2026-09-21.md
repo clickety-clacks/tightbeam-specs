@@ -31,3 +31,9 @@ The real outgoing Codex custom_tool_call marker was not indexed as sent by v0.2.
 ## Deployment checkpoint
 
 Gibson external expansion, Racter and Osanwe collectors are active on v0.2.5, with per-root source-backed query samples and restart reconciliation receipts. Eezo staged 20063 files and its historical backfill is running. Racter/Osanwe service: engram-approved-transcripts.service; Eezo LaunchAgent: ai.engram.approved-transcripts-v025. Their installation root is ~/.local/share/engram/coverage-v0.2.5, with query launcher ~/.local/bin/engram-tightbeam. Gibson keeps its original engram-gibson-coverage.service and store. The org-local operating manual was published through served identity with only a 24-line marker section added; session refresh is in progress. Detailed receipts are under /home/mike/.tightbeam/work/239781a2ccce/deployment-2026-09-21 on Gibson.
+
+## Cross-host query checkpoint
+
+Gibson additional_stores now includes consistent native-disk snapshots from Racter and Osanwe captured September 21 at 9:32 AM PT. Remote-only explain and exact peek checks passed; snapshot hashes stayed unchanged and no SQLite sidecars appeared. Referenced tapes were copied and verified. Refresh is manual, not continuous synchronization. Eezo awaits backfill. Receipt: deployment-2026-09-21/cross-host-query-validation.json in the Engram PO workspace.
+
+A third isolated defect is confirmed for native Claude assistant/user message envelopes: neither endpoint was extracted. The repair covers this alongside native Codex sender extraction and append continuity, including existing-store recovery. Evidence: ~/.local/state/engram-rollout-2026-09-21/claude-marker-repro/result.json.
