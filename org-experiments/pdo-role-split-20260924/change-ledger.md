@@ -65,3 +65,9 @@ The user requested: unless the authoring prompt names the user, guidance must us
 > Unless the authoring prompt explicitly names the user, never use their name in guidance. Write "the user".
 
 Published through `identity edit` at revision `3457325895f22be680db3a1aa3c3487b091b2296`. Both guidance-writer and guidance-reviewer include this home. The older `tightbeam-guidance-authoring` skill is release-owned; its installed bytes were not edited. This is an active org authoring-rule update and a portable rule to retain in a later .9 port, not a release or blanket refresh of existing sessions. Verified the exact two-line diff, clean identity worktree and both role includes. No behavior eval was warranted for this narrow text addition. The separate no-turn paragraph was not changed by this request.
+
+## Remove the mis-scoped external-task restriction
+
+The user clarified that the original task was to have external agents perform the engineering-kungfu consolidation. Read the original conversation: that task's restriction was expanded into a permanent shared manual paragraph in local identity 34afb8e. It does not establish a continuing org-wide pause. The evaluator's earlier org-pause framing was wrong.
+
+Published identity 50ca792ad8a7fc20415d04ad9c1b0637ad838894 removes that restriction while retaining the user's control of gateway power. No runtime pause feature, new permission gate or blanket session refresh was added. The failure evidence remains unchanged and no post-correction eval is claimed. See [the scope correction](no-turn-scope-correction/scope-correction.md), original conversation locations and exact patch.

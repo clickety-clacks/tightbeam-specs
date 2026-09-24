@@ -1,0 +1,15 @@
+diff --git a/guidance/operating-manual.md b/guidance/operating-manual.md
+index bd64f46..24a8598 100644
+--- a/guidance/operating-manual.md
++++ b/guidance/operating-manual.md
+@@ -288,9 +288,7 @@ not in padding.
+ 
+ ## Gibson organization constraints
+ 
+-Tightbeam can run turns. While Mike's no-turn restriction is in effect, read agents
+-and substrate but do not wake, dispatch, spawn, resume or perform another operation
+-that needs or can trigger a Tightbeam turn. Mike controls resumption and gateway power.
++The user controls gateway power.
+ 
+ Gibson remains on the released 0.1.8 runtime. Install only tagged, published releases
+ whose hashes match SHA256SUMS. A defective release is a release question, not permission
