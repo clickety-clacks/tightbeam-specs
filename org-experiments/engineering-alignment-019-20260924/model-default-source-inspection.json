@@ -1,0 +1,111 @@
+{
+  "source_commit": "8d2bd26ac2fcdfb7e9e0e943e046ee45580e8330",
+  "meaning": "Static parsing of authored source candidate only; not integrated source, executed default resolution or live publication.",
+  "archetypes": [
+    {
+      "archetype": "pdo",
+      "defaults": {
+        "harness": "codex",
+        "model": "gpt-6-sol",
+        "effort": "low"
+      },
+      "preferences": [
+        {
+          "model": "gpt-6-sol",
+          "effort": "low"
+        }
+      ],
+      "matches_requested": true
+    },
+    {
+      "archetype": "orchestrator",
+      "defaults": {
+        "harness": "codex",
+        "model": "gpt-6-sol",
+        "effort": "low"
+      },
+      "preferences": [
+        {
+          "model": "gpt-6-sol",
+          "effort": "low"
+        }
+      ],
+      "matches_requested": true
+    },
+    {
+      "archetype": "coder",
+      "defaults": {
+        "harness": "codex",
+        "model": "gpt-6-luna",
+        "effort": "max"
+      },
+      "preferences": [
+        {
+          "model": "gpt-6-luna",
+          "effort": "max"
+        }
+      ],
+      "matches_requested": true
+    },
+    {
+      "archetype": "spec-writer",
+      "defaults": {
+        "harness": "claude",
+        "model": "claude-opus-5-5",
+        "effort": "high"
+      },
+      "preferences": [
+        {
+          "model": "claude-opus-5-5",
+          "effort": "high"
+        }
+      ],
+      "matches_requested": true
+    },
+    {
+      "archetype": "reviewer-code",
+      "defaults": {
+        "harness": "claude",
+        "model": "claude-opus-5-5",
+        "effort": "high"
+      },
+      "preferences": [
+        {
+          "model": "claude-opus-5-5",
+          "effort": "high"
+        }
+      ],
+      "matches_requested": true
+    },
+    {
+      "archetype": "reviewer-spec",
+      "defaults": {
+        "harness": "codex",
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "preferences": [
+        {
+          "model": "gpt-6-astra",
+          "effort": "high"
+        }
+      ],
+      "matches_requested": true
+    },
+    {
+      "archetype": "guidance-reviewer",
+      "defaults": {
+        "harness": "claude",
+        "model": "claude-opus-5-5",
+        "effort": "high"
+      },
+      "preferences": [
+        {
+          "model": "claude-opus-5-5",
+          "effort": "high"
+        }
+      ],
+      "matches_requested": true
+    }
+  ]
+}
