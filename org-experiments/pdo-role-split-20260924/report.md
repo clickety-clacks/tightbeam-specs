@@ -49,3 +49,7 @@ The current trial does not establish PDO model adequacy for the empirical delive
 ## Cleanup and source of record
 
 All six fixture sessions retired; zero open assignments, pending wakes or queued/running turns remain for them. Their item was marked failed with the observed reason. Production agents, services and Subetha listeners were untouched. No runtime binary was installed or gateway restarted. Exact before/after files, publication receipts, clean review, scoped redacted evidence and negative results are retained. The specs repository contains the portable change ledger and exact patch for a later deliberate .9 port. PR #110 remains separate and unmerged.
+
+## Follow-up: asked the original PDO why
+
+The original saved conversation was available for a read-only retrospective, so no fresh eval was needed. The PDO initially described idle helper creation as preparation and cited the generic spawn/assign procedure. Challenged about its actual assignment attempt, it withdrew its claim that the record proved prior awareness of consultation ordering. It acknowledged that the skill supplied no exemption and that it ran the dispatch procedure before satisfying the PO prerequisite. Its guess that the bounded brief seemed sufficient is retrospective inference, not a proven cause. See pdo-interview-assessment.md and the exact replies. The rail prevented the premature assignment; the interview does not change that outcome or the failed proactive-compliance result.

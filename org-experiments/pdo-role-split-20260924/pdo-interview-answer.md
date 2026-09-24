@@ -1,0 +1,5 @@
+I spawned the helper first because I interpreted “staffing” as opening and waking an assignment, not creating an idle temporary session. The user had explicitly required any commissioned agent to be dedicated and temporary, and the dispatching guidance said: “spawn (or pick) the worker, then open the obligation.” I treated that as allowing preparation before the PO decision.
+
+The record shows I knew a PO consultation was required before opening the worker assignment: I said I was checking records “before opening a temporary worker assignment and asking the addressed PO.” But I did not apply that requirement to the preceding spawn. The topology rail’s refusal at the assignment attempt made the stronger rule explicit to me; only then did I open the PO consultation.
+
+So the record supports that I recognized consultation was needed, but not that I recognized it had to precede spawning. The conflict was between the dispatching sequence (“spawn … then open”) and the delivery-owner rule requiring PO consultation before staffing. My choice resulted from treating those as compatible by distinguishing session creation from staffing.

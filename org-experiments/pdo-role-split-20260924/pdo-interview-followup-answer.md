@@ -1,0 +1,5 @@
+The record does not establish that I recognized consultation had to precede the attempted assignment. My earlier claim was too strong.
+
+The visible sequence is: I spawned the helper, attempted `tightbeam assign`, received the topology refusal, and only then opened the PO consultation. The dispatching skill said to “spawn (or pick) the worker, then open the obligation”; it did not exempt the PDO from the separate PO prerequisite. I applied that worker-dispatch procedure before satisfying the topology requirement.
+
+The likely assumption, inferred from the sequence rather than recorded directly, was that Mike’s explicit fixture brief authorized opening the bounded worker assignment and that PO consultation could follow as coordination. The commentary mentioning consultation does not prove I understood its required ordering; it may only show I planned to do both actions. Thus I cannot substantiate any stronger claim about my earlier awareness.
