@@ -133,3 +133,13 @@ At3:10 PM PT, provider re-onboarding replaced shared adapters and interrupted Gi
 The external review found504825b3 and guidance19eb still contain no engineering commissioning/topology rules consuming the new facts. This remains required delivery work, with actual direct Main/PO, missing-item/default and recovery behavior to be shown. The existing enforcement owner received the concrete question packet; this is not an accepted enforcement result or new workstream. The same packet asks independent judgment about governing grant lifetime and unavailable-owner recovery.
 
 Pushover reported the completed coordinator model milestone and remaining limits; the same report was posted to codex-realtime-bridge-20260921 in Subetha, acknowledged as2b7d5655-db67-405e-8adc-b05fa0171a73.
+
+## Full combined test passed; remaining scope is still open
+
+At3:28 PM PT, the restarted full Mix gate for36b0798e completed in912.9s with9doctests,2,662tests,0failures,11skipped and1excluded. Independent log readback confirms SHA d1e17ef40127dbe260b3391f8d99891f64f7a613d31512c891e8d15df2c3383f. Holder attest att_5dde7841 records this exact result; the report is art_8215447b SHA c3c4f1789bd419579474faea3b7210bc2beda2d7f2f55cc7a17cdaea1061d58f. Original failures remain historical evidence; their cause is not established by nonrecurrence.
+
+The coder attempted completion and called504825b3 complete. The completion review rule refused closure. Independent source audit still establishes missing engineering admission rules; the existing enforcement amendment remains required regardless of that test pass. The writer additionally distinguished loaded archetype metadata from actual fresh-session selection. No reviewer has accepted these missing behaviors, no alignment source has merged and no live guidance has published.
+
+Gibson sessions resumed without external restart after roughly9minutes of adapter work. A later enforcement/PDO report falsely said the coder had not resumed. Actual turn145309 was created before the outage, started immediately after the failed145307 at1790287918725, and completed at1790289144703. It ran the full test and filed new attests. Turn145320 then started; newer implementation amendment145584 remained behind27older prompts. The external Engram agent returned this execution evidence so old createdAt/sequence values do not become a false no-execution diagnosis or another recovery-wake loop. This records present evaluation evidence and adds no persistent guidance.
+
+Pushover and Subetha reported the passing full-run milestone with remaining limits; Subetha acknowledged ee9fe45c-66ed-4a17-8bbe-6709c5e52973.
