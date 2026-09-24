@@ -16,9 +16,22 @@ The full task and final-review request are attached. The PDO chooses staffing th
 
 The PDO staffed guidance owner s_3c63ca28/asg_40c145d6 and enforcement owner s_2015c680/asg_42a235a9. Their production assignments are held by retained guidance-writer s_2643a7d6, Astra high on Gibson, and coder s_4574cda7, Sol xhigh on Racter. The guidance lane reserves retained guidance-reviewer s_6751b960, Opus5 xhigh; the runtime lane reserves reviewer-code s_081b7f08, Opus5.5 high. The separate terminal Opus5.5-high consistency reviewer is a future fresh session directly under the PDO, after integration and applicable publication. No third orchestrator is planned.
 
-The user corrected the exact PDO choice to **gpt-6-sol, effort low**. This supersedes the earlier gpt-5.6-sol setting and ambiguous Sol shorthand for PDOs. This applies to the new PDO archetype default and preference, both mixed-family and Codex-only PDO activity rows, and removal of the old Luna-medium PDO capsule instruction. A fresh .9 PDO using its defaults must resolve to gpt-6-sol at low effort. PDO activity rows must use an unambiguous model ID; the existing sol nickname maps to generation 5.6. Do not change the standing PO or all generic orchestrators. Final Opus review must check source, packaging, composition and actual default-resolution evidence.
+The user corrected the exact PDO choice to **gpt-6-sol, effort low**. This supersedes the earlier gpt-5.6-sol setting and ambiguous Sol shorthand for PDOs. This applies to the new PDO archetype default and preference, both mixed-family and Codex-only PDO activity rows, and removal of the old Luna-medium PDO capsule instruction. A fresh .9 PDO using its defaults must resolve to gpt-6-sol at low effort. PDO activity rows must use an unambiguous model ID; the existing sol nickname maps to generation 5.6. The later model instruction below also changes orchestrator policy; the standing PO remains Astra high. Final Opus review must check source, packaging, composition and actual default-resolution evidence.
 
 Gibson and Eezo currently advertise gpt-6-sol with low effort. Racter does not advertise it. The external Engram session tuned the live Engram PDO through the supported same-harness command; its receipt confirms gpt-6-sol/low and preserved engine context. The Tightbeam PDO has also been tuned successfully to gpt-6-sol/low, preserving engine context. Both session rows independently read back the requested model and effort. Neither this catalog evidence nor a tune receipt substitutes for an actual subsequent provider response. Historical Sol-low fixture evidence remains generation 5.6.
+
+The user then expanded model alignment beyond PDOs. The current policy is:
+
+| Responsibility | Requested model policy |
+| --- | --- |
+| PDO and orchestrator | gpt-6-sol, low effort |
+| Coder | Generally gpt-6-luna, max effort; the agent may select a stronger model when needed |
+| Other GPT choices | Generally select generation 6 rather than 5.6; use verified IDs |
+| Spec writer | claude-opus-5-5, high effort |
+| Review of a Codex producer | Claude harness, claude-opus-5-5, high effort |
+| Review of a Claude producer | Codex harness, gpt-6-astra, high effort |
+
+This controls live default/model guidance, .9 source policy and current staffing reconciliation. Opposite-harness review follows the actual producer, including guidance review. The PO is being consulted to amend the current model plan while preserving its two lanes and current work. The PDO owns remaining lane/worker tuning or supported handoff. Historical receipts and earlier eval models remain unchanged. Existing source defaults or planned model choices are not proof that these changes are finished. The full verbatim instruction and current observed catalog are attached.
 
 Production is underway; no reviewed or integrated alignment candidate exists at this snapshot. The observed staffing rows and original PO topology plus its terminal-review amendment are attached. Source-to-org mapping below is the baseline, not a claim that those changes have landed.
 
