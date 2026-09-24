@@ -73,3 +73,9 @@ Baseline source bytes and SHA256 list are retained privately in alignment-019-20
 The first source review found that session_po_associations.ex emits an instruction permitting delivery to amend PO advice and staff before it arrives. The existing relationship implementation is reusable, but that prompt contradicts the new engineering contract. The runtime and guidance owners now share one prompt-only correction and associated assertions, preserving nonblocking notices, revision, replay and atomicity.
 
 The runtime owner is also checking product-level accountability across two work items. A unique owner for each item alone does not establish one PDO per product or reject a same-user claimant from another product. The existing relationship facts must be examined before adding anything; a generic registry is outside scope. These are findings within the existing delivery, not new projects.
+
+## Model amendment returned
+
+PO verdict att_56545f5f and artifact art_30178d3e, SHA6f4b14b8836c1e333d1aa959707541896cb85235188e2eed2ed89691c2ff54d8, preserve the two existing lanes and direct final reviewer. The two lane orchestrators must tune to gpt-6-sol/low. The retained guidance reviewer must use Opus5.5/high before review. The current Racter coder alone retains its 5.6-sol/xhigh model as an explicit availability/context exception for asg_d0478bad through reviewed candidate or handoff/closure. New coding follows the generation6 policy. This exception is not generation6 compliance or a future default. Full decision is attached.
+
+A separate current-traffic observation recorded repeated follow-up messages queued behind still-running authoring turns. It asks the PDO to batch material corrections and reconcile superseded notices, preserving work. It adds no persistent guidance or new mechanism.
