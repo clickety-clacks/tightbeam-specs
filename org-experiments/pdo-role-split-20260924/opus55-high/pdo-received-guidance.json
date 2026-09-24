@@ -1,0 +1,19 @@
+{
+  "session": "agent:main:clawline:mike:main s_6aa74e54",
+  "thread": "01a0d46f-5883-7cc1-bfb4-bd9b5af618bb",
+  "developer_characters": 90486,
+  "sha256": "1b802fc8f8a90d22421b1e2b78816840f609e819ce292d8122d63b4c2a7d4d0f",
+  "pdo_core_present": true,
+  "producer_prohibition_present": true,
+  "consult_before_staffing_present": true,
+  "bad_no_turn_paragraph_absent": true,
+  "explicit_guidance_permission_present": true,
+  "provider_turn_contexts": [
+    {
+      "model": "gpt-5.6-luna",
+      "effort": "max",
+      "reasoning_effort": null,
+      "cwd": "/home/mike/.tightbeam/work/492fb779d656"
+    }
+  ]
+}

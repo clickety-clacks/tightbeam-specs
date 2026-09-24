@@ -1,0 +1,66 @@
+[
+  {
+    "command": [
+      "operator-withdraw",
+      "dr_cf4f3170-de1d-44ea-93e8-6f265ea9b157",
+      "--reason",
+      "External fixture driver ended this run after provider rejected the requested Opus route. No model fallback is authorized; dependency is activation of installed release 1343. Preserve observed behavior and retry with fresh test agents after the route works."
+    ],
+    "returncode": 0,
+    "stdout": "{\n  \"actionKey\": \"9a0f757fb02231f270900bfdebfc895690e175574f2291ad4be133a7d5af08b7\",\n  \"assignmentId\": \"asg_30c42a33-e6ef-45d9-9fd2-700588846373\",\n  \"consumedAt\": null,\n  \"context\": {\n    \"note\": \"restore-po-route lets the external fixture driver/model-access owner make the named PO runnable, after which I will obtain its plan; authorize-fallback lets me use an available qualified temporary producer/reviewer while preserving the supplied facts, no-code/no-probe constraints, and the existing PO as addressable product owner.\",\n    \"supersedes\": null\n  },\n  \"deadlineAt\": 1790272426604,\n  \"deadlineWakeId\": null,\n  \"decision\": null,\n  \"effortGeneration\": null,\n  \"expecterSessionKey\": null,\n  \"expecterUserId\": null,\n  \"id\": \"dr_cf4f3170-de1d-44ea-93e8-6f265ea9b157\",\n  \"kind\": \"operator\",\n  \"lineageRung\": null,\n  \"options\": [\n    {\n      \"label\": \"restore-po-route\"\n    },\n    {\n      \"label\": \"authorize-fallback\"\n    }\n  ],\n  \"ownerUserId\": \"mike\",\n  \"parkWakeId\": null,\n  \"question\": \"The named PO consultation asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f is blocked because its claude-opus-5-5 route rejects Claude Code 2.1.274 and requires 2.1.280+. Which authorized continuation should the PDO use for wi_b8193d15-8f29-42df-950e-c1c6762de366?\",\n  \"raisedAt\": 1790270626604,\n  \"raiserId\": \"agent:pdo:engram-opus55-eval-20260924\",\n  \"raiserSessionKey\": \"agent:main:clawline:mike:main s_6aa74e54\",\n  \"rationale\": null,\n  \"ruledAt\": null,\n  \"ruledBy\": null,\n  \"ruledViaSessionKey\": null,\n  \"rulingFactId\": null,\n  \"status\": \"withdrawn\",\n  \"statuteName\": null,\n  \"withdrawnAt\": 1790270967235,\n  \"withdrawnBy\": \"user:mike\",\n  \"withdrawnReason\": \"External fixture driver ended this run after provider rejected the requested Opus route. No model fallback is authorized; dependency is activation of installed release 1343. Preserve observed behavior and retry with fresh test agents after the route works.\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "revoke-assignment",
+      "asg_30c42a33-e6ef-45d9-9fd2-700588846373"
+    ],
+    "returncode": 0,
+    "stdout": "{\n  \"closedAt\": 1790270967266,\n  \"closedBySession\": null,\n  \"closedByUser\": \"mike\",\n  \"closingAttestId\": null,\n  \"effectKind\": \"coordination\",\n  \"holderFallback\": false,\n  \"holderHarness\": \"codex\",\n  \"holderKey\": \"agent:main:clawline:mike:main s_6aa74e54\",\n  \"holderProvider\": \"openai\",\n  \"holderRole\": null,\n  \"id\": \"asg_30c42a33-e6ef-45d9-9fd2-700588846373\",\n  \"openedAt\": 1790270461825,\n  \"openedBySession\": null,\n  \"openedByUser\": \"mike\",\n  \"outcome\": \"revoked\",\n  \"reviewsAssignmentId\": null,\n  \"state\": \"closed\",\n  \"subject\": \"Deliver the bounded Engram correction note\",\n  \"workItemId\": \"wi_b8193d15-8f29-42df-950e-c1c6762de366\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "revoke-assignment",
+      "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f"
+    ],
+    "returncode": 0,
+    "stdout": "{\n  \"closedAt\": 1790270967299,\n  \"closedBySession\": null,\n  \"closedByUser\": \"mike\",\n  \"closingAttestId\": null,\n  \"effectKind\": \"coordination\",\n  \"holderFallback\": false,\n  \"holderHarness\": \"claude\",\n  \"holderKey\": \"agent:main:clawline:mike:main s_05ab5eab\",\n  \"holderProvider\": \"anthropic\",\n  \"holderRole\": null,\n  \"id\": \"asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f\",\n  \"openedAt\": 1790270537847,\n  \"openedBySession\": \"agent:main:clawline:mike:main s_6aa74e54\",\n  \"openedByUser\": null,\n  \"outcome\": \"revoked\",\n  \"reviewsAssignmentId\": null,\n  \"state\": \"closed\",\n  \"subject\": \"Set the delivery plan for the supplied-facts Engram correction note: choose the smallest temporary producer and review topology, owners, archetypes, models, and completion conditions.\",\n  \"workItemId\": \"wi_b8193d15-8f29-42df-950e-c1c6762de366\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "work-item-fail",
+      "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "--reason",
+      "Environment-blocked eval: Opus 5.5 high PO could not execute because running build1342 uses Claude Code2.1.274; provider requires2.1.280+. PDO consulted first and did not produce. No PO judgment, topology, worker or note. Interview evidence preserved; rerun requires supported route."
+    ],
+    "returncode": 0,
+    "stdout": "{\n  \"ok\": true,\n  \"workItem\": {\n    \"createdAt\": 1790270428639,\n    \"createdBySession\": null,\n    \"createdByUser\": \"mike\",\n    \"failReason\": \"Environment-blocked eval: Opus 5.5 high PO could not execute because running build1342 uses Claude Code2.1.274; provider requires2.1.280+. PDO consulted first and did not produce. No PO judgment, topology, worker or note. Interview evidence preserved; rerun requires supported route.\",\n    \"id\": \"wi_b8193d15-8f29-42df-950e-c1c6762de366\",\n    \"isBug\": false,\n    \"ownerUserId\": \"mike\",\n    \"specRefName\": null,\n    \"specRefSha256\": null,\n    \"state\": \"failed\",\n    \"title\": \"Engram PDO eval: Opus 5.5 high PO, Luna max PDO, supplied-facts correction note\"\n  }\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "retire",
+      "--session",
+      "agent:main:clawline:mike:main s_6aa74e54",
+      "--key",
+      "opus55-eval-cleanup-s_6aa74e54"
+    ],
+    "returncode": 0,
+    "stdout": "{\n  \"deferred\": [],\n  \"deletedSessionKey\": \"agent:main:clawline:mike:main s_6aa74e54\",\n  \"retiredSessionKeys\": [\n    \"agent:main:clawline:mike:main s_6aa74e54\"\n  ]\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "retire",
+      "--session",
+      "agent:main:clawline:mike:main s_05ab5eab",
+      "--key",
+      "opus55-eval-cleanup-s_05ab5eab"
+    ],
+    "returncode": 0,
+    "stdout": "{\n  \"deferred\": [],\n  \"deletedSessionKey\": \"agent:main:clawline:mike:main s_05ab5eab\",\n  \"retiredSessionKeys\": [\n    \"agent:main:clawline:mike:main s_05ab5eab\"\n  ]\n}\n",
+    "stderr": ""
+  }
+]

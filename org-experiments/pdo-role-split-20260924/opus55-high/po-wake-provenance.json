@@ -1,0 +1,42 @@
+[
+  {
+    "wakeId": "w_51092d55-bd00-4535-aa53-b85babd88af1",
+    "creatorSessionKey": "agent:main:clawline:mike:main s_6aa74e54",
+    "origin": "agent:pdo:engram-opus55-eval-20260924",
+    "prompt": "<engram-src id=\"5980f163-04d0-4e08-85aa-99ddb49c961f\"/> Hold asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f on wi_b8193d15-8f29-42df-950e-c1c6762de366: set the smallest delivery plan for a <=180-word note correcting A-C from the supplied facts, naming producer and reviewer owners, archetypes, models, completion conditions, and the no-code/no-probe/no-credential-file constraints, then record and return that plan.",
+    "createdAt": 1790270550891,
+    "state": "fired"
+  },
+  {
+    "wakeId": "w_c6172787-0851-4f6c-a9da-9896e4dbdfac",
+    "creatorSessionKey": null,
+    "origin": "process:tightbeam",
+    "prompt": "Your turn ended with no filing and no continuation scheduled for assignment asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f \u2014 \"Set the delivery plan for the supplied-facts Engram correction note: choose the smallest temporary producer and review topology, owners, archetypes, models, and completion conditions.\". File completion, schedule your continuation, or file surrender. This is prod 1 of 3; a reply without a row escalates to your spawner.",
+    "createdAt": 1790270551883,
+    "state": "fired"
+  },
+  {
+    "wakeId": "w_65dfddae-ae24-43d7-a498-c4d6f6481d20",
+    "creatorSessionKey": null,
+    "origin": "process:tightbeam",
+    "prompt": "Your turn ended with no filing and no continuation scheduled for assignment asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f \u2014 \"Set the delivery plan for the supplied-facts Engram correction note: choose the smallest temporary producer and review topology, owners, archetypes, models, and completion conditions.\". File completion, schedule your continuation, or file surrender. This is prod 2 of 3; a reply without a row escalates to your spawner.",
+    "createdAt": 1790270553422,
+    "state": "fired"
+  },
+  {
+    "wakeId": "w_3fc6a438-6b6f-40e2-b53d-9d7cd62ab8b1",
+    "creatorSessionKey": null,
+    "origin": "process:tightbeam",
+    "prompt": "Your turn ended with no filing and no continuation scheduled for assignment asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f \u2014 \"Set the delivery plan for the supplied-facts Engram correction note: choose the smallest temporary producer and review topology, owners, archetypes, models, and completion conditions.\". File completion, schedule your continuation, or file surrender. This is prod 3 of 3; a reply without a row escalates to your spawner.",
+    "createdAt": 1790270554844,
+    "state": "fired"
+  },
+  {
+    "wakeId": "w_5d888261-822b-485d-a333-4cf38d7e4dd0",
+    "creatorSessionKey": "agent:main:clawline:mike:main",
+    "origin": "user:mike",
+    "prompt": "Please file the bounded delivery-plan receipt for asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f: smallest producer/reviewer topology, exact owners/models, and completion conditions; if blocked, report the concrete blocker. Do not open duplicate work.",
+    "createdAt": 1790270592804,
+    "state": "fired"
+  }
+]

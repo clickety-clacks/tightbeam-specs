@@ -1,0 +1,16 @@
+[
+  {
+    "session": "agent:main:clawline:mike:main s_6aa74e54",
+    "state": "retired",
+    "open_assignments": 0,
+    "pending_wakes": 0,
+    "active_turns": 0
+  },
+  {
+    "session": "agent:main:clawline:mike:main s_05ab5eab",
+    "state": "retired",
+    "open_assignments": 0,
+    "pending_wakes": 0,
+    "active_turns": 0
+  }
+]

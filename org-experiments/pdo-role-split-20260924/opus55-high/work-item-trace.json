@@ -1,0 +1,504 @@
+{
+  "assignments": [
+    {
+      "files": [],
+      "holderKey": "agent:main:clawline:mike:main s_6aa74e54",
+      "id": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "openerRef": "user:mike",
+      "reviewsAssignmentId": null,
+      "state": "open"
+    },
+    {
+      "files": [],
+      "holderKey": "agent:main:clawline:mike:main s_05ab5eab",
+      "id": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "openerRef": "session:agent:main:clawline:mike:main s_6aa74e54",
+      "reviewsAssignmentId": null,
+      "state": "open"
+    }
+  ],
+  "timeline": [
+    {
+      "assignmentId": null,
+      "at": 1790270428639,
+      "dueAt": 1790356828639,
+      "id": "w_06e8dfd4-ec80-4399-a7f1-3215ed67aa1d",
+      "type": "wake_scheduled"
+    },
+    {
+      "actionNeeded": true,
+      "assignmentId": null,
+      "at": 1790270461826,
+      "causalSourceId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "causalSourceKind": "assignment_transition",
+      "dispositionId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "dispositionKind": "assignment_transition",
+      "id": "w_06e8dfd4-ec80-4399-a7f1-3215ed67aa1d",
+      "livenessTriggerId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373#1",
+      "livenessTriggerKind": "supervision_entitlement",
+      "outcomeKind": "disposition",
+      "primaryWorkId": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "primaryWorkKind": "work_item",
+      "provenanceStatus": "proven",
+      "reason": null,
+      "reasonKind": "routing_bracket_satisfied",
+      "replacementWakeId": null,
+      "requesterId": "tightbeam:work-items",
+      "requesterKind": "process",
+      "schedulingOrigin": "process:tightbeam",
+      "seqTiebreak": 189159,
+      "type": "wake_canceled",
+      "workImpactKind": "linked_work_open"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270461827,
+      "context": null,
+      "effort": "max",
+      "harness": "codex",
+      "id": 145198,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_start"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270461827,
+      "dueAt": 1790271361827,
+      "id": "w_e6e0e85b-6d38-43cf-b2f3-49f8d47ffacb",
+      "type": "wake_scheduled"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270461827,
+      "evidence": null,
+      "id": "gen:asg_30c42a33-e6ef-45d9-9fd2-700588846373:1",
+      "state": "armed",
+      "type": "effort_generation"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270551883,
+      "dueAt": 1790270551883,
+      "id": "w_c6172787-0851-4f6c-a9da-9896e4dbdfac",
+      "type": "wake_scheduled"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270551884,
+      "detail": {
+        "tier": 1
+      },
+      "id": "ce:21686",
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "kind": "prod_fired",
+      "seqTiebreak": 21686,
+      "sessionKey": "agent:main:clawline:mike:main s_05ab5eab",
+      "type": "causal_event"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270552505,
+      "context": null,
+      "effort": "high",
+      "harness": "claude",
+      "id": 145200,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "claude-opus-5-5",
+      "status": "failed",
+      "type": "turn_start"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270552507,
+      "firedBy": null,
+      "id": "w_c6172787-0851-4f6c-a9da-9896e4dbdfac",
+      "matchedFactAt": null,
+      "type": "wake_fired"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270553393,
+      "context": null,
+      "effort": "high",
+      "harness": "claude",
+      "id": 145200,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "claude-opus-5-5",
+      "status": "failed",
+      "type": "turn_end"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270553422,
+      "dueAt": 1790270553422,
+      "id": "w_65dfddae-ae24-43d7-a498-c4d6f6481d20",
+      "type": "wake_scheduled"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270553423,
+      "detail": {
+        "tier": 2
+      },
+      "id": "ce:21687",
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "kind": "prod_fired",
+      "seqTiebreak": 21687,
+      "sessionKey": "agent:main:clawline:mike:main s_05ab5eab",
+      "type": "causal_event"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270553514,
+      "context": null,
+      "effort": "high",
+      "harness": "claude",
+      "id": 145201,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "claude-opus-5-5",
+      "status": "failed",
+      "type": "turn_start"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270553515,
+      "firedBy": null,
+      "id": "w_65dfddae-ae24-43d7-a498-c4d6f6481d20",
+      "matchedFactAt": null,
+      "type": "wake_fired"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270554769,
+      "context": null,
+      "effort": "high",
+      "harness": "claude",
+      "id": 145201,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "claude-opus-5-5",
+      "status": "failed",
+      "type": "turn_end"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270554844,
+      "dueAt": 1790270554844,
+      "id": "w_3fc6a438-6b6f-40e2-b53d-9d7cd62ab8b1",
+      "type": "wake_scheduled"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270554845,
+      "detail": {
+        "tier": 3
+      },
+      "id": "ce:21688",
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "kind": "prod_fired",
+      "seqTiebreak": 21688,
+      "sessionKey": "agent:main:clawline:mike:main s_05ab5eab",
+      "type": "causal_event"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270555539,
+      "context": null,
+      "effort": "high",
+      "harness": "claude",
+      "id": 145202,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "claude-opus-5-5",
+      "status": "failed",
+      "type": "turn_start"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270555540,
+      "firedBy": null,
+      "id": "w_3fc6a438-6b6f-40e2-b53d-9d7cd62ab8b1",
+      "matchedFactAt": null,
+      "type": "wake_fired"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270556516,
+      "context": null,
+      "effort": "high",
+      "harness": "claude",
+      "id": 145202,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "claude-opus-5-5",
+      "status": "failed",
+      "type": "turn_end"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270556604,
+      "dueAt": 1790270556604,
+      "id": "w_7e776a10-f6f9-4463-8623-8a04dfb31a2e",
+      "type": "wake_scheduled"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270557607,
+      "context": null,
+      "effort": "high",
+      "harness": "codex",
+      "id": 145203,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_start"
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270557610,
+      "firedBy": null,
+      "id": "w_7e776a10-f6f9-4463-8623-8a04dfb31a2e",
+      "matchedFactAt": null,
+      "type": "wake_fired"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270558301,
+      "commitRefs": null,
+      "id": "att_913c66f2-decd-4718-894c-b36a9e0c862e",
+      "kind": "progress",
+      "type": "attest",
+      "verdict": null
+    },
+    {
+      "assignmentId": "asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f",
+      "at": 1790270599423,
+      "context": null,
+      "effort": "high",
+      "harness": "codex",
+      "id": 145203,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_end"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270619391,
+      "commitRefs": null,
+      "id": "att_c4f9746c-21b0-4440-a9a3-7830d873eb69",
+      "kind": "progress",
+      "type": "attest",
+      "verdict": null
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270626604,
+      "id": "dr_cf4f3170-de1d-44ea-93e8-6f265ea9b157",
+      "ruling": null,
+      "state": "open",
+      "type": "decision_request"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270653357,
+      "context": null,
+      "effort": "max",
+      "harness": "codex",
+      "id": 145198,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_end"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270944293,
+      "dueAt": 1790270944293,
+      "id": "w_2321ddab-bff9-43d6-becb-e937426889d8",
+      "type": "wake_scheduled"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270944294,
+      "detail": {
+        "tier": 1
+      },
+      "id": "ce:21689",
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "kind": "prod_fired",
+      "seqTiebreak": 21689,
+      "sessionKey": "agent:main:clawline:mike:main s_6aa74e54",
+      "type": "causal_event"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270945263,
+      "context": null,
+      "effort": "max",
+      "harness": "codex",
+      "id": 145208,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_start"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270945264,
+      "firedBy": null,
+      "id": "w_2321ddab-bff9-43d6-becb-e937426889d8",
+      "matchedFactAt": null,
+      "type": "wake_fired"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270952624,
+      "context": null,
+      "effort": "max",
+      "harness": "codex",
+      "id": 145208,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_end"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270952693,
+      "dueAt": 1790270952693,
+      "id": "w_cedd8ad6-77c8-421d-b1ed-84d31bbe3fe2",
+      "type": "wake_scheduled"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270952693,
+      "detail": {
+        "tier": 2
+      },
+      "id": "ce:21690",
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "kind": "prod_fired",
+      "seqTiebreak": 21690,
+      "sessionKey": "agent:main:clawline:mike:main s_6aa74e54",
+      "type": "causal_event"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270953287,
+      "context": null,
+      "effort": "max",
+      "harness": "codex",
+      "id": 145209,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_start"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270953288,
+      "firedBy": null,
+      "id": "w_cedd8ad6-77c8-421d-b1ed-84d31bbe3fe2",
+      "matchedFactAt": null,
+      "type": "wake_fired"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270956374,
+      "context": null,
+      "effort": "max",
+      "harness": "codex",
+      "id": 145209,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_end"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270956422,
+      "dueAt": 1790270956422,
+      "id": "w_0efd9c99-b1c8-4646-890f-50bc81e6bdad",
+      "type": "wake_scheduled"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270956423,
+      "detail": {
+        "tier": 3
+      },
+      "id": "ce:21691",
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "kind": "prod_fired",
+      "seqTiebreak": 21691,
+      "sessionKey": "agent:main:clawline:mike:main s_6aa74e54",
+      "type": "causal_event"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270957300,
+      "context": null,
+      "effort": "max",
+      "harness": "codex",
+      "id": 145210,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_start"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270957301,
+      "firedBy": null,
+      "id": "w_0efd9c99-b1c8-4646-890f-50bc81e6bdad",
+      "matchedFactAt": null,
+      "type": "wake_fired"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270960268,
+      "context": null,
+      "effort": "max",
+      "harness": "codex",
+      "id": 145210,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_end"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270960607,
+      "dueAt": 1790270960607,
+      "id": "w_f276fbc0-ecd5-48d0-8d0c-e052de7cc364",
+      "type": "wake_scheduled"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270961317,
+      "context": null,
+      "effort": "high",
+      "harness": "codex",
+      "id": 145211,
+      "jobRef": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+      "model": "gpt-5.6-luna",
+      "status": "running",
+      "type": "turn_start"
+    },
+    {
+      "assignmentId": "asg_30c42a33-e6ef-45d9-9fd2-700588846373",
+      "at": 1790270961319,
+      "firedBy": null,
+      "id": "w_f276fbc0-ecd5-48d0-8d0c-e052de7cc364",
+      "matchedFactAt": null,
+      "type": "wake_fired"
+    }
+  ],
+  "workItem": {
+    "failReason": null,
+    "id": "wi_b8193d15-8f29-42df-950e-c1c6762de366",
+    "ownerUserId": "mike",
+    "state": "open",
+    "title": "Engram PDO eval: Opus 5.5 high PO, Luna max PDO, supplied-facts correction note"
+  }
+}

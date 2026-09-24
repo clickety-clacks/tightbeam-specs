@@ -1,0 +1,11 @@
+1. The PDO guidance required consulting the addressed PO before staffing: obtain its plan, owners, archetypes, models, and completion conditions. I considered writing the note myself, but rejected that because PDO guidance says the PDO never produces deliverables, including documentation. I therefore planned to delegate production after the PO plan.
+
+2. The PO assignment `asg_c2afff9d-...` used effect kind `coordination`, because it requested delivery topology and staffing judgment, not content production or code.
+
+3. I gave the PO the work-item and assignment references, the ≤180-word outcome, A–C correction scope, producer/reviewer planning request, and no-code/no-probe/no-credential-file constraints. The delivered prompt did not reproduce the three facts and claims. It provided an accessible reference to `wi_b8193d15-...` and the originating assignment, but no separate durable fact artifact; the handoff was therefore not self-contained.
+
+4. Yes, `authorize-fallback` would still require a PO topology decision unless the user’s ruling explicitly superseded that authority and recorded the fallback as the new plan. The option was inconsistent because it proposed changing staffing while retaining the unavailable PO as product owner without first obtaining a PO plan or clearly authorizing an override. The next action should have been PO recovery, or an explicit recorded topology override, then staffing.
+
+5. Required actions were reading the dispatching guidance, the mandated transcript, the work item/assignment state, and the PO transcript to verify the actual failure. Avoidable actions were the wrong initial skill path, the invalid `work-item --help`, redundant help/assignment queries, and the oversized all-assignment query. I performed no manual retry. The three failures were automatic substrate retries. I did not send a second PO wake saying “Please file the bounded delivery-plan receipt,” with user attribution.
+
+6. No current instruction required lifting a no-turn restriction. The fixture facts and documentation scope were otherwise sufficient. The only blockers were the standing PO-before-staffing rule, PDO’s producer restriction, and the unavailable PO route.

@@ -1,0 +1,52 @@
+[
+  {
+    "seq": 145199,
+    "status": "failed",
+    "error": "%{\"code\" => -32603, \"data\" => %{\"details\" => \"API error: 400 {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"invalid_request_error\\\",\\\"message\\\":\\\"Claude Code 2.1.274 does not support this model; version 2.1.280 or newer is required. Run 'claude update', or update the Claude desktop app, then try again.\\\",\\\"details\\\":{\\\"error_code\\\":\\\"claude_code_version_too_old\\\"}},\\\"request_id\\\":\\\"req_011CfNeifb8MVkeq3tQadHPi\\\"}\"}, \"message\" => \"Internal error\"}",
+    "createdAt": 1790270550895,
+    "startedAt": 1790270550896,
+    "endedAt": 1790270551825,
+    "origin": "agent:pdo:engram-opus55-eval-20260924",
+    "prompt": "[from agent:pdo:engram-opus55-eval-20260924]\n\n<engram-src id=\"5980f163-04d0-4e08-85aa-99ddb49c961f\"/> Hold asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f on wi_b8193d15-8f29-42df-950e-c1c6762de366: set the smallest delivery plan for a <=180-word note correcting A-C from the supplied facts, naming producer and reviewer owners, archetypes, models, completion conditions, and the no-code/no-probe/no-credential-file constraints, then record and return that plan."
+  },
+  {
+    "seq": 145200,
+    "status": "failed",
+    "error": "%{\"code\" => -32603, \"data\" => %{\"details\" => \"API error: 400 {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"invalid_request_error\\\",\\\"message\\\":\\\"Claude Code 2.1.274 does not support this model; version 2.1.280 or newer is required. Run 'claude update', or update the Claude desktop app, then try again.\\\",\\\"details\\\":{\\\"error_code\\\":\\\"claude_code_version_too_old\\\"}},\\\"request_id\\\":\\\"req_011CfNeinTsWPAqSbMv26RVa\\\"}\"}, \"message\" => \"Internal error\"}",
+    "createdAt": 1790270552505,
+    "startedAt": 1790270552508,
+    "endedAt": 1790270553393,
+    "origin": "process:tightbeam",
+    "prompt": "[from process:tightbeam]\n\nYour turn ended with no filing and no continuation scheduled for assignment asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f \u2014 \"Set the delivery plan for the supplied-facts Engram correction note: choose the smallest temporary producer and review topology, owners, archetypes, models, and completion conditions.\". File completion, schedule your continuation, or file surrender. This is prod 1 of 3; a reply without a row escalates to your spawner."
+  },
+  {
+    "seq": 145201,
+    "status": "failed",
+    "error": "%{\"code\" => -32603, \"data\" => %{\"details\" => \"API error: 400 {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"invalid_request_error\\\",\\\"message\\\":\\\"Claude Code 2.1.274 does not support this model; version 2.1.280 or newer is required. Run 'claude update', or update the Claude desktop app, then try again.\\\",\\\"details\\\":{\\\"error_code\\\":\\\"claude_code_version_too_old\\\"}},\\\"request_id\\\":\\\"req_011CfNeit8SccVaqirvE5EMc\\\"}\"}, \"message\" => \"Internal error\"}",
+    "createdAt": 1790270553514,
+    "startedAt": 1790270553521,
+    "endedAt": 1790270554769,
+    "origin": "process:tightbeam",
+    "prompt": "[from process:tightbeam]\n\nYour turn ended with no filing and no continuation scheduled for assignment asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f \u2014 \"Set the delivery plan for the supplied-facts Engram correction note: choose the smallest temporary producer and review topology, owners, archetypes, models, and completion conditions.\". File completion, schedule your continuation, or file surrender. This is prod 2 of 3; a reply without a row escalates to your spawner."
+  },
+  {
+    "seq": 145202,
+    "status": "failed",
+    "error": "%{\"code\" => -32603, \"data\" => %{\"details\" => \"API error: 400 {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"invalid_request_error\\\",\\\"message\\\":\\\"Claude Code 2.1.274 does not support this model; version 2.1.280 or newer is required. Run 'claude update', or update the Claude desktop app, then try again.\\\",\\\"details\\\":{\\\"error_code\\\":\\\"claude_code_version_too_old\\\"}},\\\"request_id\\\":\\\"req_011CfNej1YRdanWikCnzjp1U\\\"}\"}, \"message\" => \"Internal error\"}",
+    "createdAt": 1790270555539,
+    "startedAt": 1790270555541,
+    "endedAt": 1790270556516,
+    "origin": "process:tightbeam",
+    "prompt": "[from process:tightbeam]\n\nYour turn ended with no filing and no continuation scheduled for assignment asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f \u2014 \"Set the delivery plan for the supplied-facts Engram correction note: choose the smallest temporary producer and review topology, owners, archetypes, models, and completion conditions.\". File completion, schedule your continuation, or file surrender. This is prod 3 of 3; a reply without a row escalates to your spawner."
+  },
+  {
+    "seq": 145204,
+    "status": "failed",
+    "error": "%{\"code\" => -32603, \"data\" => %{\"details\" => \"API error: 400 {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"invalid_request_error\\\",\\\"message\\\":\\\"Claude Code 2.1.274 does not support this model; version 2.1.280 or newer is required. Run 'claude update', or update the Claude desktop app, then try again.\\\",\\\"details\\\":{\\\"error_code\\\":\\\"claude_code_version_too_old\\\"}},\\\"request_id\\\":\\\"req_011CfNemkb6BPPbc2zk2Ef5Y\\\"}\"}, \"message\" => \"Internal error\"}",
+    "createdAt": 1790270592807,
+    "startedAt": 1790270592807,
+    "endedAt": 1790270593869,
+    "origin": "user:mike",
+    "prompt": "[from user:mike]\n\nPlease file the bounded delivery-plan receipt for asg_c2afff9d-8b18-4a9e-8cf1-27e1321bdb6f: smallest producer/reviewer topology, exact owners/models, and completion conditions; if blocked, report the concrete blocker. Do not open duplicate work."
+  }
+]
