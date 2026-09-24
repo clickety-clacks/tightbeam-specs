@@ -1,0 +1,14 @@
+[
+  {
+    "name": "preferred-models",
+    "exit": 0,
+    "stdout": "{\n  \"liveRevision\": \"88ea827deb7d1e8f9a70258ce2fd7ffb61a0f6d6\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "name": "engineering-model-activities",
+    "exit": 0,
+    "stdout": "{\n  \"liveRevision\": \"312a6e17edaf74545bebd8758cb09fd0d1f2d47d\"\n}\n",
+    "stderr": ""
+  }
+]

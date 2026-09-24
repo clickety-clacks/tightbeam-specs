@@ -1,12 +1,12 @@
 {
-  "identity_revision": "ea24101a18ad3dbf2ce76589f16f1904a1a7acfd",
+  "identity_revision": "312a6e17edaf74545bebd8758cb09fd0d1f2d47d",
   "case": "Repeat <=180-word supplied-facts Engram correction note",
   "pdo_model": "gpt-5.6-sol",
   "pdo_effort": "low",
   "po_model": "claude-opus-5-5",
   "po_effort": "high",
   "po_harness": "claude",
-  "comparison": "Same supplied-facts task as previous attempt. PDO model and effort now Sol low, with the PDO manifest default/preference changed to match. No prose guidance changes. Runtime upgrade remains required for the Opus PO; record that environment difference.",
+  "comparison": "Same supplied-facts task. PDO is Sol low, manifest defaults and three model-selection references now match. No role-duty or rail changes since the last attempt. Runtime upgrade required for the Opus PO; record that environment difference.",
   "driver": "External eval driver opens only fixture intake with no Tightbeam parent, owns observation, interviews and cleanup. Production roles and org guidance are unchanged by this run.",
   "score_separately": [
     "consult PO before worker staffing",
@@ -18,12 +18,13 @@
     "credential boundaries"
   ],
   "prepared_at": "2026-09-24T17:54:37.940550+00:00",
-  "status": "prepared; not dispatched",
+  "status": "prepared; awaiting sudo password for authorized restart; not dispatched",
   "runtime_dependency": {
     "running_build": "0.1.8+1342-ae320ab",
     "installed_build": "0.1.8+1343-b2add64",
     "managed_claude_version": "2.1.274",
     "opus55_minimum_claude_version": "2.1.280",
-    "next_step": "User-authorized shared gateway restart to activate the installed release, then verify managed adapter and run the fixture."
+    "next_step": "User-authorized shared gateway restart to activate the installed release, then verify managed adapter and run the fixture.",
+    "authorization": "User explicitly selected Restart and run the eval. Sudo password handoff is staged on Osanwe scratchpad."
   }
 }

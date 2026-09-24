@@ -79,3 +79,7 @@ The user requested a fresh run with Opus5.5 high as PO and Luna max retained as 
 ## Sol low PDOs for new work
 
 The user broadened the trial model choice to all new work items. Published PDO default and preference are now gpt-5.6-sol low at identity ea24101. Both live PDOs, Engram and Tightbeam, were tuned to that configuration with engine context preserved. No role migration or prose-guidance change occurred. Updating three contradictory model-selection references awaits explicit guidance permission. The fresh Opus PO eval still awaits authorization to activate installed build1343; no eval success is claimed. See [sol-low/report.md](sol-low/report.md) and the before/after settings.
+
+## Align PDO model-selection guidance with Sol low
+
+After explicit user approval, identity 312a6e17 changes only the three shared PDO model references: remove PDO from the Luna capsule and replace the first candidate with sol[low] in both PDO activity rows. Defaults and live PDO runtime settings already match. No role duties, topology rail or unrelated model selection changed. Publication is verified; existing contexts were not blanket-refreshed. See [sol-low/guidance-alignment/report.md](sol-low/guidance-alignment/report.md) and exact patch. The gateway restart is now authorized and waiting for the sudo password handoff; the eval has not started.

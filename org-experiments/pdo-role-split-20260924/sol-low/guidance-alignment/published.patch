@@ -1,0 +1,35 @@
+diff --git a/guidance/engineering-model-activities.md b/guidance/engineering-model-activities.md
+index 65742fe..601bdf5 100644
+--- a/guidance/engineering-model-activities.md
++++ b/guidance/engineering-model-activities.md
+@@ -42,7 +42,7 @@ separate from that obligation and preserve separately scoped runtime authority.
+ | Activity | Minds in order | Capability floor |
+ |---|---|---|
+ | Product ownership and spirit | astra[high], fable[high], opus[xhigh], sol[xhigh] | Can challenge a technically sound result against product intent and sustain product context. |
+-| Product delivery orchestration after PO team design | luna[medium], terra[medium], sol[medium], astra[high], fable[high] | Can reconcile current work records, route reviews, recover within the PO's plan and recognize when it needs revision. The PDO role governs authority. Evaluate this judgment on observed delivery cases; the cheaper model is a choice to validate. |
++| Product delivery orchestration after PO team design | sol[low], terra[medium], sol[medium], astra[high], fable[high] | Can reconcile current work records, route reviews, recover within the PO's plan and recognize when it needs revision. The PDO role governs authority. Evaluate this judgment on observed delivery cases; the cheaper model is a choice to validate. |
+ | Delivery orchestration, bounded and familiar | sol[medium], sonnet[high], opus[high], astra[high], fable[high] | Can interpret coordination detail, manage dependencies and recognize when to seek deeper judgment. |
+ | Delivery orchestration, sustained or coupled | sol[high], opus[high], sonnet[high], astra[high], fable[high] | Can maintain obligations and reasoning across a long run. Move to the difficult-scope row when familiar coordination becomes insufficient. |
+ | Orchestration with continual deep technical judgment | astra[high], fable[high], sol[xhigh], opus[xhigh] | Can reason about the dependencies directly, rather than merely relay a planner's decisions. |
+@@ -63,7 +63,7 @@ separate from that obligation and preserve separately scoped runtime authority.
+ | Activity | Minds in order |
+ |---|---|
+ | Product ownership and spirit | astra[high], sol[xhigh] |
+-| Product delivery orchestration after PO team design | luna[medium], terra[medium], sol[medium], astra[high] |
++| Product delivery orchestration after PO team design | sol[low], terra[medium], sol[medium], astra[high] |
+ | Delivery orchestration, bounded and familiar | sol[medium], astra[high] |
+ | Delivery orchestration, sustained or coupled | sol[high], astra[high] |
+ | Orchestration with continual deep technical judgment | astra[high], sol[xhigh] |
+diff --git a/guidance/preferred-models.md b/guidance/preferred-models.md
+index d071363..562342b 100644
+--- a/guidance/preferred-models.md
++++ b/guidance/preferred-models.md
+@@ -9,7 +9,7 @@ activities live in `guidance/engineering-model-activities.md`.
+ - **gpt-6-astra** — (nickname: astra): deep product, architecture, planning and review judgment. Use high or higher reasoning for sustained work.
+ - **gpt-5.6-sol** — (nickname: sol): general engineering and delivery orchestration; increase effort for sustained or coupled work. Can commission a stronger planner.
+ - **gpt-5.6-terra** — (nickname: terra): bounded engineering implementation and mechanical work with an inspectable contract.
+-- **gpt-5.6-luna** — (nickname: luna): retain the existing medium-effort PDO and mechanical selections and low-effort factual selections.
++- **gpt-5.6-luna** — (nickname: luna): retain the existing medium-effort mechanical selections and low-effort factual selections.
+ - **gpt-6-luna**: use max effort for well-scoped and sustained implementation under an understood architecture. Escalate consequential uncertainty.
+ - **claude-opus-5-5**: requested replacement for Fable in specification drafting and independent code review. Keep it out of active defaults while supported exact-ID use on a permitted host and harness remains unproven. No effort or context setting is assumed; retain unknown capability as unknown.
+ - **claude-fable-5** — (nickname: fable): deep product judgment, difficult planning, implementation and whole-system review.
