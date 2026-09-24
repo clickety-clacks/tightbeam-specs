@@ -1,0 +1,14 @@
+{
+  "cleanupStatus": "not_applicable",
+  "context": null,
+  "effort": "low",
+  "engineContext": "preserved",
+  "fast": "off",
+  "fastPersistence": "ephemeral",
+  "fastStatus": "known",
+  "harness": "codex",
+  "model": "gpt-6-sol",
+  "ok": true,
+  "projectionCommitted": true,
+  "sessionKey": "agent:main:clawline:mike:main s_3c63ca28"
+}
