@@ -1,0 +1,387 @@
+[
+  {
+    "path": "archetypes/coder.toml",
+    "bytes": 901,
+    "sha256": "e9b01e549595119434e1f23a6369ee37d3f2417849d5751a487c97600f5bd17f"
+  },
+  {
+    "path": "archetypes/default.toml",
+    "bytes": 4010,
+    "sha256": "5d8cc2e241909a43be5f1640fc3013b4619a34b5ef3ee0a3adeb2ad6c151cda2"
+  },
+  {
+    "path": "archetypes/guidance-reviewer.toml",
+    "bytes": 655,
+    "sha256": "fbba65caeafec07cfb3ccf124f321014760fb87bf0948a0ae0aadc01f9619674"
+  },
+  {
+    "path": "archetypes/guidance-writer.toml",
+    "bytes": 644,
+    "sha256": "50b7fed2a15df2fc195fa9be90645369cf84353d2e06ddcdd2cdf7b816f2048c"
+  },
+  {
+    "path": "archetypes/integrator.toml",
+    "bytes": 570,
+    "sha256": "98c1474a7ec261bba6288212e65e7a447f56ad280c472c7eb667c4a378184e8b"
+  },
+  {
+    "path": "archetypes/orchestrator.toml",
+    "bytes": 576,
+    "sha256": "a81879d8c20343c73b87c47ca4552ad7780f153f062aa8b3c1b4ca7a7f81fbaa"
+  },
+  {
+    "path": "archetypes/pdo.toml",
+    "bytes": 564,
+    "sha256": "c03590e69e7f8349b43f597e46d0082b7312c914db117fac894dc8828cb74d67"
+  },
+  {
+    "path": "archetypes/product-owner.toml",
+    "bytes": 599,
+    "sha256": "f77d2ecea98495458b978d2454b9b7bc8e0b5da6fc96f918bfa0cda24ba305b2"
+  },
+  {
+    "path": "archetypes/recon.toml",
+    "bytes": 560,
+    "sha256": "152f4e4060326efdc9c131f97cb224150bc3b2d1ef8dbeb6f5c33d29b8026a97"
+  },
+  {
+    "path": "archetypes/reviewer-code.toml",
+    "bytes": 608,
+    "sha256": "d1c36f6b9b720a45f434450e97fbd751d6fa79ab7bbb8537155b0d37784b9884"
+  },
+  {
+    "path": "archetypes/reviewer-spec.toml",
+    "bytes": 553,
+    "sha256": "588145e250f94301afb4cbbfd77c25cd6766e8174f9b63946acc5cceb9f956a8"
+  },
+  {
+    "path": "archetypes/reviewer.toml",
+    "bytes": 799,
+    "sha256": "478c901cfa0596d83f2dbcaeda7ca8692c0223d93d422abb75b1723246879312"
+  },
+  {
+    "path": "archetypes/spec-writer.toml",
+    "bytes": 542,
+    "sha256": "4af011fe7cbc83b65f5ea55500c40711953a5dc544842186dd2558308d7ed5d6"
+  },
+  {
+    "path": "archetypes/team-planner.toml",
+    "bytes": 517,
+    "sha256": "2e7ece375e7b1ef59e19a7b5cd1baef0f4d52418bb12cef0aea82adfde91f6ef"
+  },
+  {
+    "path": "guidance/archetype-roster.md",
+    "bytes": 1452,
+    "sha256": "594832774e3b6a06419d7e78adc283c99cc5165a988b0594ddf67320cc060d78"
+  },
+  {
+    "path": "guidance/coder.md",
+    "bytes": 3208,
+    "sha256": "0138382edf54d9b52554352c6bd417473ec50dbafdce12a0195b495f63241102"
+  },
+  {
+    "path": "guidance/default.md",
+    "bytes": 62,
+    "sha256": "2cb668d47dde00ac17d8a64309cf8e3f96a1b14bbabbb81652eb519c8b87d9bf"
+  },
+  {
+    "path": "guidance/delivery-coordination.md",
+    "bytes": 6413,
+    "sha256": "06e1c6f80b7755243b03274e168c1ae223f1b6e6fc3fd97d7fe8e8ea86c79459"
+  },
+  {
+    "path": "guidance/delivery-records.md",
+    "bytes": 3306,
+    "sha256": "c6939d3efee6377969d1f589145d7a5be63988f5108cc291c852b6417ac7789f"
+  },
+  {
+    "path": "guidance/delivery-recovery.md",
+    "bytes": 2784,
+    "sha256": "39c661fd798300ea747904527cdf806b097cef61b7f8b91fc500218ce8a0bea0"
+  },
+  {
+    "path": "guidance/engineering-model-activities.md",
+    "bytes": 9033,
+    "sha256": "6c77b3ffc7a47cca1dfc7947a7349d2cf3180af4e135f6ef9879e996918b1d51"
+  },
+  {
+    "path": "guidance/engineering-tenets.md",
+    "bytes": 1878,
+    "sha256": "5610795b4c8f894f509cd04567b3c326bf3feb8e78e2f72581433bdb8ad877eb"
+  },
+  {
+    "path": "guidance/golden-rule.md",
+    "bytes": 537,
+    "sha256": "61d6ca9a8dba80edc6275c1ea7a8d59e237d1eec0b8a2943eecaa57fe944a6a0"
+  },
+  {
+    "path": "guidance/guidance-policy-craft.md",
+    "bytes": 5050,
+    "sha256": "4ab9fa5e8ca52b2282acae0c2abf964b94772c1e770508075fd865ca1cc42045"
+  },
+  {
+    "path": "guidance/guidance-reviewer.md",
+    "bytes": 1170,
+    "sha256": "66115c7b50b3ea49d94cc0de3c169ae78107ebe2120baafa4fea13d88df88b5f"
+  },
+  {
+    "path": "guidance/guidance-writer.md",
+    "bytes": 1158,
+    "sha256": "63717e402bfd7fab23fe0b38c07d6f3888dd14d7a64504285e76a7bdda4459f9"
+  },
+  {
+    "path": "guidance/harness-support.md",
+    "bytes": 885,
+    "sha256": "62c677b44999bb4612920173575f12c1ec7d8e3705a58ca7feea132e23b041d9"
+  },
+  {
+    "path": "guidance/integrator.md",
+    "bytes": 1531,
+    "sha256": "14994523242e563e5573ef9029d29081b6e3b997577bbdddd5764ae5345d1613"
+  },
+  {
+    "path": "guidance/no-testing-on-gibson.md",
+    "bytes": 3019,
+    "sha256": "4ddaf04074fd5f20ae99a0f45851a3e1f5eae38d440bb08dae378d6c4fc62307"
+  },
+  {
+    "path": "guidance/operating-manual.md",
+    "bytes": 20831,
+    "sha256": "66142d4a879fbf39b58cd2596e0a09b5f9721fab63387294d95c53c9bfd54479"
+  },
+  {
+    "path": "guidance/operating-model.md",
+    "bytes": 1935,
+    "sha256": "2e2f1828dbbfb336a1eaf2720fcee132c322087dc6226edd042897d6d94ca2b1"
+  },
+  {
+    "path": "guidance/orchestrator.md",
+    "bytes": 1142,
+    "sha256": "2aec5ebdb4df61cff42452221af955d5852779b28ccc2a59efa0d2a4addd18cd"
+  },
+  {
+    "path": "guidance/pdo.md",
+    "bytes": 2494,
+    "sha256": "9b334b83512001a720dd2c11ac49808fdeba4d3bac098a5a9d12d4871724d03d"
+  },
+  {
+    "path": "guidance/preferred-models.md",
+    "bytes": 7435,
+    "sha256": "c8a73800df5bcc73691eac3bd76b8d2a109addbe73f7f6ab3c8a0916cd39ff11"
+  },
+  {
+    "path": "guidance/product-owner.md",
+    "bytes": 6348,
+    "sha256": "ca40fb675c2dda9ac5e461576c39469439ba54ddacba7447e8c18e42b18ce8ae"
+  },
+  {
+    "path": "guidance/recon.md",
+    "bytes": 1895,
+    "sha256": "7b4cf482cc617eb1b024942a4ec25640b5d807cc0cd2158a19506134d084e3b7"
+  },
+  {
+    "path": "guidance/repository-custody.md",
+    "bytes": 1837,
+    "sha256": "a3a3a81ca9e17bd315fd87bffaa92802b60e855c161d250846c62389dcb7f590"
+  },
+  {
+    "path": "guidance/review-common.md",
+    "bytes": 2595,
+    "sha256": "dbc2437eaacc23279e805df2d671785b20c530b351d37cb3803a9e0af837cb0d"
+  },
+  {
+    "path": "guidance/reviewer-code.md",
+    "bytes": 991,
+    "sha256": "5ce75f3d4030d098cbbd8fe9c67f8eca8c3e871d82128fcdef4ea9779fd23385"
+  },
+  {
+    "path": "guidance/reviewer-spec.md",
+    "bytes": 2225,
+    "sha256": "5382251141ae31c66fef47c9d031bf5db5232dcade970b22770f566f00e42151"
+  },
+  {
+    "path": "guidance/scope-and-architecture.md",
+    "bytes": 433,
+    "sha256": "aaac1d166ad25cb304aee1c80630c50bb1317c14893856768a80dcb7135f6a6c"
+  },
+  {
+    "path": "guidance/spec-writer.md",
+    "bytes": 3822,
+    "sha256": "c80df58b6176d7309de541e837c9e07348423327077422cf832b7075d9e175ae"
+  },
+  {
+    "path": "guidance/specs-home.md",
+    "bytes": 302,
+    "sha256": "bbe1a3cdfa2cf83dacd1280d5aedf6e0a38d75b4ba0f70ee1e38875c71933707"
+  },
+  {
+    "path": "guidance/specs-interim-durability.md",
+    "bytes": 564,
+    "sha256": "a8fc8461ee1e113ac0fc889556c9dd4acc827d45e494f09e22f37f8f2bc3aecc"
+  },
+  {
+    "path": "guidance/subtraction.md",
+    "bytes": 900,
+    "sha256": "40a3e9f30665f89f22657fdb54c95bd900369df3215a07df3136358651f9c93e"
+  },
+  {
+    "path": "guidance/team-planner.md",
+    "bytes": 5327,
+    "sha256": "70c110203c4384f27f23777eea8dfadd1d1369f789f40ca8986c9d63df97ece0"
+  },
+  {
+    "path": "guidance/wisdom-core.md",
+    "bytes": 984,
+    "sha256": "12441e6cf578f6d0b7080b6a56e057ce94477df748a2addcf74d7abbbd2485b9"
+  },
+  {
+    "path": "guidance/wisdom-meta.md",
+    "bytes": 261,
+    "sha256": "4947fe18a8403e677763b2c9bbe25733c2a789332fb603a7f1a4f647c363bfd9"
+  },
+  {
+    "path": "kungfu/agentic-engineering/capabilities.md",
+    "bytes": 1271,
+    "sha256": "d9a52eb07e1db8c665ec9599c0c9f40c8f0546df764806330c7c192ae066c674"
+  },
+  {
+    "path": "kungfu/agentic-engineering/installed.toml",
+    "bytes": 1222,
+    "sha256": "9f41ff5c74df76dcf51d47ff998434421acd335c85530b5a520e26da0db65659"
+  },
+  {
+    "path": "kungfu/agentic-engineering/intake.md",
+    "bytes": 988,
+    "sha256": "1ea430e52a2320b34b707090931d1f7dad65e8b5f73e11a8673c2a92975b6f04"
+  },
+  {
+    "path": "kungfu/agentic-engineering/manifest.toml",
+    "bytes": 576,
+    "sha256": "4b503a87e170263c7939e148e08f367327fd3b86dc87a93d5cddb5034602c5cd"
+  },
+  {
+    "path": "kungfu/agentic-engineering/preferred-models.md",
+    "bytes": 2322,
+    "sha256": "5874e30da55a9ee3041e4e6f6e7a389577eba38539ad0f3a55ecbf6f5f806d2d"
+  },
+  {
+    "path": "rails/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "rails/engineering.toml",
+    "bytes": 1656,
+    "sha256": "ebbcc8ce7ac8bc8757854a158454e84df5bd5a7cb4ca862721e2f1b25e30a835"
+  },
+  {
+    "path": "rules/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "rules/engineering.toml",
+    "bytes": 7381,
+    "sha256": "9139b364faaff05beac9db1324156d21abe214f65974b3119345a8c8a84075dc"
+  },
+  {
+    "path": "rules/topology.toml",
+    "bytes": 1765,
+    "sha256": "27441f00c57f256e170a51b60b20ae6dc9617eec400faab26e8c9ef17f7e2305"
+  },
+  {
+    "path": "rules/verification.toml",
+    "bytes": 3868,
+    "sha256": "b77b16b792f96c82d92b9ed79820ef5b666d2734c322f35bee78e4aa1ffb0c56"
+  },
+  {
+    "path": "skills/adopt-c-bounds-safety/SKILL.md",
+    "bytes": 146896,
+    "sha256": "da4fdc25100c811475ca0a7097e76ef0a5897e31f6f78d9a8ebf900c680da832"
+  },
+  {
+    "path": "skills/app-intents-specialist/SKILL.md",
+    "bytes": 115880,
+    "sha256": "5ed9671614b93d86d905d84d97bcbfb59cc8ed0af054e7139e02958709596578"
+  },
+  {
+    "path": "skills/app-intents-whats-new-27/SKILL.md",
+    "bytes": 137094,
+    "sha256": "ccd543b476c36d22682070171c873b839a3638fc5d2be7c7e4c5ee0bccaf33de"
+  },
+  {
+    "path": "skills/audit-xcode-security-settings/SKILL.md",
+    "bytes": 147691,
+    "sha256": "668d7c8f7e791f69e0bd67ba05db4332210342a94ef8e18af7892319d5e22596"
+  },
+  {
+    "path": "skills/building-document-based-swiftui-applications/SKILL.md",
+    "bytes": 56358,
+    "sha256": "656bbd67547dfbb6170e30a52faeb75b48dd5377540d6648f7905f1a27622d02"
+  },
+  {
+    "path": "skills/device-interaction/SKILL.md",
+    "bytes": 12495,
+    "sha256": "584d29b72201066f2acca85de958eb477d4f25e87e5c795d4ba870625f6173bc"
+  },
+  {
+    "path": "skills/human-communication/LICENSE-asd-ste100-skill",
+    "bytes": 1075,
+    "sha256": "d3c674e8592076c9021a59b55177adbcba6fd7e1710082becb922522b22ec672"
+  },
+  {
+    "path": "skills/human-communication/SKILL.md",
+    "bytes": 698,
+    "sha256": "81854161eada1a6aff9261ee81e8678223a67087d26c94f4dc6a79cf3b20098c"
+  },
+  {
+    "path": "skills/integration-targets/SKILL.md",
+    "bytes": 2512,
+    "sha256": "eeedd1a4148c9b855c6a56d3de73647a7438122b783828e80f168493b64c1d0a"
+  },
+  {
+    "path": "skills/model-release-intake/SKILL.md",
+    "bytes": 2037,
+    "sha256": "26c845d56c8b1ef56bc621c9f9eee7c3936e4d37360eabce0e01a336f8a8d890"
+  },
+  {
+    "path": "skills/modernize-tests/SKILL.md",
+    "bytes": 9464,
+    "sha256": "880f46b4b39ca7d895f78857230e0082c299d481f74461ee977cd14f3315cfb3"
+  },
+  {
+    "path": "skills/product-delivery/SKILL.md",
+    "bytes": 360,
+    "sha256": "3c3ece26e7c57ec4a5a75b4b9afeebfe49e40add116ef9b525ce75d05b02575a"
+  },
+  {
+    "path": "skills/swiftui-specialist/SKILL.md",
+    "bytes": 169071,
+    "sha256": "ca2cc069c28966d7d8a85e3e13703011d234fd6a77e3aea6db4c995230d56525"
+  },
+  {
+    "path": "skills/swiftui-whats-new-27/SKILL.md",
+    "bytes": 54444,
+    "sha256": "629f93e957f2498610c4521c7d08708ab6470c939e6307904d741226b7dc3c56"
+  },
+  {
+    "path": "skills/team-design/SKILL.md",
+    "bytes": 3400,
+    "sha256": "81cbfdb2989ee84cbe453c4e64d1bc26a55d13882d08f783ab7bbfb021a21185"
+  },
+  {
+    "path": "skills/tightbeam-atc/SKILL.md",
+    "bytes": 3382,
+    "sha256": "b51164c4cb4c8cf25a5ad806f6f120a664920896d57bd4a46bee3033e4e8c919"
+  },
+  {
+    "path": "skills/typesafe-ai/SKILL.md",
+    "bytes": 10040,
+    "sha256": "71ea90d7906c6554c4f4c460ef7361b2d26f59116ccdae986dc6d997b9389f52"
+  },
+  {
+    "path": "skills/uikit-app-modernization/SKILL.md",
+    "bytes": 97386,
+    "sha256": "4436b23d7c368c7829787f886ea6b931e7530212a48e74ab2f4168f676bd6f48"
+  }
+]

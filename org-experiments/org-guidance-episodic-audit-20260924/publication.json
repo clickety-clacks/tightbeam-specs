@@ -1,0 +1,28 @@
+{
+  "at": "2026-09-24T16:38:13.922071+00:00",
+  "live_revision": "69bdb2090a34abcfdb6679a566123ca7f0bec305",
+  "files": [
+    {
+      "path": "/home/mike/.tightbeam/identity/guidance/operating-manual.md",
+      "resolved": "/home/mike/.tightbeam/identity/guidance/operating-manual.md",
+      "label": "operating-manual",
+      "before_sha256": "6ccbd16b60d74124ea9fab9b19b35e99ad655f04cf4cb1b961f6127f317f1c9e",
+      "candidate_sha256": "66142d4a879fbf39b58cd2596e0a09b5f9721fab63387294d95c53c9bfd54479"
+    },
+    {
+      "path": "/home/mike/.codex/AGENTS.md",
+      "resolved": "/home/mike/.codex/AGENTS.md",
+      "label": "codex-agents",
+      "before_sha256": "48e85a104a14b89934bd45f5894160b2d81b6e826e08aca3d290376dc69df565",
+      "candidate_sha256": "dd05ba2bf2d97738c04aa9a500708587699d074cd0c4c9332636e7d9bb206fa1"
+    },
+    {
+      "path": "/home/mike/.claude/CLAUDE.md",
+      "resolved": "/home/mike/.claude/CLAUDE.md",
+      "label": "claude-instructions",
+      "before_sha256": "3404a8ee5696422cc5210036bfee31507977289c2807e041b4239bd442029b5f",
+      "candidate_sha256": "c7377e4a60f3a0d390de9499307e81b68ee323aa89841626a75e0a8606ecbedc"
+    }
+  ],
+  "existing_sessions_refreshed": false
+}

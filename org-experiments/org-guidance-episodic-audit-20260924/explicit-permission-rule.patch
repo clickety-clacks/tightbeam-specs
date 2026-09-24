@@ -1,0 +1,53 @@
+--- a/guidance/operating-manual.md
++++ b/guidance/operating-manual.md
+@@ -1,4 +1,14 @@
+ # Operating tightbeam
++
++## Explicit permission to add guidance
++
++No agent may add persistent guidance anywhere unless the user explicitly asks
++for that guidance addition. If an agent wants to add guidance, it must explicitly
++ask the user for permission and wait for approval. Task instructions, corrections,
++incidents, agent requests and general maintenance authority do not supply that
++permission. This applies to shared and role guidance, skills, repository and
++harness instructions, and durable memory used as instructions. A skill that
++recommends adding guidance does not override this rule.
+ 
+ You run your work through the `tightbeam` command — an ordinary executable, already on
+ PATH in your session's environment. Run it with your shell tool, like any program; it is
+
+--- a//home/mike/.codex/AGENTS.md
++++ b//home/mike/.codex/AGENTS.md
+@@ -1,4 +1,14 @@
+ # Gibson — Tightbeam orientation (for any agent session on this machine)
++
++## Explicit permission to add guidance
++
++No agent may add persistent guidance anywhere unless the user explicitly asks
++for that guidance addition. If an agent wants to add guidance, it must explicitly
++ask the user for permission and wait for approval. Task instructions, corrections,
++incidents, agent requests and general maintenance authority do not supply that
++permission. This applies to shared and role guidance, skills, repository and
++harness instructions, and durable memory used as instructions. A skill that
++recommends adding guidance does not override this rule.
+ 
+ ## Merge readiness and device testing (Mike, 2026-09-21)
+ 
+
+--- a//home/mike/.claude/CLAUDE.md
++++ b//home/mike/.claude/CLAUDE.md
+@@ -1,4 +1,14 @@
+ # Gibson — Tightbeam orientation (for any agent session on this machine)
++
++## Explicit permission to add guidance
++
++No agent may add persistent guidance anywhere unless the user explicitly asks
++for that guidance addition. If an agent wants to add guidance, it must explicitly
++ask the user for permission and wait for approval. Task instructions, corrections,
++incidents, agent requests and general maintenance authority do not supply that
++permission. This applies to shared and role guidance, skills, repository and
++harness instructions, and durable memory used as instructions. A skill that
++recommends adding guidance does not override this rule.
+ 
+ ## Merge readiness and device testing (Mike, 2026-09-21)
+ 
