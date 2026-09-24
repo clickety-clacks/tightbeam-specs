@@ -1,0 +1,14 @@
+{
+  "head": "0e4e652348fc271a230cedba599611f6095739fd",
+  "status": "",
+  "source_pdo": {
+    "harness": "codex",
+    "model": "gpt-5.6-sol",
+    "effort": "low"
+  },
+  "live_candidate_pdo": {
+    "harness": "codex",
+    "model": "gpt-5.6-sol",
+    "effort": "low"
+  }
+}

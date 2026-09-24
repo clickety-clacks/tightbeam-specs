@@ -95,3 +95,13 @@ Attest att_2c93c414 records the enforcement orchestrator s_2015c680 successfully
 PO verdict att_58917597 approved one fresh guidance reviewer in the existing lane after the retained session's model-switch failure. The guidance lane spawned s_16e60e31, role guidance-reviewer:alignment-019-opus55, Claude claude-opus-5-5/high on Gibson. Attest att_d7034cf4 records the exact configured choice. Review has not started; executable composition/default-resolution evidence remains pending. The separate fresh terminal reviewer is still required after integration/publication. The old reviewer and unresolved tune defect remain recorded rather than retired or relabeled as fixed.
 
 Source tip `8729e82365d9615f7acad557320bd74e35b94a22` adds a consistency fix to the policy craft: explicit model/harness rules belong in shared guidance, while neutral runtime does not hardcode them. Focused Racter checks/package inspection are underway. A separate source-review finding noted engineering PO/PDO duties in a neutral association notice; its existing authors own a prompt-only correction and explicit emitted-context review.
+
+## Stale-message regression, correction required
+
+Around 2:35 PM PT, the guidance lane processed an earlier model message and filed att_99a214e9 asserting that PDO5.6 now superseded6. It emitted new writer/test-owner directions carrying that stale policy and repeated them in later progress records. This was not a new user instruction. The external Engram agent detected the attempt while both candidate manifests still said6, sent the current verbatim user/PO correction to PDO and author, and inspected again.
+
+The second inspection found an actual committed regression: clean source HEAD `0e4e652348fc271a230cedba599611f6095739fd` and the live-candidate PDO manifest both specify gpt-5.6-sol/low. Evidence is attached. This subject fails the current requirement and must not be treated as reviewed or publishable. No alignment integration or live publication has occurred. Existing live PDO seats remain configured6-sol/low.
+
+The runtime owner independently rejected the stale model change and did not pass it to the coder. PDO recorded supersession in att_e793cd59. The author must restore all affected model/default/table/evidence targets, freeze a new exact subject and obtain current validation/review. The final independent consistency review must retain this negative evidence. Queued historical messages also reintroduced old schema/CLI ordering and missing-fixture claims; current accepted ownership and the later PO scope decision still govern.
+
+The Lavish browser disconnected while the report session remains resumable. Its artifact has been updated in place; no window was reopened or session ended without direction.
