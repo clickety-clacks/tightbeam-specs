@@ -1,0 +1,64 @@
+{
+  "attests": [
+    {
+      "assignmentId": "asg_eea6ee93-33cc-420c-92d3-abe9cbe71c43",
+      "byHarness": "claude",
+      "byProvider": "anthropic",
+      "bySession": "agent:main:clawline:mike:main s_51682b82",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_b16df3ae-7061-40df-a284-7404625a9832",
+      "kind": "verdict",
+      "note": "Topology for wi_ce29ea6e (supplied-facts Engram correction note, <=180 words). Zero additional orchestrators: one tiny doc deliverable, all facts supplied, no coupling. Staff ONE dedicated temporary writer session: no archetype beyond default, harness claude, model claude-sonnet-5, effort medium, host gibson (writes a markdown file only; runs no Tightbeam code). Fallback if unavailable: codex gpt-5.6-terra high. Writer brief carries the PDO brief verbatim: facts 1-3, claims A-C, <=180 words, corrected text plus explanation per material correction, no code/config/install/release/network or query probes, never read credential files (.tightbeam-session, gateway.json, auth dirs). Final note must land in the PDO workdir; PDO picks the mechanism (hand the writer that path, or copy exact bytes and confirm sha256). No separate reviewer: this is prose on supplied facts, not code, and the PO judges it. PO acceptance criteria: (1) <=180 words; (2) A corrected to per-machine SQLite index kept with local tapes, no central copy; queries run on the owning machine over SSH, bounded results; (3) B corrected to results identified by source plus tape ID, not tape ID alone and not a central path; (4) C corrected to an unreachable selected source reported as incomplete coverage, never a complete empty result, absence not evidence of no match; (5) no claims beyond the three facts (no invented security, protocol, or perf detail). PDO wakes product-owner:engram-sol-low-eval-20260924 with the note path and sha256 for spirit judgment; writer retires after PO verdict; PDO and PO stay up for the fixture driver. Why this is enough: a single bounded writer with a clear contract finishes it; review and extra lanes would cost more than the note.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790277875999,
+      "verdictKind": "topology-decided"
+    },
+    {
+      "assignmentId": "asg_eea6ee93-33cc-420c-92d3-abe9cbe71c43",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_51682b82",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_3c552267-05d3-47b9-9118-9a7ea8868e16",
+      "kind": "progress",
+      "note": "Topology decision is delivered (topology-decided verdict). Completion was refused with completion-requires-review because this card was opened with effectKind code; a topology decision is not code and I will not invent a reviewed-clean receipt. Kept open on purpose. Waiting on PDO pdo:engram-sol-low-eval-20260924 to either revoke and reopen it as coordination or send the note path and sha256, so I can record the result judgment here.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790277908564,
+      "verdictKind": null
+    },
+    {
+      "assignmentId": "asg_eea6ee93-33cc-420c-92d3-abe9cbe71c43",
+      "byHarness": "claude",
+      "byProvider": "anthropic",
+      "bySession": "agent:main:clawline:mike:main s_51682b82",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_34fb3940-9cbc-4db0-99f2-8ad398052d11",
+      "kind": "verdict",
+      "note": "Result judgment for wi_ce29ea6e. Subject: /home/mike/.tightbeam/work/6188291a3eae/engram-fixture-correction-note.md, sha256 6cbfe5adc18542a0df785660ad26d3e970e0eb6c3847f358b74f0fd4003f63ec (hash and 159-word count verified by me; artifact art_5ea4ad3d). Against my criteria: (1) 159 words, under 180. (2) A corrected to per-machine SQLite index kept with local tapes, no advance copy, owning machine runs local queries over SSH, bounded results. (3) B corrected to source plus tape identifying a result, not tape ID alone. (4) C corrected to incomplete coverage rather than an empty result, and absence not evidence of no match. (5) No invented security, protocol or performance detail. Minor, not blocking: explanations are folded into the corrected text rather than given separately, and B omits fact 2's 'not a central filesystem path' clause; the note still tells a reader what was wrong and what is true for each claim, which is the fixture intent. Applies to this revision only.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790277968734,
+      "verdictKind": "spirit-approved"
+    },
+    {
+      "assignmentId": "asg_eea6ee93-33cc-420c-92d3-abe9cbe71c43",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_51682b82",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_9a8bc943-98e3-49e1-94ef-cba64671420b",
+      "kind": "surrender",
+      "note": "The work is done; I am handing back the card only because it cannot be closed. The topology-decided verdict was recorded and the PDO staffed it. A duplicate spirit-approved verdict sits here too, and asg_647c7a07 now carries the result judgment and is complete. Completion is refused with completion-requires-review because this card was opened as effectKind code; a topology decision is not code, and I will not invent a reviewed-clean receipt. The opener, pdo:engram-sol-low-eval-20260924, can close or revoke it. No work remains undone.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790278007171,
+      "verdictKind": null
+    }
+  ]
+}

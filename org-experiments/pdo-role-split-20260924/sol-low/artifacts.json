@@ -1,0 +1,21 @@
+{
+  "artifacts": [
+    {
+      "artifactId": "art_5ea4ad3d",
+      "contentSha256": null,
+      "createdAt": 1790277922660,
+      "createdBySession": "agent:main:clawline:mike:main s_05201de6",
+      "description": null,
+      "home": null,
+      "kind": "report",
+      "originPath": "/home/mike/.tightbeam/work/6188291a3eae/engram-fixture-correction-note.md",
+      "parentSession": "agent:main:clawline:mike:main s_2541a786",
+      "recordedMessageId": "s_eac6e731-2a1c-484f-966c-13fd9fef531c",
+      "recordedTurnEvidence": "tool-call-observed",
+      "state": "released",
+      "title": "Engram fixture correction note",
+      "updatedAt": 1790278042917,
+      "workItemId": "wi_ce29ea6e-f41c-407e-a2de-bd20005c7047"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+[
+  {
+    "sessionKey": "agent:main:clawline:mike:main s_2541a786",
+    "harnessSessionId": "01a0d4df-23d5-74e0-aef4-61a70ec61f7f",
+    "sourceSessionRef": "acp:WyJjb2RleCIsImdpYnNvbiIsIjAxYTBkNGRmLTIzZDUtNzRlMC1hZWY0LTYxYTcwZWM2MWY3ZiJd",
+    "harness": "codex",
+    "machine": "gibson",
+    "createdAt": 1790277788687
+  },
+  {
+    "sessionKey": "agent:main:clawline:mike:main s_51682b82",
+    "harnessSessionId": "c454a00b-13ae-425f-8bf6-55f5f267120b",
+    "sourceSessionRef": "acp:WyJjbGF1ZGUiLCJnaWJzb24iLCJjNDU0YTAwYi0xM2FlLTQyNWYtOGJmNi01NWY1ZjI2NzEyMGIiXQ",
+    "harness": "claude",
+    "machine": "gibson",
+    "createdAt": 1790277821694
+  }
+]

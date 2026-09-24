@@ -1,0 +1,4 @@
+MainPID=3350385
+ActiveState=active
+ActiveEnterTimestamp=Thu 2026-09-24 19:21:43 UTC
+executable=/home/mike/.local/lib/node_modules/tightbeam-0.1.8+1343-b2add64/release/erts-16.4.0.6/bin/beam.smp

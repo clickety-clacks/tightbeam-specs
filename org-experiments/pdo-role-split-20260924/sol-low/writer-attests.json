@@ -1,0 +1,19 @@
+{
+  "attests": [
+    {
+      "assignmentId": "asg_5ccaa965-3187-42de-a761-2783653c70f0",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_05201de6",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_e8fefff4-62bc-4494-b2bf-cb6152b04222",
+      "kind": "completion",
+      "note": "Delivery record for the Engram fixture correction note: written at /home/mike/.tightbeam/work/6188291a3eae/engram-fixture-correction-note.md, 159 words (<=180 bound), built only from the supplied fixture facts and the three draft claims in the PDO's brief. sha256=6cbfe5adc18542a0df785660ad26d3e970e0eb6c3847f358b74f0fd4003f63ec. Artifact art_5ea4ad3d recorded against wi_ce29ea6e-f41c-407e-a2de-bd20005c7047. No credential files read; no code, config, network, or probe actions taken. The writer assignment asg_b6a9cba1 remains open (effectKind code, completion-requires-review) pending PDO/PO judgment; a progress attest with the same facts is filed there. PDO notified by wake w_5099b9ae.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790278007493,
+      "verdictKind": null
+    }
+  ]
+}

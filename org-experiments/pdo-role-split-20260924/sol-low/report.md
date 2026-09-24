@@ -1,5 +1,7 @@
 # Sol low PDO configuration, September 24, 2026
 
+Latest result: [completed eval and interviews](eval-report.md). [Intake-routing analysis](entrypoint-routing.md). The configuration snapshot below predates the completed restart and eval.
+
 The user requested Sol low PDOs, then clarified that this must affect all new work items. This is a configuration rollout, not an eval pass.
 
 Published PDO archetype defaults and model preference changed from GPT-5.6 Luna medium to GPT-5.6 Sol low through the supported identity CLI. Identity revision ea24101a18ad3dbf2ce76589f16f1904a1a7acfd changes only four configuration fields in archetypes/pdo.toml. No prose guidance changed.

@@ -1,0 +1,26 @@
+[
+  {
+    "args": [
+      "retire",
+      "--session",
+      "agent:main:clawline:mike:main s_2541a786",
+      "--key",
+      "engram-sol-low-pdo-retire-20260924"
+    ],
+    "exit": 0,
+    "stdout": "{\n  \"deferred\": [],\n  \"deletedSessionKey\": \"agent:main:clawline:mike:main s_2541a786\",\n  \"retiredSessionKeys\": [\n    \"agent:main:clawline:mike:main s_2541a786\"\n  ]\n}\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "retire",
+      "--session",
+      "agent:main:clawline:mike:main s_51682b82",
+      "--key",
+      "engram-sol-low-po-retire-20260924"
+    ],
+    "exit": 0,
+    "stdout": "{\n  \"deferred\": [],\n  \"deletedSessionKey\": \"agent:main:clawline:mike:main s_51682b82\",\n  \"retiredSessionKeys\": [\n    \"agent:main:clawline:mike:main s_51682b82\"\n  ]\n}\n",
+    "stderr": ""
+  }
+]

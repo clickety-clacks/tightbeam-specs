@@ -18,13 +18,17 @@
     "credential boundaries"
   ],
   "prepared_at": "2026-09-24T17:54:37.940550+00:00",
-  "status": "prepared; awaiting sudo password for authorized restart; not dispatched",
+  "status": "finished; delegation succeeded, content accuracy and efficiency failed",
   "runtime_dependency": {
-    "running_build": "0.1.8+1342-ae320ab",
+    "running_build": "0.1.8+1343-b2add64",
     "installed_build": "0.1.8+1343-b2add64",
-    "managed_claude_version": "2.1.274",
+    "managed_claude_version": "2.1.280",
     "opus55_minimum_claude_version": "2.1.280",
-    "next_step": "User-authorized shared gateway restart to activate the installed release, then verify managed adapter and run the fixture.",
-    "authorization": "User explicitly selected Restart and run the eval. Sudo password handoff is staged on Osanwe scratchpad."
-  }
+    "next_step": "Activated and verified; run fresh fixture.",
+    "authorization": "User explicitly selected Restart and run the eval. Sudo password handoff is staged on Osanwe scratchpad.",
+    "activation_verified_at": "2026-09-24T19:22:40.054300+00:00"
+  },
+  "started_at": "2026-09-24T19:22:40.054300+00:00",
+  "dispatched_at": "2026-09-24T19:23:01.914084+00:00",
+  "finished_at": "2026-09-24T19:31:58.370267+00:00"
 }
