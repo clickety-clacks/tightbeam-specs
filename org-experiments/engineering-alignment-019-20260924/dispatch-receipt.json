@@ -1,0 +1,21 @@
+{
+  "closedAt": null,
+  "closedBySession": null,
+  "closedByUser": null,
+  "closingAttestId": null,
+  "effectKind": "coordination",
+  "holderFallback": false,
+  "holderHarness": "codex",
+  "holderKey": "agent:main:clawline:mike:main s_777369c7",
+  "holderProvider": "openai",
+  "holderRole": null,
+  "id": "asg_08f8e362-73f9-45af-aa1c-6f136b063f6b",
+  "openedAt": 1790281907260,
+  "openedBySession": null,
+  "openedByUser": "mike",
+  "outcome": null,
+  "reviewsAssignmentId": null,
+  "state": "open",
+  "subject": "Deliver approved engineering ownership alignment in the live org and 0.1.9",
+  "workItemId": "wi_c13b63c8-b21f-47ce-bfac-61d51de854a4"
+}

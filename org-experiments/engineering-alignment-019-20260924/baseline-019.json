@@ -1,0 +1,74 @@
+{
+  "source_commit": "e28880d6a2980c4ca5a7a983a707f83d504da960",
+  "observed_utc": "2026-09-24T20:35:21.719484+00:00",
+  "files": [
+    {
+      "path": "priv/kungfu/agentic-engineering/manifest.toml",
+      "sha256": "70d5bfb9b0b6eca3d30082b3b376f11d3c4fbaed1674b3ca21ba0a04e52761f3"
+    },
+    {
+      "path": "priv/kungfu/agentic-engineering/capabilities.md",
+      "sha256": "928df9f939282a183032d844b3bcd878e9cbd5eefa143bd51848896fdcd3a297"
+    },
+    {
+      "path": "priv/kungfu/agentic-engineering/archetypes/orchestrator.toml",
+      "sha256": "47058e30946110baa9bc5a7875622d4dc29319e89152763d5a9909f159057b01"
+    },
+    {
+      "path": "priv/kungfu/agentic-engineering/archetypes/product-owner.toml",
+      "sha256": "6881156f2efda243f241812327b620c102a32424428e81cf31985a87a6179364"
+    },
+    {
+      "path": "priv/kungfu/agentic-engineering/guidance/orchestrator.md",
+      "sha256": "e277e8dbf9d29b1c8d05a2fb6e7ef99b26989a41650e1630b8a8595d6cc58015"
+    },
+    {
+      "path": "priv/kungfu/agentic-engineering/guidance/product-owner.md",
+      "sha256": "9bb964e980435a7d01fdb612b90273d10a84c2eef886aa40162666dedf366944"
+    },
+    {
+      "path": "priv/kungfu/agentic-engineering/guidance/team-planner.md",
+      "sha256": "27dda769949b5fb0f40691d36947416c5c42256728ec4c7bf78258ef1636fc60"
+    },
+    {
+      "path": "priv/kungfu/agentic-engineering/guidance/guidance-policy-craft.md",
+      "sha256": "6ced727261e2e7bdd8939100180e0801e8a8c36c28d50cb8ad2467c1612f4b32"
+    },
+    {
+      "path": "priv/kungfu/agentic-engineering/guidance/preferred-models.md",
+      "sha256": "a4ddf8385d44f8de440562c48ec55fcccbe368068cd64b7e3d8a923ef4c2b9d6"
+    },
+    {
+      "path": "priv/kungfu/agentic-engineering/preferred-models.md",
+      "sha256": "de116b0340e0952e8047d7ffe02792727fb6f469463ae89e35616ecdbe0eaaff"
+    },
+    {
+      "path": "priv/skills/tightbeam-guidance-authoring/SKILL.md",
+      "sha256": "733c85106225e7e1d72917e6c1231ff07be92c2694dbd203f3ef9d2203cf3f57"
+    },
+    {
+      "path": "priv/skills/tightbeam-dispatching/SKILL.md",
+      "sha256": "4bd8217e251d2ece945cba82e4caa9cbfa0f58855e08c5e9ff6496dfe585a9dc"
+    },
+    {
+      "path": "priv/skills/tightbeam-cli/SKILL.md",
+      "sha256": "04b33e44c321ae2fa28f99b952f260eb3f11656e579ac67ba0cb2183cf2813d1"
+    },
+    {
+      "path": "priv/guidance/operating-manual.md",
+      "sha256": "f8ba7fe39867d288f98a7b6d9b792d384117e2c85a2a3c40601e2e434adfef95"
+    },
+    {
+      "path": "lib/tightbeam/session_po_associations.ex",
+      "sha256": "445c596de1a12849ac09ff52cb7470412da8e97a477e813b31751e307b6ec719"
+    },
+    {
+      "path": "ops/engineering-kungfu/gibson-018/README.md",
+      "sha256": "f678448f9724cd6347aa278accdb5d91123068d59751baeef9e0f8c988e3d266"
+    },
+    {
+      "path": "ops/engineering-kungfu/gibson-018/overlay/guidance/operating-manual.md",
+      "sha256": "ce60694e698bcb14477c084e113051bc176b4ce328aa115ba1104b75b0907405"
+    }
+  ]
+}
