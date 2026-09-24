@@ -1,0 +1,43 @@
+[
+  {
+    "action": "retire",
+    "session": "s_d6aa6418",
+    "result": {
+      "deferred": [],
+      "deletedSessionKey": "agent:main:clawline:mike:main s_d6aa6418",
+      "retiredSessionKeys": [
+        "agent:main:clawline:mike:main s_d6aa6418"
+      ]
+    }
+  },
+  {
+    "action": "retire",
+    "session": "s_54599a2f",
+    "result": {
+      "deferred": [],
+      "deletedSessionKey": "agent:main:clawline:mike:main s_54599a2f",
+      "retiredSessionKeys": [
+        "agent:main:clawline:mike:main s_54599a2f"
+      ]
+    }
+  },
+  {
+    "action": "fail-fixture",
+    "result": {
+      "ok": true,
+      "workItem": {
+        "createdAt": 1790237458095,
+        "createdBySession": null,
+        "createdByUser": "mike",
+        "failReason": "Eval failed: PDO directly authored deliverable and attempted completion without PO consultation; topology completion rail correctly refused. Same active PDO interviewed before fixture cleanup. Evidence retained in org-experiments/pdo-role-split-20260924/rerun-2. No product work authorized by this fixture.",
+        "id": "wi_defdb34e-8ca6-4a0d-a338-d006768a3dcd",
+        "isBug": false,
+        "ownerUserId": "mike",
+        "specRefName": null,
+        "specRefSha256": null,
+        "state": "failed",
+        "title": "PDO role split rerun 2: bounded Engram correction note"
+      }
+    }
+  }
+]

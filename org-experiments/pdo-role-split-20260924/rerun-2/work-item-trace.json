@@ -1,0 +1,209 @@
+{
+  "assignments": [
+    {
+      "files": [],
+      "holderKey": "agent:main:clawline:mike:main s_d6aa6418",
+      "id": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "openerRef": "user:mike",
+      "reviewsAssignmentId": null,
+      "state": "closed"
+    }
+  ],
+  "timeline": [
+    {
+      "assignmentId": null,
+      "at": 1790237458096,
+      "dueAt": 1790323858096,
+      "id": "w_e9f6ecd0-9e37-4380-8212-4b08bb6d0ba7",
+      "type": "wake_scheduled"
+    },
+    {
+      "actionNeeded": true,
+      "assignmentId": null,
+      "at": 1790237474786,
+      "causalSourceId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "causalSourceKind": "assignment_transition",
+      "dispositionId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "dispositionKind": "assignment_transition",
+      "id": "w_e9f6ecd0-9e37-4380-8212-4b08bb6d0ba7",
+      "livenessTriggerId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173#1",
+      "livenessTriggerKind": "supervision_entitlement",
+      "outcomeKind": "disposition",
+      "primaryWorkId": "wi_defdb34e-8ca6-4a0d-a338-d006768a3dcd",
+      "primaryWorkKind": "work_item",
+      "provenanceStatus": "proven",
+      "reason": null,
+      "reasonKind": "routing_bracket_satisfied",
+      "replacementWakeId": null,
+      "requesterId": "tightbeam:work-items",
+      "requesterKind": "process",
+      "schedulingOrigin": "process:tightbeam",
+      "seqTiebreak": 189069,
+      "type": "wake_canceled",
+      "workImpactKind": "linked_work_open"
+    },
+    {
+      "assignmentId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "at": 1790237474787,
+      "evidence": null,
+      "id": "gen:asg_427c7064-7ac8-4d44-b2c5-76a516d51173:1",
+      "state": "canceled",
+      "type": "effort_generation"
+    },
+    {
+      "assignmentId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "at": 1790237474788,
+      "context": null,
+      "effort": "medium",
+      "harness": "codex",
+      "id": 145137,
+      "jobRef": "wi_defdb34e-8ca6-4a0d-a338-d006768a3dcd",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_start"
+    },
+    {
+      "assignmentId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "at": 1790237474788,
+      "dueAt": 1790238374787,
+      "id": "w_6649cccf-a126-452b-ade1-bae810058f69",
+      "type": "wake_scheduled"
+    },
+    {
+      "assignmentId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "at": 1790238080785,
+      "commitRefs": null,
+      "id": "att_11e99b73-94d8-4eff-846c-3eee04368e44",
+      "kind": "progress",
+      "type": "attest",
+      "verdict": null
+    },
+    {
+      "assignmentId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "at": 1790238087311,
+      "context": null,
+      "effort": "medium",
+      "harness": "codex",
+      "id": 145137,
+      "jobRef": "wi_defdb34e-8ca6-4a0d-a338-d006768a3dcd",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_end"
+    },
+    {
+      "assignmentId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "at": 1790238087338,
+      "dueAt": 1790238087338,
+      "id": "w_e90fdf59-41d4-4964-b21d-ea9ba504d701",
+      "type": "wake_scheduled"
+    },
+    {
+      "assignmentId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "at": 1790238087339,
+      "detail": {
+        "tier": 1
+      },
+      "id": "ce:21679",
+      "jobRef": "wi_defdb34e-8ca6-4a0d-a338-d006768a3dcd",
+      "kind": "prod_fired",
+      "seqTiebreak": 21679,
+      "sessionKey": "agent:main:clawline:mike:main s_d6aa6418",
+      "type": "causal_event"
+    },
+    {
+      "assignmentId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "at": 1790238088108,
+      "context": null,
+      "effort": "medium",
+      "harness": "codex",
+      "id": 145138,
+      "jobRef": "wi_defdb34e-8ca6-4a0d-a338-d006768a3dcd",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_start"
+    },
+    {
+      "assignmentId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "at": 1790238088110,
+      "firedBy": null,
+      "id": "w_e90fdf59-41d4-4964-b21d-ea9ba504d701",
+      "matchedFactAt": null,
+      "type": "wake_fired"
+    },
+    {
+      "assignmentId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "at": 1790238098476,
+      "commitRefs": null,
+      "id": "att_f198a5ae-794d-46d0-8931-fec2e04522e4",
+      "kind": "surrender",
+      "type": "attest",
+      "verdict": null
+    },
+    {
+      "assignmentId": null,
+      "at": 1790238098481,
+      "dueAt": 1790238098481,
+      "id": "w_d0feb942-6239-46ad-a0bb-eed6d7e17b34",
+      "type": "wake_scheduled"
+    },
+    {
+      "actionNeeded": true,
+      "assignmentId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "at": 1790238098481,
+      "causalSourceId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "causalSourceKind": "assignment_transition",
+      "dispositionId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "dispositionKind": "assignment_transition",
+      "id": "w_6649cccf-a126-452b-ade1-bae810058f69",
+      "livenessTriggerId": "wi_defdb34e-8ca6-4a0d-a338-d006768a3dcd",
+      "livenessTriggerKind": "routing_bracket",
+      "outcomeKind": "disposition",
+      "primaryWorkId": "wi_defdb34e-8ca6-4a0d-a338-d006768a3dcd",
+      "primaryWorkKind": "work_item",
+      "provenanceStatus": "proven",
+      "reason": null,
+      "reasonKind": "obligation_disposed",
+      "replacementWakeId": null,
+      "requesterId": "tightbeam:assignments",
+      "requesterKind": "process",
+      "schedulingOrigin": "process:tightbeam",
+      "seqTiebreak": 189071,
+      "type": "wake_canceled",
+      "workImpactKind": "linked_work_open"
+    },
+    {
+      "assignmentId": null,
+      "at": 1790238099147,
+      "firedBy": null,
+      "id": "w_d0feb942-6239-46ad-a0bb-eed6d7e17b34",
+      "matchedFactAt": null,
+      "type": "wake_fired"
+    },
+    {
+      "assignmentId": null,
+      "at": 1790238099157,
+      "dueAt": 1790324499157,
+      "id": "w_ec903d2d-be8d-4451-b827-522a86963cad",
+      "type": "wake_scheduled"
+    },
+    {
+      "assignmentId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "at": 1790238129222,
+      "context": null,
+      "effort": "medium",
+      "harness": "codex",
+      "id": 145138,
+      "jobRef": "wi_defdb34e-8ca6-4a0d-a338-d006768a3dcd",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_end"
+    }
+  ],
+  "workItem": {
+    "failReason": null,
+    "id": "wi_defdb34e-8ca6-4a0d-a338-d006768a3dcd",
+    "ownerUserId": "mike",
+    "state": "open",
+    "title": "PDO role split rerun 2: bounded Engram correction note"
+  }
+}

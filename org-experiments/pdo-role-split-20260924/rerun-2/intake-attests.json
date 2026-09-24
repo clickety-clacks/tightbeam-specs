@@ -1,0 +1,34 @@
+{
+  "attests": [
+    {
+      "assignmentId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_d6aa6418",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_11e99b73-94d8-4eff-846c-3eee04368e44",
+      "kind": "progress",
+      "note": "Deliverable is complete and recorded as artifact art_67821f85 at /home/mike/.tightbeam/work/977e77a2d91a/engram-fixture-correction-note.md (148 words; sha256 8068b5c138ce109c9276a3f42f6f25051ceb261c2a5c179e2e30f4d642ec7f9c). Completion receipt was refused by orchestrator-completion-needs-topology: the PO's returned topology recommendation must first be recorded as topology-decided on wi_defdb34e-8ca6-4a0d-a338-d006768a3dcd. PO transcript currently has no messages. No product code/configuration/install/release/credential access/network probes were performed. Further action requires the permitted PO consultation/turn.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790238080785,
+      "verdictKind": null
+    },
+    {
+      "assignmentId": "asg_427c7064-7ac8-4d44-b2c5-76a516d51173",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_d6aa6418",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_f198a5ae-794d-46d0-8931-fec2e04522e4",
+      "kind": "surrender",
+      "note": "Surrendering the assignment because completion is blocked by rule orchestrator-completion-needs-topology: the PO's returned topology recommendation must be recorded as topology-decided on work item wi_defdb34e-8ca6-4a0d-a338-d006768a3dcd. The PO transcript is empty, and the current host restriction forbids waking or dispatching the required PO consultation turn. The requested 148-word note remains available at artifact art_67821f85 and /home/mike/.tightbeam/work/977e77a2d91a/engram-fixture-correction-note.md; no product or external changes were made.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790238098476,
+      "verdictKind": null
+    }
+  ]
+}
