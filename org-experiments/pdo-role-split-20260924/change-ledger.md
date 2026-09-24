@@ -57,3 +57,11 @@ Mike requested the same eval with Luna at max. Only PDO effort changed from medi
 The PDO consulted the PO before staffing without external correction, obtained a same-item topology decision, and did not author the note. Delivery still failed. The PO and PDO treated conditional no-turn guidance as an active restriction without a current ruling; both acknowledged the evidentiary gap in same-session interviews. No worker ran and no note exists. The PDO also opened consultation with the default code effect, leading to an avoidable review refusal.
 
 The consultation-order result improved in this sample; delegation and completed delivery remain unproven. This is not a general model comparison or a successful .9 fix. Both fixture sessions are retired with no remaining open obligations, pending wakes or active turns. See [luna-max/report.md](luna-max/report.md) and both preserved interview answers.
+
+## Generic user references in authored guidance
+
+The user requested: unless the authoring prompt names the user, guidance must use "the user" and never the user's personal name. Added two lines under the concise-writing rule in the current shared authoring home, `guidance/guidance-policy-craft.md`:
+
+> Unless the authoring prompt explicitly names the user, never use their name in guidance. Write "the user".
+
+Published through `identity edit` at revision `3457325895f22be680db3a1aa3c3487b091b2296`. Both guidance-writer and guidance-reviewer include this home. The older `tightbeam-guidance-authoring` skill is release-owned; its installed bytes were not edited. This is an active org authoring-rule update and a portable rule to retain in a later .9 port, not a release or blanket refresh of existing sessions. Verified the exact two-line diff, clean identity worktree and both role includes. No behavior eval was warranted for this narrow text addition. The separate no-turn paragraph was not changed by this request.
