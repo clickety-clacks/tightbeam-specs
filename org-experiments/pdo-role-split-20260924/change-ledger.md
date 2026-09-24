@@ -75,3 +75,7 @@ Published identity 50ca792ad8a7fc20415d04ad9c1b0637ad838894 removes that restric
 ## Opus 5.5 high PO rerun
 
 The user requested a fresh run with Opus5.5 high as PO and Luna max retained as PDO. Corrected guidance69bdb209 reached the PDO. It consulted before staffing, used coordination, and did not produce. The requested PO could not execute: the managed Claude2.1.274 was rejected, requiring2.1.280+. Running gateway1342 predates the installed1343 adapter correction. No topology, worker or note was produced; this is an environment-blocked attempt, not a PO behavior result. The PDO was interviewed and admitted avoidable command discovery and an inconsistent fallback proposal. Both fixture owners were retired after evidence capture with no open fixture work, wakes or turns. No guidance or runtime was changed. See [opus55-high/report.md](opus55-high/report.md). The full requested eval still needs activation of the installed release and a fresh rerun.
+
+## Sol low PDOs for new work
+
+The user broadened the trial model choice to all new work items. Published PDO default and preference are now gpt-5.6-sol low at identity ea24101. Both live PDOs, Engram and Tightbeam, were tuned to that configuration with engine context preserved. No role migration or prose-guidance change occurred. Updating three contradictory model-selection references awaits explicit guidance permission. The fresh Opus PO eval still awaits authorization to activate installed build1343; no eval success is claimed. See [sol-low/report.md](sol-low/report.md) and the before/after settings.

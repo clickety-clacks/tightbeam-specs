@@ -1,0 +1,22 @@
+[
+  {
+    "sessionKey": "agent:main:clawline:mike:main s_417a6fb8",
+    "displayName": "PDO: Engram",
+    "archetype": "orchestrator",
+    "model": "gpt-5.6-luna",
+    "thinkingLevel": "medium",
+    "harness": "codex",
+    "state": "active",
+    "identityRevision": "30b55757d466f189bb4cc701d243fde2bd181146"
+  },
+  {
+    "sessionKey": "agent:main:clawline:mike:main s_777369c7",
+    "displayName": "PDO: Tightbeam",
+    "archetype": "orchestrator",
+    "model": "gpt-5.6-sol",
+    "thinkingLevel": "high",
+    "harness": "codex",
+    "state": "active",
+    "identityRevision": "30a9ae8adc5ad96d15c9ad94be26a9898f5fa352"
+  }
+]

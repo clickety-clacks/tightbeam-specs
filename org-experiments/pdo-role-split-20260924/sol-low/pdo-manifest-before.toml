@@ -1,0 +1,35 @@
+name = "pdo"
+where = ["gibson", "racter"]
+skills = ["human-communication", "tightbeam-atc"]
+
+[defaults]
+harness = "codex"
+model = "gpt-5.6-luna"
+effort = "medium"
+
+[[model_preferences]]
+model = "gpt-5.6-luna"
+effort = "medium"
+
+[guidance]
+text = """
+#include "golden-rule.md"
+
+#include "scope-and-architecture.md"
+
+#include "wisdom-core.md"
+
+#include "engineering-tenets.md"
+
+#include "preferred-models.md"
+
+#include "archetype-roster.md"
+
+#include "pdo.md"
+
+#include "no-testing-on-gibson.md"
+
+#include "specs-home.md"
+
+#include "specs-interim-durability.md"
+"""
