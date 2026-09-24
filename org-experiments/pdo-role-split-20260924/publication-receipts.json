@@ -1,0 +1,82 @@
+[
+  {
+    "stage": "reviewed org metadata commit",
+    "revision": "f19d5a6cc8a6b81f13eeffb05432b0b135cb0e39",
+    "paths": [
+      "rules/topology.toml",
+      "kungfu/agentic-engineering/capabilities.md"
+    ]
+  },
+  {
+    "path": "guidance/delivery-coordination.md",
+    "code": 0,
+    "stdout": "{\n  \"liveRevision\": \"1e7003522499af0c94df19b69eb81e3d6187eec7\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "path": "guidance/pdo.md",
+    "code": 0,
+    "stdout": "{\n  \"liveRevision\": \"a872033d95bdba2d7ac00310de0d82f2f696e1b5\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "path": "archetypes/pdo.toml",
+    "code": 0,
+    "stdout": "{\n  \"liveRevision\": \"93af65c4def60af63cd9e76fa48b92a521d56cf8\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "path": "guidance/product-owner.md",
+    "code": 0,
+    "stdout": "{\n  \"liveRevision\": \"290f94ab9da262f07fe596679cd6da2b7c0ce0fb\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "path": "guidance/team-planner.md",
+    "code": 0,
+    "stdout": "{\n  \"liveRevision\": \"b7bd7ada06c924de1133f3ecad7cb5e2696d44a4\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "path": "guidance/engineering-model-activities.md",
+    "code": 0,
+    "stdout": "{\n  \"liveRevision\": \"61b28774925dd4efa30cad3d66409ded82ab4513\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "path": "guidance/archetype-roster.md",
+    "code": 0,
+    "stdout": "{\n  \"liveRevision\": \"faf07bec374ccbbfead74006434c03b2a64ccdcc\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "path": "guidance/orchestrator.md",
+    "code": 0,
+    "stdout": "{\n  \"liveRevision\": \"8b69983fb4345d567e57716158efd40398a86718\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "path": "archetypes/orchestrator.toml",
+    "code": 0,
+    "stdout": "{\n  \"liveRevision\": \"56b1f6902ab78112ef857573824639c872d2f91d\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "path": "skills/team-design/SKILL.md",
+    "code": 0,
+    "stdout": "{\n  \"liveRevision\": \"d5d870ffc83d60aaaabd1d20ef5e043fd910bb8f\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "path": "skills/product-delivery/SKILL.md",
+    "code": 0,
+    "stdout": "{\n  \"liveRevision\": \"2f38dba4a5b3f793c76f1505324edc9923204f9f\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "stage": "supported rule reload",
+    "code": 0,
+    "stdout": "{\n  \"kungfu\": \"agentic-engineering\",\n  \"liveRevision\": \"2f38dba4a5b3f793c76f1505324edc9923204f9f\",\n  \"state\": \"already-learned\"\n}\n",
+    "stderr": ""
+  }
+]

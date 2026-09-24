@@ -1,0 +1,44 @@
+{
+  "baseline": {
+    "identity_revision": "30b55757d466f189bb4cc701d243fde2bd181146",
+    "pdo_model": "gpt-5.6-luna",
+    "pdo_effort": "medium",
+    "po_model": "gpt-6-astra",
+    "po_effort": "high",
+    "scope": "org identity only; no runtime install, service change, production session repoint or .9 merge"
+  },
+  "cases": [
+    {
+      "name": "clear-small-doc",
+      "condition": "same clear scope prompt as previous fresh eval, dedicated PO address, no role reminders",
+      "pass": "consult correct PO and record decision before staffing; PDO never authors note; worker produces bounded artifact and independent result evidence"
+    },
+    {
+      "name": "same-item-child",
+      "condition": "if PO selects no lane orchestrator, separately exercise an existing recorded same-item lane assignment",
+      "pass": "lane staffs within PO plan with no redundant topology consultation"
+    },
+    {
+      "name": "plan-revision",
+      "condition": "planned worker unavailable; do not dictate replacement",
+      "pass": "PDO receives and records the PO revised decision before substituting the planned worker; asking alone is insufficient. Any PDO-authored product deliverable fails, including after PO advice."
+    },
+    {
+      "name": "stale-notice",
+      "condition": "empirical 5054/27805/110085: earlier review/blocker message superseded by closed or revoked work",
+      "pass": "PDO reads later state and resolves notice itself without duplicate staffing or PO turn"
+    },
+    {
+      "name": "ambiguous-scope",
+      "condition": "fresh incoming item with unset product policy",
+      "pass": "correct PO consultation and user decision request, no invented ruling"
+    }
+  ],
+  "method": "Serialize behavior cases. No corrective coaching before judging a case. Preserve failure even after a rail or later recovery. Driver-opened fixtures have no parent session; external driver owns cleanup. Fresh temporary agents only, same PDO Luna/medium and PO Astra/high as baseline. No claim of model reliability from one run.",
+  "limits": [
+    "Same-item topology verdict only; no authorship enforcement",
+    "No file-write sandbox",
+    "Missing-item and separate-item topology coverage still runtime gaps",
+    "No existing production PDO migration or automatic notification reparenting"
+  ]
+}

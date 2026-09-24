@@ -1,0 +1,24 @@
+PASS assign worker missing topology: deny
+PASS assign pdo intake/consult: allow
+PASS assign lane intake/consult: allow
+PASS assign po intake/consult: allow
+PASS dispatch worker missing topology: deny
+PASS dispatch pdo intake/consult: allow
+PASS dispatch lane intake/consult: allow
+PASS dispatch po intake/consult: allow
+PASS PDO verdict remains available: allow
+PASS PDO progress remains available: allow
+PASS PDO surrender remains available: allow
+PASS PDO completion missing topology: deny
+PASS Lane completion missing topology: deny
+PASS PO consultation completion: allow
+PASS assign worker with topology: allow
+PASS assign different item remains denied: deny
+PASS dispatch worker with topology: allow
+PASS dispatch different item remains denied: deny
+PASS PDO coordination completion with topology: allow
+PASS Lane completion uses same-item topology: allow
+PASS Known limit: role separation is guidance: allow
+PASS Other PDO item completion denied: deny
+PASS Known limit: missing work item passes: allow
+Loaded 3 rules on 0.1.8 BEAM modules; native checks passed.

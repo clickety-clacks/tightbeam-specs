@@ -1,0 +1,8 @@
+{
+  "identity_revision": "30b55757d466f189bb4cc701d243fde2bd181146",
+  "pdo_model": "gpt-5.6-luna",
+  "pdo_effort": "medium",
+  "po_model": "gpt-6-astra",
+  "po_effort": "high",
+  "scope": "org identity only; no runtime install, service change, production session repoint or .9 merge"
+}
