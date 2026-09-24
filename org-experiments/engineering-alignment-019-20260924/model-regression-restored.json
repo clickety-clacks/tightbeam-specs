@@ -1,0 +1,16 @@
+{
+  "observedAt": "2026-09-24T21:42:32.906180+00:00",
+  "head": "19eb98955d6fa2c86056e7fb6bb97c26fbd2138f",
+  "tree": "21581becff1f5a3b042a6d04a6055f761af8a03d",
+  "status": "",
+  "source_pdo": {
+    "harness": "codex",
+    "model": "gpt-6-sol",
+    "effort": "low"
+  },
+  "live_candidate_pdo": {
+    "harness": "codex",
+    "model": "gpt-6-sol",
+    "effort": "low"
+  }
+}

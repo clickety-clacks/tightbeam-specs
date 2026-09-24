@@ -105,3 +105,9 @@ The second inspection found an actual committed regression: clean source HEAD `0
 The runtime owner independently rejected the stale model change and did not pass it to the coder. PDO recorded supersession in att_e793cd59. The author must restore all affected model/default/table/evidence targets, freeze a new exact subject and obtain current validation/review. The final independent consistency review must retain this negative evidence. Queued historical messages also reintroduced old schema/CLI ordering and missing-fixture claims; current accepted ownership and the later PO scope decision still govern.
 
 The Lavish browser disconnected while the report session remains resumable. Its artifact has been updated in place; no window was reopened or session ended without direction.
+
+## Model regression restored
+
+At 2:42 PM PT, independent readback found source commit `19eb98955d6fa2c86056e7fb6bb97c26fbd2138f`, tree `21581becff1f5a3b042a6d04a6055f761af8a03d`, clean and byte-equivalent to the last good d5fdea43 source tree. The bad PDO-only5.6 commit was reverted. Source and live-candidate PDO defaults both again read gpt-6-sol/low, and a bounded search found no active PDO-only5.6 alias instruction. Full test/review/publication acceptance remains pending.
+
+The runtime owner reports its first22 focused ownership/notice tests and targeted CLI carrier tests pass on the current uncommitted scope implementation. Its full required acceptance, immutable commit and independent review remain unproven. Guidance test/composition support is being prepared separately by the same existing coder; the wrong0e4 source was excluded.
