@@ -1,0 +1,16 @@
+[
+  {
+    "at": "2026-09-24T08:40:10.101276+00:00",
+    "fixture": {
+      "seq": 145145,
+      "status": "running",
+      "createdAt": 1790239008484,
+      "startedAt": 1790239008509,
+      "requestRef": null,
+      "error": null
+    },
+    "shared_adapter_pid": 1041827,
+    "adapter_io": "rchar: 681419810\nwchar: 56220978\nsyscr: 10714\nsyscw: 53820\nread_bytes: 0\nwrite_bytes: 4096\ncancelled_write_bytes: 0\n",
+    "other_running_codex_turns_with_no_request": 1
+  }
+]

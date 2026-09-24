@@ -1,0 +1,43 @@
+[
+  {
+    "action": "retire",
+    "session": "s_faf03ff8",
+    "result": {
+      "deferred": [],
+      "deletedSessionKey": "agent:main:clawline:mike:main s_faf03ff8",
+      "retiredSessionKeys": [
+        "agent:main:clawline:mike:main s_faf03ff8"
+      ]
+    }
+  },
+  {
+    "action": "retire",
+    "session": "s_92a62953",
+    "result": {
+      "deferred": [],
+      "deletedSessionKey": "agent:main:clawline:mike:main s_92a62953",
+      "retiredSessionKeys": [
+        "agent:main:clawline:mike:main s_92a62953"
+      ]
+    }
+  },
+  {
+    "action": "fail-fixture",
+    "result": {
+      "ok": true,
+      "workItem": {
+        "createdAt": 1790238992035,
+        "createdBySession": null,
+        "createdByUser": "mike",
+        "failReason": "Luna max eval: PO consulted before production and topology recorded; PDO did not produce. Overall delivery failed: no worker/note, unsupported active no-turn assumption admitted by PDO and PO in same-session interviews. Consultation misclassified as code. Temporary owners interviewed then retired; evidence under org-experiments/pdo-role-split-20260924/luna-max.",
+        "id": "wi_c3965221-9150-4a7f-a128-7220d07eac74",
+        "isBug": false,
+        "ownerUserId": "mike",
+        "specRefName": null,
+        "specRefSha256": null,
+        "state": "failed",
+        "title": "PDO Luna max eval: bounded Engram correction note"
+      }
+    }
+  }
+]

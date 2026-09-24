@@ -1,0 +1,305 @@
+{
+  "assignments": [
+    {
+      "files": [],
+      "holderKey": "agent:main:clawline:mike:main s_faf03ff8",
+      "id": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "openerRef": "user:mike",
+      "reviewsAssignmentId": null,
+      "state": "closed"
+    },
+    {
+      "files": [],
+      "holderKey": "agent:main:clawline:mike:main s_92a62953",
+      "id": "asg_c5fb9aea-a8f8-4249-b150-d634236170dc",
+      "openerRef": "session:agent:main:clawline:mike:main s_faf03ff8",
+      "reviewsAssignmentId": null,
+      "state": "closed"
+    }
+  ],
+  "timeline": [
+    {
+      "assignmentId": null,
+      "at": 1790238992035,
+      "dueAt": 1790325392035,
+      "id": "w_dedf1526-d852-4ff2-9120-ddeffbc2fa51",
+      "type": "wake_scheduled"
+    },
+    {
+      "actionNeeded": true,
+      "assignmentId": null,
+      "at": 1790239008483,
+      "causalSourceId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "causalSourceKind": "assignment_transition",
+      "dispositionId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "dispositionKind": "assignment_transition",
+      "id": "w_dedf1526-d852-4ff2-9120-ddeffbc2fa51",
+      "livenessTriggerId": "asg_a99f43ef-220e-4d56-b437-13a495412816#1",
+      "livenessTriggerKind": "supervision_entitlement",
+      "outcomeKind": "disposition",
+      "primaryWorkId": "wi_c3965221-9150-4a7f-a128-7220d07eac74",
+      "primaryWorkKind": "work_item",
+      "provenanceStatus": "proven",
+      "reason": null,
+      "reasonKind": "routing_bracket_satisfied",
+      "replacementWakeId": null,
+      "requesterId": "tightbeam:work-items",
+      "requesterKind": "process",
+      "schedulingOrigin": "process:tightbeam",
+      "seqTiebreak": 189082,
+      "type": "wake_canceled",
+      "workImpactKind": "linked_work_open"
+    },
+    {
+      "assignmentId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "at": 1790239008483,
+      "evidence": null,
+      "id": "gen:asg_a99f43ef-220e-4d56-b437-13a495412816:1",
+      "state": "canceled",
+      "type": "effort_generation"
+    },
+    {
+      "assignmentId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "at": 1790239008484,
+      "context": null,
+      "effort": "max",
+      "harness": "codex",
+      "id": 145145,
+      "jobRef": "wi_c3965221-9150-4a7f-a128-7220d07eac74",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_start"
+    },
+    {
+      "assignmentId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "at": 1790239008484,
+      "dueAt": 1790239908483,
+      "id": "w_fe4f08a4-a3f3-43a9-986b-90960cbf4001",
+      "type": "wake_scheduled"
+    },
+    {
+      "assignmentId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "at": 1790239428038,
+      "commitRefs": null,
+      "id": "att_2353ec0e-20eb-4be2-befc-f13a91d2a4fb",
+      "kind": "progress",
+      "type": "attest",
+      "verdict": null
+    },
+    {
+      "assignmentId": "asg_c5fb9aea-a8f8-4249-b150-d634236170dc",
+      "at": 1790239514175,
+      "commitRefs": null,
+      "id": "att_9e4e5717-2d37-422f-82cb-70146f651c0b",
+      "kind": "verdict",
+      "type": "attest",
+      "verdict": "topology-decided"
+    },
+    {
+      "assignmentId": "asg_c5fb9aea-a8f8-4249-b150-d634236170dc",
+      "at": 1790239529369,
+      "commitRefs": null,
+      "id": "att_856baa85-5cab-43e0-bac8-ee217aa46a91",
+      "kind": "progress",
+      "type": "attest",
+      "verdict": null
+    },
+    {
+      "assignmentId": "asg_c5fb9aea-a8f8-4249-b150-d634236170dc",
+      "at": 1790239538382,
+      "dueAt": 1790239538382,
+      "id": "w_bf9d89c7-7fcd-4829-ba17-a68efa40c7df",
+      "type": "wake_scheduled"
+    },
+    {
+      "assignmentId": "asg_c5fb9aea-a8f8-4249-b150-d634236170dc",
+      "at": 1790239538384,
+      "detail": {
+        "tier": 1
+      },
+      "id": "ce:21682",
+      "jobRef": "wi_c3965221-9150-4a7f-a128-7220d07eac74",
+      "kind": "prod_fired",
+      "seqTiebreak": 21682,
+      "sessionKey": "agent:main:clawline:mike:main s_92a62953",
+      "type": "causal_event"
+    },
+    {
+      "assignmentId": "asg_c5fb9aea-a8f8-4249-b150-d634236170dc",
+      "at": 1790239539017,
+      "context": null,
+      "effort": "high",
+      "harness": "codex",
+      "id": 145147,
+      "jobRef": "wi_c3965221-9150-4a7f-a128-7220d07eac74",
+      "model": "gpt-6-astra",
+      "status": "delivered",
+      "type": "turn_start"
+    },
+    {
+      "assignmentId": "asg_c5fb9aea-a8f8-4249-b150-d634236170dc",
+      "at": 1790239539018,
+      "firedBy": null,
+      "id": "w_bf9d89c7-7fcd-4829-ba17-a68efa40c7df",
+      "matchedFactAt": null,
+      "type": "wake_fired"
+    },
+    {
+      "assignmentId": "asg_c5fb9aea-a8f8-4249-b150-d634236170dc",
+      "at": 1790239560888,
+      "commitRefs": null,
+      "id": "att_88efe949-c2d4-4996-8c1f-2adec6e4e666",
+      "kind": "surrender",
+      "type": "attest",
+      "verdict": null
+    },
+    {
+      "assignmentId": "asg_c5fb9aea-a8f8-4249-b150-d634236170dc",
+      "at": 1790239565221,
+      "context": null,
+      "effort": "high",
+      "harness": "codex",
+      "id": 145147,
+      "jobRef": "wi_c3965221-9150-4a7f-a128-7220d07eac74",
+      "model": "gpt-6-astra",
+      "status": "delivered",
+      "type": "turn_end"
+    },
+    {
+      "assignmentId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "at": 1790239582460,
+      "commitRefs": null,
+      "id": "att_9b4491e1-3be7-4d82-a1c5-0e8b5c81918e",
+      "kind": "progress",
+      "type": "attest",
+      "verdict": null
+    },
+    {
+      "assignmentId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "at": 1790239603766,
+      "context": null,
+      "effort": "max",
+      "harness": "codex",
+      "id": 145145,
+      "jobRef": "wi_c3965221-9150-4a7f-a128-7220d07eac74",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_end"
+    },
+    {
+      "assignmentId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "at": 1790239603869,
+      "dueAt": 1790239603869,
+      "id": "w_0b444dbb-913a-4cfe-bfbd-125b610a7dd1",
+      "type": "wake_scheduled"
+    },
+    {
+      "assignmentId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "at": 1790239603872,
+      "detail": {
+        "tier": 1
+      },
+      "id": "ce:21683",
+      "jobRef": "wi_c3965221-9150-4a7f-a128-7220d07eac74",
+      "kind": "prod_fired",
+      "seqTiebreak": 21683,
+      "sessionKey": "agent:main:clawline:mike:main s_faf03ff8",
+      "type": "causal_event"
+    },
+    {
+      "assignmentId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "at": 1790239604286,
+      "context": null,
+      "effort": "max",
+      "harness": "codex",
+      "id": 145148,
+      "jobRef": "wi_c3965221-9150-4a7f-a128-7220d07eac74",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_start"
+    },
+    {
+      "assignmentId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "at": 1790239604288,
+      "firedBy": null,
+      "id": "w_0b444dbb-913a-4cfe-bfbd-125b610a7dd1",
+      "matchedFactAt": null,
+      "type": "wake_fired"
+    },
+    {
+      "assignmentId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "at": 1790239624158,
+      "commitRefs": null,
+      "id": "att_3c1d9111-5f7a-4f4f-8fb4-7d5ab9021e0b",
+      "kind": "surrender",
+      "type": "attest",
+      "verdict": null
+    },
+    {
+      "assignmentId": null,
+      "at": 1790239624170,
+      "dueAt": 1790239624170,
+      "id": "w_da6cb5fe-c381-49cf-931f-f51e09f96666",
+      "type": "wake_scheduled"
+    },
+    {
+      "actionNeeded": true,
+      "assignmentId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "at": 1790239624174,
+      "causalSourceId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "causalSourceKind": "assignment_transition",
+      "dispositionId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "dispositionKind": "assignment_transition",
+      "id": "w_fe4f08a4-a3f3-43a9-986b-90960cbf4001",
+      "livenessTriggerId": "wi_c3965221-9150-4a7f-a128-7220d07eac74",
+      "livenessTriggerKind": "routing_bracket",
+      "outcomeKind": "disposition",
+      "primaryWorkId": "wi_c3965221-9150-4a7f-a128-7220d07eac74",
+      "primaryWorkKind": "work_item",
+      "provenanceStatus": "proven",
+      "reason": null,
+      "reasonKind": "obligation_disposed",
+      "replacementWakeId": null,
+      "requesterId": "tightbeam:assignments",
+      "requesterKind": "process",
+      "schedulingOrigin": "process:tightbeam",
+      "seqTiebreak": 189083,
+      "type": "wake_canceled",
+      "workImpactKind": "linked_work_open"
+    },
+    {
+      "assignmentId": null,
+      "at": 1790239624442,
+      "firedBy": null,
+      "id": "w_da6cb5fe-c381-49cf-931f-f51e09f96666",
+      "matchedFactAt": null,
+      "type": "wake_fired"
+    },
+    {
+      "assignmentId": null,
+      "at": 1790239624445,
+      "dueAt": 1790326024445,
+      "id": "w_6fcf8f29-eced-45cf-a73f-3abafd59b6d6",
+      "type": "wake_scheduled"
+    },
+    {
+      "assignmentId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "at": 1790239630003,
+      "context": null,
+      "effort": "max",
+      "harness": "codex",
+      "id": 145148,
+      "jobRef": "wi_c3965221-9150-4a7f-a128-7220d07eac74",
+      "model": "gpt-5.6-luna",
+      "status": "delivered",
+      "type": "turn_end"
+    }
+  ],
+  "workItem": {
+    "failReason": null,
+    "id": "wi_c3965221-9150-4a7f-a128-7220d07eac74",
+    "ownerUserId": "mike",
+    "state": "open",
+    "title": "PDO Luna max eval: bounded Engram correction note"
+  }
+}

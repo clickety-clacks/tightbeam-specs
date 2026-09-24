@@ -1,0 +1,13 @@
+[
+  {
+    "at": "2026-09-24T08:42:06.998Z",
+    "type": "session_meta",
+    "thread": "01a0d294-4246-7c22-888c-d3aa50634c2c"
+  },
+  {
+    "at": "2026-09-24T08:42:07.777Z",
+    "type": "turn_context",
+    "model": "gpt-5.6-luna",
+    "effort": "max"
+  }
+]

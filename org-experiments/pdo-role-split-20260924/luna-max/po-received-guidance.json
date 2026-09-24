@@ -1,0 +1,72 @@
+{
+  "blocks": [
+    {
+      "at": "2026-09-24T08:43:29.521Z",
+      "characters": 63501,
+      "sha256": "444b72de6a8f33c72a0435ad76d2650f1092413627e17e9f3552e3f4d9d85ca5",
+      "pdo_core": false,
+      "nonproduction": false,
+      "conditional_no_turn": true
+    },
+    {
+      "at": "2026-09-24T08:43:29.522Z",
+      "characters": 2429,
+      "sha256": "47091490938505958b0c22ff42db6fd79b272a2af6923166f4c2cc53c4fe0df4",
+      "pdo_core": false,
+      "nonproduction": false,
+      "conditional_no_turn": false
+    },
+    {
+      "at": "2026-09-24T08:43:29.522Z",
+      "characters": 271,
+      "sha256": "6ded806e3cdbb35599ecaf8742574bc5274908472b1729090010c404c2151e8e",
+      "pdo_core": false,
+      "nonproduction": false,
+      "conditional_no_turn": false
+    }
+  ],
+  "provider_contexts": [
+    {
+      "at": "2026-09-24T08:43:29.530Z",
+      "model": "gpt-6-astra",
+      "effort": "high"
+    },
+    {
+      "at": "2026-09-24T08:45:39.060Z",
+      "model": "gpt-6-astra",
+      "effort": "high"
+    },
+    {
+      "at": "2026-09-24T08:47:20.335Z",
+      "model": "gpt-6-astra",
+      "effort": "high"
+    }
+  ],
+  "error_mentions": [
+    {
+      "at": "2026-09-24T08:44:57.329Z",
+      "error": "invalid_note: note must be 1..2000 non-blank characters",
+      "call_id": "call_HnlmFIVrIOg2HWHsRUfhoIjS"
+    },
+    {
+      "at": "2026-09-24T08:45:21.405Z",
+      "error": "completion-requires-review",
+      "call_id": "call_sRhT928b6p4uMA4OlUFqQ1LI"
+    },
+    {
+      "at": "2026-09-24T08:45:29.429Z",
+      "error": "completion-requires-review",
+      "call_id": "call_I5LGeJOWUTwHu3sDO4ookyLz"
+    },
+    {
+      "at": "2026-09-24T08:45:48.901Z",
+      "error": "completion-requires-review",
+      "call_id": "call_mVcWb0S2o6ucUmeiPNn7KyM4"
+    },
+    {
+      "at": "2026-09-24T08:46:00.944Z",
+      "error": "completion-requires-review",
+      "call_id": "call_R4gtZurmvC0eUyDTDCZ7RWK2"
+    }
+  ]
+}

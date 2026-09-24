@@ -1,0 +1,49 @@
+{
+  "attests": [
+    {
+      "assignmentId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_faf03ff8",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_2353ec0e-20eb-4be2-befc-f13a91d2a4fb",
+      "kind": "progress",
+      "note": "Opened the existing-work-item consultation assignment asg_c5fb9aea-a8f8-4249-b150-d634236170dc for the addressed PO, carrying the <=180-word documentation-only scope, supplied fixture facts, and prohibition on code, live configuration, installation, release, and network/query probes; staffing awaits that plan.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790239428038,
+      "verdictKind": null
+    },
+    {
+      "assignmentId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_faf03ff8",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_9b4491e1-3be7-4d82-a1c5-0e8b5c81918e",
+      "kind": "progress",
+      "note": "PO topology verdict att_9e4e5717-2d37-422f-82cb-70146f651c0b requires one temporary dedicated recon worker (gpt-5.6-luna low on Gibson), with PDO verification and no separate reviewer. Staffing is blocked because the PO explicitly preserved the standing Mike no-turn restriction; this scope does not explicitly lift it, so no worker was spawned or woken and no note was produced. The next authorized action is that exact worker dispatch after Mike explicitly lifts the restriction for this fixture.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790239582460,
+      "verdictKind": null
+    },
+    {
+      "assignmentId": "asg_a99f43ef-220e-4d56-b437-13a495412816",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_faf03ff8",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_3c1d9111-5f7a-4f4f-8fb4-7d5ab9021e0b",
+      "kind": "surrender",
+      "note": "Surrendering this delivery assignment because the promised note cannot be produced under the still-active Mike no-turn restriction: the PO plan requires dispatching one temporary dedicated recon worker, while this session is forbidden to spawn, dispatch, wake, resume, or schedule continuation without an explicit lift. No note, code, live configuration, installation, release, or network/query probe was performed. Resume requires Mike to explicitly lift the restriction for wi_c3965221-9150-4a7f-a128-7220d07eac74 and then reassign the note production.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790239624158,
+      "verdictKind": null
+    }
+  ]
+}

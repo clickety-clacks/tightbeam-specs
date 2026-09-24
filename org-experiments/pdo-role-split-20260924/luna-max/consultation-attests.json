@@ -1,0 +1,49 @@
+{
+  "attests": [
+    {
+      "assignmentId": "asg_c5fb9aea-a8f8-4249-b150-d634236170dc",
+      "byHarness": "codex",
+      "byProvider": "openai",
+      "bySession": "agent:main:clawline:mike:main s_92a62953",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_9e4e5717-2d37-422f-82cb-70146f651c0b",
+      "kind": "verdict",
+      "note": "Fixture plan based on Mike brief s_89648556-423f-4a0a-924a-f2455d4cd65b: one dedicated temporary recon worker, Codex gpt-5.6-luna low on Gibson (catalog supports model/effort), for supplied-fact comparison and correction report. Zero added orchestrators or dedicated reviewers. PDO pdo:engram-luna-max-20260924 retains delivery, staffing, verification, artifact custody and worker retirement; retain its existing Codex gpt-5.6-luna max. PO product-owner:engram-luna-max-20260924 retains intent/topology on existing Codex gpt-6-astra high. No tuning. Note <=180 words TOTAL including headings, corrected text and explanation of each material correction: A SQLite indexes and tapes stay on each source; coordinator asks owners over SSH for local queries and bounded results, without central tape collection. B references identify source AND tape, not central paths or tape ID alone. C unreachable selected sources mean visible incomplete coverage, never evidence of no matches or complete emptiness. PDO checks all facts and word count, preserves worker-authored note in PDO workdir with artifact identity and truthful performed-work summary. Supplied facts suffice; no separate spec/charter, code, live configuration, install, release, tests, network/query probes or production Engram custody. No credential-file reads (.tightbeam-session, gateway.json, auth directories); carry restriction into worker brief. No production-agent reuse. Retire worker after durable delivery and settled obligations; keep PDO/PO for post-run questions, external fixture driver owns their retirement. Simple reversible documentation warrants PDO factual inspection, not dedicated independent review. This consultation is mistakenly effectKind=code; opener owns supported classification/closure repair, never an empty review receipt. Standing no-turn restriction still governs staffing/wakes unless Mike has explicitly lifted it for this scope; this plan grants no exception. No spawn/wake performed.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790239514175,
+      "verdictKind": "topology-decided"
+    },
+    {
+      "assignmentId": "asg_c5fb9aea-a8f8-4249-b150-d634236170dc",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_92a62953",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_856baa85-5cab-43e0-bac8-ee217aa46a91",
+      "kind": "progress",
+      "note": "Topology delivered in att_9e4e5717-2d37-422f-82cb-70146f651c0b. Completion refused by completion-requires-review because this consultation was opened as code. CLI states evidence, review and coordination effects do not require review. Responsible opener pdo:engram-luna-max-20260924 owns supported correction/disposition of this coordination-only card; no synthetic reviewed-clean verdict or extra substantive review is warranted. Consultation output is ready; assignment remains open solely for this classification/closure mismatch. No wake or continuation scheduled under standing no-turn restriction; opener can read these records and this response.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790239529369,
+      "verdictKind": null
+    },
+    {
+      "assignmentId": "asg_c5fb9aea-a8f8-4249-b150-d634236170dc",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_92a62953",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_88efe949-c2d4-4996-8c1f-2adec6e4e666",
+      "kind": "surrender",
+      "note": "Returning this misclassified code assignment to opener pdo:engram-luna-max-20260924 for disposition. The requested consultation is delivered and remains applicable in topology-decided att_9e4e5717-2d37-422f-82cb-70146f651c0b; no product decision is outstanding. Completion was refused by completion-requires-review, documented in att_856baa85-5cab-43e0-bac8-ee217aa46a91. I cannot truthfully supply a code-review receipt for this coordination-only plan. This surrender records the assignment/classification impasse; it neither retracts the plan nor claims the correction note is delivered. Existing PDO delivery assignment asg_a99f43ef-220e-4d56-b437-13a495412816 retains fixture delivery custody. PO remains available for questions; no wake, staffing, or runtime action performed.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790239560888,
+      "verdictKind": null
+    }
+  ]
+}

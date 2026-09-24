@@ -1,0 +1,36 @@
+{
+  "blocks": [
+    {
+      "at": "2026-09-24T08:42:07.774Z",
+      "characters": 90132,
+      "sha256": "5c9fe6727ce2fe76dd002f38f5812777aa90bf2ae3755e1ace82934832f46648",
+      "pdo_core": true,
+      "nonproduction": true,
+      "conditional_no_turn": true
+    }
+  ],
+  "provider_contexts": [
+    {
+      "at": "2026-09-24T08:42:07.777Z",
+      "model": "gpt-5.6-luna",
+      "effort": "max"
+    },
+    {
+      "at": "2026-09-24T08:46:44.461Z",
+      "model": "gpt-5.6-luna",
+      "effort": "max"
+    },
+    {
+      "at": "2026-09-24T08:47:20.344Z",
+      "model": "gpt-5.6-luna",
+      "effort": "max"
+    }
+  ],
+  "error_mentions": [
+    {
+      "at": "2026-09-24T08:43:14.684Z",
+      "error": "ReferenceError: crypto is not defined",
+      "call_id": "call_7pYcKM4qxZ7tbjST5kGoCoYd"
+    }
+  ]
+}

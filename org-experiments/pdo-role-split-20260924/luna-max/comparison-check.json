@@ -1,0 +1,7 @@
+{
+  "same_task_after_identifier_substitution": true,
+  "identity_before_and_after": "2f38dba4a5b3f793c76f1505324edc9923204f9f",
+  "prior_pdo": "gpt-5.6-luna medium",
+  "current_pdo": "gpt-5.6-luna max",
+  "po_both_runs": "gpt-6-astra high"
+}
