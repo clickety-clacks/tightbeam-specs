@@ -1,6 +1,6 @@
 # PDO role split experiment, September 24, 2026
 
-Mike authorized applying the proposed split and annotating changes for a later 0.1.9 port. This is an org identity experiment on released 0.1.8, not a .9 merge or release. Baseline is 30b55757d466f189bb4cc701d243fde2bd181146. Exact candidate patch and all before/after files are retained alongside this ledger. Published at identity revision 2f38dba4a5b3f793c76f1505324edc9923204f9f after independent review corrections. Fresh-session behavior eval is in progress.
+Mike authorized applying the proposed split and annotating changes for a later 0.1.9 port. This is an org identity experiment on released 0.1.8, not a .9 merge or release. Baseline is 30b55757d466f189bb4cc701d243fde2bd181146. Exact candidate patch and all before/after files are retained alongside this ledger. Published at identity revision 2f38dba4a5b3f793c76f1505324edc9923204f9f after independent review corrections. Fresh-session behavior trial failed; see report.md.
 
 ## Changes and reasons
 
@@ -36,4 +36,10 @@ The first review found four issues. Tightened the revision test to require a ret
 
 ## Publication evidence
 
-Published all 13 candidate files through exact-path config commit and identity edit. Final live revision: `2f38dba4a5b3f793c76f1505324edc9923204f9f`. Byte comparison against candidate passed; already-learned reload returned successfully. Independent final review is clean. Native released-rule checks passed 23 assertions, including explicit known-limit assertions. Fresh PDO `s_4690118d` uses archetype `pdo`, Luna medium; fresh PO `s_048b0964` uses Astra high. First fixture is `wi_318b25ce-1c84-4812-9153-21edb411368c`. Behavior is not yet a pass.
+Published all 13 candidate files through exact-path config commit and identity edit. Final live revision: `2f38dba4a5b3f793c76f1505324edc9923204f9f`. Byte comparison against candidate passed; already-learned reload returned successfully. Independent final review is clean. Native released-rule checks passed 23 assertions, including explicit known-limit assertions. Fresh PDO `s_4690118d` uses archetype `pdo`, Luna medium; fresh PO `s_048b0964` uses Astra high. First fixture is `wi_318b25ce-1c84-4812-9153-21edb411368c`. Behavior failed consultation ordering; recovery does not erase that result.
+
+## Final experimental outcome
+
+The first fresh PDO trial attempted worker staffing before PO consultation despite receiving the new core. The existing rail refused it, then the PDO recovered through the correct PO. PDO kept product authorship delegated in the observed run. Incorrect code-effect classifications caused additional refusals. The temporary coder read session credentials while finding the PDO directory, so the fixture was ended and all six temporary sessions retired. No open fixture cards, pending wakes or queued/running turns remain. No credentials are included in the exported evidence.
+
+Four planned behavior cases were not run after the stop; they remain explicitly unproven. Native same-item checks passed but do not establish lane behavior. The change remains an installed org experiment, not a proven .9 fix. Keep this negative result with the exact patch when considering later porting. Complete results are in report.md.

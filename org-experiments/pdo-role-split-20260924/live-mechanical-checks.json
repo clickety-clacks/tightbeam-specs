@@ -1,0 +1,63 @@
+[
+  {
+    "args": [
+      "work-item-create",
+      "--title",
+      "PDO split mechanical fixture: new-role completion gate",
+      "--key",
+      "pdo-split-live-rule-probe-20260924"
+    ],
+    "returncode": 0,
+    "stdout": "{\n  \"createdAt\": 1790235938003,\n  \"createdBySession\": null,\n  \"createdByUser\": \"mike\",\n  \"failReason\": null,\n  \"id\": \"wi_74c5a853-0b2c-41c6-ab1b-8b942aaa2119\",\n  \"isBug\": false,\n  \"ownerUserId\": \"mike\",\n  \"specRefName\": null,\n  \"specRefSha256\": null,\n  \"state\": \"open\",\n  \"title\": \"PDO split mechanical fixture: new-role completion gate\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "assign",
+      "--subject",
+      "Synthetic PDO intake for rule probe; no agent work",
+      "--session",
+      "agent:main:clawline:mike:main s_4690118d",
+      "--work-item",
+      "wi_74c5a853-0b2c-41c6-ab1b-8b942aaa2119",
+      "--effect-kind",
+      "coordination",
+      "--key",
+      "pdo-split-live-rule-probe-asg-20260924"
+    ],
+    "returncode": 0,
+    "stdout": "{\n  \"closedAt\": null,\n  \"closedBySession\": null,\n  \"closedByUser\": null,\n  \"closingAttestId\": null,\n  \"effectKind\": \"coordination\",\n  \"holderFallback\": false,\n  \"holderHarness\": \"codex\",\n  \"holderKey\": \"agent:main:clawline:mike:main s_4690118d\",\n  \"holderProvider\": \"openai\",\n  \"holderRole\": null,\n  \"id\": \"asg_d00a63ed-0505-4e3c-94c0-afc1cf19a20a\",\n  \"openedAt\": 1790235938014,\n  \"openedBySession\": null,\n  \"openedByUser\": \"mike\",\n  \"outcome\": null,\n  \"reviewsAssignmentId\": null,\n  \"state\": \"open\",\n  \"subject\": \"Synthetic PDO intake for rule probe; no agent work\",\n  \"workItemId\": \"wi_74c5a853-0b2c-41c6-ab1b-8b942aaa2119\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "attest",
+      "asg_d00a63ed-0505-4e3c-94c0-afc1cf19a20a",
+      "--kind",
+      "completion",
+      "--note",
+      "Synthetic negative test: no topology decision exists; must refuse"
+    ],
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "rule_denied: orchestrator-completion-needs-topology: Obtain and record the PO's returned topology recommendation as topology-decided on this work item before completing delivery coordination. Small tasks also require consultation.\n"
+  },
+  {
+    "args": [
+      "revoke-assignment",
+      "asg_d00a63ed-0505-4e3c-94c0-afc1cf19a20a"
+    ],
+    "returncode": 0,
+    "stdout": "{\n  \"closedAt\": 1790235938094,\n  \"closedBySession\": null,\n  \"closedByUser\": \"mike\",\n  \"closingAttestId\": null,\n  \"effectKind\": \"coordination\",\n  \"holderFallback\": false,\n  \"holderHarness\": \"codex\",\n  \"holderKey\": \"agent:main:clawline:mike:main s_4690118d\",\n  \"holderProvider\": \"openai\",\n  \"holderRole\": null,\n  \"id\": \"asg_d00a63ed-0505-4e3c-94c0-afc1cf19a20a\",\n  \"openedAt\": 1790235938014,\n  \"openedBySession\": null,\n  \"openedByUser\": \"mike\",\n  \"outcome\": \"revoked\",\n  \"reviewsAssignmentId\": null,\n  \"state\": \"closed\",\n  \"subject\": \"Synthetic PDO intake for rule probe; no agent work\",\n  \"workItemId\": \"wi_74c5a853-0b2c-41c6-ab1b-8b942aaa2119\"\n}\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "work-item-close",
+      "wi_74c5a853-0b2c-41c6-ab1b-8b942aaa2119"
+    ],
+    "returncode": 0,
+    "stdout": "{\n  \"ok\": true,\n  \"workItem\": {\n    \"createdAt\": 1790235938003,\n    \"createdBySession\": null,\n    \"createdByUser\": \"mike\",\n    \"failReason\": null,\n    \"id\": \"wi_74c5a853-0b2c-41c6-ab1b-8b942aaa2119\",\n    \"isBug\": false,\n    \"ownerUserId\": \"mike\",\n    \"specRefName\": null,\n    \"specRefSha256\": null,\n    \"state\": \"closed\",\n    \"title\": \"PDO split mechanical fixture: new-role completion gate\"\n  }\n}\n",
+    "stderr": ""
+  }
+]

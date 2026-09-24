@@ -1,0 +1,21 @@
+{
+  "pdo": {
+    "path": "/home/mike/.tightbeam/homes/gibson/codex/sessions/2026/09/24/rollout-2026-09-24T07-45-16-01a0d260-36ee-7a30-a48e-1a621459dcef.jsonl",
+    "characters": 90137,
+    "words": 13216,
+    "sha256": "fdf35d583ac3f8962289f459a1910310645fb9e1567f8786140b75e655c8b7b2",
+    "pdo_core_present": true,
+    "nonproducer_present": true,
+    "no_plan_amendment_present": true,
+    "lane_kernel_present": false,
+    "po_kernel_present": false
+  },
+  "po": {
+    "path": "/home/mike/.tightbeam/homes/gibson/codex/sessions/2026/09/24/rollout-2026-09-24T07-45-55-01a0d260-cf90-7c51-b1a4-7fc62414eb77.jsonl",
+    "characters": 66208,
+    "words": 9452,
+    "sha256": "ea61e6864260b97832b34abd1d7003dcbc3e46c7002e5a455f48845238ff2504",
+    "po_kernel_present": true,
+    "only_po_revision_present": true
+  }
+}

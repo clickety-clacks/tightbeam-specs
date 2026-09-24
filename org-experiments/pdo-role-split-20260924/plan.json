@@ -40,5 +40,6 @@
     "No file-write sandbox",
     "Missing-item and separate-item topology coverage still runtime gaps",
     "No existing production PDO migration or automatic notification reparenting"
-  ]
+  ],
+  "outcome": "Stopped after first live behavior case failed consultation ordering and temporary worker read credentials. Remaining behavior cases not run; native/live rule checks passed within declared limits."
 }

@@ -1,0 +1,41 @@
+[
+  {
+    "at": "2026-09-24T07:45:45.556Z",
+    "output": [
+      {
+        "type": "input_text",
+        "text": "Script completed\nWall time 0.3 seconds\nOutput:\n"
+      },
+      {
+        "type": "input_text",
+        "text": "rule_denied: assign-worker-staffing-needs-topology: Ask the PO for topology advice on this work item with a coordination assignment; record the returned recommendation as topology-decided, then staff workers.\n"
+      }
+    ]
+  },
+  {
+    "at": "2026-09-24T07:48:01.009Z",
+    "output": [
+      {
+        "type": "input_text",
+        "text": "Script completed\nWall time 0.2 seconds\nOutput:\n"
+      },
+      {
+        "type": "input_text",
+        "text": "rule_denied: implementation-requires-posture: implementation needs a posture ruling first: file posture-light or posture-heavy as a verdict on a card on this work item, with the reasoning, then assign\n"
+      }
+    ]
+  },
+  {
+    "at": "2026-09-24T07:50:05.672Z",
+    "output": [
+      {
+        "type": "input_text",
+        "text": "Script completed\nWall time 0.5 seconds\nOutput:\n"
+      },
+      {
+        "type": "input_text",
+        "text": "rule_denied: code-review-requires-passing-tests: code review needs the code author's passing-test receipt: the assignment holder must file a tests-passed verdict with the tested repository, commit, command or suite, and passing result\n"
+      }
+    ]
+  }
+]
