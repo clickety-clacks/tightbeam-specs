@@ -1,0 +1,86 @@
+[
+  {
+    "id": "asg_08f8e362-73f9-45af-aa1c-6f136b063f6b",
+    "holderKey": "agent:main:clawline:mike:main s_777369c7",
+    "openedBySession": null,
+    "state": "open",
+    "subject": "Deliver approved engineering ownership alignment in the live org and 0.1.9",
+    "displayName": "PDO: Tightbeam",
+    "archetype": "orchestrator",
+    "model": "gpt-5.6-sol",
+    "thinkingLevel": "low",
+    "host": "gibson"
+  },
+  {
+    "id": "asg_502d5bca-72fd-4edc-bf26-e4d377ec29cf",
+    "holderKey": "agent:main:clawline:mike:main s_fde9b2be",
+    "openedBySession": "agent:main:clawline:mike:main s_777369c7",
+    "state": "closed",
+    "subject": "BOUND PRODUCT/TOPOLOGY JUDGMENT: Read Mike assignment asg_08f8e362, full approved alignment proposal /home/mike/engram-architecture-spec-20260923/.lavish/engram-delivery-alignment-plan.html, canonical experiment ledger pdo-role-split-20260924, prior accepted wi_74ca0e75, addressed-PO wi_32f1f25b, open wi_25e38cf9 and wi_eac78b5e, and current origin/0.1.9. Return one recorded topology-decided verdict for this SAME work item: exact delivery lanes and dependencies, number of direct child orchestrators, Tightbeam archetype and model/effort for each lane, sequencing and shared-file ownership, acceptance boundaries for guidance/source/live publication, and any genuine unresolved product choice. Preserve one accountable PDO and addressable PO; PO opens no delivery work. Require complete .9 mapping and integration, applicable live guidance publication, independent guidance/code review, proportional staffing, one-concept/one-home, no duplicate PDO/PO, no local paths or incident narrative in shipped source, no duplicate existing work or bypass of wi_25e38cf9 controls.",
+    "displayName": "PO: Tightbeam",
+    "archetype": "product-owner",
+    "model": "gpt-6-astra",
+    "thinkingLevel": "high",
+    "host": "gibson"
+  },
+  {
+    "id": "asg_ab2d8e98-98f4-4436-ae47-c0125c7b9925",
+    "holderKey": "agent:main:clawline:mike:main s_fde9b2be",
+    "openedBySession": "agent:main:clawline:mike:main s_fde9b2be",
+    "state": "closed",
+    "subject": "PO JUDGMENT SUCCESSOR to completed asg_502d5bca: incorporate Mike terminal fresh independent guidance-reviewer claude-opus-5-5/high after reviewed .9 landing and applicable live identity publication into the existing topology. Preserve two delivery orchestrators, sole PDO/PO and existing implementation/review custody. Define final cross-environment evidence, difference classes, correction and independent re-review. Judgment only; no staffing or implementation.",
+    "displayName": "PO: Tightbeam",
+    "archetype": "product-owner",
+    "model": "gpt-6-astra",
+    "thinkingLevel": "high",
+    "host": "gibson"
+  },
+  {
+    "id": "asg_40c145d6-5958-4030-a6b5-57af4481064b",
+    "holderKey": "agent:main:clawline:mike:main s_3c63ca28",
+    "openedBySession": "agent:main:clawline:mike:main s_777369c7",
+    "state": "open",
+    "subject": "LANE OWNER: guidance, composition, mapping and live adoption. Governed by PO topology att_1015ad52 and art_250b81dd SHA032905f. Own the complete portable/current-org mapping, coherent .9 guidance patch, canonical external-skill source and active-copy reconciliation, bootstrap/setup/bundle ownership, role/model guidance, full composed review, supported publication/refresh/receipt evidence, behavioral evaluation and final mandatory independent Claude Opus5.5/high cross-environment consistency review after .9 landing and live publication. Staff exactly one guidance-writer gpt-6-astra/high and one independent guidance-reviewer Claude claude-opus-5/xhigh, preferring retained s_2643a7d6/s_6751b960 after custody checks; writer/reviewer stay on this WI. Preserve already-landed e288 root/association behavior, open wi_25e38cf9 and wi_eac78b5e custody, PR110 evidence, one-concept/one-home, historical gibson-018 boundary, no PDO authorship, no local paths in shipped prose. Coordinate exact shared hunks with enforcement lane s_2015c680; one writer per hunk. Carry reviewed-clean compatible source through fresh-target 0.1.9 integration/push when authorized, then applicable supported live publication and actual receipt verification. The final Opus5.5/high reviewer is additional and must run only after both landing and publication, with every genuine finding corrected and independently re-reviewed.",
+    "displayName": "Engineering alignment guidance lane",
+    "archetype": "orchestrator",
+    "model": "gpt-5.6-sol",
+    "thinkingLevel": "high",
+    "host": "gibson"
+  },
+  {
+    "id": "asg_42a235a9-8e9e-4ce0-8d61-021ef2c03906",
+    "holderKey": "agent:main:clawline:mike:main s_2015c680",
+    "openedBySession": "agent:main:clawline:mike:main s_777369c7",
+    "state": "open",
+    "subject": "LANE OWNER: engineering ownership enforcement and supported neutral facts. Governed by PO topology att_1015ad52 and art_250b81dd SHA032905f. Staff exactly one coder gpt-5.6-sol/xhigh and one independent reviewer-code Claude claude-opus-5-5/high on this WI, offered hosts only, verifying actual provider/model. Reconcile current origin/0.1.9, PR110 OPEN head81150012, landed session-to-PO association, current ownership/assignment/recovery facts and active source owners before edits. Implement only the smallest missing neutral attributable/inspectable fact and supported operations required to prove accountable PDO/delegated delivery responsibility across spawn/assign/default/missing-item paths while preserving bootstrap, PO consultation, backlog-only filing, worker reuse, succession, recovery and completion/failure routing. Engineering policy stays in kungfu; runtime stays SDLC-neutral. Do not use role/archetype/name/ancestry/topology verdict alone, duplicate wi_25e38cf9 topology projection, bypass its hold, build a registry/poller/fixed graph/sandbox/approval layer, or rewrite durable PO association. Own deterministic runtime/CLI/schema tests and executable fixture support. Coordinate exact shared hunks with guidance lane s_3c63ca28; one writer per hunk. Carry one independently reviewed candidate through fresh-target guarded 0.1.9 integration/push, report source/device boundaries separately, and provide exact evidence to the final cross-environment consistency review.",
+    "displayName": "Engineering alignment enforcement lane",
+    "archetype": "orchestrator",
+    "model": "gpt-5.6-sol",
+    "thinkingLevel": "high",
+    "host": "gibson"
+  },
+  {
+    "id": "asg_d0478bad-22c0-46e9-94f8-9838a5176dbf",
+    "holderKey": "agent:main:clawline:mike:main s_4574cda7",
+    "openedBySession": "agent:main:clawline:mike:main s_2015c680",
+    "state": "open",
+    "subject": "CODER: Reconcile current origin/0.1.9, PR110 head 81150012, landed session-to-PO association, current ownership/assignment/recovery facts, and active source owners; implement the smallest missing neutral attributable and inspectable fact plus supported operations needed to prove accountable PDO/delegated delivery responsibility across spawn, assign, default and missing-item paths. Preserve bootstrap, PO consultation, backlog-only filing, worker reuse, succession, recovery and completion/failure routing. Engineering policy stays in kungfu and runtime remains SDLC-neutral. Do not infer authority from role/archetype/name/ancestry/topology alone, duplicate wi_25e38cf9, bypass its hold, build a registry/poller/fixed graph/sandbox/approval layer, rewrite durable PO association, install/release/restart/touch live state, or run tests on Gibson. Own deterministic runtime/CLI/schema tests and bounded executable fixture support; run canonical gates on Racter, commit a candidate, and return exact commit/ref/gate evidence for independent review. Before editing shared hotspots, agree exact paths/hunks with guidance lane s_3c63ca28 so one writer owns each hunk. Governing PO verdict att_1015ad52 and artifact art_250b81dd SHA032905f; lane assignment asg_42a235a9.",
+    "displayName": "Coder \u2014 engineering ownership enforcement",
+    "archetype": "coder",
+    "model": "gpt-5.6-sol",
+    "thinkingLevel": "xhigh",
+    "host": "racter"
+  },
+  {
+    "id": "asg_06a5780a-2f21-44cb-ab84-94b993992197",
+    "holderKey": "agent:main:clawline:mike:main s_2643a7d6",
+    "openedBySession": "agent:main:clawline:mike:main s_3c63ca28",
+    "state": "open",
+    "subject": "AUTHOR: deliver the Lane 1 guidance/composition/live-adoption candidate under att_1015ad52/art_250b81dd as amended by att_307d2245/art_790ca424. Produce a complete ledger-to-0.1.9 mapping, coherent portable guidance patch, canonical external-skill source and active-copy reconciliation, bootstrap/setup/bundle/role/model alignment, behavioral evaluation plan/evidence, supported publication/refresh/receipt procedure, and exact integration handoff. Preserve landed e288 behavior, wi_25e38cf9 and wi_eac78b5e custody, PR110 evidence, one-concept/one-home, historical gibson-018 boundary, no PDO authorship, no local paths in shipped prose. Coordinate shared hunks with lane owner before edits; own guidance/archetype/manifest/capabilities/intake/model/skill prose only, leaving runtime/CLI/schema/rules/tests to enforcement lane. Work in an isolated durable worktree; no testing or execution on Gibson beyond allowed compile-only policy; no release/install/gateway/live runtime action. Return exact bytes/commit/hash/evidence and do not integrate or publish before independent review. The final fresh Opus5.5 cross-environment review is PDO-owned after landing/publication; supply its evidence matrix but do not staff it.",
+    "displayName": "Topology Guidance Writer",
+    "archetype": "guidance-writer",
+    "model": "gpt-6-astra",
+    "thinkingLevel": "high",
+    "host": "gibson"
+  }
+]

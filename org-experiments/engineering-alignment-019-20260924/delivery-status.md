@@ -7,10 +7,18 @@ The user authorized the complete alignment proposal on September 24 and emphasiz
 - Governing work item: wi_c13b63c8-b21f-47ce-bfac-61d51de854a4.
 - Existing Tightbeam PDO: s_777369c7, Sol low; intake asg_08f8e362-73f9-45af-aa1c-6f136b063f6b, coordination effect.
 - Existing Tightbeam PO: s_fde9b2be, Astra high. This request did not retune the standing PO.
-- PDO opened same-item PO consultation asg_502d5bca-72fd-4edc-bf26-e4d377ec29cf before worker staffing. Topology remains pending at this snapshot.
+- PDO opened same-item PO consultation asg_502d5bca-72fd-4edc-bf26-e4d377ec29cf before worker staffing. The PO recorded topology-decided att_1015ad52 and amendment att_307d2245. Exactly two Sol-high child orchestrators now hold the guidance/live-adoption and runtime-enforcement lanes.
 - Final fresh independent Opus 5.5 high consistency review is required after source integration and applicable identity publication. Its findings must be corrected and re-reviewed. It is not a substitute for code review or proof of actual received guidance.
 
 The full task and final-review request are attached. The PDO chooses staffing through the PO; the external Engram agent audits the evidence and unnecessary work. Existing related work must be reused.
+
+## Current staffing and model requirement
+
+The PDO staffed guidance owner s_3c63ca28/asg_40c145d6 and enforcement owner s_2015c680/asg_42a235a9. Their production assignments are held by retained guidance-writer s_2643a7d6, Astra high on Gibson, and coder s_4574cda7, Sol xhigh on Racter. The guidance lane reserves retained guidance-reviewer s_6751b960, Opus5 xhigh; the runtime lane reserves reviewer-code s_081b7f08, Opus5.5 high. The separate terminal Opus5.5-high consistency reviewer is a future fresh session directly under the PDO, after integration and applicable publication. No third orchestrator is planned.
+
+The user explicitly reaffirmed that 0.1.9 must use Sol low for PDOs. This applies to the new PDO archetype default and preference, both mixed-family and Codex-only PDO activity rows, and removal of the old Luna-medium PDO capsule instruction. A fresh .9 PDO using its defaults must resolve to Sol low. Do not change the standing PO or all generic orchestrators. Final Opus review must check source, packaging, composition and actual default-resolution evidence.
+
+Production is underway; no reviewed or integrated alignment candidate exists at this snapshot. The observed staffing rows and original PO topology plus its terminal-review amendment are attached. Source-to-org mapping below is the baseline, not a claim that those changes have landed.
 
 ## Baseline distinction
 
