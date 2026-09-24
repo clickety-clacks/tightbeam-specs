@@ -1,0 +1,33 @@
+{
+  "eezo": [
+    {
+      "id": "gpt-6-sol",
+      "model": "gpt-6-sol",
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+        "ultra"
+      ],
+      "maxInputTokens": 272000
+    }
+  ],
+  "gibson": [
+    {
+      "id": "gpt-6-sol",
+      "model": "gpt-6-sol",
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+        "ultra"
+      ],
+      "maxInputTokens": 272000
+    }
+  ],
+  "racter": []
+}
