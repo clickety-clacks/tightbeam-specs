@@ -1,0 +1,20 @@
+{
+  "session_id": "7d75cbd4-fd94-491d-bdc3-bdc1330f8e66",
+  "actual_response_models": [
+    "claude-opus-5-5"
+  ],
+  "requested_effort": "high",
+  "fresh_independent_session": true,
+  "original_po_session_id": "c454a00b-13ae-425f-8bf6-55f5f267120b",
+  "all_three_followup_answers_read": true,
+  "tool_calls": 54,
+  "tool_names": [
+    "Glob",
+    "Grep",
+    "Read"
+  ],
+  "outside_scope_tool_calls": [],
+  "is_error": false,
+  "report_sha256": "8244f656d7af33a8179dac1af4de9b035c9e800a65e172171f123006eab15e00",
+  "provider_report_file": "/home/mike/.tightbeam/homes/gibson/claude/projects/-home-mike-engram-architecture-spec-20260923-sol-low-case-file-20260925/7d75cbd4-fd94-491d-bdc3-bdc1330f8e66.jsonl"
+}

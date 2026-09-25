@@ -1,0 +1,272 @@
+[
+  {
+    "time": "2026-09-25T01:38:10.650Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/case-file.md"
+  },
+  {
+    "time": "2026-09-25T01:38:10.661Z",
+    "tool": "Glob",
+    "path": ""
+  },
+  {
+    "time": "2026-09-25T01:38:14.340Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/clear-prompt.txt"
+  },
+  {
+    "time": "2026-09-25T01:38:14.352Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/engram-fixture-correction-note.md"
+  },
+  {
+    "time": "2026-09-25T01:38:14.989Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/work-item-result.json"
+  },
+  {
+    "time": "2026-09-25T01:38:15.508Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/work-item-trace.json"
+  },
+  {
+    "time": "2026-09-25T01:38:20.061Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/pdo-public-trace.jsonl"
+  },
+  {
+    "time": "2026-09-25T01:38:23.957Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/pdo-public-trace.jsonl"
+  },
+  {
+    "time": "2026-09-25T01:38:27.983Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/pdo-public-trace.jsonl"
+  },
+  {
+    "time": "2026-09-25T01:38:31.933Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/pdo-public-trace.jsonl"
+  },
+  {
+    "time": "2026-09-25T01:38:35.341Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/pdo-public-trace.jsonl"
+  },
+  {
+    "time": "2026-09-25T01:38:39.883Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/pdo-public-trace.jsonl"
+  },
+  {
+    "time": "2026-09-25T01:38:45.928Z",
+    "tool": "Grep",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/writer-public-trace.jsonl"
+  },
+  {
+    "time": "2026-09-25T01:38:46.381Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/s_05201de6-claude-audit.json"
+  },
+  {
+    "time": "2026-09-25T01:38:56.646Z",
+    "tool": "Grep",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/writer-public-trace.jsonl"
+  },
+  {
+    "time": "2026-09-25T01:38:58.893Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/writer-public-trace.jsonl"
+  },
+  {
+    "time": "2026-09-25T01:39:01.650Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/writer-public-trace.jsonl"
+  },
+  {
+    "time": "2026-09-25T01:39:10.825Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/s_51682b82-claude-audit.json"
+  },
+  {
+    "time": "2026-09-25T01:39:20.379Z",
+    "tool": "Grep",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/identity-312a6e17"
+  },
+  {
+    "time": "2026-09-25T01:39:23.087Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/identity-312a6e17/guidance/pdo.md"
+  },
+  {
+    "time": "2026-09-25T01:39:23.863Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/identity-312a6e17/guidance/product-owner.md"
+  },
+  {
+    "time": "2026-09-25T01:39:24.194Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/identity-312a6e17/guidance/operating-manual.md"
+  },
+  {
+    "time": "2026-09-25T01:39:29.403Z",
+    "tool": "Grep",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/identity-312a6e17/guidance"
+  },
+  {
+    "time": "2026-09-25T01:39:33.428Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/identity-312a6e17/guidance/delivery-coordination.md"
+  },
+  {
+    "time": "2026-09-25T01:39:33.714Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/dispatch-skill-match.json"
+  },
+  {
+    "time": "2026-09-25T01:39:38.352Z",
+    "tool": "Grep",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/s_2541a786-developer.txt"
+  },
+  {
+    "time": "2026-09-25T01:39:41.265Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/s_2541a786-developer.txt"
+  },
+  {
+    "time": "2026-09-25T01:39:46.855Z",
+    "tool": "Grep",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/s_2541a786-developer.txt"
+  },
+  {
+    "time": "2026-09-25T01:39:51.177Z",
+    "tool": "Grep",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/installed-tightbeam-dispatching-SKILL.md"
+  },
+  {
+    "time": "2026-09-25T01:39:52.329Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/s_2541a786-developer.txt"
+  },
+  {
+    "time": "2026-09-25T01:39:53.063Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/s_2541a786-developer.txt"
+  },
+  {
+    "time": "2026-09-25T01:39:56.462Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/interviews/pdo-prompt.txt"
+  },
+  {
+    "time": "2026-09-25T01:39:56.822Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/interviews/pdo-answer.md"
+  },
+  {
+    "time": "2026-09-25T01:40:03.869Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/interviews/po-prompt.txt"
+  },
+  {
+    "time": "2026-09-25T01:40:04.466Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/interviews/po-answer.md"
+  },
+  {
+    "time": "2026-09-25T01:40:04.968Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/interviews/writer-prompt.txt"
+  },
+  {
+    "time": "2026-09-25T01:40:05.463Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/interviews/writer-answer.md"
+  },
+  {
+    "time": "2026-09-25T01:40:22.123Z",
+    "tool": "Grep",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/writer-public-trace.jsonl"
+  },
+  {
+    "time": "2026-09-25T01:40:23.389Z",
+    "tool": "Grep",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/po-public-trace.jsonl"
+  },
+  {
+    "time": "2026-09-25T01:40:35.024Z",
+    "tool": "Grep",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/po-public-trace.jsonl"
+  },
+  {
+    "time": "2026-09-25T01:40:40.699Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/po-public-trace.jsonl"
+  },
+  {
+    "time": "2026-09-25T01:40:47.156Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/eval-report.md"
+  },
+  {
+    "time": "2026-09-25T01:41:07.413Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/po-interview-prompt.txt"
+  },
+  {
+    "time": "2026-09-25T01:41:07.431Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/interviews/verification.json"
+  },
+  {
+    "time": "2026-09-25T01:41:07.439Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/review-marker.json"
+  },
+  {
+    "time": "2026-09-25T01:41:15.436Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/identity-312a6e17/skills/team-design/SKILL.md"
+  },
+  {
+    "time": "2026-09-25T01:41:51.565Z",
+    "tool": "Grep",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/writer-public-trace.jsonl"
+  },
+  {
+    "time": "2026-09-25T01:41:54.459Z",
+    "tool": "Grep",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/writer-public-trace.jsonl"
+  },
+  {
+    "time": "2026-09-25T01:42:18.460Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/opus-review-run.json"
+  },
+  {
+    "time": "2026-09-25T01:42:18.927Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/opus-review-stderr.txt"
+  },
+  {
+    "time": "2026-09-25T01:42:22.818Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/identity-312a6e17/archetypes/default.toml"
+  },
+  {
+    "time": "2026-09-25T01:42:23.248Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/identity-312a6e17/rules/topology.toml"
+  },
+  {
+    "time": "2026-09-25T01:43:26.626Z",
+    "tool": "Read",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence/identity-312a6e17/guidance/operating-manual.md"
+  },
+  {
+    "time": "2026-09-25T01:44:00.043Z",
+    "tool": "Grep",
+    "path": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/evidence"
+  }
+]

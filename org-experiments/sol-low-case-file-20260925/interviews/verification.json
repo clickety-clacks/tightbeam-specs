@@ -28,6 +28,13 @@
     "requested_effort": "low",
     "tool_item_types": [
       "agent_message"
+    ],
+    "new_turn_contexts": [
+      {
+        "model": "gpt-5.6-sol",
+        "effort": "low",
+        "cwd": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925"
+      }
     ]
   }
 }
