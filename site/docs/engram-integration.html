@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Engram and Tightbeam integration</title>
+<style>
+:root{color-scheme:dark;--bg:#0b0f14;--panel:#121a25;--text:#e7edf5;--muted:#9fb0c4;--line:#2b394d;--accent:#6ee7c5;--warn:#ffc86b;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text)}body{line-height:1.6}main{max-width:1100px;margin:auto;padding:42px 24px 90px}header{max-width:900px}h1,h2,h3{line-height:1.2;text-wrap:balance}h1{font-size:clamp(2rem,4.5vw,3.4rem);letter-spacing:-.035em;margin:14px 0 22px}h2{font-size:1.45rem;margin:0 0 16px}h3{font-size:1.05rem;margin:0 0 8px}p{max-width:90ch}a{color:var(--accent);text-underline-offset:3px;overflow-wrap:anywhere}.meta,.muted{color:var(--muted)}.meta{font-size:.9rem}.lead{font-size:1.2rem;max-width:75ch}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.grid>*{min-width:0}.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px}.callout{border-left:4px solid var(--accent);padding:12px 20px;background:var(--panel);margin:24px 0}.warn{border-left-color:var(--warn)}section{margin-top:38px}code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}code{color:var(--accent);overflow-wrap:anywhere;font-size:.92em}pre{font-size:.88rem;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);padding:18px;border:1px solid var(--line);border-radius:7px}table{border-collapse:collapse;width:100%;font-size:.95rem}th,td{padding:15px;text-align:left;vertical-align:top;border:1px solid var(--line);overflow-wrap:anywhere}th{background:var(--panel)}td:first-child{width:30%}.table-wrap{overflow-x:auto}details{background:var(--panel);padding:18px 22px;border:1px solid var(--line);border-radius:10px;margin-top:18px}summary{cursor:pointer;font-weight:650}details[open] summary{margin-bottom:15px}li{margin:10px 0}ul{padding-left:22px}.tag{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:2px 8px;font-size:.8rem;color:var(--accent)}footer{border-top:1px solid var(--line);margin-top:40px;padding-top:20px;font-size:.9rem} @media(max-width:700px){main{padding:25px 16px 60px}.grid{grid-template-columns:minmax(0,1fr)}th,td{padding:10px}h1{font-size:2rem}}@media print{body,html{background:white;color:#152030}:root{--bg:#fff;--panel:#f3f5f7;--text:#152030;--muted:#405064;--line:#bcc7d0;--accent:#096952;--warn:#8a5300}details{break-inside:avoid}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div class="meta">Tightbeam integration research · September 19, 2026</div>
+<h1>Configuration collects transcripts.<br>A metadata bridge identifies agents.</h1>
+<p class="lead">Engram can watch Tightbeam's existing Codex and Claude transcripts. To show which Tightbeam agent, archetype, and delegation produced a code change, it needs the session mappings that Tightbeam already records.</p>
+<p><span class="tag">Read-only recon</span> <span class="tag">Live 0.1.8 checked</span> <span class="tag">Main source checked</span></p>
+</header>
+
+<section class="grid" aria-label="Home and identity findings">
+<article class="card"><h2>The home is shared</h2><p>Current Tightbeam homes are per host and harness:</p><pre>~/.tightbeam/homes/gibson/codex
+~/.tightbeam/homes/gibson/claude</pre><p>Multiple archetypes use these homes. Guidance and elected skills are applied per session. Creating one Engram index per archetype would duplicate storage and misrepresent this topology.</p></article>
+<article class="card"><h2>The agent has a stable key</h2><p>Tightbeam's append-only pointer history connects native harness sessions to the stable Tightbeam session key. I verified this join with a real Codex transcript and a real Claude transcript.</p><p>A directory, native session ID, archetype name, and Engram tape ID each describe a different thing. Keep those distinctions in the integration.</p></article>
+</section>
+
+<section aria-labelledby="capabilities">
+<h2 id="capabilities">What needs configuration, and what needs a feature</h2>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">User outcome</th><th scope="col">What is enough</th><th scope="col">Remaining work</th></tr></thead>
+<tbody>
+<tr><td>Search code reads and edits; open surrounding conversations</td><td>Existing native adapters and explicit watch roots</td><td>Install the selected Engram release, validate actual transcript shapes, and backfill history.</td></tr>
+<tr><td>See the responsible Tightbeam agent and archetype</td><td>A small metadata bridge</td><td>Export native-session mappings and enrich results. Engram currently returns tape IDs as its session IDs.</td></tr>
+<tr><td>Follow one agent through restarts and harness changes</td><td>Existing Tightbeam pointer history plus integration</td><td>Join every recorded native segment to the stable agent key, including older segments.</td></tr>
+<tr><td>Trace a work item or delegation through to an edit</td><td>Explicit causal-link integration</td><td>Use recorded assignments, turns, wakes, and dispatch relationships. Shared homes or similar text cannot establish the link.</td></tr>
+<tr><td>Know the identity guidance used at a past moment</td><td>Historical evidence with a stated scope</td><td>A current identity stamp cannot prove what the model read during an earlier turn. Preserve unknowns.</td></tr>
+<tr><td>Search across hosts</td><td>Local indexes and existing additional stores</td><td>Arrange immutable tape or consistent snapshot transport, tape availability, and freshness. Additional stores are not a remote-query protocol.</td></tr>
+</tbody></table></div>
+</section>
+
+<section>
+<h2>The smallest useful integration</h2>
+<p>Keep native transcript ingestion. Export a compact context manifest that relates the host, harness, native session ID, and Engram tape versions to the Tightbeam session key. Include assignment and dispatch references only where records establish them.</p>
+<p>A companion tool can prove result enrichment first. A reusable integration should give Engram a supported context import/read interface and expose the mapping through a narrow Tightbeam export. It does not need a new transcript format or a new identity system.</p>
+<div class="callout"><strong>Keep metadata out of the code fingerprint index.</strong> Agent identity and coordination links should be small keyed records. Re-indexing every identity bundle, prompt, skill, and work-item description would recreate the storage problem.</div>
+<details><summary>Existing configuration fields can cover the transcript roots</summary>
+<p>This example is for Gibson and has not been installed. Each host needs its own actual base directory and configured name.</p>
+<pre>db: ~/.engram/tightbeam/index.sqlite
+tapes_dir: ~/.engram/tightbeam/tapes
+additional_stores: []
+watch:
+  debounce_secs: 5
+  ingest_timeout_secs: 120
+  log: ~/.engram/tightbeam/watch.log
+  sources:
+    - path: ~/.tightbeam/homes/gibson/codex/sessions
+      pattern: "*.jsonl"
+    - path: ~/.tightbeam/homes/gibson/claude/projects
+      pattern: "*.jsonl"</pre>
+<p>The watcher handles new file events. It does not backfill existing history on startup, and it skips absent directories. Inventory archives and older home layouts explicitly. Keep generated tapes outside every watched root.</p>
+</details>
+<details><summary>Why an Engram dispatch marker alone is incomplete</summary>
+<p>Engram's existing lineage mechanism needs the same UUID in both the sending tool call and receiving message. Tightbeam's stored IDs do not automatically create those markers. A small producer bridge could support future dispatches, but historical traffic needs explicit relationships from the retained records.</p>
+<p>I recommend the metadata and causal-link route for complete attribution. A forward-only marker bridge remains a smaller optional integration. Agent ancestry and native harness subagents need separate treatment from an actual Tightbeam delegation.</p>
+</details>
+</section>
+
+
+<section>
+<h2>Evidence and limits</h2>
+<p>I checked the live gateway version, matching source, fetched main, Engram's watcher/adapters/query projection, read-only Tightbeam metadata, and real native-session joins. No index rebuild, integration deployment, or full adapter test was performed.</p>
+<p>The recon includes the configuration example, source revisions, proposed mapping fields, and a bounded proof covering shared homes, native session changes, cross-host collisions, real edits, and historical identity gaps.</p>
+<ul>
+<li><a href="https://github.com/clickety-clacks/tightbeam/blob/fdb3db5/lib/tightbeam/homes.ex">Installed home model</a> · <a href="https://github.com/clickety-clacks/tightbeam/blob/fdb3db5/lib/tightbeam/org.ex">Native-session pointer model</a> · <a href="https://github.com/clickety-clacks/engram/blob/9f8afc65d0b365444446a473c04389adf80bd4b3/src/query/format.rs">Engram result projection</a></li>
+<li><a href="https://sqlite.org/useovernet.html">SQLite network-storage guidance</a></li>
+</ul>
+</section>
+<footer class="muted">Research snapshot: September 19, 2026. Configuration examples reflect the inspected deployment. Proposed integration capabilities are identified separately from existing behavior.</footer>
+</main>
+</body>
+</html>
