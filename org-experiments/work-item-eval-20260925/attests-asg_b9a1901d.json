@@ -1,0 +1,49 @@
+{
+  "attests": [
+    {
+      "assignmentId": "asg_b9a1901d-c221-43cb-99d3-f778be78bfc0",
+      "byHarness": "codex",
+      "byProvider": "openai",
+      "bySession": "agent:main:clawline:mike:main s_4f218a47",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_705a7e58-6011-4a9c-967a-290e23381ce4",
+      "kind": "verdict",
+      "note": "One bounded documentation note under approved task.md d2d6864a with all correction facts supplied and a 180-word cap. PO topology att_50ea68df assigns one coder producer and PO acceptance, with no separate reviewer. Direct production and fact check suffice.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790305239676,
+      "verdictKind": "posture-light"
+    },
+    {
+      "assignmentId": "asg_b9a1901d-c221-43cb-99d3-f778be78bfc0",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_4f218a47",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_bd6edf14-ee03-4d20-b721-dbffd2675a21",
+      "kind": "progress",
+      "note": "Produced note SHA-256 1cf86cbe...53a3 at /home/mike/.tightbeam/work/53cca28f7107/engram-correction-note.md, 121 words, checked against supplied A-C facts. Producer completion refused by completion-requires-review. Linked PO acceptance review assign refused by code-review-requires-passing-tests because producer assignment defaulted to code effect, although deliverable is documentation; no passing code-test receipt exists. Seeking PO topology revision or supported classification path without fabricated tests.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790305358928,
+      "verdictKind": null
+    },
+    {
+      "assignmentId": "asg_b9a1901d-c221-43cb-99d3-f778be78bfc0",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_4f218a47",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_c8a5c79d-06e3-444e-8b03-7bf19839cdd5",
+      "kind": "completion",
+      "note": "Delivered Engram correction note at /home/mike/.tightbeam/work/53cca28f7107/engram-correction-note.md, SHA-256 1cf86cbeeaa3d18e091a697a9b7139f543695282db359afb33a7984a55fb53a3, 121 words. Producer evidence assignment asg_38447af0 completed with verification att_c9242fce; PO accepted the exact file in att_5bf38585. Original code-effect assignment asg_7d812a00 was revoked as misclassified under the PO revision. Temporary worker and PO retained for post-run questions per task.md.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790305519257,
+      "verdictKind": null
+    }
+  ]
+}

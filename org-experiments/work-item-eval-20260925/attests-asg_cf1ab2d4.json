@@ -1,0 +1,19 @@
+{
+  "attests": [
+    {
+      "assignmentId": "asg_cf1ab2d4-a44e-44cc-a490-e3d38db00f9e",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_4f218a47",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_b2876046-4349-4dbf-b663-5de36df2d68d",
+      "kind": "completion",
+      "note": "Engram query correction note delivered and PO accepted: /home/mike/.tightbeam/work/53cca28f7107/engram-correction-note.md, SHA-256 1cf86cbeeaa3d18e091a697a9b7139f543695282db359afb33a7984a55fb53a3, 121 words. It corrects A-C using only task.md facts; producer completed evidence assignment asg_38447af0 and PO product acceptance is att_5bf38585. Temporary sessions remain available for evaluator questions as task.md requires.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790305524026,
+      "verdictKind": null
+    }
+  ]
+}

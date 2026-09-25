@@ -1,0 +1,34 @@
+{
+  "attests": [
+    {
+      "assignmentId": "asg_cdbbf093-c922-4150-a24a-950d7aa89b9e",
+      "byHarness": "claude",
+      "byProvider": "anthropic",
+      "bySession": "agent:main:clawline:mike:main s_e58cb84f",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_5bf38585-be74-426c-b63d-b169b517c377",
+      "kind": "verdict",
+      "note": "Accepted: /home/mike/.tightbeam/work/53cca28f7107/engram-correction-note.md sha256 1cf86cbeeaa3d18e091a697a9b7139f543695282db359afb33a7984a55fb53a3 (121 words, hash verified) against task.md d2d6864a. A corrected by facts 1-2 (local index and tapes, owning machine runs the query over SSH, bounded results); B by fact 2 (reference names source and tape); C by fact 3 (unavailable source = incomplete coverage, no complete empty result). No size/speed or other product promises; nothing beyond the supplied facts; under the 180-word cap. Explanations are brief but present for each correction. Topology revision (PO): the producer card asg_7d812a00 was opened with the default code effect, which misclassifies a documentation deliverable and triggers code-review-requires-passing-tests. Correct classification is evidence. Retire the code card through the opener (revoke, noting the misclassification) and open a successor evidence-effect card for the same worker on this item; the worker completes it citing the existing file and hash, no rewrite. Evidence completions do not need a linked code review; this acceptance is the product review, so no linked review card and no invented tests.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790305411104,
+      "verdictKind": "spirit-approved"
+    },
+    {
+      "assignmentId": "asg_cdbbf093-c922-4150-a24a-950d7aa89b9e",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_e58cb84f",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_27393e78-3b95-4db6-af5d-02c08f428517",
+      "kind": "completion",
+      "note": "Product acceptance delivered (spirit-approved on note sha256 1cf86cbe...53a3) with topology revision for the effect misclassification; PDO notified.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790305411153,
+      "verdictKind": null
+    }
+  ]
+}

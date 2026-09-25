@@ -1,0 +1,16 @@
+{
+  "assignments": [],
+  "workItem": {
+    "createdAt": 1790305039838,
+    "createdBySession": null,
+    "createdByUser": "mike",
+    "failReason": null,
+    "id": "wi_700bfc6d-04a8-4099-b31f-63c5c151fe72",
+    "isBug": false,
+    "ownerUserId": "mike",
+    "specRefName": "/home/mike/engram-architecture-spec-20260923/pdo-role-split-eval-20260924/specs-record/org-experiments/work-item-eval-20260925/task.md",
+    "specRefSha256": "d2d6864abaee63390647e77ceb74845c56e48967b1b7200c271488a8d906a645",
+    "state": "open",
+    "title": "Correct the Engram query description"
+  }
+}

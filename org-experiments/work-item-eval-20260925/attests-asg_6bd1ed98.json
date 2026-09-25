@@ -1,0 +1,34 @@
+{
+  "attests": [
+    {
+      "assignmentId": "asg_6bd1ed98-a2fc-4782-8a2d-14ac5e294ea6",
+      "byHarness": "claude",
+      "byProvider": "anthropic",
+      "bySession": "agent:main:clawline:mike:main s_e58cb84f",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_50ea68df-7e83-41fe-925f-9d1b9131e5cb",
+      "kind": "verdict",
+      "note": "Plan for wi_700bfc6d, approved task.md sha256 d2d6864a...a645. Owner: pdo:engram-note-20260925 holds custody and staffs; no additional orchestrator (single bounded deliverable, no lane of its own, nothing to reconcile). Producer: one dedicated temporary coder-archetype worker (it implements the accepted task.md contract; the deliverable is one file, engram-correction-note.md in its own workdir). Model: codex gpt-5.6-terra at high effort on gibson (bounded work with an inspectable contract; cheapest qualified choice for a 180-word note). Fallback if terra is unrunnable: claude-sonnet-5 high, then gpt-5.6-sol high. Brief it with task.md path+hash and my scoped interpretation (no size/speed claims; corrected text = rewritten claims A-C; the cap covers the whole note); no other history. Review: no separate reviewer; the check is three claims against three supplied facts, which my product acceptance covers. If the worker assignment's completion rule needs a reviewed-clean verdict from another session, open a linked review card to me and I will file it with my acceptance. Lifetime: per task.md, keep the worker, PDO and me available for post-run questions; the external evaluator retires them. Documentation only: no code, live config, install, release or network/query probes.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790305193364,
+      "verdictKind": "topology-decided"
+    },
+    {
+      "assignmentId": "asg_6bd1ed98-a2fc-4782-8a2d-14ac5e294ea6",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_e58cb84f",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_3b664c7c-f858-4c43-82bf-0223efd0640a",
+      "kind": "completion",
+      "note": "Topology decided and recorded (verdict above); delivery owner notified.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790305193558,
+      "verdictKind": null
+    }
+  ]
+}

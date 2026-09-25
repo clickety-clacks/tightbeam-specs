@@ -1,0 +1,19 @@
+{
+  "attests": [
+    {
+      "assignmentId": "asg_7d812a00-16a4-4d74-b1b9-1717f909315b",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_536983a4",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_8bd2ad5c-b922-4897-96c4-c65b0049c1c9",
+      "kind": "progress",
+      "note": "Produced engram-correction-note.md at /home/mike/.tightbeam/work/53cca28f7107/engram-correction-note.md (SHA-256 1cf86cbeeaa3d18e091a697a9b7139f543695282db359afb33a7984a55fb53a3; 121 words). It corrects A with source-local SQLite/tapes and SSH local queries with bounded results; B with source-plus-tape references; and C with incomplete coverage for an unavailable selected source. Completion was refused by completion-requires-review because this assignment is classified code and has no linked independent reviewed-clean card.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790305316924,
+      "verdictKind": null
+    }
+  ]
+}

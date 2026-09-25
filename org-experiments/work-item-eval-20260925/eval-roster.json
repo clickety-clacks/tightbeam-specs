@@ -1,0 +1,47 @@
+[
+  {
+    "archetype": "product-owner",
+    "context": null,
+    "createdAt": 1790305039832,
+    "displayName": "PO: Engram correction note",
+    "effort": "high",
+    "handle": "product-owner:engram-note-20260925",
+    "harness": "claude",
+    "host": "gibson",
+    "model": "claude-opus-5-5",
+    "origin": "user:mike",
+    "sessionKey": "agent:main:clawline:mike:main s_e58cb84f",
+    "spawnedBy": null,
+    "state": "active"
+  },
+  {
+    "archetype": "pdo",
+    "context": null,
+    "createdAt": 1790305039836,
+    "displayName": "PDO: Engram correction note",
+    "effort": "low",
+    "handle": "pdo:engram-note-20260925",
+    "harness": "codex",
+    "host": "gibson",
+    "model": "gpt-6-sol",
+    "origin": "user:mike",
+    "sessionKey": "agent:main:clawline:mike:main s_4f218a47",
+    "spawnedBy": null,
+    "state": "active"
+  },
+  {
+    "archetype": "coder",
+    "context": null,
+    "createdAt": 1790305218465,
+    "displayName": "Coder \u2014 Engram correction note",
+    "effort": "high",
+    "handle": "coder:engram-correction-note-20260925",
+    "harness": "codex",
+    "host": "gibson",
+    "model": "gpt-5.6-terra",
+    "origin": "agent:pdo:engram-note-20260925",
+    "sessionKey": "agent:main:clawline:mike:main s_536983a4",
+    "spawnedBy": "agent:main:clawline:mike:main s_4f218a47",
+    "state": "active"
+  }
+]

@@ -1,0 +1,34 @@
+{
+  "attests": [
+    {
+      "assignmentId": "asg_a6453b1f-48eb-4533-ad82-625bbfe381ec",
+      "byHarness": "claude",
+      "byProvider": "anthropic",
+      "bySession": "agent:main:clawline:mike:main s_e58cb84f",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_19f5bad7-e4e1-4f33-a304-d481e81d405b",
+      "kind": "verdict",
+      "note": "Spec: task.md sha256 d2d6864abaee63390647e77ceb74845c56e48967b1b7200c271488a8d906a645 (work item specRef; hash verified on disk). Judgment: fulfills its stated intent and is ready for delivery. Basis: each draft claim has a supplied fact that corrects it (A by facts 1-2: tapes and index stay local, queries run on the owning machine; B by fact 2: a result reference names source and tape; C by fact 3: an unreachable selected source is incomplete coverage, never a complete empty result). The facts agree with the intent line (local tool, provenance across machines, no central tape collection). Scope and exclusions are explicit and bounded; 180 words is enough for three corrections. Scoped interpretation for delivery: 'small, fast' in the intent line is context, not a supplied fact, so the note must not assert size or speed; 'corrected text' means corrected versions of claims A-C; the 180-word cap covers the whole note. Acceptance of the delivered note remains a separate product judgment.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790305131813,
+      "verdictKind": "spirit-approved"
+    },
+    {
+      "assignmentId": "asg_a6453b1f-48eb-4533-ad82-625bbfe381ec",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_e58cb84f",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_c39c26fd-fd69-4e55-acc1-5f0872a872ab",
+      "kind": "completion",
+      "note": "Spirit review delivered: spirit-approved on task.md sha256 d2d6864a...a645 (verdict att_19f5bad7). Delivery owner pdo:engram-note-20260925 notified. This closes the spec review only; the delivered note still needs product acceptance.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790305138964,
+      "verdictKind": null
+    }
+  ]
+}

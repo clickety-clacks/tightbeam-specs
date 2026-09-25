@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>The corrected work-item eval</title><style>
+:root{color-scheme:light dark;--paper:#f4f8f8;--ink:#173238;--muted:#526a6f;--line:#b5cacc;--accent:#14646c;--panel:#fff;--warn:#fff1dc}@media(prefers-color-scheme:dark){:root{--paper:#102126;--ink:#e7f3f1;--muted:#b3c9c7;--line:#628184;--accent:#86d7d4;--panel:#193137;--warn:#514225}}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 ui-sans-serif,system-ui,sans-serif}.wrap{max-width:1240px;margin:auto;padding:clamp(1rem,4vw,3rem)}h1{font-size:clamp(2rem,4vw,3rem);line-height:1.15}h2{font-size:1.25rem}p,td,th,code{overflow-wrap:anywhere}.intro{max-width:82ch;color:var(--muted)}.notice{padding:1rem;border-left:4px solid var(--accent);background:var(--warn);margin:1.5rem 0}table{border-collapse:collapse;width:100%;background:var(--panel);table-layout:fixed}th,td{text-align:left;vertical-align:top;padding:1rem;border-bottom:1px solid var(--line)}th{font-size:.88rem;color:var(--muted)}td:first-child{width:23%}strong{font-weight:650}.kind{display:block;font-size:.8rem;color:var(--muted);margin-top:.5rem}details{margin-top:.8rem;font-size:.88rem;color:var(--muted)}summary{cursor:pointer;color:var(--accent)}a{color:var(--accent)}.limits{margin-top:2rem;max-width:85ch}code{font-size:.86em}@media(max-width:760px){table,tbody,tr,td{display:block}thead{display:none}tr{border:1px solid var(--line);margin-bottom:1rem}td,td:first-child{width:auto;border:0;padding:.7rem 1rem}td[data-label]::before{content:attr(data-label);display:block;font-size:.8rem;font-weight:700;color:var(--muted);margin-bottom:.3rem}}@media print{body{font-size:11px}details{display:block}tr{break-inside:avoid}}
+
+.wrap{max-width:1100px}.reading{max-width:90ch}.reading h1{font-size:1.7rem}.reading h2{margin-top:2rem}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--panel);padding:1rem;border:1px solid var(--line)}blockquote{border-left:3px solid var(--line);margin-left:0;padding-left:1rem;color:var(--muted)}details{font-size:1rem;color:var(--ink);border:1px solid var(--line);padding:1rem;background:var(--panel)}summary{font-weight:650}nav{display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0}.chip{font-size:.85rem;color:var(--muted)}table th,table td{padding:.75rem}.full-report{border-top:1px solid var(--line);padding-top:1.5rem}
+.reading{max-width:78ch;margin-inline:auto}.reading>h1{font-size:clamp(2rem,4vw,3rem)}.reading>h2{font-size:1.35rem}.reading>p:first-of-type{font-size:1.15rem}#wording-diff{min-width:0;margin-top:1rem}details{margin-top:2rem}li+li{margin-top:.35rem}
+</style></head><body><main class="wrap"><article class="reading"><h1>The corrected work-item eval</h1>
+<p>The agents completed the job from a properly populated work item. The PDO asked the PO for the staffing plan, followed it, and delegated the writing. The PO accepted the 121-word result, and all assignments and the work item closed.</p>
+<p>Both the PO and worker read the job through the work item's linked spec. The worker confirmed it did not need another agent's conversation to understand the task. This run gives us no reason to add a separate briefing process.</p>
+<h2>What was different</h2>
+<p>I put the complete job in the work item's specification reference before dispatch. I read the reference back and verified the file and its hash. The spec contained the facts, draft claims, word limit, deliverable and scope restrictions.</p>
+<p>The existing <code>spec-dispatch-requires-spirit</code> rule refused the first delivery dispatch until the PO approved that spec. I obtained the PO judgment and retried the same dispatch. The PDO then sought the staffing decision before hiring the writer. No guidance was changed for these temporary agents during the run.</p>
+<p>The run used the installed 0.1.8 build 1343 and identity revision <code>8a61fd3</code>. It is not a test of the unpublished 0.1.9 alignment changes.</p>
+<h2>Who did the work</h2>
+<table>
+<thead>
+<tr>
+<th>Responsibility</th>
+<th>Archetype</th>
+<th>Model</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td data-label="Responsibility">Delivery</td>
+<td data-label="Archetype">PDO</td>
+<td data-label="Model">Sol 6 low</td>
+</tr>
+<tr>
+<td data-label="Responsibility">Product judgment and staffing plan</td>
+<td data-label="Archetype">Product owner</td>
+<td data-label="Model">Opus 5.5 high</td>
+</tr>
+<tr>
+<td data-label="Responsibility">Writing the note</td>
+<td data-label="Archetype">Coder</td>
+<td data-label="Model">Terra 5.6 high</td>
+</tr>
+</tbody>
+</table>
+<p>The PO chose one writer and no additional orchestrators. It said the coder role fit a file produced against an accepted contract. It chose Terra from the installed model guidance because it considered Luna max excessive for the small writing task.</p>
+<p>That choice does not demonstrate compliance with the user's newer preference for version 6 models. The served guidance still included the older fallback. The PDO used the PO's selected model and did not substitute its own choice.</p>
+<h2>What worked</h2>
+<p>The worker received the exact spec path, its hash and the correct PDO reporting address. It sent the result to that PDO. The note corrected all three draft claims and stayed under the 180-word limit.</p>
+<p>The note says queries do not require every satellite to copy its tape collection centrally. It avoids the earlier unsupported claim that nothing is copied. It also requires source-and-tape identification and makes an unavailable source visible as incomplete coverage.</p>
+<p>The PDO stayed out of producing the note. When a delivery problem needed a change to the plan, it asked the PO and followed the returned revision. The PO confirmed that it found no unapproved plan changes.</p>
+<h2>What still caused extra work</h2>
+<p>The writer's assignment defaulted to code because the PDO omitted its work type. That triggered code-test and code-review requirements for a documentation note. The PO's plan had not named a work type either.</p>
+<p>The agents recovered without inventing tests or review evidence. The PO revised the plan, the PDO revoked the misclassified assignment and opened an evidence assignment, and the worker completed that assignment using the already accepted file. No rewrite was needed.</p>
+<p>The PDO also opened an extra delivery assignment to record a required posture verdict after a staffing refusal. In its interview, it said it could have checked whether the existing delivery assignment could hold that verdict. It spent much of its first turn waiting and checking for the PO's decision, the note and acceptance; incoming messages queued behind that turn.</p>
+<p>The writer initially reported the assignment complete before its completion filing succeeded. It corrected the notice after the refusal. The final records distinguish the produced document from the completed assignment.</p>
+<h2>Result and limits</h2>
+<p>The run took 7 minutes 23 seconds from the initial PO spec-review assignment through final assignment closure, or 5 minutes 46 seconds from successful delivery dispatch. It finished September 24 at 8:05 PM PT.</p>
+<p>I read the note and collected all three agents' explanations before retiring the temporary sessions. The note, task, interviews and work records are preserved below.</p>
+<p>This is one successful delivery with recoverable coordination mistakes. It establishes that these agents could get the complete job through the work item and follow the PO/PDO split in this run. It does not establish that every entry point, model or larger task will behave the same way.</p>
+<p>The newly requested invariant-preservation guidance was not active during this run. Its author has added the sentence to the shared manual candidate and matching live candidate; review and publication are separate work still in progress.</p>
+<h2>Evidence</h2>
+<ul>
+<li><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/work-item-eval-20260925/task.md">Complete task</a> and <a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/work-item-eval-20260925/engram-correction-note.md">delivered note</a></li>
+<li><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/work-item-eval-20260925/work-item-before-dispatch.json">Work item before dispatch</a> and <a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/work-item-eval-20260925/work-item-result.json">final work item and assignments</a></li>
+<li><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/work-item-eval-20260925/interviews/pdo-answer.md">PDO interview</a>, <a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/work-item-eval-20260925/interviews/po-answer.md">PO interview</a>, <a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/work-item-eval-20260925/interviews/worker-answer.md">worker interview</a></li>
+<li><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/work-item-eval-20260925/spec-approval-attests.json">Initial spec approval</a> and <a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/work-item-eval-20260925/result-review-attests.json">result acceptance and repair decision</a></li>
+<li><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/work-item-eval-20260925/run.json">Run configuration</a>, <a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/work-item-eval-20260925/eval-roster.json">agent roster</a> and <a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/work-item-eval-20260925/turns.json">turn records</a></li>
+<li><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/work-item-eval-20260925/invariant-guidance-request.md">Authorized invariant-guidance request</a></li>
+</ul>
+<p><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/plain-language-report.md">Earlier run: correction of my incomplete setup</a></p><details id="wording-changes"><summary>What changed after the setup correction</summary><p>The report now identifies my incomplete work item as the setup error and withdraws the recommendation for extra handoff process. The comparison shows the changed conclusion. The original evidence remains unchanged.</p><div id="wording-diff"></div></details></article></main><script type="module">
+const disclosure = document.querySelector('#wording-changes');
+disclosure.addEventListener('toggle', async () => {
+  if (!disclosure.open || disclosure.dataset.loaded) return;
+  disclosure.dataset.loaded = 'yes';
+  try {
+    const { FileDiff } = await import('https://esm.sh/@pierre/diffs@1.2.10?bundle');
+    new FileDiff({theme:{light:'github-light',dark:'github-dark'},themeType:matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light',overflow:'wrap',diffStyle:'unified'}).render({
+      containerWrapper:document.querySelector('#wording-diff'),
+      oldFile:{"name": "report-conclusion.md", "contents": "# Why the agents got tangled up\n\nThe best next test is to put the complete task in one shared document, then give each worker a link and a short instruction about its part. That is Opus's main recommendation, and I agree with it.\n\nThe PDO tried to use short instructions in this run. The problem was that the work item it pointed to did not contain the task. The other agents had to search its conversation to find out what to do. That search also exposed instructions meant for someone else.\n\nThis page retells the independent Opus 5.5 review in plain language. It includes corrections from checking the records. The original report and interviews are linked below.\n\n## What I would try next\n\nUse the existing document and specification links to try one complete shared task document. It should contain the facts, constraints, expected result and acceptance criteria. Each worker should get its part, output location and reporting destination. Instructions meant only for the PDO should stay separate.\n\nA link alone is not enough. The document must exist, identify the version to use and be readable by the worker. File access between sessions on the same machine worked here. Access between machines was not tested.\n\nThen repeat the same task with the same models and settings. Compare a task supplied only in a message with one also stored in that shared document. Handle work types the same way in both versions, so we can tell whether the document helps. Count missing facts, searches through other agents' conversations, messages sent to the wrong agent and unsupported claims.\n\nOne run cannot tell us whether the PDO needs a smarter model. It does give us specific problems to fix or test before making that judgment.\n\nThese are recommendations. This case study has not changed guidance or software, and no new behavior test has run.\n\n"},
+      newFile:{"name": "report-conclusion.md", "contents": "# I set up the handoff test incorrectly\n\nIn Tightbeam, the job belongs in the work item. I created this work item with only a title and sent the full instructions to the PDO in a separate message. There was no task description or linked specification for the other agents to read.\n\nThat was my setup error. I then judged the agents as though I had supplied a complete work item. The run does not tell us whether they handle a properly created work item correctly.\n\nI withdraw the recommendation to add a separate shared brief or more handoff process based on this run. The next valid test should encode the job in the work item using Tightbeam's existing mechanism, then exercise that normal flow.\n\nThe original records and Opus report remain linked below. This correction replaces the earlier recommendation and my attribution of the missing instructions mainly to the PDO.\n\n## What the next test needs to establish\n\nFirst, create a complete work item through Tightbeam's existing process. Confirm that reading it gives the agents the job, including its facts and constraints. Then give the PDO that work item and evaluate whether it consults the PO, follows the staffing plan and delegates the assigned parts correctly.\n\nThat is the normal flow we meant to test. My incomplete setup prevented this run from answering that question. It provides no basis for requiring another document, adding briefing steps or deciding that the PDO needs a smarter model.\n\nThis correction changes the report. No new behavior test has run, and it adds no guidance or software changes.\n\n"}
+    });
+  } catch {
+    document.querySelector('#wording-diff').textContent = 'The wording comparison could not load. The rewritten report is above.';
+    delete disclosure.dataset.loaded;
+  }
+});
+</script></body></html>

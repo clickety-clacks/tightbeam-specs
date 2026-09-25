@@ -1,0 +1,23 @@
+{
+  "workItemId": "wi_700bfc6d-04a8-4099-b31f-63c5c151fe72",
+  "pdo": "agent:main:clawline:mike:main s_4f218a47",
+  "po": "agent:main:clawline:mike:main s_e58cb84f",
+  "spec": "/home/mike/engram-architecture-spec-20260923/pdo-role-split-eval-20260924/specs-record/org-experiments/work-item-eval-20260925/task.md",
+  "sha256": "d2d6864abaee63390647e77ceb74845c56e48967b1b7200c271488a8d906a645",
+  "sharedCopy": "/mnt/shared-workspace/shared/specs/wi_700bfc6d-04a8-4099-b31f-63c5c151fe72/engram-correction-task.md",
+  "models": {
+    "pdo": {
+      "model": "gpt-6-sol",
+      "effort": "low"
+    },
+    "po": {
+      "model": "claude-opus-5-5",
+      "effort": "high"
+    }
+  },
+  "preflight": "work-item spec reference read back; exact referenced bytes read and hash verified before dispatch",
+  "initialDispatchRefusal": "spec-dispatch-requires-spirit: obtain PO spirit verdict before dispatch",
+  "preDispatchPoAssignment": "asg_a6453b1f-48eb-4533-ad82-625bbfe381ec",
+  "dispatchStartedAtMs": 1790305177651,
+  "intakeAssignment": "asg_cf1ab2d4-a44e-44cc-a490-e3d38db00f9e"
+}

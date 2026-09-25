@@ -1,0 +1,49 @@
+{
+  "attests": [
+    {
+      "assignmentId": "asg_38447af0-13ad-4bd0-9d3c-f8b985845cb7",
+      "byHarness": "codex",
+      "byProvider": "openai",
+      "bySession": "agent:main:clawline:mike:main s_536983a4",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_8c28f722-14ff-498e-ad61-d3b0adbd0add",
+      "kind": "verdict",
+      "note": "Verified the existing deliverable at /home/mike/.tightbeam/work/53cca28f7107/engram-correction-note.md: observed SHA-256 is 1cf86cbeeaa3d18e091a697a9b7139f543695282db359afb33a7984a55fb53a3, matching the PO-accepted hash cited in att_5bf38585. No file contents were changed.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790305464951,
+      "verdictKind": "confirmed"
+    },
+    {
+      "assignmentId": "asg_38447af0-13ad-4bd0-9d3c-f8b985845cb7",
+      "byHarness": "codex",
+      "byProvider": "openai",
+      "bySession": "agent:main:clawline:mike:main s_536983a4",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_c9242fce-66d4-4688-b536-3a7f916f17ed",
+      "kind": "verdict",
+      "note": "Verification: sha256sum /home/mike/.tightbeam/work/53cca28f7107/engram-correction-note.md observed 1cf86cbeeaa3d18e091a697a9b7139f543695282db359afb33a7984a55fb53a3, matching the PO-accepted file cited by att_5bf38585. Observed 121 words and unchanged contents; this is the accepted evidence deliverable.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790305493009,
+      "verdictKind": "verified"
+    },
+    {
+      "assignmentId": "asg_38447af0-13ad-4bd0-9d3c-f8b985845cb7",
+      "byHarness": null,
+      "byProvider": null,
+      "bySession": "agent:main:clawline:mike:main s_536983a4",
+      "byUser": null,
+      "commitRefs": null,
+      "id": "att_2aa3f5c7-bc87-4971-9f87-5efea76214ed",
+      "kind": "completion",
+      "note": "Delivered the existing PO-accepted evidence file without rewriting it: /home/mike/.tightbeam/work/53cca28f7107/engram-correction-note.md (SHA-256 1cf86cbeeaa3d18e091a697a9b7139f543695282db359afb33a7984a55fb53a3; 121 words). PO acceptance is att_5bf38585 and verification is att_c9242fce. The note corrects centralized copying, tape-ID-only identification, and complete-empty results for unavailable selected sources using only the supplied facts.",
+      "producer": null,
+      "producerCommand": null,
+      "ts": 1790305504044,
+      "verdictKind": null
+    }
+  ]
+}
