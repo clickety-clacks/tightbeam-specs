@@ -50,6 +50,11 @@
     "sha256": "7b20c0e7d70de57fbd958f548529b19ec938fca0808d0ea600d1686be397e292"
   },
   {
+    "path": "guidance-publication.json",
+    "bytes": 878,
+    "sha256": "fb7bc53fa7b5ddb477eff265de9381d7717734d0e8a9cc8f27db1cf182e74b7a"
+  },
+  {
     "path": "initial-dispatch-refusal.stderr",
     "bytes": 215,
     "sha256": "b0bd191964a60bd990f8cffcbd2d3654f5959392317e969b9ab7d4f2947ae999"
@@ -126,13 +131,13 @@
   },
   {
     "path": "report.html",
-    "bytes": 15031,
-    "sha256": "5f56a4eea47e861477af227ef46221cf6ed272a6a71bd24e2eafe8b534de8714"
+    "bytes": 15346,
+    "sha256": "a0e3cb84f086aa5c5ea9e83b2266fb5454f81760a87f92816d57ac541a404f8a"
   },
   {
     "path": "report.md",
-    "bytes": 5281,
-    "sha256": "862f5503e690f8988631b1396c05ef0f556c99951c8f93edbf031261f9d45e68"
+    "bytes": 5473,
+    "sha256": "437db0ada2a0f9a4c021f56fbab8c16d256c3ba074cf090c5ed5044adc138656"
   },
   {
     "path": "result-review-attests.json",

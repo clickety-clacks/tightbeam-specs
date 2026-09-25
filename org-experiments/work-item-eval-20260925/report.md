@@ -50,7 +50,7 @@ I read the note and collected all three agents' explanations before retiring the
 
 This is one successful delivery with recoverable coordination mistakes. It establishes that these agents could get the complete job through the work item and follow the PO/PDO split in this run. It does not establish that every entry point, model or larger task will behave the same way.
 
-The newly requested invariant-preservation guidance was not active during this run. Its author has added the sentence to the shared manual candidate and matching live candidate; review and publication are separate work still in progress.
+The newly requested invariant-preservation guidance was not active during this run. It has since been published in the live shared manual at revision `fe1acf6`, and the rendered PDO guidance includes it for both model providers. Busy existing sessions still need a refresh at a turn boundary. The matching 0.1.9 change is independently reviewed and awaiting integration.
 
 ## Evidence
 
@@ -59,4 +59,4 @@ The newly requested invariant-preservation guidance was not active during this r
 - [PDO interview](interviews/pdo-answer.md), [PO interview](interviews/po-answer.md), [worker interview](interviews/worker-answer.md)
 - [Initial spec approval](spec-approval-attests.json) and [result acceptance and repair decision](result-review-attests.json)
 - [Run configuration](run.json), [agent roster](eval-roster.json) and [turn records](turns.json)
-- [Authorized invariant-guidance request](invariant-guidance-request.md)
+- [Authorized invariant-guidance request](invariant-guidance-request.md) and [live publication readback](guidance-publication.json)

@@ -1,0 +1,19 @@
+{
+  "liveRevision": "fe1acf6a3dfff1928f897b260208206e97a3ce85",
+  "state": "ready",
+  "conflictingPaths": [],
+  "sharedManual": "/home/mike/.tightbeam/identity/guidance/operating-manual.md",
+  "manualSha256": "1f71b19cdd165e8bbcd176876d00d67bdb0911314cf77b22d3f303d22bd523d8",
+  "wording": "Keep every applicable user-specified invariant in the governing work item and any associated spec, regardless of whether it came through chat, a document, or another source. Preserve the user's meaning.",
+  "pdoRenderedGuidance": {
+    "claude": true,
+    "codex": true
+  },
+  "sessionsAtReadback": {
+    "refreshed": 1,
+    "total": 82
+  },
+  "refreshLimit": "Busy sessions cannot refresh until a turn boundary; turn_in_progress was observed for the active delivery owner.",
+  "source019ReviewedCommit": "f90a2b50e344e34964632cc258a81a56fe7a42c2",
+  "source019Integration": "pending"
+}
