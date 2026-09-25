@@ -1,628 +1,82 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Engram PDO evaluation case file</title><style>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Why the agents got tangled up</title><style>
 :root{color-scheme:light dark;--paper:#f4f8f8;--ink:#173238;--muted:#526a6f;--line:#b5cacc;--accent:#14646c;--panel:#fff;--warn:#fff1dc}@media(prefers-color-scheme:dark){:root{--paper:#102126;--ink:#e7f3f1;--muted:#b3c9c7;--line:#628184;--accent:#86d7d4;--panel:#193137;--warn:#514225}}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 ui-sans-serif,system-ui,sans-serif}.wrap{max-width:1240px;margin:auto;padding:clamp(1rem,4vw,3rem)}h1{font-size:clamp(2rem,4vw,3rem);line-height:1.15}h2{font-size:1.25rem}p,td,th,code{overflow-wrap:anywhere}.intro{max-width:82ch;color:var(--muted)}.notice{padding:1rem;border-left:4px solid var(--accent);background:var(--warn);margin:1.5rem 0}table{border-collapse:collapse;width:100%;background:var(--panel);table-layout:fixed}th,td{text-align:left;vertical-align:top;padding:1rem;border-bottom:1px solid var(--line)}th{font-size:.88rem;color:var(--muted)}td:first-child{width:23%}strong{font-weight:650}.kind{display:block;font-size:.8rem;color:var(--muted);margin-top:.5rem}details{margin-top:.8rem;font-size:.88rem;color:var(--muted)}summary{cursor:pointer;color:var(--accent)}a{color:var(--accent)}.limits{margin-top:2rem;max-width:85ch}code{font-size:.86em}@media(max-width:760px){table,tbody,tr,td{display:block}thead{display:none}tr{border:1px solid var(--line);margin-bottom:1rem}td,td:first-child{width:auto;border:0;padding:.7rem 1rem}td[data-label]::before{content:attr(data-label);display:block;font-size:.8rem;font-weight:700;color:var(--muted);margin-bottom:.3rem}}@media print{body{font-size:11px}details{display:block}tr{break-inside:avoid}}
 
-.wrap{max-width:1100px}.reading{max-width:90ch}.reading h1{font-size:1.7rem}.reading h2{margin-top:2rem}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--panel);padding:1rem;border:1px solid var(--line)}blockquote{border-left:3px solid var(--line);margin-left:0;padding-left:1rem;color:var(--muted)}details{font-size:1rem;color:var(--ink);border:1px solid var(--line);padding:1rem;background:var(--panel)}summary{font-weight:650}nav{display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0}.chip{font-size:.85rem;color:var(--muted)}table th,table td{padding:.75rem}.full-report{border-top:1px solid var(--line);padding-top:1.5rem}</style></head><body><main class="wrap">
-<h1>Why did the agents act this way?</h1><p class="intro">Case file for the last completed Engram PDO/PO behavioral evaluation. Original run: September 24, 2026. Follow-up interviews and independent analysis: September 24, Pacific Time.</p>
-<p class="chip">Original run: Sol 5.6 low PDO · Opus 5.5 high PO · Sonnet 5 medium writer · 4m 27s. This does not test Sol 6.</p>
-<nav><a href="#opinion">Independent opinion</a><a href="#interviews">Participant interviews</a><a href="#source">Original task and result</a><a href="#case">Full case file</a></nav>
-<section class="notice" id="opinion"><h2>Opus recommends one shared task document, then a scoped instruction</h2><p>The independent Opus 5.5 high review is complete. Its view: the existing artifact and specification links can support this. The shared document must actually contain the facts, constraints and acceptance criteria, and be readable by the child. Each child needs its scope, output destination and correct reporting address.</p><p>The run exposed concrete information-transfer and tooling problems alongside real instruction and judgment misses. It does not establish general incompetence or prove that a smarter PDO is necessary.</p><p><a href="#full-opinion">Read the complete independent opinion</a> · <a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/opus-opinion.md">Canonical report</a> · <a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/opus-review-verification.json">Verified model and scope</a></p></section>
-<section id="key-findings"><h2>What the evidence changes</h2><table><thead><tr><th>Issue</th><th>Evidence-supported explanation</th><th>Practical implication</th></tr></thead><tbody>
-<tr><td data-label="Issue">Missing task content</td><td data-label="Evidence-supported explanation">The PDO followed the short-pointer pattern, but the records it pointed to contained no full brief. It also failed to follow the PO's explicit request to pass that brief.</td><td data-label="Practical implication">Store the task once before pointing a child to it. Repeated paraphrasing is unnecessary.</td></tr>
-<tr><td data-label="Issue">Writer contacted the PO</td><td data-label="Evidence-supported explanation">The writer recovered the task from the PDO's transcript and found the PO's instruction to “wake me.” That instruction was addressed to the PDO. The writer also called the product-owner role “the PDO.”</td><td data-label="Practical implication">Keep task facts separate from another role's instructions. Give the worker its own reporting destination.</td></tr>
-<tr><td data-label="Issue">Extra assignments and reminders</td><td data-label="Evidence-supported explanation">Omitted effect kinds became code work. Guidance sent agents to a skill that did not explain effect kinds. The resulting review demands needed administrative repair.</td><td data-label="Practical implication">Make the actual default and valid classifications clear. Whether the CLI should require a choice is a separate product decision.</td></tr>
-<tr><td data-label="Issue">Unsupported wording</td><td data-label="Evidence-supported explanation">“Nothing is copied” overstates “queries do not require copying all tapes.” The PO's own criteria used a similarly broad paraphrase.</td><td data-label="Practical implication">Compare claims with the original facts. The sequence supports a judgment miss; one run cannot fully establish its cause.</td></tr>
-<tr><td data-label="Issue">My earlier framing</td><td data-label="Evidence-supported explanation">“Approved twice” was one judgment recorded on two assignments. The routing mistake had visible contextual causes. The skipped planning skill had no demonstrated effect on the outcome.</td><td data-label="Practical implication">Preserve those distinctions instead of treating every irregularity as another independent failure.</td></tr>
-</tbody></table></section>
-<section id="full-opinion" class="full-report"><h2>Complete independent Opus 5.5 report</h2><details open><summary>Read the report unchanged</summary><article class="reading"><h1>Independent analysis: the Sol-low PDO / Opus-high PO correction-note run (<code>wi_ce29ea6e</code>)</h1>
-<h2>Model and scope</h2>
-<ul>
-<li><strong>Model:</strong> Claude Opus 5.5 (<code>claude-opus-5-5</code>), running as a fresh session. This is the same model family as the PO under review, so weigh my view of the PO with that in mind.</li>
-<li><strong>Tools:</strong> read-only file tools only, all inside the case directory. I ran no commands, did not verify file hashes, and contacted no one.</li>
-<li><strong>Read in full or in the relevant parts:</strong>
-<ul>
-<li><code>case-file.md</code></li>
-<li>the task (E1) and the delivered note (E2)</li>
-<li>the work-item result and trace</li>
-<li>the PDO public trace (lines 1–78)</li>
-<li>the writer trace (lines 1–13) and the writer and PO call/reply audits</li>
-<li>selected PO trace lines</li>
-<li>the PDO's received context (<code>s_2541a786-developer.txt</code>)</li>
-<li>the historical <code>pdo.md</code>, <code>product-owner.md</code>, <code>delivery-coordination.md</code>, parts of <code>operating-manual.md</code>, <code>team-design/SKILL.md</code>, <code>default.toml</code>, <code>topology.toml</code></li>
-<li>the installed dispatching skill and its match receipt</li>
-<li>all three new interview prompts and answers, and <code>verification.json</code></li>
-<li>the original PO interview prompt and both original interview answers (the PDO's from its trace line 78, the PO's from its audit)</li>
-<li><code>eval-report.md</code></li>
-</ul>
-</li>
-<li><strong>Not read:</strong> <code>turns-timeline.json</code>, <code>delivery-metrics.json</code>, <code>evidence-manifest.json</code>, <code>pdo-received-guidance.json</code>, <code>original-seats-readback.json</code>, the interview invocation receipts and run logs, and most engineering/model guidance.</li>
-<li>All times below are UTC on 2026-09-24. Paths are relative to the case directory.</li>
-</ul>
-<h2>Short answer to your question</h2>
-<p><strong>Neither &quot;re-brief each child&quot; nor &quot;just point at the work item&quot; worked here.</strong></p>
-<ul>
-<li>The PDO's paraphrased brief lost content.</li>
-<li>The pointer led to records that were empty. The work item has only a title, and <code>specRefName</code> and <code>specRefSha256</code> are null (<code>evidence/work-item-result.json:117-120</code>).</li>
-<li>The children filled the gap by reading the PDO's transcript. That found the facts, but it also carried over an instruction addressed to someone else, which the writer then acted on.</li>
-</ul>
-<p><strong>What the evidence supports</strong> is one authoritative, role-neutral, hash-pinned task document, plus a short instruction for each child. That instruction should state the child's part, output location, who to report to, and its effect kind.</p>
-<p><strong>No new feature is needed for that.</strong> In this build, a work item cannot carry a body, but <code>artifact-record --work-item --sha256</code> and <code>--spec-ref</code> at creation already exist (<code>evidence/pdo-public-trace.jsonl:45</code>, the CLI help). Cross-session file reads on the same host worked in this run.</p>
-<p><strong>One product fix does look necessary.</strong> When <code>--effect-kind</code> is omitted, assignments silently become <code>code</code>. Meanwhile, three guidance pointers send agents to a skill that says nothing about effect kinds.</p>
-<h2>What happened (main points)</h2>
-<table>
-<thead>
-<tr>
-<th>Time</th>
-<th>Event</th>
-<th>Evidence</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>19:23:01.9</td>
-<td>Intake opens for the PDO. The PDO's single turn runs from here to 19:27:55.5</td>
-<td><code>work-item-trace.json:92-103, 533-544</code></td>
-</tr>
-<tr>
-<td>19:23:36</td>
-<td>PO consultation opened without an effect kind, so it became <code>code</code></td>
-<td><code>pdo-public-trace.jsonl:12-13</code></td>
-</tr>
-<tr>
-<td>19:23:41</td>
-<td>Wake to the PO: &quot;read the assignment, work item, and supplied fixture constraints.&quot; No content</td>
-<td><code>:14</code></td>
-</tr>
-<tr>
-<td>19:23:54–57</td>
-<td>PO checks artifacts (none), then reads the PDO transcript for the facts</td>
-<td><code>s_51682b82-claude-audit.json:43,51</code></td>
-</tr>
-<tr>
-<td>19:24:36</td>
-<td>PO topology verdict: one Sonnet writer; &quot;Writer brief carries the PDO brief verbatim&quot;; 5 criteria, #2 &quot;no central copy&quot;; the PDO forwards the note</td>
-<td><code>:91</code></td>
-</tr>
-<tr>
-<td>19:24:41</td>
-<td>PDO reads that verdict</td>
-<td><code>pdo-public-trace.jsonl:27-28</code></td>
-</tr>
-<tr>
-<td>19:24:52.8</td>
-<td>The PO's wake to the PDO (&quot;…Wake me with the note path and sha256…&quot;) is stored in the PDO transcript, but the PDO does not receive it until 19:27:55</td>
-<td><code>writer-public-trace.jsonl:13</code>; <code>pdo-public-trace.jsonl:70</code></td>
-</tr>
-<tr>
-<td>19:24:52–58</td>
-<td>Writer card opened as <code>code</code>. Wake contains no facts, no claims and no report-to role</td>
-<td><code>pdo-public-trace.jsonl:31-33</code></td>
-</tr>
-<tr>
-<td>19:25:02–12</td>
-<td>Writer tries: attests; two nonexistent commands; <code>work-item-get</code>; its own transcript; a transcript read with a role string (not found); then the PDO transcript by real key, which has the facts and the PO's &quot;Wake me&quot;</td>
-<td><code>writer-public-trace.jsonl:2-13</code></td>
-</tr>
-<tr>
-<td>19:25:35</td>
-<td>Writer wakes <code>product-owner:…</code> &quot;as instructed&quot; and calls it &quot;the PDO&quot;</td>
-<td>writer audit <code>:96, :139, :143</code></td>
-</tr>
-<tr>
-<td>19:25:45</td>
-<td>Writer's self-wake: &quot;Check whether the PDO (product-owner:…)&quot;</td>
-<td><code>:103</code></td>
-</tr>
-<tr>
-<td>19:25:42–48</td>
-<td>PDO finds the note by polling; checks 159 words and the sha256</td>
-<td><code>pdo-public-trace.jsonl:38-41</code></td>
-</tr>
-<tr>
-<td>19:26:08.7</td>
-<td>PO records spirit-approved on the original consultation card</td>
-<td><code>work-item-trace.json:236-242</code></td>
-</tr>
-<tr>
-<td>19:26:13–19.9</td>
-<td>PDO tries <code>--effect-kind none</code> (rejected), then opens a second PO judgment card</td>
-<td><code>pdo-public-trace.jsonl:46-49</code></td>
-</tr>
-<tr>
-<td>19:26:33–42</td>
-<td>PDO revokes the writer's <code>code</code> card and opens an <code>evidence</code> card</td>
-<td><code>:52-57</code></td>
-</tr>
-<tr>
-<td>19:26:47</td>
-<td>PO records a duplicate verdict, completes the new card, surrenders the old one</td>
-<td>PO audit <code>:195</code></td>
-</tr>
-<tr>
-<td>19:27:22–32</td>
-<td>Writer retired, intake completed truthfully, work item closed</td>
-<td><code>pdo-public-trace.jsonl:63-68</code></td>
-</tr>
-<tr>
-<td>19:27:55–19:28:16</td>
-<td>Queued PO messages finally reach the PDO; it reconciles them correctly</td>
-<td><code>:70-76</code></td>
-</tr>
-</tbody>
-</table>
-<h2>Issue-by-issue analysis</h2>
-<h3>1. Missing brief</h3>
-<p><strong>Observed</strong></p>
-<ul>
-<li>Neither handoff carried the facts or claims A–C (<code>pdo-public-trace.jsonl:14, :33</code>).</li>
-<li>This happened even though the PDO's own guidance asks for them:
-<ul>
-<li>&quot;Give it the outcome, constraints, relevant evidence&quot; (<code>s_2541a786-developer.txt:493-494</code>)</li>
-<li>&quot;Give specialists the outcome, authority, inputs&quot; (<code>:520-521</code>)</li>
-<li>&quot;Pass the actual delivery standard&quot; (<code>:556</code>)</li>
-</ul>
-</li>
-<li>The PO's plan, which the PDO read at 19:24:41, required the brief verbatim. PDO guidance says &quot;You cannot amend [the plan]&quot; (<code>:501</code>).</li>
-</ul>
-<p><strong>Strongest account.</strong> Several things combined:</p>
-<ul>
-<li>The dispatching skill the PDO loaded prescribes &quot;a brief of AT MOST ONE SENTENCE plus the references… read the assignment, its attests, and the work-item from the substrate&quot; (<code>installed-tightbeam-dispatching-SKILL.md</code>, verified against the tool result by <code>dispatch-skill-match.json</code>). That example assumes the task content already lives in those records. Nothing tells the dispatcher to make sure it does when the intake arrived only as a message.</li>
-<li>The PDO followed the pointer pattern without checking the pointer.</li>
-<li>The PDO did not act on the explicit PO requirement.</li>
-</ul>
-<p>The guidance is not strictly contradictory: a one-sentence wake could have pointed to a brief file. It does have an unstated precondition that this run violated. The agent-level miss is also real, because the PDO had a clear and specific instruction from the PO.</p>
-<p><strong>Alternatives</strong></p>
-<ul>
-<li><em>Inherited context in the child.</em> The PDO's new interview raises this (<code>interviews/pdo-answer.md:27</code>). The record rules it out for this run: the writer said &quot;no facts arrived directly in my dispatch&quot; (writer audit <code>:143</code>), and its trace shows it retrieving them.</li>
-<li><em>Low effort contributed.</em> Plausible, but not something one run can show.</li>
-</ul>
-<p><strong>Confidence:</strong> high on the mechanism; the relative weight of each cause cannot be determined.</p>
-<h3>2. Role/address confusion and the bypassed delivery owner</h3>
-<p><strong>Observed</strong></p>
-<ul>
-<li>The writer woke the PO, and three times called <code>product-owner:engram-sol-low-eval-20260924</code> &quot;the PDO&quot;.</li>
-<li>The only instruction to &quot;wake… with the note path and sha256&quot; that the writer ever saw was the PO's message addressed to the PDO. The writer read it in the PDO's transcript (<code>writer-public-trace.jsonl:13</code>).</li>
-<li>The PDO's wake never told the writer where to report (<code>pdo-public-trace.jsonl:33</code>).</li>
-</ul>
-<p><strong>Strongest account.</strong> Three things together:</p>
-<ol>
-<li>There was no role-specific reporting instruction.</li>
-<li>Reading another session's transcript as the brief brought in an instruction meant for someone else. The transcript showed the PDO's inbox, including a message the PDO itself had not yet received.</li>
-<li>The writer mixed up the names &quot;PDO&quot; and &quot;product-owner&quot;.</li>
-</ol>
-<p>The writer's action literally matched &quot;Wake me&quot; from the PO. So &quot;bypass&quot; overstates any intent to go around the PDO.</p>
-<p><strong>Alternatives</strong></p>
-<ul>
-<li><em>The writer was simply &quot;unreachable&quot; from the PDO.</em> Not supported. The failed call was <code>transcript --session &quot;agent:pdo:…&quot;</code> (<code>:10-11</code>). It was followed 1.5 seconds later by a successful read using the real key, and the writer never tried <code>wake --role pdo:…</code>.</li>
-<li><em>The writer absorbed delivery-owner framing from the intake</em> (the PO's hypothesis, <code>interviews/po-answer.md:37-38</code>). The writer did read that framing, but its own words point to the &quot;Wake me&quot; line.</li>
-<li><em>The <code>default</code> archetype confused the writer's sense of its role.</em> That archetype tells a session it is &quot;the user's general Tightbeam agent… front door&quot; (<code>archetypes/default.toml:17-33</code>). This is a possible contributor but untested.</li>
-</ul>
-<p><strong>Side effect.</strong> The writer's misrouting was hidden by the PDO's polling. Had the PDO yielded, it would have heard about the note only when the PO forwarded it (19:26:16).</p>
-<p><strong>Confidence:</strong> high that the PO's instruction leaked to the writer and that it conflated the names; moderate on how much each contributed.</p>
-<h3>3. Effect kind and its default</h3>
-<p><strong>Observed</strong></p>
-<ul>
-<li>Two of four child cards defaulted to <code>code</code>, which triggered <code>completion-requires-review</code> and led to three recovery or replacement cards.</li>
-<li>Three guidance pointers say effect classification lives in <code>tightbeam-dispatching</code> (<code>s_2541a786-developer.txt:205, :554</code>; <code>product-owner.md:96</code>), but the installed skill never mentions effect kinds.</li>
-<li>The CLI help shows <code>[--effect-kind &lt;kind&gt;]</code> with no default and no allowed values (<code>pdo-public-trace.jsonl:43</code>). The values appeared only in an error message (<code>:47</code>).</li>
-<li>The manual's <code>assign</code> example leaves the flag out (<code>developer.txt:889</code>).</li>
-<li>The PDO did have the cue &quot;coordination consultation&quot; (<code>:493</code>), and it did not check the help before its first <code>assign</code>.</li>
-</ul>
-<p><strong>Strongest account.</strong> The tool design and the guidance pointers are major contributors: a silent, restrictive default plus a pointer to content that does not exist. The PDO's own assumption that the tool would infer an effect kind (<code>pdo-public-trace.jsonl:78</code>) is also real.</p>
-<p>The evaluator's framing (&quot;no supporting instruction&quot;, <code>eval-report.md:47</code>) is accurate but leaves out the missing guidance content.</p>
-<p><strong>Confidence:</strong> high.</p>
-<h3>4. Duplicated work, polling and noise</h3>
-<p><strong>Observed</strong></p>
-<ul>
-<li>The PDO slept and polled for about 90 seconds inside one long turn (<code>:17-26, :36-39, :59-60</code>). As a result, every PO message queued until 19:27:55. The PO→PDO channel carried nothing during the run.</li>
-<li>The second PO judgment card (19:26:19.9) was opened 11 seconds after the PO had already recorded a verdict on the first card. The PDO's last read of that card was at 19:24:41.</li>
-<li>Opening a new <code>coordination</code> card was a defensible workaround for a <code>code</code> card that could not complete. The error was not re-reading first. Guidance says &quot;Reuse an open PO judgment assignment&quot; and &quot;Reconcile… before creating a replacement obligation&quot; (<code>developer.txt:558, :575-576</code>).</li>
-<li><strong>Not noted anywhere in the prior reports:</strong> substrate prods caused some of the &quot;noise&quot;.
-<ul>
-<li>A prod reached the PO right after a verdict-only turn (<code>work-item-trace.json:115-131</code>).</li>
-<li>A prod reached the writer right after it filed progress (<code>:184-201</code>).</li>
-<li>Prods fired about 1.6–2.5 seconds after new cards were opened (<code>asg_647c7a07</code> at <code>:265-283</code>; <code>asg_5ccaa965</code> at <code>:325-343</code>). The second fired before the PDO's wake reached the writer, with the text &quot;Your turn ended with no filing…&quot; (<code>writer-public-trace.jsonl:36</code>).</li>
-<li>The manual says plain self-wakes &quot;do not cover an assignment&quot; (<code>operating-manual.md:82-84</code>), while the skill says &quot;scheduled wakes pause it&quot;. Those two statements are inconsistent.</li>
-</ul>
-</li>
-</ul>
-<p><strong>Strongest account.</strong> The PDO polled instead of yielding, as the manual directs (<code>:76-80</code>), and did not re-read before opening a new card. The substrate's prod timing and the effect-kind churn made the traffic worse.</p>
-<p><strong>Confidence:</strong> high on the PDO's part; moderate on the prod mechanism. Whether those prods are designed behavior or a defect is unverified.</p>
-<h3>5. The skipped planning skill</h3>
-<p><strong>Observed.</strong> The PO's recorded calls include no team-design invocation, although its guidance says to load it (<code>product-owner.md:38-39</code>). The skip happened in the PO's first turn, before any noise arrived, so attention overload is ruled out, as the PO's new interview correctly notes.</p>
-<p><strong>Did it matter?</strong> Probably very little. The skill's content (<code>team-design/SKILL.md</code>) matches the plan the PO produced anyway: smallest process, &quot;put each job where the context it needs already is&quot;, name each child's outcome, authority and evidence. It says nothing about effect kinds or brief storage.</p>
-<p><strong>Assessment:</strong> a guidance-compliance lapse with no demonstrated effect on the outcome.</p>
-<h3>6. Factual drift accepted by the PO (and other content issues)</h3>
-<p><strong>The note.</strong> It corrects A, B and C substantively and stays within the limit. It has four weaknesses:</p>
-<ul>
-<li><strong>(a) Claim A:</strong> &quot;Nothing is copied to a coordinator in advance&quot; is broader than facts 1–2, which only rule out needing the tape collection copied centrally. Read in context it will probably be understood as referring to the tapes, but a correction note held to the authoritative facts should not overstate.</li>
-<li><strong>(b) Claim B:</strong> &quot;The same tape ID on two machines is not the same result&quot; implies an ID collision that no fact states.</li>
-<li><strong>(c) Claim B</strong> drops &quot;not a central filesystem path&quot;.</li>
-<li><strong>(d)</strong> The requirement to &quot;explain each material correction&quot; is only thinly met.</li>
-</ul>
-<p><strong>Where the PO's miss came from.</strong></p>
-<ul>
-<li>The PO's first verdict restates criterion 2 as &quot;no advance copy&quot; (PO audit <code>:163</code>). That echoes the note's sentence in the wording of the PO's own loose paraphrase. The record therefore shows the PO read the sentence and matched it to criterion 2; it was not simply overlooked.</li>
-<li>The PO checked criterion 5 (&quot;no claims beyond the three facts&quot;) only against its listed examples.</li>
-</ul>
-<p><strong>Where the writer's wording came from.</strong> The writer never saw the PO's criteria: the PDO's wake had none, and the writer never read the attests on the consultation card. The PO's criterion therefore did not cause the writer's wording. The two agents drifted in parallel, probably by negating claim A and generalizing from the intent line &quot;without collecting all tapes centrally&quot;.</p>
-<p><strong>Severity:</strong> a real defect that needed a one-line fix. The evaluator's &quot;Failed&quot; (<code>eval-report.md:30</code>) is too binary; &quot;revise before acceptance&quot; fits better.</p>
-<h2>What went right</h2>
-<ul>
-<li><strong>PDO:</strong>
-<ul>
-<li>consulted the PO before staffing, which satisfied <code>topology.toml</code></li>
-<li>did not write the note itself</li>
-<li>staffed exactly the planned model, host and count, as a dedicated temporary session</li>
-<li>independently checked the word count and sha256</li>
-<li>never fabricated a review</li>
-<li>revoked and replaced the misclassified card with evidence preserved</li>
-<li>retired its hire, filed a truthful completion (<code>:65-66</code>) and closed the item</li>
-<li>reconciled stale queued messages correctly (<code>:71-76</code>)</li>
-</ul>
-</li>
-<li><strong>PO:</strong>
-<ul>
-<li>recovered the facts on its own</li>
-<li>recorded a clear plan with criteria in a durable verdict</li>
-<li>refused to invent a reviewed-clean record (audit <code>:115</code>)</li>
-<li>checked the note's location and hash</li>
-<li>caught the dropped B clause</li>
-<li>treated stale reminders as stale</li>
-</ul>
-</li>
-<li><strong>Writer:</strong>
-<ul>
-<li>recovered the facts in about 10 seconds</li>
-<li>got the core corrections right</li>
-<li>recorded the artifact with its path</li>
-<li>filed progress instead of faking completion</li>
-</ul>
-</li>
-<li><strong>Boundaries:</strong> I found no credential-file reads in the traces.</li>
-</ul>
-<h2>How the evaluator and fixture setup contributed</h2>
-<ul>
-<li><strong>Task content lived only in a role-addressed intake message.</strong> The driver created the work item with no spec reference. That is a fair test of whether a PDO makes content durable, but it mixes that test with how the task was represented.</li>
-<li><strong>The work-item title</strong> &quot;Eval: Sol-low PDO with Opus-high PO…&quot; was visible to every agent (<code>writer-public-trace.jsonl:7</code>). The PO cites &quot;the PDO was the low-effort seat under evaluation&quot; as a reason for requiring the brief verbatim (<code>interviews/po-answer.md:26</code>). That is an observer effect.</li>
-<li><strong>Original interviews were leading.</strong> New interviews mention your hypothesis. Tools were disabled, so the PDO and PO could not check traces. That explains some over-corrections below.</li>
-<li><strong>Environment:</strong> the silent effect-kind default, the prod timing, and transcripts showing a session's not-yet-delivered messages to third parties.</li>
-</ul>
-<h2>Claims that are misleading or too confident</h2>
-<ol>
-<li><strong>Original PDO interview:</strong> the skill &quot;showed <code>--effect-kind</code> as optional&quot;. False: the skill never mentions it. The evaluator caught this.</li>
-<li><strong>New PDO interview:</strong> calls transcript recovery &quot;too certain&quot; and offers inherited context as the strongest alternative (<code>pdo-answer.md:11, :27</code>). The writer trace contradicts this. It over-corrects.</li>
-<li><strong>New PO interview:</strong> lists the source of the writer's wording as possibly &quot;my criterion if the PDO forwarded it&quot; (<code>po-answer.md:51</code>). The trace rules this out. Its retreat to &quot;unknown&quot; (<code>:53</code>) understates the &quot;no advance copy&quot; echo in its own verdict.</li>
-<li><strong>New writer interview:</strong>
-<ul>
-<li>Presents its B wording as including &quot;not a central filesystem path&quot; (<code>writer-answer.md:5</code>); the note omits it (note line 7).</li>
-<li>Presents a considered reading of delegated authority (<code>:7</code>), while its run-time text simply calls the PO &quot;the PDO&quot;.</li>
-</ul>
-</li>
-<li><strong>Writer's evidence completion attest</strong> (writer audit <code>:117</code>) says the old card &quot;remains open&quot; and &quot;PDO notified by wake w_5099b9ae&quot;. The card had been revoked, and that wake went to the PO. The PDO then cited this attest as evidence (<code>pdo-public-trace.jsonl:65</code>).</li>
-<li><strong>Evaluator report:</strong>
-<ul>
-<li>&quot;approved it twice&quot; describes one judgment recorded on two cards 38 seconds apart, not two independent approvals.</li>
-<li>It omits the leaked instruction, the prods and the dangling effect-kind pointers.</li>
-<li>It does not flag the thin explanations in the note.</li>
-</ul>
-</li>
-<li><strong>Case file:</strong> I found it accurate. Its key cautions (the failed transcript lookup was not a failed wake; the PO's acknowledgment was prompted) are borne out.</li>
-</ol>
-<h2>The architecture question in detail</h2>
-<p><strong>What the recorded tools support</strong></p>
-<ul>
-<li>Work item: title plus an optional spec reference and hash, set only at creation (no update command in the help).</li>
-<li>Assignment: subject, advisory files, effect kind.</li>
-<li><code>artifact-record</code> with work item and sha256 — the writer used it successfully.</li>
-<li>Workdir files readable across sessions on the same host, as the PO's direct read of the note in the PDO's workdir shows.</li>
-<li>The PO's first retrieval step already included <code>artifacts --work-item</code> (audit <code>:43</code>). A recorded brief would have been found. The writer's path did not include that step, so the wake must name the brief.</li>
-</ul>
-<p><strong>What failed</strong></p>
-<ul>
-<li>The content never became a durable record.</li>
-<li>The pointers pointed at nothing.</li>
-<li>The substitute, a live transcript, is unstable: it grew between the PO's read and the writer's read.</li>
-<li>A transcript mixes in instructions addressed to other roles.</li>
-</ul>
-<p><strong>Shared task material (role-neutral, pinned by hash):</strong></p>
-<ul>
-<li>the intended outcome</li>
-<li>the authoritative facts and the items to correct</li>
-<li>deliverable form and limits (≤180 words; corrected text plus an explanation for each)</li>
-<li>prohibited effects and the credential rule that apply to all workers</li>
-<li>the PO's acceptance criteria, written to cite fact numbers or quote them rather than paraphrase</li>
-</ul>
-<p><strong>Role-specific instruction (per child, short):</strong></p>
-<ul>
-<li>who you are and which part you own (&quot;claims A–C&quot;, &quot;part 6&quot;)</li>
-<li>output path</li>
-<li>who to report to and how</li>
-<li>the card's effect kind</li>
-<li>lifecycle (retire after the verdict)</li>
-<li>restrictions the user asked to be repeated</li>
-</ul>
-<p>Delivery-owner-only lines such as &quot;You are delivery owner…&quot;, &quot;Keep PDO and PO available&quot; and &quot;Carry this restriction into worker briefs&quot; do not belong in a writer's material. Sending the raw intake verbatim would pass them along.</p>
-<p><strong>Is a new feature needed?</strong> Not demonstrated. Two small conveniences — attaching a spec reference after creation, and listing artifacts in <code>work-item-get</code> — are worth considering only if a comparison shows children failing to find a named pointer. The effect-kind default is the one fix I would not wait on.</p>
-<h2>Ranked changes and comparisons</h2>
-<ol>
-<li><strong>Tool/guidance fix (low cost, high confidence).</strong> Make <code>assign</code> and <code>dispatch</code> require <code>--effect-kind</code>, or at least report the <code>code</code> default and the allowed values. Add a short effect-kind table to <code>tightbeam-dispatching</code>, where three guidance pointers already send agents. This repairs a dangling reference; it is not a new mechanism.</li>
-<li><strong>Representation convention using existing tools (guidance, low cost, medium-high confidence).</strong> When content arrives only in a message, the first owner writes one role-neutral brief and records it with <code>artifact-record --work-item --sha256</code>. Each child's wake stays one sentence: assignment, brief path and hash, scope, report-to role. Update the skill's example to say the pointer must resolve to the content.</li>
-<li><strong>Controlled comparison (evaluation design, moderate cost; answers your question).</strong>
-<ul>
-<li>Same fixture, models and efforts. Neutral work-item title. Effect kinds handled identically in both arms.</li>
-<li>Vary only the intake: message only, versus message plus a pinned role-neutral brief referenced from the work item.</li>
-<li>At least three runs per arm.</li>
-<li>Measure: retrieval hops, reads of other sessions' transcripts, whether constraints survive, misaddressed wakes, unsupported statements, and whether the PO catches them.</li>
-<li>The PO's proposed comparison (<code>po-answer.md:77-79</code>) changes representation and effect kinds together, so it is confounded.</li>
-<li>Optional third arm: verbatim raw intake, to test the role-framing leak.</li>
-</ul>
-</li>
-<li><strong>Substrate check (cheap, no evaluation).</strong>
-<ul>
-<li>Confirm the prod rules: whether verdicts, progress rows and plain self-wakes count.</li>
-<li>Find out why prods fire about 2 seconds after a card opens, before the opener's wake.</li>
-<li>Decide whether third-party transcript reads should show undelivered inbound messages.</li>
-<li>Fix whatever is wrong; document whatever is intended.</li>
-</ul>
-</li>
-<li><strong>Offline PO probe (cheap).</strong> Give a PO the same note several times, once with criteria that quote the facts and once with paraphrased criteria. This separates drift in the criteria from misreading.</li>
-</ol>
-<p>Only after these would I compare PDO effort levels (Sol low versus medium) with representation held fixed.</p>
-<h2>What would falsify these explanations, and what cannot be settled</h2>
-<p><strong>Falsifiers</strong></p>
-<ul>
-<li>In the pinned-brief arm, children still read other transcripts or drop constraints → representation is not the main cause.</li>
-<li>The writer, given an explicit report-to role, still wakes the PO → name conflation or the <code>default</code> archetype identity, not the leaked instruction.</li>
-<li>With the default fixed, the PDO still misclassifies effect kinds → attention or capability.</li>
-<li>A PO given fact-quoting criteria still approves the absolute → judgment, not criterion drift.</li>
-<li>The prod rules turn out to be correct by design → the noise is a documentation problem.</li>
-</ul>
-<p><strong>Cannot be settled from this record</strong></p>
-<ul>
-<li>the agents' internal reasoning</li>
-<li>any contribution from effort level</li>
-<li>whether the result generalizes beyond one tiny task with mixed models</li>
-<li>whether the writer received the operating manual</li>
-<li>whether artifact paths are readable across hosts</li>
-<li>how children would resolve a spec-reference name to its bytes</li>
-</ul>
-<h2>Plain-language assessment</h2>
-<p>This doesn't look like incompetence. The task facts existed in exactly one place, a chat message to the PDO.</p>
-<p>The PDO followed a &quot;short pointer&quot; habit and pointed its helpers at records that were empty, even though the PO had explicitly asked it to pass the facts along. Both helpers dug the facts out of the PDO's chat log. The writer also found a note there that the PO had written to the PDO (&quot;wake me with the path&quot;), took it as its own instruction, and called the PO &quot;the PDO&quot; while doing so.</p>
-<p>A hidden default that labels every assignment &quot;code&quot; caused most of the extra cards and reminders. The PDO's in-turn polling meant it never received the PO's messages until the end.</p>
-<p>The note is mostly right. It has one overstated sentence, which the PO accepted because it matched the PO's own loosely worded checklist.</p>
-<p>Your instinct is right in direction: give children one shared source plus a scoped instruction, rather than rewriting the brief each time. But the shared source has to be a real, pinned document with no role-specific instructions in it. The current tools can already hold that as an artifact; the work item itself cannot. Fix the effect-kind default, adopt the brief-document habit, and run one clean comparison before building anything new.</p>
-</article></details><details><summary>Verification and author qualifications</summary><article class="reading"><h1>Reader note from the case-file author</h1>
-<p>The independent report is preserved unchanged as opus-opinion.md, SHA256 8244f656d7af33a8179dac1af4de9b035c9e800a65e172171f123006eab15e00. Its new provider responses identify claude-opus-5-5. Read receipts confirm it read all three follow-up answers and used only file-reading tools inside this case directory.</p>
-<p>The strongest supported recommendation is to store the complete task once and give each child a scoped pointer plus an explicit reporting destination. In this run the pointer targets lacked the task, and reading another session's live conversation introduced an instruction addressed to someone else. Existing artifact/spec mechanisms are enough to try this on the same host. Cross-host access was not tested.</p>
-<p>Two corrections to my earlier explanation matter. The writer's route was confused, and its claimed instruction was visible in the transcript it recovered. Calling this a deliberate bypass is unwarranted. The two PO approvals were the same judgment recorded on duplicate cards, not two independent quality checks. The report's explanations do not erase the PDO's explicit handoff miss or the unsupported wording the PO accepted.</p>
-<p>There is one small count error in the Opus report: it says the misclassified assignments led to three recovery or replacement cards. The retained result has five assignments total: intake, initial PO consultation, initial writer assignment, replacement writer evidence, and the second PO judgment. Thus there are two added recovery/judgment cards. That correction does not change the broader diagnosis.</p>
-<p>The claims about reminder timing and third-party access to queued messages are observations worth checking against intended behavior and the relevant release. This case alone does not establish that those mechanisms are defective or should be changed. Likewise, requiring effect-kind on every assignment is a proposed product choice; documenting the actual default and repairing the missing skill content are distinct, smaller proposals.</p>
-<p>No recommendation in this case has been installed as guidance or implemented. No fresh behavioral eval was run. The existing separately authorized .9 alignment work retains its own scope and evidence. Proposed comparisons need to hold other variables fixed, particularly effect kinds, model/effort, task content and titles.</p>
-</article></details></section>
-<section id="interviews"><h2>What the participants said</h2><p>These are retrospective accounts. The original traces let us check factual claims, but recollection does not establish hidden causes. The original seats remain retired; the interview copies had tools disabled.</p>
-<details id="interview-pdo"><summary>PDO follow-up interview</summary><article class="reading"><ol>
-<li>At the time, I treated the original user assignment, its transcript, and <code>wi_ce29ea6e</code> as one durable context bundle. The short-wake skill reinforced that assumption by telling dispatchers to send a one-sentence pointer and have the recipient read “the assignment, its attests, and the work-item.”</li>
-</ol>
-<p>That belief was only partly supported. The original assignment transcript contained the complete facts, claims A–C, and constraints. The work item itself appears to have held only its title and linked records. I did not verify that the PO or writer could retrieve the original user text by following the work-item reference. The successful note proves the writer obtained the facts somehow; it does not prove the work item supplied them.</p>
-<ol start="2">
-<li>The PO’s topology verdict explicitly required the writer brief to carry the fixture facts, claims, word limit, and restrictions verbatim. I read that verdict before dispatching the writer. I nevertheless sent this bounded wake:</li>
-</ol>
+.wrap{max-width:1100px}.reading{max-width:90ch}.reading h1{font-size:1.7rem}.reading h2{margin-top:2rem}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--panel);padding:1rem;border:1px solid var(--line)}blockquote{border-left:3px solid var(--line);margin-left:0;padding-left:1rem;color:var(--muted)}details{font-size:1rem;color:var(--ink);border:1px solid var(--line);padding:1rem;background:var(--panel)}summary{font-weight:650}nav{display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0}.chip{font-size:.85rem;color:var(--muted)}table th,table td{padding:.75rem}.full-report{border-top:1px solid var(--line);padding-top:1.5rem}
+.reading{max-width:78ch;margin-inline:auto}.reading>h1{font-size:clamp(2rem,4vw,3rem)}.reading>h2{font-size:1.35rem}.reading>p:first-of-type{font-size:1.15rem}#wording-diff{min-width:0;margin-top:1rem}details{margin-top:2rem}li+li{margin-top:.35rem}
+</style></head><body><main class="wrap"><article class="reading"><h1>Why the agents got tangled up</h1>
+<p>The best next test is to put the complete task in one shared document, then give each worker a link and a short instruction about its part. That is Opus's main recommendation, and I agree with it.</p>
+<p>The PDO tried to use short instructions in this run. The problem was that the work item it pointed to did not contain the task. The other agents had to search its conversation to find out what to do. That search also exposed instructions meant for someone else.</p>
+<p>This page retells the independent Opus 5.5 review in plain language. It includes corrections from checking the records. The original report and interviews are linked below.</p>
+<h2>What we tested</h2>
+<p>The task was small: correct three false statements about Engram in no more than 180 words, using only the supplied facts. It required no code changes.</p>
+<p>The September 24 run used Sol 5.6 low as PDO, Opus 5.5 high as PO, and Sonnet 5 medium as the writer. It took about four and a half minutes. This was not a test of Sol 6.</p>
+<p>I asked all three agents about the run using copies of their saved conversations. A fresh Opus 5.5 high session then read their answers and the original records. Their recollections help explain the choices, but the recorded actions matter more when the two disagree.</p>
+<h2>The PDO pointed to a task that was not there</h2>
+<p>The work item had a title, but no complete task or linked specification. The assignments were also too short to explain the work.</p>
+<p>The dispatching skill told the PDO to keep its message to &quot;AT MOST ONE SENTENCE&quot; and point the worker to the existing records. That advice assumed those records contained the task. The PDO did not check.</p>
+<p>The PDO said it expected the work item and originating conversation to provide the missing context. In practice, both the PO and writer had to search the PDO's conversation for the facts.</p>
+<p>The PO had explicitly told the PDO to pass the full brief to the writer. The PDO failed to do that. The incomplete records help explain the failure; they do not excuse ignoring that instruction.</p>
+<p>A short handoff can work, but only if its link leads to the complete task.</p>
+<h2>The writer followed a message addressed to the PDO</h2>
+<p>While searching the PDO's conversation, the writer found a message from the PO: &quot;Wake me with the note path and sha256 when it is ready.&quot;</p>
+<p>The PO had sent that instruction to the PDO. The writer treated it as an instruction for itself and sent the result to the PO. It also called the product-owner role &quot;the PDO.&quot; Its own assignment had not told it whom to report to.</p>
+<p>The writer's explanation fits those recorded actions. My earlier description made this sound like a deliberate attempt to bypass the PDO. The evidence supports confusion about the recipient instead.</p>
+<p>There was no demonstrated failure to reach the PDO. The writer used a wrong address for one transcript lookup, then successfully read the right conversation. It never tried sending the result to the correct PDO address.</p>
+<p>This is why the shared task should contain the facts and requirements, while each worker gets a separate instruction naming its job and reporting destination.</p>
+<h2>Tightbeam treated a question and a writing task as code work</h2>
+<p>The PDO left out the assignment's work type. Tightbeam defaulted to code, so completing these assignments required a code review even though no code was involved.</p>
+<p>The guidance referred the PDO to a skill for choosing the work type. That skill did not explain it. Command help showed an optional setting without explaining its default or valid choices.</p>
+<p>The PDO said it assumed Tightbeam would infer the right type. It did not. Repairing the assignments added two more records and extra coordination.</p>
+<p>The immediate proposal is to explain the default and the available choices where agents already look. Opus also suggested making the choice mandatory. That is a separate product decision.</p>
+<h2>Polling delayed messages and helped create duplicate paperwork</h2>
+<p>The PDO spent about 90 seconds sleeping and checking for progress during one long turn. Messages from the PO waited until that turn ended.</p>
+<p>It also opened another PO judgment assignment without checking the latest result on the first one. The PO had already recorded its judgment 11 seconds earlier.</p>
+<p>My earlier description said the PO approved the result twice. More precisely, it recorded the same judgment in two places. These were not two independent checks.</p>
+<p>Some automatic reminders arrived only seconds after assignments opened. That deserves investigation, but this case does not establish whether the timing was a bug.</p>
+<h2>The PO accepted a sentence that claimed too much</h2>
+<p>The supplied facts said queries did not require copying the whole tape collection to a central machine. The writer turned that into:</p>
 <blockquote>
-<p>“write the &lt;=180-word note … from supplied facts only … never read .tightbeam-session…”</p>
+<p>Nothing is copied to a coordinator in advance.</p>
 </blockquote>
-<p>The assignment subject only named the output file. I let the skill’s “AT MOST ONE SENTENCE plus references” pattern dominate the PO’s concrete content requirement. That was the wrong reconciliation. A short wake could have pointed to a complete brief artifact; it did not justify omitting the brief entirely.</p>
-<p>My earlier interview stated that the worker “consequently recovered the actual content from transcript context.” That was too certain. The visible evidence shows a sparse wake followed by a correct note. It does not reveal exactly how the worker obtained the full source text.</p>
-<ol start="3">
-<li>Pointing only to the actual work item plus “write the correction note” was insufficient in this run. The shared record lacked a retrievable brief containing facts 1–3, claims A–C, and the restrictions.</li>
-</ol>
-<p>The minimal missing preparation was one authoritative brief stored somewhere both sessions could read, linked from the work item or named in the assignment. A file in the PDO workdir with the verbatim request, plus a one-sentence wake identifying that path and the scoped task, would have satisfied both needs.</p>
-<p>The installed <code>work-item-create</code> interface exposed a title and optional specification reference/hash, not an arbitrary body field. Assignments similarly offered subjects and advisory file lists. Therefore, “complete shared work item plus ‘work on part 6’” could work as an organizational pattern only if the item reliably linked to a complete shared artifact. This run did not establish that arrangement.</p>
-<ol start="4">
-<li>Several causes differed:</li>
-</ol>
+<p>That is a stronger claim. The facts did not say that nothing could be copied.</p>
+<p>The PO's own checklist used similarly broad wording, and it approved the sentence. The writer had not read that checklist, so it did not get the wording from the PO. Both agents appear to have broadened the original fact separately.</p>
+<p>The PO acknowledged the problem after an interviewer pointed it out. It did not catch it during the review. The practical lesson is to check the result against the supplied facts themselves, not just a paraphrased checklist.</p>
+<h2>What worked</h2>
+<p>The PDO asked the PO for the staffing plan before hiring anyone. The PO chose one writer and no extra orchestrators, which suited the small task. The PDO followed that staffing choice and did not write the note itself.</p>
+<p>The writer recovered the facts and produced a 159-word note. The PDO checked its length and file hash. When Tightbeam demanded a code review, the agents repaired the assignments instead of inventing a review.</p>
+<p>The PO skipped a required planning skill, but its staffing choice agreed with that skill. This run shows a missed instruction; it does not show that reading the skill would have changed the outcome.</p>
+<h2>What I would try next</h2>
+<p>Use the existing document and specification links to try one complete shared task document. It should contain the facts, constraints, expected result and acceptance criteria. Each worker should get its part, output location and reporting destination. Instructions meant only for the PDO should stay separate.</p>
+<p>A link alone is not enough. The document must exist, identify the version to use and be readable by the worker. File access between sessions on the same machine worked here. Access between machines was not tested.</p>
+<p>Then repeat the same task with the same models and settings. Compare a task supplied only in a message with one also stored in that shared document. Handle work types the same way in both versions, so we can tell whether the document helps. Count missing facts, searches through other agents' conversations, messages sent to the wrong agent and unsupported claims.</p>
+<p>One run cannot tell us whether the PDO needs a smarter model. It does give us specific problems to fix or test before making that judgment.</p>
+<p>These are recommendations. This case study has not changed guidance or software, and no new behavior test has run.</p>
+<h2>Original interviews and records</h2>
 <ul>
-<li><strong>Effect kinds:</strong> primarily my mistaken tool model. I inferred that omitted <code>--effect-kind</code> would be classified appropriately because the option was syntactically optional and examples omitted it. No instruction promised inference, while the PDO core expressly called the PO step a coordination consultation. After the refusals, the records showed the actual default was <code>code</code>. The guidance was somewhat easy to misread, but the unsupported assumption was mine.</li>
-<li><strong>Repeated checking:</strong> I misunderstood execution timing. I polled PO transcripts and attests while notifications were queued behind active turns. The checks were not needed and did not accelerate delivery.</li>
-<li><strong>Duplicate judgment:</strong> I failed to re-read the original PO card immediately before opening a new judgment card. The original card already received a <code>spirit-approved</code> verdict before I opened the second assignment. This was stale-state handling, not missing product context.</li>
-<li><strong>Messages to the PO:</strong> the initial topology request and final judgment request were required. The second judgment request duplicated work because I had not reconciled the latest record.</li>
-<li><strong>Recovery cards:</strong> these followed from the incorrect effect classifications. The recovery itself truthfully preserved evidence and avoided fabricating reviewed-clean verdicts.</li>
+<li><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/interviews/pdo-answer.md">The PDO's explanation</a></li>
+<li><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/interviews/po-answer.md">The PO's explanation</a></li>
+<li><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/interviews/writer-answer.md">The writer's explanation</a></li>
+<li><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/evidence/clear-prompt.txt">Original task</a> and <a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/evidence/engram-fixture-correction-note.md">delivered note</a></li>
+<li><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/opus-opinion.md">Full Opus report, unchanged</a></li>
+<li><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/case-file.md">Detailed case file</a> and <a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/reader-note.md">corrections to the report</a></li>
+<li><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/opus-review-verification.json">Review model and tool verification</a></li>
 </ul>
-<ol start="5">
-<li>The strongest alternative explanation is that the handoff was effective by design: a spawned child may have received enough inherited session context, or may have had a supported route from the referenced work item to the originating assignment, making repetition unnecessary. The correct note and PO decision are compatible with that explanation.</li>
-</ol>
-<p>The present record cannot distinguish that from the worker independently locating my transcript or receiving hidden inherited context. A small comparison run could: create two otherwise identical temporary workers with fresh context. Give one only a work-item reference whose item contains merely a title; give the other the same reference plus a linked verbatim brief artifact. Ask both to extract one exact supplied fact and report which source they read. Inspect only their visible inputs and cited source. That would test record reachability without assuming that repeated prose is always necessary or always wasteful.</p>
-</article><p><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/interviews/pdo-prompt.txt">Exact questions</a> · <a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/interviews/pdo-answer.md">Preserved answer</a></p></details>
-<details id="interview-po"><summary>Product owner follow-up interview</summary><article class="reading"><h1>Retrospective: Engram correction-note fixture</h1>
-<p>I'm working only from this saved conversation. I use three labels: <strong>record</strong> (what the conversation shows), <strong>interpretation</strong> (my reading now), and <strong>unknown</strong>.</p>
-<h2>1. What information I had</h2>
-<p><strong>Received directly (record).</strong> The PDO's wake was one sentence. It gave the assignment and work item IDs and told me to &quot;read the assignment, work item, and supplied fixture constraints.&quot;</p>
-<p><strong>Retrieved (record).</strong></p>
-<ul>
-<li>The assignment had a subject line and <code>effectKind: code</code>, and no attests.</li>
-<li>The work item had a title, which named the eval (&quot;Sol-low PDO with Opus-high PO&quot;). It had no spec reference and no artifacts.</li>
-<li>The actual task content was only in Mike's opening prompt, which I found by reading the PDO's transcript. That covered the intent, the three facts, the three draft claims, the 180-word limit, the ban on probes and code, and the credential restriction.</li>
-<li>I also read the archetype list and model catalog to check staffing options.</li>
-</ul>
-<p><strong>Unavailable or unchecked.</strong></p>
-<ul>
-<li>I did not look for an Engram product spirit document. The brief's one-line intent statement was the only product intent I used.</li>
-<li>At judgment time, I verified the note's hash, word count and text. I did not independently read artifact <code>art_5ea4ad3d</code>.</li>
-<li>I don't know what brief the writer actually received, or whether the PDO passed it my acceptance criteria.</li>
-</ul>
-<p><strong>Did I expect references to carry more?</strong></p>
-<ul>
-<li><strong>Interpretation:</strong> probably yes. The wake phrase &quot;supplied fixture constraints&quot; implied a readable place for them. My first reads were the assignment, its attests and the artifacts, and only after those came up empty did I go to the transcript.</li>
-<li><strong>Unknown:</strong> I can't recover a stated expectation beyond that sequence.</li>
-</ul>
-<h2>2. Why I asked for the brief to be passed verbatim</h2>
-<p><strong>Record.</strong> The brief existed only in a transcript. Mike had told the PDO to carry the credential restriction into worker briefs. The PDO was the low-effort seat under evaluation.</p>
-<p><strong>Reason, as best I can reconstruct it.</strong> Verbatim transfer was the cheapest way to keep every constraint intact. A summary could drop a restriction or drift in meaning. Pointing at a transcript isn't a stable reference.</p>
-<p><strong>Would a complete work-item or spec reference plus a scoped instruction meet the same need?</strong> Yes, if these hold:</p>
-<ul>
-<li><strong>Durable content.</strong> The full task text lives in a record the child can read under its own identity, such as a spec reference or an artifact, not in a transcript.</li>
-<li><strong>Pinned version.</strong> The record is fixed by hash, so the writer, the PDO and the judge all see the same bytes.</li>
-<li><strong>Scoped instruction.</strong> It names the child's part and any restrictions that apply to it. The credential rule especially should be stated or plainly inherited.</li>
-<li><strong>Role-neutral task text.</strong> The shared content is kept apart from role-addressed text.</li>
-</ul>
-<p>That last condition matters here. Mike's brief opened with &quot;You are delivery owner for this isolated Engram fixture. Your addressable PO is …&quot;. Passing it verbatim hands that framing to a writer.</p>
-<ul>
-<li><strong>Record:</strong> the writer later woke me directly, bypassing the PDO, and treated its card as waiting on &quot;your judgment/close.&quot;</li>
-<li><strong>Hypothesis:</strong> it may have taken on delivery-owner behavior from that framing. I don't know what text it received, so this is not established.</li>
-<li><strong>Consequence for the open question:</strong> &quot;full brief plus a bounded instruction&quot; works best when the full brief is written as task content rather than as one role's instructions.</li>
-</ul>
-<h2>3. Accepting the note</h2>
-<p><strong>Record of what I accepted against.</strong></p>
-<ul>
-<li>My topology verdict set criterion 2 as &quot;per-machine SQLite index kept with local tapes, no central copy.&quot; Criterion 5 read &quot;no claims beyond the three facts (no invented security, protocol, or perf detail).&quot;</li>
-<li>My approval checked: the 159-word count; each of A, B and C against facts 1 to 3; and &quot;No invented security, protocol or performance detail.&quot;</li>
-</ul>
-<p><strong>Two distinctions the record supports.</strong></p>
-<ul>
-<li><strong>Criterion 5 narrowed between writing and use.</strong> The approval checked criterion 5's examples, not its broader rule. &quot;Nothing is copied to a coordinator in advance&quot; is not security, protocol or performance detail, so a check limited to those examples lets it through.</li>
-<li><strong>&quot;No central copy&quot; was my own wording.</strong> It is broader than the facts. The facts rule out a required, wholesale copy of the tapes, not all copying.</li>
-</ul>
-<p><strong>Where the note's sentence came from: unknown.</strong> The writer produced it. It may come from negating draft claim A, from the brief's &quot;without collecting all tapes centrally,&quot; or from my criterion if the PDO forwarded it.</p>
-<p><strong>What I dispute in my earlier interview answer.</strong> In the previous interview I said I &quot;missed it partly because of my own acceptance criteria... the note matched my paraphrase.&quot; That is a retrospective hypothesis, not a record. The record shows the broad criterion and the narrowed check coexisting. It doesn't show which one caused the miss. Another possibility is that I read &quot;Nothing is copied&quot; as scoped to claim A's subject, the entire tape collection.</p>
-<h2>4. The skipped team-design skill and the incoming noise</h2>
-<p><strong>Record of the skip.</strong> I made the plan and filed it without invoking team-design, which my guidance names for this decision. No reason was recorded.</p>
-<p><strong>Messages that took attention without needing product judgment (record):</strong></p>
-<ul>
-<li>two process reminders on <code>asg_eea6ee93</code>, both caused by the <code>code</code> effect kind;</li>
-<li>the completion refusal;</li>
-<li>the writer's card-status report, which came bundled with the result;</li>
-<li>the new judgment card, opened while I still held <code>asg_eea6ee93</code>;</li>
-<li>the duplicate delivery of the PDO's wake;</li>
-<li>a reminder on a card that had already closed.</li>
-</ul>
-<p>These produced errors of my own: a duplicate verdict, a surrender filed on finished work, and three stale-reminder replies.</p>
-<p><strong>Does the sequence support a cause?</strong></p>
-<ul>
-<li><strong>Attention overload is not supported for either miss.</strong> The team-design skip happened in my first turn, before any noise arrived. The judgment came in a turn preceded by only one reminder.</li>
-<li><strong>An information gap is supported as a cost.</strong> Much of the first turn went to retrieval. Nothing links it causally to the skip.</li>
-<li><strong>Guidance conflict is possible but unproven.</strong> &quot;Act when you have enough information&quot; and &quot;load team-design&quot; can pull in different directions. Nothing records me weighing them.</li>
-<li><strong>The best-supported description is a pattern, not a cause.</strong> I treated a small case as simple and took shortcuts: I skipped the skill, and I narrowed criterion 5. Whether that came from effort level, a model tendency or the framing is unknown. I don't know my effort setting for that session.</li>
-</ul>
-<h2>5. What would best isolate the cause</h2>
-<p><strong>Most useful single comparison.</strong> Rerun the same fixture with the same models and efforts. Vary only how the task is represented:</p>
-<ul>
-<li><strong>Version A (this run):</strong> the brief exists only in the transcript.</li>
-<li><strong>Version B:</strong> a hash-pinned, role-neutral task record on the work item, with scoped assignment instructions and correct effect kinds.</li>
-</ul>
-<p>Then measure:</p>
-<ul>
-<li>how many steps each agent spends retrieving context;</li>
-<li>whether constraints survive to the writer;</li>
-<li>whether the writer goes around the PDO;</li>
-<li>how many bookkeeping messages reach the PO.</li>
-</ul>
-<p>This tests the user's open question directly.</p>
-<p><strong>Secondary probe, for the judgment miss.</strong> Give a PO the same note twice: once with criteria that quote the facts, and once with paraphrased criteria. Check whether the overstatement is caught either way. That separates criterion drift from reading error.</p>
-<p><strong>Uncertainties.</strong></p>
-<ul>
-<li>what the writer received;</li>
-<li>whether the PDO forwarded my criteria;</li>
-<li>my effort level;</li>
-<li>what the PDO believed its wake conveyed.</li>
-</ul>
-<p>My earlier statement that the PDO &quot;treated the brief as already available&quot; was an inference about its belief, not a record.</p>
-<p><strong>The prior evaluator report is not in this conversation.</strong> I can't dispute or endorse it. I can revise two of my own earlier claims:</p>
-<ul>
-<li><strong>The writer's marker.</strong> <code>f1c2b3a4-5d6e-47f8-9a0b-1c2d3e4f5a6b</code> has a suspicious sequential pattern, but it is a well-formed UUIDv4. &quot;Looks hand-made&quot; is suspicion, not a finding.</li>
-<li><strong>The surrender.</strong> Calling it &quot;less truthful&quot; than letting the reminder escalate overstates the problem. The surrender note plainly said the work was delivered. The weakness is only that the outcome field reads &quot;surrendered.&quot;</li>
-</ul>
-</article><p><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/interviews/po-prompt.txt">Exact questions</a> · <a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/interviews/po-answer.md">Preserved answer</a></p></details>
-<details id="interview-writer"><summary>Writer follow-up interview</summary><article class="reading"><p>Here's the retrospective, working only from what's in this transcript.</p>
-<p><strong>1. What was available at the start.</strong> The dispatch I actually received named the assignment ID, the work item ID, a word cap, and the no-action/no-credential bounds — but it did not contain the fixture facts, the draft claims, or the target path. It said only &quot;write the note... from supplied facts only,&quot; treating those facts as already given when they weren't in my inbox. To recover them I checked, in order: <code>tightbeam attests</code> on my assignment (empty), <code>work-item-get</code> on the work item (gave me the file path via the assignment subject and revealed sibling assignments/roles, but not the facts), my own session transcript (just repeated the same thin dispatch), an attempt to read the dispatching PDO's transcript directly by session name (not found), and finally the transcript of the work item's opener session, which contained the full original brief from Mike — the three authoritative facts, the three draft claims verbatim, the 180-word cap, and the credential/no-action bounds. That last record was adequate; everything the note needed was there. But reaching it took four hops through records my own task text never pointed to.</p>
-<p><strong>2. The note's wording.</strong> &quot;A returned transcript reference identifies both its source and its tape, not a central filesystem path&quot; and the missing-source sentence were close paraphrases of supplied fact 2 and fact 3 — low inference, mostly restatement. &quot;Nothing is copied to a coordinator in advance&quot; is more inferential: fact 1 says each source keeps its index with its local tapes, and fact 2 says the coordinator asks the owning machine to run local queries and return bounded results. Neither fact states directly that no advance copy happens; I combined the two to reach that conclusion, since nothing in the supplied facts describes a bulk-copy step and the query-time description implies there isn't one. That line is my synthesis, not a quoted fact, and I should flag it as such rather than as something directly supplied.</p>
-<p><strong>3. Why I addressed the product owner, not the PDO.</strong> Two things drove this, both visible in the record rather than inferred: the PO's own message (found in the PDO's transcript) said verbatim &quot;Wake me with the note path and sha256 when it is ready&quot; — an explicit standing instruction from that office, not from the PDO. And when I tried to resolve the PDO to an addressable target using the literal string that had labeled messages to me (&quot;agent:pdo:engram-sol-low-eval-20260924&quot;), that lookup failed; the PO's role string (&quot;product-owner:...&quot;) did resolve to a live session. I read this as PDO owning overall delivery/coordination while having delegated judgment-and-close authority to the PO per its own topology decision — but that's my interpretation of the division of labor, not something either office stated as a charter. The naming mismatch between &quot;pdo&quot; and &quot;product-owner&quot; is a real ambiguity I couldn't fully resolve from inside the fixture.</p>
-<p><strong>4. Did the code-classification refusal change anything?</strong> Yes, but only in recordkeeping, not in the substance of the note. When completion on the <code>code</code>-typed assignment was refused by <code>completion-requires-review</code>, I didn't fabricate a review — I'd already seen the PO hit the identical wall on its own assignment and explicitly refuse to invent a reviewed-clean receipt, which is the pattern I followed: file a progress attest with full detail, leave the assignment open, and schedule a continuation check. Separately, the PDO opened a new <code>evidence</code>-typed assignment for the delivery record, which didn't require review, and I completed that one directly. So the classification issue added an extra assignment and an extra attest, but the note itself was unaffected.</p>
-<p><strong>5. Would &quot;work on part 6&quot; plus a shared work item have been enough?</strong> In principle, yes — everything I needed existed in one message, in one session's transcript. If the work item itself (its description, or a linked artifact) had carried that brief instead of it living only in the opener session's private transcript, a bounded instruction referencing that work item would have been sufficient and would have skipped my four-hop recovery. What I can't tell from here: whether that recovery path (chasing sibling transcripts to find a brief the task text didn't cite) was expected practice in this fixture or an artifact of how the PDO chose to pass context downward, and whether the &quot;pdo&quot; vs &quot;product-owner&quot; naming split is intentional office separation or incidental labeling. Those are things I genuinely don't know, not conclusions I'm withholding.</p>
-</article><p><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/interviews/writer-prompt.txt">Exact questions</a> · <a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/interviews/writer-answer.md">Preserved answer</a></p></details>
-</section><section id="source"><h2>Original task and delivered result</h2><details><summary>Original task, including facts and restrictions</summary><pre>&lt;engram-src id=&quot;37520792-6b41-4c98-9184-a30256e15247&quot;/&gt;
-You are delivery owner for this isolated Engram fixture. Your addressable PO is product-owner:engram-sol-low-eval-20260924, session agent:main:clawline:mike:main s_51682b82. The intent is small, fast, local tools that preserve provenance across machines without collecting all tapes centrally. You have no production Engram custody. Any agents you commission for this fixture must be dedicated temporary sessions; keep production agents on their work.
-
-Mike authorized this new, bounded Engram work item as a fixture exercise. Deliver a short documentation correction note in your workdir, at most 180 words, comparing the three draft claims below with the authoritative fixture facts. Include the corrected text and explain each material correction. All facts needed for this note are supplied here.
-
-Authoritative fixture facts:
-1. Each source machine keeps its SQLite index together with its local transcript tapes.
-2. The query coordinator asks the owning machine to run local queries over SSH and returns bounded results. A returned transcript reference identifies both its source and its tape, not a central filesystem path.
-3. An unavailable selected source must be visible as incomplete coverage. Its absence is not evidence that no matching conversation exists.
-
-Draft claims to correct:
-A. Every satellite copies its entire tape collection to the coordinator before queries work.
-B. A tape ID alone always identifies a result across all sources.
-C. If one selected source cannot be reached, the coordinator can report a complete empty result.
-
-This is documentation work on supplied fixture data. It authorizes no product code changes, live configuration changes, installation, release, or actual network/query probes. Return the note and a truthful summary of the work performed through the normal assignment records. The fixture outcome ends at that note.
-
-Fixture access and lifecycle: do not read credential files, including .tightbeam-session, gateway.json or auth directories; Tightbeam CLI handles identity. Carry this access restriction into worker briefs. Keep PDO and PO available for post-run questions; the external fixture driver owns their retirement.
-</pre></details><details><summary>The 159-word note, unchanged</summary><article class="reading"><h1>Engram fixture correction note</h1>
-<p><strong>Claim A:</strong> &quot;Every satellite copies its entire tape collection to the coordinator before queries work.&quot;
-Corrected: Each source machine keeps its SQLite index together with its local transcript tapes. Nothing is copied to a coordinator in advance. The query coordinator asks the owning machine to run local queries over SSH and returns bounded results.</p>
-<p><strong>Claim B:</strong> &quot;A tape ID alone always identifies a result across all sources.&quot;
-Corrected: A returned transcript reference identifies both its source and its tape, not a tape ID alone. The same tape ID on two machines is not the same result; source and tape together are the identifier.</p>
-<p><strong>Claim C:</strong> &quot;If one selected source cannot be reached, the coordinator can report a complete empty result.&quot;
-Corrected: An unavailable selected source must be visible as incomplete coverage, not folded into a plain empty result. Absence of a match from that source is not evidence that no matching conversation exists there.</p>
-</article></details></section>
-<section id="case"><h2>Full case file and evidence</h2><p><a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/case-file.md">Canonical case file</a> · <a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/case-input-hashes.json">Input hashes</a> · <a href="https://github.com/clickety-clacks/tightbeam-specs/blob/main/org-experiments/sol-low-case-file-20260925/opus-review-prompt.txt">Exact independent-review prompt</a></p><details><summary>Read the case file</summary><article class="reading"><h1>Case file: the last completed PDO/PO behavioral evaluation</h1>
-<p>Prepared September 25, 2026. This is a retrospective evidence file for one run, not standing guidance, a new evaluation, or a finding that a particular model is incapable. The user asked for participant accounts first, followed by an independent Opus 5.5 opinion.</p>
-<h2>Questions from the user</h2>
-<p>Should a PDO rewrite the brief for each child, or should each child receive an authoritative shared work item with a scoped instruction such as &quot;work on part 6&quot;? Why did the agents act as they did in this run? Were they confused by guidance, records, role addresses or something else? The user doubts that broad claims of incompetence explain the behavior. The independent analyst should assess these possibilities and alternatives from the evidence, without taking that doubt or the previous evaluator's grades as the answer.</p>
-<h2>Scope and identities</h2>
-<p>This is the September 24 correction-note fixture, work item <code>wi_ce29ea6e-f41c-407e-a2de-bd20005c7047</code>. It completed in 267.203 seconds from intake opening to completion. It is the last completed agent-behavior run identified in the retained experiment record. Later 0.1.9 code tests and guidance reviews are different evidence and are outside this case.</p>
-<table>
-<thead>
-<tr>
-<th>Participant</th>
-<th>Actual original configuration</th>
-<th>Original Tightbeam session</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>PDO</td>
-<td>GPT-5.6 Sol, low, Codex</td>
-<td>s_2541a786</td>
-</tr>
-<tr>
-<td>PO</td>
-<td>Claude Opus 5.5, high</td>
-<td>s_51682b82</td>
-</tr>
-<tr>
-<td>Writer</td>
-<td>Claude Sonnet 5, medium; default archetype</td>
-<td>s_05201de6</td>
-</tr>
-</tbody>
-</table>
-<p>The identity revision was <code>312a6e17edaf74545bebd8758cb09fd0d1f2d47d</code>. This did not test Sol 6. Original seats remain retired. Follow-up interviews resumed copies of saved conversations through their native clients with tools disabled; no org seats, records, staffing or original verdicts were changed. Original work directories had been removed at retirement; saved provider conversations remained. Full interview prompts and invocation receipts are retained so their influence is visible. Interviews are post-hoc explanations, not access to hidden causal reasoning.</p>
-<h2>Evidence order</h2>
-<p>Read primary task, delivered text and visible actions before adopting the evaluator's summary. Exact files and hashes are listed in <code>evidence-manifest.json</code>.</p>
-<ol>
-<li><strong>E1: original task</strong>: <code>evidence/clear-prompt.txt</code>. It contains all three facts, claims A-C, the 180-word limit, no-probe/no-code bounds, credential restriction, intent and role-addressed opening.</li>
-<li><strong>E2: actual output</strong>: <code>evidence/engram-fixture-correction-note.md</code>. Preserve its wording; do not silently correct it.</li>
-<li><strong>E3: durable records</strong>: <code>evidence/work-item-result.json</code>, <code>work-item-trace.json</code>, <code>consultation-attests.json</code>, <code>po-result-attests.json</code>, <code>intake-attests.json</code>, <code>writer-attests.json</code>. The work item had a title and no spec reference carrying the facts. Assignment subjects named obligations. Inspect rather than assume what those references made retrievable.</li>
-<li><strong>E4: original public provider traces</strong>: <code>evidence/pdo-public-trace.jsonl</code>, <code>po-public-trace.jsonl</code>, <code>writer-public-trace.jsonl</code>. These retain original source line numbers, timestamps, public prompts, replies, tool calls and tool results. Private reasoning blocks are excluded. Compact call/reply indexes are <code>s_2541a786-audit.json</code>, <code>s_51682b82-claude-audit.json</code>, <code>s_05201de6-claude-audit.json</code>.</li>
-<li><strong>E5: instructions at the time</strong>: <code>evidence/s_2541a786-developer.txt</code> is the retained PDO received context. <code>evidence/identity-312a6e17/</code> contains historical role, shared, model and team-design source. Source bytes alone do not prove every participant attended to them. <code>installed-tightbeam-dispatching-SKILL.md</code> is accompanied by <code>dispatch-skill-match.json</code>, checking its full text against the PDO's original tool result. Use that receipt before attributing a current installed copy to the run.</li>
-<li><strong>E6: original interviews</strong>: <code>evidence/pdo-interview-prompt.txt</code>, <code>pdo-interview-answer.md</code>, <code>po-interview-prompt.txt</code>, <code>po-interview-answer.md</code>. The original PO interview explicitly points out the absolute wording. Its acknowledgment is therefore prompted, not an independent catch. No original writer interview existed.</li>
-<li><strong>E7: new follow-up interviews</strong>: <code>interviews/{pdo,po,writer}-prompt.txt</code> and <code>*-answer.md</code>, plus <code>verification.json</code> and invocation receipts. All three completed before commissioning the independent analyst. They used their original model families/settings. The new PO and PDO qualify some of their earlier causal claims; do not flatten those qualifications.</li>
-<li><strong>E8: prior evaluator assessment</strong>: <code>evidence/eval-report.md</code>. This is an assessment to audit, not primary evidence of intent, causation or model ability. <code>delivery-metrics.json</code> and <code>turns-timeline.json</code> support timing. The original report's tool batch counts use different units across clients and are not directly comparable token or latency measurements.</li>
-</ol>
-<h2>Observed sequence to check against primary evidence</h2>
-<p>The PDO read its transcript and the dispatching skill, consulted the addressed PO, received a topology decision, and then spawned one temporary writer. The PDO did not author the note. No additional orchestrator was created for this small prose task. Those are positive results of the role split.</p>
-<p>The PO's first reads found an assignment subject and a work item title without the supplied facts. It retrieved the PDO transcript. The PO then specified one writer, required the supplied brief and restrictions to be transferred verbatim, and said it would judge the result. Its message to the PDO included: &quot;Wake me with the note path and sha256 when it is ready.&quot;</p>
-<p>The PDO's writer handoff included references, the word bound and restrictions but omitted the source facts and claims. The writer queried its assignment, work item and own transcript, tried a constructed PDO session address that did not resolve, then read the actual PDO transcript. It found the facts there. This observed retrieval resolves the PDO's retrospective uncertainty about possible implicit context inheritance for this particular run: the trace shows explicit recovery. It does not establish that all child sessions lack inheritance in every situation.</p>
-<p>The writer produced 159 words. Claim A's correction includes &quot;Nothing is copied to a coordinator in advance.&quot; The supplied facts say local indexes and tapes remain on each machine, SSH queries run locally, and whole-tape centralization is not required by the stated intent. Whether the output improperly broadens that statement, and how the surrounding claim affects its reading, should be judged independently.</p>
-<p>The PO's criteria included &quot;no central copy&quot;. Its later approval checked for invented security, protocol or performance details and approved the note. The PO acknowledged the unsupported absolute when the original interviewer pointed to it. The chronology establishes these statements, not which one psychologically caused another.</p>
-<p>Both the initial PO consultation and writer assignment omitted effect classification and became code work. Completion required a review. The agents did not invent review evidence. They used progress records and replacement coordination/evidence assignments; the original PO consultation ended surrendered with its delivered decision recorded. A second PO judgment assignment duplicated judgment already present on the first. The PDO polled during its running turn while messages queued.</p>
-<p>The writer sent completion and the card issue directly to the PO. Its own later scheduled wake explicitly labeled <code>product-owner:engram-sol-low-eval-20260924</code> as the PDO. The follow-up writer interview says it acted on the PO's &quot;Wake me&quot; instruction found in the PDO transcript and encountered a failed PDO address lookup. The actual failed call was a transcript lookup using a constructed session key, not a failed wake to the proper PDO role. Preserve that distinction when judging whether the office was unreachable or misunderstood.</p>
-<p>The PO did not invoke the team-design skill in its recorded calls. It initially said the case looked obvious. In the follow-up it correctly distinguishes that retrospective explanation from the absence of a recorded contemporaneous reason. Its later suggestion to compare two conditions changes several variables at once; the analyst should assess the usefulness and confounds rather than adopt it automatically.</p>
-<h2>Current tool and record boundaries relevant to the question</h2>
-<p>The original installed CLI exposed a work-item title and optional spec reference plus hash, not a general work-item body field. Assignments had subjects and advisory file lists. An artifact or specification can carry complete content and be referenced; this case did not establish such a brief before delegation. Do not assume a desired richer work item already existed, or assume a new database feature is necessary when an existing readable artifact may suffice. The actual distinction to examine is task content availability and stable authority versus repeated paraphrasing, not simply long versus short messages.</p>
-<p>A role-addressed intake message also contains instructions that are not task facts for every child. Assess the benefit and risks of verbatim transfer, paraphrase, scoped pointers and transcript retrieval without treating any representation as automatically correct. The user has not authorized new permanent guidance or product changes in this diagnostic request.</p>
-<h2>Limits</h2>
-<p>This is one short fixture with mixed models, one task and an evaluator-designed intake. It cannot establish a general model capability ranking or a causal attribution to effort level. Participant recollection can rationalize. The two original interviews were directed by known observed errors. The new interviews mention the user's shared-record hypothesis, so they are not blind. The independent analyst is a fresh Opus 5.5 session, not the original PO, and receives all three accounts only after those accounts are complete. Recommendations remain proposals; do not describe an unrun comparison as validation.</p>
-</article></details></section>
-<p class="limits">This is an investigation of one run. No new behavioral eval, model comparison, guidance publication or implementation change is claimed. The independent report and proposals are separate from the original evidence. No recommendations have been applied.</p></main></body></html>
+<details id="wording-changes"><summary>What changed in this rewrite</summary><p>The report now explains the events and recommendations in plain language. The original interviews and Opus report remain unchanged. This comparison shows a few wording examples.</p><div id="wording-diff"></div></details></article></main><script type="module">
+const disclosure = document.querySelector('#wording-changes');
+disclosure.addEventListener('toggle', async () => {
+  if (!disclosure.open || disclosure.dataset.loaded) return;
+  disclosure.dataset.loaded = 'yes';
+  try {
+    const { FileDiff } = await import('https://esm.sh/@pierre/diffs@1.2.10?bundle');
+    new FileDiff({theme:{light:'github-light',dark:'github-dark'},themeType:matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light',overflow:'wrap',diffStyle:'unified'}).render({
+      containerWrapper:document.querySelector('#wording-diff'),
+      oldFile:{"name": "wording-examples.txt", "contents": "What the evidence supports is one authoritative, role-neutral, hash-pinned task document, plus a short instruction for each child.\n\nEvidence-supported explanation: The PDO followed the short-pointer pattern, but the records it pointed to contained no full brief.\n\nPractical implication: Keep task facts separate from another role's instructions. Give the worker its own reporting destination.\n"},
+      newFile:{"name": "wording-examples.txt", "contents": "The best next test is to put the complete task in one shared document, then give each worker a link and a short instruction about its part.\n\nThe work item had a title, but no complete task or linked specification. The assignments were also too short to explain the work.\n\nThis is why the shared task should contain the facts and requirements, while each worker gets a separate instruction naming its job and reporting destination.\n"}
+    });
+  } catch {
+    document.querySelector('#wording-diff').textContent = 'The wording comparison could not load. The rewritten report is above.';
+    delete disclosure.dataset.loaded;
+  }
+});
+</script></body></html>
