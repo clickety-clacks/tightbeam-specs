@@ -255,9 +255,14 @@
     "bytes": 212
   },
   {
-    "path": "interviews/verification.json",
+    "path": "interviews/verification-addendum.json",
     "sha256": "0449a600e6ae22259b06b0123b06d1b681aee5639293856dc99adf94cad0ad72",
     "bytes": 1104
+  },
+  {
+    "path": "interviews/verification.json",
+    "sha256": "43542758bc204efc4593853175520f7c61a6307a6fdce3f82258c6845535faba",
+    "bytes": 908
   },
   {
     "path": "interviews/writer-answer.md",
