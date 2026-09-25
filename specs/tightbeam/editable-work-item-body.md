@@ -1,6 +1,6 @@
 # Editable Work-Item Body and Supported CLI Read/Update
 
-- Status: SPEC-READY — MAIN-ERA AUTHORITY AMENDED FROM REVIEWED-CLEAN ARTIFACT; EXECUTION-TIME `origin/main` EVIDENCE PIN `8d0baa789c4aea1513a6d77ed53a6d54d76d1fb6`; COLD-DIGESTED; B1/I1 CLOSED
+- Status: AMENDMENT-PENDING-REVIEW — MAIN-ERA AUTHORITY AMENDED FROM REVIEWED-CLEAN ARTIFACT; EXECUTION-TIME `origin/main` EVIDENCE PIN `8d0baa789c4aea1513a6d77ed53a6d54d76d1fb6`; COLD-DIGESTED; B1/I1 CLOSED
 - Work item: `wi_0488b06a-0950-4356-84b7-c56e413a6bbe`
 - Authority: owner main-era amendment ruling `att_be83756f-1f59-4d2c-bd6c-cd5da5e311f5`; immutable ruling `art_7d8f7444`, SHA-256 `e967132d3c11b8c3afb84a5d6722a73b3900eace6571587ca68a41839a13ce0d`
 - Spec assignment: `asg_137f199a-e1fd-4e89-b8b4-4098badbddcc`
@@ -8,6 +8,14 @@
 - Historical reviewed-clean verdict: `att_cd680ee6-aac3-4b94-a3e3-4f584824f7a3`; report `art_3af9d997`, SHA-256 `8d97d81dc9dc19c473f87c3e6915bb478eb6bef7e7f4623724e7b296cad43e83`
 - Authoritative source line: execution-time `origin/main`; `8d0baa789c4aea1513a6d77ed53a6d54d76d1fb6` is the amendment evidence pin, not a permanent implementation baseline
 - Pattern name: **work-item body detail**
+
+## Accepted contract correction
+
+Mike accepted decision `dr_bf9c8fef-17bb-455c-b1bb-514eb460518a`. This amendment preserves shipped metadata-only CLI behavior while adding disjoint body-only forms and rejecting mixed metadata, including priority. Source evidence: `art_74e17448` and `art_c5b6058c`, compared against main `832b0253e130171ff2d07e116dd7ffecfa74b685` and maintenance `7311707d43486c5ee580daeb640c10c8ec84e383`. The prior full-spec SHA-256 is `a98802df50e6d0f7312f4a2cf67a2bd77093eb0293afc4da245e82a83a25d9c8`.
+
+The correction also preserves current main transaction-ordered Firehose notices, post-handler non-atomic audit, and caller-facing errors. Body-bearing denied notices are sanitized at Dispatch only. It adds no Publisher, Hub, or StateResources redesign and imports no Publisher into maintenance. This policy amendment grants no product writer allocation, migration slot, host action, protected push, implementation, or landing. Existing owner rulings govern line election and shared-seam ordering separately.
+
+Coordinator allocation `att_272086e1-6637-4064-b296-6a87b304fb9a` authorizes policy text only. Schema, keyring, migrations, and artifact provenance have no body allocation: Visitor remains paused, artifact work requires a fresh predecessor after REST, WakeRails G-C remains pending, and settlement has no slot or exclusive body claim. WorkItems compatibility/no-op behavior, StateResources summaries, and existing work-item notices remain REST B2-owned. Main `test/firehose_publisher_test.exs` remains REST B2-owned; decision/turn/message projection remains REST decision-owned. The CLI amendment preserves late-ruling `--succeeds` parser and assignment bytes as well as metadata forms. Existing artifact capture retains captured bytes, digest, verified state, and RELEASED provenance; this amendment changes none of those mechanisms. These current holds supersede the historical no-overlap census below. Product implementation requires a later explicit shared-seam disposition from the REST/artifact/Visitor/WakeRails owners.
 
 ## Goal
 
@@ -32,7 +40,7 @@ This feature must add a mechanism. Deleting the work-item or spec-reference surf
 ## Non-Goals
 
 - This spec does not remove, rename, migrate, alias, or reinterpret `specRefName` or `specRefSha256`.
-- This spec does not expose title, bug classification, or spec-reference edits through the new CLI command.
+- This spec preserves existing metadata-only CLI title, spec-reference, priority, clear-spec-reference, and no-patch forms. It adds no new metadata capability or CLI bug-classification flag.
 - This spec does not add body history, versions, diffs, rich-text parsing, search, templates, or section-specific fields.
 - This spec does not add compare-and-swap, edit leases, merge logic, or an update idempotency key.
 - This spec does not add a second read verb.
@@ -67,7 +75,7 @@ Decisions considered and declined:
 - **Additive activation**: A transaction that creates and validates new schema objects without altering or backfilling an existing table.
 - **Org credential**: The operator credential that the wire router classifies as `:org`. An org credential does not itself name a work-item principal.
 - **Session credential**: A session token that the wire router classifies as `{:session, session}`. It names the session and restricts which explicit identity selectors the caller may use.
-- **Legacy metadata patch field**: One of the pre-existing raw `work-item-update` fields `title`, `isBug`, `specRefName`, or `specRefSha256`. The new CLI does not expose these fields.
+- **Legacy metadata patch field**: One of the pre-existing raw `work-item-update` fields `title`, `isBug`, `specRefName`, `specRefSha256`, or `priority`. Existing CLI metadata forms remain supported; body forms cannot carry these fields.
 
 ## Assumptions
 
@@ -75,7 +83,7 @@ A1. Tightbeam stores durable org state in the SQLite database named by the gatew
 
 A2. `work-item-get` already exists in the Rust CLI, wire router, gateway handler table, and work-item module.
 
-A3. `work-item-update` already exists in the wire router, gateway handler table, and work-item module. Commit `864c7df` initially exposed a generic Rust CLI update, and CLI-surface cleanup `86fecf2` removed it. The baseline intentionally has no Rust CLI update; this feature exposes only the body forms instead of restoring the prior generic metadata surface.
+A3. `work-item-update` exists in the Rust CLI, wire router, gateway handler table, and work-item module. Current CLI metadata forms and their byte fixtures are authoritative preservation inputs. Commits `93495a94` and `4c52e6c1` establish the metadata and priority surface; reviewed composition `157ebdb6` on main and `87797e5e` on maintenance preserves it. This feature adds a disjoint body form without deleting those forms.
 
 A4. The wire router resolves the credential and explicit identity before the work-item handler applies its principal rule. The observable refusal therefore depends on both the credential class and the identity selector.
 
@@ -113,9 +121,9 @@ R3. A body-only update changes no `specRefSha256` value.
 
 - Acceptance: Given a 64-character spec-reference digest, when a caller clears the body, then a direct row read returns the same digest.
 
-R4. The CLI accepts no spec-reference flag on `work-item-update`.
+R4. The CLI accepts no metadata flag in a body-form `work-item-update`; metadata-only forms remain unchanged.
 
-- Acceptance: Given `tightbeam work-item-update wi_1 --spec-ref x`, when the CLI parses the command, then it exits with the exact update usage error and sends no request.
+- Acceptance: Given `tightbeam work-item-update wi_1 --body text --spec-ref x`, when the CLI parses the command, then it exits with the exact update usage error and sends no request.
 
 ### Body value
 
@@ -237,9 +245,9 @@ R31. A file-backed database retains the body across gateway process restart.
 
 ### CLI and wire
 
-R32. The CLI grammar is `tightbeam work-item-update <workItemId> (--body <text> | --body=<text> | --clear-body)` with at most one supported identity selector. The one-token `--body=<text>` form is the canonical spelling when body text begins with `--`; it is also valid for other body text, including the empty string.
+R32. The additional body-form CLI grammar is `tightbeam work-item-update <workItemId> (--body <text> | --body=<text> | --clear-body)` with at most one supported identity selector. The one-token `--body=<text>` form is the canonical spelling when body text begins with `--`; it is also valid for other body text, including the empty string.
 
-- Acceptance: Given `--body text`, `--body=text`, `--body=`, or `--clear-body`, with no explicit identity or with one valid identity selector, when the CLI parses the command, then it constructs `Command::WorkItemUpdate` with the exact replacement, empty, or clear value. Given argv `--body --clear-body`, the parser treats the two tokens as conflicting body operations and returns the exact command usage text; it does not store literal body text. Given `--body=--clear-body` or `--body=--body`, the parser stores the exact flag-looking text. Given neither body operation, repeated operations, an unsupported flag, or terminal `--body`, parsing returns the exact command usage text. Given more than one identity selector, parsing returns the existing exact identity-mutual-exclusion error. Given an existing command other than `work-item-update` and argv containing `--name=value` or `--clear-body next`, the parser returns the same command or error as the pre-feature baseline.
+- Acceptance: Given `--body text`, `--body=text`, `--body=`, or `--clear-body`, with no explicit identity or with one valid identity selector, when the CLI parses the command, then it constructs `Command::WorkItemUpdate` with the exact replacement, empty, or clear value. Given argv `--body --clear-body`, the parser treats the two tokens as conflicting body operations and returns the exact command usage text; it does not store literal body text. Given `--body=--clear-body` or `--body=--body`, the parser stores the exact flag-looking text. Given repeated body operations, a mixed metadata/body operation, an unsupported flag, or terminal `--body`, parsing returns the exact command usage text. Given more than one identity selector, parsing returns the existing exact identity-mutual-exclusion error. Given an existing command other than `work-item-update` and argv containing `--name=value` or `--clear-body next`, the parser returns the same command or error as the pre-feature baseline.
 
 R33. `--body ""` sends an empty JSON string.
 
@@ -249,13 +257,13 @@ R34. `--clear-body` sends JSON null.
 
 - Acceptance: Given the clear flag, when the CLI builds the request, then the request contains `"body":null`.
 
-R35. The CLI sends no title, bug, or spec-reference field for a body update.
+R35. The CLI sends no title, bug, priority, or spec-reference field for a body update.
 
 - Acceptance: Given either supported update form, when the CLI builds the byte-exact JSON request, then `params` contains only `workItemId` and `body`.
 
 R36. The CLI help lists the update command and states replacement and clear semantics.
 
-- Acceptance: Given `tightbeam help`, `tightbeam help work-item-update`, and the unknown-command roster, when a caller reads each command catalog, then each lists `work-item-update`; both help surfaces show the exact syntax and state that the command replaces or clears the body.
+- Acceptance: Given `tightbeam help`, `tightbeam help work-item-update`, and the unknown-command roster, when a caller reads each command catalog, then each lists `work-item-update`; both help surfaces retain metadata syntax and add exact body syntax with replacement and clear semantics.
 
 R37. The prior `work-item-create` and `work-item-get` request bytes remain unchanged.
 
@@ -271,7 +279,7 @@ R39. One GitHub Actions test workflow run verifies the exact integrated `main` S
 
 R40. A raw update is body-only or legacy-metadata-only.
 
-- Acceptance: Given an existing work item and a raw `work-item-update` request that contains `body` and one or more legacy metadata patch fields, when `Tightbeam.WorkItems` handles it, then the handler returns `invalid_body_patch` before any write. When the same request crosses the wire, the router returns HTTP 400. The body, body attribution, title, `isBug`, `specRefName`, and `specRefSha256` remain unchanged.
+- Acceptance: Given an existing work item and a raw `work-item-update` request that contains `body` and one or more legacy metadata patch fields, when `Tightbeam.WorkItems` handles it, then the handler returns `invalid_body_patch` before any write. When the same request crosses the wire, the router returns HTTP 400. The body, body attribution, title, `isBug`, `specRefName`, `specRefSha256`, and `priority` remain unchanged.
 
 R41. The repository provides one executable reality-smoke command for a fresh file-backed gateway and the built Rust CLI.
 
@@ -326,15 +334,15 @@ This is a new instance of the existing `supervision_liveness_v1` additive-activa
 For a call that contains `:body`, the handler performs this sequence inside the existing update transaction:
 
 1. Fetch the work item and its optional body row.
-2. If the request also contains `:title`, `:is_bug`, `:spec_ref_name`, or `:spec_ref_sha256`, return `invalid_body_patch` before any write.
+2. If the request also contains `:title`, `:is_bug`, `:spec_ref_name`, `:spec_ref_sha256`, or `:priority`, return `invalid_body_patch` before any write.
 3. Validate that the requested body is `nil` or a binary for which `String.valid?/1` is true and `byte_size/1` is at most 65,536.
 4. Compare the requested public body value with the stored public body value.
 5. If the values differ, upsert body, resolved principal, and current millisecond timestamp.
 6. Fetch the body-update response inside the transaction; commit the transaction before returning it.
 
-The handler receives `nil` for a clear and a string for a replacement. Omitted `:body` preserves the body. Each CLI update request includes `:body`.
+The handler receives `nil` for a clear and a string for a replacement. Omitted `:body` preserves the body. Each body-form CLI update request includes `:body`; metadata-only requests omit it.
 
-A raw gateway request that omits `body` follows the pre-existing metadata update path without a body read or write. A request that contains `body` is a body-only request. Combining `body` with a legacy metadata patch field makes `Tightbeam.WorkItems` return `invalid_body_patch` with message `body cannot be combined with title, isBug, specRefName, or specRefSha256` before either path writes. `Tightbeam.Wire.Router` applies its existing default error-status mapping and returns HTTP 400; no router or gateway source edit is required. This subtraction preserves the unchanged raw metadata behavior and prevents a normal-return validation error from committing a partial mixed update.
+A raw gateway request that omits `body` follows the pre-existing metadata update path without a body read or write. A request that contains `body` is a body-only request. Combining `body` with a legacy metadata patch field makes `Tightbeam.WorkItems` return `invalid_body_patch` with message `body cannot be combined with title, isBug, specRefName, specRefSha256, or priority` before either path writes. `Tightbeam.Wire.Router` applies its existing default error-status mapping and returns HTTP 400; no router or gateway source edit is required. This subtraction preserves the unchanged raw metadata behavior and prevents a normal-return validation error from committing a partial mixed update.
 
 A no-op clear on a legacy item does not create a sidecar row. A clear after present text stores a null body with clear attribution. This keeps the public absent value simple while preserving the last real change.
 
@@ -369,7 +377,7 @@ The body update response is new and safe to audit:
 
 For an absent body, `state` is `absent`, `byteLength` is `0`, and `sha256` is `null`. For an empty body, `state` is `present`, `byteLength` is `0`, and `sha256` is the SHA-256 of the empty byte string.
 
-Raw `work-item-update` calls that omit `body` keep their existing flat response shape. This spec adds no CLI route to those legacy metadata fields.
+Raw `work-item-update` calls that omit `body` keep their existing flat response shape. Their existing CLI routes, no-patch behavior, response shapes, and request byte fixtures remain unchanged.
 
 ### 3. Detail read projection
 
@@ -399,6 +407,10 @@ The work-item module invokes the existing `on_work_item_change` callback once af
 The callback retains the existing best-effort contract. A callback failure after commit leaves the body durable and can leave no metadata doorbell. The command does not retry the callback. Making the doorbell atomic with the body would require a broader Gateway callback contract and is declined for this bounded feature.
 
 The accepted verb event and the body transaction retain the existing non-atomic ordering: the body commits first, then `Dispatch` appends the verb event. A process death or event-append failure in that interval can leave a committed body without a verb event and can return an error after the body committed. This spec accepts that named failure because it matches the existing work-item update audit seam. Transactional audit would require a broader Dispatch contract change.
+
+On main, the existing WorkItems transaction also queues the canonical Firehose notice through `Publisher.maybe_accepted_in_txn`. Preserve that capture and commit ordering independently of the later audit append. Keep body text and attribution out of the shared summary serializer and publication fallback. This does not change metadata-only notices or their versioning policy. Maintenance has no Publisher at this seam; do not import it.
+
+For raised outcomes on main body-update requests and all work-item-get requests, Dispatch sends the existing stable body-elided crash descriptor to the denial-notice handoff instead of the exception-bearing caller error. The caller still receives its existing error, and metadata-only update errors retain their existing behavior. Keep the change at Dispatch; Publisher, Hub, and StateResources require no redesign. Test an exception containing a unique body sentinel against both stored audit payload and emitted denial notices; neither may contain it. Test metadata-only error parity separately. These tests supplement R24-R25 and AC9 without changing authorization or the body descriptor.
 
 ### 5. Authorization
 
@@ -438,7 +450,9 @@ tightbeam work-item-update <workItemId> --clear-body
 
 The command may also accept one existing identity selector: `--as`, `--as-user`, or `--as-process`. With no explicit selector, the existing credential-derived identity behavior applies.
 
-The parser permits only `body`, `clear-body`, and identity flags on this command. It requires exactly one body operation. It treats `clear-body` as a boolean only inside the command-scoped update parser; the shared global boolean-flag set remains unchanged. The parser must read `--body` by presence, not through `nonempty/2`, because the empty string is a valid body.
+When a body operation occurs, the parser permits only `body`, `clear-body`, and identity flags and requires exactly one body operation. With no body operation it follows the existing metadata parser unchanged, including no-patch updates. It rejects a body operation combined with title, spec-reference, clear-spec-reference, or priority flags before sending a request. It treats `clear-body` as a boolean only inside the command-scoped update parser; the shared global boolean-flag set remains unchanged. The parser must read `--body` by presence, not through `nonempty/2`, because the empty string is a valid body.
+
+Metadata-only parsing keeps its existing usage and errors. Invalid body forms use the exact body-form usage below.
 
 The parser must preserve the difference between an explicit empty argv value and a missing argv value: `--body ""` and the one-token argv value `--body=` are empty replacements, while a terminal `--body` has no value and returns the exact command usage text. If replacement text begins with `--`, the caller uses one argv token with the literal prefix `--body=`. Thus `--body=--clear-body` stores `--clear-body`, while the two argv tokens `--body --clear-body` select conflicting body operations and return the exact command usage text.
 
@@ -462,7 +476,7 @@ The existing identity key appears before `verb` under the CLI's current request 
 
 | Condition | CLI or gateway result | HTTP status |
 | --- | --- | --- |
-| Missing item id, extra positional argument, neither body operation, conflicting or repeated body operations, separated `--body` followed by a flag-looking token, or unsupported flag | Exact CLI usage error; no request | Not applicable |
+| Missing item id, extra positional argument, mixed metadata/body forms, conflicting or repeated body operations, separated `--body` followed by a flag-looking token, or unsupported flag | Exact CLI usage error; no request | Not applicable |
 | Unknown work-item id | `unknown_work_item` | 404 |
 | Body is not string or null | `invalid_body` | 400 |
 | Body exceeds 65,536 UTF-8 bytes | `invalid_body` | 400 |
@@ -474,7 +488,7 @@ The existing identity key appears before `verb` under the CLI's current request 
 | Malformed additive schema | Boot raises `incompatible_work_item_body_v1` | Not applicable |
 | Unexpected handler exception | Existing `server_error` envelope | 500 |
 
-The exact command usage text is: `usage: tightbeam work-item-update <workItemId> (--body <text> | --body=<text> | --clear-body)`.
+The exact body-form usage text is: `usage: tightbeam work-item-update <workItemId> (--body <text> | --body=<text> | --clear-body)`.
 
 The command preserves the existing multiple-identity error: `identity flags are mutually exclusive: pass exactly one of --as, --as-user, or --as-process`.
 
@@ -487,7 +501,7 @@ The credential-path messages remain exact:
 
 The `invalid_body` message is: `body must be null or valid UTF-8 text of at most 65536 bytes`.
 
-The `invalid_body_patch` message is: `body cannot be combined with title, isBug, specRefName, or specRefSha256`.
+The `invalid_body_patch` message is: `body cannot be combined with title, isBug, specRefName, specRefSha256, or priority`.
 
 ### 9. Traceability
 
@@ -509,7 +523,7 @@ The `invalid_body_patch` message is: `body cannot be combined with title, isBug,
 The execution-time census found no declared open assignment claim on the paths below. The opener must recheck durable custody before each dispatch and assign each mutation lane with its exact file list. `lib/tightbeam/gateway.ex` needs no feature edit. If implementation later proves that it does, the affected lane stops for a new owner ruling before taking custody or changing the file.
 
 1. **Amended-spec review and implementation-authority hold.** This main-era amendment requires one independent exact-revision `reviewed-clean` verdict. The owner must grant separate implementation authority after that verdict. No implementation assignment opens before both durable gates exist.
-2. **Elixir vertical lane, internally ordered.** Files: `lib/tightbeam/schema.ex`, `lib/tightbeam/work_items.ex`, `lib/tightbeam/dispatch.ex`, `test/schema_shape_test.exs`, `test/work_items_test.exs`, `test/dispatch_test.exs`, and `test/router_test.exs`. First add and prove activation. Then add domain and detail behavior. Then add audit redaction and the wire-level mixed-patch and status proofs. Do not edit `lib/tightbeam/gateway.ex`, `lib/tightbeam/wire/router.ex`, `lib/tightbeam/db.ex`, `lib/tightbeam/work_state.ex`, or `lib/tightbeam/client_e2e/leg_gateway.ex` without a new owner ruling.
+2. **Elixir vertical lane, internally ordered.** Files: `lib/tightbeam/schema.ex`, `lib/tightbeam/work_items.ex`, `lib/tightbeam/dispatch.ex`, `test/schema_shape_test.exs`, `test/work_items_test.exs`, `test/dispatch_test.exs`, and `test/router_test.exs`; main-only denial-notice regression coverage uses `test/firehose_publisher_test.exs` after explicit owner allocation. First add and prove activation. Then add domain and detail behavior. Then add audit redaction and the wire-level mixed-patch and status proofs. Do not edit `lib/tightbeam/gateway.ex`, `lib/tightbeam/wire/router.ex`, `lib/tightbeam/db.ex`, `lib/tightbeam/work_state.ex`, or `lib/tightbeam/client_e2e/leg_gateway.ex` without a new owner ruling.
 3. **Rust CLI lane.** Files: `cli/src/args.rs`, `cli/src/dispatch.rs`, their in-file unit tests, and `test/cli_integration_test.exs`. Add only the reviewed command-scoped grammar, request builder, help, and regression fixtures. Preserve every other command's tokenization and byte fixtures.
 4. **Aggregate and reality lane.** After lanes 2 and 3 produce green exact commits, assemble them on a clean candidate branch from the then-current green `origin/main`. This lane owns only `scripts/work_item_body_smoke.exs` plus the integration branch. Run the full Elixir and Rust gates on the clean baseline and exact candidate, build the release CLI, and run the real fresh file-backed restart smoke through that binary. Record exact counts, environment hygiene, paths, PIDs, inputs, restart identity, and teardown result.
 5. **Whole-change review.** One independent reviewer checks the assembled exact commit against this canonical spec and the baseline, candidate, and reality-smoke evidence. Partial lane review does not satisfy this gate.
@@ -631,8 +645,8 @@ AC10 — CLI closure:
 - Given the supported update forms,
 - When Rust parser and byte-builder tests run with ordinary, empty, clear, `--body=--clear-body`, and `--body=--body` inputs,
 - Then each accepted form produces the exact request bytes and preserves its literal value.
-- When the tests run with `--body --clear-body`, repeated separated or inline body operations, terminal `--body`, an unsupported metadata flag, and existing non-update baseline fixtures containing `--name=value` and `--clear-body next`,
-- Then each invalid update exits with the exact usage and sends no request, while each existing command's result matches its pre-feature fixture.
+- When the tests run with `--body --clear-body`, repeated separated or inline body operations, terminal `--body`, a metadata flag combined with a body operation, and existing non-update baseline fixtures containing `--name=value` and `--clear-body next`,
+- Then each invalid body-form update exits with the exact body usage and sends no request, while each existing command's result matches its pre-feature fixture. Metadata-only title, spec-reference, clear-spec-reference, priority, combined metadata, and no-patch fixtures retain their exact request bytes and errors.
 
 AC11 — Restart durability:
 
@@ -650,12 +664,12 @@ AC12 — Whole product:
 AC13 — Raw metadata compatibility:
 
 - Given a work item with a present body,
-- When a raw caller updates title, `isBug`, or the existing spec-reference pair while omitting `body`,
+- When a raw caller updates title, `isBug`, priority, or the existing spec-reference pair while omitting `body`,
 - Then the pre-existing flat update response shape remains unchanged and the body plus attribution remain byte-identical.
 
 AC14 — Raw update separation:
 
-- Given an existing work item and one raw request containing a valid body plus `title`, `isBug`, `specRefName`, or `specRefSha256`,
+- Given an existing work item and one raw request containing a valid body plus `title`, `isBug`, `specRefName`, `specRefSha256`, or `priority`,
 - When the handler receives the request,
 - Then it returns `invalid_body_patch` before any write, records no submitted body text in the denied event, and preserves the body, attribution, and legacy metadata fields.
 - When the same request crosses the wire,
