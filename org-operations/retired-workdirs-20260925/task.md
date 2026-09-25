@@ -1,0 +1,17 @@
+# Reclaim Gibson space from retired agents' repositories
+
+The user's request, September 25, 2026 UTC:
+
+> i need you to run a sol 6 scan of retired workdirs for retired branches. by definition branches/clones in workdirs for retired agents should not be needed anymore, and we need to clean those up
+
+Run one Codex `gpt-6-sol` worker for the scan and cleanup. High effort is appropriate for checking deletion candidates. This is authorized operational cleanup on Gibson, where Engram collection has stopped below its configured 40 GiB reserve. The external Engram agent owns verification and reporting back to the user. The existing Tightbeam PDO carries internal delivery and obtains the required PO judgment; this bounded job does not need another manager or product office.
+
+Scan Gibson's `~/.tightbeam/work` and retired workdirs under `~/.tightbeam/archive`. Establish retired session ownership from read-only state records and supported placement evidence, without opening session tokens or other credential files. Prioritize large obsolete Git clones, worktrees, local branches and their disposable build/dependency outputs. The archive currently occupies approximately 460 GiB; this is an inventory size, not an estimate of reclaimable bytes.
+
+The user has authorized cleanup now, including retired agents' repositories beyond the scanner's own original subtree. Do not require retired agents to wake or grant permission. The older active-owner-only sweep on wi_1d10d833 is related history, not the scope of this request. Do not impose a new waiting period or treat an agent-authored retention convention as a conflicting user instruction.
+
+Verify that each removal is actually obsolete. Retirement can leave a checkout borrowed by an active successor or a service, or leave unique source/evidence behind. Preserve those concrete dependencies, original transcripts, active Engram indexes/tapes/snapshots, running services, and active agents' work. In particular, Engram's installed Gibson collector runs from work/97a111456c2b; its maintenance evidence is under work/239781a2ccce; the unfinished SSH implementation is under work/096348bbd0df. Do not delete these because of a directory owner label. Check active process paths, worktree/common-object dependencies and referenced artifacts before removal. Preserve necessary source or evidence compactly when that allows deleting a large disposable clone; avoid copying large trees on the same nearly full filesystem. Untracked build output alone does not make an obsolete clone necessary.
+
+Remove verified obsolete local repository material with exact-path operations. Do not delete remote branches, force-reset repositories, alter the state database, install software, change services, or write persistent guidance. Keep a concrete exception when unique work, an active dependency or ownership uncertainty prevents deletion; continue with independent candidates. Do not block the whole scan on one exception.
+
+Record the candidate inventory and completed removals outside deletion targets, including session state, path, Git revision/disposition, allocated bytes, and any preserved source/evidence location. Recheck the candidate immediately before deletion. Report actual filesystem free space before and after, deleted allocated bytes separately, and remaining large exceptions with reasons. Verify whether Gibson Engram collection catches up once capacity is recovered. Success means reclaimed obsolete storage and a truthful completion report, not just an audit proposal or a new cleanup framework.
