@@ -1,0 +1,231 @@
+[
+  {
+    "path": "evidence/clear-prompt.txt",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/clear-prompt.txt",
+    "sha256": "31d3c3f5ea5ed1711ce373a32443c65927c38af4b352fd424775e7acff045fc9",
+    "bytes": 2232
+  },
+  {
+    "path": "evidence/engram-fixture-correction-note.md",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/engram-fixture-correction-note.md",
+    "sha256": "6cbfe5adc18542a0df785660ad26d3e970e0eb6c3847f358b74f0fd4003f63ec",
+    "bytes": 999
+  },
+  {
+    "path": "evidence/eval-report.md",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/eval-report.md",
+    "sha256": "43c7501fbde632e04df295d79a61bed5578f849fffe61fb0cddca11f170b4f0f",
+    "bytes": 7750
+  },
+  {
+    "path": "evidence/pdo-interview-prompt.txt",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/pdo-interview-prompt.txt",
+    "sha256": "0d96e4b6b5138dcdec6acda85878fa63da3071df023ae094ea366195122638f8",
+    "bytes": 1475
+  },
+  {
+    "path": "evidence/pdo-interview-answer.md",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/pdo-interview-answer.md",
+    "sha256": "07469cae79004bb1e412a5f33189cfe0f30e9fd8194d84da287ea8091f68aa5f",
+    "bytes": 4450
+  },
+  {
+    "path": "evidence/po-interview-prompt.txt",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/po-interview-prompt.txt",
+    "sha256": "dbb5133ebceffb9cf63b8cbf504d9b33d5da2be8b02c95519fc763d57fa91ca8",
+    "bytes": 1290
+  },
+  {
+    "path": "evidence/po-interview-answer.md",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/po-interview-answer.md",
+    "sha256": "e703cd6850f8effef6b57fd84fdb019bb95aa4e09e749c475ec6fab500611116",
+    "bytes": 6335
+  },
+  {
+    "path": "evidence/work-item-result.json",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/work-item-result.json",
+    "sha256": "343433a4c16b3de262527375d1246e03902525f4f5082ae8eb9b6ea657f4b298",
+    "bytes": 4807
+  },
+  {
+    "path": "evidence/consultation-attests.json",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/consultation-attests.json",
+    "sha256": "56638c521dccbccb843ac0359ae6705f4fffb4dd8f6ae006688e0a8d6769a606",
+    "bytes": 5569
+  },
+  {
+    "path": "evidence/po-result-attests.json",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/po-result-attests.json",
+    "sha256": "28d594a4f4e0abb8949e9c4854f902a14e06b860784ae44b7b4187d8015989a4",
+    "bytes": 1602
+  },
+  {
+    "path": "evidence/intake-attests.json",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/intake-attests.json",
+    "sha256": "7c3a1d7de3f38f9fdfd854c3c030787051639dac3da8b45f842bf965ac223601",
+    "bytes": 1069
+  },
+  {
+    "path": "evidence/writer-attests.json",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/writer-attests.json",
+    "sha256": "ee51cedc0054e2032418276fbdc8a1b1f0afdcb1736139b4a2ff63af1282b5ff",
+    "bytes": 1164
+  },
+  {
+    "path": "evidence/work-item-trace.json",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/work-item-trace.json",
+    "sha256": "4821eb2f17cd07983d30c23dc3627c77a3b467d6b562e0e14674ba0eb4259e3d",
+    "bytes": 17062
+  },
+  {
+    "path": "evidence/turns-timeline.json",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/turns-timeline.json",
+    "sha256": "13dfd2c733d3b049d23b17ebedefe1b309bf9fc2f975c5e7ad6fa87bd5dfffb2",
+    "bytes": 4109
+  },
+  {
+    "path": "evidence/delivery-metrics.json",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/delivery-metrics.json",
+    "sha256": "d7960be482ec933c69a0a98bd88f8227cf100494f07028aa9ecc2c9fd34e08c9",
+    "bytes": 263
+  },
+  {
+    "path": "evidence/pdo-received-guidance.json",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/pdo-received-guidance.json",
+    "sha256": "d8189e33b50fb88f5cb84a1c438b43d7dfb3f02aec619a43ddfce1bef91d18fc",
+    "bytes": 547
+  },
+  {
+    "path": "evidence/s_2541a786-developer.txt",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/s_2541a786-developer.txt",
+    "sha256": "1f0f2880bc99c0914714d474b700b934015c2fba07c697dacb6252a8e8e6487c",
+    "bytes": 93126
+  },
+  {
+    "path": "evidence/s_2541a786-audit.json",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/s_2541a786-audit.json",
+    "sha256": "76986e3c4a9d1c06e6f676eeaac89eac6355ac87fa480b31b5855fdca656054c",
+    "bytes": 26074
+  },
+  {
+    "path": "evidence/s_51682b82-claude-audit.json",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/s_51682b82-claude-audit.json",
+    "sha256": "b7d85f7bae65e5f8e9636576a7d48104a2d3b81e45cb539828506d07577b9728",
+    "bytes": 33285
+  },
+  {
+    "path": "evidence/s_05201de6-claude-audit.json",
+    "origin": "/home/mike/engram-architecture-spec-20260923/pdo-sol-low-eval-20260924/s_05201de6-claude-audit.json",
+    "sha256": "1437db87ed0f21ba83f4496e87cfd9a9042a4e0af706e649dea68f7a6e4717ba",
+    "bytes": 11297
+  },
+  {
+    "path": "evidence/identity-312a6e17/archetypes/default.toml",
+    "origin": "/home/mike/.tightbeam/identity@312a6e17edaf74545bebd8758cb09fd0d1f2d47d:archetypes/default.toml",
+    "sha256": "5d8cc2e241909a43be5f1640fc3013b4619a34b5ef3ee0a3adeb2ad6c151cda2",
+    "bytes": 4010
+  },
+  {
+    "path": "evidence/identity-312a6e17/archetypes/pdo.toml",
+    "origin": "/home/mike/.tightbeam/identity@312a6e17edaf74545bebd8758cb09fd0d1f2d47d:archetypes/pdo.toml",
+    "sha256": "eea5520f1f75ab24728d6c909a4941432452c014b816e48635a04dc190acded3",
+    "bytes": 556
+  },
+  {
+    "path": "evidence/identity-312a6e17/archetypes/product-owner.toml",
+    "origin": "/home/mike/.tightbeam/identity@312a6e17edaf74545bebd8758cb09fd0d1f2d47d:archetypes/product-owner.toml",
+    "sha256": "f77d2ecea98495458b978d2454b9b7bc8e0b5da6fc96f918bfa0cda24ba305b2",
+    "bytes": 599
+  },
+  {
+    "path": "evidence/identity-312a6e17/guidance/archetype-roster.md",
+    "origin": "/home/mike/.tightbeam/identity@312a6e17edaf74545bebd8758cb09fd0d1f2d47d:guidance/archetype-roster.md",
+    "sha256": "594832774e3b6a06419d7e78adc283c99cc5165a988b0594ddf67320cc060d78",
+    "bytes": 1452
+  },
+  {
+    "path": "evidence/identity-312a6e17/guidance/delivery-coordination.md",
+    "origin": "/home/mike/.tightbeam/identity@312a6e17edaf74545bebd8758cb09fd0d1f2d47d:guidance/delivery-coordination.md",
+    "sha256": "06e1c6f80b7755243b03274e168c1ae223f1b6e6fc3fd97d7fe8e8ea86c79459",
+    "bytes": 6413
+  },
+  {
+    "path": "evidence/identity-312a6e17/guidance/engineering-model-activities.md",
+    "origin": "/home/mike/.tightbeam/identity@312a6e17edaf74545bebd8758cb09fd0d1f2d47d:guidance/engineering-model-activities.md",
+    "sha256": "0d4d34a8c701113a237e76071eb465815f5ae363ff8a9bfd6cbc17bbfeee937c",
+    "bytes": 9025
+  },
+  {
+    "path": "evidence/identity-312a6e17/guidance/engineering-tenets.md",
+    "origin": "/home/mike/.tightbeam/identity@312a6e17edaf74545bebd8758cb09fd0d1f2d47d:guidance/engineering-tenets.md",
+    "sha256": "5610795b4c8f894f509cd04567b3c326bf3feb8e78e2f72581433bdb8ad877eb",
+    "bytes": 1878
+  },
+  {
+    "path": "evidence/identity-312a6e17/guidance/operating-manual.md",
+    "origin": "/home/mike/.tightbeam/identity@312a6e17edaf74545bebd8758cb09fd0d1f2d47d:guidance/operating-manual.md",
+    "sha256": "66142d4a879fbf39b58cd2596e0a09b5f9721fab63387294d95c53c9bfd54479",
+    "bytes": 20831
+  },
+  {
+    "path": "evidence/identity-312a6e17/guidance/pdo.md",
+    "origin": "/home/mike/.tightbeam/identity@312a6e17edaf74545bebd8758cb09fd0d1f2d47d:guidance/pdo.md",
+    "sha256": "9b334b83512001a720dd2c11ac49808fdeba4d3bac098a5a9d12d4871724d03d",
+    "bytes": 2494
+  },
+  {
+    "path": "evidence/identity-312a6e17/guidance/preferred-models.md",
+    "origin": "/home/mike/.tightbeam/identity@312a6e17edaf74545bebd8758cb09fd0d1f2d47d:guidance/preferred-models.md",
+    "sha256": "b8e7298fb71015a0215848e74d6733e208f1d7015458a6d4dc733c3dfc3851b9",
+    "bytes": 7427
+  },
+  {
+    "path": "evidence/identity-312a6e17/guidance/product-owner.md",
+    "origin": "/home/mike/.tightbeam/identity@312a6e17edaf74545bebd8758cb09fd0d1f2d47d:guidance/product-owner.md",
+    "sha256": "ca40fb675c2dda9ac5e461576c39469439ba54ddacba7447e8c18e42b18ce8ae",
+    "bytes": 6348
+  },
+  {
+    "path": "evidence/identity-312a6e17/rules/topology.toml",
+    "origin": "/home/mike/.tightbeam/identity@312a6e17edaf74545bebd8758cb09fd0d1f2d47d:rules/topology.toml",
+    "sha256": "27441f00c57f256e170a51b60b20ae6dc9617eec400faab26e8c9ef17f7e2305",
+    "bytes": 1765
+  },
+  {
+    "path": "evidence/identity-312a6e17/skills/team-design/SKILL.md",
+    "origin": "/home/mike/.tightbeam/identity@312a6e17edaf74545bebd8758cb09fd0d1f2d47d:skills/team-design/SKILL.md",
+    "sha256": "81cbfdb2989ee84cbe453c4e64d1bc26a55d13882d08f783ab7bbfb021a21185",
+    "bytes": 3400
+  },
+  {
+    "path": "evidence/pdo-public-trace.jsonl",
+    "origin": "/home/mike/.tightbeam/homes/gibson/codex/sessions/2026/09/24/rollout-2026-09-24T19-23-08-01a0d4df-23d5-74e0-aef4-61a70ec61f7f.jsonl",
+    "origin_sha256": "951fbc39ba0adbf0175a97694549cffce614ed47dd243abb2767888d86db809b",
+    "sha256": "1115048af5884974294acecc48a299018cdf0fa2708761b996aae74679f2e955",
+    "bytes": 159041,
+    "filter": "Public input/output/tool calls/results only; reasoning blocks excluded"
+  },
+  {
+    "path": "evidence/po-public-trace.jsonl",
+    "origin": "/home/mike/.tightbeam/homes/gibson/claude/projects/-home-mike--tightbeam-work-a9d5c5382d21/c454a00b-13ae-425f-8bf6-55f5f267120b.jsonl",
+    "origin_sha256": "1b2e675958030a46627ad041a39d20e283aebe89dced58e3089aa3386991c0bc",
+    "sha256": "5fb9aeda3eb496143cbd901b692fe20b8498322add5c675dd44638a5ba9d0a94",
+    "bytes": 79335,
+    "filter": "Public input/output/tool calls/results only; reasoning blocks excluded"
+  },
+  {
+    "path": "evidence/writer-public-trace.jsonl",
+    "origin": "/home/mike/.tightbeam/homes/gibson/claude/projects/-home-mike--tightbeam-work-243f0f78dba7/ba70af05-7cbf-4932-a416-720861b59663.jsonl",
+    "origin_sha256": "9454a145f89dc84ceaf2988470e57b142741df47d07b4fa82c45e3970afa97b1",
+    "sha256": "0f35b34310688cc0435fe60df00f7cec4f1348dff3dbcf4e078b18dddbd71184",
+    "bytes": 43036,
+    "filter": "Public input/output/tool calls/results only; reasoning blocks excluded"
+  },
+  {
+    "path": "evidence/installed-tightbeam-dispatching-SKILL.md",
+    "origin": "/home/mike/.tightbeam/homes/gibson/codex/skills/tightbeam-dispatching/SKILL.md",
+    "sha256": "a6850f57b7a84e68f31641fbe975ec3f6417647b5ce203055e9a80634720e953",
+    "bytes": 3248,
+    "note": "Current installed copy, compare against original trace tool output before attributing to run."
+  }
+]

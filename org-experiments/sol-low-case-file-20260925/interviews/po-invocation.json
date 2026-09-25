@@ -1,0 +1,28 @@
+{
+  "command": [
+    "claude",
+    "--print",
+    "--resume",
+    "c454a00b-13ae-425f-8bf6-55f5f267120b",
+    "--fork-session",
+    "--model",
+    "claude-opus-5-5",
+    "--effort",
+    "high",
+    "--tools",
+    "",
+    "--strict-mcp-config",
+    "--mcp-config",
+    "{\"mcpServers\":{}}",
+    "--setting-sources",
+    "",
+    "--settings",
+    "{\"disableAllHooks\":true}",
+    "--output-format",
+    "json"
+  ],
+  "returncode": 0,
+  "mode": "native saved-conversation fork interview; original org seat remains retired",
+  "original_workspace_removed": true,
+  "cwd": "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925"
+}

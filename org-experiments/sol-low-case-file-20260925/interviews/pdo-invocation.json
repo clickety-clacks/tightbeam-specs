@@ -1,0 +1,30 @@
+{
+  "command": [
+    "codex",
+    "exec",
+    "--ignore-user-config",
+    "--skip-git-repo-check",
+    "-s",
+    "read-only",
+    "--disable",
+    "shell_tool",
+    "--disable",
+    "unified_exec",
+    "--disable",
+    "multi_agent",
+    "-c",
+    "web_search=\"disabled\"",
+    "-c",
+    "model_reasoning_effort=\"low\"",
+    "-m",
+    "gpt-5.6-sol",
+    "--json",
+    "-o",
+    "/home/mike/engram-architecture-spec-20260923/sol-low-case-file-20260925/interviews/pdo-answer.md",
+    "fork",
+    "01a0d4df-23d5-74e0-aef4-61a70ec61f7f",
+    "-"
+  ],
+  "returncode": 0,
+  "mode": "native saved-conversation fork interview using its original Codex home; org seat remains retired"
+}

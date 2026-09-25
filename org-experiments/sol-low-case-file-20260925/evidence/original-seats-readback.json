@@ -1,0 +1,32 @@
+[
+  {
+    "sessionKey": "agent:main:clawline:mike:main s_2541a786",
+    "displayName": "pdo: Engram Sol low eval",
+    "state": "retired",
+    "harness": "codex",
+    "model": "gpt-5.6-sol",
+    "thinkingLevel": "low",
+    "host": "gibson",
+    "identityRevision": "312a6e17edaf74545bebd8758cb09fd0d1f2d47d"
+  },
+  {
+    "sessionKey": "agent:main:clawline:mike:main s_51682b82",
+    "displayName": "product-owner: Engram Sol low eval",
+    "state": "retired",
+    "harness": "claude",
+    "model": "claude-opus-5-5",
+    "thinkingLevel": "high",
+    "host": "gibson",
+    "identityRevision": "312a6e17edaf74545bebd8758cb09fd0d1f2d47d"
+  },
+  {
+    "sessionKey": "agent:main:clawline:mike:main s_05201de6",
+    "displayName": "Writer \u2014 Engram fixture correction note",
+    "state": "retired",
+    "harness": "claude",
+    "model": "claude-sonnet-5",
+    "thinkingLevel": "medium",
+    "host": "gibson",
+    "identityRevision": "312a6e17edaf74545bebd8758cb09fd0d1f2d47d"
+  }
+]
