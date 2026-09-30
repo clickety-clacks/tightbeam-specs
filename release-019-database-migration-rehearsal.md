@@ -1,6 +1,6 @@
 # 0.1.9 database migration rehearsal
 
-Status: runbook
+Status: superseded on 2026-09-30 by `docs/e2e/0.1.9/migration.md` in the code repository (branch 0.1.9), which folds this rehearsal into the E2E runbooks. Kept for history; do not run this version.
 
 This rehearsal proves that 0.1.9 can migrate a real 0.1.8 database without
 changing the live Gibson database.
