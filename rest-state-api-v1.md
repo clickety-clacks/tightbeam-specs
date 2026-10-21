@@ -990,10 +990,14 @@ return each visible exact-match item in that order. No visible exact match
 returns an empty collection. An empty value, a non-string decoded value, or an
 unknown query key returns `400 invalid_filter`.
 
-The CLI commands `toplines` and `topline` retain their existing ExecutionMap
-selection, tree assembly, telemetry rendering, and response summarization.
-Their distinct REST migration is governed by the canonical ExecutionMap
-contract. During M4, `transcript --name` first calls the exact `displayName`
+The CLI commands `execution-map` and `execution-map-select` retain their
+existing ExecutionMap selection, tree assembly, telemetry rendering, and
+response summarization. Their four selections (flat roster, tree, subtree,
+and assignment selection) retain the canonical routes, filters, and paging;
+flat telemetry uses canonical `after` and `limit`. Their REST migration is
+governed by the canonical ExecutionMap contract. The `toplines` and `topline`
+commands retain their durable Topline behavior and are outside this telemetry
+migration. During M4, `transcript --name` first calls the exact `displayName`
 sessions collection lookup. It returns zero, one, or many visible R7 session
 candidates without transcript content. The caller then chooses a `sessionKey`
 and calls `GET /api/sessions/:sessionKey/messages`. The wrapper does not issue
@@ -1059,6 +1063,25 @@ agent-only return-field condition in the table note below.
 | coordination share | `sessionKey`, `from`, `to`, `turns`, `wakeTurns`, `classedTurns`, `coordinationTurns`, `summons`, `algedonic`, `byClass`, `share`, `dependencyVersion` |
 | digest members | `wakeId`, `prompt`, `class`, `classElection`, `createdAt`, `dependencyVersion` |
 | work-item trace | `workItem`, `assignments`, `causalChildren`, `attribution`, `dependencyVersion` |
+
+Decision-request table note — options (R7/G6). The shared serializer MUST
+preserve author order and expose every stored option-object field with its
+stored value on REST and Firehose, including `effect` and other additional
+fields. A stored NULL options value emits `[]`; a stored string array emits
+same-order `{label}` objects. A stored option object MUST contain a string
+`label`; any additional JSON fields are allowed and MUST be emitted unchanged.
+The serializer MUST NOT reject an option because it has an additional field
+or because an additional field has a particular value. Invalid JSON, a
+non-array, a null element, or a missing or nonstring `label` MUST fail with
+`projection_invalid` without a partial canonical item. One shared serializer
+serves every route and leaves stored data unchanged.
+
+Given stored options `[{"label":"Proceed","effect":"allow","group":1},
+{"label":"Stop","effect":"deny","group":2}]`, when the shared serializer
+encodes the item for REST or Firehose, then both expose those complete option
+objects in that order with each field value preserved. Given an option with an
+additional field or an `effect` value other than `allow` or `deny`, encoding
+preserves that field and value rather than returning `projection_invalid`.
 
 Decision-request table note — agent return. For `kind:"agent"`, the shared
 query retains stored `returned_by`, `return_reason`, and `returned_at`.

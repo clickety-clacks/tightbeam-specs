@@ -84,7 +84,9 @@ these three fields. `facts.id` is the sole numeric public field named `id` in
 v1.
 
 Every item contains exactly the keys listed by R7/R7a, in that listed order.
-Nested objects contain exactly the keys listed here, in their listed order.
+Nested objects contain exactly the keys listed here, in their listed order,
+except that decision options preserve additional stored fields as defined by
+`DecisionOption` below.
 The encoder emits no insignificant whitespace. It escapes JSON strings by the
 same library path for REST, CLI, and firehose.
 
@@ -144,7 +146,9 @@ typed J below and still passes SR2/SR6 secret exclusion.
 - `SessionCapabilities`:
   `{setHarness:O<SetHarnessUnsupported>|O<SetHarnessSupported>}`. The
   unsupported form has no `options`; the supported form has no `reason`.
-- `DecisionOption`: `{label:S}`.
+- `DecisionOption`: an open object containing `label:S` and zero or more
+  additional string-keyed `J` fields. Additional fields, including `effect`,
+  retain their stored values and are not rejected for being unrecognized.
 - `ToplineMembership`: `{id:S, toplineId:S, workItemId:S,
   ownerUserId:S, linkReason:S, linkedActor:O<Actor>, linkedAt:I,
   unlinkReason:S|null, unlinkedActor:O<Actor>|null, unlinkedAt:I|null,

@@ -26,10 +26,11 @@ Authority:
 - Product-owner ruling message
   `s_f898378f-29cf-46b9-a5ad-b4e8681ef6c0`, 2026-08-25. It closes direct-read
   `--as` and `--as-process` behavior without a new REST identity parameter.
-- Superseding product-owner route ruling for this assignment, 2026-08-25. The
-  retained `toplines` and `topline` CLI names read current ExecutionMap
-  telemetry through a separate `/api/execution-map` family. They do not read
-  durable Toplines.
+- Telemetry naming clarification, 2026-10-19, supersedes the
+  2026-08-25 command-name wording: `execution-map` and
+  `execution-map-select` read ExecutionMap telemetry through the separate
+  `/api/execution-map` family. Durable `toplines` and `topline` retain their
+  existing behavior and are excluded from this telemetry migration.
 - Contract-closure work item
   `wi_835a72aa-c88b-421b-a34c-41d23032c7c7` owns exact session display-name
   filtering. Distinct contract-closure work item
@@ -73,9 +74,11 @@ and each M5 compatibility HTTP alias. Keep every dispatch write available.
   wrapper from `cli-surface-v1.md`.
 - This build does not change D1 or D2 REST routes, filters, envelopes,
   visibility, errors, cache headers, cursor encoding, or item shapes.
-- This build does not read, change, or remove durable Toplines or the
-  `/api/toplines` family. The similarly named CLI commands retain their names
-  and read ExecutionMap telemetry through `/api/execution-map`.
+- This build does not read, change, or remove durable Toplines, the
+  `toplines` and `topline` commands, or the `/api/toplines` family. The
+  `execution-map` and `execution-map-select` commands read telemetry through
+  `/api/execution-map`; durable Topline reads do not count as telemetry
+  migration.
 - This build does not change `doctor`, help, or another local-only read.
 - This build does not remove or reroute a dispatch write.
 - This build does not merge, deploy, or release product code.
@@ -253,10 +256,10 @@ alias.
 | `work-item-trace ID` | `work-item-trace` | `GET /api/work-items/:id/trace` | None. |
 | `transcript --session KEY [page flags]` | `transcript` retrieval | `GET /api/sessions/:sessionKey/messages` with `before`, `after`, and `limit` | None. |
 | `transcript --name NAME` | `transcript` lookup | `GET /api/sessions?displayName=NAME` using the exact filter frozen by `wi_835a72aa-c88b-421b-a34c-41d23032c7c7`; call `GET /api/sessions/:sessionKey/messages` only after the caller selects a session | Return the candidate choice from canonical session items. Return no message content during lookup. |
-| `toplines` | `toplines` flat roster | `GET /api/execution-map` with canonical `after` and `limit`; translate existing filters to `origin`, `ownerUserId`, `state`, `quietOverMs`, `specRefName`, dependent `specRefSha256`, and `sessionKey` | None. |
-| `toplines --tree` | `toplines` tree | `GET /api/execution-map/tree` with the same roster filters and no page parameters | Render the returned forest without recomputing server telemetry. |
-| `topline --under ID` | `topline` subtree | `GET /api/execution-map/subtrees/:workItemId` with the roster filters and no page parameters | Render the returned forest. |
-| `topline --assignments IDS` | `topline` assignment selection | `GET /api/execution-map/assignments` with each ordered id as a repeated `assignmentId` and no roster or page parameters | Render the returned item selection and `noItem` ids. |
+| `execution-map` | `execution-map` flat roster | `GET /api/execution-map` with canonical `after` and `limit`; translate existing filters to `origin`, `ownerUserId`, `state`, `quietOverMs`, `specRefName`, dependent `specRefSha256`, and `sessionKey` | None. |
+| `execution-map --tree` | `execution-map` tree | `GET /api/execution-map/tree` with the same roster filters and no page parameters | Render the returned forest without recomputing server telemetry. |
+| `execution-map-select --under ID` | `execution-map-select` subtree | `GET /api/execution-map/subtrees/:workItemId` with the roster filters and no page parameters | Render the returned forest. |
+| `execution-map-select --assignments IDS` | `execution-map-select` assignment selection | `GET /api/execution-map/assignments` with each ordered id as a repeated `assignmentId` and no roster or page parameters | Render the returned item selection and `noItem` ids. |
 | `attests ASSIGNMENT [page flags]` | `attests` | `GET /api/assignments/:id/attests` with `after` and `limit` | None. |
 | `assignments [--session KEY\|--role NAME] [--state S]` | `assignments` | `GET /api/assignments` with `holderKey`, `holderRole`, and `state` | None. |
 | `coordination-share --session KEY --from MS --to MS` | `coordination-share` | `GET /api/sessions/:sessionKey/coordination-share?from=MS&to=MS` | None. |
@@ -340,9 +343,9 @@ add wakes, digest carriers, roles, or pending devices to the canonical
 org-plus-sessions composition.
 The `transcript --name` formatter may perform only the candidate selection
 frozen by `wi_835a72aa-c88b-421b-a34c-41d23032c7c7`; it does not scan sessions
-or transcripts to recreate a missing server filter. The `toplines` and
-`topline` formatters may arrange a canonical ExecutionMap view but must not
-reproduce the server's telemetry computation or read the durable
+or transcripts to recreate a missing server filter. The `execution-map` and
+`execution-map-select` formatters may arrange a canonical ExecutionMap view
+but must not reproduce the server's telemetry computation or read the durable
 `/api/toplines` resource.
 
 ### D3-R7 — compatibility during M4
@@ -360,7 +363,13 @@ contract is unavailable.
 ### D3-R8 — legacy dispatch-read inventory
 
 The source census must classify each operation before the removal commit.
-These 23 read operations are present at baseline:
+These 23 read operations are present at the historical source baseline;
+its `toplines` and `topline` entries denote telemetry, now named
+`execution-map` and `execution-map-select`, respectively. The removal-base
+census MUST classify telemetry under those current names separately from
+durable `toplines` and `topline` reads. Durable Topline reads are outside this
+telemetry migration and MUST NOT be removed as those historical telemetry
+entries:
 
 | Class | Legacy dispatch-read operations |
 |---|---|
@@ -549,8 +558,10 @@ branch while every D3-R8 adapter and D3-R9 alias remains available to older
 clients and parity tests.
 
 A8. **Given** the accepted D3-R10 receipt, **when** the removal commit runs the
-dispatch census, **then** each of the 23 baseline read operations is refused at
-the router or mixed-verb read selector, `critical inspect` remains absent, and
+dispatch census, **then** each of the 23 baseline read operations, with the
+telemetry names mapped as D3-R8 specifies, is refused at the router or
+mixed-verb read selector, durable `toplines` and `topline` retain their existing
+behavior, `critical inspect` remains absent, and
 the corresponding canonical GET returns its contract response.
 
 A9. **Given** the removal commit, **when** each D3-R9 route is requested with a
