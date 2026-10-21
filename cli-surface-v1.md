@@ -1,6 +1,6 @@
 # Tightbeam CLI surface — v1 (living contract)
 
-Status: RATIFIED (Flynn ruling, adjudication #7, 2026-07-24). Supersedes the
+Status: RATIFIED (2026-07-24). Supersedes the
 retired Rust PORT spec (archive/cli-rust-v1-PORT-SPEC-RETIRED.md) — that spec's
 "no new verbs" invariant was port-fidelity discipline for a completed migration,
 not surface policy, and its ghost caused a spec-obedient deletion of working
@@ -79,16 +79,16 @@ Operator-facing (demanded by operating ceremonies and the smoke):
   declared `purpose` and `root_archetype`. Demand: the seeded onboarding agent reads it to
   know what is available and what each bundle is FOR, so it can offer one when a user
   describes a capability it provides (neutral-seed-v1; kungfu-template-v1 manifest
-  purpose). Ratified by Flynn 2026-08-01. It replaced an earlier draft that discovered
+  purpose). Ratified 2026-08-01. It replaced an earlier draft that discovered
   bundles by triggering the unknown-bundle REFUSAL and reading the list out of the error
   message — an error path used as an API.
 - **doctor** — install/health check (bundle operating manual).
-- **assimilate** — host assimilation ceremony. RULED INTENDED (Flynn, 2026-07-25):
+- **assimilate** — host assimilation ceremony. RATIFIED as intended (2026-07-25):
   assimilation installs adapter support for ALL registered harnesses on the target
   machine regardless of any single-harness selection — machines are kept fully
   provisioned because operators add/remove harnesses per machine after the fact.
   Bound: this holds while per-harness support stays small (today: two npm packages,
-  megabytes); if a future harness's footprint is large, re-open the ruling.
+  megabytes); if a future harness's footprint is large, revisit this decision.
 - **run-smoke / run-tests** — producer verbs the rails' remedies dispatch
   (p3-observables-producers-v1; referenced by kungfu skills).
 
@@ -126,8 +126,8 @@ with a helpful identity/discovery error.
 `session-tokens-v1` owns the discovery mechanics, including walk-up location,
 malformed-file behavior, and precedence over environment and `gateway.json`.
 The unconditional `identity required` behavior inherited from the retired Rust
-port spec is a fossil and has no authority over this living contract (Flynn
-ruling, 2026-07-25).
+port spec is a fossil and has no authority over this living contract
+(decided 2026-07-25).
 
 ## Amendment duty
 
