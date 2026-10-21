@@ -1064,24 +1064,24 @@ agent-only return-field condition in the table note below.
 | digest members | `wakeId`, `prompt`, `class`, `classElection`, `createdAt`, `dependencyVersion` |
 | work-item trace | `workItem`, `assignments`, `causalChildren`, `attribution`, `dependencyVersion` |
 
-Decision-request table note — options (R7/G6), per the 2026-10-19 options
-clarification. The shared serializer MUST
-emit each option as exactly `{label}` on REST and Firehose. Stored NULL
-options emit `[]`; a stored string array emits same-order `{label}` objects.
-A stored option object MUST contain a string `label` and MAY contain only
-one additional field, `effect`, whose value MUST be `allow` or `deny`.
-The serializer MUST omit that stored `effect` from the public option,
-preserve author order, and leave stored data unchanged. Invalid JSON, a
-non-array, a null element, a missing or nonstring `label`, an `effect` outside
-`allow|deny`, or any other extra field MUST fail with `projection_invalid`
-without a partial canonical item. One shared serializer serves every route.
+Decision-request table note — options (R7/G6). The shared serializer MUST
+preserve author order and expose every stored option-object field with its
+stored value on REST and Firehose, including `effect` and other additional
+fields. A stored NULL options value emits `[]`; a stored string array emits
+same-order `{label}` objects. A stored option object MUST contain a string
+`label`; any additional JSON fields are allowed and MUST be emitted unchanged.
+The serializer MUST NOT reject an option because it has an additional field
+or because an additional field has a particular value. Invalid JSON, a
+non-array, a null element, or a missing or nonstring `label` MUST fail with
+`projection_invalid` without a partial canonical item. One shared serializer
+serves every route and leaves stored data unchanged.
 
-Given stored options `[{"label":"Proceed","effect":"allow"},
-{"label":"Stop","effect":"deny"}]`, when the shared serializer encodes the
-item for REST or Firehose, then both expose options
-`[{"label":"Proceed"},{"label":"Stop"}]` in that order. Given an option
-with `effect:"other"` or another extra field, encoding fails with
-`projection_invalid`; a label-only object remains accepted.
+Given stored options `[{"label":"Proceed","effect":"allow","group":1},
+{"label":"Stop","effect":"deny","group":2}]`, when the shared serializer
+encodes the item for REST or Firehose, then both expose those complete option
+objects in that order with each field value preserved. Given an option with an
+additional field or an `effect` value other than `allow` or `deny`, encoding
+preserves that field and value rather than returning `projection_invalid`.
 
 Decision-request table note — agent return. For `kind:"agent"`, the shared
 query retains stored `returned_by`, `return_reason`, and `returned_at`.
