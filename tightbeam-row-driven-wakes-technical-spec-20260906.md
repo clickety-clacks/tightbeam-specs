@@ -587,12 +587,12 @@ help, parser and output before activating the amendment (wisdom 20–22). Accept
 
 ## Acceptance
 
-Tests use isolated fixtures on **host-a or host-b**, over SSH, through unmodified
-`scripts/verify_mix.sh`. Name the actual host and candidate commit in every gate attest.
-Use source fixtures for SQL/state properties; no invented live observation capture.
-No tests, probes, gates or checkout code execute on the production host. If the remote host fails
-for host/toolchain reasons, record the blocker and stop that run; do not fall back.
-CLI changes also receive the applicable Rust gate on the remote host.
+Tests use isolated fixtures on a test host the operator has designated for this purpose, over
+SSH, through unmodified `scripts/verify_mix.sh`. Name the actual host and candidate commit in
+every gate attest. Use source fixtures for SQL/state properties; no invented live observation
+capture. No tests, probes, gates or checkout code execute on the production host or against the
+live installation. If the test host fails for host/toolchain reasons, record the blocker and stop
+that run; do not fall back. CLI changes also receive the applicable Rust gate on the test host.
 
 The following matrix is carried **verbatim from accepted design §4**:
 

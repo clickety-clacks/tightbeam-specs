@@ -6,10 +6,10 @@
 
 ## Problem
 
-`Tightbeam.Harness.Claude` (0.1.8) fetches the Anthropic `/v1/models` list and then withholds every model not in a compiled-in constant, `@adapter_selectable_models`, keyed to claude-agent-acp 0.66.0. The gateway logs: "model(s) the API offers are not selectable by claude-agent-acp 0.66.0 and were withheld". On 2026-09-01 all three hosts (host-a, host-b, host-c) were re-onboarded for Anthropic; each catalog now shows exactly fable-5, opus-5, opus-4-8, sonnet-5, haiku-4-5 and nothing newer. `claude-fable-5-1` is withheld even though:
+`Tightbeam.Harness.Claude` (0.1.8) fetches the Anthropic `/v1/models` list and then withholds every model not in a compiled-in constant, `@adapter_selectable_models`, keyed to claude-agent-acp 0.66.0. The gateway logs: "model(s) the API offers are not selectable by claude-agent-acp 0.66.0 and were withheld". On 2026-09-01 all three hosts (the production host and two test hosts) were re-onboarded for Anthropic; each catalog now shows exactly fable-5, opus-5, opus-4-8, sonnet-5, haiku-4-5 and nothing newer. `claude-fable-5-1` is withheld even though:
 
 - the API offers it,
-- the adapters on host-a were upgraded the same day to claude-agent-acp 0.73.0 / claude-agent-sdk 0.3.257, whose bundled Claude Code 2.1.257 selects it,
+- the adapters on the production host were upgraded the same day to claude-agent-acp 0.73.0 / claude-agent-sdk 0.3.257, whose bundled Claude Code 2.1.257 selects it,
 - the spec-writer and reviewer archetypes now default to it and fall through to gpt-5.6-sol xhigh.
 
 The constant is a translation table (API id ↔ adapter picker string, e.g. `claude-fable-5` ↔ `claude-fable-5[1m]`) that was snapshotted into code. Every new Anthropic model therefore needs a gateway release. `derived-model-catalog-v1` already ruled "NO allowlist, NO sensible subset" for the substrate; the constant is a regression against that ruling that grew out of per-environment refusal measurements (see the comment trail in `lib/tightbeam/harness/claude.ex`).
@@ -107,7 +107,7 @@ Spawn / tune / set-model resolve alias → slug via the manifest, build the stru
 ### D4. Publishing
 
 - Source of truth: `priv/model-manifest.json` in the tightbeam repo. Bundled into every release.
-- Publish: a release step (or a `mix tightbeam.manifest.publish` task) copies the committed file to the droplet at `/var/www/tightbeam.ing/model-manifest.json` over the existing `tbing` ssh alias on host-a. Nginx serves it as `application/json` with `Cache-Control: public, max-age=300` and an ETag. No auth, no CORS needed.
+- Publish: a release step (or a `mix tightbeam.manifest.publish` task) copies the committed file to the droplet at `/var/www/tightbeam.ing/model-manifest.json` over the existing `tbing` ssh alias on the production host. Nginx serves it as `application/json` with `Cache-Control: public, max-age=300` and an ETag. No auth, no CORS needed.
 - A manifest change is a data commit plus a publish. Adding a model is one row and a `minVersion`. The existing `model-release-intake` skill's step 4 ("sweep archetypes") now also says "add the manifest row".
 
 ### D5. Hosting facts (recon 2026-09-01)
@@ -116,9 +116,9 @@ Spawn / tune / set-model resolve alias → slug via the manifest, build the stru
 |---|---|
 | Droplet | `tightbeam-ing-sfo3`, DigitalOcean sfo3, IPv4 143.198.229.224, IPv6 2604:a880:4:1d0:0:3:5817:c000 |
 | OS / web | Ubuntu, kernel 6.8, nginx 1.24.0, certbot present, ufw allows OpenSSH + Nginx Full |
-| Access | root over ssh from host-a via alias `tbing` (key lives on host-a). No doctl anywhere. |
+| Access | root over ssh from the production host via alias `tbing` (key lives on the production host). No doctl anywhere. |
 | Serving today | `blog.tightbeam.ing` only: root `/var/www/blog.tightbeam.ing`, Let's Encrypt cert for that one name (expires 2026-11-19), HTTP→HTTPS redirect. Static files, copied by hand; no git, no cron, no deploy script. |
-| DNS | Nameservers are Porkbun's. `blog.tightbeam.ing` → A 143.198.229.224. The apex `tightbeam.ing` has **no A/AAAA record**. Nobody on host-a/host-b/host-c/this machine holds Porkbun or DigitalOcean API credentials. |
+| DNS | Nameservers are Porkbun's. `blog.tightbeam.ing` → A 143.198.229.224. The apex `tightbeam.ing` has **no A/AAAA record**. Nobody on the production host, either test host, or this machine holds Porkbun or DigitalOcean API credentials. |
 | Disk | 24 GB, 11% used |
 
 Consequences: serving `https://blog.tightbeam.ing/model-manifest.json` needs only a file copy and works today. Serving from the apex needs (a) an A and AAAA record at Porkbun, which only the operator can add, then (b) a second nginx server block with `server_name tightbeam.ing` and `certbot --nginx -d tightbeam.ing`. Both are ten-minute jobs once DNS resolves.
@@ -137,7 +137,7 @@ O1. **Fate of the Claude `/v1/models` fetch.** Default (t3code-exact): retire it
 
 O2. **Canonical URL.** Default: `https://tightbeam.ing/model-manifest.json`, with `https://blog.tightbeam.ing/model-manifest.json` served from the same file as the interim URL until the apex record exists. The gateway's fetch URL is a config value with the apex as its default.
 
-O3. **Who runs the publish step.** Default: the release ceremony on host-a, since the ssh alias and key live there.
+O3. **Who runs the publish step.** Default: the release ceremony on the production host, since the ssh alias and key live there.
 
 ## Acceptance tests
 
@@ -147,7 +147,7 @@ O3. **Who runs the publish step.** Default: the release ceremony on host-a, sinc
 - T4 Passthrough: spawn with `--model claude-not-in-manifest` reaches the adapter with that slug; adapter refusal advances the ladder.
 - T5 Rendering: `--model claude-fable-5-1 --context 1m` renders `claude-fable-5-1[1m]` inside the adapter and nowhere else; `tightbeam list` output contains no `[`.
 - T6 Reader latency: `tightbeam list` returns within its existing budget while a manifest fetch is hung.
-- T7 End to end: with the manifest published on the droplet and host-a's adapters at 0.73.0 / SDK 0.3.257, `tightbeam spawn --archetype spec-writer` selects claude-fable-5-1 high, and `tightbeam list` shows it on host-a, host-b, and host-c after their adapters are brought to the same versions.
+- T7 End to end: with the manifest published on the droplet and the production host's adapters at 0.73.0 / SDK 0.3.257, `tightbeam spawn --archetype spec-writer` selects claude-fable-5-1 high, and `tightbeam list` shows it on the production host and both test hosts after their adapters are brought to the same versions.
 
 ## Handoff
 

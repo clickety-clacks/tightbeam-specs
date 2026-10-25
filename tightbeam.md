@@ -1151,7 +1151,7 @@ lag the satellites.
 | containment-v1 family, codex-gates-v1, rails-mechanism-v1 | landed |
 | agentic-engineering-guidance-spec | living (guidance CONTENT blocks; conformance via archetypes tests) |
 | client-e2e-v1 | READY — implementation queued (clawline repo driver + identifiers) |
-| production-machine-v1 | IMPLEMENTED on branch production-machine-v1; suite 1297/0 host-a+host-b; e2e smoke 7/7 on host-b twice; T-RECOGNITION is its tenet; awaiting operator verification |
+| production-machine-v1 | IMPLEMENTED on branch production-machine-v1; suite 1297/0 on two test hosts; e2e smoke 7/7 on one of them twice; T-RECOGNITION is its tenet; awaiting operator verification |
 | assignment-lifecycle-fallback-escalation-v1 | MVP contract — exact-hash independent `reviewed-clean` required before implementation |
 | assignment-revocation-reason-v1 | implementation authority — candidate pending independent review |
 

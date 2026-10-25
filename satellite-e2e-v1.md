@@ -9,7 +9,7 @@ exists or should be written.
 ## STANDING CREDENTIAL RULE — host-a E2E OpenAI restore (2026-08-15)
 
 Every host-a reset/rebuild E2E lane restores the E2E-ONLY OpenAI credential
-BEFORE testing, from its durable source: an operator-only secret file on host-g.
+BEFORE testing, from its durable source: an operator-only secret file on the production host.
 Restore is by STANDARD INPUT ONLY at onboarding time:
 
     cat <operator-provided-path> | ssh host-a \
@@ -155,7 +155,7 @@ immediately before the signal.
     listen state, HTTP answers — unchanged after the run.
   - host-d additionally: artifacts confined to your two run roots, both removed at end
     (standing host-d rule: no dev artifacts, ever).
-  - host-g: not in this matrix (production host).
+  - The production host: not in this matrix.
 
 ## Run-gateway fixture notes
 

@@ -322,7 +322,7 @@ assimilation commands. It then requires `command -v node` to return the
 supplied path and records that observation. It does not source a profile,
 accept raw `PATH` text, or retain the inherited preflight `PATH`.
 
-This seed lets the host-a ceremony name
+This seed lets the production-host ceremony name
 `/home/user-a/.local/bin/node`; its parent also makes the colocated npm and vendor
 CLIs visible to existing preflight checks. If another prerequisite remains
 absent, assimilation keeps its existing named refusal. A missing unseeded Node
@@ -562,7 +562,7 @@ Each acceptance case names the requirements and architecture it verifies.
 
 Traces: R-2, R-3; A-1, A-2.
 
-Given the real host-a capture with source SHA-256
+Given the real production-host capture with source SHA-256
 `afd148ada1c50a6282e849b05fabc3752ea565ebd47c265354e9a13da5288e60`,
 when the implementer adds the launch fixture, then the fixture preserves these
 captured observations rather than a hand-written ideal response:
@@ -739,7 +739,7 @@ vocabulary, ordering, privacy, and read behavior.
 
 Traces: R-10; A-1 through A-7.
 
-Given a fresh v6 org on host-a whose gateway process `PATH` excludes
+Given a fresh v6 org on the production host whose gateway process `PATH` excludes
 `/home/user-a/.local/bin`, valid Codex and Claude credentials, and executable
 Node, npm, Codex, and Claude files in that omitted directory plus rsync at
 `/usr/bin/rsync`, when

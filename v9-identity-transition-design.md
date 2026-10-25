@@ -105,7 +105,7 @@ the preparer does not silently accept it.
 **I2 — Preserve customization deliberately.** The preparer transplants the old
 reviewer's unrelated manifest settings into the two proposed manifests and records
 any ambiguous guidance clause for owner disposition. Given the inspected old
-manifest, then `where`, model preferences, `no-testing-on-host-a.md`,
+manifest, then `where`, model preferences, the no-testing-on-the-production-host guidance file,
 `specs-home.md`, `integration-targets`, and `tightbeam-atc` survive unless the owner
 explicitly changes them. Copying the shipped manifests wholesale fails this check.
 
