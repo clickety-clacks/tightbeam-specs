@@ -1,22 +1,11 @@
 # Coordination fabric — bones and cartilage — v1
 
-Status: r5 FOLDED (2026-08-13; executes the AUTHORIZED change requests
-`0.2-change-request-001.md` §C and `0.2-change-request-002.md` D1–D9 —
-both authorized by the operator, 2026-08-13 — in one fold sitting per their
-terms; source log: `emergent-formalization-candidates-2026-08-13.md`).
-Amended 2026-08-22 by direct operator ruling: a decision
+Status: r5 (2026-08-13). Amended 2026-08-22: a decision
 reader may return an insufficient-information agent question to its asker
 without answering it; the typed return is terminal, reasoned, and auditable
-(§7, Phase 1 seam ③).
-Prior: r4 READY (2026-08-13; declared after the cross-vendor delta
-re-check + its prescribed fix round — see `review-gate-findings-2026-08-13.md`).
-Folded from the 2026-08-13 review gate
-(`review-gate-findings-2026-08-13.md`;
-integrator rulings recorded there). r3 and
-earlier authored from the ruled forks of
+(§7, Phase 1 seam ③). r3 and earlier were authored from the forks of
 `coordination-fabric-ideation-2026-08-12.md` (retained as provenance; this
-file supersedes it as design authority). Rulings: operator, 2026-08-12; fold
-rulings: integrator 2026-08-13, overridable.
+file supersedes it as design authority).
 
 > "Tightbeam is a machined part for binding agents together, not duct tape."
 
@@ -870,15 +859,14 @@ Exit: conformance fixtures per seam; classes visible in transcript and
 toplines; live feature-smoke green on both harnesses (deferrable only by
 recorded ruling if no live gateway exists on the 0.2 line at the time).
 
-Existing carriers, absorb rather than duplicate: **the notice-batching work item** ("Batch
+Existing carriers, absorb rather than duplicate: **notice batching** ("Batch
 pending non-user notices into one agent turn while preserving source rows")
 is seam ② in embryo, its title already carrying Law 2; its
 narrower scope (substrate notices only) is a sane first increment before
-classed agent traffic. **The HUDDLE work item** (Main as the owner's executive
+classed agent traffic. **The HUDDLE design** (Main as the owner's executive
 assistant) independently drafted the class vocabulary, the
 rows-not-prose context rule, and the typed metadata the directive schema
-needs — feed it into §7 and §12 Q1/Q2. Third independent invention of the
-fabric inside this org (after attend and exception-based reporting).
+needs — feed it into §7 and §12 Q1/Q2.
 
 **Phase 2 — anatomy (entry: Phase 1 shipped; zero substrate changes).**
 Neutral seed gains: the exec archetype, the office convention doc (incl.
@@ -980,20 +968,13 @@ explicit word.
 Canonical set for this design: this file (design authority);
 `coordination-fabric-pragmatics-2026-08-12.md` (sealed Q&A record);
 `coordination-fabric-ideation-2026-08-12.md` (sealed provenance);
-`v0.2-program-2026-08-12.md` (program record: workstreams, staffing,
-phases); `review-gate-findings-2026-08-13.md` (review gate record + fold
-rulings); `0.2-change-request-001.md` and `0.2-change-request-002.md`
-(the authorized r5 change sets); `emergent-formalization-candidates-2026-08-13.md`
-(the r5 source log: observed behaviors, the razor, the tiers, the naming
-and staffing rulings — and itself the reference example of a promotion
-request); `adjudication-deletion-amendment.md` (the boundary this spec must
+`adjudication-deletion-amendment.md` (the boundary this spec must
 never cross); `wake-on-fact-v1.md` (consumed primitive); `tightbeam.md`
 (hub — may not lag this file).
 
 ## Revision trail
 
-2026-08-22 decision-reader return amendment: the operator directly authorized
-the amendment. Terms, §7, and Phase 1 seam ③ now define the typed `returned`
+2026-08-22 decision-reader return amendment: Terms, §7, and Phase 1 seam ③ now define the typed `returned`
 disposition, immutable source row, required return reason, stamped actor and
 time, open-queue removal, asker notification, owner-only revision/replacement
 choice, existence-oracle-safe authorization, and single-winner/idempotent
@@ -1076,8 +1057,7 @@ quiet floor (60 min) alongside the 30-min decision floor. READY declared.
 
 r4 (2026-08-13): review-gate fold. Canonical structure added (Goal,
 Non-Goals, Terms, Assumptions, spec-homing; Open Questions marked). Class
-vocabulary re-layered seed-not-substrate with skeletal reshape path
-(integrator ruling 2). Avasarala's watermark population defined over
+vocabulary re-layered seed-not-substrate with skeletal reshape path. Avasarala's watermark population defined over
 obligations + classed rows; misclassification costs restated honestly.
 Classifier stamps only unclassified traffic; sender election preserved.
 Algedonic routing pinned (principal AND human channel, seed default).

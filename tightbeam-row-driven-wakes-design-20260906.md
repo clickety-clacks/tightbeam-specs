@@ -248,7 +248,8 @@ the typed state machine.
   forced migration).
 
 Sequential G-A → G-B → G-C (one seam, one coder path); G-D follows. Remote regressions per
-goal on host-a/host-b via scripts/verify_mix.sh unmodified, host named in each attest; fresh
+goal on host-a/host-b (the two designated remote test hosts, named in the deployment's private
+environment record) via scripts/verify_mix.sh unmodified, host named in each attest; fresh
 independent review per preferred-models; spirit summary before any integration; integration
 additionally held under the standing landing hold.
 

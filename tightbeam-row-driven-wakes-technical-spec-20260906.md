@@ -12,7 +12,8 @@ Only a justified unresolved dependency qualifies for wait-aware effort treatment
 
 Controlling authority, in order:
 
-1. The governing wait-policy document, `tightbeam-wait-spirit-20260906-mike.md`, SHA-256
+1. The governing wait-policy document of 2026-09-06 in this repository (filename prefix
+   `tightbeam-wait-spirit-20260906`), SHA-256
    `ba377391d80433b735aca88ae5a104d9add82de86f8bc5e6c93f18fe62753964`.
    Its Commission and Agreed turn-end rule control the earlier proposals.
 2. Accepted design Revision 4, `tightbeam-row-driven-wakes-design-20260906.md`, SHA-256
@@ -586,7 +587,8 @@ help, parser and output before activating the amendment (wisdom 20–22). Accept
 
 ## Acceptance
 
-Tests use isolated fixtures on **host-a or host-b**, over SSH, through unmodified
+Tests use isolated fixtures on **host-a or host-b**, the two designated remote test hosts (the
+deployment's private environment record names each machine; no other host qualifies), over SSH, through unmodified
 `scripts/verify_mix.sh`. Name the actual host and candidate commit in every gate attest.
 Use source fixtures for SQL/state properties; no invented live observation capture.
 No tests, probes, gates or checkout code execute on the production host. If the remote host fails
