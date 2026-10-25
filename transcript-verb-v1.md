@@ -84,7 +84,7 @@ AS1. REST R7 exposes `seq` on each transcript-message item and
 AS2. REST R5 compares a decoded cursor tuple directly. Cursor validity does
 not require the boundary row to remain present.
 
-AS3. The separate session-freshness prerequisite from recon finding G2
+AS3. The separate session-freshness prerequisite (`event-firehose-v1.md` R8)
 supplies `session.spawned`, `session.updated`, and `session.retired` under the
 `session.` subscription prefix. That prerequisite owns their mutation mapping;
 this spec does not duplicate it.
@@ -174,7 +174,7 @@ Cold build uses this closed snapshot-to-buffer handoff:
    conversation state.
 2. Establish a firehose subscription filtered to that `sessionKey`. The
    subscription includes `message.created` and the `session.` prefix supplied
-   by recon finding G2. Receive `subscription_ready`.
+   by the session-freshness prerequisite (AS3). Receive `subscription_ready`.
 3. Fetch the transcript tail. Record the response's `session` as `S0` and
    its `rowVersion` as `V0`.
 4. Page backward with `oldestCursor` only until the displayed slice is
