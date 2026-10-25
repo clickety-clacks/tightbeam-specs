@@ -3,9 +3,11 @@
 Status: build specification. Amendment status: candidate for one fresh
 independent review — cursor-signing indeterminate-commit quarantine and
 recovery.
-Authority: the canonical REST specification; the adopted six-resource
-shared-serializer contract; the reviewed firehose baseline; and the
-reviewed canonical AU2 repair.
+Authority: the canonical REST specification; the adopted contract that
+gives config, host environment, hosts, users, identity, and kungfu each one
+named query, one public serializer, and one admin-only visibility function,
+shared by REST detail, CLI read wrappers, and firehose notices; the reviewed
+firehose baseline; and the reviewed canonical AU2 repair.
 
 This is one bounded amendment to the cursor-authenticity seam. It changes
 design only and authorizes no product edit, implementation, main landing,

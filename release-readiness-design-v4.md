@@ -162,10 +162,10 @@ train's org id.
 7. Installed test hosts can report the installed package digest and embedded source SHA.
 8. The release tables described in revision 3 have not shipped. Migration can add the
    consolidated revision-4 schema without translating live release rows.
-9. The immutable Clawline fixture retained from revision 3 is a recorded artifact with observed
+9. The immutable Clawline fixture retained from revision 3 is `artifact-clawline-fixture`, observed
    SHA-256 `08311b7779f8445369e6bf3a5d0c7bfe6203ca833a74b5ebe36b757f9fdf3670`. It contains
-   transcript continuity, Gate D, and a reopened work item.
-   It is acceptance data, not Tightbeam policy.
+   transcript continuity, Gate D, and reopened work item
+   `item-reopened`. It is acceptance data, not Tightbeam policy.
 
 If an implementation falsifies an assumption, the affected scope returns to spec review.
 It does not substitute a heuristic.
@@ -960,9 +960,9 @@ missing content, missing required keys, altered bytes, member/watch hash mismatc
 marker mismatch, then the snapshot returns an integrity error and currency
 `needs_attention`, not `current`.
 
-**A-51 — Preserved Clawline fixture.** Given the immutable Clawline fixture at the assumed
+**A-51 — Preserved Clawline fixture.** Given immutable fixture `artifact-clawline-fixture` at the assumed
 digest, when release membership and gates are serialized, then transcript continuity, Gate
-D, the reopened work item, and literal decisions round-trip as
+D, reopened `item-reopened`, and literal decisions round-trip as
 product evidence without becoming Tightbeam defaults.
 
 **A-52 — Terminal optional-line protection.** Given a shipped or canceled `release_line`

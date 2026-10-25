@@ -3,8 +3,9 @@
 Status: SPEC CANDIDATE. It is bounded to the two supplied specimens, additive
 to `eea3e9a`, and does not replace automatic adapter-death recovery.
 
-Evidence boundary: the recorded phantom-turn report, its confirmation, and the
-ruled prior-specimen authority, which identifies the 19-hour stuck turn and the
+Evidence boundary: phantom-turn report `attest-phantom`, confirmation
+`attest-confirmation`, and the ruled prior-specimen authority
+`decision-prior-specimen`, which identifies the 19-hour stuck turn and the
 later five-turn specimen.
 Adjacent retired-session queue invalidation remains excluded.
 
@@ -343,10 +344,11 @@ Adjacent retired-session queue invalidation remains excluded.
    bounded reason are supplied, then the row becomes `failed`, the reason is
    stored in the existing error field, and no `failed_unknown` row is created.
 3. **The two supplied specimens.** Given fixtures for the earlier 19-hour
-   stuck turn and the five confirmed phantom turns, when an admin settles each exact stale target, then
+   stuck turn and the five confirmed phantom turns `turn-1`, `turn-2`, `turn-3`,
+   `turn-4`, and `turn-5`, when an admin settles each exact stale target, then
    each target has one terminal row, one operator lifecycle event, and no
    second running row remains for its session. The proof cites
-   the phantom-turn report, its confirmation, and the ruled prior-specimen authority.
+   `attest-phantom`, `attest-confirmation`, and `decision-prior-specimen`.
 4. **Live refusal.** Given a target that the lane reports `live`, when the
    operator sends either outcome, then the response is `turn_live` and the
    target row, lifecycle table, queue, and publication table are byte-for-byte

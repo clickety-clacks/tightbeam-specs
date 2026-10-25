@@ -21,7 +21,10 @@ Authority:
   Router/M1 handling, and the exact current Toplines R9 dependency set. The
   accompanying REST R3b correction removes stale adapter names without
   changing public bytes.
-- Adopted six-resource shared-serializer contract.
+- The adopted contract that gives config, host environment, hosts, users,
+  identity, and kungfu each one named query, one public serializer, and one
+  admin-only visibility function, shared by REST detail, CLI read wrappers,
+  and firehose notices.
 - D1 candidate `rest-read-plane-d1.md`. D1's final reviewed canonical
   identity replaces this candidate identity at the code-start gate below; a
   seam-name difference requires a reviewed D2 amendment before product code
@@ -50,7 +53,7 @@ The resource-scoped start-gate amendment changes only this file. The earlier
 composition also changed the narrow R3b companion in `rest-state-api-v1.md`;
 those canonical bytes remain unchanged. Review this amendment against current
 canonical D1, REST, wire schema, firehose, the accepted closures above, and the adopted
-shared-serializer contract. The D2 code-start set also
+six-resource contract above. The D2 code-start set also
 includes D1's final reviewed canonical spec and integration and the reviewed
 canonical landings for the Toplines-and-sessions filter contract closure and
 the ExecutionMap contract closure. The code-start preflight records
