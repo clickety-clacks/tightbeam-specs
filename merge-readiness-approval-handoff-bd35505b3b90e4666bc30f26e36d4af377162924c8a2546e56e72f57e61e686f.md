@@ -2,14 +2,8 @@
 
 Status: **SPEC-READY FOR INDEPENDENT REVIEW**.
 
-Work item: `wi_ab7d8496-a7b7-4076-ade5-1b2144a2a400`  
-Authority: parent assignment `asg_bbfa003a-c1c2-4e07-8abe-11947aeb5d8e`  
-Recon: artifact `art_108f9266`, inspected Tightbeam commit
-`ac8651dcb104f312da1c67e0cb7b1abebc640b2b`
-
 This spec does not authorize implementation until an independent reviewer clears its
-exact content hash. The orchestrator binds the work item to the cleared hash after that
-verdict.
+exact content hash.
 
 ## Goal
 
@@ -146,10 +140,10 @@ qualifying event is the completion transaction itself.
 10. A code-producing assignment that can qualify has one direct work item. A missing
     work item is a named completion refusal under I9.
 
-Assumption 7 is a build dependency, not current behavior at recon commit `ac8651dc`.
+Assumption 7 is a build dependency, not current behavior at source commit `ac8651dc`.
 Candidate commit `fa4905922119c336f6b0e4016c18a8e4a8cf2c6b` supplies the required
-field, migration, setter, cycle refusal, and active-ancestor pattern. It is not authority
-until it is rebased, reviewed, and merged.
+field, migration, setter, cycle refusal, and active-ancestor pattern. It is
+not authority until it is rebased, reviewed, and merged.
 
 ## Invariants
 
@@ -529,7 +523,7 @@ instructions.
 
 ### 1. Proven source and dependencies
 
-Recon artifact `art_108f9266` established these facts on commit `ac8651dc`:
+Source inspection established these facts on commit `ac8651dc`:
 
 - Producer test verdicts cannot carry structured commit references
   (`lib/tightbeam/assignments.ex:1544-1605`).

@@ -1,35 +1,21 @@
 # Release readiness, frozen main candidates, and optional release lines — revision 5
 
-Status: spec-approved candidate for fresh independent exact-artifact review.  
-Canonical path: `specs/tightbeam/release-readiness-design-v5.md`  
-Work item: `wi_3c9d3a64-15a8-457e-b2b1-429a1264f04f`  
-Producer assignment: `asg_ea220e82-5a11-4706-9fd0-ffbb979dc134`
+Status: candidate specification.  
+Canonical path: `specs/tightbeam/release-readiness-design-v5.md`
 
-This revision replaces the decision authority of revision 4, `art_25b966e7`, SHA-256
+This revision replaces the decision authority of revision 4, SHA-256
 `fcb6e16af03f2d1c6c590107744a2bdfd62c1856cf07d14f32d3b38194a2ead1`.
 Revision 4 remains immutable at `specs/tightbeam/release-readiness-design-v4.md`.
-Its byte-identical Gibson review projection `art_0791914f`, SHA-256
-`fcb6e16af03f2d1c6c590107744a2bdfd62c1856cf07d14f32d3b38194a2ead1`, also remains
-non-canonical provenance.
 
-Revision 4 had replaced `art_3d656920`, SHA-256
+Revision 4 had replaced revision 3, SHA-256
 `6af5e684ee145314d6a906429378c1709e126a3de815d59e65d89c95ac8b1df0`, and its
-imported baseline `art_df141e91`, SHA-256
+imported baseline, SHA-256
 `3252a3928f3ff64865c8f8c53ea3a94d68a9cd24ba134aaf7ac49cee94828001`.
 Those artifacts and earlier revisions remain immutable history.
 
-This revision closes the eight findings in revision-4 review
-`att_7aeb95d6-f5d0-496e-8aa3-13c2863ce266` under owner rulings
-`att_21d69cad-cc45-40da-b605-9853847a121d` for F1-F4 and
-`att_253d0baa-a17f-4dea-bbd6-2cb3b6145835` for F5-F8. It retains the closure of controlling
-historical review `att_4506ae4f-9b29-4eda-8207-936e1341e344` and its full report
-`art_df1f7f1d`, SHA-256
-`a7ec2c75e96bdf6b093c2e734a8aa57dfcf49606eaea5df1b530190a36fd9594`.
-It also implements the product-owner ruling
-`att_2a65ba32-88ad-460b-afde-ae47a409bd93` in the design. That ruling supersedes
-`att_8db7d29a-588e-4745-8dde-082a0cc10089` where the older ruling made a release
-branch the default candidate path. The older ruling remains superseded provenance and
-has no normative force in this revision.
+This revision no longer makes a release
+branch the default candidate path; the older ruling that did so has no normative force in
+this revision.
 
 Two unpublished draft digests are explicitly rejected: SHA-256
 `0bbc4505e7e2b39ba23fcf0d39126ac908aab5b2bea025ca6f52d70d14ee034c` and SHA-256
@@ -248,10 +234,9 @@ optional-line integration changes the exact generation lock from `open` to
 7. Installed test hosts can report the installed package digest and embedded source SHA.
 8. The release tables described in revisions 3 and 4 have not shipped. Migration can add
    the consolidated revision-5 schema without translating live release rows.
-9. The immutable Clawline fixture retained from revision 3 is `art_ab55409f`, observed
+9. The immutable Clawline fixture retained from revision 3 has observed
    SHA-256 `08311b7779f8445369e6bf3a5d0c7bfe6203ca833a74b5ebe36b757f9fdf3670`. It contains
-   transcript continuity, Gate D, and reopened work item
-   `wi_9086ebd5-bd62-4c04-9b97-ac83ce34f53e`. It is acceptance data, not Tightbeam policy.
+   transcript continuity, Gate D, and a reopened work item. It is acceptance data, not Tightbeam policy.
 
 If an implementation falsifies an assumption, the affected scope returns to spec review.
 It does not substitute a heuristic.
@@ -498,7 +483,7 @@ One unique index reserves each repository/tag-name pair for one promotion.
 
 Mechanism choice: ADD wins because Git refs alone cannot preserve product ownership,
 review provenance, proof binding, or recovery after a lost external response. DELETE loses
-because Mike requires a durable release responsibility and an exact frozen candidate SHA.
+because the operator requires a durable release responsibility and an exact frozen candidate SHA.
 ACCEPT loses because an unreviewed or tag-built candidate is an explicitly rejected release
 state. Optional release-line state is added only for the explicit concurrency, maintenance,
 and patch cases; ordinary releases add no branch.
@@ -508,19 +493,6 @@ set of rails for facts the substrate must recover without inference. DELETE lose
 required first-release provenance, owner reissue, automatic push admission, or optional
 release mode respectively. ACCEPT loses because each missing fact permits an unreviewed
 candidate, ownerless hold, duplicate run, or post-proof ref race.
-
-Revision-4 review findings trace in both directions as follows:
-
-| Finding | Normative closure | Acceptance |
-| --- | --- | --- |
-| F1 review author not holder-bound | Independent evidence term; I-12; Architecture 4 | A-10 |
-| F2 brief fields undefined | I-04; Architecture 3 closed schema | A-04, A-50, A-55 |
-| F3 empty-range/arbitrary-base escape | Anchor term; I-12; Architecture 2 and 4 | A-11, A-12, A-54 |
-| F4 optional ref-effect promotion race | Line generation lock term; I-25; Architecture 4 and 6 | A-28B, A-43 |
-| F5 offer and relief lifecycle missing | Offer/relief terms; I-05, I-26; Architecture 2 | A-03B, A-46B, A-47 |
-| F6 branch-push replay unkeyed | I-14, I-20; Architecture 5 | A-18C, A-35 |
-| F7 decision terminal occurrences absent | I-07; Architecture 3 | A-05, A-06, A-48 |
-| F8 provisional digests unnamed | Header rejection | A-53 |
 
 ### 2. Owner and brief lifecycle
 
@@ -1051,7 +1023,7 @@ ref readback, output, and forbidden side effects.
 when Tightbeam projects the train, then readiness and go/no-go remain the exact authored
 values and no inferred declaration or ship event exists.
 
-**A-02 — Exact owner.** Given two sessions owned by Mike and an epoch naming session A,
+**A-02 — Exact owner.** Given two sessions owned by the operator and an epoch naming session A,
 when session B tries commit, decide, freeze, optional-line integration, promote, tag,
 ordinary transfer, ship, or owner-cancel, then each request returns `not_release_owner` and
 writes zero mutation rows. This check does not replace the separately authorized
@@ -1448,9 +1420,9 @@ content, missing required keys, unknown keys, altered bytes, any collection-hash
 unresolved evidence, or commit marker mismatch, then the snapshot returns an integrity error
 and currency `needs_attention`, not `current`.
 
-**A-51 — Preserved Clawline fixture.** Given immutable fixture `art_ab55409f` at the assumed
+**A-51 — Preserved Clawline fixture.** Given the immutable Clawline fixture at the assumed
 digest, when release membership and gates are serialized, then transcript continuity, Gate
-D, reopened `wi_9086ebd5-bd62-4c04-9b97-ac83ce34f53e`, and literal decisions round-trip as
+D, the reopened work item, and literal decisions round-trip as
 product evidence without becoming Tightbeam defaults.
 
 **A-52 — Terminal optional-line protection.** Given a shipped or canceled `release_line`

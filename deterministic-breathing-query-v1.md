@@ -1,6 +1,6 @@
 # Deterministic breathing query v1 — session, assignment, and work item
 
-Status: draft spec candidate for `wi_4ef0bb82-7d16-4ddd-acff-54fbb516e80f`.
+Status: draft spec candidate.
 This file specifies a read-only contract on both supported product lines,
 `0.1.9` and `main`/`0.2`. It does not authorize implementation.
 
@@ -13,10 +13,9 @@ This spec is a bounded amendment to these authorities:
 | `standing-accountability-lifecycle.md` | Reaffirmation, progress, and continuation remain standing-accountability receipts only. They do not establish breathing. |
 | `patrol-response-acknowledgment.md` | Patrol acknowledgments remain episode receipts only. They do not establish breathing. |
 
-Background, not authority: `wi_a57dee58-7dc6-43e4-b36d-a45959e64ad6`,
-`wi_0c1ad73a-e18b-4661-9cb9-a62324703c47`,
-`wi_bcb85145-ca2e-49d9-b440-3acc19234709`, the superseded physical-liveness
-verdict on `wi_990f7b7e-837b-4aba-8f2e-ac6617327d78`, and the 0.2 sweep
+Background, not authority: the deterministic progress-since read, the bounded
+watchdog, the superseded physical-liveness
+verdict, and the 0.2 sweep
 entries on supervision truth and bounded watchdog inference.
 
 ## Goal
@@ -174,8 +173,8 @@ A5. The current effort-checkin implementation on both lines still counts
 attests and work-item updates as effect. This spec removes their authority for
 breathing only. It does not redesign effort check-in in this card.
 
-A6. The deterministic progress-since read (`wi_0c1ad73a`) and the bounded
-watchdog (`wi_bcb85145`) remain separate work. This spec defines the physical
+A6. The deterministic progress-since read and the bounded
+watchdog remain separate work. This spec defines the physical
 predicate they consume or stand beside; it does not merge them.
 
 ## Invariants
@@ -216,7 +215,7 @@ does not prove breathing.
 I10. The query exposes only public row fields already allowed on that product
 line. Secret material such as `cliToken` is never emitted.
 
-I11. `wi_990f7b7e` is superseded for physical breathing. Any future rail,
+I11. The earlier physical-liveness verdict is superseded for physical breathing. Any future rail,
 watchdog, query, or product feature that needs physical liveness shall consume
 this spec’s physical evidence rather than attestation inheritance or any other
 recorded-fact surrogate.

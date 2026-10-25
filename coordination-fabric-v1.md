@@ -1,22 +1,11 @@
 # Coordination fabric — bones and cartilage — v1
 
-Status: r5 FOLDED (2026-08-13; executes the AUTHORIZED change requests
-`0.2-change-request-001.md` §C and `0.2-change-request-002.md` D1–D9 —
-both authorized by Mike, 2026-08-13 — in one fold sitting per their
-terms; source log: `emergent-formalization-candidates-2026-08-13.md`).
-Amended 2026-08-22 by Mike's direct ruling on wi_f3f1ae8f: a decision
+Status: r5 (2026-08-13). Amended 2026-08-22: a decision
 reader may return an insufficient-information agent question to its asker
 without answering it; the typed return is terminal, reasoned, and auditable
-(§7, Phase 1 seam ③).
-Prior: r4 READY (2026-08-13; declared after the cross-vendor delta
-re-check + its prescribed fix round — see `review-gate-findings-2026-08-13.md`).
-Folded from the 2026-08-13 review gate
-(`review-gate-findings-2026-08-13.md`: one Fable round, one Sol-xhigh round,
-blind, both changes-requested; integrator rulings recorded there). r3 and
-earlier authored from the ruled forks of
+(§7, Phase 1 seam ③). r3 and earlier were authored from the forks of
 `coordination-fabric-ideation-2026-08-12.md` (retained as provenance; this
-file supersedes it as design authority). Rulings: Mike, 2026-08-12; fold
-rulings: integrator 2026-08-13, overridable.
+file supersedes it as design authority).
 
 > "Tightbeam is a machined part for binding agents together, not duct tape."
 
@@ -34,7 +23,7 @@ already authorized.
 
 Protect the org's scarcest resource — frontier-model attention — by shaping
 WHEN coordination traffic spends a mind's turn, without ever shaping WHAT is
-recorded. Verified 2026-08-12 in `state.db`: the relief product owner's open
+recorded. Verified 2026-08-12 in `state.db`: a product owner's open
 cards were lifecycle-repair procedure, custody relays, and review-cascade
 coordination — System-2/3 work consuming a System-5 mind. Every knowledge
 worker is exposed the same way. This spec is variety attenuation (Ashby)
@@ -366,7 +355,7 @@ domain-free shapes (§8b) — and reads the casebook as evidence. Same rows,
 two altitudes; row provenance keeps their disagreements visible instead of
 silent.
 
-**Reference implementation:** the 0.1 stall patrol, running this whole
+**Reference implementation:** a 0.1 stall-detection agent, running this whole
 contract on inference today — a learned class taxonomy, correctly-blocked
 vs stalled verdicts, executed recoveries, precedent citations,
 escalate-only-novel. Its taxonomy is that org's case law and never ships.
@@ -585,7 +574,7 @@ skeletal change (§8) — lawful via the identity tree, never silent.
 | `blocker` | progress stopped | desk immediately; summon at desk's judgment, floor-bounded / principal immediately | prodder floor |
 | `algedonic` | genuine pain (constitution violation, spirit drift, data loss) | bypasses every bone and every desk: delivered to the principal AND the org's configured human channel (seed default: both; skeletal to reshape). Never batched, never digested, never triaged | none — immediate |
 
-**Insufficient-information return (Mike, 2026-08-22).** The principal who
+**Insufficient-information return (operator, 2026-08-22).** The principal who
 was asked an agent question — the exact session resolved at file time, or
 its stamped accountable owner — may return an OPEN question with a required,
 non-blank reason instead of answering it. The return changes only that
@@ -808,7 +797,7 @@ Marked blocking (B: blocks the phase named) or non-blocking (NB).
    vocabulary, precedence beyond latest-wins, cross-key conflicts. v1's
    five-key contract (§6) suffices for Phase 3.
 2. (NB) Digest format craft — what a good brief looks like: guidance, not
-   mechanism; feeds from wi_4ed08ef3's drafts.
+   mechanism; feeds from the HUDDLE work item's drafts.
 3. (NB) Class-vocabulary completeness per domain kungfu (Phase 6 evidence
    will show).
 4. (NB) Whether `status-responder` needs rate/abuse shaping beyond §5's
@@ -851,8 +840,8 @@ verdict-reselect). Why this gates Phase 1: the pilot's delegation cards
 ride the assignment lifecycle, and standing up new coordination machinery
 on a lifecycle with a known unlawful-exit defect would build the fabric on
 the one part of the chassis currently violating Law 3 — repair the chassis
-first. Exit: the wi_1b0237fe wedge CLASS is exercisable via the new verb by
-an agent in conformance tests (the live wi_1b0237fe card itself is 0.1.x's
+first. Exit: the live wedge's CLASS is exercisable via the new verb by
+an agent in conformance tests (the live wedged card itself is 0.1.x's
 to unwedge, by cherry-pick election); a conformance fixture pinning
 holder-verdict-wins.
 
@@ -870,15 +859,14 @@ Exit: conformance fixtures per seam; classes visible in transcript and
 toplines; live feature-smoke green on both harnesses (deferrable only by
 recorded ruling if no live gateway exists on the 0.2 line at the time).
 
-Existing carriers, absorb rather than duplicate: **wi_1100e078** ("Batch
-pending non-user notices into one agent turn while preserving source rows"
-— unstaffed) is seam ② in embryo, its title already carrying Law 2; its
+Existing carriers, absorb rather than duplicate: **notice batching** ("Batch
+pending non-user notices into one agent turn while preserving source rows")
+is seam ② in embryo, its title already carrying Law 2; its
 narrower scope (substrate notices only) is a sane first increment before
-classed agent traffic. **wi_4ed08ef3** (HUDDLE — Main as Mike's executive
-assistant — unstaffed) independently drafted the class vocabulary, the
+classed agent traffic. **The HUDDLE design** (Main as the owner's executive
+assistant) independently drafted the class vocabulary, the
 rows-not-prose context rule, and the typed metadata the directive schema
-needs — feed it into §7 and §12 Q1/Q2. Third independent invention of the
-fabric inside this org (after attend and exception-based reporting).
+needs — feed it into §7 and §12 Q1/Q2.
 
 **Phase 2 — anatomy (entry: Phase 1 shipped; zero substrate changes).**
 Neutral seed gains: the exec archetype, the office convention doc (incl.
@@ -925,7 +913,7 @@ encounter, adjudicate-before-escalate as the loop,
 class-learned-after-ruling as the ring-once guarantee. The prodder floor
 stays BONE beneath her: every §5 guarantee holds with the nurse unstaffed,
 wrong, or dead — she reduces the interruption cost of escalations; she
-never carries the floor. The 0.1 stall patrol is the reference
+never carries the floor. A 0.1 stall-detection agent is the reference
 implementation; its taxonomy is that org's case law and never ships (§8b).
 **Unbraid the prodder per the original plan:** sweep mechanics stay
 physics; thresholds, cadence, quiet-definitions, and ladder shape move to
@@ -980,126 +968,6 @@ explicit word.
 Canonical set for this design: this file (design authority);
 `coordination-fabric-pragmatics-2026-08-12.md` (sealed Q&A record);
 `coordination-fabric-ideation-2026-08-12.md` (sealed provenance);
-`v0.2-program-2026-08-12.md` (program record: workstreams, staffing,
-phases); `review-gate-findings-2026-08-13.md` (review gate record + fold
-rulings); `0.2-change-request-001.md` and `0.2-change-request-002.md`
-(the authorized r5 change sets); `emergent-formalization-candidates-2026-08-13.md`
-(the r5 source log: observed behaviors, the razor, the tiers, the naming
-and staffing rulings — and itself the reference example of a promotion
-request); `adjudication-deletion-amendment.md` (the boundary this spec must
+`adjudication-deletion-amendment.md` (the boundary this spec must
 never cross); `wake-on-fact-v1.md` (consumed primitive); `tightbeam.md`
 (hub — may not lag this file).
-
-## Revision trail
-
-2026-08-22 decision-reader return amendment: Mike directly authorized
-wi_f3f1ae8f. Terms, §7, and Phase 1 seam ③ now define the typed `returned`
-disposition, immutable source row, required return reason, stamped actor and
-time, open-queue removal, asker notification, owner-only revision/replacement
-choice, existence-oracle-safe authorization, and single-winner/idempotent
-race behavior. No hold, ruling, or substrate judgment was added.
-
-r5 fix round (2026-08-13, same day; Sol fold review, finding 3): §6 layer
-2 sharpened — dispatch rules compile the charter's STRUCTURAL must-nots
-only (verb, attest kind, target card, authority reference); the SEMANTIC
-half of the substance prohibition (prose judging a work product) binds as
-law-as-text in the charter and is enforced by layer 3's audit, never by
-the substrate parsing content (gate Q1/Q6; candidates item 11's
-contentless-mechanism ruling). Terms entry aligned. Finding 8 (bone still
-named Avasarala in program-doc measurement text) fixed in the program
-record, same sitting. Seed-arm residue, same sitting: §6's MAY list and
-§11.5's acceptance clause dropped the "acknowledge directives" filing —
-this fold's own no-ack law makes directive receipt provable by behavior
-(the next filing that reflects the directive), never by an
-acknowledgment filing; §11.5 now audits acknowledgment-only filings as a
-violation instead of expecting them.
-
-r5 (2026-08-13): the CR fold — executes `0.2-change-request-001.md` §C
-(items 1–7) and `0.2-change-request-002.md` (D1–D9), both AUTHORIZED by
-Mike 2026-08-13, one sitting, per the candidates log
-(`emergent-formalization-candidates-2026-08-13.md`). NAMING: the §5 bone
-renamed avasarala → `prodder` (same watermark contract, floors, and
-population — only the name); AVASARALA moved up to the triage role (§5b,
-new — charter template, casebook-as-data with mandatory evidence citations
-and hit counts, provisional-class minting, empty seed content, the 0.1
-stall patrol as reference implementation, the nurse/Miller division of
-labor); the naming law adopted spec-wide (§3): name the minds, keep the
-machinery boring. NEW SECTIONS: §6b how desks bend (identity composition,
-four knobs; the manifest `desk` section + home-projection composition
-specced as CR-002's one real mechanism change, implementation a named
-build card); §6c inception + the altitude rule + workflows W1–W6; §8b the
-promotion pipeline (razor, specimens → minting → tiered recommendations;
-owner = veto-with-context); §8c first boot (prodder always on, Main the
-day-one nurse, archetypes unstaffed, triggers in guidance). AMENDED: §4
-(the office is the unit of hiring; the desk graph as nervous system, built
-by hiring; restaffing text harmonized), §6 (spawn-as-directed-execution
-with mandatory authority citation; three-layer containment —
-provisioning/law/audit; desk memory is rows; one desk archetype, priced
-pairing, desks have no desks), §7 (fyi never obliges a reply turn — the
-no-acknowledgment law's anchor; external-notification dedup on blockage
-identity), §8 (dispatch rules and provisioning gates skeletal by
-construction), §9 (three new rows), §10 (no staffing; no promotion
-execution), §11 (prodder naming; convention note until the dispatch
-mechanism ships), §13 (Phase 2 r5 addenda; Phase 4 rewritten around the
-nurse contract with the prodder kept bone and the r4.3 coalescer kept;
-Phase 5b added — Miller formalized as a seed playbook, probe list empty).
-Invariant 4 added (the substrate never staffs). Terms, Assumptions (5
-amended; 6–8 added), and Open Questions (5 resolved; 7–11 added, B/NB
-marked) updated. Sealed files untouched.
-
-r4.3 (2026-08-13): completeness-scan fold (dual-vendor scan,
-completeness-scan-2026-08-13.md). §5 classifier row rewritten to match
-the shipped, review-accepted design — election is how traffic enters the
-fabric; unclassed wakes are untouched legacy traffic (auto-stamping would
-retroactively hold unelected mail); the classify seam remains for
-org-authored per-sender defaults. Coalescer explicitly SCHEDULED at Phase
-4 (it was named in §5 but scheduled nowhere — a spec defect). Receiver
-re-classification recorded as a Phase 3 desk behavior (deferral, not
-hole). Mike may overrule any of the three.
-
-r4.2 (2026-08-13): §4 crash-window claim narrowed per Sol micro-review —
-the post-crash state is a bounded, governed dual-authority window (not
-"benign"): duplicated-delivery worst case named, watermark/effort-checkin
-bounds named, exec stand-down rule added to the seed guidance.
-
-r4.1 (2026-08-13): §4 dissolution ordering corrected — REBIND-then-revoke
-(was revoke-then-rebind; revocation never changes role binding, so the old
-order left the role routing to an off-card desk in the crash window; found
-by Sol's Phase 2 review of the office-convention doc, which inherited the
-defect from this section; both fixed in the same breath).
-
-r4 fix round (2026-08-13, same day): three defects the Sol delta re-check
-named, fixed as prescribed — §11.3 accepts answer/consume as lawful
-clearing; §6's avasarala clause re-scoped to the watermark population
-(batcher enforces ceilings, Invariant 3); §5 seeds the open-obligation
-quiet floor (60 min) alongside the 30-min decision floor. READY declared.
-
-r4 (2026-08-13): review-gate fold. Canonical structure added (Goal,
-Non-Goals, Terms, Assumptions, spec-homing; Open Questions marked). Class
-vocabulary re-layered seed-not-substrate with skeletal reshape path
-(integrator ruling 2). Avasarala's watermark population defined over
-obligations + classed rows; misclassification costs restated honestly.
-Classifier stamps only unclassified traffic; sender election preserved.
-Algedonic routing pinned (principal AND human channel, seed default).
-"Hold" designated; exec verb list tightened (restaff excluded, substance
-verdict defined). Directive v1 contract (five keys, latest-wins,
-cancellation). Batcher creates the wake at min(turn boundary, ceiling) —
-idle-session digests materialize their own turn. Office dissolution
-sequence + degraded windows named. §11 summon set corrected; acceptance
-made decidable (thresholds, windows, definitions). Policy-skew and
-status-query degradation rules added. Phase 0 gate rationale stated;
-Phase 1 ships its manual amendment.
-
-r3 (2026-08-12): the watchdog behaviour is named **Avasarala** (Mike's
-ruling; Tightbeam is Expanse-themed — port 11373 = 1373 gates + 1 Earth).
-Supervision's prodder unbraids INTO this behaviour at Phase 4. (r5 note:
-the name later moved up to the triage role; the bone reverted to the
-legacy name `prodder` — §3's naming law.)
-
-r2 (2026-08-12): §4 layering corrected (office pattern is neutral-seed
-anatomy, not domain kungfu — Mike's catch); §13 implementation phases added,
-evidence-gated, placing every v0 exclusion.
-
-r1 (2026-08-12): authored from the ideation record plus four rulings
-(accountability = office-as-convention; bones = substrate mechanism + kungfu
-policy; exec context = rows + directives; override = self + spirit backstop).

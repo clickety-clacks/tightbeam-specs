@@ -1,32 +1,30 @@
 # Owner decision request relief v1
 
-Status: specification for build — Mike written instruction, 2026-09-04
-Work item: `wi_3d328d28-4c3c-4405-a624-427426fa10d5`
-Posture: HEAVY (`att_4a8e3cc4` on `asg_14e7590c`)
-Evidence: `art_02574fb9`, sha256
+Status: specification for build — operator written instruction, 2026-09-04
+Posture: HEAVY
+Evidence: sha256
 `83782fe8522c87066d3b9eddb7207c5e8606e5a55e6346c90fdb6c7047e386b8`
 
-Amended 2026-09-05 for review finding B-1 and post-MVP items P-1 through P-5
-(`art_141180b0`). The amendment corrects one class of error throughout: the first
+Amended 2026-09-05. The amendment corrects one class of error throughout: the first
 draft made per-ref claims against a two-branch model of a repository that has
 three branches and a running release whose artifact matches no branch tip. A18 is
 new and every per-ref claim below now names its ref. No requirement text changed.
 The measured size of R6 changed from 17 to 8, because the 17 describes only a
 frozen branch pointer that no host runs and no release ships.
 
-Authority, verbatim (Mike, 2026-09-04):
+Authority, verbatim (the operator, 2026-09-04):
 
 > ROOT CAUSE, file it as a work item and staff it: the completion rail refuses
 > terminal receipts on work that is landed and independently reviewed, and lanes
 > respond by raising owner-facing decision requests. That rail is manufacturing
-> paperwork for Mike. Fix it so a landed, reviewed card can close without an
+> paperwork for [the operator]. Fix it so a landed, reviewed card can close without an
 > owner ruling.
 
-Scope addition, verbatim (Mike, ruling `dr_778ba73b`, 2026-09-04 21:30 UTC):
+Scope addition, verbatim (the operator, 2026-09-04 21:30 UTC):
 
 > a retired raiser leaves an immortal owner-facing request that no living actor
-> can clear. That is worse than the completion rail Mike named, and four of these
-> were unclearable by anyone but him, forever. It is staffed as wi_3d328d28 —
+> can clear. That is worse than the completion rail [the operator] named, and four of these
+> were unclearable by anyone but [the operator], forever. It is staffed as [this work item] —
 > keep it, and make sure the spec covers BOTH the retired-raiser trap and the 37
 > effort check-in requests that effort-rule refuses with current expecter
 > required.
@@ -63,7 +61,7 @@ own count.
 **8** carried, at the moment of
 refusal, a holder-filed review conclusion from a session other than the card's own
 holder — a conclusion the fact discards. That 8 is the figure on `main`, on
-`0.1.9`, and on the release gibson runs, which share one card-selection rule; a
+`0.1.9`, and on the release the production host runs, which share one card-selection rule; a
 larger figure of 17 belongs only to the frozen `0.1.8` pointer, which no host runs
 and no release ships (A18, A6). R6 repairs exactly those and turns none
 of the others from allowed to denied. The measurement, both selection rules, and
@@ -71,7 +69,7 @@ the three distinct causes are at R6.
 
 **The raise rate.** Over the fourteen days to 2026-09-04 the org raised between 11
 and 73 operator decision requests per day, 617 in total. All-time, 502 operator
-requests carry a ruling, and every one of those rulings carries a `user:mike`
+requests carry a ruling, and every one of those rulings carries a `user:<owner>`
 origin. Measured 2026-09-04 against `decision_requests` where `kind = 'operator'`,
 counting raises by `createdAt` bucketed to UTC days and rulings by
 `status = 'ruled'`. Read that 502 as A12 requires: `ruledBy` records attribution,
@@ -85,8 +83,8 @@ path exists. `operator-rule` refuses any principal that is not the owner user.
 raiser retires, the last remaining path closes and the row can only be cleared
 by the owner in person.
 
-On 2026-09-04 at 19:00 UTC the owner cleared four such rows by hand
-(`dr_8d3ea46f`, `dr_fa2e0f91`, `dr_0cdc5e80`, `dr_112e519e`). Their raisers had
+On 2026-09-04 at 19:00 UTC the owner cleared four such rows by hand.
+Their raisers had
 retired days earlier; three of the four asked about work that had since
 completed. That hand-clearing is the cost this specification exists to stop
 recurring.
@@ -152,7 +150,7 @@ mistake this document for permission to build.
    `completion-requires-review` collapses history to a "latest", and that
    collapse is the defect R6 repairs.
 7. **No installation, service, schema, adapter, or host change.** Repository
-   work only. The production host is locked at 0.1.8 under Mike's 2026-09-02
+   work only. The production host is locked at 0.1.8 under the operator's 2026-09-02
    change law. Nothing in this document may be applied to a running host without
    that law's separate two-step ceremony.
 8. **Not a change to effort check-in escalation.** The probe, the four effect
@@ -233,8 +231,8 @@ what happened. It does not need a product decision.
 **Genuine owner decision.** A question whose answer changes product behaviour,
 scope, priorities, release intent, user experience, commitments, or a trust
 root; or which is sensitive, destructive, security-relevant, costly, hard to
-reverse, or dangerous. `dr_24edf371`, "name the trust root for self-healing
-satellite CLI delivery", is the worked example in the current open set, and it
+reverse, or dangerous. The request "name the trust root for self-healing
+satellite CLI delivery" is the worked example in the current open set, and it
 is correctly the owner's.
 
 ## Assumptions
@@ -249,7 +247,7 @@ a thing this document makes true. If one is false, the design above it moves.
 | `main` | the mainline | — |
 | `0.1.9` | the active 0.1 maintenance branch; release tags are cut from here | `8bcc242b`, 2026-09-05 |
 | `0.1.8` | a FROZEN branch pointer, 85 commits behind `0.1.9` | `2ff4ed2a`, 2026-08-22 |
-| `v0.1.8+1337` | the release gibson runs today | `fdb3db5`, 2026-08-22 |
+| `v0.1.8+1337` | the release the production host runs today | `fdb3db5`, 2026-08-22 |
 
 Ancestry, verified 2026-09-05: `0.1.8` < `v0.1.8+1337` < `7090a630` < `0.1.9`,
 all one line, so the running release is a tag sitting three commits ahead of the
@@ -289,13 +287,13 @@ most recently OPENED review card and reads verdicts inside it. Both were run ove
 the same 30-day window; the results are at R6.
 
 Which ref carries which is the correction that matters, and an earlier draft of
-this document got it wrong. `main`, `0.1.9`, AND the release gibson runs
+this document got it wrong. `main`, `0.1.9`, AND the release the production host runs
 (`v0.1.8+1337`) all carry the VERDICT-RECENCY rule; the function body is
 byte-identical between `0.1.9` and the running release, verified 2026-09-05. The
 `openedAt` rule survives on the frozen `0.1.8` pointer alone
 (`assignments.ex:315`), which no host runs and no release ships. Commit
 `8765c22e`, "Fix holder verdict selection on 0.1.8", replaced it on the 0.1.x
-line before the release gibson runs was cut.
+line before the release the production host runs was cut.
 
 What does not move is the false refusal count this document is sized by: **8
 under both rules**, because the cards it names are cards whose winning verdict is
@@ -328,7 +326,7 @@ session principal by one of two clauses, and WHICH ONE is a per-ref fact (A18).
 The NARROW clause requires exact identity with the row's current expecter:
 `authorized?({:session, key}, request), do: request.expecter_session_key == key`.
 It is at `lib/tightbeam/effort_checkin.ex:1269` on the frozen `0.1.8` pointer and
-at the same address in the release gibson runs, `v0.1.8+1337`; the two files are
+at the same address in the release the production host runs, `v0.1.8+1337`; the two files are
 byte-identical.
 
 The WIDE clause admits every session unconditionally:
@@ -338,7 +336,7 @@ targetless decision request responders", 2026-08-27 00:00 UTC) and **`0.1.9`**
 (`lib/tightbeam/effort_checkin.ex:1425`, introduced by commit `7090a630`, "Adapt
 decision expecter preference to 0.1.9", 2026-08-27 07:29 UTC).
 
-`7090a630` is contained in no release tag. That is why the release gibson runs
+`7090a630` is contained in no release tag. That is why the release the production host runs
 still carries the NARROW clause while the branch that ships next carries the
 WIDE one. A reader who checks only the running host will not see the defect R7's
 "must not become any session" paragraph guards against.
@@ -363,7 +361,7 @@ live database, read only.
 **A12.** `decision_requests.ruledBy` records the call's attributed origin, not
 its authorizing principal. A session call carrying `--as-user <id>` records
 `user:<id>` while being authorized as the session. Of the 918 effort rulings
-attributed to `user:mike` in the 14 days to 2026-09-04, 540 are on requests whose
+attributed to `user:<owner>` in the 14 days to 2026-09-04, 540 are on requests whose
 expecter was a session, which the user clause of `authorized?` cannot authorize;
 those calls were therefore authorized as the expecter session and merely
 attributed to the owner. No count in this document claims to measure the owner's
@@ -615,14 +613,12 @@ deliberately, because reopening lets one review card carry several verdicts over
 its life, so "which verdict wins" and "whose card is it on" cannot be two
 separately-derived answers that have to agree by luck. Pooling across cards makes
 that temptation stronger, not weaker: a builder who computes the winning verdict
-in one query and the qualifying cards in another has reintroduced the defect a
-previous review of this fact already removed.
+in one query and the qualifying cards in another has reintroduced a defect this
+fact's single-query design already removed.
 
 **Kind collapse, measured.** Ten review cards in the live database carry the
 holder-filed sequence `reviewed-clean -> verified` as their complete verdict
-history: `asg_ae32658f`, `asg_e24c4273`, `asg_463f7907`, `asg_f60f061e`,
-`asg_129f8993`, `asg_58bfc8f7`, `asg_9a476205`, `asg_0b1ea9e1`, `asg_187df922`,
-`asg_a6f74a2b`. Each reviewed independently, each concluded clean, each is
+history. Each reviewed independently, each concluded clean, each is
 invisible to the rail today.
 
 The org's own paperwork causes it. Nine of those ten review cards are held by
@@ -636,13 +632,13 @@ completion rail's remedy manufactures the state in which the other completion
 rail false-positives. That is not an unlucky ordering; it is the normal path for
 a coder-archetype reviewer.
 
-**Card collapse, measured.** `asg_0bf0dc45` carries four linked review cards.
-Three concluded `reviewed-clean` (`asg_2cdabccb`, `asg_3da5b789`, `asg_ec8fb3ac`).
-The fourth, `asg_e526fd86`, carries a single `release-approved` and is the most
+**Card collapse, measured.** One producing card carries four linked review cards.
+Three concluded `reviewed-clean`.
+The fourth carries a single `release-approved` and is the most
 recent. The rail read the fourth card only, saw a kind that is not
 `reviewed-clean`, and denied a card with three independent clean reviews and a
 release approval on it. This example was replayed under both card-selection rules
-and selects `asg_e526fd86` under each, so it demonstrates the card collapse
+and selects the fourth card under each, so it demonstrates the card collapse
 identically on every ref in A18.
 
 **A third collapse exists and R6 deliberately does NOT remove it.** The fact's
@@ -653,8 +649,7 @@ independence, and the producing card is denied even though an earlier
 independent round concluded `reviewed-clean`. That behaviour is deliberate: the
 fact's own documentation states it as a rule, that a self-held latest round
 still disqualifies so a holder cannot launder its own verdict past an earlier
-independent one, and it was written that way in response to a previous review of
-this fact.
+independent one.
 
 It looks like a third false positive and it is not one. Removing it would let a
 producing card's holder resurrect a stale independent clean by filing a verdict
@@ -729,7 +724,7 @@ is that the fact stops discarding evidence it already has.
 
 **What R6 does not fix, named so it is not assumed.** A review that happened but
 was never written as a verdict row is not reached by any predicate. That case is
-Q4's residual, and it is the case that actually produced `dr_8d3ea46f`. R6 does
+Q4's residual, and it is the case that actually produced the request ruled `authorize-successor`. R6 does
 not touch it and does not pretend to.
 
 The subtraction test, applied to R6:
@@ -758,7 +753,7 @@ for someone to ask, which is the paperwork this document exists to stop.
 
 ### R7 — `effort-rule` admits the escalation lineage, not only the rung the clock has reached
 
-**The defect.** The frozen `0.1.8` pointer and the release gibson runs authorize a
+**The defect.** The frozen `0.1.8` pointer and the release the production host runs authorize a
 session principal by exact identity with the row's current expecter (A9). `main`
 and `0.1.9` carry the opposite defect and are treated separately below. But the
 expecter is not a party
@@ -925,8 +920,8 @@ is recorded as OQ-7.
 Where `assignmentId` is NULL, the authorized set is unchanged: the owner, or the
 raiser. No card, no derived authority.
 
-This is not an edge case tidied away. It is load-bearing for I1. `dr_24edf371`,
-the trust-root question and the one genuine owner decision in the current open
+This is not an edge case tidied away. It is load-bearing for I1. The
+trust-root question, the one genuine owner decision in the current open
 set, has a NULL `assignmentId`. The shape of a request that is truly about the
 product, rather than about a card's bookkeeping, is exactly the shape this
 requirement leaves alone.
@@ -1035,7 +1030,7 @@ that lanes escalate. Telling lanes not to escalate the friction that remains is
 guidance (R5). Widening the clearing is substrate (R1, R3, R4).
 
 *What the clearing evidence says about which half is load-bearing.* Three
-raisers, woken with the recovery owner's adjudication, withdrew their own
+raisers, woken with an owner's adjudication, withdrew their own
 requests within minutes and recorded the ruling on their own cards. So a
 clearing motion already exists and already works. That narrows the gap
 precisely: it is not that no lawful clearing act exists, it is that the only
@@ -1138,17 +1133,17 @@ moment it can be known.
 
 **For the four that already existed:** they are gone, and the way they went is
 the evidence for this document rather than a problem it must solve. On
-2026-09-04 at 19:00 UTC the owner ruled all four in person: `dr_8d3ea46f`
-`authorize-successor`, `dr_fa2e0f91` `main-only`, `dr_0cdc5e80`
-`keep-open-with-liveness-exemption`, `dr_112e519e` `accept-explicit-synthetic`.
-Their raisers `s_38b44b0b`, `s_72fd7b84`, and `s_ffeef545` had retired days
+2026-09-04 at 19:00 UTC the owner ruled all four in person:
+`authorize-successor`, `main-only`,
+`keep-open-with-liveness-exemption`, and `accept-explicit-synthetic`.
+Their three raisers had retired days
 earlier, and three of the four asked about work that had already completed by the
 time they were answered.
 
 So the honest answer to "answer it for the four that already exist, not only for
 future ones" is: **the four cost the owner a hand-clearing session that R3 and R4
 would have prevented, and as of this writing no stranded row remains.** At
-2026-09-04 22:50 UTC the open operator set is a single row, `dr_24edf371`, whose
+2026-09-04 22:50 UTC the open operator set is a single row, the trust-root question, whose
 raiser is active and which is the genuine owner decision named in Terms. R4 is
 therefore prophylactic today rather than remedial, and the specification says so
 plainly instead of claiming a cleanup it will not perform. It will not stay
@@ -1163,7 +1158,7 @@ once said so.
 The subtraction test, applied to R3 and R4:
 
 - *Delete the surface instead?* Deleting the operator request arm would take
-  `dr_24edf371` with it. The owner must keep every genuine product decision;
+  the trust-root question with it. The owner must keep every genuine product decision;
   that is I1. Deletion loses.
 - *Accept the failure as a named value instead?* Accepting means the org keeps a
   class of row that only a human can clear, which is the manufactured paperwork
@@ -1204,17 +1199,17 @@ there" is not a preference here. It is the whole fix: the qualifying rows exist,
 and the query discards them.**
 
 **Three: a review whose verdict was never written is reached by no predicate.**
-The wedge in `dr_8d3ea46f` was neither of the above. The review had happened, but
+The wedge in the request ruled `authorize-successor` was neither of the above. The review had happened, but
 its verdict was never written as a row, because `attest` refuses a verdict from
 any principal but the card's holder and on any card that is not open, and the
-review card `asg_86d4081b` was revoked before the verdict was filed. Evidence
+review card was revoked before the verdict was filed. Evidence
 that was never recorded is not evidence the rail is failing to read. No receipt
 kind can conjure it; R6 does not reach it; this document specifies nothing for
 it.
 
 The lawful repair for that third case exists and needs no change: open a fresh
 review round against the same parent, held by a living independent reviewer, and
-let it file its verdict. The parent card in that very case, `asg_963d6e43`, went
+let it file its verdict. The parent card in that very case went
 on to close completed after four rounds, three revoked and one completed. The
 path works.
 
@@ -1250,7 +1245,7 @@ in-scope engineering acts that the owner's own standing law already answered. A
 lane that asks permission it already has has not misclassified its question; it
 has doubted its authority. R1 gives it a real alternative — take the opener's
 adjudication and retract — which is precisely what nine living raisers did on
-2026-09-04, citing the recovery owner's adjudication artifact in their withdrawal
+2026-09-04, citing an owner's adjudication artifact in their withdrawal
 reasons. That pattern is already the org's practice. Today it stops working the
 moment the raiser retires. R1 and R3 make it survive that.
 
@@ -1334,14 +1329,14 @@ verdict sequence is `reviewed-clean` then `verified`, WHEN the producing card's
 holder attests completion, THEN the completion is not denied by
 `completion-requires-review`. This check FAILS against the code as it stands on
 2026-09-04; it is the defect R6 repairs, and it is drawn from ten real review
-cards listed at R6.
+cards measured at R6.
 
 **AC-11 (R6, card collapse).** GIVEN a producing card with four
 `--reviews`-linked review cards held by sessions other than its holder, three
 whose latest review-conclusion verdict is `reviewed-clean` and a fourth, most
 recent, whose only holder-filed verdict is `release-approved`, WHEN the producing
 card's holder attests completion, THEN the completion is not denied. This check
-also FAILS today, and is drawn from `asg_0bf0dc45`.
+also FAILS today, and is drawn from the card-collapse example at R6.
 
 **AC-12 (I7, retraction across cards still bites).** GIVEN a producing card with
 two `--reviews`-linked review cards held by other sessions, the earlier
@@ -1383,7 +1378,7 @@ to before. This check must be green on whichever ref R7 lands on, and it must be
 written so that it fails for any change that admits the holder by any route.
 
 **Where it starts red.** AC-16 passes today on the frozen `0.1.8` pointer and in
-the release gibson runs, which carry the narrow clause. **It starts RED on BOTH
+the release the production host runs, which carry the narrow clause. **It starts RED on BOTH
 `main` and `0.1.9`**, which carry the wide clause that admits every session (A9).
 An earlier draft of this document said `main` only; that was wrong, and `0.1.9`
 is the ref release tags are cut from. A builder on either of those two refs must
@@ -1496,7 +1491,7 @@ While verifying I1 against the source, a gap was found between what I1 promises
 and what the ruling path enforces. Its shape is not the same on both code lines,
 and its detail is deliberately not written here: the spec commons is a public
 repository, and a precise account of a gap in an authorization guard does not
-belong in one. The finding is recorded on `asg_d893bbf9` and carried to the
+belong in one. The finding is recorded and carried to the
 card's owner, who has it. What can be said safely is the part that matters to a
 reader of this document: a `decision_requests` row alone would not distinguish
 the case, while the `events` row would, because it records the calling session
@@ -1688,6 +1683,6 @@ starts red (A9, AC-16). `0.1.9` is the ref release tags are cut from, so the ref
 most likely to carry this work is one that starts red.
 
 Nothing in this document is applied to a running host by the work it specifies.
-The production host runs `v0.1.8+1337` and is locked at 0.1.8 under Mike's
+The production host runs `v0.1.8+1337` and is locked at 0.1.8 under the operator's
 2026-09-02 change law, and any deployment of this change is a separate act
 requiring that law's two-step ceremony.

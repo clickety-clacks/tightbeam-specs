@@ -1,25 +1,18 @@
-> **SUPERSEDED PRE-AUTHORITY (2026-08-22).** This draft landed from a lane that had
-> already been superseded when the landing was fulfilled (race disclosed in
-> att on asg_507b144d). It is EVIDENCE, not the design of record, and must not be
-> adopted or revised as a second design. The authoritative completion-rails
-> decisions spec is being produced under `wi_a7fd5022` by
-> spec-writer:completion-rails-decisions; that document wins on every point.
+> **SUPERSEDED PRE-AUTHORITY (2026-08-22).** This draft is EVIDENCE, not the
+> design of record, and must not be adopted or revised as a second design. The
+> authoritative completion-rails decisions spec wins on every point.
 
 # Completion policy — composable named rails
 
-Status: proposed 0.2 design for
-`wi_032f11a6-2ab2-41b6-ab04-41b06a35cf18`. This document decides the shape;
+Status: proposed 0.2 design. This document decides the shape;
 it authorizes no implementation, deployment, identity change, or 0.1 modification.
 
 Authority and evidence:
 
-- Mike's design input is
-  `att_1ae1a7ad-7e46-4475-90a5-c97e1a52803a`.
-- The concrete failure is
-  `asg_29bb92dc-b7a2-4df4-9be8-3d85dbcca541`:
-  `att_483f9eff-ec19-4b2f-8888-0e2cf0189ed7` proves the requested child owner
+- The concrete failure is a product-owner spawn-coordination card, the
+  specimen card: its fulfillment evidence proves the requested child owner
   and ownership card existed and were briefed, while
-  `att_a261517d-0c68-4aa1-8f0e-659741e8672b` records that completion was refused
+  its completion refusal records that completion was refused
   only because the coordination card had defaulted to `effectKind=code`.
 - Current-main evidence is Tightbeam `b8e6c47e4631da8345aaf8c6ab73b0858e630bf6`.
   `Assignments` defaults an untyped non-review assignment to `effectKind=code`,
@@ -71,7 +64,7 @@ The evaluated alternatives are:
 
 | shape | decision | reason |
 |---|---|---|
-| `effectKind` selects completion policy | reject | It describes expected effect, not the card's evidence contract; `asg_29bb92dc` is the false-denial specimen. |
+| `effectKind` selects completion policy | reject | It describes expected effect, not the card's evidence contract; the specimen card is the false-denial specimen. |
 | Archetype declares one typed `outputKind` | reject | It moves the guess to a coarser level and still makes substrate code translate a type into policy. |
 | Each card carries free-form predicates or scripts | reject | It bypasses reviewed law, invites opener-authored policy, and creates a second rules surface. |
 | Archetype defaults plus reasoned card deltas over installed named rails | choose | The ordinary path is automatic, exceptions are explicit, and the existing rules engine remains the only executor. |
@@ -423,7 +416,7 @@ applies to that archetype's ordinary cards. Mixed archetypes use the common
 denominator and explicit card deltas. The substrate does not hardcode the
 initial matrix.
 
-The `asg_29bb92dc` card is then repaired through the ordinary amendment verb:
+The specimen card is then repaired through the ordinary amendment verb:
 remove `completion-requires-review@1` with a reason naming spawn coordination and
 the fulfillment receipt. Its `effectKind=code` remains as historical truth. No
 synthetic artifact or review is created.
@@ -465,8 +458,8 @@ does not replace rail-specific remedies.
 
 6. A product-owner spawn-coordination assignment with `effectKind=code` and an
    empty rail set completes after its universal checks. It creates no review or
-   artifact requirement. This fixture cites `asg_29bb92dc`, `att_483f9eff`, and
-   `att_a261517d`.
+   artifact requirement. This fixture cites the specimen card, its fulfillment
+   evidence, and its completion refusal.
 7. An assignment with `effectKind=evidence` and an attached independent-review
    rail is denied until its qualifying reviewed-clean fact exists. This proves
    `effectKind` is not the selector in either direction.
@@ -519,7 +512,7 @@ This sequence is descriptive, not implementation authority:
    output-specific rules and ship matching archetype defaults.
 8. Remove the `effectKind` selector only after the migration and exact-definition
    gates pass on every open assignment and every serving gateway.
-9. Prove the `asg_29bb92dc` repair and the review-without-review-of-review fixture.
+9. Prove the specimen card repair and the review-without-review-of-review fixture.
 
 ## Non-goals
 

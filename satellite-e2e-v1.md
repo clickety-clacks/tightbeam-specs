@@ -1,45 +1,43 @@
 # Satellite e2e runbook — v1
 
-Status: ACTIVE RUNBOOK (Flynn ruling 2026-07-25: this is a runbook a TEST AGENT gets
+Status: ACTIVE RUNBOOK (2026-07-25: this is a runbook a TEST AGENT gets
 through, NOT a script we maintain — "we want our test agents to be flexible and I don't
-want to get into the business of maintaining broken testing scripts"). The journeys,
-oracles, and safety rails below were adversarially gate-cleared against main 58f7fe0
-(trajectory 8→7→1→READY); the executor is an agent that follows this runbook, adapts
+want to get into the business of maintaining broken testing scripts"). The executor is an agent that follows this runbook, adapts
 around incidental failures, and reports an honest scorecard. No satellite_e2e script
 exists or should be written.
 
-## STANDING CREDENTIAL RULE — shrdlu E2E OpenAI restore (Mike, 2026-08-15)
+## STANDING CREDENTIAL RULE — linux gateway E2E OpenAI restore (2026-08-15)
 
-Every SHRDLU reset/rebuild E2E lane restores the E2E-ONLY OpenAI credential
-BEFORE testing, from its durable source: a Mike-only secret file on GIBSON.
+Every reset/rebuild E2E lane on the linux gateway test host restores the E2E-ONLY OpenAI credential
+BEFORE testing, from its durable source: an operator-only secret file on the production host.
 Restore is by STANDARD INPUT ONLY at onboarding time:
 
-    cat <mike-provided-path> | ssh shrdlu \
-      '<test-install>/bin/tightbeam onboard openai --api-key --as-user mike'
+    cat <operator-provided-path> | ssh <linux-gateway-test-host> \
+      '<test-install>/bin/tightbeam onboard openai --api-key --as-user <operator-user>'
 
 Constraints, absolute: the secret VALUE never appears in argv, artifacts,
 attests, evidence files, ATC notes, or this document; the file PATH is
-sensitive — obtain it from Mike, never by searching; the file is Mike's to
+sensitive — obtain it from the operator, never by searching; the file is the operator's to
 rotate. This rule supersedes the interactive device-auth expectation for
-shrdlu E2E (the device ceremony detaches to a private pty by design and is
-relay-incompatible — product finding on wi_e86ddd54; its arm/timeout
+E2E on that host (the device ceremony detaches to a private pty by design and is
+relay-incompatible — a recorded product finding; its arm/timeout
 behaviors are already banked evidence and need no re-exercise).
 
-## STANDING CODE-DELIVERY RULE — auth ceremonies (Mike, ledger 8287cd0)
+## STANDING CODE-DELIVERY RULE — auth ceremonies
 
 A sign-in URL or one-time code printed by ANY ceremony is a DELIVERABLE.
-Within ONE MINUTE of print the executor must BOTH: (1) elevate — wake user
-mike with the code text and open the URL in eezo's browser; AND (2) file
+Within ONE MINUTE of print the executor must BOTH: (1) elevate — wake the operator's
+user with the code text and open the URL in the orchestration host's browser; AND (2) file
 the URL+code as an attest row on its card. Codes are short-lived
 single-use pairing strings, not durable secrets. A ceremony that cannot
 deliver inside the minute is ABORTED AND RE-ARMED — never left to expire
-silently. (Product fix: wi_0535922b — onboard emits structured url+code +
+silently. (Product fix: onboard emits structured url+code +
 row + operator notification; this rule is the stopgap until it lands.)
 
 ## Executor contract (the flexibility rule)
 
-- You are an agent on the ORCHESTRATION host (eezo) with SSH access per
-  environments.md. Read environments.md before starting; it is the access truth.
+- You are an agent on the ORCHESTRATION host with SSH access per
+  the environment access record. Read that record before starting; it is the access truth.
 - GET THROUGH THE RUNBOOK: an incidental failure (SSH hiccup, slow boot, flaky model
   turn) is yours to diagnose and work around — retry, respawn, take another path — and
   every workaround goes in the scorecard. A journey is only FAILED when its oracle
@@ -54,12 +52,12 @@ row + operator notification; this rule is the stopgap until it lands.)
 ## Preconditions on the GATEWAY host (check these first — each one blocked a run)
 
 The runbook long assumed these because the orchestration host happened to satisfy them.
-None held on shrdlu the first time a run started there, and each failed with a message
+None held on the linux gateway test host the first time a run started there, and each failed with a message
 about something else:
 
-- **The gateway needs the leg's harness CLI installed.** shrdlu had no `codex` at all, so
-  onboarding could not run — `tightbeam onboard openai` shells out to
-  `codex login --device-auth`. npm's prefix there is `/usr`, so install user-local
+- **The gateway needs the leg's harness CLI installed.** Without `codex`,
+  onboarding cannot run — `tightbeam onboard openai` shells out to
+  `codex login --device-auth`. Where npm's prefix is a system directory such as `/usr`, install user-local
   (`npm install -g --prefix ~/.local <pkg>@<pinned>`); the rails forbid sudo. Pin the
   version: harness CLIs auto-update under us.
 - **The gateway needs its OWN onboarding for that harness** (already stated below) — and
@@ -74,27 +72,25 @@ about something else:
   refuses to boot by design (`Schema.ShapeError`). Move it aside as the message says;
   credentials live in `auth/` and are unaffected.
 
-## Host matrix (Flynn-assigned roles)
+## Host matrix
 
 | pairing | gateway | satellite | harness leg |
 |---|---|---|---|
-| linux/linux | shrdlu (`clu@shrdlu`) | eurisko (`clu@eurisko`; eliza rejected — no node at all) | codex |
-| macOS/macOS | tars (`mike@tars`) | eezo | claude |
+| linux/linux | the linux gateway test host | the linux satellite test host (the negative-fixture host is rejected — no node at all) | codex |
+| macOS/macOS | the macOS gateway test host | the orchestration host | claude |
 
-(Legs swapped 2026-07-25 after run lnx-0725a: eurisko already holds a codex credential
-store but no claude one — claude onboarding needs an interactive login, codex runs now;
-eezo holds claude credentials, so the claude leg rides the macOS pairing. Complementary
-coverage across the matrix is preserved. eurisko's non-interactive PATH now exposes
-asdf node — operator fix, ~/.bashrc prepend, backup at ~/.bashrc.bak-tightbeam.)
+(The codex leg rides the linux pairing because the linux satellite holds a codex credential
+store and codex onboarding runs non-interactively, while claude onboarding needs an
+interactive login; the orchestration host holds claude credentials, so the claude leg rides
+the macOS pairing. The linux satellite's non-interactive PATH exposes node.)
 
 Legs are complementary across pairings (claude and codex have materially different
 remote launch recipes — both get covered across the matrix). Record exact harness+model.
-Run linux FIRST; macOS/tars only after a clean linux run.
+Run linux FIRST; macOS only after a clean linux run.
 
-**Credentials — TWO requirements (mac-0726a):** the SATELLITE needs the harness
+**Credentials — TWO requirements:** the SATELLITE needs the harness
 credential store (projected, below) AND the GATEWAY needs its OWN onboarding for that
-harness — model validation is a gateway-side authenticated catalog fetch (task #22; on
-linux shrdlu satisfied this by accident). A gateway with no harness credential cannot
+harness — model validation is a gateway-side authenticated catalog fetch. A gateway with no harness credential cannot
 place sessions ANYWHERE for that harness. Assimilate does not transport credentials
 (SATELLITE.md). Harness
 credentials live on each satellite OUTSIDE your deletion scope (standard harness auth
@@ -138,13 +134,12 @@ immediately before the signal.
   your marker — never anything else, never `~`, never broad globs.
 - Kills: exact PID with POSITIVE IDENTITY. Primary predicate: command line contains
   your run's base_dir or install dir (use `ps -ww` — macOS truncates argv without it).
-  KERNEL-IDENTITY equivalent (mac-0726a: a system-toolchain gateway's argv contains NO
+  KERNEL-IDENTITY equivalent (a system-toolchain gateway's argv contains NO
   run root): cwd under a run root (lsof) AND open files under a run root AND owning
   your test port's listener — re-verified immediately before the kill. Either
   predicate suffices; NO match = do not signal. Never `pkill`/pattern kills. No
   `sudo`. No systemctl/launchd/unit operations on any host, ever. Teardown scripts
-  must not let an identity-check abort skip the REMAINING teardown steps (mac-0726a:
-  a fail-fast script left the gateway running on the production host for minutes —
+  must not let an identity-check abort skip the REMAINING teardown steps (a fail-fast script left the gateway running on the production host for minutes —
   each teardown step independent, failures reported not cascaded).
 - Lock: create `~/.tightbeam-e2e-<pairing>.lock` (runid+pid) on the gateway host at
   start; refuse to run if it exists with a live pid; remove it (that exact path only)
@@ -152,15 +147,15 @@ immediately before the signal.
 - npm confinement: run assimilate's remote npm with `NPM_CONFIG_CACHE` and `TMPDIR`
   inside your install root.
 - Protected surfaces, pre/post (record before, assert identical after):
-  - shrdlu AND tars: OpenClaw ports **18789, 18792, 18800** listener PIDs. Your test
+  - Both gateway test hosts: OpenClaw ports **18789, 18792, 18800** listener PIDs. Your test
     gateway port comes from **12000-12999**, not protected, not already listening.
-  - eliza (if used): Subetha three-way — service PID (exact match, read-only), `:4000`
+  - The negative-fixture host (if used): Subetha three-way — service PID (exact match, read-only), `:4000`
     listen state, HTTP answers — unchanged after the run.
-  - tars additionally: artifacts confined to your two run roots, both removed at end
-    (standing TARS rule: no dev artifacts, ever).
-  - gibson: not in this matrix (prod lane).
+  - The macOS gateway test host additionally: artifacts confined to your two run roots,
+    both removed at end (standing rule for that host: no dev artifacts, ever).
+  - The production host: not in this matrix.
 
-## Run-gateway fixture notes (lnx-0725d)
+## Run-gateway fixture notes
 
 - Device pairing auto-creates a Main session ON THE GATEWAY HOST whose turns fail
   forever (a run-owned gateway installs a harness CLI but no local ACP adapter). This
@@ -168,7 +163,7 @@ immediately before the signal.
   key in /version with a climbing failure count and adjudication chatter. Match
   circuit polls on the EXACT satellite adapter key (`codex:shared@sat-e2e-<host>`) —
   a loose grep will read the gateway key's circuit mid-S4.
-- S4 status (until tasks #16/#19 land): the reason clause FAILS today by design of the
+- S4 status (until the fixes for these defects land): the reason clause FAILS today by design of the
   defect (bare :task_crash instead of adapter_unavailable) and the resident-session
   recovery clause FAILS (adjudication hold with no visible decision surface). Keep
   reporting them as FAIL — they are product defects under repair, not oracle problems.
@@ -189,9 +184,8 @@ to every group.
 
 S1 **Assimilate cold** — NOTE: assimilate creates the satellite base_dir WITHOUT your
    RUN_MARKER — write the marker into it immediately after every assimilate/
-   re-assimilate, or teardown will rightly refuse the removal (hit in lnx-0725c/d and
-   mac-0726a). FIRST bootstrap an admin on the fresh org (run lnx-0725b:
-   REGISTER refuses "admin required" on a fresh base_dir — pair a device over the run
+   re-assimilate, or teardown will rightly refuse the removal. FIRST bootstrap an admin on the fresh org
+   (REGISTER refuses "admin required" on a fresh base_dir — pair a device over the run
    gateway's ws (cold-start rule: first paired user is admin); this is part of S1, not
    a workaround). Then `assimilate <ssh-dest>` with your run-owned `--base-dir` →
    hosts.json on the gateway gains the satellite entry (config entry — hosts are never
@@ -201,7 +195,7 @@ S1 **Assimilate cold** — NOTE: assimilate creates the satellite base_dir WITHO
 S2 **Session on satellite** — credential projection + the authenticated registry
    preflight above (presence alone is not a pass); install a run-owned
    archetype `sat-e2e-<runid>` whose `where` admits the satellite (the shipped default
-   admits eezo/tars/racter only); `spawn --host <satellite>` with it; drive one turn →
+   does not admit every test satellite); `spawn --host <satellite>` with it; drive one turn →
    turn completes; `inspect.sessions[].host` names the satellite; the session's
    workspace and delivered home exist on the satellite — DERIVE the paths via the
    `Placement.workdir_path/2` and `Homes.home_path/3` conventions from session key +
@@ -228,9 +222,9 @@ S6 **Teardown (ALWAYS, even after failures)** — reachable satellite: your test
    Unreachable satellite: report exactly what you created there (your creation notes)
    as named residue and FAIL the run naming it — never silent.
 
-## Fixture bare-metal policy (Flynn-directed 2026-07-25)
+## Fixture bare-metal policy (2026-07-25)
 
-The DELETABLE satellites (eurisko, eliza) start every e2e run BARE. The fixture reset
+The DELETABLE satellites (the linux satellite test host and the negative-fixture host) start every e2e run BARE. The fixture reset
 is a SANCTIONED RAIL CATEGORY with an exact pinned path list (like the lockfile
 exception — rails are precision, not blanket prohibition; an agent may rm ONLY these
 exact paths, on deletable satellites only, and only when NO onboarding tmux session
@@ -243,24 +237,25 @@ pre-installed tooling and the positive journeys prove tightbeam's OWN bring-up
 (assimilate-shipped adapters + projected credentials) end to end. CREDENTIAL STORES
 (~/.claude, ~/.codex) PERSIST — they are the onboarding product, deliberately outside
 fixture scope; credential ABSENCE is tested at the projection seam (below), not by
-deleting stores. Exemptions: shrdlu and racter (Flynn: needed for other things), tars
-(OpenClaw production provider host) and eezo (dev/orchestration host, live sessions) —
+deleting stores. Exemptions: the linux gateway test host and any other shared host (needed for other
+things), the macOS gateway test host (it also runs a production OpenClaw provider) and the
+orchestration host (dev host, live sessions) —
 on those, absence is created per-run via PATH-scoped environments, never global
 removal; the run-owned gateway still installs its own confined harness CLI in its
-install root (the lnx-0725a pattern). Model catalog: the gateway reads
+install root. Model catalog: the gateway reads
 homes/<HOSTNAME>/<harness>/models_cache.json — keyed by the gateway's hostname, NOT the
 literal "local"; a wrong key degrades silently at boot (:missing_cache) and bites at
-spawn (lnx-0725b workaround 4).
+spawn.
 
-## Negative journeys (Flynn-directed 2026-07-25: missing dependencies are test
+## Negative journeys (2026-07-25: missing dependencies are test
 material, not just blockers — "a good opportunity to test what happens if dependencies
 like harnesses and oauths aren't available")
 
 Each asserts the product REFUSES CLEANLY with a named, actionable error — never a hang,
-crash, or half-configured state. Run 1 (lnx-0725a) proved N1/N3 accidentally; they are
-now first-class. All rails apply (incl. eliza's Subetha three-way when touching eliza).
+crash, or half-configured state. Run 1 proved N1/N3 accidentally; they are
+now first-class. All rails apply (incl. the negative-fixture host's Subetha three-way when touching it).
 
-N1 **No node on satellite** — assimilate against eliza (the permanent negative fixture:
+N1 **No node on satellite** — assimilate against the negative-fixture host (permanent:
    no node anywhere) → PROBE fails first, exit nonzero, message names node and the
    remedy ("install node and retry"); NOTHING is created on the satellite (verified —
    run 1 evidence: PROBE precedes any satellite write); hosts.json unchanged.
@@ -270,19 +265,18 @@ N2 **No harness credential at the projection seam** — the substrate reads cred
    spawn → refused with the pinned onboarding error naming the harness, host, and
    remedy; no session row leaks into active state; no remote workspace created. (This
    stays valid even after the host gains a ~/.claude store — the seam under test is
-   tightbeam's, not the host's.) KNOWN DEFECT until task #17 lands: on a host
+   tightbeam's, not the host's.) KNOWN DEFECT until its fix lands: on a host
    assimilated after gateway boot the refusal comes out as the catalog masquerade
    ("cannot validate model...") because credential validation fails open with no
-   Credentials server — a gateway restart produces the true pinned refusal (run
-   lnx-0725c evidence). Post-#17, no restart may be needed and the masquerade form is
+   Credentials server — a gateway restart produces the true pinned refusal. After the fix, no restart may be needed and the masquerade form is
    itself a FAIL.
 N3 **No harness CLI on gateway** — boot a run-owned gateway from an env whose PATH has
    no harness CLI → boot refuses with the named error (gateway.ex:387 family) listing
    what it looked for; no port bound, no partial base_dir daemon left running.
 
-## macOS environment (mac-0726a)
+## macOS environment
 
-No `setsid` — detach with `( nohup … & )`. TARS has system Elixir 1.20.2/OTP29 and
+No `setsid` — detach with `( nohup … & )`. The macOS gateway test host has system Elixir 1.20.2/OTP29 and
 cargo 1.94 — no install-root toolchain dance; only the confined harness-CLI install
 applies. PATH-scoped absence recipe: shim dir of symlinks (elixir/erl/mix + node/npm),
 PATH=$shim:/usr/bin:/bin — homebrew bin must be OFF PATH for N3.
@@ -299,8 +293,8 @@ ran), `Wall clock`, and `Runid`. Verdict cells: `PASS`, `PASS (workaround: …)`
 `FAIL(note)`, `INCOMPLETE(blocker)`, `SKIP(reason)`. A run report alone is not filing —
 `e2e-tier-map-v1` §Scorecards is the rule.
 
-## History
+## Why a runbook
 
-r1-r3 were spec rounds for a scripted driver; Flynn redirected to agent-executed
-runbook (scripts rot; agents adapt). The oracle/rail content survived unchanged — the
-gate work was about WHAT to verify and what's safe, which is executor-independent.
+The executor is an agent following a runbook rather than a scripted driver (scripts rot;
+agents adapt). The oracle and rail content is executor-independent: it defines WHAT to
+verify and what's safe.

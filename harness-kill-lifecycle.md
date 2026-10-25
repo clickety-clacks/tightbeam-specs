@@ -1,6 +1,6 @@
 # Harness kill and park: distinct durable outcomes
 
-**Status:** kill design ruled 2026-07-31. On Mike's 2026-09-01 ruling, this
+**Status:** kill design ruled 2026-07-31. On the operator's 2026-09-01 ruling, this
 contract defines two distinct operations: kill and park. See Naming below.
 
 ## Naming
@@ -18,7 +18,7 @@ Three distinct things had claimed the word:
 3. **Park a session (this contract).** Set a session aside, preserved, so it can be
    relaunched later. A park request produces one durable success-or-failure outcome.
 
-Mike's ruling, 2026-09-01: park does not mean kill in any ordinary sense of the
+The operator's ruling, 2026-09-01: park does not mean kill in any ordinary sense of the
 word, and a person reading "parked" will not expect the thing to be destroyed. The
 destructive operation is called kill. Park keeps its plain meaning of setting
 something aside to come back to.
@@ -31,7 +31,7 @@ a session park to a decision request.
 **Code reconciliation still owed.** Shipped internals under `harness_process.ex`
 carry park-named identifiers predating this ruling. The process lifecycle state named
 below is `kill_requested`. Reconciling existing code identifiers to the ruled names is
-work item `wi_6937890c`'s to schedule; this document states the intended vocabulary,
+separate work to schedule; this document states the intended vocabulary,
 not the current code.
 
 ## The promise

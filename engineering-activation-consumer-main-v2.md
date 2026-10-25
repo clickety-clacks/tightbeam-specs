@@ -2,13 +2,9 @@
 
 Status: spec-ready for one independent policy review; implementation, pinning, installation, deployment, restart, release, and live-state mutation remain unauthorized  
 Recorded: 2026-08-20 23:23 PT  
-Work item: `wi_ddd80184-9cf7-4612-8a0a-ac610b5b7b10`  
-Policy assignment: `asg_f511f989-90db-45e8-b1d3-434d3d9b58bc`  
-Owner authority: `art_abe67f90`, SHA-256 `3d0d5b6b82f81760e06d31780738bde39d91c7d06a3edeb3d574bac06c838bf4`  
-Main reconciliation: `art_a65f2893`, SHA-256 `7b891d340e38bec272f8df640387c29dc2605c2ea9b0ec978561d23fa38d828b`, verdict `att_a75c3bbb-de4a-49ea-8fd2-f3fa1c60d75f`<br>
-Neutral substrate authority: `art_2bc5475e`, SHA-256 `5eb530a0183d793b35be1363c2a0aaea8b021490f11ef159887377f4f42805fb`  
-Deployment-safety authority: `art_c4230451`, SHA-256 `5db00f518feb0c398e0c33a0f9a44d1c89e1af06ee177fd08a9fd6f040fb316e`  
-Supersedes the Engineering consumer policy in `art_16df51ca` and `art_44b99337`; preserves their reviewed findings and acceptance except where this complete policy states a replacement.
+Neutral substrate authority: the `activation-events-v1` specification, SHA-256 `5eb530a0183d793b35be1363c2a0aaea8b021490f11ef159887377f4f42805fb`  
+Deployment-safety authority: the Linux deployment-safety specification, SHA-256 `5db00f518feb0c398e0c33a0f9a44d1c89e1af06ee177fd08a9fd6f040fb316e`  
+Supersedes the earlier Engineering consumer policy revisions; preserves their reviewed findings and acceptance except where this complete policy states a replacement.
 
 ## Goal
 
@@ -16,16 +12,16 @@ Define the Engineering policy that joins the reviewed neutral `activation-events
 
 The policy must make a production installation mechanically unable to cross either adopted rename entry point until the manager holds an `AcceptedActivationAttempt` derived from the committed or exact-replayed neutral attempt response.
 
-The policy must preserve a durable paper trail that binds Mike's production-installation approval, the exact machine target, the manager attempt, the external mutation, each service result, the machine result, owner notice, and recovery.
+The policy must preserve a durable paper trail that binds the operator's production-installation approval, the exact machine target, the manager attempt, the external mutation, each service result, the machine result, owner notice, and recovery.
 
 The policy must keep each production path that lacks the adopted typed seam labelled **NOT MECHANICALLY GATED**.
 
-This policy adds the Engineering consumer adapter because deleting the supported production-installation surface would strand existing service installations, while accepting the current direct-overwrite path would fail this work item's paper-trail goal.
+This policy adds the Engineering consumer adapter because deleting the supported production-installation surface would strand existing service installations, while accepting the current direct-overwrite path would fail this policy's paper-trail goal.
 
 ## Non-Goals
 
 1. This policy does not authorize source changes, implementation cards, a spec pin, package installation, deployment, activation, restart, rollback, service-unit replacement, release action, credential mutation, Git-ref mutation, or work-item disposition.
-2. This policy does not change the neutral event table, event kinds, verbs, capability, lifecycle, read relations, replay rules, wake semantics, or acceptance contract in `art_2bc5475e`.
+2. This policy does not change the neutral event table, event kinds, verbs, capability, lifecycle, read relations, replay rules, wake semantics, or acceptance contract in the neutral substrate authority.
 3. This policy does not add a second activation primitive, a deploy-specific substrate fact, a generic policy engine, a generic callback registry, or a generic workflow engine.
 4. This policy does not add a deployment root per gateway instance, a second deployment scope on one machine, a configurable service-set source, or a parallel deployment lock.
 5. This policy does not add a filesystem class or mount-option class beyond ext4 mounted with default options.
@@ -38,13 +34,13 @@ This policy adds the Engineering consumer adapter because deleting the supported
 ## Terms
 
 - **Execution-time main authority**: Git commit `3fe0e941840ed138a6a285261c0e35687d8d27a3`, selected by the read-only reconciliation recorded at 2026-08-25 13:13 PT. Its root tree is `6b9c3854157f80afe376f924384ef0cff8744d58`. The exact relevant object identities appear under Architecture. The frozen `0.1.8` and `0.1.x` history is evidence, not an integration target for this policy.
-- **Neutral activation primitive**: the one `activation_events` stream and fixed `activation-*` verb family defined by `art_2bc5475e`. Tightbeam verifies identity, shape, order, replay, access, and durable notice mechanics. It does not decide Engineering readiness, authority sufficiency, result meaning, recovery, or acknowledgement policy.
-- **Deployment manager**: the root-privileged local `DeployManager` defined by `art_c4230451`. It is the sole writer of `/opt/tightbeam` deployment state and registered systemd unit files. Root privilege makes it the executor, not the authorizer.
-- **Production installation**: the action defined by `art_c4230451` that makes one exact verified update restart-loadable on a production machine by publishing immutable objects and replacing `active`.
-- **Mike approval identity**: the Ed25519 public key and SHA-256 key identifier in root-owned mode-`0444` `/etc/tightbeam/deploy-authority.json`. Mike retains the matching private key outside the production host.
-- **Production-installation basis**: one canonical, single-use, Ed25519-signed approval envelope. It binds the approval and challenge IDs, Mike key ID, canonical host identity, deployment-root identity, fixed `production-install` action, exact update digests, verification-evidence digest, expected-active value, and ordered service-set digest.
-- **Canonical host identity**: the SHA-256 of the exact 32 random bytes in root-owned mode-`0400` `/etc/tightbeam/deploy-host-id`, as defined by `art_c4230451`.
-- **Deployment-root identity**: the SHA-256 of canonical JSON containing the canonical host identity and canonical absolute deployment-root path, as defined by `art_c4230451`.
+- **Neutral activation primitive**: the one `activation_events` stream and fixed `activation-*` verb family defined by the neutral substrate authority. Tightbeam verifies identity, shape, order, replay, access, and durable notice mechanics. It does not decide Engineering readiness, authority sufficiency, result meaning, recovery, or acknowledgement policy.
+- **Deployment manager**: the root-privileged local `DeployManager` defined by the deployment-safety authority. It is the sole writer of `/opt/tightbeam` deployment state and registered systemd unit files. Root privilege makes it the executor, not the authorizer.
+- **Production installation**: the action defined by the deployment-safety authority that makes one exact verified update restart-loadable on a production machine by publishing immutable objects and replacing `active`.
+- **Operator approval identity**: the Ed25519 public key and SHA-256 key identifier in root-owned mode-`0444` `/etc/tightbeam/deploy-authority.json`. The operator retains the matching private key outside the production host.
+- **Production-installation basis**: one canonical, single-use, Ed25519-signed approval envelope. It binds the approval and challenge IDs, operator key ID, canonical host identity, deployment-root identity, fixed `production-install` action, exact update digests, verification-evidence digest, expected-active value, and ordered service-set digest.
+- **Canonical host identity**: the SHA-256 of the exact 32 random bytes in root-owned mode-`0400` `/etc/tightbeam/deploy-host-id`, as defined by the deployment-safety authority.
+- **Deployment-root identity**: the SHA-256 of canonical JSON containing the canonical host identity and canonical absolute deployment-root path, as defined by the deployment-safety authority.
 - **Ordered service set**: the finite non-empty ordered entries in root-owned mode-`0444` `/etc/tightbeam/deploy-services.json`. Its identity is the SHA-256 of the canonical file bytes.
 - **Engineering deployment target**: a content-bound target snapshot containing the canonical host identity, deployment-root identity, and ordered service-set digest. One target represents one machine deployment, not one gateway instance.
 - **Manager intent**: the immutable, fsynced deployment-manager record that binds the transaction ID, operation, exact target, prior state, target state, applicable authority, expected-active value, evidence, and adopted rename seam before the neutral attempt call.
@@ -65,20 +61,20 @@ This policy adds the Engineering consumer adapter because deleting the supported
 4. `README.md` at that commit still directs an operator to run `npm install -g` before service restart.
 5. `docs/UPGRADE.md` at that commit still contains the direct stop, checkout pull, compile, and start cycle.
 6. The Linux npm overwrite, direct source-checkout upgrade, and macOS npm/LaunchDaemon paths therefore remain **NOT MECHANICALLY GATED**.
-7. `art_2bc5475e` is the reviewed authority for one neutral activation primitive.
-8. `art_c4230451` is the reviewed authority for Linux deployment storage, authorization records, filesystem barriers, systemd mechanics, status, recovery, rollback, GC, first cutover, and its A-01 through A-20 and A3-01 through A3-10 acceptance cases.
-9. Mike's durable ruling `att_03d09931-e62d-4ed9-9d1a-ee8790188498` selects Mike as production-installation authorizer, running and serving as the observation bar, ext4 default options as the supported durability class, root-owned deployment objects and units with existing non-root gateway accounts, and one deployment per machine.
+7. The neutral substrate authority is the reviewed authority for one neutral activation primitive.
+8. The deployment-safety authority is the reviewed authority for Linux deployment storage, authorization records, filesystem barriers, systemd mechanics, status, recovery, rollback, GC, first cutover, and its A-01 through A-20 and A3-01 through A3-10 acceptance cases.
+9. The operator's durable ruling selects the operator as production-installation authorizer, running and serving as the observation bar, ext4 default options as the supported durability class, root-owned deployment objects and units with existing non-root gateway accounts, and one deployment per machine.
 10. The manager can hold its deployment lock across policy evaluation, neutral attempt append or replay, manager acceptance recording, and the rename boundary.
 11. The neutral client can preserve exact raw gateway responses or exact local transport failures in manager-owned durable evidence.
 12. Marketing A-28 and Biosciences A-29 remain separate neutral-feature runtime release gates. The Engineering fixture cannot satisfy either gate.
 
 ## Invariants
 
-**E-01 — one neutral primitive.** Engineering records declaration, authority, attempt, observation, compensation, notice, and acknowledgement through `art_2bc5475e`. The substrate contains no Engineering-specific event kind, verb, state, policy decision, or sibling fact.
+**E-01 — one neutral primitive.** Engineering records declaration, authority, attempt, observation, compensation, notice, and acknowledgement through the neutral substrate authority. The substrate contains no Engineering-specific event kind, verb, state, policy decision, or sibling fact.
 
 **E-02 — pinned main source.** An implementation card derived from this artifact targets commit `3fe0e941840ed138a6a285261c0e35687d8d27a3`. A later main commit requires a new read-only reconciliation before implementation authority can bind it.
 
-**E-03 — authorizer and executor stay distinct.** The neutral `authorizer` and `basis` identify Mike's Ed25519 approval and exact signed envelope for production installation. The neutral `executor` identifies the root deployment manager. Root privilege alone grants no production-installation authority.
+**E-03 — authorizer and executor stay distinct.** The neutral `authorizer` and `basis` identify the operator's Ed25519 approval and exact signed envelope for production installation. The neutral `executor` identifies the root deployment manager. Root privilege alone grants no production-installation authority.
 
 **E-04 — one exact machine target.** The target binds the canonical host identity, deployment-root identity, and ordered service-set digest. A changed member, order, unit, account, org base, endpoint, host identity, or deployment-root identity changes the target and invalidates a stale basis.
 
@@ -96,7 +92,7 @@ This policy adds the Engineering consumer adapter because deleting the supported
 
 **E-11 — coverage stays exact.** A path becomes mechanically gated only after its owned mutation entry point requires `AcceptedActivationAttempt` and its real runtime fixture passes. A row, CI receipt, source scan, later restart, or design approval does not change coverage.
 
-**E-12 — action authorities stay separate.** Mike's production-installation approval does not authorize restart, observation, rollback, unit rollback, GC, compensation, acknowledgement, or adjudication. Each action uses the separate authority defined by deployment safety or Engineering policy.
+**E-12 — action authorities stay separate.** The operator's production-installation approval does not authorize restart, observation, rollback, unit rollback, GC, compensation, acknowledgement, or adjudication. Each action uses the separate authority defined by deployment safety or Engineering policy.
 
 **E-13 — notice remains evidence.** The neutral attempted event and owner wake commit together. Wake `fired` proves enqueue. Explicit owner acknowledgement records receipt. Missing acknowledgement remains visible and does not rewrite machine observation or assignment outcome.
 
@@ -110,9 +106,9 @@ This policy adds the Engineering consumer adapter because deleting the supported
 
 ### Authority and precedence
 
-1. `art_2bc5475e` remains the sole authority for neutral substrate storage, fields, event shapes, verbs, capability, replay, lifecycle, reads, notices, and neutral acceptance.
-2. `art_c4230451` remains the authority for Linux deployment mechanics and its acceptance suite, except that this artifact replaces its obsolete `origin/0.1.x` integration direction with E-02 and inserts the accepted-attempt seam defined here before both rename entry points.
-3. This artifact is the complete Engineering consumer policy. It supersedes the consumer portions of `art_16df51ca` and `art_44b99337`. A builder does not layer either prior consumer artifact onto this one.
+1. The neutral substrate authority remains the sole authority for neutral substrate storage, fields, event shapes, verbs, capability, replay, lifecycle, reads, notices, and neutral acceptance.
+2. The deployment-safety authority remains the authority for Linux deployment mechanics and its acceptance suite, except that this artifact replaces its obsolete `origin/0.1.x` integration direction with E-02 and inserts the accepted-attempt seam defined here before both rename entry points.
+3. This artifact is the complete Engineering consumer policy. It supersedes the consumer portions of the earlier Engineering consumer policy revisions. A builder does not layer either prior consumer artifact onto this one.
 4. `0.1.8`, `0.1.x`, `ac8651dcb104f312da1c67e0cb7b1abebc640b2b`, and `378807eabb39cecc25ea801494053f8aa20feafa` remain historical evidence only.
 
 ### Exact main source map
@@ -142,7 +138,7 @@ The adapter accepts four Engineering activation classes:
 
 Package receipt, extraction, verification, inactive release publication, inactive generation construction, release-candidate proof, tag creation, and GitHub Release creation are preparation or evidence production. They are not activation attempts because they do not change restart-loadable or systemd-effective bytes.
 
-U0 is an Engineering production activation, but it is not a production installation of an update: it selects byte- and provenance-equivalent legacy bytes already selected by the registered units. U0 uses the separate first-cutover authority from `art_c4230451` and does not consume Mike's production-installation approval. A U0 candidate whose managed bytes differ from the verified legacy bytes refuses under deployment-safety legacy-byte exclusion; the adapter does not widen U0 into an update installation.
+U0 is an Engineering production activation, but it is not a production installation of an update: it selects byte- and provenance-equivalent legacy bytes already selected by the registered units. U0 uses the separate first-cutover authority from the deployment-safety authority and does not consume the operator's production-installation approval. A U0 candidate whose managed bytes differ from the verified legacy bytes refuses under deployment-safety legacy-byte exclusion; the adapter does not widen U0 into an update installation.
 
 ### Neutral field mapping
 
@@ -154,7 +150,7 @@ U0 is an Engineering production activation, but it is not a production installat
 | `correlationKey` | the stable manager transaction ID |
 | `preparedInput` | a content-bound release manifest, managed-legacy manifest, retained-generation manifest, or complete ordered unit-plan manifest for the exact operation |
 | `target` | a `ResourceRef` to the Engineering deployment-target snapshot defined below |
-| `authorizer` | `{namespace: engineering.production-install-authorizer, id: <Mike-key-id>}` for production installation; an action-specific Engineering identity for a separate non-installation action |
+| `authorizer` | `{namespace: engineering.production-install-authorizer, id: <operator-key-id>}` for production installation; an action-specific Engineering identity for a separate non-installation action |
 | `basis` | the content-bound production-installation approval envelope or separate action-specific basis |
 | `decision` | `{namespace: engineering.production-install, code: approved}` for an accepted production-installation basis; Tightbeam does not interpret it |
 | `executor` | `{namespace: engineering.deploy-manager, id: root@<canonical-host-identity>}` |
@@ -181,7 +177,7 @@ The neutral target uses namespace `engineering.deployment-target`, ID `machine:<
 
 ### Production-installation authority mapping
 
-The Engineering policy accepts one production-installation authority event only when its `authorizer` equals `{namespace: engineering.production-install-authorizer, id: <Mike-key-id>}`, its `basis` equals `{namespace: engineering.production-install-approval, id: <approval-id>, sha256: <canonical-envelope-digest>}`, and its `decision` equals `{namespace: engineering.production-install, code: approved}`. The Mike key ID comes from the current production trust policy. The basis digest is the SHA-256 of the exact canonical signed approval envelope.
+The Engineering policy accepts one production-installation authority event only when its `authorizer` equals `{namespace: engineering.production-install-authorizer, id: <operator-key-id>}`, its `basis` equals `{namespace: engineering.production-install-approval, id: <approval-id>, sha256: <canonical-envelope-digest>}`, and its `decision` equals `{namespace: engineering.production-install, code: approved}`. The operator key ID comes from the current production trust policy. The basis digest is the SHA-256 of the exact canonical signed approval envelope.
 
 Before selecting that authority event for `activation-attempt`, the adapter verifies:
 
@@ -189,7 +185,7 @@ Before selecting that authority event for `activation-attempt`, the adapter veri
 2. the current canonical host identity, deployment-root identity, service-set digest, and expected-active value;
 3. the fixed `production-install` action;
 4. the challenge is open and its state matches the signed envelope;
-5. the signature validates under the current Mike Ed25519 key;
+5. the signature validates under the current operator Ed25519 key;
 6. the update and verification-evidence digests match the prepared input;
 7. the approval remains unconsumed, unsuperseded, and unrevoked; and
 8. the manager has fsynced the one-use consumed fact before the first production-installation mutation.
@@ -226,7 +222,7 @@ The value binds:
 For active-pointer activation, while holding the deployment lock, the manager executes this order:
 
 1. read and validate current target truth;
-2. validate the action-specific Engineering policy and Mike approval when the action is production installation;
+2. validate the action-specific Engineering policy and operator approval when the action is production installation;
 3. fsync the one-use approval-consumption fact when applicable;
 4. publish and validate inactive immutable release and generation objects;
 5. write and fsync the immutable manager intent;
@@ -297,9 +293,9 @@ Cards 1, 2A, and 2B are sequential after separate owner authorization. Card 2A s
 
 **C-01 — source authority.** Given this artifact and a repository object database, when the reviewer resolves the pinned main commit and each object in the source map, then the commit equals `3fe0e941840ed138a6a285261c0e35687d8d27a3` and each object ID matches. A moved `refs/heads/main` does not silently change this artifact's source authority.
 
-**C-02 — neutral boundary.** Given the implementation's substrate vocabulary, when the neutral self-gate runs, then it contains the one `activation_events` table and fixed neutral verb family from `art_2bc5475e`, with no Engineering or deploy-specific sibling fact, verb, event kind, derived state, or policy evaluator.
+**C-02 — neutral boundary.** Given the implementation's substrate vocabulary, when the neutral self-gate runs, then it contains the one `activation_events` table and fixed neutral verb family from the neutral substrate authority, with no Engineering or deploy-specific sibling fact, verb, event kind, derived state, or policy evaluator.
 
-**C-03a — production authority mapping.** Given a valid Mike-signed production-installation envelope, when the adapter maps the authority event, then `authorizer`, `basis`, `decision`, `executor`, and `externalAttempt` equal the closed values in the Neutral field mapping table.
+**C-03a — production authority mapping.** Given a valid operator-signed production-installation envelope, when the adapter maps the authority event, then `authorizer`, `basis`, `decision`, `executor`, and `externalAttempt` equal the closed values in the Neutral field mapping table.
 
 **C-03b — privilege is not authority.** Given a root manager without that authority event and basis, when it requests production installation, then the manager invokes zero installation mutations.
 
@@ -337,7 +333,7 @@ Cards 1, 2A, and 2B are sequential after separate owner authorization. Card 2A s
 
 **C-18 — U0 mapping.** Given a validated virgin root, when the adapter declares managed-legacy U0, then `expected_active` equals `virgin:<deployment-root-identity>`, `targetStateBefore` binds the required virgin and legacy evidence, and the active-pointer entry point requires a matching accepted attempt before the first `active` rename.
 
-**C-19 — action separation.** Given a valid Mike production-installation approval, when restart, rollback, unit rollback, GC, compensation, acknowledgement, or adjudication is requested without its separate authority, then the requested action refuses without consuming or widening the installation approval.
+**C-19 — action separation.** Given a valid operator production-installation approval, when restart, rollback, unit rollback, GC, compensation, acknowledgement, or adjudication is requested without its separate authority, then the requested action refuses without consuming or widening the installation approval.
 
 **C-20 — coverage census.** Given execution-time main before implementation, when the coverage report runs, then Linux npm overwrite, direct source-checkout upgrade, and macOS npm/LaunchDaemon report **NOT MECHANICALLY GATED**. A design row, CI receipt, source scan, later restart, or successful unrelated fixture leaves those labels unchanged.
 
@@ -351,4 +347,4 @@ Cards 1, 2A, and 2B are sequential after separate owner authorization. Card 2A s
 
 ## Open Questions
 
-None. Mike's rulings and the six owner-authorized replacements close the load-bearing policy choices. A later main commit, a macOS production-coverage claim, or a request to vary filesystem, principal, target, threshold, or service-set policy requires a new owner ruling and a new spec amendment; it is not an implementation detail.
+None. The operator's rulings and the six owner-authorized replacements close the load-bearing policy choices. A later main commit, a macOS production-coverage claim, or a request to vary filesystem, principal, target, threshold, or service-set policy requires a new owner ruling and a new spec amendment; it is not an implementation detail.

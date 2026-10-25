@@ -1,12 +1,10 @@
 # Subagent markers — parent-attributed observability for harness-internal fan-out — v1
 
-Status: READY (gate-cleared 2026-07-25, Sol-high round 7: zero blocking; rounds 1-6 findings
-folded — termination-carrier prerequisite, canonical refs, reserved-fact boundary, stop-wins
-registration race). Flynn-directed. Small, additive; builds only on existing mechanisms
+Status: READY. Small, additive; builds only on existing mechanisms
 (markers, wake-on-fact, adapter event streams). Implementation may proceed; the
-served-identity lane it was sequenced behind is merged (main `9a84163`).
+served-identity work it was sequenced behind is merged (main `9a84163`).
 
-## Ruling this implements (Flynn, 2026-07-24)
+## Ruling this implements (2026-07-24)
 
 Harness-internal subagents are the parent agent's business — they fan out inside one turn,
 evaporate with it, and have no residency (bible §Where it sits; decisions §Landscape
@@ -169,7 +167,7 @@ unit and this spec has been violated.
 
 ## Component touches
 
-`acp/adapter.ex` (consume envelopes → markers — COLLIDES with the served-identity lane;
+`acp/adapter.ex` (consume envelopes → markers — COLLIDES with the served-identity work;
 sequence after its merge); the NEW canonical marker append API + schema (no existing row
 family fits — see Mechanism §3) with its atomic condition-fact write; the harness-session →
 parent-session mapping surface (adapter coordinator); the reserved-obligation-facts loader

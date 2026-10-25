@@ -11,16 +11,11 @@ authority. This specification is based on Tightbeam
 `42c20cdcee81c632a26b663ab0521642ee4a7b7d` and tightbeam-specs
 `e125efe346a51f115785b5e7ad5804355b958a42`.
 
-Product authority comes from work item
-`wi_b145b076-e2d4-4c6f-bb1e-5949485f1385` and its user-authored durable trace.
-The B1 and B2 corrections come from owner ruling
-`dr_6f85d524-aa0b-493b-ac26-427ccaaebac9`. They answer the blocking findings in
-verdict `att_61c8f42f-7608-4a14-bd75-64052d92b473` and report
-`art_49aff2e0`. This specification amends the product-scope, spec-review, and
+Product authority comes from the work item's user-authored durable trace.
+The B1 and B2 corrections come from an owner ruling. This specification amends the product-scope, spec-review, and
 spec-assignment-opening clauses of `agentic-engineering-guidance-spec.md`.
-The explicit automatic-remedy purpose transport closes verdict
-`att_faa62df3-a700-4fa5-9d36-f74c7780841d` and report `art_f034dc25` without
-changing the owner-ruled B1 or B2 boundary.
+The explicit automatic-remedy purpose transport does not change the owner-ruled B1
+or B2 boundary.
 
 ## Goal
 

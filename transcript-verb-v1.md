@@ -1,6 +1,6 @@
 # Transcript CLI wrapper — v1
 
-Status: G5 reconciliation candidate, 2026-08-27. Mike's firehose gap
+Status: G5 reconciliation candidate, 2026-08-27. The firehose gap
 remediation ruling makes REST/transcript authority reconciliation a read-side
 firehose prerequisite. When this exact candidate passes independent review and
 lands, it supersedes the prior `transcript-verb-v1.md` lookup, projection,
@@ -331,4 +331,4 @@ dispatch call and audit row top-level `sessionKey` remain null.
 
 ## Open Questions
 
-None. Mike's 2026-08-27 G5 ruling fixes the authority boundary and scope.
+None. The 2026-08-27 G5 ruling fixes the authority boundary and scope.

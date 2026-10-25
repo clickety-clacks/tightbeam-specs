@@ -1,9 +1,6 @@
 # Assignment lifecycle fallback escalation v1
 
-Status: MVP contract; implementation is forbidden until an independent reviewer files `reviewed-clean` against this exact content hash  
-Work item: `wi_3d6d13a0-c4cf-4370-88a1-b407c41ff7c1`  
-Authority assignment: `asg_3fce3846-487e-496a-af79-6e2114ff39ab`  
-Product owner assignment: `asg_0bd4c0ab-68a0-463e-92c4-e5d11a8135c5`
+Status: MVP contract
 
 ## Invariants
 
@@ -440,17 +437,19 @@ No new delete API, cascade, retention timer, or secret-bearing column exists.
 
 ### ARC-14 — Captured real fixtures
 
-Implementation commits these immutable, real-row fixtures and a provenance file:
+Implementation commits these immutable, real-row fixtures and a provenance file. The names
+below are illustrative labels for the captured rows; distinct labels are distinct rows, and
+turn labels follow the recorded turn sequence:
 
-1. `test/fixtures/assignment_lifecycle/routing-owner-present.json` — work item `wi_8cd66374-6a48-446e-88e1-502652ff24c0`, routing wake `w_9a13250f-2e93-4819-a464-b02bd10356c7`, assignment `asg_64cdf952-5d10-4c58-b74f-224fa5c1f278`.
-2. `test/fixtures/assignment_lifecycle/live-switch-failed-worker.json` — work item `wi_507991c2-af57-440f-92a3-da199d9b00e1`, owner assignment `asg_9f5977dd-1d6e-49a5-a48a-c3d68b387f7f`, worker assignment `asg_15c877a9-6015-4f93-939a-e94d75de240e`, failed turns `3523` and `3601`.
-3. `test/fixtures/assignment_lifecycle/overlay-user-rooted.json` — work item `wi_4274ccf5-62b6-45e2-9753-74bae345c2f4`, assignment `asg_7b5f3876-2b6f-4d3b-b92c-f3b2dd8f64c6`, failed supervision turn `5352`, surrender attest `att_2a04e02a-e461-4343-b77d-d0e69df686c0`, delivered slate turn `5727`.
-4. `test/fixtures/assignment_lifecycle/fable-routing-cancellation.json` — separate negative fixture for work item `wi_9086ebd5-bd62-4c04-9b97-ac83ce34f53e`, routing wake `w_90267efc-5c07-4153-802f-14c9b1e819f1`, assignment `asg_8e48d3cb-60f6-4a66-be36-345f5b86f841`.
-5. `test/fixtures/assignment_lifecycle/provenance.json` — source artifact `art_9d7e1cd9`, source SHA-256 `009d3659f5c16729dccdd3d5e5c177c6db4e6160ebab37be96f364874cffe574`, producer `att_f9faaead-4952-48dc-b2e8-a6b9c1389dc0`, reviewed-clean `att_fbdc63ab-0758-4801-8ab8-080c81b5004a`, completion `att_6a156a8a-9e77-478e-a513-cec717f8ab66`, capture commit `f5e4b25971c0037a2a17a8df4edf5f4e6e7e45cc`, and exact capture argv.
+1. `test/fixtures/assignment_lifecycle/routing-owner-present.json` — work item `item-1`, routing wake `wake-1`, assignment `asg-1`.
+2. `test/fixtures/assignment_lifecycle/live-switch-failed-worker.json` — work item `item-2`, owner assignment `asg-2`, worker assignment `asg-3`, failed turns `turn-1` and `turn-2`.
+3. `test/fixtures/assignment_lifecycle/overlay-user-rooted.json` — work item `item-3`, assignment `asg-4`, failed supervision turn `turn-3`, surrender attest `attest-surrender`, delivered slate turn `turn-4`.
+4. `test/fixtures/assignment_lifecycle/fable-routing-cancellation.json` — separate negative fixture for work item `item-4`, routing wake `wake-2`, assignment `asg-5`.
+5. `test/fixtures/assignment_lifecycle/provenance.json` — source artifact `artifact-source`, source SHA-256 `009d3659f5c16729dccdd3d5e5c177c6db4e6160ebab37be96f364874cffe574`, producer `attest-producer`, reviewed-clean `attest-reviewed-clean`, completion `attest-completion`, capture commit `f5e4b25971c0037a2a17a8df4edf5f4e6e7e45cc`, and exact capture argv.
 
 Fixtures preserve identifiers, principals, correlations, timestamps, state, and terminal columns. They redact prompts, errors, subjects, notes, model context, message content, and credentials with byte length and SHA-256 evidence. Hand-written ideal fixtures do not pass.
 
-ARC-14 fixture validation and AC-15 packaged smoke are release-blocking for this MVP because a hand-written, mock-only, or source-tree-only pass can conceal silent loss, duplicate terminal escalation, false attribution, or human-principal impersonation. Each is an incredibly detrimental failure under owner ruling `att_a8418685-4f10-4a91-90b0-9ac9b6bceb48`. This rationale adds no fixture or smoke scope.
+ARC-14 fixture validation and AC-15 packaged smoke are release-blocking for this MVP because a hand-written, mock-only, or source-tree-only pass can conceal silent loss, duplicate terminal escalation, false attribution, or human-principal impersonation. Each is an incredibly detrimental failure. This rationale adds no fixture or smoke scope.
 
 ### ARC-15 — Exact implementation decomposition
 
@@ -489,14 +488,6 @@ scripts/assignment_lifecycle_smoke.exs
 `lib/tightbeam/schema.ex`, Rust CLI files, identity/Kung Fu content, client code, release code, and deployment files are outside the implementation set.
 
 ### ARC-16 — Source and review provenance
-
-Normative intent originates in `art_9d7e1cd9` at SHA-256 `009d3659f5c16729dccdd3d5e5c177c6db4e6160ebab37be96f364874cffe574`, independently reviewed-clean in `att_fbdc63ab-0758-4801-8ab8-080c81b5004a`.
-
-This MVP consumes ninth-review report `art_52f72ba6` at SHA-256 `93c916f24657d40c66d96e7d4cc0e02df4bffbe954ce25ddd2eb2b62a43f6fde`, owner source ruling `att_dc857f39-585b-4d12-985f-d4a40e60a89d`, custody ruling `att_57bb03f4-81d9-4511-9434-d6ff0e81b8fe`, and Mike's focused-correction/MVP ruling delivered on 2026-08-21.
-
-The first MVP review covered `art_c0dd2b7e` at SHA-256 `34f38864174b6b95525f0fb1a6497b1df6087cee6bd096aadec5792b375a393e` and filed changes-requested verdict `att_08478431-132c-41d6-a9ca-902f3fedb4a4` with report `art_ac28c6c8` at SHA-256 `d11a405ca630ce829ffbb3141209e7a6d9ccdf6573627271dcb6b79f357f74c7`. Operator decision `dr_cfe612db-7289-4a1f-acd5-5bb26701fbfc` authorized the minimal F1/F2 closure: close-generation assignment identity, deletion of untyped predecessor events as coverage, and the bounded rollback duplicate in ARC-12. Owner re-pin `att_7d588233-c56b-4641-a90e-1c8af14f1cf0` adopts `main@b8e6c47e4631da8345aaf8c6ab73b0858e630bf6` and deletes typed model-exhaustion-to-Main behavior from this MVP. Owner ruling `att_a8418685-4f10-4a91-90b0-9ac9b6bceb48` advances the baseline to `main@2d0bbf056996ca573379bc022f7620b55f309120` with rollback predecessor `b8e6c47e4631da8345aaf8c6ab73b0858e630bf6` and supplies the exact blocking-fixture rationale in ARC-14, AC-14, and AC-15.
-
-The prior frozen candidate `art_1fbd7a55` at SHA-256 `5caf7d2dba7f90532c339d11b230bf4ba86d6e29ac1cf0ff8002403140272ca6` remains historical review evidence. It is not implementation authority.
 
 The builder MUST recheck remote `refs/heads/main`. If it differs from `2d0bbf056996ca573379bc022f7620b55f309120`, implementation stops for an owner re-pin.
 

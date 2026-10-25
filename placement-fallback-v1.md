@@ -1,8 +1,8 @@
 # Placement fallback — a denial must not be a dead end
 
-Status: **DECIDED 2026-08-02 by Flynn, not yet implemented.**
+Status: **DECIDED 2026-08-02 by the operator, not yet implemented.**
 
-## The problem, in Flynn's words
+## The problem, in the operator's words
 
 > "there should be a fallback! at any time any model or harness could run out of tokens. we
 > can't let substrate stop all work because this happens. if this was just agents without a
@@ -11,10 +11,10 @@ Status: **DECIDED 2026-08-02 by Flynn, not yet implemented.**
 
 Raised after a live install where `spawn` refused twice in a row and stopped everything:
 
-- `placement_denied: claude on eezo needs onboarding: :in_progress` — chose a harness with no
+- `placement_denied: claude on <host> needs onboarding: :in_progress` — chose a harness with no
   credential while a fully onboarded one (codex/openai) sat available on the same host.
 - `catalog_unavailable: cannot validate model "claude-sonnet-5[medium]" for codex on host
-  eezo` — the archetype's default model is an anthropic ref, so pinning `--harness codex`
+  <host>` — the archetype's default model is an anthropic ref, so pinning `--harness codex`
   fails on a default that harness can never offer.
 
 Both refusals are correct about the fact and useless as an outcome. The operator had a

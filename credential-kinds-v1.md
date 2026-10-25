@@ -1,6 +1,6 @@
 # Credential kinds — v1
 
-Decided 2026-07-28 (Flynn). Ruled as an INVARIANT, not a feature: Tight Beam
+Decided 2026-07-28. Ruled as an INVARIANT, not a feature: Tight Beam
 supports BOTH credential kinds — API key and subscription token — for BOTH
 harnesses, and reports which kind is active to the client over the clawline
 protocol.
@@ -11,7 +11,7 @@ Today the product supports exactly one kind per harness: claude's subscription
 setup-token, codex's ChatGPT OAuth. No API-key handling exists anywhere
 (verified 2026-07-28 — no ANTHROPIC_API_KEY / OPENAI_API_KEY path in lib/).
 Both harnesses natively support API keys; the product just never wires them.
-Flynn ruled the gap a deficit.
+The operator ruled the gap a deficit.
 
 ## Invariants
 
@@ -40,14 +40,13 @@ Flynn ruled the gap a deficit.
      (verified 200); api key → `api.openai.com/v1/models` (API keys carry
      `api.model.read`, the scope the subscription token was refused for —
      verify empirically before relying on it).
-   - preflight liveness probes (#15/#81 territory): per-kind endpoints as
-     above.
+   - preflight liveness probes: per-kind endpoints as above.
 4. **Onboarding gains a key path.** API-key onboarding is non-interactive:
    the operator supplies the key, the ceremony validates it live (one
    authenticated models call), banks it with metadata recording the kind.
-   No browser, no device code, no TUI — which also means none of #80's
-   machinery is on this path. The interactive subscription ceremonies are
-   unchanged.
+   No browser, no device code, no TUI — which also means none of that
+   onboarding machinery is on this path. The interactive subscription
+   ceremonies are unchanged.
 5. **Kind is recorded in credential metadata** (`credential.json` gains
    `"kind"`), and everything that reads the store dispatches on it rather
    than sniffing file shape. One authority.
@@ -55,7 +54,7 @@ Flynn ruled the gap a deficit.
    are static — no rotation, no refresh, no single-writer constraint.
    Subscription: claude static (year-long setup-token), codex self-rotating
    (in-place, single writer — the shared-runtime constraint). Liveness and
-   expiry reporting (#81) dispatch on kind.
+   expiry reporting dispatch on kind.
 
 ## Non-goals
 

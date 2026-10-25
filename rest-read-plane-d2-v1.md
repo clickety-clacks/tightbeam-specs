@@ -1,61 +1,45 @@
 # REST read plane D2 — remaining resource families and conformance
 
-Status: build specification candidate for
-`wi_ea98345b-51f4-4fae-b7df-3670c0d54f6b`.
+Status: build specification candidate.
 
-Resource-scoped start-gate amendment: review candidate on active work item
-`wi_cb5734eb-c175-4815-8763-882d69dfa9bf`, assignment
-`asg_a41c244e-8043-4aae-b85e-c219fc47438a`. The historical work item above
-remains closed. This amendment changes only D2 code-start evidence; it grants
-no product start before independent review and canonical spec landing.
+Resource-scoped start-gate amendment: this amendment changes only D2
+code-start evidence; it grants no product start before independent review
+and canonical spec landing.
 
 Authority:
 
-- Resource-scoped start ruling `att_a707f2ca-3f2a-4976-ad43-f718710dcd01`:
-  a named resource slice may start after its complete canonical prerequisites
-  and owner-allocated hunks are proved. This does not waive a dependency or
-  satisfy the gate for another resource, full D2 delivery, or D3.
-- Historical review baseline: `rest-state-api-v1.md` r3, artifact `art_971f45b5`, reviewed
-  commit `8b96e512688cc3c010c33c96d1ba622e543c7206`, SHA-256
-  `49b86ec874283c523001be7449b1e14aef47ca72932955445638ce6443aad754`.
+- Resource-scoped start ruling: a named resource slice may start after its
+  complete canonical prerequisites and owner-allocated hunks are proved.
+  This does not waive a dependency or satisfy the gate for another
+  resource, full D2 delivery, or D3.
+- Historical review baseline: `rest-state-api-v1.md` r3.
 - Composition authority: current canonical `rest-state-api-v1.md`, its
   normative `rest-state-api-v1-wire-schema.md` companion, and
   `event-firehose-v1.md` on the parent of this composition. Later canonical
   clauses govern over the historical review baseline.
-- Owner ruling `att_a4ca52cf-87bc-48f6-a161-2d9e6132283d` requires
-  resource-specific canonical REST seams, existing D1 Router/M1 handling,
-  and the exact current Toplines R9 dependency set. The accompanying REST
-  R3b correction removes stale adapter names without changing public bytes.
-- Adopted six-resource shared-serializer contract `art_b1995a26`, SHA-256
-  `72bb22676bc5cd116f696e23b21b382073efaa8dabbb2ae9d2a524641dd210f6`,
-  adopted by decision fact 1093.
-- D1 candidate `rest-read-plane-d1.md`, commit `5b1ffa2`, SHA-256
-  `430cc2ab4768a44407e3338ea483927f2f2d0e71349deb83452815874d75f268`.
-  D1's final reviewed canonical identity replaces this candidate identity at
-  the code-start gate below; a seam-name difference requires a reviewed D2
-  amendment before product code starts.
+- Owner ruling requires resource-specific canonical REST seams, existing D1
+  Router/M1 handling, and the exact current Toplines R9 dependency set. The
+  accompanying REST R3b correction removes stale adapter names without
+  changing public bytes.
+- The adopted contract that gives config, host environment, hosts, users,
+  identity, and kungfu each one named query, one public serializer, and one
+  admin-only visibility function, shared by REST detail, CLI read wrappers,
+  and firehose notices.
+- D1 candidate `rest-read-plane-d1.md`. D1's final reviewed canonical
+  identity replaces this candidate identity at the code-start gate below; a
+  seam-name difference requires a reviewed D2 amendment before product code
+  starts.
 - Product-owner binding ruling, 2026-08-24 PT: durable human-intent Toplines
   keep `/api/toplines[/:id]`; work telemetry moves to the distinct
-  `/api/execution-map` family. Contract closure is tracked by
-  `wi_835a72aa-c88b-421b-a34c-41d23032c7c7` and
-  `wi_3874a61f-288b-4b54-ac8a-da9234a910a2`.
-- Accepted Toplines closure: canonical commit
-  `05d08b8af74a877d4dabe3dcba8250787d5d430e`, REST SHA-256
-  `4f9c5ca7e5c0c429b24d5011c68137f59e734f4bc5494fbbda27bca50be142ee`,
-  completion `att_6a0da1aa-9bbe-43fb-8c8e-9c5be21aeda4`, clean verdict
-  `att_a612059b-230d-4b0c-be05-706fbc3b022d`, report `art_55ed30e7`.
-- Accepted ExecutionMap closure: canonical commit
-  `0139d9a71180a7175965473fade9b183d2b57601`, REST SHA-256
-  `d1af5567ec4ad6bd4cf36776790892f87c26fa62eb73a7cd0a88f4804079b88f`,
-  completion `att_c6a21d4d-af6a-4baa-b30b-130fb4ad9b57`, clean verdict
-  `att_22ba96ea-abbb-4fd7-b173-d35efa92900b`, report `art_f5907baf`.
-  Its coupled wire SHA-256 is
-  `2be26c6a5d67e3b7243ad5b3059b57f41c161d55b55f8e8433a1ef1ce4710bb4`;
-  firehose SHA-256 is
-  `f7ff75a2b3559208bcee5a50be03414a0d539328300a1f519118dd168101830d`.
-  These closed work items supply historical prerequisite proofs; current
-  canonical semantics must still be preserved. Their closure supplies no
-  D1 implementation or canonical-green product proof.
+  `/api/execution-map` family.
+- Accepted Toplines closure: this closed work supplies historical
+  prerequisite proofs; current canonical semantics must still be preserved.
+  Its closure supplies no D1 implementation or canonical-green product
+  proof.
+- Accepted ExecutionMap closure: this closed work supplies historical
+  prerequisite proofs; current canonical semantics must still be preserved.
+  Its closure supplies no D1 implementation or canonical-green product
+  proof.
 
 ## Spec home
 
@@ -69,10 +53,10 @@ The resource-scoped start-gate amendment changes only this file. The earlier
 composition also changed the narrow R3b companion in `rest-state-api-v1.md`;
 those canonical bytes remain unchanged. Review this amendment against current
 canonical D1, REST, wire schema, firehose, the accepted closures above, and the adopted
-shared-serializer contract `art_b1995a26`. The D2 code-start set also
+six-resource contract above. The D2 code-start set also
 includes D1's final reviewed canonical spec and integration and the reviewed
-canonical landings for `wi_835a72aa-c88b-421b-a34c-41d23032c7c7` and
-`wi_3874a61f-288b-4b54-ac8a-da9234a910a2`. The code-start preflight records
+canonical landings for the Toplines-and-sessions filter contract closure and
+the ExecutionMap contract closure. The code-start preflight records
 their exact paths, commits, and SHA-256 values. This file references those
 canonical landings and does not copy their draft bytes.
 
@@ -99,7 +83,7 @@ legacy dispatch read.
   migration and removal gates.
 - D2 does not add partial-name, case-folded-name, or arbitrary text search to
   `/api/sessions`. It consumes the exact `displayName` filter only after
-  `wi_835a72aa-c88b-421b-a34c-41d23032c7c7` lands reviewed and canonical.
+  the Toplines-and-sessions filter contract closure lands reviewed and canonical.
 - D2 does not expose asset bytes through an artifact or work-item relation.
 
 ## Terms
@@ -146,11 +130,9 @@ legacy dispatch read.
    or depends on read markers requires their durable row and set/clear seam;
    another slice may proceed only with evidence that these are not its
    dependencies. Missing prerequisites continue to block their dependent slices.
-5. The reviewed canonical result of
-   `wi_835a72aa-c88b-421b-a34c-41d23032c7c7` fixes the Toplines list and
-   session `displayName` filter contract before D2 product code starts.
-6. The reviewed canonical result of
-   `wi_3874a61f-288b-4b54-ac8a-da9234a910a2` fixes the ExecutionMap R7 row,
+5. The reviewed canonical closure of the Toplines list and
+   session `displayName` filter contract fixes that contract before D2 product code starts.
+6. The reviewed canonical closure of the ExecutionMap contract fixes the ExecutionMap R7 row,
    wire schema, R9 dependency set, and response-envelope shapes before D2
    product code starts.
 
@@ -219,9 +201,9 @@ proofs for the exact canonical product base:
    resource requires source evidence that the selected slice does not depend
    on it; calling the slice independent is not proof.
 4. The reviewed canonical commit, SHA-256, and verdict for
-   `wi_835a72aa-c88b-421b-a34c-41d23032c7c7`.
+   the Toplines-and-sessions filter contract closure.
 5. The reviewed canonical commit, SHA-256, and verdict for
-   `wi_3874a61f-288b-4b54-ac8a-da9234a910a2`.
+   the ExecutionMap contract closure.
 
 A missing proof or hunk allocation stops edits for the selected slice. An
 independently complete slice need not wait for unrelated resource prerequisites;
@@ -278,10 +260,10 @@ string.
 | read markers | `GET /api/read-markers`; `GET /api/read-markers/:scopeKey` | `query_read_marker/2` — `Tightbeam.ReadMarkers` | `read_marker/1` | `read_marker_visible?/3` |
 | roles | `GET /api/roles` | canonical collection selection — `Tightbeam.Roles` | `role/1` | `role_visible?/3` |
 | toplines | `GET /api/toplines`; `GET /api/toplines/:id` | `query_public/2` — `Tightbeam.Toplines` (R6c) | `Tightbeam.Toplines.public_item/1` | `topline_visible?/3` |
-| execution map — flat | `GET /api/execution-map` | `list_execution_map/2` — `Tightbeam.ExecutionMap` | canonical `execution_map_node/1` from `wi_3874a61f-288b-4b54-ac8a-da9234a910a2` | `execution_map_node_visible?/3` |
-| execution map — tree | `GET /api/execution-map/tree` | `query_execution_map_tree/2` — `Tightbeam.ExecutionMap` | the same `execution_map_node/1` inside the canonical tree envelope from `wi_3874a61f-288b-4b54-ac8a-da9234a910a2` | `execution_map_node_visible?/3` |
-| execution map — subtree | `GET /api/execution-map/subtrees/:workItemId` | `query_execution_map_subtree/2` — `Tightbeam.ExecutionMap` | the same `execution_map_node/1` inside the canonical subtree envelope from `wi_3874a61f-288b-4b54-ac8a-da9234a910a2` | `execution_map_node_visible?/3` |
-| execution map — assignment selection | `GET /api/execution-map/assignments` | `query_execution_map_assignments/2` — `Tightbeam.ExecutionMap` | the same `execution_map_node/1` inside the canonical assignment-selection envelope from `wi_3874a61f-288b-4b54-ac8a-da9234a910a2` | `execution_map_assignment_visible?/3`, then `execution_map_node_visible?/3` |
+| execution map — flat | `GET /api/execution-map` | `list_execution_map/2` — `Tightbeam.ExecutionMap` | canonical `execution_map_node/1` from the ExecutionMap contract closure | `execution_map_node_visible?/3` |
+| execution map — tree | `GET /api/execution-map/tree` | `query_execution_map_tree/2` — `Tightbeam.ExecutionMap` | the same `execution_map_node/1` inside the canonical tree envelope from the ExecutionMap contract closure | `execution_map_node_visible?/3` |
+| execution map — subtree | `GET /api/execution-map/subtrees/:workItemId` | `query_execution_map_subtree/2` — `Tightbeam.ExecutionMap` | the same `execution_map_node/1` inside the canonical subtree envelope from the ExecutionMap contract closure | `execution_map_node_visible?/3` |
+| execution map — assignment selection | `GET /api/execution-map/assignments` | `query_execution_map_assignments/2` — `Tightbeam.ExecutionMap` | the same `execution_map_node/1` inside the canonical assignment-selection envelope from the ExecutionMap contract closure | `execution_map_assignment_visible?/3`, then `execution_map_node_visible?/3` |
 | facts | `GET /api/facts` | canonical collection selection — `Tightbeam.ConditionFacts` | `condition_fact/1` | `condition_fact_visible?/3` |
 | critical state | `GET /api/critical-state` | canonical collection selection — `Tightbeam.CriticalLeases` | `critical_state/1` | `critical_state_visible?/1` |
 | archetypes | `GET /api/archetypes`; `GET /api/archetypes/:name` | `query_archetype/2` — `Tightbeam.Archetypes` | `archetype/1` | `archetype_visible?/1` |
@@ -292,8 +274,8 @@ string.
 
 `/api/toplines[/:id]` serializes only durable human-intent Toplines. The four
 ExecutionMap routes serialize only mechanical work telemetry. The exact
-ExecutionMap R7 and envelope shapes live in the reviewed canonical result of
-`wi_3874a61f-288b-4b54-ac8a-da9234a910a2`; D2 references that one home and
+ExecutionMap R7 and envelope shapes live in the reviewed canonical closure of
+the ExecutionMap contract; D2 references that one home and
 does not restate or fork the projection.
 
 ### Filter allowlists
@@ -308,7 +290,7 @@ parameter is invalid. An unlisted query key returns `400 invalid_filter`.
 |---|---|
 | org | none |
 | harness catalog | none |
-| sessions | `state`, `ownerUserId` (admin only), `spawnedBy`, `archetype`, `harness`, `provider`, `model`, `host`, `role`, `displayName` exact after `wi_835a72aa-c88b-421b-a34c-41d23032c7c7` lands canonical |
+| sessions | `state`, `ownerUserId` (admin only), `spawnedBy`, `archetype`, `harness`, `provider`, `model`, `host`, `role`, `displayName` exact after the Toplines-and-sessions filter contract closure lands canonical |
 | transcript messages | none |
 | coordination share | required singleton `from`, `to` epoch-millisecond bounds; `from < to` |
 | work items | `state`, `ownerUserId`, `createdBySession`, `createdByUser`, `isBug`, `specRefName`, `holderKey` |
@@ -416,8 +398,8 @@ user principal. A session does not borrow its owner's grants or admin bit.
 | agent decision requests | asker session; asked session; accountable owner user; admin |
 | read markers | marker `userId` user; admin |
 | toplines | topline owner; admin |
-| execution map — flat, tree, subtree | principals admitted by the underlying work-item AU4 grants in the reviewed `wi_3874a61f-288b-4b54-ac8a-da9234a910a2` canonical closure |
-| execution map — assignment selection | principals admitted by the assignment AU4 grants before selection and the underlying work-item AU4 grants before node emission, as fixed by the reviewed `wi_3874a61f-288b-4b54-ac8a-da9234a910a2` canonical closure |
+| execution map — flat, tree, subtree | principals admitted by the underlying work-item AU4 grants in the reviewed ExecutionMap contract canonical closure |
+| execution map — assignment selection | principals admitted by the assignment AU4 grants before selection and the underlying work-item AU4 grants before node emission, as fixed by the reviewed ExecutionMap contract canonical closure |
 | facts | filing session; filing-session owner; admin; a process-origin fact is admin only |
 | critical state, archetypes, guidance, rails, harness processes, devices | admin only |
 
@@ -451,7 +433,7 @@ D2 adds no safe config or host-environment value. Those allowlists remain D1's
 | devices | R7 fields only; omit `token` |
 | harness processes | R7a fields only; omit `identityToken`, credential-bearing paths, command environment, and environment values |
 | toplines | canonical R7 fields only; no ExecutionMap node or envelope field |
-| execution map | exact R7 fields from the reviewed `wi_3874a61f-288b-4b54-ac8a-da9234a910a2` canonical closure; no Topline field or serializer |
+| execution map | exact R7 fields from the reviewed ExecutionMap contract canonical closure; no Topline field or serializer |
 | archetypes | committed live served-identity bytes only; MCP entries contain only `name` and sorted `envNames`; omit commands, arguments, values, and host paths |
 | guidance | built-in served guidance and committed `identity/guidance/*.md` only; one shared sanitizer owns `content` |
 | rails | parsed committed `identity/rails/*.toml` only; one shared sanitizer owns `pattern` and `text` |
@@ -486,7 +468,7 @@ contracts govern the entries used here without a second extraction rule.
 | guidance | `identity.updated`, `kungfu.updated` |
 | rails | `identity.updated`, `kungfu.updated` |
 
-The reviewed canonical result of `wi_3874a61f-288b-4b54-ac8a-da9234a910a2`
+The reviewed canonical closure of the ExecutionMap contract
 owns the exact ExecutionMap dependency set. D2 consumes that closed set after
 reviewed canonical landing and does not duplicate it here.
 
@@ -502,7 +484,7 @@ existing shared envelope handling:
 `{"schemaVersion":1,"resource":"assignments","item":{}}`
 
 The three unpaged ExecutionMap response shapes are the exact reviewed
-canonical envelopes from `wi_3874a61f-288b-4b54-ac8a-da9234a910a2`. They
+canonical envelopes from the ExecutionMap contract closure. They
 reuse D1 envelope utilities. D2 does not define or duplicate those shapes.
 
 The resource string is the canonical R7/R8 resource name. JSON uses UTF-8,
@@ -672,8 +654,8 @@ slice report cannot substitute for that result or open D3-R1 or D3-R10.
     REST-local serializer, projection, cursor codec, envelope encoder, or
     duplicate visibility rule, then the conformance gate fails.
 21. **Canonical closure gate.** Given either
-    `wi_835a72aa-c88b-421b-a34c-41d23032c7c7` or
-    `wi_3874a61f-288b-4b54-ac8a-da9234a910a2` lacks a reviewed canonical
+    the Toplines-and-sessions filter contract closure or
+    the ExecutionMap contract closure lacks a reviewed canonical
     commit and SHA-256, when D2 preflight runs, then preflight fails before a
     product source edit.
 22. **Toplines semantic boundary.** Given durable human-intent Toplines and
@@ -694,7 +676,7 @@ slice report cannot substitute for that result or open D3-R1 or D3-R10.
     `400 invalid_filter`.
 25. **Exact session-name lookup.** Given sessions with equal and near-match
     display names, when `/api/sessions?displayName=<exact>` runs after the
-    reviewed `wi_835a72aa-c88b-421b-a34c-41d23032c7c7` canonical closure
+    reviewed Toplines-and-sessions filter contract canonical closure
     lands, then only exact matches within the visible set appear and partial
     or case-folded lookup is not introduced.
 26. **Unpaged routes.** Given each route declared unpaged and each of

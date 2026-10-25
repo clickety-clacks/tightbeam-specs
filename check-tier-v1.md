@@ -1,36 +1,6 @@
-# Check tier v1 — verdict filings and completion gating (implementation spec, r4)
+# Check tier v1 — verdict filings and completion gating (implementation spec)
 
-Status: DRAFT r4 (r3 round: the 'no router change' prohibition scoped to error_status/1 only — the additive @agent_verbs registration of the new `attests` verb is explicitly authorized). Prior:
-CONFIRMED all four r1 fixes sound — FK-safe rebuild, verdict/revoke
-ordering, raw-kind branch + narrowed compat, cached $assignment — and
-returned six precision findings, no design rework: the public API is
-pinned to NON-COLLIDING Tightbeam.Assignments functions
-(verdict_kinds/2, list_attests/2) — no Tightbeam.Attests module
-exists, attests are owned by Tightbeam.Assignments, and
-Assignments.list/2 is already taken with different semantics; the
-constitutional-refusal claim and invariant 4 are SCOPED to rules
-demanding an assignment.* fact — an attest.kind-only rule may
-legally pre-empt unknown_assignment (r6 invariant 1); the
-supervision-impl cite is updated r11→r13; the verdictKind lexicon
-parenthetical is corrected — statute rule names share the character
-grammar but carry NO length cap, the 64 cap is new here; the router
-status-mapping "extension" is deleted as a no-op — the landed
-catch-all already maps both new codes to 400; and the "landed
-precedence tests stand untouched" claim is retracted — the landed
-fixtures use literal 'verdict' as the invalid-kind fixture
-(assignments_test.exs ~147) and must move to a different garbage
-kind, with the 'verdict' assertions updated separately to the
-verdict path. The free-lexicon ruling held review unchanged again.)
-r2 was: (r1 adversarial round, four findings: attests rebuild pinned
-FK-safe — foreign_keys=OFF window with foreign_key_check, because
-assignments.closingAttestId is an inbound FK to attests;
-verdict/revoke race contract restated for a NON-CLOSING verdict —
-both-succeed legal, only a post-closure verdict row forbidden;
-zero-rules backward-compat narrowed to no-policy-change with the
-authorized observable deltas enumerated and attest r5's LANDED
-handler order restored; unknown-vs-empty for assignment.verdicts
-pinned via the shared cached $assignment resolution mirroring the
-landed $target pattern.) r1 was: initial draft.
+Status: DRAFT.
 This is the check tier promised by attest-v1.md r5
 (§DELIBERATE NARROWING: "verdict-carrying attests arrive with the check
 tier as a spec revision, extending the attests table rather than
@@ -68,7 +38,7 @@ rename-rebuild migration precedent (idempotency.ex ~38) — which this
 spec's migration deliberately does NOT copy verbatim (§Schema: attests
 has an inbound FK; the bare rename-rebuild is FK-unsafe there). If the
 attest schema or verbs are absent from main, STOP and report.
-Supervision-impl is an independent sibling lane: it and this spec
+Supervision-impl is an independent sibling effort: it and this spec
 extend attest's modules with DISJOINT function sets and share no
 tables — either merge order works.
 
@@ -114,7 +84,7 @@ content evaluation of any kind. Pagination on the new query verb. UI.
 - WHO FILES: constitutionally, ANY session or user principal may file a
   verdict — including the holder. Forbidding self-verdicts is a policy
   sane operators could differ on → statute (worked example below), not
-  code. Users file because humans verify (Flynn is a verdict source);
+  code. Users file because humans verify (the operator is a verdict source);
   this is the one attest kind not holder-gated and the one that may be
   user-filed.
 - ONE VERB, NOT TWO: verdicts ride the existing `attest` verb (new
@@ -254,7 +224,7 @@ without it the CLI request is rejected before dispatch; this is the
 same one-line allowlist addition every new verb makes, not an
 error-mapping change.
 
-Public API additions, built in this lane, as new functions on
+Public API additions, built as part of this spec, as new functions on
 Tightbeam.Assignments — the module that owns all attest code. There
 is NO Tightbeam.Attests module and this spec does NOT create one (the
 supervision-impl precedent is exactly this: authorized extensions
@@ -516,7 +486,7 @@ cargo test green in cli/. Commit on the branch; do not merge. STOP and
 report on any conflict with existing code, attest's landed shape, or
 this spec.
 
-## Open question (Flynn)
+## Open question (for the operator)
 
 Verdict-kind vocabulary: this spec rules FREE LEXICON strings (any
 `^[a-z0-9][a-z0-9-]*$` name; the org's statutes close over the names

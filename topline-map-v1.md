@@ -1,13 +1,13 @@
 # Topline map — the work telemetry the substrate already knows — v1
 
-Status: DRAFT r7. This is a read-only substrate view over durable work, assignment,
+Status: DRAFT. This is a read-only substrate view over durable work, assignment,
 turn, attest, wake, adjudication, and creation-context rows. It consumes
 `core-causality-fixes-v1.md` C1 (creation context recorded) and C2 (at most one
 resolved item per assignment). It adds no schema, migration, or emission.
 
 ## What v1 delivers
 
-Flynn's ask: "render the toplines and show information like 5 agent jobs, the
+The operator's ask: "render the toplines and show information like 5 agent jobs, the
 number of attests, finish/start state, idle state … a map for that agent to go
 figure out what's done and what isn't … should be able to query subtrees."
 
@@ -207,7 +207,7 @@ Field-group labels are normative:
   holder at turn end (supervision.ex:201-220,316-320), and wake suppression is
   session-keyed across all pending prompt wakes (wakes.ex:333-344).
 > **AMENDED 2026-08-12:** the `holds` field below died with adjudication —
-> `adjudication_episodes` is gone. Adjudication was deleted 2026-08-05 ("Adjudication is DELETED. Model policy is guidance, not substrate." — `tightbeam-decisions.md`). Retained as history. See `adjudication-deletion-amendment.md`.
+> `adjudication_episodes` is gone. Adjudication was deleted 2026-08-05 ("Adjudication is DELETED. Model policy is guidance, not substrate."). Retained as history. See `adjudication-deletion-amendment.md`.
 
 - **holds** — plural `[{episodeId, cause|null, sessionKey}]`, restricted to open
   adjudication holds whose `sessionKey` is one of those same current

@@ -1,10 +1,10 @@
 # Supervision v1 — event-driven stall detection, prods, and escalation (design spec)
 
-Status: DESIGN — ratified by Flynn 2026-07-19/20 (conversation: "what
+Status: DESIGN — ratified 2026-07-19/20 (conversation: "what
 prevents an agent from just giving up"). Implementation spec follows once
 the statute engine lands (this builds on the same chokepoint machinery
 and introduces the attest primitive). Origin: the week's delegation
-retrospective — hand-run Sol lanes stalled silently (one 88-minute
+retrospective — hand-run agent sessions stalled silently (one 88-minute
 zero-file stall caught only by a manually-armed check), and the question
 "would tightbeam have improved this?" produced this design.
 

@@ -1,34 +1,12 @@
 # Patrol response acknowledgment
 
-Status: cold-digested reviewed-correction candidate; artifacts `art_023f8032`
-and `art_db0395b7` are historical superseded evidence and no longer
+Status: candidate; earlier superseded artifacts are no longer
 implementation authority; not cleared for implementation until this exact
 candidate is recorded and exactly one fresh linked independent review returns
 clean
 
 Authority:
 
-- Work item `wi_3e0c3cf7-96a2-4cde-9ed9-9d3ba0074d4b`.
-- Owner ruling `att_985e3746-621d-40e3-85eb-aaa406fd782e`.
-- Live-loop correction `att_07e7d25e-2239-4f33-9bb6-d30408f6124a`.
-- Post-loop direction `att_a4b9964b-3ea3-4906-8986-56e13bce7291`.
-- Owner lifecycle evidence `att_b4ec83e1-2fa1-47da-b891-244945aa3279`.
-- Owner stale-escalation evidence `att_83bc1c99-6de5-469e-9d23-dbb4cc59f96d`
-  and specimen `att_ed7280bb`.
-- Supervisor timeline reconciliation
-  `att_01b3212c-2773-4e5c-b044-c010d5efb6e6`.
-- Owner work-blocked evidence `att_ddbbf084-ad7c-499e-91c6-0bc5fda4ae94`,
-  `att_4346df01-2328-4d11-981c-186dd728d13f`,
-  `att_111113e4-ef97-49df-93f0-db15bf6c1290`, and
-  `att_ca24fb5c-cd50-425d-8ea3-db95d6b8625e`.
-- Recon report `art_d0634d61`, SHA-256
-  `2c49e74eb77c7706b14801f77e6a556d47d53a20ab1815922683774f3a080a29`.
-- Reviewed artifact `art_db0395b7`, SHA-256
-  `f6e6890295af291bbae6fce4b7537750d8dc7bf78cb1ebd565936221d1c9d6b4`.
-- Independent review report `art_007adca3` and changes-requested verdict
-  `att_7b5c1177-b7a0-404c-8439-87d85bed379b`.
-- Successor producer assignment
-  `asg_16043d4d-aeb8-4966-b12e-7d83753dd44f`.
 - Source baseline `ac8651dcb104f312da1c67e0cb7b1abebc640b2b`.
 
 This spec is a bounded amendment to `production-machine-v1.md`,
@@ -95,8 +73,8 @@ inference loses because it cannot prove causality or successor isolation.
     the work item.
 11. This spec teaches no new agent operating pattern. It requires no manual
     guidance amendment.
-12. This spec does not reclassify, delete, or repair historical turns 19082,
-    19084, or 19086. Their timestamps prove delivery before the later revoke;
+12. This spec does not reclassify, delete, or repair historical turns `turn-1`,
+    `turn-2`, or `turn-3`. Their timestamps prove delivery before the later revoke;
     they do not by themselves prove every other admission predicate.
 13. This spec does not transfer a patrol count, entitlement, generation,
     acknowledgment, wake, decision request, or observation from a predecessor
@@ -109,8 +87,7 @@ inference loses because it cannot prove causality or successor isolation.
 16. This spec does not add a retry worker, lifecycle sweeper, polling loop, or
     timeout that decides whether an assignment, session, or block is current.
 17. This spec does not mutate the historical review assignments
-    `asg_0cf8e6ec-4530-4ef9-b2aa-8579800bbe34` or
-    `asg_99e999f9-847e-4d72-9f7a-1295067d7bac`.
+    `review-1` or `review-2`.
 
 ## Terms
 
@@ -915,7 +892,7 @@ the typed cancellation reason `patrol_source_mismatch`, requester
 `tightbeam:wake-scheduler`, causal source kind `scheduler_delivery`, causal
 source ref equal to the exact wake id, and a no-replacement outcome.
 
-R37. Historical turns 19082, 19084, and 19086 occurred at
+R37. Historical turns `turn-1`, `turn-2`, and `turn-3` occurred at
 1786525417781, 1786525418890, and 1786525419917. The later revoke committed at
 1786525633131. The implementation shall leave those rows byte-equal. F10 shall
 assert only that each recorded delivery precedes the recorded revoke. Neither
@@ -1205,8 +1182,8 @@ Trace: R7, R11, R20, R24–R30, I1–I4, I10, I17.
 
 ### F10 — Recorded delivery-before-revoke is not rewritten
 
-Given an immutable evidence fixture containing terminal turns 19082, 19084, and
-19086 at 1786525417781, 1786525418890, and 1786525419917, followed by revoke of
+Given an immutable evidence fixture containing terminal turns `turn-1`, `turn-2`, and
+`turn-3` at 1786525417781, 1786525418890, and 1786525419917, followed by revoke of
 their source assignment at 1786525633131,
 
 When the fixture reads those durable rows and runs the paired lifecycle
@@ -1237,9 +1214,8 @@ cause, existing queued turns become `canceled` without harness execution, and
 replays return the same stopped rows. No candidate reaches any session or
 assignment that succeeded A.
 
-This fixture carries owner evidence
-`att_83bc1c99-6de5-469e-9d23-dbb4cc59f96d` and specimen `att_ed7280bb` without
-mutating either historical review assignment.
+This fixture carries owner evidence `attest-owner-evidence` and specimen
+`attest-specimen` without mutating either historical review assignment.
 
 Trace: R31-R36, R44-R46, I12-I15, I18.
 
@@ -1406,8 +1382,8 @@ Trace: R25-R36, R44-R46, I12-I14, I17-I18.
 
 ## Open Questions
 
-None. Artifacts `art_023f8032` and `art_db0395b7`, their producer approvals,
-and review evidence `art_007adca3` plus `att_7b5c1177` remain immutable
+None. Earlier artifacts, their producer approvals,
+and their review evidence remain immutable
 historical evidence for superseded hashes; they are not implementation
 authority. The implementation scope remains blocked until this amended file is
 cold-digested, recorded as one replacement artifact, receives one superseding

@@ -2,7 +2,7 @@
 
 Status: SPEC-READY, TARGETLESS
 
-Authority: Mike's assignment on `wi_c94444e6-3107-40c5-a577-2fe251a03661`:
+Authority: the operator's instruction:
 "expecter is the preferred responder, not an authorization gate; any agent may
 answer a decision request, with normal agent judgment determining whether it
 should." This contract is derived from Tightbeam `main` commit
@@ -27,7 +27,7 @@ The smallest useful result is one response contract for the two request kinds
 that carry an expecter: `agent` and `effort`. Deleting the gates wins over
 adding delegation, proxy, or approval machinery because the requested standing
 needs no intermediate state. Accepting the existing refusal loses because it
-is the defect this work item changes.
+is the defect this contract changes.
 
 ## Non-Goals
 
@@ -47,8 +47,8 @@ is the defect this work item changes.
   notification targets, effort deadlines, rung rotation, answer consumption,
   returned-question replacement, or assignment liveness policy.
 - This contract does not select an implementation branch, release line,
-  deployment target, or release vehicle. `wi_c94444e6` stays untargeted until
-  Mike sets a target.
+  deployment target, or release vehicle. This contract stays untargeted until
+  the operator sets a target.
 
 ## Terms
 
@@ -389,7 +389,7 @@ surfaces says an agent response requires the asked principal or current
 expecter. The guidance names no competence, ownership, or urgency algorithm.
 
 **A-17 — Compatibility gate.** Given the unmodified source pin and the candidate
-implementation, when the implementation lane runs the applicable baseline and
+implementation, when the implementer runs the applicable baseline and
 candidate gates from `.github/workflows/ci.yml`, then both runs are green. The
 candidate additionally runs deterministic focused checks for A-01 through A-16
 and the real CLI smoke for A-14.
@@ -397,5 +397,5 @@ and the real CLI smoke for A-14.
 ## Open Questions
 
 None. The implementation target is intentionally unset and does not block spec
-review or implementation planning. Mike must name the target before a producer
+review or implementation planning. The operator must name the target before a producer
 changes source.

@@ -1,9 +1,6 @@
 # Explicit addressed-PO consultation — 0.1.9
 
-Work item: `wi_32f1f25b-570d-4fc5-8115-0a31e4d07299`.
-Product owner: `product-owner:tightbeam`, session `s_fde9b2be`.
-PO assignment: `asg_0f1ead2b-aef7-488c-abd6-74f934a32e28`.
-Authority: Mike's 2026-09-19 request to define, implement, review and land this small change on 0.1.9, plus his approved conditional PDO/PO model split. Revision 2 supersedes the authored spec only for the explicit additions below; preserve previous evidence and unchanged behavior.
+Authority: the operator's 2026-09-19 request to define, implement, review and land this small change on 0.1.9, plus the operator's approved conditional PDO/PO model split. Revision 2 supersedes the authored spec only for the explicit additions below; preserve previous evidence and unchanged behavior.
 Integration target: `refs/heads/0.1.9` only. Source inspected at `5d07645e186583cd3565002bd3aea3a49f55e2f8`; execution must reconcile the actual target tip.
 
 ## Spirit
@@ -16,7 +13,7 @@ Success means one durable, attributable association and one logical notice for e
 
 Add one durable current-association row per exact orchestrator session incarnation. Suggested table `session_po_associations` contains `sessionKey` (primary key), `ownerUserId`, explicit `poRole`, monotonically increasing `revision`, `noticeWakeId`, the setting principal/cause, and timestamps. Reuse ordinary event and request-idempotency records for history and replay; do not introduce a second notification ledger.
 
-One explicit setter, proposed CLI `session-po-set --session <exact-session-key> --po-role <exact-role-address> --key <request-key>`, travels through the normal authenticated dispatch path. It returns the current association and existing/new notice wake ID. Provide current association readback through the existing inspect session surface. Under PO ruling att_37f56f96, do not add PO fields or a combined version to every canonical session resource/notice; no new management UI is needed.
+One explicit setter, proposed CLI `session-po-set --session <exact-session-key> --po-role <exact-role-address> --key <request-key>`, travels through the normal authenticated dispatch path. It returns the current association and existing/new notice wake ID. Provide current association readback through the existing inspect session surface. Do not add PO fields or a combined version to every canonical session resource/notice; no new management UI is needed.
 
 The PO reference is an exact, registered role address, not a role-name convention. At setting time it must resolve to an active same-owner session. The caller explicitly designates that address as the PO; no product-name matching, prefix matching, ancestor inference, automatic role discovery, or archetype-name heuristic establishes the relationship. Persist the role address and include it literally in the notice. A later role rebind does not itself create a new association or prompt.
 
@@ -56,9 +53,9 @@ Exercise the production setter/dispatch, database, scheduler and queue paths wit
 - Prove schema upgrade/fresh initialization and normal readback, plus CLI/wire spelling and response tests. Run focused tests, then applicable canonical Linux/macOS gates on the exact candidate and independent review before guarded integration.
 
 
-## Approved conditional model split — Mike, 2026-09-19
+## Approved conditional model split — 2026-09-19
 
-This addition belongs to the same work item and 0.1.9 delivery. Preserve the explicit association, one durable consultation notice, inspect-only readback ruling att_37f56f96, and all existing acceptance obligations.
+This addition belongs to the same 0.1.9 delivery. Preserve the explicit association, one durable consultation notice, inspect-only readback ruling, and all existing acceptance obligations.
 
 A product delivery orchestrator (PDO) means an explicitly assigned delivery responsibility: route work, staff it, retain delivery custody, and escalate consequential judgment. An orchestrator role name, product suffix, or ancestor match does not establish either that responsibility or a PO association.
 
@@ -74,7 +71,7 @@ Use existing explicit spawn/tune selection mechanics where selection is authoriz
 
 ### Benchmark rationale required in the independent review record
 
-Preserve Mike's approved Artificial Analysis GPT-5.6 comparison snapshot exactly:
+Preserve the operator's approved Artificial Analysis GPT-5.6 comparison snapshot exactly:
 
 | Model and effort | AA Intelligence Index | Strategy & Ops | Engineering | Standardized end-to-end response | Output speed |
 |---|---:|---:|---:|---:|---:|
@@ -82,7 +79,7 @@ Preserve Mike's approved Artificial Analysis GPT-5.6 comparison snapshot exactly
 | GPT-5.6 Terra, medium | 30 | 35 | 31 | 9.40 s | 69 tokens/s |
 | GPT-5.6 Sol, medium | 39 | 48 | 40 | 13.89 s | 57 tokens/s |
 
-Sources: [Artificial Analysis Luna/Terra release comparison](https://artificialanalysis.ai/models/releases/comparisons/gpt-5-6-luna-vs-gpt-5-6-terra) and [Artificial Analysis Sol/Terra release comparison](https://artificialanalysis.ai/models/releases/comparisons/gpt-5-6-sol-vs-gpt-5-6-terra). Retrieved 2026-09-19. The first comparison and the indexed Sol/Terra snapshot reproduce these figures; a refreshed live Sol/Terra page already reports different speed/latency values. Treat the table as the dated decision basis supplied by Mike, not a permanently current measurement. Carry the source URLs, effort levels, units and snapshot status into the review report.
+Sources: [Artificial Analysis Luna/Terra release comparison](https://artificialanalysis.ai/models/releases/comparisons/gpt-5-6-luna-vs-gpt-5-6-terra) and [Artificial Analysis Sol/Terra release comparison](https://artificialanalysis.ai/models/releases/comparisons/gpt-5-6-sol-vs-gpt-5-6-terra). Retrieved 2026-09-19. The first comparison and the indexed Sol/Terra snapshot reproduce these figures; a refreshed live Sol/Terra page already reports different speed/latency values. Treat the table as the dated decision basis supplied by the operator, not a permanently current measurement. Carry the source URLs, effort levels, units and snapshot status into the review report.
 
 The rationale is a product judgment: favor the shorter measured response and faster output for bounded routing/custody once the PO supplies team design, while retaining stronger product/topology judgment and deep-technical orchestration where it belongs. These aggregate measurements do not prove Tightbeam task success, a local latency guarantee, or an Astra score not supplied here. No fresh benchmark run is required.
 
@@ -102,7 +99,7 @@ Reuse applicable existing tests and add only meaningful checks needed by changed
 
 ## Custody and scope limits
 
-PO retains this Spirit and product acceptance. Existing PDO `s_777369c7` owns source staffing, shared-file allocation, proof, independent review, integration and recovery. Recommend one implementation holder and one independent reviewer; the PDO may adopt or amend that team shape with a recorded reason. Reuse existing qualified sessions where practical.
+PO retains this Spirit and product acceptance. The existing PDO owns source staffing, shared-file allocation, proof, independent review, integration and recovery. Recommend one implementation holder and one independent reviewer; the PDO may adopt or amend that team shape with a recorded reason. Reuse existing qualified sessions where practical.
 
 The producer may choose smaller equivalent storage/dispatch details, but must return any scope change before expanding. In particular, do not turn this into a generic relationship registry, role-management overhaul, topology optimizer, automated staffing scheme, or new notification framework. Preserve ongoing schema/wake work through PDO allocation.
 

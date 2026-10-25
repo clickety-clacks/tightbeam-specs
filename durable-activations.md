@@ -1,24 +1,13 @@
 # Durable activations v1
 
-Status: evidence-only review correction — independent re-review required  
+Status: draft  
 Date: 2026-08-09 UTC  
-Work item: `wi_f4b531cd-3def-4d7b-b909-5ddcb6d170bf`  
-Spec assignment: `asg_f479c53e-316d-49b9-a115-74dcdb531d38`  
 Source baseline: Tightbeam `origin/main` at
 `769d4b44a98aa7db862fdf5619f215aded66a408`  
-Prior consumer recon: `art_487c6afe`, SHA-256
-`209ab2017cc23ca214e8cc1203e4af3df739fca97305964aebee3059f92e6094`, verdict
-`att_93563dce-7f04-4834-81b3-df3056c3e50a`  
-Acceptance authority: Mike ruling
-`att_1cacf1ba-c534-4bd1-b5ff-810aa2466376`  
-Independent review: `art_c68595be`, SHA-256
-`7e9609dc4e527ad4ae5d2fcd1adb61e8197b5a301ad2f4903b98c5c76f8a3caf`, verdict
-`att_08d7db94-6f25-4f92-9a1e-ee64edcf1c91` (`changes-requested`) on
-`asg_5c19357a-ce8d-486b-ab98-2fbd9ef3f394`  
-Owner adjudication: `att_7dad38f1-da37-4149-992f-02fee0ade684`, corrected by
-`att_43c81355-2b77-443f-9a62-640378c7f735`, supersedes only the broader F2 read remedy
-in `att_f90f0efe-ca47-4115-acd4-605f780b6ae7` and requires the terminal same-work-item
-successor bridge  
+Prior consumer recon: the deploy-specific proposal recast below  
+Acceptance authority: operator ruling  
+Owner ruling: supersedes only a broader read remedy and requires
+the terminal same-work-item successor bridge  
 Operating pattern: a domain-owned adapter decides whether an external action may run;
 Tightbeam records the adapter's declared input, authority evidence, attempt, observation,
 notice, and acknowledgement.
@@ -45,7 +34,7 @@ optional additional sanity coverage and is not a publication gate.
 
 Formal design verdict: **one new neutral activation event stream is required**. Existing
 rows preserve related evidence but cannot represent this occurrence mechanically. The
-proposed `production_deploy_facts` stream and `deploy-*` verbs in `art_487c6afe` are
+proposed `production_deploy_facts` stream and `deploy-*` verbs in the prior consumer recon are
 recast as one Engineering consumer mapping to this primitive. They do not become a
 second substrate surface.
 
@@ -241,7 +230,7 @@ corresponding wake reaches `fired`. A fired wake proves enqueue, not human recei
     old tables readable. Older binaries can ignore the table. A client that requires the
     table needs an explicit capability check (`lib/tightbeam/schema.ex:33-69`).
 16. No existing spec found in the searched shared spec trees names a neutral activation
-    pattern. `art_487c6afe` is evidence and a deploy-specific proposal, not live neutral
+    pattern. The prior consumer recon is evidence and a deploy-specific proposal, not live neutral
     authority.
 17. The current `GET /version` response exposes `protocolVersion`, `server`, and adapter
     health but no generic feature list (`lib/tightbeam/wire/router.ex:24,101`). This
@@ -865,7 +854,7 @@ creates the table on a compatible stamped database. An older gateway ignores the
 An adopting domain adapter refuses before external mutation when the gateway lacks
 `activation-events-v1` in `GET /version.features`.
 
-Existing deploy attests, artifacts, wakes, and report `art_487c6afe` remain historical
+Existing deploy attests, artifacts, wakes, and the prior consumer recon report remain historical
 evidence. No migration translates them into activation events because translation would
 invent input, target, authority, attempt ordering, observation, and acknowledgement facts
 that were not mechanically present.
@@ -1053,7 +1042,7 @@ chain.
 
 **DELETE chosen for the prior proposal:** delete the proposed deploy-specific table, verbs,
 production enum, owner/admin deploy authority, rollback mode, and substrate completion gate
-from the implementation plan; `art_487c6afe` remains evidence for the Engineering mapping.
+from the implementation plan; the prior consumer recon remains evidence for the Engineering mapping.
 
 **ACCEPT chosen for universal enforcement:** a domain path without an adopted mutation seam
 is recorded as not mechanically gated. Tightbeam does not infer or claim coverage from shell
@@ -1194,7 +1183,7 @@ effect occurred, when recovery records `indeterminate`, then no timeout rewrites
 recovery principal records one reconciliation or leaves the state unresolved; the
 external-operation spy records zero mutation calls in either case.
 
-**A-22 — deploy recast.** Given the exact Engineering facts proposed in `art_487c6afe`, when
+**A-22 — deploy recast.** Given the exact Engineering facts proposed in the prior consumer recon, when
 mapped to v1, then declaration, authority, attempt, observation, compensation, notice, and
 acknowledgement use activation verbs only; production scope and authority sufficiency stay
 in the Engineering adapter/rule.

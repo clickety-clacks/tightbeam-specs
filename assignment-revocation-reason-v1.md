@@ -1,7 +1,6 @@
 # Assignment revocation reason v1
 
-Status: implementation authority — Mike written instruction, 2026-08-30
-Work item: `wi_f2ea2015-b535-40c6-9704-77f8a70799df`
+Status: implementation authority — operator written instruction, 2026-08-30
 
 ## Purpose
 

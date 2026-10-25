@@ -1,21 +1,17 @@
 # Editable Work-Item Body and Supported CLI Read/Update
 
-- Status: AMENDMENT-PENDING-REVIEW — MAIN-ERA AUTHORITY AMENDED FROM REVIEWED-CLEAN ARTIFACT; EXECUTION-TIME `origin/main` EVIDENCE PIN `8d0baa789c4aea1513a6d77ed53a6d54d76d1fb6`; COLD-DIGESTED; B1/I1 CLOSED
-- Work item: `wi_0488b06a-0950-4356-84b7-c56e413a6bbe`
-- Authority: owner main-era amendment ruling `att_be83756f-1f59-4d2c-bd6c-cd5da5e311f5`; immutable ruling `art_7d8f7444`, SHA-256 `e967132d3c11b8c3afb84a5d6722a73b3900eace6571587ca68a41839a13ce0d`
-- Spec assignment: `asg_137f199a-e1fd-4e89-b8b4-4098badbddcc`
-- Historical reviewed artifact: `art_31dd4cfc`, SHA-256 `65831b88b0df41ce216255d4de9ea8d2770aecca96869202b4320e5058b73606`
-- Historical reviewed-clean verdict: `att_cd680ee6-aac3-4b94-a3e3-4f584824f7a3`; report `art_3af9d997`, SHA-256 `8d97d81dc9dc19c473f87c3e6915bb478eb6bef7e7f4623724e7b296cad43e83`
+- Status: AMENDMENT-PENDING-REVIEW — MAIN-ERA AUTHORITY AMENDED FROM REVIEWED-CLEAN ARTIFACT; EXECUTION-TIME `origin/main` EVIDENCE PIN `8d0baa789c4aea1513a6d77ed53a6d54d76d1fb6`; COLD-DIGESTED
+- Authority: owner main-era amendment ruling; immutable ruling SHA-256 `e967132d3c11b8c3afb84a5d6722a73b3900eace6571587ca68a41839a13ce0d`
 - Authoritative source line: execution-time `origin/main`; `8d0baa789c4aea1513a6d77ed53a6d54d76d1fb6` is the amendment evidence pin, not a permanent implementation baseline
 - Pattern name: **work-item body detail**
 
 ## Accepted contract correction
 
-Mike accepted decision `dr_bf9c8fef-17bb-455c-b1bb-514eb460518a`. This amendment preserves shipped metadata-only CLI behavior while adding disjoint body-only forms and rejecting mixed metadata, including priority. Source evidence: `art_74e17448` and `art_c5b6058c`, compared against main `832b0253e130171ff2d07e116dd7ffecfa74b685` and maintenance `7311707d43486c5ee580daeb640c10c8ec84e383`. The prior full-spec SHA-256 is `a98802df50e6d0f7312f4a2cf67a2bd77093eb0293afc4da245e82a83a25d9c8`.
+The operator accepted a decision. This amendment preserves shipped metadata-only CLI behavior while adding disjoint body-only forms and rejecting mixed metadata, including priority. Source evidence was compared against main `832b0253e130171ff2d07e116dd7ffecfa74b685` and maintenance `7311707d43486c5ee580daeb640c10c8ec84e383`. The prior full-spec SHA-256 is `a98802df50e6d0f7312f4a2cf67a2bd77093eb0293afc4da245e82a83a25d9c8`.
 
 The correction also preserves current main transaction-ordered Firehose notices, post-handler non-atomic audit, and caller-facing errors. Body-bearing denied notices are sanitized at Dispatch only. It adds no Publisher, Hub, or StateResources redesign and imports no Publisher into maintenance. This policy amendment grants no product writer allocation, migration slot, host action, protected push, implementation, or landing. Existing owner rulings govern line election and shared-seam ordering separately.
 
-Coordinator allocation `att_272086e1-6637-4064-b296-6a87b304fb9a` authorizes policy text only. Schema, keyring, migrations, and artifact provenance have no body allocation: Visitor remains paused, artifact work requires a fresh predecessor after REST, WakeRails G-C remains pending, and settlement has no slot or exclusive body claim. WorkItems compatibility/no-op behavior, StateResources summaries, and existing work-item notices remain REST B2-owned. Main `test/firehose_publisher_test.exs` remains REST B2-owned; decision/turn/message projection remains REST decision-owned. The CLI amendment preserves late-ruling `--succeeds` parser and assignment bytes as well as metadata forms. Existing artifact capture retains captured bytes, digest, verified state, and RELEASED provenance; this amendment changes none of those mechanisms. These current holds supersede the historical no-overlap census below. Product implementation requires a later explicit shared-seam disposition from the REST/artifact/Visitor/WakeRails owners.
+This amendment changes policy text only. It makes no body change to schema, keyring, migrations, artifact provenance, or settlement. WorkItems compatibility/no-op behavior, StateResources summaries, existing work-item notices, and main `test/firehose_publisher_test.exs` stay under the REST B2 contract; decision/turn/message projection stays under the REST decision contract. The CLI amendment preserves late-ruling `--succeeds` parser and assignment bytes as well as metadata forms. Existing artifact capture retains captured bytes, digest, verified state, and RELEASED provenance; this amendment changes none of those mechanisms. These constraints supersede the historical no-overlap census below. Product implementation requires a later explicit shared-seam disposition covering REST, artifacts, Visitor, and WakeRails.
 
 ## Goal
 
@@ -97,7 +93,7 @@ A8. The schema bootstrap may add a validated sidecar object set to the current r
 
 A9. Existing CLI callers consume the JSON result that the gateway returns. They do not deserialize a fixed Rust work-item struct.
 
-A10. At amendment execution time, durable open-assignment records declared no claim on the implementation and smoke paths listed in Architecture section 10. Owner ruling `att_be83756f-1f59-4d2c-bd6c-cd5da5e311f5` withholds implementation authority until this exact amendment is reviewed-clean and the owner grants separate implementation authority.
+A10. At amendment execution time, durable open-assignment records declared no claim on the implementation and smoke paths listed in Architecture section 10. The owner ruling withholds implementation authority until this exact amendment is reviewed-clean and the owner grants separate implementation authority.
 
 A11. At execution-time `origin/main` `8d0baa789c4aea1513a6d77ed53a6d54d76d1fb6`, `.github/workflows/ci.yml` has SHA-256 `1ccc8176ca9a8b9c2a677eaf31723e3c9602f6790ed8baccb945a5bc2d000e57`. It runs on pushes to `main`; its test matrix jobs are named `linux` and `macos`; and its release guard uses `refs/heads/main`. This body feature makes no workflow edit.
 
@@ -173,7 +169,7 @@ R14. The body and its attribution change in one SQLite transaction.
 
 R15. A real body change records the authenticated principal that the transport resolved.
 
-- Acceptance: Given a session token acting through `--as-user mike`, when it replaces the body, then `bodyUpdatedByUser` is `mike` and `bodyUpdatedBySession` is `null`.
+- Acceptance: Given a session token acting through `--as-user alice`, when it replaces the body, then `bodyUpdatedByUser` is `alice` and `bodyUpdatedBySession` is `null`.
 
 R16. A repeated update with the stored value does not change attribution.
 
@@ -199,7 +195,7 @@ R20. Body mutability does not depend on work-item lifecycle state.
 
 R21. A user principal may read and update a body.
 
-- Acceptance: Given an org credential with `--as-user mike` and a session credential owned by `mike` with `--as-user mike`, when each caller runs get and update, then each call succeeds and a real body change attributes `bodyUpdatedByUser` to `mike`.
+- Acceptance: Given an org credential with `--as-user alice` and a session credential owned by `alice` with `--as-user alice`, when each caller runs get and update, then each call succeeds and a real body change attributes `bodyUpdatedByUser` to `alice`.
 
 R22. A session principal may read and update a body.
 
@@ -356,10 +352,10 @@ The body update response is new and safe to audit:
     "specRefName": "specs/tightbeam/ship.md",
     "specRefSha256": "<64 lowercase hex>",
     "isBug": false,
-    "ownerUserId": "mike",
+    "ownerUserId": "alice",
     "state": "open",
     "failReason": null,
-    "createdByUser": "mike",
+    "createdByUser": "alice",
     "createdBySession": null,
     "createdAt": 1
   },
@@ -368,7 +364,7 @@ The body update response is new and safe to audit:
     "byteLength": 4,
     "sha256": "<sha256 of body bytes>",
     "changed": true,
-    "updatedByUser": "mike",
+    "updatedByUser": "alice",
     "updatedBySession": null,
     "updatedAt": 2
   }
@@ -684,10 +680,10 @@ AC15 — Credential-specific authorization:
 
 ## Open Questions
 
-OQ1 — **RESOLVED: current-main authority and evidence contract named.** Owner ruling `att_be83756f-1f59-4d2c-bd6c-cd5da5e311f5` and immutable ruling `art_7d8f7444` authorize this bounded policy amendment and one linked exact-revision review. Execution-time `origin/main` `8d0baa789c4aea1513a6d77ed53a6d54d76d1fb6` is the amendment evidence pin, not a permanent implementation tip. Its complete `.github/workflows/ci.yml` has SHA-256 `1ccc8176ca9a8b9c2a677eaf31723e3c9602f6790ed8baccb945a5bc2d000e57`, triggers on pushes to `main`, uses release guard `refs/heads/main`, and runs test jobs named `linux` and `macos`.
+OQ1 — **RESOLVED: current-main authority and evidence contract named.** The owner ruling and immutable ruling authorize this bounded policy amendment and one linked exact-revision review. Execution-time `origin/main` `8d0baa789c4aea1513a6d77ed53a6d54d76d1fb6` is the amendment evidence pin, not a permanent implementation tip. Its complete `.github/workflows/ci.yml` has SHA-256 `1ccc8176ca9a8b9c2a677eaf31723e3c9602f6790ed8baccb945a5bc2d000e57`, triggers on pushes to `main`, uses release guard `refs/heads/main`, and runs test jobs named `linux` and `macos`.
 
 Each later implementation lane must start from the then-current green `origin/main` after this amendment is reviewed-clean and the owner grants separate implementation authority. The body feature makes no `.github/workflows/ci.yml` edit. Current repository law requires work on a branch, a green full gate, review evidence in the specs repository, and merge of the finished work to `main`. This resolution removes the obsolete maintenance-branch prerequisite and cross-line integration topology. It does not authorize implementation, binding, completion, merge, deployment, custody change, or disposition.
 
-Owner-authorized review findings B1 and I1 remain closed: the spec contains no body-feature CI mutation prescription, and the command-scoped `--body=<text>` literal spelling plus parser tests remains unchanged.
+The spec contains no body-feature CI mutation prescription, and the command-scoped `--body=<text>` literal spelling plus parser tests remains unchanged.
 
 Implementation may choose private function names. It may not change field names, storage semantics, response shapes, limits, authorization, audit redaction, dependency order, or acceptance behavior without amending this canonical file first.

@@ -1,7 +1,7 @@
 # Derived model catalog v1 — full model inventory derived from each harness
 
-Status: DRAFT r2 (Flynn-converged design; supersedes r1). r1's build exists (uncommitted in
-tightbeam_ex-modelcat) and is REVISED to this, not restarted from scratch.
+Status: DRAFT (the operator's design; supersedes an earlier draft). An earlier build exists
+(uncommitted in tightbeam_ex-modelcat) and is REVISED to this, not restarted from scratch.
 
 ## Goal
 
@@ -70,8 +70,8 @@ No pin/alias resolution step exists anymore.
 - I4 — ASYNC + cached: derive into an in-memory cache (TTL ~15 min). The network/file fetch runs in a
   spawned Task that messages the result back — it must NEVER run inside a GenServer call that a reader
   awaits, and must NEVER block gateway boot. Readers get the cached value (or empty/last-known)
-  immediately; a slow/hung API call cannot time out `/list`. (This is the r1 review's MAJOR + boot
-  findings — the blocking in-callback fetch is the specific defect to fix.)
+  immediately; a slow/hung API call cannot time out `/list`. (The blocking in-callback fetch is
+  the specific defect to fix.)
 
 ## All readers + validation
 
@@ -108,13 +108,14 @@ Requirements on the reader:
 - This refines I3: the graceful-degrade path additionally records which of `stale` /
   `unavailable(reason)` it entered, so readers can tell them apart.
 
-## Hardening (from r1 review)
+## Hardening
 
 - Declare `:ssl` (and `:inets` for `:httpc`) explicitly in `extra_applications` — do not rely on
   bandit transitively starting `:ssl`.
-- The HTTPS call MUST verify the server certificate (peer verification / CA store) — the r1 build used
-  `verify_none`, exposing the bearer token to MITM. Verify the cert.
-- No admin/refresh verb (r1 added an unspecced `refresh/1`; drop it — TTL is enough for v1).
+- The HTTPS call MUST verify the server certificate (peer verification / CA store) — the existing
+  build used `verify_none`, exposing the bearer token to MITM. Verify the cert.
+- No admin/refresh verb (the existing build added an unspecced `refresh/1`; drop it — TTL is
+  enough for v1).
 
 ## Migration
 
@@ -137,14 +138,14 @@ with refs that fail validation. (Note this; the reset itself is an ops step, not
   the old catalog missed (`max`, `ultra`); bare slug when none.
 - Degrade: missing token / failed fetch / malformed JSON / missing cache → empty-or-last-known, NO
   crash of a reader, boot, or `/list`.
-- ASYNC: a slow/hung fetch does NOT block `ModelCatalog.get` or a concurrent `/list` (the r1 MAJOR) —
-  assert a reader returns promptly (cached/empty) while a refresh is in flight.
+- ASYNC: a slow/hung fetch does NOT block `ModelCatalog.get` or a concurrent `/list` — assert a
+  reader returns promptly (cached/empty) while a refresh is in flight.
 - `opus[1m]` (and any `[1m]`) never appears. Validation accepts every derived ref, rejects an absent
-  one, and — with a provider-id default — the default claude spawn path validates (the r1 CRITICAL).
+  one, and — with a provider-id default — the default claude spawn path validates.
 - No `@model_catalog`/`model_pins` remains as source of truth.
 
 ## Handoff
 
-Revise the r1 build in tightbeam_ex-modelcat to this. Both sources + effort derivation are fully
-resolved above (no investigation needed). Build gate: `mix compile --warnings-as-errors` + `mix test`
-(+ seeds) green. Then Opus code-review before merge.
+Revise the existing build in tightbeam_ex-modelcat to this. Both sources + effort derivation are
+fully resolved above (no investigation needed). Build gate: `mix compile --warnings-as-errors` +
+`mix test` (+ seeds) green. Then code review before merge.

@@ -1,7 +1,7 @@
 # Identity composition v2 — projection manifests, skill-rm transform, session overrides
 
 Supersedes session-overrides-v1.md (whose DISPOSITION recorded the review
-blockers) — every blocker and Flynn ruling from 2026-07-19 is resolved
+blockers) — every blocker and ruling from 2026-07-19 is resolved
 here. THREE PARTS, implemented IN ORDER in one lane; run the full gate
 (`mix compile --warnings-as-errors` clean, `mix test` green) after EVERY
 part. Repo: worktree `~/src/tightbeam_ex-idv2` (branch `identity-v2`).
@@ -128,7 +128,7 @@ removed skill still fails (unchanged law).
   rare, loudly fatal, never silent). Separator is `--`; archetype name
   validation gains: names may not contain `--` (boot error; small law
   addition, include it).
-- Dual-accessor contract (explicit; the r1 error was "thread
+- Dual-accessor contract (explicit; the earlier error was "thread
   everywhere"): IDENTITY reads (home path, adapter key, staging, stderr
   log, guidance/skills composition) use identityName. BASE reads (MCP
   config, fallback_models, placement `where`, model pin, org displays)
@@ -136,7 +136,7 @@ removed skill still fails (unchanged law).
   to convert: Gateway checkout (harness_session), Gateway cancel path's
   key construction, Gateway set_model immediate-reload key,
   Placement.adapter_opts, Placement.deliver_home. Everything else stays
-  base. (Reviewer-verified list; if you find another key construction
+  base. (Verified list; if you find another key construction
   site, STOP and report.)
 - Reconstruction at adapter (re)start: the coordinator's adapter_opts
   closure receives only the key. Placement resolves the effective
@@ -197,7 +197,7 @@ FORBIDDEN — refuse with invalid_overrides naming the unsupported
 transport). No statute-engine interaction. No changes to rails, roles,
 wire payloads.
 
-## FIX ROUND 1 (post adversarial review — six findings, all to fix)
+## Required fixes
 
 Design corrections (maintainer errors in the original spec, now ruled):
 - IDENTITY FINGERPRINT ≠ STAMP BYTES. identityName's hex16 derives from
@@ -245,8 +245,8 @@ Findings to fix (file:line refs from the review, branch identity-v2):
 
 Gates unchanged; run the FULL suite after fixes. Do not commit.
 
-## FIX ROUND 2 (re-review: 5/6 resolved; one partial + two regressions)
-1. PARTIAL (finding 1): reconstruction collision check queries state='active' only — must check ALL rows carrying the identityName (retired included; a retired row's differing recipe still proves a collision).
+## Follow-up fixes
+1. PARTIAL: reconstruction collision check queries state='active' only — must check ALL rows carrying the identityName (retired included; a retired row's differing recipe still proves a collision).
 2. REGRESSION: pin dirs are created BEFORE reprojection and their mere existence forces pinned linkage — if reprojection fails, deletion aborts but later deliveries use the snapshot despite the library being live. Order/guard so pinned linkage only takes effect once the transform commits (e.g. mark-complete file or pin under a staging name until success).
 3. REGRESSION: set_harness persists the new engine BEFORE fallible eager delivery — a delivery failure leaves the row switched with no history clear/response. Deliver first (or make persistence contingent); on failure leave org state unchanged and surface the error.
 Gates as always; do not commit.

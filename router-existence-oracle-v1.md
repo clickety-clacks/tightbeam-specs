@@ -1,6 +1,6 @@
 # Router existence oracle — typed targets and who may learn what exists — v1
 
-Status: DRAFT r1 (Fable-authored 2026-07-26). One ruling required (R1 below);
+Status: DRAFT r1 (2026-07-26). One ruling required (R1 below);
 everything else follows from the audit.
 
 ## Defect
@@ -56,7 +56,7 @@ the early resolution is a pure oracle serving no caller.
 For the consumers it is caller UX the tests pin as "teaching errors": assign/
 dispatch require a target and reject `userId` and retired holders with named
 bodies (router.ex:525-544); a typo'd key on a mutation must fail loudly by name.
-test/router_test.exs pins exact bodies: `"unknown role: mike"` (:720),
+test/router_test.exs pins exact bodies: the unknown-role body for a named role (:720),
 `"unknown sessionKey"` (:754), the byte-exact unknown-role body (:794), and the
 "typed-target teaching errors precede Dispatch and status classes are pinned"
 test that follows. The CLI attaches `sessionKey` ONLY on target-taking commands

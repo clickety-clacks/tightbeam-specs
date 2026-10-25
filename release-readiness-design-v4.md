@@ -1,30 +1,16 @@
 # Release readiness, frozen main candidates, and optional release lines — revision 4
 
-Status: spec-approved candidate for fresh independent exact-artifact review.  
-Canonical path: `specs/tightbeam/release-readiness-design-v4.md`  
-Work item: `wi_3c9d3a64-15a8-457e-b2b1-429a1264f04f`  
-Producer assignment: `asg_ea220e82-5a11-4706-9fd0-ffbb979dc134`
+Canonical path: `specs/tightbeam/release-readiness-design-v4.md`
 
-This revision replaces the decision authority of `art_3d656920`, SHA-256
-`6af5e684ee145314d6a906429378c1709e126a3de815d59e65d89c95ac8b1df0`, and its
-imported baseline `art_df141e91`, SHA-256
-`3252a3928f3ff64865c8f8c53ea3a94d68a9cd24ba134aaf7ac49cee94828001`.
-Those artifacts and earlier revisions remain immutable history.
+This revision replaces the decision authority of the prior revision and its imported
+baseline. Those documents and earlier revisions remain immutable history.
 
-This revision closes the controlling review `att_4506ae4f-9b29-4eda-8207-936e1341e344`
-and its full report `art_df1f7f1d`, SHA-256
-`a7ec2c75e96bdf6b093c2e734a8aa57dfcf49606eaea5df1b530190a36fd9594`.
-It also implements the product-owner ruling
-`att_2a65ba32-88ad-460b-afde-ae47a409bd93` in the design. That ruling supersedes
-`att_8db7d29a-588e-4745-8dde-082a0cc10089` where the older ruling made a release
-branch the default candidate path. The older ruling remains superseded provenance and
-has no normative force in this revision.
+An earlier ruling made a release branch the default candidate path. That ruling is
+superseded and has no normative force in this revision.
 
 This file is one self-contained authority. A builder does not need a prior revision to
 interpret it. No implementation, merge, release, deployment, tag, or branch mutation is
-authorized by this file. Implementation remains blocked until a different Codex session
-files `reviewed-clean` against this file's exact SHA-256 and the product owner then opens
-an implementation assignment.
+authorized by this file.
 
 ## Goal
 
@@ -176,10 +162,10 @@ train's org id.
 7. Installed test hosts can report the installed package digest and embedded source SHA.
 8. The release tables described in revision 3 have not shipped. Migration can add the
    consolidated revision-4 schema without translating live release rows.
-9. The immutable Clawline fixture retained from revision 3 is `art_ab55409f`, observed
+9. The immutable Clawline fixture retained from revision 3 is `artifact-clawline-fixture`, observed
    SHA-256 `08311b7779f8445369e6bf3a5d0c7bfe6203ca833a74b5ebe36b757f9fdf3670`. It contains
    transcript continuity, Gate D, and reopened work item
-   `wi_9086ebd5-bd62-4c04-9b97-ac83ce34f53e`. It is acceptance data, not Tightbeam policy.
+   `item-reopened`. It is acceptance data, not Tightbeam policy.
 
 If an implementation falsifies an assumption, the affected scope returns to spec review.
 It does not substitute a heuristic.
@@ -356,7 +342,7 @@ One unique index reserves each repository/tag-name pair for one promotion.
 
 Mechanism choice: ADD wins because Git refs alone cannot preserve product ownership,
 review provenance, proof binding, or recovery after a lost external response. DELETE loses
-because Mike requires a durable release responsibility and an exact frozen candidate SHA.
+because the operator requires a durable release responsibility and an exact frozen candidate SHA.
 ACCEPT loses because an unreviewed or tag-built candidate is an explicitly rejected release
 state. Optional release-line state is added only for the explicit concurrency, maintenance,
 and patch cases; ordinary releases add no branch.
@@ -681,7 +667,7 @@ ref readback, output, and forbidden side effects.
 when Tightbeam projects the train, then readiness and go/no-go remain the exact authored
 values and no inferred declaration or ship event exists.
 
-**A-02 — Exact owner.** Given two sessions owned by Mike and an epoch naming session A,
+**A-02 — Exact owner.** Given two sessions owned by one user and an epoch naming session A,
 when session B tries commit, decide, freeze, optional-line integration, promote, tag,
 ordinary transfer, ship, or owner-cancel, then each request returns `not_release_owner` and
 writes zero mutation rows. This check does not replace the separately authorized
@@ -974,9 +960,9 @@ missing content, missing required keys, altered bytes, member/watch hash mismatc
 marker mismatch, then the snapshot returns an integrity error and currency
 `needs_attention`, not `current`.
 
-**A-51 — Preserved Clawline fixture.** Given immutable fixture `art_ab55409f` at the assumed
+**A-51 — Preserved Clawline fixture.** Given immutable fixture `artifact-clawline-fixture` at the assumed
 digest, when release membership and gates are serialized, then transcript continuity, Gate
-D, reopened `wi_9086ebd5-bd62-4c04-9b97-ac83ce34f53e`, and literal decisions round-trip as
+D, reopened `item-reopened`, and literal decisions round-trip as
 product evidence without becoming Tightbeam defaults.
 
 **A-52 — Terminal optional-line protection.** Given a shipped or canceled `release_line`

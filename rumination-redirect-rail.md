@@ -1,6 +1,6 @@
 # Rumination redirect-rail — v1 (design)
 
-Status: RATIFIED (Flynn 2026-07-23). Rumination-before-ORCHESTRATION is a substrate
+Status: RATIFIED (2026-07-23). Rumination-before-ORCHESTRATION is a substrate
 rail that REDIRECTS into a think-turn rather than denying; rumination-before-handoff
 stays guidance (wisdom 3). Trigger ruling: RAIL THE ENTRANCE, TEACH THE RE-ENTRY —
 the rail fires ONCE per work-item, on the FIRST dispatch; whether any later change
@@ -72,7 +72,7 @@ version proves insufficient.
 - All fan-out callers — the rule is about the ACT of orchestrating, not the archetype
   (ruled).
 
-## Ruled (Flynn 2026-07-23)
+## Ruled (2026-07-23)
 
 1. RESET: once per work-item for its whole life. The first fan-out is where whole-spec
    spirit gets loaded; one think-turn at the entrance, never again. No per-wave reset.
@@ -92,6 +92,6 @@ version proves insufficient.
 
 ## Depends on
 
-- The `digest:` wake convention carrying a `workItemId` (the wake-prompt fact filed in
-  the cultivation lanes). If digest wakes cannot yet be tagged with a workItemId, that
+- The `digest:` wake convention carrying a `workItemId` (the wake-prompt fact filed
+  elsewhere in the substrate). If digest wakes cannot yet be tagged with a workItemId, that
   tagging is the one prerequisite to build first.

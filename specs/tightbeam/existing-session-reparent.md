@@ -1,10 +1,8 @@
 # Existing-session re-parent MVP
 
 Status: proposed for one independent cross-harness review  
-Work item: `wi_a78f6a03-cb0b-4b75-9c89-d13507d55a5d`  
-Writer assignment: `asg_1aa2ce01-425e-42bf-9b26-57ba77ce7775`  
 Research base: direct `origin/0.1.x` at `dd1b77f27dbd4fe642ec491eb04a4ce57cd6359b`  
-Scope ruling: relief product owner response to `w_68437173`; preserve existing Toplines and role-fallback meanings.
+Scope ruling: preserve existing Toplines and role-fallback meanings.
 
 ## Goal
 
@@ -12,15 +10,15 @@ Add one `session-reparent` operation. An owner acting as a user can use it to se
 
 The operation does not require a turn, wake, or acknowledgment from the new parent. It preserves the session, assignment, work item, attests, artifacts, transcript, queued work, and running turn.
 
-Flynn's first use is:
+The first use is:
 
 ```text
 tightbeam session-reparent \
-  --session 'agent:main:clawline:mike:main s_e15f8ee6' \
-  --parent 'agent:main:clawline:mike:main' \
-  --assignment asg_ac32b22c-babe-4f16-bbdb-b502a3af9ff7 \
-  --key lachesis-under-main-1 \
-  --as-user mike
+  --session 'agent:main:clawline:user-a:main s_<child>' \
+  --parent 'agent:main:clawline:user-a:main' \
+  --assignment asg_<assignment-id> \
+  --key child-under-main-1 \
+  --as-user user-a
 ```
 
 ## Non-Goals
@@ -46,8 +44,8 @@ tightbeam session-reparent \
 ## Assumptions
 
 - Direct `origin/0.1.x` at the research base stores session creation parentage only in `sessions.spawnedBy`.
-- The live Lachesis session is active, custom, owned by `mike`, and has `spawnedBy = NULL`.
-- The live Lachesis assignment is open, is held by that session, and directly names the open Lachesis work item.
+- The live child session in the first use is active, custom, owned by `user-a`, and has `spawnedBy = NULL`.
+- That child's assignment is open, is held by that session, and directly names the child's open work item.
 - The current database transaction seam serializes the validation and write set.
 - `toplines --tree` derives causal work-item edges from immutable creation-turn evidence. It does not consume `sessions.spawnedBy`.
 - Role fallback resolves an absent or retired role binding to the owner's Main. It does not consume `sessions.spawnedBy`.
@@ -75,7 +73,7 @@ session-reparent --session <childSessionKey> --parent <parentSessionKey>
                  --assignment <assignmentId> --key <idempotencyKey>
 ```
 
-The gateway verb is `session-reparent`. The four parameters are required. The caller must use a user principal, such as `--as-user mike`. A session principal and a process principal receive `user_principal_required`.
+The gateway verb is `session-reparent`. The four parameters are required. The caller must use a user principal, such as `--as-user user-a`. A session principal and a process principal receive `user_principal_required`.
 
 On success, the response contains:
 
@@ -91,7 +89,7 @@ On success, the response contains:
   "assignment": {
     "assignmentId": "asg_...",
     "workItemId": "wi_...",
-    "originOpenerRef": "user:mike",
+    "originOpenerRef": "user:user-a",
     "previousCurrentCoordinationParentRef": null,
     "currentCoordinationParentRef": "session:..."
   },
@@ -170,9 +168,9 @@ This spec teaches no new agent operating pattern. It adds an owner maintenance c
 
 ## Acceptance
 
-### A1 — Flynn's correction succeeds
+### A1 — The first-use correction succeeds
 
-Given the live Lachesis child has origin parent `NULL`, one direct open assignment, and immutable origin opener `user:mike`, when `mike` runs the example command, then the gateway commits one correction event. The event sets both current values to Main. The origin parent and origin opener remain unchanged.
+Given the live first-use child has origin parent `NULL`, one direct open assignment, and immutable origin opener `user:user-a`, when `user-a` runs the example command, then the gateway commits one correction event. The event sets both current values to Main. The origin parent and origin opener remain unchanged.
 
 ### A2 — The new parent does not act
 
@@ -180,11 +178,11 @@ Given Main has no runnable credential and takes no turn during A1, when the comm
 
 ### A3 — Each read tells origin from current topology
 
-Given A1 committed, when `mike` reads the session list, work-item trace, Toplines tree, and role list, then each surface reports the corrected current value. The session list still reports `spawnedBy = null`. The work trace still reports `openerRef = user:mike`. The Toplines causal `parent` block and nesting remain unchanged. The role binding and fallback target remain unchanged.
+Given A1 committed, when `user-a` reads the session list, work-item trace, Toplines tree, and role list, then each surface reports the corrected current value. The session list still reports `spawnedBy = null`. The work trace still reports `openerRef = user:user-a`. The Toplines causal `parent` block and nesting remain unchanged. The role binding and fallback target remain unchanged.
 
 ### A4 — New lineage work uses the correction
 
-Given A1 committed, when a later authorization, escalation, bubble, supervision action, artifact ancestry check, or retirement traversal resolves the Lachesis parent, then that consumer resolves Main through `Org.current_parent`. A pending row that already names a target keeps that target.
+Given A1 committed, when a later authorization, escalation, bubble, supervision action, artifact ancestry check, or retirement traversal resolves the child's parent, then that consumer resolves Main through `Org.current_parent`. A pending row that already names a target keeps that target.
 
 ### A5 — Unsafe topology is refused
 
@@ -204,4 +202,4 @@ Given the child has a running turn, durable transcript, attests, artifacts, pend
 
 ## Open Questions
 
-None. The relief product owner ruled that the MVP preserves existing Toplines causal-tree and role-fallback semantics. It adds truthful current-topology fields and changes only true lineage consumers.
+None. The scope ruling is that the MVP preserves existing Toplines causal-tree and role-fallback semantics. It adds truthful current-topology fields and changes only true lineage consumers.

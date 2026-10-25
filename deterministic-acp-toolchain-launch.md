@@ -2,11 +2,9 @@
 
 Status: review candidate for implementation on the Tightbeam 0.2 main line.
 
-Work item: `wi_abd25f93-ba45-4ba6-8933-5ca099307e5f`.
-
 Authority:
 
-- Mike's 2026-08-24 20:37 PT direction: prevent the missing-Node launch
+- The operator's 2026-08-24 20:37 PT direction: prevent the missing-Node launch
   incident; do not inherit an interactive-shell `PATH`; record the resolved
   executable and lifecycle outcome.
 - `0.2.0-cross-line-reconciliation-plan.md` F2: do not port commit `5ae9f10`
@@ -31,11 +29,11 @@ The governing maxim is: **assimilation observes the toolchain; launch executes
 the banked observation; lifecycle rows report what happened.**
 
 This spec is the smallest 0.2 answer to the incident captured in
-`art_b6e6f04a`, SHA-256
+the artifact with SHA-256
 `afd148ada1c50a6282e849b05fabc3752ea565ebd47c265354e9a13da5288e60`:
 the installed Codex adapter is a `#!/usr/bin/env node` program;
 `PATH=/usr/local/bin:/usr/bin:/bin` cannot launch it; adding
-`/home/mike/.local/bin` resolves `/home/mike/.local/bin/node` and initializes
+`/home/user-a/.local/bin` resolves `/home/user-a/.local/bin/node` and initializes
 the same adapter.
 
 ## Non-Goals
@@ -97,9 +95,9 @@ the same adapter.
    selected harness CLI with `command -v` without sourcing a login profile.
 2. The installed Codex and Claude ACP adapters for this release are Node
    programs reached through absolute scripts beneath the registered
-   `adapterBinDir`. The real Codex capture in `art_b6e6f04a` resolves
+   `adapterBinDir`. The real Codex capture resolves
    `codex-acp` to
-   `/home/mike/.tightbeam/adapters/node_modules/@agentclientprotocol/codex-acp/dist/index.js`
+   `/home/user-a/.tightbeam/adapters/node_modules/@agentclientprotocol/codex-acp/dist/index.js`
    with `#!/usr/bin/env node`.
 3. A registered host already carries `baseDir`, `cliBin`, and
    `adapterBinDir`. Current Placement stores `adapterBinDir` but does not use it
@@ -262,17 +260,17 @@ Version 1 has this exact logical shape:
 {
   "v": 1,
   "cause": "assimilate",
-  "principal": "user:mike",
+  "principal": "user:user-a",
   "observedAt": 1787629180000,
   "platform": "Linux x86_64",
   "adapterRuntime": {
     "name": "node",
-    "path": "/home/mike/.local/bin/node",
+    "path": "/home/user-a/.local/bin/node",
     "version": "v24.18.0"
   },
   "harnessCliPaths": {
-    "claude": "/home/mike/.local/bin/claude",
-    "codex": "/home/mike/.local/bin/codex"
+    "claude": "/home/user-a/.local/bin/claude",
+    "codex": "/home/user-a/.local/bin/codex"
   }
 }
 ```
@@ -324,8 +322,8 @@ assimilation commands. It then requires `command -v node` to return the
 supplied path and records that observation. It does not source a profile,
 accept raw `PATH` text, or retain the inherited preflight `PATH`.
 
-This seed lets the Gibson ceremony name
-`/home/mike/.local/bin/node`; its parent also makes the colocated npm and vendor
+This seed lets the production-host ceremony name
+`/home/user-a/.local/bin/node`; its parent also makes the colocated npm and vendor
 CLIs visible to existing preflight checks. If another prerequisite remains
 absent, assimilation keeps its existing named refusal. A missing unseeded Node
 refusal also names `--node <target-absolute-path>` as the alternative to host
@@ -494,8 +492,8 @@ migration pass through the central schema seam.
     "status": "ready",
     "factDigest": "<sha256>",
     "observedAt": 1787629180000,
-    "principal": "user:mike",
-    "runtimeExecutable": "/home/mike/.local/bin/node",
+    "principal": "user:user-a",
+    "runtimeExecutable": "/home/user-a/.local/bin/node",
     "runtimeVersion": "v24.18.0",
     "harnesses": ["claude", "codex"]
   }
@@ -552,7 +550,7 @@ harness-process help text in the same change.
 
 ADD wins for one reason: deleting inherited `PATH` without a deterministic
 replacement makes each Node-backed adapter unlaunchable, while accepting the
-failure preserves the exact incident Mike directed the product to prevent.
+failure preserves the exact incident the operator directed the product to prevent.
 The added mechanism is limited to one host-row manifest, one one-to-one launch
 context, one planner, and two existing reads.
 
@@ -564,20 +562,20 @@ Each acceptance case names the requirements and architecture it verifies.
 
 Traces: R-2, R-3; A-1, A-2.
 
-Given the real Gibson capture `art_b6e6f04a` with source SHA-256
+Given the real production-host capture with source SHA-256
 `afd148ada1c50a6282e849b05fabc3752ea565ebd47c265354e9a13da5288e60`,
 when the implementer adds the launch fixture, then the fixture preserves these
 captured observations rather than a hand-written ideal response:
 
 - adapter path
-  `/home/mike/.tightbeam/adapters/node_modules/.bin/codex-acp`;
+  `/home/user-a/.tightbeam/adapters/node_modules/.bin/codex-acp`;
 - resolved script ending
   `@agentclientprotocol/codex-acp/dist/index.js`;
 - shebang `#!/usr/bin/env node`;
 - failing `PATH=/usr/local/bin:/usr/bin:/bin`;
 - stderr containing `node` and `No such file or directory`;
-- successful path containing `/home/mike/.local/bin`;
-- resolved Node `/home/mike/.local/bin/node`.
+- successful path containing `/home/user-a/.local/bin`;
+- resolved Node `/home/user-a/.local/bin/node`.
 
 The fixture records the source artifact id and SHA. Mechanical removal of
 compiler warnings, ANSI bytes, and provider capability payload is documented;
@@ -586,7 +584,7 @@ builder test consumes the fixture. Merely checking the fixture into the tree
 does not pass this case.
 
 Given the fixture's failing system-only `PATH`, when assimilation preflight is
-run with `--node /home/mike/.local/bin/node`, then it verifies that exact
+run with `--node /home/user-a/.local/bin/node`, then it verifies that exact
 executable, observes the same absolute Node path, and does not source a login
 profile. The test fails if the CLI stores or forwards the inherited preflight
 `PATH` as a host fact.
@@ -631,8 +629,8 @@ target file, a non-executable target, a nonzero version result, or a
 `command -v node` result different from the supplied path, when assimilation
 runs, then it refuses before provisioning or registration and names the failed
 check. Given executable Node, npm, Codex, and Claude files under
-`/home/mike/.local/bin`, executable rsync at `/usr/bin/rsync`,
-`--node /home/mike/.local/bin/node`, and a non-login `PATH` that omits the local
+`/home/user-a/.local/bin`, executable rsync at `/usr/bin/rsync`,
+`--node /home/user-a/.local/bin/node`, and a non-login `PATH` that omits the local
 directory, when assimilation completes, then only the Node parent was
 prepended during provisioning and the stored manifest contains the observed
 absolute Node and harness paths rather than the inherited `PATH`.
@@ -741,11 +739,11 @@ vocabulary, ordering, privacy, and read behavior.
 
 Traces: R-10; A-1 through A-7.
 
-Given a fresh v6 org on Gibson whose gateway process `PATH` excludes
-`/home/mike/.local/bin`, valid Codex and Claude credentials, and executable
+Given a fresh v6 org on the production host whose gateway process `PATH` excludes
+`/home/user-a/.local/bin`, valid Codex and Claude credentials, and executable
 Node, npm, Codex, and Claude files in that omitted directory plus rsync at
 `/usr/bin/rsync`, when
-`assimilate --node /home/mike/.local/bin/node` installs the adapters and records
+`assimilate --node /home/user-a/.local/bin/node` installs the adapters and records
 that absolute executable, then one real Codex turn and one real Claude turn
 complete through the real ACP adapters. `harness-process list` shows the same
 resolved Node path and fact digest for each launch plus its lifecycle state.

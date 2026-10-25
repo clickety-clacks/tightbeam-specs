@@ -120,7 +120,7 @@ effect was that **a grant added for a harness silently widened the rail write
 wall.**
 
 On linux that grant was `/dev`, and `/dev/shm` is world-writable tmpfs. Measured
-on shrdlu against a real rail profile: the script wrote `/dev/shm`, the rail
+on a linux test host against a real rail profile: the script wrote `/dev/shm`, the rail
 returned PASS, and the file outlived the scratch `rm_rf`. A durable write channel
 outside the scratch root — a platform difference resolving toward *less*
 restriction, which is the one direction this spec forbids.
@@ -170,7 +170,7 @@ child output, so a rail script could forge them:**
 produced band 30 on macOS and band 10 on linux. That is rail-AUTHORED input
 deciding the verdict, and the OS legible from it — the platform-illegibility
 clause broken by the very seam meant to uphold it, and the same family as the
-fabricated child-exit line (#43): a fact read off a channel the subject of the
+fabricated child-exit line: a fact read off a channel the subject of the
 judgement controls.
 
 **The invariant now: once a child has run, nothing it writes or exits with can
@@ -273,14 +273,14 @@ TRUNCATE` is *accepted* on `/dev/null` by every kernel measured — ABI 4 on the
 fleet and ABI 7 on the CI runner alike, which the `contain-probe` trace prints as
 `WRITE_FILE|TRUNCATE -> ok`. An earlier reading of this blamed a "strict kernel
 rejecting TRUNCATE"; that was false, and the real cause of the outage it was
-invented to explain was a stale cached binary sending the full set (#60). Do not
+invented to explain was a stale cached binary sending the full set. Do not
 reintroduce `TRUNCATE` for devices looking for a compatibility reason — there
 isn't one; the reason is that it is inert there.
 
 This mask keys off the target's type, a property of the path identical on every
 accepted kernel — it is not the per-ABI masking forbidden above. **But the *valid
 set per type* is itself kernel-dependent**, and that is exactly what three
-same-version fleet hosts cannot show: shrdlu and eurisko (both Landlock ABI 4)
+same-version fleet hosts cannot show: two linux test hosts (both Landlock ABI 4)
 accept `WRITE_FILE | TRUNCATE` on `/dev/null`; the CI runner's newer kernel does
 not. The all-platforms CI gate caught it; the fleet never could. The narrowest
 type-appropriate set (`WRITE_FILE` for a device) is the one that holds across
@@ -311,8 +311,8 @@ runner's `EINVAL` is diagnosed from its own output rather than inferred from a
 version string. It is wired into the linux CI job as a diagnostic step and is safe
 to run anywhere: it reports, it never enforces.
 
-Probed directly: shrdlu and eurisko, both 6.8.0-134, both with `landlock` in
-`/sys/kernel/security/lsm`. gibson is reported as 6.8.0-136 and so is above the
+Probed directly: two linux test hosts, both 6.8.0-134, both with `landlock` in
+`/sys/kernel/security/lsm`. The production host is reported as 6.8.0-136 and so is above the
 floor, but was not reachable to probe when this was written — confirm it before
 the production cutover, since a host below the floor refuses every rail.
 
@@ -371,7 +371,7 @@ two halves of one rule that cannot drift apart, not a defence.
 The facts, which are worth keeping: `O_NOFOLLOW` would not give that property. It
 refuses only a **trailing** symlink, and combined with `O_PATH` it does not even do
 that — it returns a descriptor to the symlink itself; intermediate components are
-followed regardless. Measured on shrdlu: ordinary resolution follows a swapped
+followed regardless. Measured on a linux test host: ordinary resolution follows a swapped
 intermediate component, and with `RESOLVE_NO_SYMLINKS` the same root refuses with
 `ELOOP` while a symlink-free root grants normally.
 
@@ -458,14 +458,13 @@ for "we run the suite elsewhere".
 
 Proven on real hosts, not inferred from the other platform:
 
-- **shrdlu** (linux, 6.8.0-134, Landlock ABI 4) and **eurisko** (linux,
-  6.8.0-134): `cargo test` 81 + 2 green, including all six wrapper tests that
+- **Two linux test hosts** (both 6.8.0-134, Landlock ABI 4): `cargo test` 81 + 2 green, including all six wrapper tests that
   failed before, the executed enforcement test, and the sub-floor refusal tests.
   Directly: a write inside the granted root lands, a write outside is `Permission
   denied` and the file never appears, and a macOS-dialect profile handed to the
   linux wrapper is band 30. Stress: 30 full-suite runs on a CPU-saturated box, 0
   flakes, after the `ETXTBSY` retry (before it, ~1 in 8).
-- **eezo** (macOS): `cargo test` 79 + 2 green.
+- **A macOS test host**: `cargo test` 79 + 2 green.
 - **Proven on the runner's kernel.** The CI runner is `6.17.0-1020-azure`,
   Landlock ABI 7 — a newer kernel that rejects `TRUNCATE` on `/dev/null` where the
   ABI-4 fleet accepts it. The device-node masking (a device gets `WRITE_FILE` only)
@@ -475,26 +474,27 @@ Proven on real hosts, not inferred from the other platform:
   shown to agree rather than assumed to.
 - Non-vacuity: mutating the linux renderer to grant `/` instead of the real roots
   fails the enforcement test. A green enforcement test is therefore evidence.
-- **The `/dev/shm` channel, measured before and after** on shrdlu against a real
+- **The `/dev/shm` channel, measured before and after** on a linux test host against a real
   `rail_profile/1`: before, the escape wrote its file, the rail returned PASS, and
   the file outlived the scratch `rm_rf`. After, the write is `Permission denied`,
   the file never exists, and the rail denies (band 10) — while `>/dev/null` and
   writes inside scratch still work, which is what makes the narrowing safe rather
   than merely tighter.
 - **Both platforms report the same suite and the same outcome**: 953 tests,
-  6 doctests, 0 failures, 11 skipped, on eezo and on shrdlu. That equality is the
-  gate; a difference between the jobs is a parity defect by definition.
+  6 doctests, 0 failures, 11 skipped, on the macOS test host and on a linux test
+  host. That equality is the gate; a difference between the jobs is a parity
+  defect by definition.
 
-The linux failure set went 44 → 0, over two lanes that had to be reconciled
+The linux failure set went 44 → 0, over two lines of work that had to be reconciled
 before either number meant anything:
 
 - **This seam accounted for 20 of the 44**: 12 `RailScriptTest`, 1
   `RailRemedyTest`, 7 `ConformanceTest` C5/C6/C7 rail-script vectors.
-- **Platform test-parity (#56) accounted for the rest**: `ProducersTest` and the
+- **Platform test-parity accounted for the rest**: `ProducersTest` and the
   C4/Cap conformance vectors (`kill(1)` needs `--` before a process-group target
   or linux delivers nothing), and `IdentityTest` (a real `git` merge with no
   committer identity reports a phantom `{:conflict, []}`).
-- The two sets overlapped in one direction that neither lane could see alone: a
+- The two sets overlapped in one direction that neither line of work could see alone: a
   producer timeout was masking a `contained` deny underneath in six Cap fixtures.
   Fixing containment alone left them red for the producer reason; fixing the kill
   grammar alone unmasked them as containment failures. Only the merged tree is
@@ -520,14 +520,14 @@ assumes the double contains; the double says in its own text that it does not.
 - **Adapter containment** (`placement.ex`: the `sandbox-exec` preflight probe and
   the `["/usr/bin/sandbox-exec", "-p", profile, binary]` adapter cmd). Same
   macOS-only assumption, unreachable today because every adapter key is
-  `"shared"` (task #36). It is dead code, not a live defect — but it becomes a
+  `"shared"`. It is dead code, not a live defect — but it becomes a
   live one the moment adapter containment is enabled, and whoever enables it
   owns making both sites per-OS under this spec. `adapter_profile/1` being per-OS
   means the profile those sites pass is already correct on linux; the applier is
   not.
 - **`containment_additions/0` is macOS-shaped** (`/private/tmp`, `/dev` for the
   claude harness) and now reaches only `adapter_profile/1`. Re-expressing it per-OS
-  is adapter-containment work and belongs with #36 — and whoever does it should
+  is adapter-containment work and belongs with the item above — and whoever does it should
   note that `/dev` on linux means `/dev/shm`, so the adapter wall will need the
   same narrowing the rail wall just got. The rail seam no longer depends on any of
   it.

@@ -2,13 +2,12 @@
 
 > Governing amendment, 8 September 2026: the [core operating principle](tightbeam.md#operating-principle-trust-record-and-agent-judgment) governs which rules are enforced. Mechanism capability and historical rollout examples do not justify a workflow restriction. Review existing engineering rules, tool guards and hard-coded checks together with guidance. The [0.1.9 enforcement assessment](tightbeam-019-enforcement-assessment-2026-09-08.md) records current findings and proposed rule dispositions; it does not change live enforcement.
 
-Status: DRAFT r9 (Claude/Opus; hardened through the ensemble adversarial-review
-rounds). This is the substrate-mechanism spec referenced by
+Status: DRAFT r9. This is the substrate-mechanism spec referenced by
 `agentic-engineering-guidance-spec.md` §6
 («Substrate mechanism (separate spec)») and by `rails-and-guidance-roadmap.md`
 §8. It makes roadmap phases **P4** (script effect), **P5** (remedies + rail-set
 satisfiability), and **P6** (turn-end sweep) implementable by focused agents. It
-is written against the roadmap **D1 = hybrid** ruling (Flynn, 2026-07-21):
+is written against the roadmap **D1 = hybrid** ruling (2026-07-21):
 predicates remain the always-on hot path; scripts are added.
 
 Ground truth was read from the merged `main`: `lib/tightbeam/rules.ex`,
@@ -19,7 +18,7 @@ Ground truth was read from the merged `main`: `lib/tightbeam/rules.ex`,
 `gateway.ex`. Sibling authorities this spec composes with, unchanged unless named:
 `statute-engine-v1.md` r6 (the predicate engine), `check-tier-v1.md` r4 (verdict
 facts), `escalation-substrate-v1.md`
-(ratified to Flynn's model — the `escalate` outcome, `resolve/3`/`escalate/4`/
+(ratified to the ruled model — the `escalate` outcome, `resolve/3`/`escalate/4`/
 `consume/2` seam), `p3-observables-producers-v1.md` (verdict-independence facts +
 producers), `wake-on-fact-v1.md` (durable `creatorSessionKey`),
 `model-ringdown-pattern.md` (model-adjudication episodes / the session hold — the
@@ -28,7 +27,7 @@ derived-not-stored event model), `supervision-v1.md` / `supervision-impl-v1.md` 
 (the turn-terminal edge). Where this spec is silent, those govern.
 
 Containment is a rails mechanism: adapter-level containment was ruled out
-(Flynn, 2026-07-28; `containment-impl-v1.md` is reduced to that ruling's stub).
+(2026-07-28; `containment-impl-v1.md` is reduced to that ruling's stub).
 The containment profile template, the per-seam renderers, and the wrapper
 contract are contractual HERE (§A3–§A4) and in the code
 (`lib/tightbeam/containment.ex`, `cli/src/contain.rs`).
@@ -110,7 +109,7 @@ episode lifecycle is a **CAS state machine** in `rail_remedy_episodes`
 (`claimed→dispatched→live→closed`, atomic single-row UPDATEs fenced by `claimToken`,
 TTL reclaim, §C3): only the claimant (after winning the pre-dispatch lease)
 dispatches, a concurrent reader treats `claimed`/`dispatched` as in-flight, a `live`
-producer is re-woken not re-spawned, and — the r6 invariant — there is **at most one
+producer is re-woken not re-spawned, and — the invariant — there is **at most one
 external dispatch effect per OCCURRENCE**: the dispatch's `wire_idempotency` key is
 the occurrence key (which bumps on any terminal-state exit — `closed` reopen or
 dead-`live` replacement — and is PRESERVED by a TTL-stale reclaim), so a
@@ -175,9 +174,8 @@ exactly as statute and rail loading works today.
   `rail_remedy_episodes` CAS table (§C3) owns the episode *lifecycle*
   (`claimed→dispatched→live→closed`, TTL reclaim, verdict-landed close) — which the
   `wire_idempotency` forever-ledger cannot express. The producer *dispatch* is
-  deduped through `wire_idempotency` normally, keyed on the episode key (finding
-  2d — one ledger, normal semantics). Two tables, two roles, no conflict. (Revised
-  across r1→r4: r1 "no new table" → r2 episodes-only → r4 episodes + wire ledger.)
+  deduped through `wire_idempotency` normally, keyed on the episode key (one
+  ledger, normal semantics). Two tables, two roles, no conflict.
 - **G5 — No blocking judgments.** Scripts never await inference or a session
   (I2). The async judgment is predicate-gate + remedy.
 - **G6 — No per-operation containment telemetry.** Kernel denials inside a
@@ -261,7 +259,7 @@ file-and-rule-named errors):
   `allow | deny | remedy | escalate`; a return with no effect, or an effect for a
   non-declared return, is a load error. An effect of `remedy` requires a
   `[rule.remedy]` table (§C); an effect of `escalate` requires the escalation
-  engine (`escalation-substrate-v1`, ratified to Flynn's model) to be present —
+  engine (`escalation-substrate-v1`, ratified to the ruled model) to be present —
   statute loading gates on that spec's adversarial review landing clean (a load
   error naming the dependency until then), not on ratification (which is done).
 - `[rule.check].timeout_ms`, when present, is an integer in `1..60000`.
@@ -281,7 +279,7 @@ ancestry script then returns `reconciled`). Only verdict-fact gates
 
 ### A2. The invocation contract
 
-**V1 execution scope (finding 10, RULED).** Rail scripts (and p3's producer
+**V1 execution scope (RULED).** Rail scripts (and p3's producer
 verbs) execute on the **gateway host only**. Containment is applied locally where the
 gateway runs, so a holder whose workdir lives on a **remote** host is a **named
 deferred gap** owned by placement — the gate fails closed (`script_error`) rather
@@ -293,11 +291,11 @@ When a statute's script fires (predicate matched or no predicate), the substrate
 1. Creates a fresh per-invocation scratch dir `<base_dir>/rails/scratch/<uuid>`
    (mode 0700), `File.rm_rf!/1` on the way out regardless of outcome.
 2. **Resolves the invocation context.** A script cannot find the assignment's code
-   from the raw call alone (finding 11), so the substrate resolves, from the call's
+   from the raw call alone, so the substrate resolves, from the call's
    `$assignment` (check-tier's cached dependency) joined to the holder session row:
    `holder_key`, `holder_workdir` (via **`Placement.holder_workdir/2`** — p3's
-   single public workdir seam; the r3 `Gateway.session_workdir/2` promotion is
-   dropped, finding 10), the `host` the holder runs on, and
+   single public workdir seam; `Gateway.session_workdir/2` is not promoted), the
+   `host` the holder runs on, and
    `holder_harness`/`holder_archetype`. For a call with no assignment these are
    `null`. If `host` is not the gateway host, the script is not run (the deferred
    gap above).
@@ -338,9 +336,8 @@ When a statute's script fires (predicate matched or no predicate), the substrate
 ### A3. The return contract and the fail-closed matrix (I3, normative)
 
 **The custody wrapper (`tightbeam rail-exec`).** BEAM Ports cannot `setpgid` or
-`killpg`, and `sandbox-exec`'s own nonzero cannot be told apart from the child's
-(finding 11). So scripts run through the Rust `contain` module
-(`cli/src/contain.rs`):
+`killpg`, and `sandbox-exec`'s own nonzero cannot be told apart from the child's.
+So scripts run through the Rust `contain` module (`cli/src/contain.rs`):
 
 `tightbeam rail-exec --profile <SBPL> --timeout-ms <N> -- <script-path>`
 
@@ -374,7 +371,7 @@ wrapper's exit + its stdout:
 | exit 20 (timeout) | fail | **deny + escalate** | `script_timeout` | `timeout` |
 | exit 30 (profile-apply refusal) | fail | **deny + escalate** | `script_contained_refused` | `contained` |
 
-Note the precise split (finding 4/C5): an **in-sandbox** denied write is EPERM
+Note the precise split: an **in-sandbox** denied write is EPERM
 inside the child → the child exits nonzero → wrapper exit 10 → `script_error`.
 `script_contained_refused` (exit 30) means the sandbox could not be applied at
 all — a host mis-provisioning, not a script action. A "containment escape"
@@ -391,7 +388,7 @@ value the missing observation would have carried:
 | the invocation context could not be resolved (holder absent, non-local, or its workdir would not open) — no script was spawned | **deny + escalate** | `script_error` | `unreported` |
 | the substrate itself raised or exited while running the check | **deny + escalate** | `script_error` | `unreported` |
 
-**No sensor malfunction silently decides against work (Flynn's ruling,
+**No sensor malfunction silently decides against work (ruled
 2026-07-29; generalized the same day under dark-factory doctrine).** A bare
 deny is reserved for the one case where the sensor actually answered "deny"
 — a declared token mapped to `deny` by `[rule.check.effects]`. Every other
@@ -473,7 +470,7 @@ A misbehaving script is itself contained and fails closed (guidance-spec §6
 
 ## B. Hybrid dispatch — one dry decision function, two actors
 
-**The three roles, pinned (finding 1).** There is exactly ONE decision function
+**The three roles, pinned.** There is exactly ONE decision function
 and exactly TWO places a decision becomes an effect:
 
 1. **`Rules.decide(db, call) :: {decision, to_close, to_consume}`** — THE decision
@@ -529,7 +526,7 @@ and exactly TWO places a decision becomes an effect:
    decision becomes an effect. Both call `Rules.decide` and **close each episode in
    `to_close`** (§C3.5 — Dispatch at the verb edge, Supervision at the sweep,
    regardless of `decision` — a passed statute closes even when a later one denies).
-   **Consumption is VERB-EDGE-ONLY (lattice H9): the SWEEP NEVER consumes.** A
+   **Consumption is VERB-EDGE-ONLY: the SWEEP NEVER consumes.** A
    whole-fold `:allow` at the turn-end edge has **no handler to run**, so consuming a
    ruling there would spend it (`ruled→consumed`) with no execution behind it — a lost
    authorization. So `to_consume` is **ignored at the sweep** (§D2/§D3); only the verb
@@ -560,8 +557,8 @@ and exactly TWO places a decision becomes an effect:
    ruling on the work does not fix the sensor, and silent recurrence is what §A3
    forbids.
 
-**Escalation is a STATUTE-LEVEL resolver, never a dispatch-level authority
-(FRESH-1, CRITICAL).** An escalate statute is folded EXACTLY like any other
+**Escalation is a STATUTE-LEVEL resolver, never a dispatch-level authority.**
+An escalate statute is folded EXACTLY like any other
 statute — no special-casing. When `decide` reaches an escalate statute it reads
 the engine's **effect-free `resolve/3`** (escalation-substrate-v1 §9.1), whose
 **unified public union is four shapes: `:allow | {:allow, ruling_id} | {:deny, e} |
@@ -649,11 +646,11 @@ reviews = "{assignment_id}"         # p3's typed review-of link — WHOLE-TOKEN
 work_item = "{work_item_id}"        # WHOLE-TOKEN
 ```
 
-`reviews = "{assignment_id}"` is load-bearing (finding 3): it sets p3's
+`reviews = "{assignment_id}"` is load-bearing: it sets p3's
 `reviewsAssignmentId` on the review assignment, so the spawned reviewer's verdict
 is **reachable** from the producer assignment and enters
 `cross_harness_verdict_kinds`. Without it the reviewer's `reviewed-clean` would
-never release the gate — and per p3's round-2 **anti-laundering invariant** (p3
+never release the gate — and per p3's **anti-laundering invariant** (p3
 invariant 6) the independence facts (`independent_`/`cross_harness_`/
 `cross_provider_verdict_kinds`) read ONLY verdicts on review assignments `R` with
 `R.reviewsAssignmentId = A`; a verdict filed **directly** on `A`, by anyone,
@@ -662,8 +659,8 @@ gates: there is no direct-verdict bypass, and a review remedy MUST carry
 `reviews`. A user override of such a gate is the escalation/ruling path
 (`escalation-substrate-v1`), not a verdict lighting the fact.
 
-**The review remedy's only composable action is `assign` to a BOUND reviewer role
-(lattice H3/H2).** A `spawn` remedy **cannot carry the `reviews` link** (spawn
+**The review remedy's only composable action is `assign` to a BOUND reviewer role.**
+A `spawn` remedy **cannot carry the `reviews` link** (spawn
 creates a session, it does not create the review assignment that carries
 `reviewsAssignmentId`), so the flagship review remedy is necessarily `action =
 "assign"` targeting an **existing, bound** reviewer role — resolved bound-or-fail
@@ -676,7 +673,7 @@ The independence property is **cross-harness**; the same-harness fallback (a
 fresh session at a higher thinking level) is **guidance-level, not rail-enforced**
 (§X1).
 
-**`external_producer` (statute field, finding 4).** A verdict-fact gate whose
+**`external_producer` (statute field).** A verdict-fact gate whose
 required kind arrives from an agent/user workflow the substrate does not itself
 originate — e.g. a plain `assignment.verdicts` gate an org fills by a human
 reviewer, or a review gate whose reviewer is created outside this statute's
@@ -689,8 +686,7 @@ counts." `external_producer` is meaningful only on a verdict-fact gate; on any
 other statute it is a load error.
 
 - `action` ∈ `{spawn, wake, assign}` — the existing dispatch verbs. No new verb.
-  **`run-tests`/`run-smoke` are NOT legal remedy actions (lattice H9/H3
-  narrowing).** So a **mechanical-producer gate** (over `assignment.produced_verdict_kinds`,
+  **`run-tests`/`run-smoke` are NOT legal remedy actions.** So a **mechanical-producer gate** (over `assignment.produced_verdict_kinds`,
   whose only producer is a `producers.toml` verb, §F1) **cannot originate its
   producer**: it has no remedy, so it **denies at the verb edge and, at the sweep,
   re-obligates the holder** (§D2), who runs `run-tests`/`run-smoke` **deliberately**
@@ -731,7 +727,7 @@ other statute it is a load error.
 `$assignment` (check-tier's cached pseudo-fact) and its params. `{caller_origin}`
 — the raw origin. Any other token is a load error.
 
-### C2. Remedy authority — the reserved remedy principal (F5)
+### C2. Remedy authority — the reserved remedy principal
 
 Remedies do **NOT** dispatch as `process:tightbeam`: `assign` and `spawn`
 constitutionally reject process principals (assignments.ex `principal_allowed`;
@@ -745,26 +741,26 @@ could dispatch only `wake` — the flagship review remedy would be inert. Instea
   WS/HTTP/CLI seams only ever set `user`/`agent`/`process`; the `RailRemedy`
   executor inside the dispatch tier is the sole constructor, so the principal
   cannot be forged by a caller.
-- **Constitutional acceptance seam — the exact ground-truth deltas (finding 2).**
+- **Constitutional acceptance seam — the exact ground-truth deltas.**
   The remedy principal is admitted per-action, never generally:
   - `assignments.ex`: `principal_allowed({:remedy, %{action: "assign"}}) → :ok`;
     `principal_id({:remedy, %{owner: o}}) → "user:" <> o`; **and `opener/1` gains
     `opener({:remedy, %{owner: o}}) → {o, nil}`** (the review assignment's opener
-    columns attribute to the owner user, `{byUser, bySession}` — the review found
-    `opener/1` had no remedy clause; assign creation calls it).
+    columns attribute to the owner user, `{byUser, bySession}` — `opener/1` has no
+    remedy clause today; assign creation calls it).
   - `gateway.ex` spawn: admits `{:remedy, %{action: "spawn", owner: o}}`, using
     `o` as the `owner_user_id` the handler reads (bypassing `resolve_caller`'s
     `owner_user_id: nil → forbidden`).
   - `wake`: admits `{:remedy, %{action: "wake"}}`.
   A remedy principal whose `action` ≠ the verb it reaches is rejected exactly as a
   process principal is.
-- **Serialization (finding 2).** `EventLog.serialize_principal/1`
+- **Serialization.** `EventLog.serialize_principal/1`
   string-interpolates a `{kind, value}` tuple and cannot render a map. Add
   `serialize_principal({:remedy, %{statute: s, action: a}}) → "remedy:" <> a <>
   ":" <> s` — the stable audit string form (e.g. `"remedy:assign:completion-needs-
   independent-review"`). Every `remedy:` dispatch's events row carries it.
-- **Role→session resolution — REQUIRE A BOUND REVIEWER, fail loud on unbound
-  (lattice H3/H2).** `RailRemedy` resolves `target_role` via
+- **Role→session resolution — REQUIRE A BOUND REVIEWER, fail loud on unbound.**
+  `RailRemedy` resolves `target_role` via
   `Roles.resolve(db, target_role)` (roles.ex:166-179) but **rejects the owner-Main
   fallback**: `resolve/3` returns `{:ok, key, fell_back?}`, and the remedy proceeds
   **only** on `{:ok, key, false}` (a real, active BOUND session). `{:ok, _, true}`
@@ -782,7 +778,7 @@ could dispatch only `wake` — the flagship review remedy would be inert. Instea
 
 ### C3. Idempotency — remedy episodes with explicit CAS states
 
-> ERRATA (Fable review, 2026-07-23): the TTL-reclaim CAS below must pin `occurrence`
+> ERRATA (2026-07-23): the TTL-reclaim CAS below must pin `occurrence`
 > in its WHERE clause (`AND occurrence = <observed>`), not only status+openedAt. Without
 > it, if an episode cycles close→reopen (occurrence bumped) between the reclaimer's read
 > and its UPDATE, the reclaimer wins the row at the new occurrence but dispatches under
@@ -790,12 +786,12 @@ could dispatch only `wake` — the flagship review remedy would be inert. Instea
 > at N+1 with a producer whose ledger entry lives under N → dead-live reclaim can never
 > confirm → permanent silent block. Pinning occurrence still PRESERVES the value (TTL
 > reclaim does not bump); it only makes the reclaimer lose the race when the row moved.
- (F3, F6)
 
 The `wire_idempotency` ledger has no episode/status/close and races on
 get→act→put, so it cannot own the episode lifecycle. A new episodes table owns it,
-as an explicit CAS state machine (finding 3: the old `open`+NULL-producer window
-let a concurrent loser see an open row with no producer and dispatch again):
+as an explicit CAS state machine (an `open` state with a NULL producer would leave
+a window where a concurrent loser sees an open row with no producer and dispatches
+again):
 
 ```sql
 CREATE TABLE IF NOT EXISTS rail_remedy_episodes (
@@ -813,7 +809,7 @@ CREATE TABLE IF NOT EXISTS rail_remedy_episodes (
 );
 ```
 
-**Two key families close the two-external-effects hole (r6 LEASE/TTL ruling).**
+**Two key families close the two-external-effects hole (the LEASE/TTL ruling).**
 `claimToken` fenced the row transitions but NOT the external dispatch: a TTL reclaim
 mints a new `claimToken` while the ORIGINAL claimant's `spawn`/`assign` may still be
 running, so two producers could be created. The fix splits the keys:
@@ -860,7 +856,7 @@ First read the current row (if any) to route; then act by CAS.
 
 1. **Claim (atomic, before any side effect).** Mint a fresh `token`. Try, in order,
    the first that affects a row; a win makes THIS actor the claimant. **THE
-   OCCURRENCE RULE (r9): any transition OUT OF A TERMINAL episode state bumps
+   OCCURRENCE RULE: any transition OUT OF A TERMINAL episode state bumps
    `occurrence`; only the TTL-stale pre-`live` reclaim preserves it.** Terminal
    states are `closed` (fact landed) and dead-`live` (producer confirmed dead) —
    the spent occurrence's dispatch wire key is done, so a NEW occurrence is required
@@ -869,7 +865,7 @@ First read the current row (if any) to route; then act by CAS.
    still be running), so its reclaim preserves the occurrence to dedupe with it.
    - fresh: `INSERT … (statute, subject, status, occurrence, rewakeCount, claimToken,
      openedAt) VALUES (?, ?, 'claimed', 1, 0, <token>, now) ON CONFLICT DO NOTHING`.
-   - reclaim-closed (terminal exit → **BUMP occurrence**, r9 fix): `UPDATE … SET
+   - reclaim-closed (terminal exit → **BUMP occurrence**): `UPDATE … SET
      status='claimed', producerKey=NULL, occurrence=occurrence+1, rewakeCount=0,
      claimToken=<token>, openedAt=now WHERE (statute,subject)=(?,?) AND status='closed'
      AND occurrence=<observed>` — the bumped occurrence gives a fresh dispatch wire
@@ -881,7 +877,7 @@ First read the current row (if any) to route; then act by CAS.
      ('claimed','dispatched') AND openedAt < now − TTL` (**TTL = 60_000 ms**).
      Occurrence unchanged, so a re-dispatch reuses the same wire key and collapses
      with a still-running original to one producer.
-   - reclaim-dead-`live` (terminal → **BUMP occurrence**, finding 3a): when the read
+   - reclaim-dead-`live` (terminal → **BUMP occurrence**): when the read
      showed `status='live'`, `producerKey` resolves **dead** (session retired /
      review assignment closed/revoked without the satisfying verdict), **AND** the
      current occurrence's dispatch `wire_idempotency` entry has been inspected to
@@ -899,10 +895,10 @@ First read the current row (if any) to route; then act by CAS.
    "rail-dispatch:"<>statute<>":"<>subject<>":"<>occurrence`** — the occurrence key,
    so a same-occurrence racing re-dispatch (e.g. a TTL reclaim that stole the row
    while THIS dispatch still ran) collapses to one producer through the forever
-   ledger (the r6 invariant: ≤1 external effect per occurrence). On the return:
+   ledger (the invariant: ≤1 external effect per occurrence). On the return:
    - **success:** `UPDATE … SET status='live', producerKey=? WHERE
      (statute,subject)=(?,?) AND status='dispatched' AND claimToken=<mine>`.
-   - **denied dispatch (finding 3b):** the producer verb returned `{:error, …}` (the
+   - **denied dispatch:** the producer verb returned `{:error, …}` (the
      runtime blocker, §F). Release the lease so a later edge retries — `DELETE …
      WHERE (statute,subject)=(?,?) AND status='dispatched' AND claimToken=<mine>` —
      and record `rail_remedy` outcome `blocked`. **Retry timing (precise):** the row
@@ -916,7 +912,7 @@ First read the current row (if any) to route; then act by CAS.
      rewakeCount=rewakeCount+1 WHERE … AND status='live' AND claimToken=<observed>`,
      then `wake` under the remedy principal with `--key =
      "rail-rewake:"<>…<>occurrence<>":"<>rewakeCount` (each re-wake lands, no dedupe).
-     **Target choice (lattice H2/H4) — wake the party that must ACT:**
+     **Target choice — wake the party that must ACT:**
      - **latest linked verdict is NON-satisfying** (a `changes-requested` verdict is
        the newest verdict reachable via `reviewsAssignmentId = A`) → wake **`A`'s
        HOLDER** (the producer/coder — it must iterate on the findings), NOT the
@@ -928,9 +924,9 @@ First read the current row (if any) to route; then act by CAS.
      gate still denies. That claimant will reach `live`.
 4. **Deny the gated verb now** (I4/I5): `{:deny, %{code: "rule_denied", rule: name,
    reason: "remedy_fired", ref: ref, producer: producerKey, message: text}}`. No wait.
-5. **Close — per-statute-pass, actor-owned (finding 3d).** Closure is NOT
-   conditioned on the overall bare `:allow` (the review's defect: an earlier passed
-   statute could not close when a later statute denied). Instead, as `decide` folds,
+5. **Close — per-statute-pass, actor-owned.** Closure is NOT
+   conditioned on the overall bare `:allow` (otherwise an earlier passed statute
+   could not close when a later statute denied). Instead, as `decide` folds,
    it collects a **`to_close`** list — every statute that INDIVIDUALLY passed
    (`allow`) AND has a `live` episode for this `subject` — and returns it alongside
    the decision (a pure read; `decide` writes nothing). The **actor** closes each,
@@ -948,21 +944,21 @@ First read the current row (if any) to route; then act by CAS.
 the producer files `reviewed-clean` on its `reviews`-linked assignment, the fact
 becomes reachable, the holder's next `attest completion` decides `:allow`, passes
 silently, and closes the episode. Reviewer teardown is a separate org rail, not
-this mechanism's concern (roadmap P7 records this; §X-note F12).
+this mechanism's concern (roadmap P7 records this).
 
 ---
 
 ## D. Turn-end sweep (P6) — one adjudicator, folded into supervision
 
-### D1. Single terminal-edge adjudicator (F8)
+### D1. Single terminal-edge adjudicator
 
-The sweep is **not** a second GenServer racing supervision (finding 8: two
-independent casts to two servers let scheduler order change enforcement, and let
-supervision prod while the sweep spawns a remedy for the same holder). Instead the
+The sweep is **not** a second GenServer racing supervision (two
+independent casts to two servers would let scheduler order change enforcement, and
+let supervision prod while the sweep spawns a remedy for the same holder). Instead the
 sweep is a **step inside `Supervision.evaluate/5`** — supervision already owns the
 turn-terminal edge (its `:on_terminal` cast), so there is one adjudicator, one
-reaction per terminal, no race by construction. Supervision.ex IS modified in P6
-(the earlier "not modified" claim is retired by this ruling); `Rules` exposes the
+reaction per terminal, no race by construction. Supervision.ex IS modified in P6;
+`Rules` exposes the
 dry decision API (§B) that supervision's new step calls. No `RailSweep` GenServer,
 no second `:on_terminal` cast.
 
@@ -970,10 +966,10 @@ Supervision's existing predicate primitives are reused as-is: `turn just termina
 (the cast), `Ledger.pending_count == 0` (`:busy`), `Assignments.oldest_open`
 (open obligation), its `lastEvaluatedTerminal` **watermark/dedupe** (a re-delivered
 terminal is `:duplicate`, an older one `:coalesced` — the rail step inherits this,
-so no separate rail watermark is needed, closing finding 10's dedupe gap), and its
+so no separate rail watermark is needed), and its
 outbox-drain recovery contract.
 
-### D2. The ONE total supervision order (F8, F9, F10, lattice H1/H8)
+### D2. The ONE total supervision order
 
 **§D2 owns the single total order that integrates EVERY branch** — supervision's own
 (`supervision-v1`/`supervision-impl-v1`), the escalation park
@@ -993,7 +989,7 @@ with :new <- dedupe(…) do                                    # (1) dedupe / :d
         {:held, tag}  -> {:held, tag}                        #     open model-adjudication episode → suppress rail+prod
         :fallthrough  ->
           case rail_step(db, session_key, assignment, terminal_seq) do  # (5) rail step
-            {:acted, tag} -> {:acted, tag}                   #     remedy/escalate (FRESH-5, unmodified)
+            {:acted, tag} -> {:acted, tag}                   #     remedy/escalate (unmodified)
             :fallthrough  ->
               if Wakes.pending_count(db, session_key) == 0,   # (6) generic pending-wake
                 do:  <is_nil(terminal_seq) ? :idle : claim_and_act (prod)>,  # (7) prod ladder
@@ -1008,7 +1004,7 @@ with :new <- dedupe(…) do                                    # (1) dedupe / :d
 > The live turn-end order runs (1)(2)(3) then (5)(6)(7) with no hold branch.
 > Retained as history. See `adjudication-deletion-amendment.md`.
 
-**(4) ADJUDICATION-HOLD (lattice H1/H8).** When the LIVE holder has an **open
+**(4) ADJUDICATION-HOLD.** When the LIVE holder has an **open
 model-adjudication episode** — an `adjudication_episodes` row for this session with
 `status IN ('claimed','notified')` (`model-ringdown-pattern`, the durable session
 hold while the owner adjudicates a model exhaustion/unavailability) — the session is
@@ -1023,13 +1019,13 @@ watermarks" rule. On `terminal_seq == nil` (recovery) it does not act, `:fallthr
 step's escalate branch by `parkWakeId` idempotency — §D2.4.)
 
 **Named supervision change:** liveness is checked before `Wakes.pending_count`
-(finding 7 — the rail step must run before the generic pending-wake so a non-self
-wake cannot suppress the remedy; FRESH-1 r6 — only a LIVE holder acts). A **retired**
+(the rail step must run before the generic pending-wake so a non-self wake cannot
+suppress the remedy, and only a LIVE holder acts). A **retired**
 holder now yields `:stranded` even when a wake is pending (the deliberate consequence,
 a retired holder cannot act on a wake). The `:live` prod path is otherwise
 byte-unchanged.
 
-`rail_step/4` takes `terminal_seq` (FRESH-3): **on `terminal_seq == nil` (a recovery
+`rail_step/4` takes `terminal_seq`: **on `terminal_seq == nil` (a recovery
 path) it does NOT act and returns `:fallthrough`**, mirroring supervision's existing
 `is_nil(terminal_seq)` guard, so no acted branch attempts a NULL watermark write
 (the column is NOT NULL, supervision.ex ~20). `rail_step` returns `{:acted, tag}`
@@ -1037,7 +1033,7 @@ path) it does NOT act and returns `:fallthrough`**, mirroring supervision's exis
 loads — §D2.4) only when it acts, writing `lastEvaluatedTerminal = terminal_seq`
 itself; `evaluate_terminal` returns that `{:acted, tag}` **unmodified** so
 `Supervision.evaluate/5`'s result is `{:acted, :rail_remedy | :rail_escalate}` (the
-shape escalation-substrate-v1's acceptance expects — FRESH-5). Otherwise
+shape escalation-substrate-v1's acceptance expects). Otherwise
 `:fallthrough`, leaving the pending-wake suppression and prod ladder unchanged. A
 non-self wake cannot suppress the remedy (the rail step runs first, uses
 `self_pending_count`); it still suppresses the *prod* on the fallthrough.
@@ -1045,7 +1041,7 @@ non-self wake cannot suppress the remedy (the rail step runs first, uses
 The rail step, for the oldest open assignment `a`, with strict precedence —
 remedy XOR prod, never both:
 
-1. **Self-scheduled continuation suppresses everything (I6, F10).** If a pending
+1. **Self-scheduled continuation suppresses everything (I6).** If a pending
    wake targeting the holder was **scheduled by the holder itself** —
    `Wakes.self_pending_count(db, session_key) > 0`, counting pending wakes where
    **`sessionKey = creatorSessionKey = holder`**, keyed on wake-on-fact-v1's
@@ -1054,22 +1050,22 @@ remedy XOR prod, never both:
    `creatorSessionKey ≠ holder` and does NOT count) — the agent is coming back on
    its own clock: the rail step does nothing and supervision's own path is
    unchanged. This is the **no-false-positive guarantee**, keyed on the durable
-   creator identity (finding 10: `Wakes.pending_count` of *any* wake proved the
-   wrong statement; the mutable `origin` is not a sound self-scheduling proof).
+   creator identity (`Wakes.pending_count` of *any* wake is the wrong statement;
+   the mutable `origin` is not a sound self-scheduling proof).
 2. **Compute the dry decision** for the obligation (§D3). It is one of `:allow`,
    `{:deny,…}`, `{:remedy, statute, ref, …}`, `{:escalate,…}`.
 3. **`{:remedy,…}` → run the remedy, XOR the prod.** Gate-unsatisfied with a
-   runnable remedy = reviewable work by definition (finding 10 ruling:
+   runnable remedy = reviewable work by definition (ruling:
    reviewable-work is the **gate-unsatisfied state itself**, not a self-attested
    `progress` row). Fire the remedy once via §C3's episode claim (idempotent —
    if the verb edge already claimed this episode, this is a re-wake, not a second
    producer), record `rail_sweep` decision `run-remedy`, **write supervision's
-   `lastEvaluatedTerminal` watermark for this terminal_seq** (finding 7 — the
+   `lastEvaluatedTerminal` watermark for this terminal_seq** (the
    remedy branch advances the watermark exactly like every other supervision
    branch, so a re-delivered terminal is `:duplicate` and never double-fires), and
    **return `{:acted, :rail_remedy}` without prodding**.
 4. **`{:escalate, statute, ctx, dr_id}` → the sweep opens the request AND parks the
-   holder, watermark, XOR the prod.** By the FRESH-1 principle (§B), `decide` has
+   holder, watermark, XOR the prod.** By the statute-level-resolver principle (§B), `decide` has
    ALREADY resolved any active waiver or prior ruling in-fold — a `:allow`
    resolution continued the fold (so a waived/ruled-allow escalate statute never
    reaches here as `{:escalate}`), and a `{:deny}` resolution is handled by §D2.5.
@@ -1089,7 +1085,7 @@ remedy XOR prod, never both:
    supervision.ex:370; there is no resident deadline clock). The park is
    **idempotent** via the DR's stored `parkWakeId` (a sweep over an already-parked
    open DR re-returns it, never double-parks). The sweep records `rail_sweep`
-   decision **`escalate-park`** (FRESH-2 r6), writes `lastEvaluatedTerminal`, and
+   decision **`escalate-park`**, writes `lastEvaluatedTerminal`, and
    returns `{:acted, :rail_escalate}` without prodding. Moot in v1 regardless: no
    `escalate`-bearing turn-end statute loads until escalation's review lands clean
    (§A1).
@@ -1097,14 +1093,14 @@ remedy XOR prod, never both:
    denies but declares no remedy (or a fail-closed script) leaves the obligation
    unsatisfied but unremediable: `:fallthrough` to supervision's existing prod →
    ladder → Main terminus, unchanged (that path writes the watermark as today).
-   Record `rail_sweep` `re-obligate`. (Finding 9's fix: the sweep never "runs the
-   offending statute's remedy" when none exists.)
+   Record `rail_sweep` `re-obligate`. (The sweep never "runs the offending
+   statute's remedy" when none exists.)
 6. **`:allow` (no gate-unsatisfied obligation) → supervision's normal path.** If
    `a` is merely abandoned with nothing owed to a gate, `:fallthrough`; supervision
    prods as today (writing the watermark on its branch). Record `rail_sweep` `none`.
 
 Because the decision and the action are separated (§B dry API) and the rail step
-fires at most once under the episode claim, there is no double-effect (finding 9):
+fires at most once under the episode claim, there is no double-effect:
 `Rules.evaluate` never fires a remedy; only this step (or the verb edge) does.
 
 ### D3. Evaluation mechanics (synthesizing the obligation)
@@ -1122,15 +1118,15 @@ Rules.decide(db, %{verb: "attest", origin: "remedy:sweep",
 predicate/script machinery as the verb edge (§B) filtered to `turn-end`-edged
 statutes, and **returns `{decision, to_close, to_consume}` without firing**.
 Supervision, the sweep actor, closes each `to_close` episode but **IGNORES
-`to_consume` — the sweep NEVER consumes** (lattice H9: no handler runs at the
+`to_consume` — the sweep NEVER consumes** (no handler runs at the
 turn-end edge, so consuming would spend a ruling with nothing behind it; §B item 3).
 It then acts on `decision` per §D2. Scripts fire here identically to the verb edge (time-boxed, contained,
 fail-closed via `rail-exec`). The synthesized call NEVER mutates: the step
 evaluates statutes and, at most, the leased remedy dispatches; it never dispatches
 the synthesized `attest completion`.
 
-Finding 10's dropped branches: the old "≥1 `progress`/`completion` attest = work
-landed" predicate is **removed** — a self-attested `progress` does not prove a
+Dropped branches: the "≥1 `progress`/`completion` attest = work landed"
+predicate is **removed** — a self-attested `progress` does not prove a
 commit, and a `completion` attest cannot coexist with an open assignment (the real
 handler closes it), so that half was unreachable. Reviewable-work is now exactly
 "the gate decided `{:remedy,…}`" (§D2.3). Only `attest` is a synthesizable outcome
@@ -1144,7 +1140,7 @@ Two audiences, two records (I7). The **agent** sees only the refusal reason at
 the moment a gate fires (never on pass). The **substrate** records every
 invocation for the derived-not-stored tuning corpus (observability-v1).
 
-**The one legibility contract (finding 17).** Guidance/smoke call these
+**The one legibility contract.** Guidance/smoke call these
 "self-naming facts"; this mechanism realizes each self-naming fact as a **row** —
 there is no separate fact object. The mapping is explicit: a non-pass's
 self-naming fact IS its `events(denied)` row (agent-facing, §E1); a script/remedy/
@@ -1179,15 +1175,15 @@ name and meaning):
   message: "<statute text>"}
 ```
 
-**I1 vs E1 reconciled (finding 17).** I1's "predicate-only behavior observably
+**I1 vs E1 reconciled.** I1's "predicate-only behavior observably
 unchanged" scopes to the denial **outcome** (still one `denied` row, same
 `code`/`rule`/`message`, no mutation, same hot path) and the pre-existing payload
 keys — NOT to the absence of additive keys. The new keys are additive-compatible:
 a pre-r6 consumer reading `code`/`rule`/`message` sees exactly what it saw before;
 the hot path still writes one row. Additive payload extension does not violate
-observable-equivalence of behavior. Stated so no reviewer reads a conflict.
+observable-equivalence of behavior.
 
-### E2. The legibility query path (finding 17: the public feed omits payload)
+### E2. The legibility query path (the public feed omits payload)
 
 `EventLog.events_after/3` projects only `id, ts, kind, verb, origin, principal,
 sessionKey` — **not `payload`** — so the promised rail/reason are not retrievable
@@ -1239,7 +1235,7 @@ and a denial never depends on a row landing (I3).
 
 ## F. Rail-set satisfiability (P5 load gate)
 
-`Rules.load!` gains `identity/producers.toml` as a **load input** (finding 4):
+`Rules.load!` gains `identity/producers.toml` as a **load input**:
 `Rules.load!(base_dir, valid_verbs, producers)` where `producers` is the parsed
 producer registry (the same file p3's Lane C loads — `{kind → command}`, e.g.
 `tests`/`smoke`). After per-statute validation and the r6 duplicate check, the
@@ -1252,13 +1248,13 @@ is one of p3's canonical verdict facts, each with its `assignment.` prefix:
 `assignment.verdicts`, `assignment.independent_verdict_kinds`,
 `assignment.cross_harness_verdict_kinds`, `assignment.cross_provider_verdict_kinds`,
 `assignment.produced_verdict_kinds` (**`assignment.verdict_kinds_any` is purged —
-p3 deleted that fact**, finding 4). Script-effect gates are exempt (the
+p3 deleted that fact**). Script-effect gates are exempt (the
 script-K rule, §A1). A `not_in [K1..Kn]` gate is **satisfied by producing ANY one
 Ki** — so F1 requires a producer for **at least one** Ki, not all.
 
 The valid producer set is a **closed, static union of exactly THREE sources**
-(finding 4 — no blanket "any agent-created review assignment counts"; that made
-almost every kind theoretically producible and defeated the check):
+(no blanket "any agent-created review assignment counts"; that would make almost
+every kind theoretically producible and defeat the check):
 
 1. **In-statute remedies:** a statute whose `[rule.remedy].produces` is one of the
    gate's Ki (and, for an independence-fact gate, the remedy carries
@@ -1274,7 +1270,7 @@ almost every kind theoretically producible and defeated the check):
    NO implicit "open attestation always produces" rule; the annotation is required.
 
 F1 rejects a gate iff **none** of the three sources covers **any** Ki. The error
-names the **single gate statute** and the missing kind(s) (finding 4/7 — it cannot
+names the **single gate statute** and the missing kind(s) (it cannot
 "name both statutes"; only the gate exists). F2's error names two. (A user override
 of a review gate is the escalation/ruling path, not a verdict that lights the fact;
 it counts only if the gate declares `external_producer=true`.)
@@ -1282,17 +1278,16 @@ it counts only if the gate declares `external_producer=true`.)
 **F2 — REMEDY REACHABILITY (blocked-producer deadlock).** For each statute with a
 remedy `R` dispatching verb `W`, two checks:
 
-- **(a) Constitutional acceptance (finding 5).** `W`'s handler MUST admit the
+- **(a) Constitutional acceptance.** `W`'s handler MUST admit the
   reserved remedy principal for `R`'s declared `action` (§C2's per-action
   acceptance seam). A remedy whose `action` a handler does not admit — e.g.
   `action="assign"` where `principal_allowed` does not accept `{:remedy,
   %{action:"assign"}}` — is rejected at load (a constitutionally impossible
-  producer, which the old F2 could certify reachable). The admitted set is fixed
+  producer). The admitted set is fixed
   by §C2: `assign`, `spawn`, `wake` each admit their own action; nothing else.
 - **(b) Provable pure-deny blocker.** Let `A` be the attributes `R` fixes: `verb =
   W` and `caller.origin_class = "remedy"` (the reserved class, §C2). Those two ARE
-  the closed attribute→fact mapping — nothing else (narrowed by Flynn ruling,
-  adjudication #4, 2026-07-24: the earlier text also promised literal
+  the closed attribute→fact mapping — nothing else (narrowed 2026-07-24: the earlier text also promised literal
   remedy-target/param values mapping to `target.*`/params facts, a dictionary
   that was never defined and that no statute has needed — role literals need
   runtime resolution, spawn fixes no target session, list params have no fact
@@ -1336,7 +1331,7 @@ the smoke-set spec is drafted in parallel — reference the classes, do not defi
 fixtures here).
 
 The three phases are **sequential on `rules.ex`/`dispatch.ex`**, not parallel
-lanes (finding 16): P4 adds the grammar + dry decision + script effect, P5 adds
+lanes: P4 adds the grammar + dry decision + script effect, P5 adds
 remedy grammar + firing + satisfiability, P6 adds the turn-end filter + the
 supervision fold. Each depends on the prior. They are one implementation stream.
 
@@ -1365,9 +1360,9 @@ supervision fold. Each depends on the prior. They are one implementation stream.
   (`cli/src/contain.rs`): `setpgid`, per-OS containment staging + contained
   spawn (§A3/§A4), `--timeout-ms` timer, `killpg(-pgid, SIGKILL)` on timeout,
   the four-way exit-band encoding (0/10/20/30, §A3). This is the process-group +
-  profile-vs-child custody finding 11 requires.
+  profile-vs-child custody §A3 requires.
 - `lib/tightbeam/placement.ex` — `holder_workdir/2` is p3's pinned public workdir
-  seam (finding 10); §A2.2 resolves the holder workdir through it. NO
+  seam; §A2.2 resolves the holder workdir through it. NO
   `Gateway.session_workdir/2` promotion.
 - `lib/tightbeam/dispatch.ex` — **switches from `Rules.evaluate` to `Rules.decide`**
   and acts on the full decision (the verb-edge actor, §B); threads the additive
@@ -1399,7 +1394,7 @@ without firing (dry API).
 - `lib/tightbeam/rules.ex` — `[rule.remedy]` grammar + per-action target/param
   validation + interpolation typing + the `external_producer` field (§C1);
   **`Rules.load!(base_dir, valid_verbs, producers)`** takes `identity/producers.toml`
-  as a load input (finding 4) and runs the §F pass (F1 closed-3-source producer
+  as a load input and runs the §F pass (F1 closed-3-source producer
   existence; F2 (a) constitutional acceptance, (b) provable pure-deny blocker, (c)
   bounded chain), raising and naming statutes.
 - NEW `lib/tightbeam/rail_remedy.ex` — resolves binding tokens (§C1) and the
@@ -1418,10 +1413,10 @@ without firing (dry API).
   performed by the ACTOR (Dispatch or Supervision), not here.
 - `lib/tightbeam/assignments.ex` — `principal_allowed` admits `{:remedy,
   %{action:"assign"}}`; `principal_id` maps it to `"user:"<>owner`; **`opener/1`
-  gains `opener({:remedy, %{owner: o}}) → {o, nil}`** (finding 2 — assign creation
+  gains `opener({:remedy, %{owner: o}}) → {o, nil}`** (assign creation
   calls `opener/1`). No other authorization change.
 - `lib/tightbeam/event_log.ex` — **`serialize_principal({:remedy, %{statute,
-  action}})` → `"remedy:<action>:<statute>"`** (finding 2 — the map cannot ride the
+  action}})` → `"remedy:<action>:<statute>"`** (the map cannot ride the
   tuple interpolation).
 - `lib/tightbeam/gateway.ex` — the spawn handler admits `{:remedy,
   %{action:"spawn", owner}}` (owner as `owner_user_id`); `wake` admits `{:remedy,
@@ -1432,27 +1427,27 @@ without firing (dry API).
 - `lib/tightbeam/dispatch.ex` — a `{:remedy,…}` decision at the verb edge fires
   `RailRemedy` then denies with `reason="remedy_fired"`.
 - `lib/tightbeam/idempotency.ex` — **reused normally** for the producer dispatch
-  (episode key as the idempotency key, finding 2d); the `rail_remedy_episodes` table
+  (episode key as the idempotency key); the `rail_remedy_episodes` table
   owns the episode *lifecycle* (claim/CAS/close/reopen), `wire_idempotency` owns
   dispatch-level dedup. Two roles, no conflict.
 
 **Acceptance (C6).** A gate with an absent required fact dispatches the producer
-under the remedy principal (proving `assign`/`spawn`/`opener` accept it — findings
-2/5), claims an episode + wins the pre-dispatch lease, blocks the verb, and the
+under the remedy principal (proving `assign`/`spawn`/`opener` accept it),
+claims an episode + wins the pre-dispatch lease, blocks the verb, and the
 ACTOR closes the episode (`live→closed`) when the producer files `reviewed-clean`
 on its `reviews`-linked assignment and the holder re-dispatches. **≤1 external
-effect per occurrence (r6):** a fixture where a TTL reclaim steals the row while the
+effect per occurrence:** a fixture where a TTL reclaim steals the row while the
 ORIGINAL claimant's dispatch still runs asserts exactly ONE producer — both dispatch
 under the SAME occurrence key and the forever `wire_idempotency` ledger dedupes the
 second; the TTL-stale-claim reclaim does NOT bump `occurrence`. **Terminal-exit
-occurrence bump (r9):** a `closed`-episode **reopen** and a dead-`live` replacement
+occurrence bump:** a `closed`-episode **reopen** and a dead-`live` replacement
 each BUMP `occurrence`, proven by a fixture that closes an episode, then re-fires and
 asserts a genuinely NEW producer (a distinct wire key) — NOT the old producer the
 spent key would return. **Stale-claimant row fencing:** a superseded claimant loses
 the `claimed→dispatched` lease CAS and performs no external dispatch.
-**Denied-dispatch retry (finding 3b):** a `blocked` producer dispatch releases the
+**Denied-dispatch retry:** a `blocked` producer dispatch releases the
 lease and the NEXT firing edge re-claims and re-dispatches (across two edges).
-**Multi-statute closure (finding 3d):** with S1 passing and S2 denying over one
+**Multi-statute closure:** with S1 passing and S2 denying over one
 subject, S1's episode closes and S2's stays `live`. **Re-wakes land:** each re-wake
 bumps `rewakeCount` for a fresh key.
 An unbound token/role fails closed (`unbound`, no dispatch). Satisfiability:
@@ -1466,28 +1461,27 @@ loud `blocked` outcome.
 ### P6 — Turn-end sweep (folded into supervision)
 
 **Seams.**
-- `lib/tightbeam/supervision.ex` — **MODIFIED** (the fold, finding 8): the
+- `lib/tightbeam/supervision.ex` — **MODIFIED** (the fold): the
   `evaluate_terminal` `with` chain (supervision.ex ~177) is **restructured** so
   `holder_state` is hoisted above `Wakes.pending_count` and the rail step nests in
-  the `:live` branch (§D2's exact ordering — finding 7 + FRESH-1 r6: after liveness,
+  the `:live` branch (§D2's exact ordering: after liveness,
   before pending-wake). Reuses `lastEvaluatedTerminal` dedupe/watermark and drain.
   Calls `Rules.decide(db, synth_call)` (`edge: :turn_end`) and, on `{:remedy,…}`
   with `Wakes.self_pending_count == 0`, `RailRemedy` (episode-claimed).
-  **Named return-signature change (FRESH-3):** `Supervision.evaluate/5` today returns
+  **Named return-signature change:** `Supervision.evaluate/5` today returns
   one of `:idle | :busy | :continuation | :duplicate | :coalesced | {:prodded, k} |
   {:escalated, rung, target} | :terminus | :stranded | {:refused, code}`; this fold
   ADDS `{:acted, :rail_remedy} | {:acted, :rail_escalate} | {:held,
   :adjudication_hold}` to that union (the acted branches + the model-adjudication hold,
   §D2). Call sites already ignore the tag (it is test-only), so the addition is
   source-compatible; it is documented here as an explicit ground-truth signature
-  change, not a silent one. **Named ordering consequence (FRESH-1 r6):** a retired
+  change, not a silent one. **Named ordering consequence:** a retired
   holder with a pending wake now yields `:stranded` (doorbell) where the old order
   yielded `:continuation` (§D2). No second GenServer, no second `:on_terminal` cast
-  (finding 16's "omitted RailSweep in children" is moot — there is no RailSweep).
+  (there is no RailSweep).
 - `lib/tightbeam/wakes.ex` — NEW `Wakes.self_pending_count(db, session_key)`:
   pending wakes where `sessionKey = creatorSessionKey = holder`, on wake-on-fact-v1's
-  durable `creatorSessionKey` column (§4.2), NOT the mutable `origin` (§D2.1,
-  finding 10). The existing `pending_count/2` is unchanged (supervision's
+  durable `creatorSessionKey` column (§4.2), NOT the mutable `origin` (§D2.1). The existing `pending_count/2` is unchanged (supervision's
   fallthrough prod path keeps it).
 - `lib/tightbeam/event_log.ex` — `rail_sweep` lifecycle rows.
 - `lib/tightbeam/gateway.ex` — **no change** (the `:on_terminal` closure already
@@ -1495,15 +1489,15 @@ loud `blocked` outcome.
 
 **Acceptance (C7).** An agent that finishes-and-idles with an open,
 gate-unsatisfied obligation (the reviewable-work observable is the gate-unsatisfied
-decision itself, not a `progress` attest — finding 10) runs the remedy XOR the
+decision itself, not a `progress` attest) runs the remedy XOR the
 prod, once, via the episode claim; `rail_sweep` records `run-remedy`. An agent
 with a **self-scheduled** continuation wake triggers neither remedy nor prod
-(`Wakes.self_pending_count > 0`, finding 10) — the no-false-positive guarantee
+(`Wakes.self_pending_count > 0`) — the no-false-positive guarantee
 (I6); a user reminder or supervision prod does NOT suppress it. A gate-unsatisfied
 obligation whose turn-end statute has **no remedy** re-obligates via supervision's
-prod (finding 9); a merely abandoned obligation with nothing owed to a gate takes
+prod; a merely abandoned obligation with nothing owed to a gate takes
 supervision's normal path. One adjudicator, one reaction per terminal, dedup'd by
-supervision's watermark (finding 8).
+supervision's watermark.
 
 ---
 
@@ -1520,7 +1514,7 @@ supervision's watermark (finding 8).
   returns **only** `{:decision_pending, id}`; **`consume/2`** is the actor's
   per-ruling CAS. Plus `decision_requests` +
   `escalation_waivers`, ruling facts, waivers, owner delivery. It is **rewritten to
-  Flynn's ruled model** (Q1–Q4 resolved). The roadmap's sequencing is **satisfied**;
+  the ruled model** (Q1–Q4 resolved). The roadmap's sequencing is **satisfied**;
   statute loading of an `escalate` effect gates on that spec's adversarial review
   landing clean, not on ratification. P4–P6 do not depend on it; it composes now.
 - **Producer strength.** This mechanism enforces fact **existence**, never
@@ -1536,12 +1530,11 @@ supervision's watermark (finding 8).
 
 ---
 
-## §6 model tensions — surfaced, and their team-lead rulings (2026-07-21)
+## §6 model tensions — surfaced, and their rulings (2026-07-21)
 
 Seven places the merged substrate met the guidance-spec §6 model at an edge were
 surfaced for adjudication rather than resolved silently. Each now carries its
-ruling; this spec is written to the ruling. Kept in the spec because they are the
-load-bearing decisions an adversarial reviewer must see justified.
+ruling; this spec is written to the ruling.
 
 **X1 — Independence is CROSS-HARNESS, not cross-model. RULED.** §6's original
 enforcement-mapping row said «`reviewed-clean`, author ≠ producer, cross-model»,
@@ -1554,7 +1547,7 @@ catalog's opacity ruling is preserved. This is exactly
 `assignment.cross_harness_verdict_kinds`; the two specs are **coupled** and the
 §C1 worked example gates on it (`reviewed-clean` + author-independence +
 cross-harness). The guidance spec's «cross-model» wording is being updated to
-«cross-harness» to match (team-lead's edit, not this spec's). The same-harness
+«cross-harness» to match (a change to that spec, not this one). The same-harness
 fallback (a fresh session at a higher thinking level) is **guidance-level, not
 rail-enforced** — the rail gates only on the cross-harness fact.
 
@@ -1571,13 +1564,13 @@ to the agent and a `rail_script`/`rail_remedy`/`rail_sweep` row to
 «a judgment the script delegates by spawning a session — both are the same
 mechanism» read literally against «async judgment is never a blocking call» was
 the only genuine contradiction. RULING: this spec's narrowing is now the
-canonical model — the guidance spec §6 has been amended (team-lead's edit) to
+canonical model — the guidance spec §6 has been amended to
 state scripts are **sync-only** and judgment is **gate-on-fact +
 remedy-originated**. A script may only *trigger* a remedy (return a
 `remedy`-mapped token), never *await* a judge (I2). No open item remains.
 
 **X4 — `escalate` sequencing: SATISFIED.** `escalation-substrate-v1` is now
-rewritten to Flynn's ruled model (Q1–Q4 resolved). The multi-shape resolution lives
+rewritten to the ruled model (Q1–Q4 resolved). The multi-shape resolution lives
 in the **in-fold, effect-free `resolve/3`** (unified four-shape union `:allow |
 {:allow, ruling_id} | {:deny, e} | {:needs_request, dr_id|nil}`, folded by
 `Rules.decide`, §B); the effect `escalate/4` returns **only** `{:decision_pending,

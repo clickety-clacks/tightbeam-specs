@@ -1,6 +1,6 @@
 # CLI ↔ gateway versioning
 
-**Status:** ruled by Flynn, 2026-07-31.
+**Status:** ruled 2026-07-31.
 
 ## The numbering system is semantic versioning
 
@@ -21,7 +21,7 @@ it offered and the version required.
 
 ## Keeping the fleet current
 
-**`update-clients` is admin-only (Flynn ruling, 2026-08-01).** It replaces the CLI binary
+**`update-clients` is admin-only (ruling, 2026-08-01).** It replaces the CLI binary
 on every registered machine, and that reach is an operator power, not an agent verb. An
 implementation guard to this effect was once added unrequested and removed for lacking
 authority; this ruling is that authority, and the guard returns with it.
@@ -34,7 +34,7 @@ authority; this ruling is that authority, and the guard returns with it.
 
 Note the distinction from what was deleted: the gateway does **not** infer a remote CLI's
 identity from exit codes and stdout at boot. That inference was unbounded in its failure
-modes and produced a new defect every review round. Asking a CLI its version and reading the
+modes and produced a new defect every revision. Asking a CLI its version and reading the
 answer is a different mechanism with a different epistemic basis.
 
 ## Cutting a release REQUIRES a compatibility decision

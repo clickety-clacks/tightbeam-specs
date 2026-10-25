@@ -1,17 +1,7 @@
 # Nullable effective parent v1
 
 Status: SPEC READY. Implementation is forbidden until one independent review accepts
-this exact revision and Mike reads the reviewed revision.
-
-Authority: `wi_cd2bb06d-a736-451c-98c3-428129bbe246`, Mike brief
-`s_c43e373c-a6e1-4878-9224-a053e3304e2c`, target election
-`att_b90d64e1-f333-4aba-b594-79d426c56b72`, visibility clarification
-`att_d9d5b31d-9467-4514-8088-973e50d81e7f`, and controlling simplification
-`att_e759139e-0ae6-4c96-a0f8-6ffc16e589df`. Compatibility receipt:
-`att_aa1111e0-ebbe-4452-a09d-92f5cf08c472`. Missing-Main advisory:
-`att_15fd37b3-5b07-4dfa-bdce-14047bbafa93` from source
-`att_114c9b72`. Completion compatibility receipt: `att_d6bbed39` against
-`art_ae962883`.
+this exact revision and the operator reads the reviewed revision.
 
 Target baselines: main/0.2.0 at `8e269e89c04b6b8569813142a12742f3325b8503`;
 0.1.9 at `6c0eacb337c1de086d8d7d76f1c1dc57cad9a3d5`.
@@ -39,7 +29,7 @@ machinery that manufactures explicit parents.
 4. This spec does not require a command that clears an explicit parent. Reparenting may
    continue to set an explicit parent.
 5. This spec does not create a second resolver or a separate terminal-assignment fallback
-   mechanism for `wi_3d6d13a0-c4cf-4370-88a1-b407c41ff7c1`.
+   mechanism for terminal-assignment reports.
 6. This spec does not port main's bootstrap, cold-start, replay, or activation subsystems
    to 0.1.9.
 7. This spec does not make the governance rule a prose-parsing runtime rail.
@@ -71,7 +61,7 @@ machinery that manufactures explicit parents.
 5. A parent consumer already owns its authorization, eligibility, idempotency, and named
    failure rules.
 6. The reviewed completion contract requires raw `spawnedBy` target equality and treats a
-   null parent as unavailable with no Main fallback. Those two rules conflict with Mike's
+   null parent as unavailable with no Main fallback. Those two rules conflict with the operator's
    later ruling and are replaced only as stated in ARC-04.
 7. The reviewed exec-desk work has no semantic conflict. It consumes the resolver and owns
    no fallback or migration logic.
@@ -111,7 +101,7 @@ machinery that manufactures explicit parents.
 9. **INV-09 — Owner Main is a fixed point.** An Owner Main with stored null resolves to its
    own canonical key. A consumer detects that fixed point before another hop.
 10. **INV-10 — Terminal fallback is a corollary.** The terminal-assignment owner-Main
-    behavior bound to `wi_3d6d13a0` is a corollary of INV-02. It has no separate fallback
+    behavior is a corollary of INV-02. It has no separate fallback
     path, candidate ladder, marker, or lifecycle store.
 
 ## Architecture
@@ -166,7 +156,7 @@ machinery that manufactures explicit parents.
    closure permits direct stored-parent reads only in the resolver, migration,
    serialization, diagnostics, and tests.
 9. **ARC-09 — Separate gates.** The canonical spec receives one parent-opened independent
-   exact-hash review. Mike reads that reviewed revision before either implementation
+   exact-hash review. The operator reads that reviewed revision before either implementation
    assignment opens. The main and 0.1.9 arms then receive separate producer cards,
    migrations, tests, reviews, landing decisions, and release gates. Evidence from one arm
    cannot satisfy the other.
@@ -211,7 +201,7 @@ knowledge rows can become stale.
 7. **AC-07 — Terminal fallback.** Given terminal completion, surrender, revocation, or
    failed assigned-turn fixtures with null stored parent, the existing parent action targets
    eligible Owner Main once through the resolver. Source closure finds no separate
-   implementation for `wi_3d6d13a0`.
+   implementation of the terminal-assignment owner-Main fallback.
 8. **AC-08 — Failure, concurrency, and restart.** Given a missing, inactive, or foreign-owner
    Main target, the consumer records its named failure and writes no parent action. Given
    concurrent reparent and parent action, the recorded target and action match one committed
@@ -232,7 +222,7 @@ knowledge rows can become stale.
     count-and-identity capture for each named live-org consequence. A stale knowledge row
     cannot satisfy this gate.
 12. **AC-12 — Review gates.** Given this exact spec hash, one independent reviewer accepts
-    it and Mike records that he read the reviewed revision before either implementation arm
+    it and the operator records that they read the reviewed revision before either implementation arm
     opens. Each arm then supplies its own baseline proof, migration fixture, tests, review,
     and landing evidence.
 

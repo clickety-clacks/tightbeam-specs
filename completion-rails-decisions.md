@@ -1,35 +1,28 @@
 # Completion rails decisions
 
-Status: review-ready decisions spec for
-`wi_a7fd5022-1926-4e9b-ad11-14590bff7907`. This spec supersedes the design
+Status: review-ready decisions spec. This spec supersedes the design
 choices in `completion-policy-named-rails.md`; that file remains evidence only.
 This spec authorizes no implementation, deployment, runtime mutation, identity
 change, or 0.1-line change.
 
-Revision note: the amendment after review verdict
-`att_6a11fb3a-3a89-4310-b892-e5ababb338d6` adds the frozen legacy-selector
+Revision note: the amendment after review adds the frozen legacy-selector
 mapping and the companion-authority contract. It does not change the attachment,
 repair, subtree, vocabulary, or deletion decisions.
 
 Authority and evidence:
 
-- Mike opened `asg_507b144d-dc35-4f9a-b150-0e36c0027090` to produce this
-  decisions spec in the canonical `tightbeam-specs` repository.
-- Mike's rail direction is recorded in
-  `att_1ae1a7ad-7e46-4475-90a5-c97e1a52803a`: archetypes and cards attach
+- The operator directed that this decisions spec be produced in the canonical
+  `tightbeam-specs` repository.
+- The operator's rail direction is on record: archetypes and cards attach
   named rails; an archetype with no deliverable rail has none; the substrate
   executes the selected law and does not infer a deliverable kind.
-- `att_483f9eff-ec19-4b2f-8888-0e2cf0189ed7` proves that
-  `asg_29bb92dc-b7a2-4df4-9be8-3d85dbcca541` fulfilled its spawn-and-brief
-  outcome. `att_a261517d-0c68-4aa1-8f0e-659741e8672b` proves completion was
+- The specimen card's fulfillment evidence proves that it
+  fulfilled its spawn-and-brief
+  outcome. Its completion refusal proves completion was
   then refused only because `effectKind=code` selected a review gate for work
   with no reviewable product bytes.
-- `art_4f0936f4` at SHA-256
-  `6e69554ff2ebe762f4e0100e7949c2b8b837feaaf950f64b6dfdcebfa787eaa9`
-  is superseded noncanonical input. Its candidate later landed at commit
-  `a5c2bfd4af2fea98daa7e1038415bf1ffb1bb2a7` after its lane had been
-  withdrawn. The artifact, commit, and `completion-policy-named-rails.md` do not
-  carry authority and are not revised by this spec.
+- `completion-policy-named-rails.md` is superseded noncanonical input and does not
+  carry authority and is not revised by this spec.
 
 ## Goal
 
@@ -226,7 +219,7 @@ that the declared rows exist.
 An agent, archetype author, card opener, or parent can attach only a rail already
 in the catalog. A card or subtree row cannot mint law. Any agent may propose a
 rail on an identity staging branch. Under the current identity-governance rule,
-only Flynn's merge to identity main mints or adopts it; changing that principal
+only the operator's merge to identity main mints or adopts it; changing that principal
 requires an explicit identity-governance amendment. The serving process installs
 only a merged identity revision. No substrate release is required when the rail
 uses the existing closed fact, verb, check, outcome, and remedy vocabulary. A new
@@ -265,8 +258,8 @@ bytes under an existing identity.
 
 The canonical home of this spec is
 `clickety-clacks/tightbeam-specs/completion-rails-decisions.md`. Its
-implementation authority is the exact byte sequence for which
-`wi_a7fd5022-1926-4e9b-ad11-14590bff7907.specRefName` equals
+implementation authority is the exact byte sequence for which the work item
+that pins this spec has a `specRefName` equal to
 `completion-rails-decisions.md` and whose SHA-256 equals that work item's
 `specRefSha256`. A repository branch, local checkout, artifact copy, or unbound
 commit is not implementation authority. The work-item pin remains empty until a
@@ -282,7 +275,7 @@ The following companions are frozen at canonical `tightbeam-specs` commit
 | `statute-engine-v1.md` | `20bb78619f85f1e4c783b0328b8970149673140316c3e12b777672427a0469cb` | `Invariants (the acceptance lens)`, `Rule files`, `Fact vocabulary`, `Operators & typing`, `Evaluation`, and `Validation` |
 | `check-tier-v1.md` | `b07d1357f00a0bbedaa34a17e310bf051c0b18d898d2e3c58b7d9ca30f53409e` | `Ruled decisions`, `Verbs`, `Statute facts`, `Response shapes`, and `Invariants (acceptance lens)` |
 | `rails-mechanism-v1.md` | `434a4aaf18f3d31534f81b70eb19a009eba5159b1dbcf34b33c8f966a86b7900` | `Invariants (the acceptance lens)`, `A. Script guards`, `B. Hybrid dispatch`, `C. Remedies`, `E. Legibility`, and `F. Rail-set satisfiability` |
-| `tightbeam-decisions.md` | `5f7a63b8bf726feb1817176969dd75e7a81467f99bbea25a3886dc70d629a459` | `Agency-preserving supervision`, `Org learning: codifying emergent structure`, and `Rails: hard law`, including the `propose` staging seam, Flynn merge authority, one engine, and structured-fact boundary |
+| `tightbeam-decisions.md` | `5f7a63b8bf726feb1817176969dd75e7a81467f99bbea25a3886dc70d629a459` | `Agency-preserving supervision`, `Org learning: codifying emergent structure`, and `Rails: hard law`, including the `propose` staging seam, the operator's merge authority, one engine, and structured-fact boundary |
 
 An implementation preflight fetches that exact canonical commit, hashes each
 companion byte-for-byte, and verifies the work-item pin for this spec. A missing
@@ -337,7 +330,7 @@ These names designate row contracts. They do not infer which card needs them.
 ### Minting and installation
 
 Rail definitions live in the org-owned identity source. Any agent may propose a
-definition on a staging branch. Flynn's merge to identity main is the current
+definition on a staging branch. The operator's merge to identity main is the current
 mint/adoption authority. The serving process installs only that merged revision
 through the normal identity publication path. The substrate validates grammar,
 closed facts, exact identity, and rail-set satisfiability. It does not judge the
@@ -418,7 +411,7 @@ cause, and principal. The original card opener, owning user, or administrator
 may use `require`, `omit`, or `restore`; the card holder alone gains no repair
 authority.
 
-This is the repair for `asg_29bb92dc-b7a2-4df4-9be8-3d85dbcca541` after
+This is the repair for the specimen card after
 migration: omit `completion/independent-reviewed-clean@1` from its
 legacy-migration basis and cite the fulfillment and refusal attests. The card's
 history remains truthful. The repair creates no artifact, review card, or
@@ -620,10 +613,10 @@ required archetype default is refused and writes no assignment.
 ### A7 — The jammed coordination card is repaired without fiction
 
 Given migration attaches `completion/independent-reviewed-clean@1` to
-`asg_29bb92dc-b7a2-4df4-9be8-3d85dbcca541`, when its authorized opener runs the
+the specimen card, when its authorized opener runs the
 repair verb with the current revision, a new key, a reason citing
-`att_483f9eff-ec19-4b2f-8888-0e2cf0189ed7` and
-`att_a261517d-0c68-4aa1-8f0e-659741e8672b`, and an omission of that exact rail,
+its fulfillment evidence and
+its completion refusal, and an omission of that exact rail,
 then one new revision commits and the holder receives one notice. No review,
 artifact, verdict, child session, or assignment is fabricated.
 
@@ -646,7 +639,7 @@ and receive the same rail decision. No runtime path reads the historical label.
 
 Given a staging proposal adds a new versioned completion rail that
 uses only installed facts, verbs, checks, outcomes, and remedies, when the org
-receives Flynn's identity-main merge and the serving process loads that revision,
+receives the operator's identity-main merge and the serving process loads that revision,
 then the rail appears in the catalog without a Tightbeam binary change. Given a
 parent or card attempts to name an uninstalled rail or embeds a predicate, then
 the gateway refuses it by exact name and writes no policy row.

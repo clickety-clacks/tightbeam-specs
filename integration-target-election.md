@@ -10,17 +10,12 @@ refuses a landing that has no matching election, registry, and destination.
 
 Tightbeam is the first pilot. This replaces the convention-and-attest-registry practice and
 also represents a separately scoped registry for the ClipMesh ruling. It realizes the
-branch-authority rulings represented by
-`dr_b18fef87-82ff-4893-8882-24e5d096736b`,
-`dr_4ecad888-39dc-4e7c-8080-21cfb064249d`,
-`dr_2e105899-339d-4ff2-a9bd-d89a1683c16d`, `att_21d12c0b`, and
-`dr_70bdfcbf-76a6-42ed-aa60-28617b0e3fcd` without inferring a target from any
+operator's branch-authority rulings without inferring a target from any
 branch, commit, review, spec, or nearby work.
 
 ## Non-Goals
 
-- Choose an integration target for an untargeted work item, including
-  `wi_eb6f8d36-0c9e-436f-8a62-b76f1190b021`.
+- Choose an integration target for an untargeted work item.
 - Merge, push, release, deploy, or operate Git itself.
 - Change the artifact identity contract of `specRefName` and `specRefSha256`.
 - Make Tightbeam `0.1.8` a destination. The superseding release authority locks it.
@@ -50,7 +45,7 @@ branch, commit, review, spec, or nearby work.
 - **Election decision request (DR)**: the only DR subtype that can produce an election. It
   carries the work item, its registry ID, an expected election revision, a frozen registry
   version, and a structured selection of either hold or a subset of that version.
-- **Delegation grant**: a durable, scoped authority from Mike to one principal to resolve an
+- **Delegation grant**: a durable, scoped authority from the operator to one principal to resolve an
   election DR. The grant identifies its grantor, grantee, work-item scope, creation time,
   revocation state, and cause.
 - **Landing**: a Tightbeam-managed integration outcome. It names one work item, the same
@@ -61,7 +56,7 @@ branch, commit, review, spec, or nearby work.
 
 ## Assumptions
 
-- Mike remains the owner authorized to grant or revoke an election delegation and to create
+- The operator remains the owner authorized to grant or revoke an election delegation and to create
   a registry. An existing registry's recorded policy-owner role owns its version-update and
   work-item-binding seams. The session that acts through that role remains the attributed
   principal.
@@ -87,9 +82,9 @@ branch, commit, review, spec, or nearby work.
 1. A work item has exactly one current election state: no election, a `hold` election, or a
    `destinations` election. A `destinations` election contains one or more distinct,
    canonical destination IDs. A `hold` election contains zero destination IDs.
-2. Only Mike, or the grantee of an active delegation grant scoped to the work item, can rule
+2. Only the operator, or the grantee of an active delegation grant scoped to the work item, can rule
    an election DR. The registry policy owner, product owner, work-item owner, reviewer, and
-   spec author do not gain election authority unless Mike grants it durably.
+   spec author do not gain election authority unless the operator grants it durably.
 3. An election DR presents `hold` plus each destination in its frozen registry version. Its
    structured selection is either `hold` or a non-empty subset of those destination IDs. The
    substrate rejects any other ID and rejects a selection that combines `hold` with a
@@ -167,7 +162,7 @@ Add these records and fields:
   `registryId`, `registryVersionId`, `predecessorElectionId`, `idempotencyKey`,
   `electedByPrincipal`, `delegationGrantId`, `cause`, and `createdAt`.
 - `integration_target_delegations`: immutable grant identity and scope plus revocation fields.
-  Grant and revoke mutations are Mike-only and append attributed audit events.
+  Grant and revoke mutations are operator-only and append attributed audit events.
 - `integration_target_landing_receipts`: immutable accepted-outcome rows with `id`,
   `workItemId`, `registryId`, `destinationId`, `landingRef`, `electionId`,
   `electionRevision`, `currentRegistryVersionId`, `idempotencyKey`, `principal`, `cause`, and
@@ -198,7 +193,7 @@ contract closes.
 
 `integration-target-registry-create --scope-kind <product|repository> --scope-ref <ref>
 --policy-owner-role <role> --authority-ref <ref> --authority-sha256 <hex>
---destination <display-name>... --cause <text>` is Mike-only. It generates one opaque
+--destination <display-name>... --cause <text>` is operator-only. It generates one opaque
 registry ID and one opaque destination ID per supplied display name, inserts registry version
 1, advances the current-version pointer, and writes one attributed audit event in a single
 transaction. A scope collision returns `integration_target_registry_scope_exists` and the
@@ -261,14 +256,14 @@ returns `{"registries":[<registry object>...]}` ordered by registry ID. Destinat
 ordered by destination ID. Registry get and list each run in one read transaction. Registry
 get, registry list, DR creation, and landing each read every registry row and its pointed-to
 immutable version in one database snapshot; no result can pair a new pointer with an old
-version body. `authorizingPolicyOwnerRole` is null for the Mike-created first version and is
+version body. `authorizingPolicyOwnerRole` is null for the operator-created first version and is
 the authorizing role string for a policy-owner update. Each `createdAt` value is an integer
 Unix epoch in milliseconds.
 
-After the empty schema migration, Mike creates the Tightbeam pilot registry through
+After the empty schema migration, the operator creates the Tightbeam pilot registry through
 `integration-target-registry-create` with the exact scope, policy-owner role, authority, hash,
 and display names in Assumptions. This is policy data, not compiled topology. Creating a
-ClipMesh registry is a separate Mike-authorized policy action; a ClipMesh display name such as
+ClipMesh registry is a separate operator-authorized policy action; a ClipMesh display name such as
 `0.1.0` cannot collide with a Tightbeam display name because elections and landings carry the
 registry ID and opaque destination ID.
 
@@ -280,7 +275,7 @@ registry ID and opaque destination ID.
    `integration_target_election`, the current work-item revision, and the frozen registry
    options. Its standard projection enumerates `hold` plus each registry destination; free
    text and cross-registry IDs are invalid.
-2. Mike grants a scoped delegation only with
+2. The operator grants a scoped delegation only with
    `integration-target-delegate --work-item <id> --principal <kind:id> --cause <text>`.
    `integration-target-revoke-delegation <grant-id> --cause <text>` records the revocation.
 3. Election DR resolution uses
@@ -288,7 +283,7 @@ registry ID and opaque destination ID.
    --idempotency-key <opaque-key> --rationale <text>`. The election subtype requires a
    non-empty rationale and stores it as the election cause. `--integration-target` may repeat,
    and the hold flag is exclusive. Inside one transaction, the handler checks the caller's
-   Mike-or-active-grantee authority, DR subtype, expected revision, work-item registry binding,
+   operator-or-active-grantee authority, DR subtype, expected revision, work-item registry binding,
    frozen registry version, typed selection, and idempotency outcome. It records base DR ruling
    `integration_target_election`, stores the typed resolution in the election row, supersedes
    a former current election when present, advances the pointer and revision, and publishes
@@ -401,7 +396,7 @@ verification and refusal remain deterministic substrate work (wisdom 6 through w
 
 The migration adds nullable work-item fields, revision 0, and the new empty tables. It creates
 no registry, registry version, destination, work-item registry binding, election, target
-selection, delegation, or landing receipt. Existing work stays untargeted until Mike creates
+selection, delegation, or landing receipt. Existing work stays untargeted until the operator creates
 its registry, the registry policy owner binds the work item, and a new election DR resolves.
 
 Readers and old clients remain compatible because work-item and decision-request output only
@@ -424,7 +419,7 @@ owner and each engineering archetype, so it gives the rule one guidance home. Ad
 definitive teaching:
 
 > Before a managed integration, read the work item's integration-target election. Do not infer
-> a destination from a branch, a commit, a review, a spec, or nearby work. Ask Mike or a
+> a destination from a branch, a commit, a review, a spec, or nearby work. Ask the operator or a
 > durably delegated principal to resolve the election DR. Treat `hold` and no election as a
 > refusal to land. The substrate decides whether the named registry and destination are
 > elected.
@@ -440,10 +435,10 @@ spec.
    invokes `integration-land` for that registry and its `main` destination ID, then the handler
    returns `integration_target_missing`, writes a refusal event with the caller, work item, and
    registry, and writes no acceptance receipt.
-2. Given a Mike-ruled election DR selecting `hold`, when a caller invokes `integration-land`
+2. Given an operator-ruled election DR selecting `hold`, when a caller invokes `integration-land`
    for the bound registry and its `0.1.9` destination ID, then the handler returns
    `integration_target_hold` and preserves the hold row.
-3. Given a Mike-ruled election selecting only the Tightbeam `main` destination ID, when a
+3. Given an operator-ruled election selecting only the Tightbeam `main` destination ID, when a
    caller lands at that ID, then the handler writes one accepted landing receipt. When the
    caller lands at the Tightbeam `0.1.9` destination ID, then the handler returns
    `integration_target_absent`.
@@ -456,7 +451,7 @@ spec.
    then its typed projection contains exactly `hold` plus those three opaque destination IDs
    and display names. The DR accepts a non-empty subset of those IDs as one selection, retains
    the registry ID and authority hash, and omits `0.1.8`.
-6. Given an election DR, when a principal other than Mike resolves it without an active scoped
+6. Given an election DR, when a principal other than the operator resolves it without an active scoped
    delegation, then the handler refuses with `integration_target_election_unauthorized` and
    leaves the DR and work-item pointer unchanged.
 7. Given an active delegation scoped to the work item, when its grantee resolves the DR, then
@@ -473,7 +468,7 @@ spec.
    revision 3 before the DR resolves, then resolution returns
    `stale_integration_target_election`, leaves that DR unresolved, and creates no election.
 10. Given a work item with `specRefName` and `specRefSha256`, when the registry policy-owner
-    role binds a registry or Mike resolves an election, then the specRef pair is byte-for-byte
+    role binds a registry or the operator resolves an election, then the specRef pair is byte-for-byte
     unchanged. Given a registry binding and election, when a valid specRef update occurs, then
     both pointers and the election revision are unchanged.
 11. Given pre-feature work items, when the migration completes, then each has a null registry
@@ -494,7 +489,7 @@ spec.
     engineering archetype reads `engineering-tenets.md`, then it receives the exact
     integration-target teaching above and no other guidance file independently defines a
     target-selection rule.
-15. Given no Tightbeam registry exists, when Mike invokes `integration-target-registry-create`
+15. Given no Tightbeam registry exists, when the operator invokes `integration-target-registry-create`
     with the exact Tightbeam scope, policy-owner role, authority, hash, and display names in
     Assumptions, then it returns one opaque registry ID and three opaque destination IDs, and
     registry get returns version 1 with those values. When the same scope is created again,

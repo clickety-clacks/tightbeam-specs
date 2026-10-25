@@ -4,20 +4,8 @@ Status: FROZEN FOR ONE LINKED INDEPENDENT REVIEW
 
 Date: 2026-08-18 UTC
 
-Assignment: `asg_0c4356a4-29af-4c18-95c1-c2f1db2ba8d1`
-
-Work items:
-
-- this amendment serves `wi_c01e8f20-3f77-434f-a124-f006278c4ff6`;
-- it extends Bug A on `wi_113d569f-7aff-412b-aec3-0c21f2e87f40`.
-
-Reviewed base: `art_aac9cafc`, SHA-256
-`a8fc963dd141721df2253a52644a60da7f9ef8792579518f7d65a3377829a990`,
-reviewed-clean in `att_cb9a06bc-3ad3-4d6f-818e-8e78c51616b9`.
-
-Controlling sequencing: `att_a034fbd6-2542-4404-8fa5-f22a3ffa7be5`.
-Historical partial implementation pointer `art_7409e650` remains integrity and custody
-evidence only. Its missing bytes are not current source authority.
+Reviewed base: SHA-256
+`a8fc963dd141721df2253a52644a60da7f9ef8792579518f7d65a3377829a990`.
 
 This amendment changes design only. It authorizes no implementation, source edit,
 release-line work, provider probe, credential access, wake experiment, deployment,
@@ -84,15 +72,12 @@ The sender must receive one of two visible results:
    `failureClass=legacy_outcome_unknown`, trusted migrated sender and routing identity,
    and one notice. The design creates no fabricated carrier and no absent
    attempt/admitted/handled/undeliverable ledger.
-   Source: the amendment assignment subject for
-   `asg_0c4356a4-29af-4c18-95c1-c2f1db2ba8d1`, preserved by
-   `att_694b3367-b8aa-41c8-b78a-18eea1b615a6`.
 3. Normal resolution returns one exact session after it applies the existing direct,
    role-fallback, and owner-Main rules.
 4. The gateway can read current session, hold, circuit, harness, ACP, adapter,
    credential-presence, and typed quota facts without an external call.
-5. The 2026-08-18 specimen records session `s_f63d31e5`, twelve failed turns, and lost
-   wakes `w_45faa8a8` and `w_a2a13028`. The specimen motivates this amendment. It does
+5. The 2026-08-18 specimen records one session, twelve failed turns, and two lost
+   wakes. The specimen motivates this amendment. It does
    not authorize a live replay or provider probe.
 6. Existing request idempotency, terminal compare-and-set behavior, deterministic notice
    identity, and publisher recovery remain available.
@@ -309,10 +294,10 @@ then no second terminal outcome or sender notice is created.
 
 ### A6. Specimen, authorization, and compatibility
 
-Given a fixture modeled on session `s_f63d31e5` with a current typed weekly
+Given a fixture modeled on the specimen session with a current typed weekly
 `quota_exhausted` fact, when the two historical prompt shapes are submitted as new test
 requests, then each request receives the R3 refusal and no accepted wake disappears.
-The test does not contact a provider and does not replay `w_45faa8a8` or `w_a2a13028`.
+The test does not contact a provider and does not replay the specimen's two lost wakes.
 
 Given an unauthorized reader, when it requests another principal's refusal evidence,
 terminal outcome, or notice, then existing authorization returns `denied` without

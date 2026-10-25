@@ -8,22 +8,9 @@ product `origin/main`.
 Authority: `rest-state-api-v1.md` SP2, SP4, R2, R4, R4c, R4d, R7, R8,
 SR1-SR4, AU1-AU5, AU7-AU8, and A2/A35-A37; its normative wire companion;
 `event-firehose-v1.md` V3-V5 and A6; the D1 transport contract in
-`rest-read-plane-d1.md`; Mike ruling
-`dr_2902b630-0e69-4d58-a16e-bbf3f1f0e017`; spirit verdict
-`att_725b1665-6b35-419e-9f0b-d9af9c62130d`; and route authority report
-`art_cc58df9e` at SHA-256
-`fdd867d9d51031888eb0ca56bb184f39d1706d3e0b1fa7fada4385540b98e8f5`,
-with its source-readable extract in message
-`s_611313bb-ad2d-4434-b075-267b6f67f2e7` and its R7 correlation correction
-in message `s_6f2e66ab-bfed-409a-92e5-a72701548c20`; message
-`s_88e9615c-a45e-4726-98dc-29356d4a2ca2` fixes the shared ordered-item
-encoding requirement. Independent exact-revision review
-`att_da2b9fde-22bd-4b90-8314-6675ebf92f33` and immutable report
-`art_d6fea797` at SHA-256
-`e15b8716d0969941b8199565667af5dd2760113845e48409d687bee1dbd7edbd`
-require the work-item and assignment query correction below.
-This specification serves
-`wi_62996c64-1871-409b-be96-ecce9555bd7e`.
+`rest-read-plane-d1.md`; the operator ruling; and the route authority report,
+with its source-readable extract and its R7 correlation correction; a further
+ruling fixes the shared ordered-item encoding requirement.
 
 ## Spec homing
 
@@ -128,10 +115,10 @@ types, nullability, enum domains, and order. This card corrects the existing
 turn and device serializers and their primary-ref extraction exactly as I4
 defines. Another serializer or mutation defect remains outside this card.
 
-AS4. The firehose registry correction lane owns `session.updated` and the
+AS4. The firehose registry correction work owns `session.updated` and the
 `prod.fired` observational classification. This card neither waits on that
-lane to implement routes nor edits its files. Full cross-class A6 closure waits
-for both reviewed lanes.
+work to implement routes nor edits its files. Full cross-class A6 closure waits
+for both reviewed changes.
 
 ## Invariants
 
@@ -195,7 +182,7 @@ worktree, unreviewed tip, or specs-only D1 revision does not satisfy this gate.
 
 The builder branches from that exact green main tip. The builder does not
 compose this card with the D1, G7, registry, CLI, firehose Card 5, deployment,
-or release lane.
+or release work.
 
 ### Table 1 — closed route and seam map
 
@@ -488,12 +475,12 @@ AC12 — **Focused and full evidence.** Given the completed targetless product
 branch, when verification runs, then focused route, auth, precedence, error,
 cache, secret, key, type, seam-identity, and raw-parity tests pass. The builder
 also records baseline and after counts from the repository's full green gate
-on Gibson. The evidence names the product base SHA, candidate SHA, D1 landing
+on the designated build host. The evidence names the product base SHA, candidate SHA, D1 landing
 SHA, exact commands, pass/failure/skip counts, and the shared Table 1 test
 source. A source-diff assertion rejects changes outside the touch boundary.
 
 AC13 — **Scope separation.** Given the candidate diff, when a reviewer checks
-it against the D1, G7, registry, Card 5, CLI, deployment, and release lanes,
+it against the D1, G7, registry, Card 5, CLI, deployment, and release work,
 then it contains only this card's routes, the two new query seams, two R7
 conformance corrections, the two existing non-composite query corrections,
 focused tests, and required ref extraction. It does not change either

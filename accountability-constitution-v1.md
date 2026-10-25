@@ -1,6 +1,6 @@
 # Accountability constitution & session lifecycle — v1
 
-Status: **RATIFIED DIRECTION** (Flynn rulings, 2026-07-22, from the first in-substrate org
+Status: **RATIFIED DIRECTION** (ruled 2026-07-22, from the first in-substrate org
 test). This spec is the canonical home of these decisions. Sections marked UNBUILT are
 design-complete but unscheduled; implementation lanes deepen them to mechanism grade (and
 take adversarial review) when cut. Where this spec assigns a seam to an existing mechanism
@@ -51,8 +51,8 @@ policy, thresholds, topology. Binding POLICY is law; binding EXISTENCE is physic
   gets its own card with a decomposed subject. Sub-agents never receive the same card and
   never mint new work-items for pieces of an existing one; genuinely new discovered scope
   is raised to the work-item's owner as a proposal.
-- **No intent in limbo — the lifecycle brackets (UNBUILT; scheduled as the
-  work-item-brackets lane).** Work-items gain `owner` (default: creator) and an
+- **No intent in limbo — the lifecycle brackets (UNBUILT; scheduled as part of
+  work-item-brackets).** Work-items gain `owner` (default: creator) and an
   `icebox` mark. Filing is inseparable from arming the brackets; both reuse existing
   machinery, no new fact kinds:
   - **Bracket 1, routed-or-deadline (rot-at-start):** the work-item-create transaction
@@ -125,12 +125,12 @@ policy, thresholds, topology. Binding POLICY is law; binding EXISTENCE is physic
 
 ## 5. Supervision completions (UNBUILT)
 
-- **Strand notification:** the P6 sweep classifies retired-holder assignments as
+- **Strand notification:** the sweep classifies retired-holder assignments as
   :stranded (mechanism spec); this spec adds WHO IS TOLD — a strand files a fact and
   notifies the first LIVING ancestor up the spawner chain; org owner at the root (via the
   wake-to-user path → client push).
-- **The strand condition is a row, not a judgment (Flynn-ruled 2026-07-24, adjudication
-  #3):** notification fires iff the retired holder has OPEN ASSIGNMENT rows. A retired
+- **The strand condition is a row, not a judgment (ruled 2026-07-24):** notification
+  fires iff the retired holder has OPEN ASSIGNMENT rows. A retired
   session with no open assignment was doing nothing anyone is owed — work that is not a
   row does not exist — so routine retirement stays silent (doorbell/stamp only, per
   supervision). This resolves the apparent conflict with supervision's
@@ -146,7 +146,7 @@ policy, thresholds, topology. Binding POLICY is law; binding EXISTENCE is physic
 
 - MUTATING tool calls require the caller to hold an open assignment: file writes,
   state-changing shell, tightbeam effect verbs. Read/query tools are free.
-- Enforcement points already exist or are in flight: C1 harness hooks (commands), P4-P6
+- Enforcement points already exist or are in flight: harness hooks (commands), the
   dispatch layer (verbs). The check is one predicate over the assignments table.
 - Self-carding is legal: the guarantee is no INVISIBLE work, not no autonomous work — a
   self-opened card is patrolled, attributed, readable, revocable.
@@ -187,10 +187,9 @@ Two implementation stages of total emission, both tracked on the roadmap:
 
 ## Provenance
 
-Ratified in conversation 2026-07-21/22 during the first in-substrate org test (three
-incidents: silent strand via borrowed-orchestrator retirement; unbooked expectation at
-two chain links including the operator's own dispatch; retired-session process/drawer
-ghosts). Decisions ledger carries the narrative; the roadmap tracks scheduling. Guidance
+Derived from the first in-substrate org test, which surfaced three incidents: silent
+strand via borrowed-orchestrator retirement; unbooked expectation at two chain links
+including the operator's own dispatch; retired-session process/drawer ghosts. Guidance
 already shipped: dispatching skill (expecter-opens-card, pointer briefs, threading,
 retire duty, bottom-up sweep), product-owner archetype (self-assignment, orchestrator
 exclusivity, slates), orchestrator archetype (no source editing), operating manual

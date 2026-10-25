@@ -4,41 +4,29 @@
 file is not implementation or rollout authority until that review returns
 reviewed-clean for the exact commit and SHA-256.
 
-**Work item:** `wi_ff222e95-ecd4-4ba0-83cc-ddd9e2301e07`
-
-**Controlling authority:** Mike's decision
-`dr_07bdef13-45ae-435f-bc79-b2dc6b0a5ebf`, recovered in direct message
-`s_4867db6b-8fa8-4f81-b46a-b1806531463b` and final owner ruling
-`att_6349ad2d-6d7e-4352-a333-6ff0218cfd79`. Owner ruling
-`att_1e928176-63b6-4a39-b76b-fd7694c2311b` and producer verdict
-`att_fb2292c8-1732-48fe-9582-d5b3b50dd81c` apply the same correction.
-Target ruling `att_a3883546-7a75-4208-8823-5eeac314052a` fixes the two product
+**Controlling authority:** the operator's decision.
+A target ruling fixes the two product
 lines and indivisible landing rule.
 
-Review adjudication `att_fdfbb9e5-a015-4645-94f4-bca5c43554a7` supplies two
-source-reality corrections: apply covers materialized Tightbeam skill files
+Two source-reality corrections apply: apply covers materialized Tightbeam skill files
 only, and neither target CLI currently exposes a per-session reload result. The
-same adjudication accepts the existing `identityRevision` bookkeeping and a
-revision-bearing ordinary prompt. This contract preserves both without treating
+existing `identityRevision` bookkeeping and a
+revision-bearing ordinary prompt are accepted. This contract preserves both without treating
 either as revision readback or strict confirmation.
 
-Exact-revision review `att_78debb7c-d39a-4157-94e7-f4a0927b6461` and report
-`art_3819fece` found one selection hole: an active session that has never
-started has no current harness-session pointer. A successor called that path a
-pre-change no-op based on historical source. Exact target-line review
-`att_701f0cc0-d4ee-45e7-b07c-a8176b2d7753` and report `art_a7f546df` proved
-that both current target lines instead materialize skill files and stamp the
+One selection hole exists: an active session that has never
+started has no current harness-session pointer. An earlier draft called that path a
+pre-change no-op based on historical source. Both current target lines instead materialize skill files and stamp the
 session without adapter work. R-02, R-03, R-06, R-11, and A-01 preserve the
 current target behavior. The controlling decision supplies no authority to
 delete it.
 
-Product adjudication `att_945c674e-e7bb-401c-87b7-0f6713232119` accepts that
-preservation and requires this exact successor to clear a fresh
-different-session review before implementation or landing. It also keeps the
+This exact successor must clear a fresh
+different-session review before implementation or landing. The
 separate canonical-spec cleanup at `18af4f1df74fc9d71969ecc20ae227d9fc5d2a10`
-behind the reviewed-clean successor.
+stays behind the reviewed-clean successor.
 
-Cleanup inventory addendum `art_4499cc87` found a downstream contradiction in
+A cleanup inventory found a downstream contradiction in
 `observability-v1.md`: that file classified never-started sessions as `:noop`
 even though they now reach the revision stamp. This file owns the identity-apply
 outcome classification. `observability-v1.md` retains only the generic emission
@@ -50,10 +38,10 @@ native skill location and records the source revision. Tightbeam then tells a
 started selected session to re-read the files on a best-effort basis. Apply
 supplies no strict confirmation that later work uses the new guidance.
 
-This authority supersedes owner ruling
-`att_8aaff8d4-aba0-44c4-be19-7099eba49fce` where that ruling required atomic
+This authority supersedes the earlier owner ruling
+where that ruling required atomic
 replacement or revision readback. It preserves only the existing bookkeeping
-that `att_fdfbb9e5` accepts. It drops all earlier strict identity-apply and
+accepted above. It drops all earlier strict identity-apply and
 immutable-generation designs for this work item. Earlier commits, including
 `f4b49223caa4a24842675cde57c74daa01983043`,
 `94496236016aafff8dcc485799084d8df98ef01e`, and
@@ -117,7 +105,7 @@ how a workflow obtains strict confirmation.
   target, or execute a live identity change automatically.
 - This specification does not authorize product implementation before review.
 - This specification does not authorize a live identity command, schema
-  mutation, Gibson product execution, installation, release, deployment, or
+  mutation, live-host product execution, installation, release, deployment, or
   target move.
 
 ## Terms
@@ -507,7 +495,7 @@ before the cleanup or include both in the same merge.
 
 ## Open Questions
 
-None. `dr_07bdef13-45ae-435f-bc79-b2dc6b0a5ebf` selects the simple,
+None. The controlling decision selects the simple,
 best-effort skill-file-update-plus-nudge path. A stricter transition protocol
 would require a new product decision and a separate specification. It is not a
 refinement of this contract.

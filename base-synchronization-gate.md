@@ -1,16 +1,11 @@
 # Base-synchronization gate for implementation passes
 
-Status: amended after independent review
-`att_230098c5-2a18-4e4c-9191-53220608b1c5`; ready for a fresh independent review  
-Work item: `wi_15f960ac-3083-437a-9979-0f0313b7f474`  
-Spec assignment: `asg_3e05a07b-ed03-4a90-bff3-f0c446ee31ff`  
-Product authority: Mike's direct assignment
-`asg_74254cdf-8629-49dc-befe-c20ad253b391`  
+Status: draft  
 Source baseline: Tightbeam `main` at
 `cd72fe0b06404afc6619a800c84a6a7eea595baa`  
 Baseline observation: the configured SSH remote returned that commit at
 `2026-08-12T14:37:25Z`  
-Canonical home: `/Users/mike/shared-workspace/shared/specs/tightbeam/base-synchronization-gate.md`  
+Canonical home: `specs/tightbeam/base-synchronization-gate.md` in the shared specs workspace  
 Operating pattern taught: Agentic Engineering pre-pass base synchronization; the
 neutral operating-manual pointer lands in the same shipped batch
 
@@ -1164,85 +1159,18 @@ that rule. Commit
 (`2026-08-06T03:35:13Z`) refracted the worktree rule into the coder kernel. This spec
 extends that live pattern; it does not mint a parallel name.
 
-The cold digest also found an existing lifecycle contradiction: `feature-cycle` lines
+The live guidance also carries an existing lifecycle contradiction: `feature-cycle` lines
 72-74 requires one review card to receive verdicts until clean, while `reviewing-code`
-lines 54-59 requires that card to complete after each verdict. The first review of this
-spec produced the concrete case: `asg_0996df7b-f8ae-452a-a44a-8a56c1f1ab96` closed
+lines 54-59 requires that card to complete after each verdict, so a review card closes
 after `changes-requested`. The A-12 `feature-cycle` refactor replaces impossible card
 reuse with one fresh linked card per review round and retains reviewer completion;
 A-09 only consumes that lifecycle for base-evidence freshness.
-
-The amendment closes every blocking finding in
-`att_c19d96cf-80db-4cb1-b340-f3387c961a9e`:
-
-| Finding | Closure in this spec |
-| --- | --- |
-| B1 — canonical home | Metadata, A-13, and A-15 bind the artifact to the shared `specs/tightbeam` path; the superseded session-workdir file is not canonical. |
-| B2 — taught-pattern discovery | I-10 and A-12 require one neutral operating-manual pointer in the same shipped batch. |
-| B3 — impossible proof | I-01 and I-09 state that ordered attests are worker claims and observable consistency, not independent observation of edit time or a moving ref's historical remote tip. |
-| B4 — inaccessible home | I-10 and A-13 place the short detector in shared guidance and the sole procedure in one shipped skill elected by all six Agentic Engineering manifests. |
-| B5 — evidence/schema determinism | A-07 records preflight and integration commands, makes array order normative, makes object-key order and whitespace non-normative, and binds each artifact's own bytes by SHA-256. |
-| B6 — source-less pass kind | A-07 restricts reports to `new` or `rework`; A-08 gives source-less classification an attest-only `source-less` value and no report. |
-| B7 — declaration authority | Terms and A-02 derive opener identity from the assignment row and owner-user authority from durable `ownerUserId`; neither depends on an unavailable-opener ceremony or a prior owner ruling. |
-
-The next amendment closes every finding in
-`att_d2022b2b-369a-43d7-abe0-5f0cf7012ac6`:
-
-| Finding | Closure in this spec |
-| --- | --- |
-| B1 — rework red deadlock | I-05, Terms, A-06, A-07, and A-09 keep `review-target-red` releasable when the triggering reviewed commit, safe command identity, and exit status reproduce on the pre-integration commit and synchronized baseline with no additional failing command. Later reviews deleted the stream and fingerprint comparison rather than reopening the deadlock. |
-| B2 — evidence lifecycle | I-06 and A-07 delete outcome fields from the immutable pre-record report and add observation-only stop facts. A-08 makes the attest the sole outcome, defines a total report-to-outcome mapping, validates a cited artifact before honoring release, and defines append-only recovery for interruptions or ambiguous rows. |
-| B3 — correction race | I-03 and A-02 bind the declaration at the observable attempt transition. Later corrections apply to the next attempt or pass; the spec deletes the unenforceable in-flight invalidation guarantee. |
-| B4 — exception null type | A-06 types `overrides_policy` as a JSON string or JSON `null` and rejects the string `"null"`. |
-| I5 — false provenance | A-11 replaces the unrelated `8a26bd3` attribution with full-history evidence from `7608dd16`, `c16e1048`, and `f425fcf`. |
-| I6 — false projection check | A-11 and A-15 state that `packaging/assemble.sh` only packages. Direct `Archetypes.guidance/2` composition proves the detector projection; identity learning, skill-byte comparison, and manifest validation prove the elected skill projection. |
 
 Check: Given the implementation starts from another source commit, when the implementer
 opens the edit, then the implementer re-runs the source map. If a load-bearing clause
 or mechanism changed, the implementer stops before editing and reports the exact
 changed commit, paths, and lines to the orchestrator and canonical spec writer. The
 implementer does not amend spec authority.
-
-The next amendment closes every finding in
-`att_118187c0-8c80-4839-a597-45008853d0e9`:
-
-| Finding | Closure in this spec |
-| --- | --- |
-| F1 — dispatch contradiction | A-02, A-12, A-13, and A-15 add `orchestrator.md` to the batch and narrow atomic dispatch so source-changing cards can receive a declaration between assignment creation and wake. |
-| F2 — artifact trust | I-06, the worker-session term, and A-07 through A-09 require `kind=data` and bind `createdBySession` to the attempt's worker, report, and outcome-attest author. Negative acceptance rejects a wrong-kind or foreign row. |
-| F3 — every-attempt contradiction | I-06 now requires complete rows only for release. A-07 and A-08 require blocked or interrupted attempts to preserve the maximal bytes and rows that actually succeeded without fabricating absent evidence. |
-| F4 — duplicated review lifecycle | I-10, A-09, and A-12 leave commissioning and completion only in `feature-cycle`; the base skill consumes the current round and owns only base-specific evidence. |
-| F5 — note rail | The attest-note encoding term caps the canonical emitted line at 2,000 UTF-8 bytes, forbids truncation and implicit pointers, and defines one bounded non-authorizing fallback for every oversized required shape. A-08 replaces free-form outcome reasons with enums. |
-| F6 — always-on depth | I-10 and A-12 through A-15 split a short detector from one elected on-demand skill across all six manifests. State, schema, exception, and recovery depth occur only in the skill. |
-
-The next amendment closed every finding then known in
-`att_4b47aa7a-e6a2-49d3-af74-6b36d05458f0`:
-
-| Finding | Closure in this spec |
-| --- | --- |
-| F1 — nondeterministic sanitization | The then-current candidate used a deterministic literal sanitizer. The following review proved that mechanism unsafe for transformed secrets, so the next amendment deletes it. This row is provenance, not a live requirement. |
-| F2 — unauthorized implementer amendment | A-11 and A-15 delete implementer amendment authority. A stale source map stops implementation and returns the evidence to the orchestrator and canonical spec writer. Only a spec-writer assignment may amend the canonical file; a new artifact/hash, fresh linked independent review, reviewed-clean verdict, and orchestrator re-pin are required before the implementer is woken to restart. |
-
-The next amendment closed the sole finding then known in
-`att_2bae131e-81de-4fe1-873c-ee4600c508d2`:
-
-| Finding | Closure in this spec |
-| --- | --- |
-| F1 — transformed-secret leakage | The then-current candidate replaced literal redaction with a secret-free launcher precondition. The following review proved that precondition unbuilt and incompatible with credentialed required tests, so the next amendment deletes the entire stream/fingerprint surface. This row is provenance, not a live requirement. |
-
-The next amendment closes the sole finding in
-`att_3e912e95-825c-450f-8ce0-2d75e140165e`:
-
-| Finding | Closure in this spec |
-| --- | --- |
-| F1 — credentialed-test deadlock | The Safe test evidence term, A-06 through A-09, and AC-42, AC-43, AC-47, and AC-56 delete persisted stdout/stderr, output encodings, fingerprints, reconstruction, capture authorities, and the secret-free-launch precondition. Repository-required credentialed commands run under A-06 without gate-owned stream capture. The gate retains only safe pre-expansion command identity, revision, non-secret environment qualifier, exit, `passed` or `failed` result, and classification. A-11 records the live credentialed-smoke rule and the absence of a security launcher. |
-
-The next amendment closes the sole finding in
-`att_230098c5-2a18-4e4c-9191-53220608b1c5`:
-
-| Finding | Closure in this spec |
-| --- | --- |
-| F1 — contradictory preflight output contract | The Preflight cleanliness evidence term, A-04, A-07, A-09, AC-01, and AC-19 delete undefined “sanitized output.” Git uses one exact status command and maps exit plus stdout emptiness to the bounded `clean`, `dirty`, or `error` enum without retaining stream bytes. Worktree-status output yields only the `clean` or `dirty` evidence category; A-07 separately enumerates lawful non-test source-control facts without retaining their underlying streams. Non-Git policy must provide its deterministic predicate or the gate blocks. |
 
 ### A-12 — One-home and clause-preservation map
 
@@ -1352,44 +1280,44 @@ The subtraction choices are:
   interruption ceremony must not inflate every always-on prompt. The six manifests
   already support both guidance includes and skill elections. This adds no product
   command.
-
-The third changes-requested round re-derived each closure before adding surface:
-
-| Finding | Smallest closure | Why delete or accept lost |
-| --- | --- | --- |
-| F1 | Delete `orchestrator.md`'s word `exactly` and name the existing two-step case. | Deleting pre-wake declaration defeats I-02; accepting contradiction makes dispatch nondeterministic. |
-| F2 | Compare two artifact-row fields that already exist. | Deleting recovery reopens prior B2; accepting a foreign or `report` row creates false release. |
-| F3 | Delete I-06's universal every-attempt claim. | No added recovery mechanism is needed; absent rows remain named failure. |
-| F4 | Delete review-card lifecycle from the base skill. | `feature-cycle` already owns it; accepting duplication violates wisdom 18. |
-| F5 | Delete free-form outcome reasons and add one bounded non-authorizing overflow marker. | Deleting declaration and exception detail destroys accountability; accepting truncation makes evidence false. The marker creates no release or new substrate state. |
-| F6 | Relocate depth into one elected skill and keep only the detector always-on. | Deleting depth makes the gate unbuildable; accepting it always-on violates wisdom 16-17. |
-
-The fourth changes-requested round re-derived the headline invariant before closing
-the two findings:
-
-| Finding | Smallest closure | Why delete or accept lost |
-| --- | --- | --- |
-| F1 | The then-current candidate added one byte-level literal sanitizer; the fifth round below supersedes and deletes it after transformed-secret leakage was demonstrated. | This historical choice retained exact fingerprints, but it failed the transformed-secret case and is not a live requirement. |
-| F2 | Delete the implementer's authority to amend the spec and use the existing spec-writer plus linked-review handoff. | Adding an implementation-owned amendment lane duplicates `feature-cycle`. Accepting stale or unreviewed authority breaks the content-hash gate. |
-
-The fifth changes-requested round deleted the defective sanitizer but selected a
-secret-free precondition that the sixth round below supersedes:
-
-| Finding | Smallest closure | Why delete or accept lost |
-| --- | --- | --- |
-| F1 | The then-current candidate deleted literal redaction, refused secret-bearing or unknown capture before process start, and retained byte framing for cited secret-free invocations. | That historical choice prevented transformed-secret persistence but required an unbuilt launcher and deadlocked credentialed required tests; it is not a live requirement. |
-
-The sixth changes-requested round deletes the self-created capture surface:
-
-| Finding | Smallest closure | Why add or accept lost |
-| --- | --- | --- |
-| F1 | Delete stdout/stderr persistence, encodings, fingerprints, reconstruction, capture authorities, and the secret-free-launch precondition; retain the safe command identity, revision, environment qualifier, exit, concise result, and classification. | Adding a credential-aware sandbox loses because current containment is not a security boundary and the fourteen-file guidance batch must not invent one. Accepting a permanently blocked credentialed smoke loses because repository policy requires that smoke. Accepting command-and-exit comparison without output identity is the smaller named limitation. |
-
-The seventh changes-requested round deletes the residual undefined preflight surface:
-
-| Finding | Smallest closure | Why add or accept lost |
-| --- | --- | --- |
-| F1 | Delete “sanitized output” and the blanket gate-wide output-derived-value ban. Retain one exact Git status command whose clean/dirty branch depends on stdout emptiness, the strict raw-stream and test-output-derived bans, and only the source-control facts that A-07 enumerates. | Adding a sanitizer or wrapper loses because neither exists and status paths need not persist. Deleting cleanliness proof loses I-04 and I-06. Accepting an undefined result makes release undecidable. |
+- Pre-wake declaration: `orchestrator.md` drops the word `exactly` and names the
+  existing two-step case. Deleting pre-wake declaration defeats I-02; accepting the
+  contradiction makes dispatch nondeterministic.
+- Artifact trust: the gate compares two artifact-row fields that already exist.
+  Deleting recovery reopens the evidence-lifecycle gap; accepting a foreign or `report`
+  row creates false release.
+- Every-attempt claim: I-06 drops the universal claim. No added recovery mechanism is
+  needed; absent rows remain named failure.
+- Review-card lifecycle: the base skill does not carry it. `feature-cycle` already owns
+  it; accepting duplication violates wisdom 18.
+- Outcome reasons: free-form reasons are replaced by enums and one bounded
+  non-authorizing overflow marker. Deleting declaration and exception detail destroys
+  accountability; accepting truncation makes evidence false. The marker creates no
+  release or new substrate state.
+- Procedural depth: depth lives in one elected skill and only the detector is
+  always-on. Deleting depth makes the gate unbuildable; accepting it always-on violates
+  wisdom 16-17.
+- Spec amendment: the implementer has no authority to amend the spec and uses the
+  existing spec-writer plus linked-review handoff. Adding an implementation-owned
+  amendment lane duplicates `feature-cycle`. Accepting stale or unreviewed authority
+  breaks the content-hash gate.
+- Process output: the gate does not persist stdout/stderr, encodings, fingerprints,
+  reconstruction, or capture authorities, and has no secret-free-launch precondition; it
+  retains the safe command identity, revision, environment qualifier, exit, concise
+  result, and classification. A literal sanitizer fails on transformed secrets, and a
+  secret-free launcher is unbuilt and would deadlock credentialed required tests. Adding
+  a credential-aware sandbox loses because current containment is not a security
+  boundary and the fourteen-file guidance batch must not invent one. Accepting a
+  permanently blocked credentialed smoke loses because repository policy requires that
+  smoke. Accepting command-and-exit comparison without output identity is the smaller
+  named limitation.
+- Preflight output: the gate has no "sanitized output" and no blanket gate-wide
+  output-derived-value ban. It retains one exact Git status command whose clean/dirty
+  branch depends on stdout emptiness, the strict raw-stream and test-output-derived
+  bans, and only the source-control facts that A-07 enumerates. Adding a sanitizer or
+  wrapper loses because neither exists and status paths need not persist. Deleting
+  cleanliness proof loses I-04 and I-06. Accepting an undefined result makes release
+  undecidable.
 
 Check: Given a proposal to add `base-synchronized` as an enforced rail fact during this
 implementation, when the reviewer compares it with current source, then the reviewer
@@ -1458,7 +1386,7 @@ The orchestrator orders the work because the fourteen files share one concept:
    implementation assignment runs those live mutations implicitly.
 
 The spec artifact remains at
-`/Users/mike/shared-workspace/shared/specs/tightbeam/base-synchronization-gate.md`. The work item and review bind its exact
+`specs/tightbeam/base-synchronization-gate.md` in the shared specs workspace. The work item and review bind its exact
 SHA-256. A material review amendment creates a new hash and invalidates the prior
 handoff hash. Only a spec-writer assignment may make that amendment; implementation
 cannot resume until the replacement hash has a linked `reviewed-clean` verdict and the

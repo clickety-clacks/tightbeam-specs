@@ -1,6 +1,6 @@
 # Verification papertrail — the substrate requires, inference produces — v1
 
-Status: DRAFT for Flynn's gate (#90 re-ruling, 2026-07-29). Supersedes
+Status: DRAFT for the operator's gate (re-ruling, 2026-07-29). Supersedes
 `producer-definitions-v1.md` (amended 2026-07-28) in full and the producer
 subsystem of `p3-observables-producers-v1.md` §5 (the `producer_jobs` queue,
 substrate execution, mechanical verdict stamps). Ground truth read on main:
@@ -42,7 +42,7 @@ owns every primitive it takes: attests, artifacts, statutes, remedies.
 
 ## Ruling
 
-Flynn, 2026-07-29 (recorded in memory `substrate-records-inference-acts`;
+The operator, 2026-07-29 (recorded in memory `substrate-records-inference-acts`;
 supersedes the 2026-07-28 producer-definitions gate direction):
 
 **The substrate records, observes, prods, and gates on records; it never
@@ -322,7 +322,7 @@ Every consumer of the subsystem on main, enumerated:
    `skills/feature-cycle/SKILL.md`, `skills/spec-conformance/SKILL.md`
    (instruct `run-tests`/`run-smoke`), `intake.md` Q3 (destination
    `identity/producers.toml`).
-8. Test-org identity repos (shrdlu, tars) — committed `producers.toml`,
+8. Test-org identity repos (test-org-a, test-org-b) — committed `producers.toml`,
    served guidance snapshots instructing the verbs.
 9. Forensic surfaces — `producer_failed`/`producer_kill_failed` lifecycle
    event emissions; historical `attests` rows carrying producer stamps.
@@ -488,12 +488,12 @@ included, because they make the line legible:
 
 ## Migration
 
-Greenfield permissions hold (no production org until gibson); the two test
+Greenfield permissions hold (no production org until the production install); the two test
 orgs are the whole upgrade surface.
 
 - **One cut, no alias seam** (recommendation; timing is §Open 1). The verbs,
   handlers, runner, and CLI commands delete together; the CLI rebuild is
-  part of the cut. shrdlu's and tars's identity repos are rewritten in the
+  part of the cut. test-org-a's and test-org-b's identity repos are rewritten in the
   same cut: `producers.toml` deleted, relearn delivers the rewritten
   guidance and the new statute file.
 - **`producers.toml` becomes inert.** Nothing reads it after the cut; a
@@ -525,7 +525,7 @@ orgs are the whole upgrade surface.
   does not grade evidence.
 - **No verification schema, and no well-known verify slot.** No
   verify-command declaration in substrate or kungfu config — and,
-  considered and REJECTED at this ruling (Flynn, 2026-07-29): a
+  considered and REJECTED at this ruling (operator, 2026-07-29): a
   substrate-owned well-known verify-entry-point slot (a `.tightbeam/verify`
   file or key whose content a remedy sentence would quote). Its only
   distinct value would be substrate auto-execution, which the Principle
@@ -601,18 +601,18 @@ orgs are the whole upgrade surface.
 - **A7 — smoke and platforms.** A1/A2/A5 run end-to-end through the real
   gateway + CLI before ready-to-verify (org smoke-coverage practice), on
   both macOS and Linux gateways, platforms named in the report.
-## Open (for Flynn)
+## Open (for the operator)
 
 1. **Sunset timing of the legacy verbs.** Options: (a) one cut, hard
    deletion, test-org identity repos rewritten in the same change; (b) a
-   fenced alias seam through gibson go-live (the superseded spec's shape).
+   fenced alias seam through production go-live (the superseded spec's shape).
    **Recommendation: (a).** The seam existed to keep un-relearned served
    guidance working mid-upgrade; with only deletable test orgs live and
    relearn shipping the rewritten guidance in the same cut, a compatibility
    seam is machinery for an imagined future.
 2. **Fate of the producer_jobs machinery.** §5's verdict — full deletion;
    survivors are records only (attest stamp columns, inert historical
-   tables) plus `external_producer`. Named open at the #90 gate, so stated
+   tables) plus `external_producer`. Named open at the earlier gate, so stated
    here for confirmation. **Recommendation: confirm §5 as written** — no
    consumer with independent necessity was found, and nothing is kept for
    imagined futures.

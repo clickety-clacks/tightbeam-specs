@@ -1,14 +1,14 @@
-# REST vs CLI — the state-read adjudication (tb02)
+# REST vs CLI — the state-read adjudication
 
 Status: CANONICAL r2, 2026-08-21. r2 is the adopted three-plane authority
-input for `rest-state-api-v1.md` canonical r4. Mike's 2026-08-25 ruling in
-message `s_21b93fdd-5e62-4ed9-ac7e-923697463936` supersedes only r2's contrary
+input for `rest-state-api-v1.md` canonical r4. The operator's 2026-08-25 ruling
+supersedes only r2's contrary
 `asUser` query-parameter prohibition; canonical REST r4 owns that current
 transport behavior. The read-plane, write-plane, and CLI-sugar rulings remain
 unchanged.
 
-r2 reconciled recon wi_9239a7f1's report
-(NFS shared/specs/tightbeam/rest-state-api-recon.md; recon accepted the
+r2 reconciled a recon report
+(recon accepted the
 three-plane ruling and its inventory corrections are adjudicated in).
 Accepted from the recon: coordination-share and digest-members are pure
 reads and move to the read plane (code-verified); REST homes for the
@@ -28,8 +28,8 @@ material. The recon's
 tables, resource routes, projection minima, migration order, acceptance
 proofs) was adopted as the baseline for the REST spec, subject to the scoped
 `asUser` supersession above. Spec-side folds landed as event-firehose-v1.md
-r5. Adjudicated by tb02 per Mike's ruling
-that recon output is input to my classification. Feeds
+r5. Adjudicated per the operator's ruling
+that recon output is input to this classification. Feeds
 event-firehose-v1.md P5.
 
 ## Spec homing
@@ -147,9 +147,7 @@ never re-create SQL.
 
 ## Reconciliation state
 
-- Recon wi_9239a7f1: DONE and reconciled (this r2). Report:
-  NFS shared/specs/tightbeam/rest-state-api-recon.md. Verdict filed on
-  asg_9a1b4764.
-- Kin: wi_9fdc0c07 (client buildability) supplies the demand side;
+- The recon: DONE and reconciled (this r2). Its verdict is filed.
+- A kin card (client buildability) supplies the demand side;
   event-firehose-v1.md r5 (P5, V3-V5, registry, A6) carries the
   spec-side folds of this ruling.

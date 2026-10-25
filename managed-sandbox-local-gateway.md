@@ -1,30 +1,6 @@
 # Managed-sandbox local Tightbeam gateway
 
-Status: STOPPING-RECOVERY-CORRECTED PROPOSAL PENDING CLEAN INDEPENDENT REVIEW
-
-Authority: work item `wi_7c53cfb2-1ad4-477c-b3df-bffc0d3714fa`;
-recon verdict `att_5b82a9c3-dfcc-4da5-bafc-d011bf537ada`;
-historical closure report `art_4a60cdf3` at SHA-256
-`869f650ee514d52e3450e3809b26bf679d4ec0adade2de69925c947dca094227`;
-live specimen `att_edd8f0e0-1568-4753-8079-e7bc9af3da61`.
-First independent review `att_da816395-6895-4e9c-be2a-89c645066765`
-requested five blocking changes against commit
-`39200fe74bfb9bbd8be8c2fe9204f544302e7556`.
-That sole review closed through completion `att_9facab30` and full report
-artifact `art_405ed9cf`. This amendment addresses its five findings. Continuation
-assignment `asg_7fa0cf19-956d-4c1b-807a-ae5c9391908e` requests clean review of
-the amended bytes before policy completion.
-Verification review `att_ca8e39a2-5175-4f52-a553-28cf0365c3da` and report
-`art_a178df78` cleared F1, F2, F3, and F5 and requested one F4 correction
-against commit `d33ce3dfd90d88f4e0c97c0565600756e9098671`.
-F4-only review `att_5c37ae5c-1688-4a8b-adba-595653c798d0` and report
-`art_89b5dd64` confirmed that commit
-`682c7167b86e8550085c0108bd0491d4bfe0dd73` closes the original unlink race
-and requested a complete activator failure and descriptor-lifecycle contract.
-Lifecycle review `att_985e1811-0949-425c-b513-6b55eb352b67` and report
-`art_f6b2303b` confirmed that commit
-`b5af7768abd971737014bedee95a1dc25eb054a0` closes those findings except for
-identity-safe, bounded recovery from the durable `stopping` phase.
+Status: PROPOSAL PENDING CLEAN INDEPENDENT REVIEW
 
 Source basis: Tightbeam `7a70a2f616363074514237b5bee48ba67c52e2ea` and
 tightbeam-specs `2327bc66a45c7cedf6e726bf8e13b40153531e0b`, both current
@@ -808,7 +784,7 @@ approval heuristic.
 ## Acceptance
 
 The implementation passes when AC-1 through AC-21 pass and the following
-reality smoke passes on Gibson against the release CLI, the release gateway,
+reality smoke passes on the Linux target host against the release CLI, the release gateway,
 and the pinned Codex binary:
 
 1. Start a real host socket activator and gateway with a disposable installation

@@ -1,13 +1,13 @@
 # Neutral seed — v1
 
-Decided 2026-07-28 (Flynn), verbatim: "agentic-engineering must NOT be
+Decided 2026-07-28, verbatim: "agentic-engineering must NOT be
 automatically installed for a new organization. New organizations start with
 the neutral minimal identity substrate only. agentic-engineering remains an
 explicitly learnable Kung Fu bundle, installed only when the organization
 chooses to learn it, and it must be removable/unlearnable like other Kung Fu.
 Do not broaden it beyond this scope."
 
-Closes audit findings #91 F1–F3: the seed identity IS agentic-engineering,
+The seed identity IS agentic-engineering,
 active from first boot, with no learn gate.
 
 ## Problem
@@ -53,7 +53,7 @@ substrate touches identity:
 - Scope is exactly this. Nothing else about archetypes, producers, or
   vocabulary changes here.
 
-## INVARIANT — neutral is not ignorant (Flynn; written down 2026-08-01 after it was implemented wrong)
+## INVARIANT — neutral is not ignorant (written down 2026-08-01 after it was implemented wrong)
 
 The seeded default archetype is an EXPERT ON LEADING THE USER TO KUNGFU. Neutral means it
 carries no engineering doctrine; it does NOT mean it knows nothing. A fresh org's main
@@ -73,7 +73,7 @@ BECOME a kungfu. It teaches the seam, not engineering practice.
 
 ### RECOVERED DESIGN — it was built once, and half of it survived (2026-08-01)
 
-The kungfu-offer design was BUILT in session aa41f7b9 (2026-07-22), audited under Flynn's
+The kungfu-offer design was BUILT (2026-07-22), audited under
 challenge, and then partly lost — because half was written into a LIVE IDENTITY TREE on one
 machine (~/.tightbeam-beam/identity/guidance/default.md) instead of into priv/seed. That
 machine was reset; the guidance went with it. This section exists so it cannot evaporate
@@ -97,7 +97,7 @@ it. Restore into priv/seed:
    section, not a database table. Outcomes are adopted / declined / deferred. A DECLINE
    CLOSES IT — never re-raise. A deferral waits for a NEW, STRONGER signal, not a timer.
 
-3. THE TRAIT (Flynn pushed the agent from one instance to the class):
+3. THE TRAIT (broadened from one instance to the class):
    "You are the org's general agent and the user's front door, and you WANT this user to get
    everything tightbeam can give them." plus
    "Attentiveness is the trait, offers are its expression: notice how this user actually
@@ -113,7 +113,7 @@ it. Restore into priv/seed:
    practiced way-of-working an org adopts — guidance, skills, and rules bundled so agents
    work in a discipline instead of improvising."
 
-**THE AUDIT, worth preserving as method.** Flynn challenged: "you've not just made up
+**THE AUDIT, worth preserving as method.** The challenge was: "you've not just made up
 mechanisms and left it to the agent to invent?" The agent audited rather than asserted,
 found it HAD invented one — creation dates in the `list` projection — and downgraded the
 trigger from "several default sessions over a span of days" to "two or more alive at once",
@@ -124,7 +124,7 @@ invented-mechanism problem and must be downgraded again to what is real.
 
 ### The offer needs MECHANISM, not just judgment (recovered 2026-08-01)
 
-Flynn's kungfu-offer message ends: "think about what mechanisms you need in place to do a
+The kungfu-offer message ends: "think about what mechanisms you need in place to do a
 good job at presenting this to the user." That clause was truncated in every earlier
 quotation of it, and it is the part that makes the rest buildable.
 
@@ -132,7 +132,7 @@ Guidance alone cannot do this job. An agent reading guidance knows what a good m
 looks like; it does not know whether this org was ALREADY offered kungfu last week and
 declined, or how many bare defaults the user has spawned across sessions. Those are facts
 about the org over time, so the substrate has to record them — otherwise every session
-re-offers from zero, which is precisely the over-offering Flynn is guarding against.
+re-offers from zero, which is precisely the over-offering this guards against.
 
 The minimum the substrate must record, kept as small as it can be:
 - that an offer was MADE, and when
@@ -148,7 +148,7 @@ is durable, and the absence of a record is not permission to offer repeatedly.
 NOT YET DESIGNED. This is the open piece of the kungfu-offer requirement; the guidance
 half can ship without it, but the requirement is not met until the facts are recorded.
 
-### TWO ROOTS, different owners (Flynn, 2026-08-01)
+### TWO ROOTS, different owners (2026-08-01)
 
 Verbatim: "the root archetype is the archetype for the kungfu and agents need the info and
 also probably clawline protocol to offer it as root or render it differently than other
@@ -174,7 +174,7 @@ Also from the earlier ask and easy to miss: there must be GUIDANCE AROUND THE
 DEFAULT-ARCHETYPE SETTING IN THE SUBSTRATE — not only the setting and the offer, but the
 substrate explaining what that setting means and when to change it.
 
-### What Flynn actually asked for (recovered from transcript 2026-08-01; BOTH HALVES UNBUILT)
+### What the operator actually asked for (recovered from transcript 2026-08-01; BOTH HALVES UNBUILT)
 
 Verbatim, from an earlier session — this is the requirement, not the paraphrase:
 
@@ -199,7 +199,7 @@ So the requirement is BEHAVIORAL, not merely informational — a default that ca
 1. **Proactive education, well-timed.** Notice the user repeatedly spawning bare default
    archetypes OVER TIME (once or twice across a span, not on first sight), then educate:
    what kung fu means in Chinese and why the name fits, list what is available, offer to
-   install. Flynn's explicit instruction: "don't just single shot this, think about when
+   install. The operator's explicit instruction: "don't just single shot this, think about when
    it's best to offer this" — the TIMING is part of the design, not an implementation
    detail.
 2. **Root archetype adoption.** A bundle declares its intended root archetype; after a
@@ -271,9 +271,7 @@ names; the kungfu template stays.
   (:55), `assign --role coder` (:99), and a reference to the bundle's
   `worktree-session` skill (:141). Those passages are rewritten neutrally:
   roles exemplified generically, and the `worktree-session` pointer moves
-  into the bundle's own guidance. (#70's guidance lane may be editing this
-  same file; the implementer checks its current state before touching it —
-  this spec changes the text's obligations, not its bytes, today.)
+  into the bundle's own guidance.
 - Commit vocabulary names the actual object: `seed: neutral-identity`,
   `learn: <bundle>`, `unlearn: <bundle>`, `relearn: <names>`.
 
@@ -413,14 +411,14 @@ keeps them.
 
 ## Non-goals
 
-- No producer redesign (#90). The seed ships no `producers.toml`; where the
+- No producer redesign. The seed ships no `producers.toml`; where the
   bundle or seed touches producer vocabulary, producer-definitions-v1 is the
   authority.
-- No vocabulary batch (#93).
+- No vocabulary batch.
 - No archetype-system changes beyond what neutrality strictly requires: no
   bundle-archetype renames, no default-archetype-setting semantics changes
-  (gateway.ex:1297–1299), no placement or dangling-`where` changes (#95's
-  boot line stands as shipped).
+  (gateway.ex:1297–1299), no placement or dangling-`where` changes (the
+  existing boot line stands as shipped).
 - No bundle marketplace, registry, remote fetch, or versioning; learn sources
   only the shipped `priv/kungfu/` tree.
 - No changes to `identity edit`/`apply`/`status`, `kungfu-scaffold`, Homes
@@ -468,7 +466,7 @@ keeps them.
 9. Platforms: the fresh-org and learn/unlearn suites run on both macOS and
    Linux gateways (name the platforms in the report).
 
-## Open (for Flynn)
+## Open (for the operator)
 
 1. **Where does the bundle's default-session enrichment go?** The bundle may
    no longer own `archetypes/default.toml`, so learning it no longer changes

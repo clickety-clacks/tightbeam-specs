@@ -1,8 +1,6 @@
 # CLI direct-REST read migration v1 — D3 build specification
 
-Status: DRAFT for independent review, 2026-08-25. This specification serves
-work item `wi_113442f5-22ae-457b-a971-1b620069d490` and assignment
-`asg_29aeed02-f3bc-421a-99ca-c2bce6f80ec0`.
+Status: DRAFT for independent review, 2026-08-25.
 
 Canonical home: `clickety-clacks/tightbeam-specs`, file
 `cli-direct-rest-read-migration-v1.md` on canonical `main`. A branch commit or
@@ -14,8 +12,7 @@ Authority:
 
 - `rest-state-api-v1.md`, canonical r3 at SHA-256
   `49b86ec874283c523001be7449b1e14aef47ca72932955445638ce6443aad754`
-  (reviewed source commit `8b96e512688cc3c010c33c96d1ba622e543c7206`,
-  canonical artifact `art_971f45b5`). Its C1, M4, M5, M8, AU1, AU2, A8,
+  (reviewed source commit `8b96e512688cc3c010c33c96d1ba622e543c7206`). Its C1, M4, M5, M8, AU1, AU2, A8,
   A8a, and A13a clauses control this build.
 - `rest-vs-cli-adjudication.md` r2. Its three-plane ruling makes REST the
   read plane, dispatch the write plane, and the CLI terminal sugar.
@@ -23,20 +20,16 @@ Authority:
 - `session-tokens-v1.md`. It owns current bearer discovery and dispatch
   principal selection. This specification changes only the transport of
   shared-state reads.
-- Product-owner ruling message
-  `s_f898378f-29cf-46b9-a5ad-b4e8681ef6c0`, 2026-08-25. It closes direct-read
+- Product-owner ruling, 2026-08-25. It closes direct-read
   `--as` and `--as-process` behavior without a new REST identity parameter.
 - Telemetry naming clarification, 2026-10-19, supersedes the
   2026-08-25 command-name wording: `execution-map` and
   `execution-map-select` read ExecutionMap telemetry through the separate
   `/api/execution-map` family. Durable `toplines` and `topline` retain their
   existing behavior and are excluded from this telemetry migration.
-- Contract-closure work item
-  `wi_835a72aa-c88b-421b-a34c-41d23032c7c7` owns exact session display-name
-  filtering. Distinct contract-closure work item
-  `wi_3874a61f-288b-4b54-ac8a-da9234a910a2`, author assignment
-  `asg_2dbc772b-b800-4e47-91b7-59965560a2dd`, owns the ExecutionMap REST
-  contract.
+- The display-name contract closure owns exact session display-name
+  filtering. The distinct ExecutionMap contract closure owns the ExecutionMap
+  REST contract.
 
 The fixed `rest-state-api-v1.md` baseline defines durable
 `GET /api/toplines`, durable `GET /api/toplines/:id`, and
@@ -95,7 +88,7 @@ chain. It does not send a dispatch body or call `/agent/dispatch`.
 
 **Canonical read value** — an exact closed-world R7/R7a item or an exact
 ExecutionMap view node frozen by
-`wi_3874a61f-288b-4b54-ac8a-da9234a910a2`, emitted by its D1 or D2 public
+the ExecutionMap contract closure, emitted by its D1 or D2 public
 serializer. A CLI formatter may place the value in a command-specific outer
 object. It does not add, remove, rename, redact, or recompute a value field.
 
@@ -119,10 +112,9 @@ the commit that migrates CLI wrappers.
 
 ## Assumptions
 
-AS1. The reviewed canonical closure from
-`wi_835a72aa-c88b-421b-a34c-41d23032c7c7` will freeze the exact display-name
-candidate filter. The reviewed canonical closure from
-`wi_3874a61f-288b-4b54-ac8a-da9234a910a2` will freeze the separate
+AS1. The reviewed canonical display-name contract closure will freeze the
+exact display-name candidate filter. The reviewed canonical ExecutionMap
+contract closure will freeze the separate
 ExecutionMap route family and its selections. D2 will land each canonical GET
 used in the wrapper inventory. D3 code does not start until the four
 dependency gates in D3-R1 pass. A missing route, filter, or composed selection
@@ -141,7 +133,7 @@ caller must pass to `--before` or `--after`. A route test falsifies this if a
 paginated response cannot drive the next request without the CLI minting or
 decoding a cursor.
 
-AS4. The accepted M6 and M7 lanes will record exact canonical integration
+AS4. The accepted M6 and M7 migrations will record exact canonical integration
 commits and parity verdicts. Legacy dispatch reads and M5 aliases remain when
 either record is absent.
 
@@ -164,7 +156,7 @@ or admin authority.
 
 I4. A canonical REST route and its retained CLI wrapper use the same server
 query and public serializer named by D1, D2, or the reviewed
-`wi_3874a61f-288b-4b54-ac8a-da9234a910a2` closure. When the resource has a
+ExecutionMap contract closure. When the resource has a
 firehose state class, its publisher uses that serializer too. D3 adds only HTTP
 request construction and command-level outer formatting.
 
@@ -188,11 +180,9 @@ data.
 ### D3-R1 — code-start dependency
 
 The implementer must branch from a green canonical Tightbeam main after specs
-main contains the reviewed canonical closures from
-`wi_835a72aa-c88b-421b-a34c-41d23032c7c7` and
-`wi_3874a61f-288b-4b54-ac8a-da9234a910a2`, and product main contains the
-reviewed-clean D2 integration for
-`wi_ea98345b-51f4-4fae-b7df-3670c0d54f6b`. The dependency receipt must name:
+main contains the reviewed canonical display-name and ExecutionMap contract
+closures, and product main contains the reviewed-clean D2 integration. The
+dependency receipt must name:
 
 1. the reviewed display-name closure path, SHA-256, and verdict;
 2. the canonical specs-main commit that contains the display-name closure;
@@ -255,7 +245,7 @@ alias.
 | `work-item-get ID` | `work-item-get` | `GET /api/work-items/:id` | None. |
 | `work-item-trace ID` | `work-item-trace` | `GET /api/work-items/:id/trace` | None. |
 | `transcript --session KEY [page flags]` | `transcript` retrieval | `GET /api/sessions/:sessionKey/messages` with `before`, `after`, and `limit` | None. |
-| `transcript --name NAME` | `transcript` lookup | `GET /api/sessions?displayName=NAME` using the exact filter frozen by `wi_835a72aa-c88b-421b-a34c-41d23032c7c7`; call `GET /api/sessions/:sessionKey/messages` only after the caller selects a session | Return the candidate choice from canonical session items. Return no message content during lookup. |
+| `transcript --name NAME` | `transcript` lookup | `GET /api/sessions?displayName=NAME` using the exact filter frozen by the display-name contract closure; call `GET /api/sessions/:sessionKey/messages` only after the caller selects a session | Return the candidate choice from canonical session items. Return no message content during lookup. |
 | `execution-map` | `execution-map` flat roster | `GET /api/execution-map` with canonical `after` and `limit`; translate existing filters to `origin`, `ownerUserId`, `state`, `quietOverMs`, `specRefName`, dependent `specRefSha256`, and `sessionKey` | None. |
 | `execution-map --tree` | `execution-map` tree | `GET /api/execution-map/tree` with the same roster filters and no page parameters | Render the returned forest without recomputing server telemetry. |
 | `execution-map-select --under ID` | `execution-map-select` subtree | `GET /api/execution-map/subtrees/:workItemId` with the roster filters and no page parameters | Render the returned forest. |
@@ -309,7 +299,7 @@ not preflight whether `asUser` exists. An org bearer with known, unknown,
 empty, or missing `asUser`; a session bearer with absent, matching-owner, or
 mismatched-owner `asUser`; and a device bearer with `asUser` must receive the
 AU2 result without client reinterpretation. These rules carry the product-owner
-ruling delivered on 2026-08-25 for `asg_29aeed02`.
+ruling delivered on 2026-08-25.
 
 ### D3-R5 — response and error behavior
 
@@ -342,7 +332,7 @@ The `list` formatter must not restore the current dispatch `inspect` query or
 add wakes, digest carriers, roles, or pending devices to the canonical
 org-plus-sessions composition.
 The `transcript --name` formatter may perform only the candidate selection
-frozen by `wi_835a72aa-c88b-421b-a34c-41d23032c7c7`; it does not scan sessions
+frozen by the display-name contract closure; it does not scan sessions
 or transcripts to recreate a missing server filter. The `execution-map` and
 `execution-map-select` formatters may arrange a canonical ExecutionMap view
 but must not reproduce the server's telemetry computation or read the durable
@@ -488,7 +478,7 @@ Likely product touchpoints, verified at baseline:
 - `lib/tightbeam/gateway.ex`: legacy handler registration and mixed `config`
   read/write split;
 - the ExecutionMap query and serializer modules frozen by
-  `wi_3874a61f-288b-4b54-ac8a-da9234a910a2`: D3 reuses them and does not add a
+  the ExecutionMap contract closure: D3 reuses them and does not add a
   second telemetry projection;
 - `test/router_test.exs`, `test/gateway_test.exs`, and resource-focused tests:
   removal absence and write-preservation proofs.
@@ -594,8 +584,7 @@ unit-test success alone do not satisfy this acceptance.
 
 Open Questions: none. The REST product owner ruled the direct-read `--as` and
 `--as-process` behavior on 2026-08-25. The display-name query vocabulary is
-owned by `wi_835a72aa-c88b-421b-a34c-41d23032c7c7`; the separate ExecutionMap
-family is owned by `wi_3874a61f-288b-4b54-ac8a-da9234a910a2` under
-`asg_2dbc772b-b800-4e47-91b7-59965560a2dd`. Both are D3-R1 code-start
+owned by the display-name contract closure; the separate ExecutionMap
+family is owned by the ExecutionMap contract closure. Both are D3-R1 code-start
 dependencies rather than inventions in this specification. Durable
 `/api/toplines` semantics remain outside D3.
