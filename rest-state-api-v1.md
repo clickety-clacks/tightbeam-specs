@@ -44,6 +44,14 @@ G9 setHarness capability successor, 2026-08-28: PROPOSED. Add the closed session
 `session.harness_changed` R8 class. The exact behavior contract is
 `session-status-set-harness-capability-v1.md`.
 
+Tool-call and session-transition successor, 2026-10-25: PROPOSED. Add the
+`tool calls` resource and its two session-scoped routes, state that the R5d
+history boundary does not filter tool records, open the transcript-message
+`marker.kind` reader domain, and seed the `tool_call.started`, `tool_call.ended`, and
+`transition.recorded` R8 rows. The exact behavior contract is
+`tool-call-and-session-transition-records-v1.md`; its TC, TR, and FH labels
+are cited here as defined there.
+
 G4 error-contract successor, 2026-08-26: PROPOSED. This amendment applies one
 closed typed error envelope to the canonical `/api` read routes in R2, R3, and
 R3a. It changes no success envelope, resource label, R7/R7a item, R8/R8b
@@ -148,6 +156,12 @@ candidate set is this file, `rest-state-api-v1-wire-schema.md`,
 `event-firehose-v1.md`, `cli-surface-v1.md`, and
 `session-status-set-harness-capability-v1.md`; all five land in one reviewed
 revision.
+The tool-call and session-transition successor adds a resource, changes the
+transcript-message projection, and adds R8 mappings, a filter value, and wire
+types. Its exact set is this file, `rest-state-api-v1-wire-schema.md`,
+`event-firehose-v1.md`, and its behavior contract
+`tool-call-and-session-transition-records-v1.md`; all four land in one reviewed
+revision, and `cli-surface-v1.md` is unchanged.
 `rest-state-api-r3-adjudication.md`, `rest-vs-cli-adjudication.md`, and
 `topline-map-v1.md` remain authority inputs, not custody companions for this
 contract. A worktree, artifact row, transcript, adjudication ledger, or review
@@ -417,6 +431,7 @@ R2. Core model resources:
 | GET /api/sessions | paged sessions |
 | GET /api/sessions/:sessionKey | session detail + mechanical status |
 | GET /api/sessions/:sessionKey/messages[, /:messageId] | paged transcript projection and message detail |
+| GET /api/sessions/:sessionKey/tool-calls[, /:toolCallId] | paged tool-call records and tool-call detail |
 | GET /api/sessions/:sessionKey/coordination-share?from=&to= | pure bounded aggregate read |
 | GET /api/work-items[, /:id, /:id/trace] | paged collection, detail, composed trace |
 | GET /api/assignments[, /:id, /:id/attests] | paged collection (with derived status, advisory files, effect), detail, nested attests |
@@ -496,6 +511,7 @@ R7/R7a projection.
 | `GET /api/attests/:attestId` | R7 attest `id`; equals R8 `refs.attestId` | `attests` |
 | `GET /api/roles/:name` | R7 role `name`; equals R8 `refs.role` | `roles` |
 | `GET /api/sessions/:sessionKey/messages/:messageId` | R7 message `(sessionKey,id)`; `id` equals R8 `refs.messageId` | `transcript messages` |
+| `GET /api/sessions/:sessionKey/tool-calls/:toolCallId` | R7 tool call `(sessionKey,id)`; `id` equals R8 `refs.toolCallId` | `tool calls` |
 | `GET /api/facts/:factId` | canonical positive base-10 R7 fact `id`; equals R8 `refs.factId` and `rowVersion` numerically | `condition facts` |
 | `GET /api/critical-state/:sessionKey` | R7 critical-state `sessionKey`; equals R8 `refs.sessionKey` | `critical state` |
 | `GET /api/host-env/:host/:harness/:name` | R7a host-environment `(host,harness,name)`; equals the three R8 primary refs | `host environment` |
@@ -621,6 +637,8 @@ success and R4c error envelope. A query string does not change the value.
 | `/api/sessions/:sessionKey` | `sessions` |
 | `/api/sessions/:sessionKey/messages` | `transcript messages` |
 | `/api/sessions/:sessionKey/messages/:messageId` | `transcript messages` |
+| `/api/sessions/:sessionKey/tool-calls` | `tool calls` |
+| `/api/sessions/:sessionKey/tool-calls/:toolCallId` | `tool calls` |
 | `/api/sessions/:sessionKey/coordination-share` | `coordination share` |
 | `/api/work-items` | `work items` |
 | `/api/work-items/:id` | `work items` |
@@ -773,6 +791,7 @@ R5a. Stable collection orders and cursor tuples are:
 | wakes | `(createdAt, wakeId)` |
 | turns | `(seq)` |
 | transcript messages | `(seq, id)` |
+| tool calls | `(seq, id)` |
 | artifacts | `(createdAt, artifactId)` |
 | assets | `(createdAt, assetId)` |
 | decision requests | `(raisedAt, id)` |
@@ -876,6 +895,12 @@ empty cursorless tail has both flags false. An empty caught-up `after` page has
 `newestCursor` bound to `after`; using either cursor in the other direction
 returns `400 invalid_cursor`.
 
+The history boundary does not filter the tool-calls collection (TC13). For a
+target session, the collection and its page flags cover every tool record AU4
+permits, ordered by R5a `(seq,id)`, whatever its `afterMessageSeq` relative to
+`clearedThroughSeq`, and a boundary advance removes no record from them. The
+tool-call detail route applies AU4 only, as the message detail route does.
+
 R6. Filters are whitelisted per resource:
 
 | Resource | V1 whitelist filters |
@@ -903,6 +928,7 @@ R6. Filters are whitelisted per resource:
 | read markers | caller user by default; scopeKey exact or prefix |
 | facts | kind exact, scope exact, origin exact, tsFromInclusive, tsToExclusive |
 | critical state | sessionKey exact |
+| tool calls | afterMessageSeqFromInclusive, afterMessageSeqToExclusive |
 | execution map flat, tree, subtree | origin, ownerUserId, state, quietOverMs, specRefName, specRefSha256, sessionKey |
 | toplines | state exact |
 
@@ -912,7 +938,10 @@ never an existence oracle. No `fields`, `sort`, `include`, or join parameters
 exist in v1. Every bounded-time filter is an epoch-millisecond integer named
 `<field>FromInclusive` or `<field>ToExclusive`. The lower comparison is `>=`;
 the upper comparison is `<`. Wakes admit `dueAt` and `firedAt`; turns admit
-`createdAt`, `startedAt`, and `endedAt`; facts admit `ts`. A missing bound is
+`createdAt`, `startedAt`, and `endedAt`; facts admit `ts`. Tool calls admit
+the integer pair `afterMessageSeqFromInclusive` and
+`afterMessageSeqToExclusive`, which bound the transcript-message `seq` anchor
+rather than a time, with the same `>=` and `<` comparisons. A missing bound is
 open. Any other time-filter name returns `400 invalid_filter`.
 
 R6a. ExecutionMap roster filters have these exact meanings and validation:
@@ -1032,6 +1061,7 @@ agent-only return-field condition in the table note below.
 | hosts | `host`, `rowVersion` |
 | sessions | `sessionKey`, `displayName`, `kind`, `orderIndex`, `isBuiltIn`, `adopted`, `ownerUserId`, `origin`, `spawnedBy`, `handle`, `archetype`, `overrides`, `identityName`, `identityRevision`, `harness`, `provider`, `model`, `thinkingLevel`, `modelContext`, `host`, `clearedThroughSeq`, `state`, `createdAt`, `updatedAt`, `mechanicalStatus`, `capabilities`, `rowVersion` |
 | transcript messages | `id`, `seq`, `sessionKey`, `role`, `messageType`, `marker`, `content`, `at`, `sender`, `deviceId`, `clientMessageId`, `replyToMessageId`, `replyToClientMessageId`, `llmVisibleMessageId`, `attachments`, `attentionTier`, `turnSeq`, `assignmentId`, `jobRef`, `harness`, `provider`, `model`, `effort`, `context`, `rowVersion` |
+| tool calls | `id`, `seq`, `sessionKey`, `turnSeq`, `afterMessageSeq`, `harnessToolCallId`, `title`, `kind`, `toolName`, `status`, `rawInput`, `rawOutput`, `content`, `truncated`, `startedAt`, `endedAt`, `rowVersion` |
 | work items | `id`, `title`, `specRefName`, `specRefSha256`, `isBug`, `ownerUserId`, `state`, `failReason`, `routingWakeId`, `slateWakeId`, `createdByUser`, `createdBySession`, `createdInTurnSeq`, `createdContextKnown`, `createdAt`, `priority`, `rowVersion` |
 | assignments | `id`, `subject`, `holderKey`, `holderRole`, `holderFallback`, `openedByUser`, `openedBySession`, `openedAt`, `state`, `outcome`, `closedAt`, `closedByUser`, `closedBySession`, `closingAttestId`, `revocationReason`, `workItemId`, `reviewsAssignmentId`, `holderHarness`, `holderProvider`, `files`, `effectKind`, `derivedStatus`, `rowVersion` |
 | attests | `id`, `assignmentId`, `kind`, `verdictKind`, `note`, `bySession`, `byUser`, `producer`, `producerCommand`, `byHarness`, `byProvider`, `commitRefs`, `ts`, `rowVersion` |
@@ -1134,17 +1164,21 @@ null. The R7 serializer omits `messageType` for either row and never emits
 unrecognized future string. A missing or unrecognized value means `assistant`
 for message-type presentation; it does not change `role`. Readers do not reject
 the item or parse `content`. For a non-null source, the R7 serializer copies the
-stored string. REST, CLI wrappers, and `message.created` call that one
-serializer; an adapter does not construct another transcript-message map.
+stored string. REST, CLI wrappers, `message.created`, and
+`transition.recorded` call that one serializer; an adapter does not construct
+another transcript-message map.
 
 An item carries `marker` immediately after `messageType` exactly when the row
 has a stored marker, which the stored row ties to `messageType:"marker"`. Its
 value is the closed object `{kind, from, to}` of non-null strings. Other items
-omit the key and never emit `marker:null`. `marker.kind` is one of
-`harness-switch`, `model-retune`, or `session-restart`; this enum is closed.
-Markers travel as `message.created`; no `transition.recorded` class exists.
-`marker.kind` names a transition; `messageType` remains the message-kind
-discriminator.
+omit the key and never emit `marker:null` (TR4). Producers emit only
+`harness-switch`, `model-retune`, `session-restart`, or `context-compacted` as
+`marker.kind`. Readers accept an unrecognized kind string, do not reject the
+item, and show the message `content` (TR5). Markers travel as
+`transition.recorded` (FH2). In the public 0.1.9 and 0.1.12 lines, `marker.kind`
+is one of the first three values, markers travel as `message.created`, and no
+`transition.recorded` class exists. `marker.kind` names a transition;
+`messageType` remains the message-kind discriminator.
 
 Example: a harness-change marker item reads
 `…"messageType":"marker","marker":{"kind":"harness-switch","from":"…","to":"…"},"content":…`;
@@ -1175,7 +1209,8 @@ principal, else from the session owner.
   carry the same `(id,rowVersion)` SHALL carry identical items. This does not
   require `rowVersion` to equal `seq`. It covers changes inside one running
   build; a projection change that an upgrade causes is covered by the
-  firehose M2 rebuild that every gateway restart triggers.
+  firehose M2 rebuild that every gateway restart triggers. These version rules
+  apply in the same way to a marker item that `transition.recorded` carries.
 
 Example: two unlinked legacy human rows in a session owned by user `u1`, one
 stored null and one stored `""`, are both served with `sender:"user:u1"`. A
@@ -1226,9 +1261,9 @@ schema fixes JSON types, nullability, nested object keys, enum domains, and
 array order. An unknown enum value fails serialization and emits no partial
 response.
 
-The preceding unknown-enum failure applies to closed enums. `messageType` is
-the one open discriminator defined by R7m; an unrecognized string remains
-valid.
+The preceding unknown-enum failure applies to closed enums. `messageType` and
+`marker.kind` are the two open reader domains defined by R7m; an unrecognized
+string remains valid.
 
 R7b. `/download/:assetId` returns bytes, not a JSON projection. The asset row
 is its sole authorization metadata; no inferred artifact or work-item link
@@ -1314,6 +1349,8 @@ remain outside this table.
 | `read_marker.updated` after set | read markers | upsert | `userId` + `scopeKey` |
 | `read_marker.updated` after clear | read markers | delete | `userId` + `scopeKey` |
 | `message.created` | transcript messages | upsert | `messageId` + `sessionKey` |
+| `transition.recorded` | transcript messages | upsert | `messageId` + `sessionKey` |
+| `tool_call.started`, `tool_call.ended` | tool calls | upsert | `toolCallId` + `sessionKey` |
 | `condition_fact.filed` | condition facts | upsert | `factId` |
 | `critical_lease.updated` | critical state | upsert | `sessionKey` |
 | `config.updated` | config | upsert | `key` |
@@ -1654,7 +1691,7 @@ does not borrow that bit.
 |---|---|
 | org, harness catalog, hosts, roles | any authenticated user or session in the org |
 | sessions | target session; target session owner; admin |
-| transcript messages, coordination share | target session; target session owner; admin |
+| transcript messages, tool calls, coordination share | target session; target session owner; admin |
 | work items, work-item trace | work-item owner; creating session; a session that holds an assignment on the item; admin |
 | assignments | holder session; work-item owner; opener when the opener is a user or session principal; admin |
 | attests | any principal allowed to read the parent assignment |
@@ -1828,8 +1865,8 @@ The work-item proof requires `priority` immediately before `rowVersion` and
 rejects a missing, extra, reordered, or conditionally omitted work-item key.
 
 For transcript messages, the proof evaluates the R7m condition first and then
-requires the resulting key set exactly. It proves `messageType` is the sole
-conditional key.
+requires the resulting key set exactly. It proves `messageType` and `marker`
+are the only conditional keys.
 A4. Subscribe-first multi-resource snapshot plus buffered notices converges
 under concurrent creates/updates/deletes by last-version-wins upsert on
 `(primary key, rowVersion)`; reconnect + fresh rebuild converges with no event

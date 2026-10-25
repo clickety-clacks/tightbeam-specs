@@ -51,6 +51,16 @@ key, its closed `TransitionMarker` shape and closed kind domain, and the
 nonempty `sender` rule for human rows. This adds no other field or wire
 change.
 
+Tool-call and session-transition successor, 2026-10-25: PROPOSED. Add the
+`tool calls` item, the closed `ToolCallTruncation` shape, and their enum
+domains, and open the `TransitionMarker.kind` reader domain. The `marker` key
+and `TransitionMarker` shape are the reset-safe history amendment's, made once
+(its §8a C2 and C3). The
+exact set is this file, `rest-state-api-v1.md`, `event-firehose-v1.md`, and
+the behavior contract `tool-call-and-session-transition-records-v1.md`; all four
+land in one reviewed revision, and `cli-surface-v1.md` is unchanged. Its TR
+labels are cited here as defined there.
+
 ## Encoding rules
 
 JSON is UTF-8. Integers are signed JSON integers and never floating-point
@@ -149,6 +159,7 @@ typed J below and still passes SR2/SR6 secret exclusion.
 - `HarnessModel`: `{provider:S, model:S, displayName:S, efforts:A<S>,
   capabilities:O<ModelCapabilities>}`.
 - `HarnessCapability`: `{name:S, supported:B}`.
+- `ToolCallTruncation`: `{field:S, originalBytes:I}`.
 - `ArchetypeDefaults`:
   `{harness:S|null, model:O<ModelPreference>|null}`.
 - `Containment`: `{fs:S, network:S}`.
@@ -281,6 +292,7 @@ mutate this field.
 |---|---|---|---|---|---|
 | sessions | sessionKey, displayName, kind, ownerUserId, origin, spawnedBy, handle, archetype, identityName, identityRevision, harness, provider, model, thinkingLevel, modelContext, host, state, mechanicalStatus | orderIndex, clearedThroughSeq, createdAt, updatedAt, rowVersion | isBuiltIn, adopted | overrides `O<SessionOverrides>`, capabilities `O<SessionCapabilities>` | ownerUserId, spawnedBy, handle, identityName, identityRevision, provider, model, thinkingLevel, modelContext, host, clearedThroughSeq, overrides |
 | transcript messages | id, sessionKey, role, messageType, content, sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, llmVisibleMessageId, assignmentId, jobRef, harness, provider, model, effort | seq, at, attentionTier, turnSeq, rowVersion | — | attachments `A<O<Attachment>>`, marker `O<TransitionMarker>`, context `J` | sender (except on a human row), deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, assignmentId, jobRef, harness, provider, model, effort, turnSeq, context |
+| tool calls | id, sessionKey, harnessToolCallId, title, kind, toolName, status | seq, turnSeq, afterMessageSeq, startedAt, endedAt, rowVersion | — | truncated `A<O<ToolCallTruncation>>`, rawInput `J`, rawOutput `J`, content `J` | toolName, rawInput, rawOutput, content, endedAt |
 | work items | id, title, specRefName, specRefSha256, ownerUserId, state, failReason, routingWakeId, slateWakeId, createdByUser, createdBySession | createdInTurnSeq, createdAt, priority, rowVersion | isBug, createdContextKnown | — | specRefName, specRefSha256, ownerUserId, failReason, routingWakeId, slateWakeId, createdByUser, createdBySession, createdInTurnSeq |
 | assignments | id, subject, holderKey, holderRole, openedByUser, openedBySession, state, outcome, closedByUser, closedBySession, closingAttestId, revocationReason, workItemId, reviewsAssignmentId, holderHarness, holderProvider, effectKind, derivedStatus | openedAt, closedAt, rowVersion | holderFallback | files `A<S>` | holderRole, openedByUser, openedBySession, outcome, closedAt, closedByUser, closedBySession, closingAttestId, revocationReason, workItemId, reviewsAssignmentId, holderHarness, holderProvider |
 | attests | id, assignmentId, kind, verdictKind, note, bySession, byUser, producer, producerCommand, byHarness, byProvider | ts, rowVersion | — | commitRefs `A<O<CommitRef>>` | verdictKind, note, bySession, byUser, producer, producerCommand, byHarness, byProvider, commitRefs |
@@ -334,10 +346,15 @@ canonical REST and notices; legacy response shapes remain unchanged.
 - session kind: `main|dm|custom`; session state: `active|retired`.
 - message role: `user|assistant`; attentionTier: `-1|0|1`.
 - messageType current producer values: `assistant|substrate|marker|agent`.
-  This discriminator is the sole open string domain in this file; missing and
-  unrecognized values use the `assistant` fallback defined above.
-- `TransitionMarker.kind`: `harness-switch|model-retune|session-restart`
-  (closed).
+  This discriminator is one of the two open reader domains in this file;
+  missing and unrecognized values use the `assistant` fallback defined above.
+- `TransitionMarker.kind` current producer values:
+  `harness-switch|model-retune|session-restart|context-compacted`. This is the
+  second open reader domain (TR5): a reader accepts an unrecognized kind
+  string and shows the message `content`.
+- tool-call status: `pending|in_progress|completed|failed`;
+  `ToolCallTruncation.field`: `rawInput|rawOutput|content`. Tool-call `kind`
+  is an open string, not an enum.
 - work-item state: `open|iceboxed|closed|failed`.
 - assignment state: `open|closed`; outcome:
   `completed|surrendered|revoked|null`.
@@ -384,6 +401,8 @@ canonical REST and notices; legacy response shapes remain unchanged.
 - `SessionCapabilities.setHarness.options` preserves registered harness-catalog
   order. It contains each registered harness exactly once; the resident harness
   is disabled and each other harness is enabled.
+- tool-call `truncated` sorts by `field` in the order `rawInput`,
+  `rawOutput`, `content`.
 - topline memberships sort by `(linkedAt, id)`; concerns by `(createdAt, id)`.
 - ExecutionMap flat items, assignment-selected items, forest roots, siblings,
   and children sort by source `(createdAt,id)`. `closingAttests` sorts by
@@ -408,4 +427,5 @@ amendment must change this file and the corresponding main R4 or R9 clause
 together.
 
 A present `messageType` that is not a string is a schema failure. An
-unrecognized `messageType` string is the sole enum exception and remains valid.
+unrecognized `messageType` string or `TransitionMarker.kind` string is one of
+the two enum exceptions and remains valid.
