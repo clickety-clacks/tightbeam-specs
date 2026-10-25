@@ -587,8 +587,7 @@ help, parser and output before activating the amendment (wisdom 20–22). Accept
 
 ## Acceptance
 
-Tests use isolated fixtures on **host-a or host-b**, the two designated remote test hosts (the
-deployment's private environment record names each machine; no other host qualifies), over SSH, through unmodified
+Tests use isolated fixtures on **host-a or host-b**, over SSH, through unmodified
 `scripts/verify_mix.sh`. Name the actual host and candidate commit in every gate attest.
 Use source fixtures for SQL/state properties; no invented live observation capture.
 No tests, probes, gates or checkout code execute on the production host. If the remote host fails

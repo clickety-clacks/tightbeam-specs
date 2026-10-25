@@ -35,7 +35,6 @@ The closure adds a deployment manager because deleting the supported upgrade sur
 
 ## Terms
 
-- **host-a**: the deployment's designated production host. The deployment's private environment record names the machine; this specification uses only the placeholder.
 - **Deployment root**: `/opt/tightbeam`, the root-owned privileged filesystem namespace that contains the lock, challenges, authorization-use facts, staging area, immutable releases, generations, evidence, authorization copies, intents, audit facts, trash, and `active` pointer.
 - **Canonical host identity**: the SHA-256 of the exact 32 random bytes in root-owned mode-`0400` `/etc/tightbeam/deploy-host-id`. Supported setup creates this file once from the operating-system cryptographic random source. The manager reads it but cannot create, replace, or repair it. A missing, malformed, or changed value after deployment history exists puts deployment in `held` state.
 - **Deployment-root identity**: the SHA-256 of canonical JSON containing the canonical host identity and canonical absolute deployment-root path. The same host/path tuple produces the same identity across crashes; a different host or path cannot satisfy a virgin authorization.
