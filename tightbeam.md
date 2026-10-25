@@ -15,7 +15,7 @@ normative); where that record and this spec disagree, this spec wins.
 accountability and responsibilities durable and visible. Control and judgment
 belong to the agents and the people who authorize them.**
 
-Adopted by Mike, 8 September 2026. This governs the specifications below,
+Adopted 8 September 2026. This governs the specifications below,
 including law and supervision. It clarifies the earlier agent-first and
 "Prompt, don't prescribe" rulings.
 
@@ -201,7 +201,7 @@ patchbay. It is to be a great one.
 
 ## Tenets (normative)
 
-T-CONCURRENCY (Flynn ruling 2026-07-30, PRIME INVARIANT): Tightbeam exists
+T-CONCURRENCY (ruling 2026-07-30, PRIME INVARIANT): Tightbeam exists
 because single-threaded agent runtimes were intolerable. Sessions run
 concurrently: no session's work ever waits on another session's, and no
 harness's work ever waits on another harness's. Only a session's OWN lane
@@ -217,7 +217,7 @@ mechanisms). *Test:* does this make anyone wait on work that has not started,
 or on another session's work at all? Then it violates the reason Tightbeam
 exists.
 
-COROLLARY — LIFECYCLE NEVER BLOCKS PROMPTS (Flynn, 2026-07-30): adapter and
+COROLLARY — LIFECYCLE NEVER BLOCKS PROMPTS (2026-07-30): adapter and
 session lifecycle — spawn, bounce, close, heal, credential events — is
 genuinely sensitive and deserves careful serialization. It must NEVER sit on
 the path of a prompt to an already-running agent. "Every other prompt blocks
@@ -231,7 +231,7 @@ MUTATIONS — boot, bounce, close — traverse the serializer. *Test:* can any
 lifecycle operation, or any FAILURE of one, delay a prompt to a session that
 is already running? Then it is on the wrong path.
 
-T-RECOGNITION (Flynn ruling 2026-08-05): THE SUBSTRATE NEVER WAITS. Tightbeam
+T-RECOGNITION (ruling 2026-08-05): THE SUBSTRATE NEVER WAITS. Tightbeam
 is a production machine in the Newell sense: a recognize-act cycle over the
 current durable state of the system. No substrate state may have someone
 else's decision as its exit condition — anything shaped like waiting is
@@ -254,14 +254,14 @@ worked example this tenet was carved from — a substrate-owned session hold
 whose only exit was a human ruling, entered when a model was unavailable;
 it froze the queue behind it, re-raised itself within minutes of being
 cleared by hand, told the user to run a CLI verb that was never wired, and
-livelocked production on gibson's first week. 5,700 lines, deleted the day
+livelocked production in its first week. 5,700 lines, deleted the day
 the tenet was ruled. *Test:* does this put the substrate in a state that
 only someone else's decision can exit? Then it is the defect this tenet
 names. Is this behavior's condition readable in working memory by anything,
 or is it a flag with one reader? The former is a production; the latter is
 procedure wearing a fact's clothes.
 
-T-INTEGRATOR (Flynn ruling 2026-08-03): TIGHTBEAM IS NOT A HARNESS. It runs no raw
+T-INTEGRATOR (ruling 2026-08-03): TIGHTBEAM IS NOT A HARNESS. It runs no raw
 model of its own; it INTEGRATES with harnesses and leaves the work to them. Three
 consequences, and they pull against each other on purpose:
 
@@ -288,7 +288,7 @@ can inspect it, while `progress_status` reduces the same update to a title or th
 already parsed. *Test:* is tightbeam holding information about a harness's work that a
 human would want and cannot see? Then (3) applies.
 
-T-CONSPICUOUS (Flynn ruling 2026-08-03): CONSPICUOUS OPERATIONS. Everything the
+T-CONSPICUOUS (ruling 2026-08-03): CONSPICUOUS OPERATIONS. Everything the
 system does on a user's behalf is visible to that user WHILE it happens. It is
 not the waiting that erodes trust, it is the silence: a prompt may legitimately
 sit behind another turn, behind an adapter coming back, behind a credential
@@ -298,7 +298,7 @@ clawline protocol rather than logged beside it: the system's own work is narrate
 on the same channel as an agent's, so a user reading one stream sees everything
 acting on their behalf. A state that means both "about to run" and "will never
 run" violates this tenet even when nothing is lost, because the user cannot tell
-which one they have. *Prevents:* the OpenClaw failure Flynn names as the reason
+which one they have. *Prevents:* the OpenClaw failure the operator names as the reason
 for this product — "I'd send prompts and the agent turn would just fail, or I'd
 get no response and wouldn't know what happened to my message." *Reproduced
 today:* a 60-minute soak lost 3 of 148 turns to gateway SIGKILL — left `queued`
@@ -309,7 +309,7 @@ fails right now, can the user see what became of their message without reading a
 log? If not, it is not conspicuous, and shipping it spends trust the product
 cannot re-earn cheaply.
 
-T-SOURCE (Flynn ruling 2026-07-30): SINGLE SOURCE OF TRUTH. Every fact has
+T-SOURCE (ruling 2026-07-30): SINGLE SOURCE OF TRUTH. Every fact has
 exactly one owner, and the owner is wherever the fact physically lives — the
 harness owns conversational truth (T2 is this tenet's conversational case), the
 adapter process owns session residency, a machine owns which binary it carries,
@@ -327,7 +327,7 @@ lives somewhere else? Then either it is a cache that may be wrong without
 consequence, or it is a defect. If you would have to fabricate its past to
 demonstrate it, it is a defect.
 
-T-PARITY (Flynn ruling 2026-07-25): parity on EVERYTHING between registered
+T-PARITY (ruling 2026-07-25): parity on EVERYTHING between registered
 harnesses is an invariant. Every harness touchpoint goes through the polymorphic
 `Tightbeam.Harness` interface (N-ary, never two-ary); every capability is
 parity-complete or carries a named divergence with a negative test in
@@ -819,8 +819,8 @@ what was detected and failed (forensics). Every
 host — including the gateway's own machine — appears under its real
 hostname; there are no indexical names ("local", "here", "self") in the
 registry, in `where` sets, or on session rows. The org's vocabulary must
-match the operator's: "spawn on eezo" has to resolve on eezo, including
-when asked on eezo. Which machine is the gateway's own is carried by the
+match the operator's: "spawn on host-a" has to resolve on host-a, including
+when asked on host-a. Which machine is the gateway's own is carried by the
 host's transport config (no ssh destination), never by a special name.
 Onboarding a satellite is a client-side ceremony — `assimilate` in the
 reference CLI — in which the operator's CLI prepares the machine over the
@@ -1130,7 +1130,7 @@ lag the satellites.
 - **`tightbeam-decisions.md`** — dated decisions and their grounding; provenance,
   not current-state.
 - **Capability specs (`*-v1.md`)** — one contract per capability: mechanism,
-  invariants, required proofs. They gate (adversarial Sol-high review to READY),
+  invariants, required proofs. They gate (adversarial high-effort review to READY),
   then implement, then merge.
 - **Spikes, conformance, patterns** — investigation reports and cross-cutting
   doctrine; advisory unless promoted into a contract.
@@ -1139,19 +1139,19 @@ lag the satellites.
 
 | Spec | Status |
 |---|---|
-| served-identity-home-projection-v1 | READY (5 rounds) — IMPLEMENTED, merged `9a84163` |
-| tightbeam-credential-onboarding-v1 | READY — IMPLEMENTED with served identity, merged `9a84163` |
-| subagent-markers-v1 | READY (7 rounds) — IMPLEMENTED, merged `cf83b4e` |
-| observability-v1 (+ emission addendum) | RATIFIED; addendum READY (5 rounds) — IMPLEMENTED, merged `5ae730c` |
-| harness-adapter-seam-v1 | READY (10 rounds) — IMPLEMENTED, merged `09028a0`, e2e smoke 8/8 |
-| effort-without-effect-checkin-v1 | SUPERSEDED by `effort-checkin-v2.md` (v1 implementation merged `816f724`; v2 replaced its dispatch-anchored git-motion semantics) |
+| served-identity-home-projection-v1 | READY — IMPLEMENTED, merged |
+| tightbeam-credential-onboarding-v1 | READY — IMPLEMENTED with served identity, merged |
+| subagent-markers-v1 | READY — IMPLEMENTED, merged |
+| observability-v1 (+ emission addendum) | RATIFIED; addendum READY — IMPLEMENTED, merged |
+| harness-adapter-seam-v1 | READY — IMPLEMENTED, merged, e2e smoke 8/8 |
+| effort-without-effect-checkin-v1 | SUPERSEDED by `effort-checkin-v2.md` (v1 implementation merged; v2 replaced its dispatch-anchored git-motion semantics) |
 | adjudication-deletion-amendment | RECORD (2026-08-12) — banners the 2026-08-05 adjudication deletion across the corpus; GAP-1 re-homed to `harness-support.md` |
 | derived-model-catalog-v1 | landed (see decisions ledger) |
 | escalation-substrate-v1, attest-v1, check-tier-v1, work-item-v1 (in accountability family) | landed |
 | containment-v1 family, codex-gates-v1, rails-mechanism-v1 | landed |
 | agentic-engineering-guidance-spec | living (guidance CONTENT blocks; conformance via archetypes tests) |
-| client-e2e-v1 | READY (4 rounds) — implementation queued (clawline repo driver + identifiers) |
-| production-machine-v1 | spec review (Fable, REVISE→amended) + code review (Opus 5 distinct, REVISE→revised) — IMPLEMENTED on branch production-machine-v1 at 7ecf02a; suite 1297/0 eezo+shrdlu; e2e smoke 7/7 on shrdlu twice; T-RECOGNITION is its tenet; awaiting Flynn verification |
+| client-e2e-v1 | READY — implementation queued (clawline repo driver + identifiers) |
+| production-machine-v1 | IMPLEMENTED on branch production-machine-v1; suite 1297/0 host-c+host-a; e2e smoke 7/7 on host-a twice; T-RECOGNITION is its tenet; awaiting operator verification |
 | assignment-lifecycle-fallback-escalation-v1 | MVP contract — exact-hash independent `reviewed-clean` required before implementation |
 | assignment-revocation-reason-v1 | implementation authority — candidate pending independent review |
 

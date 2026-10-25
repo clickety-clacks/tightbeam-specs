@@ -26,7 +26,7 @@ here conflicts with the tree: STOP and report; never improvise.
    prefix `agent:`; (b) `user:<id>`, always a user reference resolving to
    that user's Main by derivation; (c) any other word, always a role
    name. No field is ever Role|User; no uniqueness constraint across
-   namespaces; a role named `mike` and a user `mike` coexist and the
+   namespaces; a role named `alice` and a user `alice` coexist and the
    engine never confuses them.
 4. LATE-BIND THE FUTURE, PIN THE PAST: standing references (scheduled
    wakes, config, guidance) hold role NAMES and resolve at each use.
@@ -226,7 +226,7 @@ commit.
 
 ## Addendum A (supersedes §3's target grammar): strictly typed target fields
 
-RULING (Flynn): reference seams are STRICTLY TYPED — a parameter is a
+RULING: reference seams are STRICTLY TYPED — a parameter is a
 userId, a role, or a sessionKey, never a union, and the type is carried
 STRUCTURALLY (by field name), never inferred from string shape. The §3
 "typed grammar" (prefix classification of one `target` string) is a
@@ -260,7 +260,7 @@ existing attribution seam (`as` / `asUser` / `asProcess`).
   reason changed in the validator comment.
 - Guidance (`@builtin_operations`/`@builtin_comms`): rewrite addressing
   language to the typed flags (see Lane C) and reply spelling:
-  `[from user:mike]` → `wake --user mike`; `[from agent:notetaker]` →
+  `[from user:alice]` → `wake --user alice`; `[from agent:notetaker]` →
   `wake --role notetaker`; `[from process:x]` → cannot be woken. Pinned
   guidance tests updated.
 - Update every existing test that used `target` to the typed fields; add

@@ -1,6 +1,6 @@
 # Router existence oracle — typed targets and who may learn what exists — v1
 
-Status: DRAFT r1 (Fable-authored 2026-07-26). One ruling required (R1 below);
+Status: DRAFT r1 (2026-07-26). One ruling required (R1 below);
 everything else follows from the audit.
 
 ## Defect

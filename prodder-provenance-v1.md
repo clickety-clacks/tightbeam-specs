@@ -1,19 +1,13 @@
 # Prodder provenance v1
 
-Status: bounded F1/F2 successor under `att_01f72a7e`; awaiting fresh independent exact-artifact review
+Status: bounded F1/F2 successor; awaiting fresh independent exact-artifact review
 
 Authority:
 
-- Work item `wi_e27eb1a6-0cc3-4d3b-92e7-430f94171fcc`.
-- Owner rulings `att_e5b64758` and `att_260adeca`.
-- Recon evidence `att_aa4c9117` and `art_5d92d28f`.
-- Changes requested in `att_032120da` and review report `art_a68bebe7`, whose reviewed bytes had SHA-256 `de0708…` as recorded by the assignment. The retired review artifact is no longer readable; this spec relies on the durable review attest and does not claim to reproduce its bytes.
+- Owner rulings.
+- Recon evidence.
 - Source baseline `19a50e47aa9e7d0a8ff474321102cd890a7dd0c7`.
-- Independent review verdict `att_df4ea9b8-175f-4e89-be04-59a4a63d3c3c` and exact report `art_1d204d8a`, SHA-256 `5bcac973c84942a213a7941784a8b70c389a38c241a4f290e0b6280fbb4e3b88`.
-- Corrected-artifact review verdict `att_8175790d-3c5d-46f0-82d9-c26226e7496c` and exact report `art_7ebef755`, SHA-256 `7033290d27f5a53f5a252763c7344db087a93d79b0f40c2fa0806bdd867cffd7`.
-- Round-four review verdict `att_2aa31efe-6e3c-4cd8-ba34-d149f23a0d65` and exact report `art_ede58e43`, SHA-256 `77f1912d1d551ae5ac888c8cc228f583357b92e010f600ede6870d3675538b5b`.
-- Final exact-artifact review verdict `att_c4b4367b-c1aa-44e0-a5cf-96160052b09a` and exact report `art_52840b4c`, SHA-256 `ff64f50e08ae1914f1b2f64b6b3865ff666ca816ce6ef10e73dc904d0c57cb47`.
-- Bounded successor authority `att_01f72a7e-de07-4b74-b212-e293dfdf72e2`; changes-requested verdict `att_c27b9873-6df0-4b44-9276-e7e4f7745188` and evidence report `art_f6b57667`, SHA-256 `954b914e042a6e83d6ec2e031d1ae18c536530d4fd1e81e64ac345c228c0fda2`.
+- Bounded successor authority.
 
 This spec is a bounded amendment to `production-machine-v1.md`, `supervision-v1.md`, `supervision-impl-v1.md`, and `job-trace-observability-v1.md`. It supersedes only these conflicting clauses:
 
@@ -37,7 +31,7 @@ The result shall answer five questions for one attempt:
 4. Which raw facts caused that result?
 5. Did the existing fault-bubbling path admit or suppress the resulting failure?
 
-The implementation shall preserve the parent elevation demonstrated by owner evidence `att_e5b64758`. It shall make the narrower terminal, suppression, and elevation provenance durable and legible.
+The implementation shall preserve the parent elevation demonstrated by owner evidence. It shall make the narrower terminal, suppression, and elevation provenance durable and legible.
 
 Subtraction ruling: ADD wins because the owner requires the existing supervision and elevation behavior to remain while its unexplained outcomes become durable. DELETE would remove required supervision or elevation. ACCEPT would preserve the owner-ratified provenance defect.
 
@@ -234,7 +228,7 @@ A **cause observation** is the single append-only `lifecycle_events` row for one
 ```json
 {
   "kind":"suppressed_user_alerted",
-  "matchedFact":{"id":203,"ts":1700000000000,"kind":"user-alerted","scope":"mike","origin":"process:tightbeam"}
+  "matchedFact":{"id":203,"ts":1700000000000,"kind":"user-alerted","scope":"user-a","origin":"process:tightbeam"}
 }
 ```
 
@@ -261,7 +255,7 @@ The exact admitted action schemas are:
 ```
 
 ```json
-{"kind":"terminal_alert_committed","ownerUserId":"mike","lifecycleEventId":456,"conditionFactId":203,"ownerMarkerSeq":789}
+{"kind":"terminal_alert_committed","ownerUserId":"user-a","lifecycleEventId":456,"conditionFactId":203,"ownerMarkerSeq":789}
 ```
 
 ```json
@@ -788,4 +782,4 @@ Trace: R1–R3, R30–R36, I1, I9–I10.
 
 None.
 
-Owner rulings `att_260adeca` and bounded successor ruling `att_01f72a7e` close B1–B5 and the F2b carrier/source seam. A proposed change beyond the exact schedule-basis carrier, escalation `triggerBasis`, admitted `causal_events` source, or to another typed set, transaction boundary, counter equation, observation schema, versioned surface, or existing policy requires a new spec amendment before implementation.
+Owner rulings and the bounded successor ruling close B1–B5 and the F2b carrier/source seam. A proposed change beyond the exact schedule-basis carrier, escalation `triggerBasis`, admitted `causal_events` source, or to another typed set, transaction boundary, counter equation, observation schema, versioned surface, or existing policy requires a new spec amendment before implementation.

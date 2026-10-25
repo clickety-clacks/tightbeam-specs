@@ -5,19 +5,16 @@ No implementation or live action is authorized by this document. No product test
 ran during its preparation. One independent design review follows the writer's
 cold digest; this document does not claim that review has passed.
 
-Decision `dr_c41118fc-3871-4024-8064-2f6d2d1e6036`, relayed by the orchestrator
-on 2026-09-05, resolves Q1–Q3: reuse relearn after separately authorized installed
+The owner's decision of 2026-09-05 resolves Q1–Q3: reuse relearn after separately authorized installed
 input preparation; retain retired old-reviewer rows for historical access and
 create explicit successors; accept merge-abort recovery plus limited
 post-publication repair. **A new seam is forbidden.** The ruling selects this
 design's boundary; it authorizes neither installation nor live rollout.
 
-Authority: decision `dr_bfa7429e-9e59-49a2-8871-dadfdc0370f8`; work item
-`wi_fc47cb46-cfc4-45c6-9b74-def1522e5ebf`; design assignment
-`asg_8e8a82b0-ea3d-408a-9090-f935ee8ff9c7`. The canonical brief is
+Authority: the canonical brief is
 [`v9-identity-transition-design-brief.md` at 3add567](https://github.com/clickety-clacks/tightbeam-specs/blob/3add567f2847b38505747799995b8f09a00e5dad/v9-identity-transition-design-brief.md),
-SHA-256 `6e0dbc15fccecb7216df87ab4afc1c9ed467892ff65c98dbf940d5877127693f`,
-artifact `art_0741d994`. That object lives on the brief's branch, not in this
+SHA-256 `6e0dbc15fccecb7216df87ab4afc1c9ed467892ff65c98dbf940d5877127693f`.
+That object lives on the brief's branch, not in this
 design's allocated main tree. It remains the read-only input; this document does
 not land or revise the brief.
 
@@ -49,7 +46,7 @@ atomicity, runtime-readback, migration, audit, or identity architecture; automat
 reviewer classification; fleet-wide apply; historical backfill; session override
 erasure; retirement of unfinished work; or live execution during design.
 
-No edit to closed identity recovery or `asg_1295062f`. No installation, release,
+No edit to closed identity recovery. No installation, release,
 deployment, service, adapter, or credential work. No second-YES request. This design
 does not revive the reset/reload machinery described in older identity workflow
 specs: the brief expressly preserves the accepted simple file-refresh behavior.
@@ -61,7 +58,7 @@ this transition and adds no command or interface.
 
 - **Accepted V9 source:** Tightbeam main commit
   `dbe46a8fbabc0d81460c8239dbf54ac8989d6b0b` and maintenance commit
-  `7ccf653185fa9b9e26610dec8909eae49b594862`; source completion is `att_7488ce2d`.
+  `7ccf653185fa9b9e26610dec8909eae49b594862`.
 - **Installed input:** the gateway application's seed and shipped bundle files.
   A checkout, a specs artifact, and a CLI help listing are not this input.
 - **Identity tree:** the org's Git repository at `<base>/identity`; `main` holds
@@ -108,7 +105,7 @@ the preparer does not silently accept it.
 **I2 — Preserve customization deliberately.** The preparer transplants the old
 reviewer's unrelated manifest settings into the two proposed manifests and records
 any ambiguous guidance clause for owner disposition. Given the inspected old
-manifest, then `where`, model preferences, `no-testing-on-gibson.md`,
+manifest, then `where`, model preferences, `no-testing-on-host-a.md`,
 `specs-home.md`, `integration-targets`, and `tightbeam-atc` survive unless the owner
 explicitly changes them. Copying the shipped manifests wholesale fails this check.
 
@@ -157,14 +154,14 @@ Do not infer cross-line runtime equivalence from the guidance pair's acceptance.
 | Unlearn checks even retired session references; ordinary relearn has no corresponding reference-release call. | [org.ex:1434–1536](https://github.com/clickety-clacks/tightbeam/blob/f4b68f078d3767cede71572aa88c4516372867cf/lib/tightbeam/org.ex#L1434), [gateway.ex:3670–3788](https://github.com/clickety-clacks/tightbeam/blob/f4b68f078d3767cede71572aa88c4516372867cf/lib/tightbeam/gateway.ex#L3670) | Relearn's ability to delete a manifest does not prove existing sessions remain operable. |
 | Retirement keeps history; apply selects active rows and writes files before stamps and reread submission. Status renders the current archetype for active sessions. | [org.ex:971–1040](https://github.com/clickety-clacks/tightbeam/blob/f4b68f078d3767cede71572aa88c4516372867cf/lib/tightbeam/org.ex#L971), [gateway.ex:4018–4050, 4194–4330](https://github.com/clickety-clacks/tightbeam/blob/f4b68f078d3767cede71572aa88c4516372867cf/lib/tightbeam/gateway.ex#L4194) | Do not delete the manifest while active reviewer sessions depend on it. Retired transcript access and runnable-session access must be distinguished. |
 
-Read-only installed observations on Gibson, 2026-09-05:
+Read-only installed observations on the production host, 2026-09-05:
 
-- CLI resolves to `/home/mike/.local/lib/node_modules/tightbeam/bin/tightbeam`;
+- CLI resolves to `~/.local/lib/node_modules/tightbeam/bin/tightbeam`;
   its version and package metadata say `0.1.8`. This version string is not a build
   commit pin. The inspected installed Identity BEAM SHA-256 is
   `f878927f5bb6668f4738a2d7fd43684a05eff9cc7352c6487e2d5344c433a0c0`.
 - Installed bundle root is
-  `/home/mike/.local/lib/node_modules/tightbeam/release/lib/tightbeam-0.1.8/priv/kungfu/agentic-engineering`.
+  `~/.local/lib/node_modules/tightbeam/release/lib/tightbeam-0.1.8/priv/kungfu/agentic-engineering`.
   Its `archetypes/reviewer.toml` exists, SHA-256
   `6b1db43faa72f9c525d6a997e15780ef31cf5187aee46842a3882bedadf9af53`.
   `tightbeam kungfu list` advertises that bundle; it does not attest that it is V9.
@@ -455,7 +452,7 @@ they cannot be called exact rollback or preservation of runnable old reviewers.
 
 No mechanism is added. A new source selector, catalog-removal verb, compatibility
 alias, general migration, and exact rollback machinery were considered and
-declined under `dr_c41118fc`. Deleting rollout loses the requested org outcome;
+declined under the owner's `rule-reuse-boundaries` ruling. Deleting rollout loses the requested org outcome;
 reusing the existing seams with named limits delivers the chosen boundary without
 new architecture.
 
@@ -472,7 +469,7 @@ live execution, and does not claim the future fixture cases already passed.
 
 ### Finite future fixture verification
 
-Run only on **eezo or racter**, in a holder-owned fixture checkout and scratch base.
+Run only on **one of the two designated non-production test hosts**, in a holder-owned fixture checkout and scratch base.
 Use an authorized sanitized capture of the relevant identity Git history and
 installed input files. Do not copy credentials, gateway tokens, or live state.db.
 Use fixture session rows for lifecycle behavior; do not fabricate external harness
@@ -496,13 +493,13 @@ required release CLI first on that test host using
 `cargo build --release --manifest-path cli/Cargo.toml`. Record the host, exact
 checkout, actual command, capture hashes, and result. Follow that candidate's
 required checks if implementation is later authorized. A remote host/toolchain
-failure stops verification; Gibson is not a fallback. No gate or product code
+failure stops verification; the production host is not a fallback. No gate or product code
 execution belongs to this design assignment.
 
 ## Open Questions
 
 No unresolved load-bearing design choice remains after
-`dr_c41118fc-3871-4024-8064-2f6d2d1e6036` (`rule-reuse-boundaries`). Preserve these
+the owner's `rule-reuse-boundaries` ruling. Preserve these
 resolved questions so a later reader does not re-decide them:
 
 - **Q1 — RESOLVED:** reuse relearn after separately authorized installed-input

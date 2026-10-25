@@ -1,9 +1,8 @@
 # Probe v1 — lineage marker + machine-facts diagnostics (implementation spec, r4)
 
-Status: DRAFT r4 after third adversarial review (codex xhigh; 2
-blocking + 2 important + 1 minor findings resolved below). Parent
+Status: DRAFT r4. Parent
 design: supervision-v1.md (§Forensics — PROBE, triggered not
-resident). This spec is the sole authority for the build lane;
+resident). This spec is the sole authority for the build;
 supervision-v1.md is background.
 
 Revision note (r3 → r4): B1 root truth extended — SQLite's WAL
@@ -340,7 +339,7 @@ always present; unknown facts are null or empty, never missing keys.
       "schema": "tightbeam.probe.v1",
       "probed_at_ms": 1752900000000,
       "collection_ms": 240,
-      "host": { "hostname": "eezo", "platform": "macos" | "linux",
+      "host": { "hostname": "host-a", "platform": "macos" | "linux",
                 "probe_version": "<CARGO_PKG_VERSION>" },
       "base_dir": {
         "path": "/Users/org/.tightbeam",
@@ -354,27 +353,27 @@ always present; unknown facts are null or empty, never missing keys.
       },
       "marked_candidates": [
         { "pid": 4242, "ppid": 1, "pgid": 4242,
-          "lineage": "resident@eezo",
-          "lineage_raw": "tb1-cmVzaWRlbnRAZWV6bw",
+          "lineage": "resident@host-a",
+          "lineage_raw": "tb1-cmVzaWRlbnRAaG9zdC1h",
           "lineage_raw_b64": null,
           "evidence": "environ_exact",
           "executable": "/usr/local/bin/node",
           "elapsed_s": 8021, "started_at_s": 1752891979,
           "cwd": "/Users/org/.tightbeam/work/9f8a3c2d1b40" },
         { "pid": 4290, "ppid": 4242, "pgid": 4242,
-          "lineage": "resident@eezo",
-          "lineage_raw": "tb1-cmVzaWRlbnRAZWV6bw",
+          "lineage": "resident@host-a",
+          "lineage_raw": "tb1-cmVzaWRlbnRAaG9zdC1h",
           "lineage_raw_b64": null,
           "evidence": "environ_exact",
           "executable": "/usr/bin/git",
           "elapsed_s": 63, "started_at_s": 1752899937,
           "cwd": "/Users/org/.tightbeam/work/9f8a3c2d1b40" }
       ],
-      "identity_candidates": { "resident@eezo": [4242, 4290] },
+      "identity_candidates": { "resident@host-a": [4242, 4290] },
       "adapter_candidates": [
         { "pid": 4242, "harness": "claude", "ppid": 1, "pgid": 4242,
-          "lineage": "resident@eezo",
-          "lineage_raw": "tb1-cmVzaWRlbnRAZWV6bw",
+          "lineage": "resident@host-a",
+          "lineage_raw": "tb1-cmVzaWRlbnRAaG9zdC1h",
           "lineage_raw_b64": null,
           "evidence": "environ_exact",
           "executable": "/usr/local/bin/node",
@@ -501,7 +500,7 @@ ONLY when the remote target triple matches the assimilating host's
 binary (ceremonies.rs:379-381 skips the CLI step on mismatch) — so,
 per the same ruling session-tokens-v1 §Rollout pins for its CLI push,
 mismatched-triple satellites are EXCLUDED from probe availability
-until a matching binary is provided through that lane's stated path;
+until a matching binary is provided through that spec's stated path;
 this spec invents no second mechanism. EXISTING satellites likewise
 wait on the SAME satellite CLI-refresh path session-tokens-v1
 §Rollout uses (spinup refreshes directories/adapters/credentials,

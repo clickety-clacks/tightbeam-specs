@@ -23,7 +23,7 @@ port; corrupt/missing gateway.json → fresh token minted.
 ## 2. Wake targets accept a user id (reach the operator's Main)
 
 Wake resolution today: a target is a sessionKey or an agent handle. Add:
-a bare user id (`mike`) or `user:<id>` resolves to that user's Main
+a bare user id (`alice`) or `user:<id>` resolves to that user's Main
 session via `Org.personal_session_key/1` — but ONLY when that user exists
 (users table) AND no session handle shadows the bare id (handle lookup
 wins; document that precedence in one comment). Unknown stays the
@@ -32,8 +32,8 @@ resolve (the shared target_session/resolve path in gateway or router —
 find the single chokepoint; do NOT duplicate logic per verb).
 Files: the one resolver site (+ its module), `test/gateway_test.exs` or
 `test/router_test.exs` (wherever target resolution is already tested).
-Tests: wake target "mike" → enqueued for the Main key; "user:mike" same;
-handle shadowing (a session with handle "mike" wins); unknown id → error.
+Tests: wake target "alice" → enqueued for the Main key; "user:alice" same;
+handle shadowing (a session with handle "alice" wins); unknown id → error.
 
 ## 3. Model pin in projected claude homes (the fable fix)
 

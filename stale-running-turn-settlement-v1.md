@@ -1,15 +1,12 @@
 # Stale-running-turn settlement — v1
 
-Status: SPEC CANDIDATE — review reconciliation revision. This artifact
-supersedes the incorrectly recorded SHA on `art_e081e04b`. It is bounded to
-the two supplied specimens, additive to `eea3e9a`, and does not replace
-automatic adapter-death recovery.
+Status: SPEC CANDIDATE. It is bounded to the two supplied specimens, additive
+to `eea3e9a`, and does not replace automatic adapter-death recovery.
 
 Evidence boundary: PHANTOM `att_45772d58`, confirmation `att_7ef386ea`, and the
 ruled prior-specimen authority `dr_b7e2f1ff-c13f-4a36-9454-ce5f9026c71a`, which
-identifies the 19-hour stuck turn and tonight's five-turn specimen in Mike
-message `s_fa15c670-c408-44d7-9f28-917d6b71d2a9` at epoch `1787716372866`.
-The adjacent retired-session lane `wi_154bf46b` remains excluded.
+identifies the 19-hour stuck turn and tonight's five-turn specimen.
+Adjacent retired-session queue invalidation remains excluded.
 
 ## Goal
 
@@ -116,15 +113,13 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
 - This verb does not detect stale turns automatically or add a timeout policy.
 - This verb does not duplicate `eea3e9a` adapter-death recovery.
 - This verb does not retire, delete, or invalidate a session or its queued
-  turns. Retired/deleted-session queue invalidation remains the owner of
-  `wi_154bf46b`.
+  turns. Retired/deleted-session queue invalidation remains separate work.
 - This verb does not interrupt a live task or send a harness cancel. The
   existing `cancel` verb remains the live-task cancellation path.
 - This verb does not restart a gateway, adapter, session, or lane.
 - This verb does not alter credentials, configuration, identity, release
   targets, deployment, or the 0.1.8 line.
-- This work item remains untargeted. A session and turn are request parameters,
-  not a work-item target.
+- A session and turn are request parameters, not a work-item target.
 
 ## Terms
 
@@ -339,10 +334,10 @@ The adjacent retired-session lane `wi_154bf46b` remains excluded.
 ## Acceptance
 
 1. **Authorized cancel.** Given an active session, a durable `running` target,
-   a lane result of `stale`, and an authenticated admin `user:mike`, when the
+   a lane result of `stale`, and an authenticated admin `user:admin-a`, when the
    operator sends `settle-turn` with `outcome=cancel`, then exactly one CAS
    changes the row to `canceled`, exactly one lifecycle event carries
-   `cause=operator:stale-running-turn` and `principal=user:mike`, and the
+   `cause=operator:stale-running-turn` and `principal=user:admin-a`, and the
    response identifies that target as the CAS winner.
 2. **Authorized fail.** Given the same fixture, when `outcome=fail` and a
    bounded reason are supplied, then the row becomes `failed`, the reason is

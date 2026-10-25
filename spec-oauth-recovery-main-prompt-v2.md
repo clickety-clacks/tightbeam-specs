@@ -2,11 +2,9 @@
 
 Status: READY TO BUILD
 
-Authority: Mike, 2026-08-20
+Authority: the operator, 2026-08-20
 
-Work item: `wi_92bc2577-4050-4d8a-8f97-bcba65bcddd3`
-
-Supersedes: `art_e06563b7` and `art_83c3b17c`
+Supersedes: two earlier specification artifacts
 
 ## Spirit
 

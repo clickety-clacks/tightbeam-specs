@@ -1,12 +1,11 @@
 # Completion-escalation rail v2
 
 Status: TARGETLESS G1/G2 REVISION CANDIDATE — AWAITS ONE OWNER-OPENED
-INDEPENDENT EXACT-SHA REVIEW for
-`wi_809821f8-e72b-41d8-b4b5-af28c7e670a6`.
+INDEPENDENT EXACT-SHA REVIEW.
 
 Tightbeam main `6ae34287aa4864b8fe6fabfc96166d02b9827a89` contains the previously
-reviewed completion-only mechanism. Mike's 2026-09-01 scope request
-`s_6f2c6413-8e9a-4b7f-bfc9-3c395bcd19b0` identifies two pre-release gaps in
+reviewed completion-only mechanism. The operator's 2026-09-01 scope request
+identifies two pre-release gaps in
 those landed bytes. First, the action-needed request must open for each observable
 one-or-more-to-zero assignment transition, not only for a completion attest. Second,
 an unanswered request must stop repeating forever to one recipient and must climb the
@@ -77,28 +76,26 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
 - The accountability constitution requires escalation to reach a living authority by
   climbing past dead spawner links to the owner root. It applies the same rule to empty
   or dead escalation chains (`accountability-constitution-v1.md:16-17,125-126`).
-- Mike's scope request `s_6f2c6413-8e9a-4b7f-bfc9-3c395bcd19b0` supplies the observed
+- The operator's scope request supplies the observed
   trigger and silence evidence: 380 completion, 61 revocation, 53 surrender, and three
   initial-zero idle sessions; Main also ignored four consecutive daily notices on
-  `wi_0bb4b7eb`.
-- Ruled accept outcomes `dr_d255b817-1541-460e-8549-bc55a9e7aa1f` and
-  `dr_518d5591-57b8-4a73-8aeb-6634afb334a1` were delivered as exact recorded rationale
-  by the product owner in `s_904edadd-16b9-41ba-81cf-680eb8c86c3a`; the delivery is not
-  represented as Mike's personal wording. The first keeps initial-zero outside this
+  one work item.
+- Two ruled accept outcomes were delivered as exact recorded rationale
+  by the product owner; the delivery is not
+  represented as the operator's personal wording. The first keeps initial-zero outside this
   transition revision. The later, authoritative surrender ruling preserves the 0.2
   deletion and admits only completion and revocation here.
-- Mike ruling `s_0100f65a-b2b4-4278-9c5b-394987e3a839`, recorded in
-  `att_73471946-be23-46ad-b384-de4d8a8675fe`, makes the completion parent the
+- An operator ruling makes the completion parent the
   unconditional completion route. Any other delivery, including the assignment opener,
   requires an explicit report-to declaration on the card. No route derives from the
   create verb or ceremony.
-- Mike waiver `s_ee88a313-e923-435f-8999-44975bafe62f` and ruled request
-  `dr_5e23055c-0d2d-4eb6-88fb-ccffb3a6a601` authorize the shape-bump/recreate boundary
+- An operator waiver and a ruled request
+  authorize the shape-bump/recreate boundary
   needed to widen fixed wake-cancellation vocabulary. The abstraction answer
-  `s_b9c9fa65-267a-43b2-823e-d372954d1378` rejects the five proposed values as a bundle:
+  rejects the five proposed values as a bundle:
   only `completion_transition` is a stable new domain classification.
-- Direct owner assignment `asg_a12d6873-9b00-4924-b3c8-674582fd7973` and digest
-  `att_55fab334-3d4b-413a-bd85-fd8e3882ba67` require a parent-facing completion notice,
+- The direct owner assignment and its digest
+  require a parent-facing completion notice,
   an action-needed request when the child reaches zero open assignments, an explicit
   retain/park/retire choice, and no automatic retirement.
 - A completion is already a holder-filed row. The attest insert, guarded assignment
@@ -111,8 +108,8 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
   the retire rail makes built-in Main permanent
   (`lib/tightbeam/assignments.ex` `open_assignment_result/5`;
   `lib/tightbeam/gateway.ex` `retire_result/3` and `completion_retire_in_txn/4`, at exact
-  product commit `6ae34287aa4864b8fe6fabfc96166d02b9827a89`). Product ruling
-  `att_e7b138b6-fb9e-4fc5-a00e-b016390a2e25` keeps Main assignable and admits only an
+  product commit `6ae34287aa4864b8fe6fabfc96166d02b9827a89`). A product ruling
+  keeps Main assignable and admits only an
   explicit retain self-disposition for that exact root session.
 - `Assignments.open_count/2` already defines the session-level open-assignment count
   (`lib/tightbeam/assignments.ex` `open_count/2`, at exact product commit
@@ -162,13 +159,11 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
 4. **Adopt.** A24 uses one open root request with a stopped scheduler. Exact Main calls
    park and then retire against that row. This proves both refusals without pretending
    that two live empty epochs can coexist after assignment-open supersession.
-5. **Replace as stale evidence.** The reviewed-clean predecessor verdict is
-   `att_4f59063a-f3e5-4697-9957-1e2c0787fada` against exact `cd1a9a99…` bytes and old
-   source `95aefa68476240e3364312ad8ff9a2958584ef7e`. Recon verdict
-   `att_eeb27cd2-b27a-4e79-af19-435fd1f564b4` requires this successor and one new
-   independent review against `6c13efc…`. Open Question 2 records the current gate.
+5. **Replace as stale evidence.** The predecessor review evidence is against older
+   bytes and an older source. This successor
+   requires one new independent review against `6c13efc…`. Open Question 2 records the current gate.
 
-### Amendment rulings for `att_35dc33fc-660c-4989-b78d-56eab886a1e7`
+### Amendment rulings for review findings
 
 1. **F1 — delete retired-session replay.** A retired session has no CLI authentication
    seam in release `6c13efc…`. R11, R15, A13, and A16 therefore require a session caller
@@ -200,7 +195,7 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
    the closed wake-cancellation source/disposition checks changes existing table shapes.
    The revised build reserves `coordination-fabric-v1-phase1-v16` after current v15. A database stamped with another
    shape is refused before DDL or feature writes and must be moved aside and recreated.
-   In-place migration remains declined because Mike's waiver selected recreation and
+   In-place migration remains declined because the operator's waiver selected recreation and
    current-main reconciliation changes only the allocated stamps, not that policy.
 5. **Route only from durable rows.** A non-root terminal transition's immutable initial
    parent snapshot is exactly the result of `Org.effective_parent_in_txn/2` for the
@@ -214,15 +209,15 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
    current recipient cannot accept the next notice. Both use existing reason
    `target_unresolvable` and name the canceled wake as the `scheduler_delivery` source.
    This preserves truthful requester identity without adding a reason. It records the
-   writer's smallest-contract disposition of withdrawn request
-   `dr_52983a36-5c27-425f-9383-472108c09bce` under Mike's 2026-08-25 RULE YOUR OWN
+   writer's smallest-contract disposition of a withdrawn request
+   under the operator's 2026-08-25 RULE YOUR OWN
    directive.
 7. **Keep one typed delivery-failure marker.** R15 already requires
    `completion_escalation_undeliverable` for each exact-target delivery refusal. Its
    detail names `channel=parent|report-to` and `resolution=target-unresolvable`, so the
    existing marker remains truthful without adding a domain event or deleting specified
-   observability. This records the writer's smallest-contract disposition of withdrawn
-   request `dr_2195043c-a970-422b-90c9-789e998755b3` under that directive.
+   observability. This records the writer's smallest-contract disposition of a withdrawn
+   request under that directive.
 8. **Delete the diagnostic parent-copy foreign keys.** A selected effective-parent key
    can name a missing row. That is required dirt, not a valid session relation. The
    completion row must preserve that dangling observed key while it records
@@ -230,7 +225,7 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
    `immediateParentSessionKey` and `parentSessionKey` are non-null text copies without
    `REFERENCES sessions(sessionKey)`. Child, cause, and report-to fields retain their
    session foreign keys. This is the sole F1 correction from
-   `att_9d9af9f6-a194-4965-a5d8-d529e6de4395` and `art_635358a2`.
+   the foreign-key review.
 9. **Preserve fired notice truth.** A delivered prompt wake is `fired`, so a later retain
    records no cancellation for that notice. Retain still cancels the pending deadline
    and any notice that has not delivered. A22 asserts `wake_fired` for the two delivered
@@ -244,8 +239,8 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
   `notice-only` completion never climbs.
 - No disposition delegation through `report-to`. The optional declaration adds one
   informational delivery only.
-- No new park, relaunch, stop, recycle, or process-kill contract. Work item
-  `wi_6937890c-6ba6-48b7-a9d2-4eb4510fe245` owns that primitive.
+- No new park, relaunch, stop, recycle, or process-kill contract. Separate
+  park-primitive work owns that primitive.
 - No change to work-item causal parent derivation, `createdInTurnSeq`, `jobRef`, or the
   topology projection in `Toplines` (`lib/tightbeam/toplines.ex` `list/2` and `get/2`).
 - No replacement for the work-item routed/slate brackets. A work item with zero open
@@ -465,7 +460,7 @@ explicit stored parent or Owner Main.
 7. Prompt wake delivery uses the existing projection and turn pipeline. Aware and
    unaware clients can both read the ordinary message payload
    (`lib/tightbeam/wire/payloads.ex` `server_message/1`).
-8. `wi_6937890c-6ba6-48b7-a9d2-4eb4510fe245` will define a safe, authorized park
+8. Separate park-primitive work will define a safe, authorized park
    operation and its durable success result. This spec does not assume its function or
    wire name.
 9. Successful device authentication returns a device row with a non-empty `user_id`.
@@ -998,7 +993,7 @@ The action handler uses this refusal precedence:
   applies to `completion-disposition --decision retire` because that verb cannot
   acknowledge an action that did not happen.
 - `park`: call only the interface ratified by
-  `wi_6937890c-6ba6-48b7-a9d2-4eb4510fe245`. Acknowledgment commits only after that
+  the separate park-primitive work. Acknowledgment commits only after that
   primitive's durable success condition. A park-operation failure leaves the request open
   and records the failure. No placeholder park implementation is permitted.
 
@@ -1371,7 +1366,7 @@ Current v15 already creates `completion_escalations` and
 closed `wake_cancellations` source/disposition checks. G1/G2 widens the two completion
 tables with typed terminal-cause and recipient-routing fields; it does not add a second
 rail or cancellation value. SQLite cannot widen those existing shapes through
-`CREATE TABLE IF NOT EXISTS`. Under Mike's waiver, Schema
+`CREATE TABLE IF NOT EXISTS`. Under the operator's waiver, Schema
 reserves successor stamp `coordination-fabric-v1-phase1-v16` after exact current-main
 stamp `coordination-fabric-v1-phase1-v15`. A database carrying v15 or any other stamp is
 refused by name before schema-module DDL or feature queries run. Tightbeam does not
@@ -2107,7 +2102,7 @@ request, session, wakes, assignments, and lifecycle rows remain unchanged.
 
 ### A15 — Park dependency gate
 
-Given the park primitive from `wi_6937890c-6ba6-48b7-a9d2-4eb4510fe245` is absent or has
+Given the park primitive from the separate park-primitive work is absent or has
 not received its required reviewed-clean contract, when a caller chooses park, then the
 gateway returns `park_dependency_unavailable`, leaves the request open, and records the
 attempt as `completion_escalation_park_failed`. The feature release gate remains red.
@@ -2348,29 +2343,27 @@ proposal.
 ## Open Questions
 
 1. **BLOCKING — park action contract.** The safe park/relaunch/stop-recycle primitive is
-   unbuilt and is owned by `wi_6937890c-6ba6-48b7-a9d2-4eb4510fe245`. The completion
+   unbuilt and is owned by separate park-primitive work. The completion
    record, notice, read path, retain path, and retire path are separable. The full
    retain/park/retire feature must not release until A15 uses the ratified real park
    interface. This spec does not name that interface.
 2. **BLOCKING IMPLEMENTATION GATE — independent successor review.** The predecessor
    remains reviewed history. Current implementation evidence is exact main
-   `6ae34287aa4864b8fe6fabfc96166d02b9827a89`. Mike's G1/G2 request changes this spec
+   `6ae34287aa4864b8fe6fabfc96166d02b9827a89`. The operator's G1/G2 request changes this spec
    before any implementation reconciliation. No implementation scope can start until
    the product owner opens one different-session review and that reviewer files
    `reviewed-clean` against this candidate's exact artifact hash. On
    `changes-requested`, amend this canonical file first and publish another hash. The
    reviewed artifact retains this gate text; the linked verdict resolves it without
    changing reviewed bytes.
-3. **NON-BLOCKING DECIDED EXCLUSION — initial zero.** Accepted decision request
-   `dr_d255b817-1541-460e-8549-bc55a9e7aa1f`, with exact recorded rationale delivered
-   in `s_904edadd-16b9-41ba-81cf-680eb8c86c3a`, keeps a session that never held an
+3. **NON-BLOCKING DECIDED EXCLUSION — initial zero.** An accepted decision request
+   keeps a session that never held an
    assignment outside this revision. It made no one-or-more-to-zero transition. Adding
    it here would widen the scoped request and require a different detector and activation
    boundary. A28 makes the exclusion executable rather than implicit. A future need for
    never-staffed-session escalation requires a separate evidence-backed proposal.
-4. **NON-BLOCKING DECIDED EXCLUSION — active surrender.** Later accepted decision
-   request `dr_518d5591-57b8-4a73-8aeb-6634afb334a1`, with exact recorded rationale
-   delivered in `s_904edadd-16b9-41ba-81cf-680eb8c86c3a`, is authoritative for this
+4. **NON-BLOCKING DECIDED EXCLUSION — active surrender.** A later accepted decision
+   request is authoritative for this
    conflict. Tightbeam 0.2 deliberately deleted active surrender; current Assignments
    closes lifecycle attests as completed, and tests refuse new surrender writes. This
    revision therefore implements completion and revocation only. It neither restores a

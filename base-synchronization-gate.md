@@ -1,16 +1,11 @@
 # Base-synchronization gate for implementation passes
 
-Status: amended after independent review
-`att_230098c5-2a18-4e4c-9191-53220608b1c5`; ready for a fresh independent review  
-Work item: `wi_15f960ac-3083-437a-9979-0f0313b7f474`  
-Spec assignment: `asg_3e05a07b-ed03-4a90-bff3-f0c446ee31ff`  
-Product authority: Mike's direct assignment
-`asg_74254cdf-8629-49dc-befe-c20ad253b391`  
+Status: amended after independent review; ready for a fresh independent review  
 Source baseline: Tightbeam `main` at
 `cd72fe0b06404afc6619a800c84a6a7eea595baa`  
 Baseline observation: the configured SSH remote returned that commit at
 `2026-08-12T14:37:25Z`  
-Canonical home: `/Users/mike/shared-workspace/shared/specs/tightbeam/base-synchronization-gate.md`  
+Canonical home: `specs/tightbeam/base-synchronization-gate.md` in the shared specs workspace  
 Operating pattern taught: Agentic Engineering pre-pass base synchronization; the
 neutral operating-manual pointer lands in the same shipped batch
 
@@ -1167,13 +1162,12 @@ extends that live pattern; it does not mint a parallel name.
 The cold digest also found an existing lifecycle contradiction: `feature-cycle` lines
 72-74 requires one review card to receive verdicts until clean, while `reviewing-code`
 lines 54-59 requires that card to complete after each verdict. The first review of this
-spec produced the concrete case: `asg_0996df7b-f8ae-452a-a44a-8a56c1f1ab96` closed
+spec produced the concrete case: its review card closed
 after `changes-requested`. The A-12 `feature-cycle` refactor replaces impossible card
 reuse with one fresh linked card per review round and retains reviewer completion;
 A-09 only consumes that lifecycle for base-evidence freshness.
 
-The amendment closes every blocking finding in
-`att_c19d96cf-80db-4cb1-b340-f3387c961a9e`:
+The amendment closes every blocking finding of the first independent review:
 
 | Finding | Closure in this spec |
 | --- | --- |
@@ -1185,8 +1179,7 @@ The amendment closes every blocking finding in
 | B6 — source-less pass kind | A-07 restricts reports to `new` or `rework`; A-08 gives source-less classification an attest-only `source-less` value and no report. |
 | B7 — declaration authority | Terms and A-02 derive opener identity from the assignment row and owner-user authority from durable `ownerUserId`; neither depends on an unavailable-opener ceremony or a prior owner ruling. |
 
-The next amendment closes every finding in
-`att_d2022b2b-369a-43d7-abe0-5f0cf7012ac6`:
+The next amendment closes every finding of the second review:
 
 | Finding | Closure in this spec |
 | --- | --- |
@@ -1203,8 +1196,7 @@ or mechanism changed, the implementer stops before editing and reports the exact
 changed commit, paths, and lines to the orchestrator and canonical spec writer. The
 implementer does not amend spec authority.
 
-The next amendment closes every finding in
-`att_118187c0-8c80-4839-a597-45008853d0e9`:
+The next amendment closes every finding of the third review:
 
 | Finding | Closure in this spec |
 | --- | --- |
@@ -1215,30 +1207,26 @@ The next amendment closes every finding in
 | F5 — note rail | The attest-note encoding term caps the canonical emitted line at 2,000 UTF-8 bytes, forbids truncation and implicit pointers, and defines one bounded non-authorizing fallback for every oversized required shape. A-08 replaces free-form outcome reasons with enums. |
 | F6 — always-on depth | I-10 and A-12 through A-15 split a short detector from one elected on-demand skill across all six manifests. State, schema, exception, and recovery depth occur only in the skill. |
 
-The next amendment closed every finding then known in
-`att_4b47aa7a-e6a2-49d3-af74-6b36d05458f0`:
+The next amendment closed every finding then known in the fourth review:
 
 | Finding | Closure in this spec |
 | --- | --- |
 | F1 — nondeterministic sanitization | The then-current candidate used a deterministic literal sanitizer. The following review proved that mechanism unsafe for transformed secrets, so the next amendment deletes it. This row is provenance, not a live requirement. |
 | F2 — unauthorized implementer amendment | A-11 and A-15 delete implementer amendment authority. A stale source map stops implementation and returns the evidence to the orchestrator and canonical spec writer. Only a spec-writer assignment may amend the canonical file; a new artifact/hash, fresh linked independent review, reviewed-clean verdict, and orchestrator re-pin are required before the implementer is woken to restart. |
 
-The next amendment closed the sole finding then known in
-`att_2bae131e-81de-4fe1-873c-ee4600c508d2`:
+The next amendment closed the sole finding then known in the fifth review:
 
 | Finding | Closure in this spec |
 | --- | --- |
 | F1 — transformed-secret leakage | The then-current candidate replaced literal redaction with a secret-free launcher precondition. The following review proved that precondition unbuilt and incompatible with credentialed required tests, so the next amendment deletes the entire stream/fingerprint surface. This row is provenance, not a live requirement. |
 
-The next amendment closes the sole finding in
-`att_3e912e95-825c-450f-8ce0-2d75e140165e`:
+The next amendment closes the sole finding of the sixth review:
 
 | Finding | Closure in this spec |
 | --- | --- |
 | F1 — credentialed-test deadlock | The Safe test evidence term, A-06 through A-09, and AC-42, AC-43, AC-47, and AC-56 delete persisted stdout/stderr, output encodings, fingerprints, reconstruction, capture authorities, and the secret-free-launch precondition. Repository-required credentialed commands run under A-06 without gate-owned stream capture. The gate retains only safe pre-expansion command identity, revision, non-secret environment qualifier, exit, `passed` or `failed` result, and classification. A-11 records the live credentialed-smoke rule and the absence of a security launcher. |
 
-The next amendment closes the sole finding in
-`att_230098c5-2a18-4e4c-9191-53220608b1c5`:
+The next amendment closes the sole finding of the seventh review:
 
 | Finding | Closure in this spec |
 | --- | --- |
@@ -1458,7 +1446,7 @@ The orchestrator orders the work because the fourteen files share one concept:
    implementation assignment runs those live mutations implicitly.
 
 The spec artifact remains at
-`/Users/mike/shared-workspace/shared/specs/tightbeam/base-synchronization-gate.md`. The work item and review bind its exact
+`specs/tightbeam/base-synchronization-gate.md` in the shared specs workspace. The work item and review bind its exact
 SHA-256. A material review amendment creates a new hash and invalidates the prior
 handoff hash. Only a spec-writer assignment may make that amendment; implementation
 cannot resume until the replacement hash has a linked `reviewed-clean` verdict and the

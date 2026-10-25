@@ -14,7 +14,7 @@ non-hermetic); codex's hook engine is described on its OWN terms
 (neither harness is the reference); and the gate row is a tightbeam-side
 ◐ᵗ wiring gap this spec closes, not a codex deficiency (matrix
 reality-audited 2026-07-20, codex has zero true vendor-✖ rows).
-r2 → r3 (2026-07-20): applies Flynn's ruling that
+r2 → r3 (2026-07-20): applies the operator's ruling that
 resolves the r2 adversarial review (3 critical, 1 high, 2 medium). THE
 BAR IS "WORKS FOR AGENTS WITH NON-MALICIOUS INTENT." Codex gates are
 RAILS, not a security boundary — exactly like Claude rails, and never
@@ -44,7 +44,7 @@ graceful {:error, :adapter_unavailable} (MEDIUM 6).
 History: r1 → r2 (2026-07-20) applied the r1 review (2 critical, 2
 high, 2 medium, 2 low) plus three second-spike deltas.
 
-Grounded in codex-gates-spike-report.md (spike run 2026-07-20 on eezo,
+Grounded in codex-gates-spike-report.md (spike run 2026-07-20 on `host-a`,
 codex-cli 0.144.6 — read it first; every delivery mechanism below was
 proven live there) plus a second independent two-machine replication
 whose deltas are folded in below. Parent: rails-v1-implementation.md
@@ -234,7 +234,7 @@ Changes exactly these files:
   `test/acp_adapter_test.exs`, `test/archetypes_test.exs`.
 
 Plus, same change set (harness-support maintenance rule 1):
-`shared-workspace/shared/specs/tightbeam/harness-support.md` — the
+`specs/tightbeam/harness-support.md` in the shared specs workspace — the
 gate-statutes row AND the future-tiers row (§Matrix below).
 
 Non-goals (do not build): block/check tiers, Stop-hook semantics,

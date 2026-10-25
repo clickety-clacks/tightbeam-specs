@@ -5,7 +5,7 @@ Parity-law status: **ACTIVE**. The READY r3 migration gate closed on
 reconciled shipped skill, and registry-driven feature smoke.
 
 Canonical record of which tightbeam features work on which harness, and by
-what mechanism. Discipline (Flynn directive, 2026-07-18): per-harness
+what mechanism. Discipline (operator directive, 2026-07-18): per-harness
 support is FACTS TO KNOW, never facts to rediscover — every feature that
 diverges by harness gets a row here when it ships, and the shipped
 `tightbeam-harnesses` skill mirrors this table so agents consult instead
@@ -69,7 +69,7 @@ Maintenance rules (parity formality):
 
 The empirical error envelopes each harness emits, keyed to the classified
 condition the model-adjudication engine (`model-ringdown-pattern.md`) routes on.
-This catalog is INHERENTLY OPPORTUNISTIC (Flynn/team-lead ruling 2026-07-22):
+This catalog is INHERENTLY OPPORTUNISTIC (operator ruling 2026-07-22):
 quota-exhaustion and post-exhaustion recovery shapes cannot be induced on
 demand, and deliberately breaking a live harness's auth to sample its auth-fail
 shape is FORBIDDEN (the org runs on it). So the catalog builds two ways: (a) the
@@ -77,11 +77,11 @@ adjudication classify seam records every UNCLASSIFIED runtime error's raw
 envelope (`unclassified_harness_error` lifecycle marker), turning every wild
 production failure into a contribution automatically; (b) the two SAFE probes
 (model-refusal per harness). Rows are provenance-marked; `?` = not yet captured,
-never guessed. The classification-mapping lane consumes this table.
+never guessed. Classification mapping consumes this table.
 
 | condition | claude envelope | codex envelope | surfacing / provenance |
 |---|---|---|---|
-| `auth_failed` | ? (opportunistic only — NO auth-breaking probe) | `turn_error` whose output = `"Your access token could not be refreshed because your refresh token was revoked. Please log out and sign in again."` | codex: surfaces at the adapter as `detail=turn_error` (seen at the boot gate wiring-check as `gate wiring-check FAIL detail=turn_error output=…`). LIVE INCIDENT 2026-07-21, `adapter-codex:reviewer@eezo.stderr.log`. First empirical entry. |
+| `auth_failed` | ? (opportunistic only — NO auth-breaking probe) | `turn_error` whose output = `"Your access token could not be refreshed because your refresh token was revoked. Please log out and sign in again."` | codex: surfaces at the adapter as `detail=turn_error` (seen at the boot gate wiring-check as `gate wiring-check FAIL detail=turn_error output=…`). LIVE INCIDENT 2026-07-21, `adapter-codex:reviewer@host-a.stderr.log`. First empirical entry. |
 | `model_unavailable` | `"Invalid value for config option model: <ref>"` (config-option refusal; see the Model-selection row — environment-dependent offered set) | ? (SAFE model-refusal probe pending) | claude: known symptom from the Model-selection row; codex: to be captured by applying a catalog-invalid model to a scratch session (safe probe). |
 | `boot_failed` | ? | ? | residual — a boot fault that is neither auth nor model refusal; because boot is lazy it can surface after a successful spawn. Opportunistic. |
 | `quota_exhausted` | ? | ? | NOT inducible on demand — opportunistic capture via the `unclassified_harness_error` seam. |
@@ -89,5 +89,5 @@ never guessed. The classification-mapping lane consumes this table.
 
 Discipline: this catalog is FACTS TO KNOW (the framing rule above). An `other`
 classification in the live engine that recurs is a signal to add its row here,
-mapped, and promote it out of `other` — that promotion is the classification
-lane's per-shape work, backed by the recorded envelope, never by a guess.
+mapped, and promote it out of `other` — that promotion is per-shape
+classification work, backed by the recorded envelope, never by a guess.

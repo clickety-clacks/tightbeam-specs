@@ -1,42 +1,25 @@
 # Release readiness, frozen main candidates, and optional release lines — revision 6
 
 Status: spec-approved candidate for fresh independent exact-artifact review.  
-Canonical path: `specs/tightbeam/release-readiness-design-v6.md`  
-Work item: `wi_3c9d3a64-15a8-457e-b2b1-429a1264f04f`  
-Producer assignment: `asg_b4011dae-23aa-41ec-9e66-b08fc09e65c7`
+Canonical path: `specs/tightbeam/release-readiness-design-v6.md`
 
-This revision replaces the decision authority of sealed revision 5, `art_fe8314ec`, SHA-256
-`511d53d57a346898d36d2ea62540af8bcae2a90a5b879c53144cdb0e3cd039ba`.
+This revision replaces the decision authority of sealed revision 5.
 Revision 5 remains immutable at `specs/tightbeam/release-readiness-design-v5.md`.
 
-Revision 5 had replaced revision 4, `art_25b966e7`, SHA-256
-`fcb6e16af03f2d1c6c590107744a2bdfd62c1856cf07d14f32d3b38194a2ead1`.
+Revision 5 had replaced revision 4.
 Revision 4 remains immutable at `specs/tightbeam/release-readiness-design-v4.md`.
-Its byte-identical Gibson review projection `art_0791914f`, SHA-256
-`fcb6e16af03f2d1c6c590107744a2bdfd62c1856cf07d14f32d3b38194a2ead1`, also remains
-non-canonical provenance.
 
-Revision 4 had replaced `art_3d656920`, SHA-256
-`6af5e684ee145314d6a906429378c1709e126a3de815d59e65d89c95ac8b1df0`, and its
-imported baseline `art_df141e91`, SHA-256
-`3252a3928f3ff64865c8f8c53ea3a94d68a9cd24ba134aaf7ac49cee94828001`.
+Revision 4 had replaced an earlier revision and its imported baseline.
 Those artifacts and earlier revisions remain immutable history.
 
-This revision closes the five findings in revision-5 review
-`att_62fb5f13-c20a-4671-af1f-893bf3294880` under owner rulings
-`att_1233d254-9c8f-4618-b781-d9cf013eb369` for F1-F3 and
-`att_e83f8168-99b8-461a-bef8-bd285b5dceab` for F4-F5.
+This revision closes the five findings in the revision-5 review under owner rulings
+for F1-F3 and F4-F5.
 
-It preserves revision 5's closure of the eight findings in revision-4 review
-`att_7aeb95d6-f5d0-496e-8aa3-13c2863ce266` under owner rulings
-`att_21d69cad-cc45-40da-b605-9853847a121d` for F1-F4 and
-`att_253d0baa-a17f-4dea-bbd6-2cb3b6145835` for F5-F8. It retains the closure of controlling
-historical review `att_4506ae4f-9b29-4eda-8207-936e1341e344` and its full report
-`art_df1f7f1d`, SHA-256
-`a7ec2c75e96bdf6b093c2e734a8aa57dfcf49606eaea5df1b530190a36fd9594`.
-It also implements the product-owner ruling
-`att_2a65ba32-88ad-460b-afde-ae47a409bd93` in the design. That ruling supersedes
-`att_8db7d29a-588e-4745-8dde-082a0cc10089` where the older ruling made a release
+It preserves revision 5's closure of the eight findings in the revision-4 review
+under owner rulings for F1-F4 and F5-F8. It retains the closure of the controlling
+historical review and its full report.
+It also implements a product-owner ruling in the design. That ruling supersedes
+the older ruling where it made a release
 branch the default candidate path. The older ruling remains superseded provenance and
 has no normative force in this revision.
 
@@ -289,10 +272,9 @@ optional-line integration changes the exact generation lock from `open` to
 7. Installed test hosts can report the installed package digest and embedded source SHA.
 8. The release tables described in revisions 3 through 5 have not shipped. Migration can add
    the consolidated revision-6 schema without translating live release rows.
-9. The immutable Clawline fixture retained from revision 3 is `art_ab55409f`, observed
+9. The immutable Clawline fixture retained from revision 3 has observed
    SHA-256 `08311b7779f8445369e6bf3a5d0c7bfe6203ca833a74b5ebe36b757f9fdf3670`. It contains
-   transcript continuity, Gate D, and reopened work item
-   `wi_9086ebd5-bd62-4c04-9b97-ac83ce34f53e`. It is acceptance data, not Tightbeam policy.
+   transcript continuity, Gate D, and a reopened work item. It is acceptance data, not Tightbeam policy.
 
 If an implementation falsifies an assumption, the affected scope returns to spec review.
 It does not substitute a heuristic.
@@ -583,7 +565,7 @@ One unique index reserves each repository/tag-name pair for one promotion.
 
 Mechanism choice: ADD wins because Git refs alone cannot preserve product ownership,
 review provenance, proof binding, or recovery after a lost external response. DELETE loses
-because Mike requires a durable release responsibility and an exact frozen candidate SHA.
+because the operator requires a durable release responsibility and an exact frozen candidate SHA.
 ACCEPT loses because an unreviewed or tag-built candidate is an explicitly rejected release
 state. Optional release-line state is added only for the explicit concurrency, maintenance,
 and patch cases; ordinary releases add no branch.
@@ -1274,7 +1256,7 @@ ref readback, output, and forbidden side effects.
 when Tightbeam projects the train, then readiness and go/no-go remain the exact authored
 values and no inferred declaration or ship event exists.
 
-**A-02 — Exact owner.** Given two sessions owned by Mike and an epoch naming session A,
+**A-02 — Exact owner.** Given two sessions owned by user-a and an epoch naming session A,
 when session B tries commit, decide, freeze, optional-line integration, promote, tag,
 ordinary transfer, ship, or owner-cancel, then each request returns `not_release_owner` and
 writes zero mutation rows. This check does not replace the separately authorized
@@ -1747,9 +1729,9 @@ content, missing required keys, unknown keys, altered bytes, any collection-hash
 unresolved evidence, or commit marker mismatch, then the snapshot returns an integrity error
 and currency `needs_attention`, not `current`.
 
-**A-51 — Preserved Clawline fixture.** Given immutable fixture `art_ab55409f` at the assumed
+**A-51 — Preserved Clawline fixture.** Given the immutable Clawline fixture at the assumed
 digest, when release membership and gates are serialized, then transcript continuity, Gate
-D, reopened `wi_9086ebd5-bd62-4c04-9b97-ac83ce34f53e`, and literal decisions round-trip as
+D, the reopened work item, and literal decisions round-trip as
 product evidence without becoming Tightbeam defaults.
 
 **A-52 — Terminal optional-line protection.** Given a shipped or canceled `release_line`

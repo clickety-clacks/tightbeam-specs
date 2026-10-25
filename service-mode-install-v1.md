@@ -1,6 +1,6 @@
 # Service-mode installation — spec v1
 
-Status: DRAFT, not yet reviewed. Blocks the Gibson production install.
+Status: DRAFT, not yet reviewed. Blocks the production install.
 
 ## Why this exists
 
@@ -9,7 +9,7 @@ foreground process bound to a terminal. It dies on logout and does not exist aft
 reboot. Every "successful" install to date has been a foreground process, which is
 not how any customer will run this.
 
-Ruling (Flynn, 2026-07-27): **Tight Beam must install as an independent persistent
+Ruling (operator, 2026-07-27): **Tight Beam must install as an independent persistent
 system service on every supported host OS.** The account that runs the installer is
 the *customer invoking the installer*; it is not where the service lives. A service
 that dies when the installing account logs out has not been installed.
@@ -34,7 +34,7 @@ process. They have different actors, different privileges, and different proofs.
 ## Service identity and locations
 
 The service runs as **the account that installed it** — no dedicated service
-account is created. openclaw runs the same way (LaunchAgents under `mike`, no
+account is created. openclaw runs the same way (LaunchAgents under `user-a`, no
 LaunchDaemon, no service account), and inventing one here would test a configuration
 nobody ships.
 
@@ -120,7 +120,7 @@ Tight-Beam-free state is a separately authorized action, not a phase of the smok
 Proof is observed state on a real host — a running foreground process is not
 evidence for any of these, and a green unit file is not evidence for 2, 3, or 5.
 
-## Open questions for Flynn
+## Open questions for the operator
 
 1. **Service-mode onboarding delivery** — both implemented flows are interactive
    (browser OAuth, device code) and run in the gateway's environment. Under a

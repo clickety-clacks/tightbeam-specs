@@ -1,10 +1,8 @@
 # Session-status `setHarness` capability amendment v1
 
-Status: successor candidate after changes-requested verdict
-`att_cd693728-9ab7-47dd-82ee-e2bf6b290f7b`. That review closed F1 through
-F3; this successor changes only F4 through F6. Mike authorized
-the firehose schema amendment through decision
-`dr_7f4b03d9-d37f-4889-a118-8be67e9eae45`, option A. This file carries no
+Status: successor candidate. F1 through F3 are closed; this successor changes
+only F4 through F6. The operator authorized the firehose schema amendment. This
+file carries no
 implementation, target, specRef binding, merge, release, deployment, or live-state
 authority.
 

@@ -1,9 +1,6 @@
 # Assignment lifecycle fallback escalation v1
 
-Status: MVP contract; implementation is forbidden until an independent reviewer files `reviewed-clean` against this exact content hash  
-Work item: `wi_3d6d13a0-c4cf-4370-88a1-b407c41ff7c1`  
-Authority assignment: `asg_3fce3846-487e-496a-af79-6e2114ff39ab`  
-Product owner assignment: `asg_0bd4c0ab-68a0-463e-92c4-e5d11a8135c5`
+Status: MVP contract
 
 ## Invariants
 
@@ -450,7 +447,7 @@ Implementation commits these immutable, real-row fixtures and a provenance file:
 
 Fixtures preserve identifiers, principals, correlations, timestamps, state, and terminal columns. They redact prompts, errors, subjects, notes, model context, message content, and credentials with byte length and SHA-256 evidence. Hand-written ideal fixtures do not pass.
 
-ARC-14 fixture validation and AC-15 packaged smoke are release-blocking for this MVP because a hand-written, mock-only, or source-tree-only pass can conceal silent loss, duplicate terminal escalation, false attribution, or human-principal impersonation. Each is an incredibly detrimental failure under owner ruling `att_a8418685-4f10-4a91-90b0-9ac9b6bceb48`. This rationale adds no fixture or smoke scope.
+ARC-14 fixture validation and AC-15 packaged smoke are release-blocking for this MVP because a hand-written, mock-only, or source-tree-only pass can conceal silent loss, duplicate terminal escalation, false attribution, or human-principal impersonation. Each is an incredibly detrimental failure. This rationale adds no fixture or smoke scope.
 
 ### ARC-15 — Exact implementation decomposition
 
@@ -489,14 +486,6 @@ scripts/assignment_lifecycle_smoke.exs
 `lib/tightbeam/schema.ex`, Rust CLI files, identity/Kung Fu content, client code, release code, and deployment files are outside the implementation set.
 
 ### ARC-16 — Source and review provenance
-
-Normative intent originates in `art_9d7e1cd9` at SHA-256 `009d3659f5c16729dccdd3d5e5c177c6db4e6160ebab37be96f364874cffe574`, independently reviewed-clean in `att_fbdc63ab-0758-4801-8ab8-080c81b5004a`.
-
-This MVP consumes ninth-review report `art_52f72ba6` at SHA-256 `93c916f24657d40c66d96e7d4cc0e02df4bffbe954ce25ddd2eb2b62a43f6fde`, owner source ruling `att_dc857f39-585b-4d12-985f-d4a40e60a89d`, custody ruling `att_57bb03f4-81d9-4511-9434-d6ff0e81b8fe`, and Mike's focused-correction/MVP ruling delivered on 2026-08-21.
-
-The first MVP review covered `art_c0dd2b7e` at SHA-256 `34f38864174b6b95525f0fb1a6497b1df6087cee6bd096aadec5792b375a393e` and filed changes-requested verdict `att_08478431-132c-41d6-a9ca-902f3fedb4a4` with report `art_ac28c6c8` at SHA-256 `d11a405ca630ce829ffbb3141209e7a6d9ccdf6573627271dcb6b79f357f74c7`. Operator decision `dr_cfe612db-7289-4a1f-acd5-5bb26701fbfc` authorized the minimal F1/F2 closure: close-generation assignment identity, deletion of untyped predecessor events as coverage, and the bounded rollback duplicate in ARC-12. Owner re-pin `att_7d588233-c56b-4641-a90e-1c8af14f1cf0` adopts `main@b8e6c47e4631da8345aaf8c6ab73b0858e630bf6` and deletes typed model-exhaustion-to-Main behavior from this MVP. Owner ruling `att_a8418685-4f10-4a91-90b0-9ac9b6bceb48` advances the baseline to `main@2d0bbf056996ca573379bc022f7620b55f309120` with rollback predecessor `b8e6c47e4631da8345aaf8c6ab73b0858e630bf6` and supplies the exact blocking-fixture rationale in ARC-14, AC-14, and AC-15.
-
-The prior frozen candidate `art_1fbd7a55` at SHA-256 `5caf7d2dba7f90532c339d11b230bf4ba86d6e29ac1cf0ff8002403140272ca6` remains historical review evidence. It is not implementation authority.
 
 The builder MUST recheck remote `refs/heads/main`. If it differs from `2d0bbf056996ca573379bc022f7620b55f309120`, implementation stops for an owner re-pin.
 

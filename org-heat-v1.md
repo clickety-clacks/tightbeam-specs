@@ -1,6 +1,6 @@
 # Org heat v1 — spend the tokens on the work that matters
 
-Status: PROPOSAL, 2026-08-31. Recorded from Mike's design conversation so the
+Status: PROPOSAL, 2026-08-31. Recorded from the operator's design conversation so the
 idea survives outside a chat session. This document authorizes no
 implementation, deployment, identity change, or live mutation. It needs a
 reviewed successor before anyone builds it.
@@ -71,7 +71,7 @@ is waiting on heat rather than wondering who dropped it.
 This is the one part of heat that is not optional. Without it the feature
 manufactures the alerts it was built to avoid.
 
-## Open questions for Mike
+## Open questions for the operator
 
 1. **The curve.** How much does one step of priority change the hold at a given
    heat, and does the lowest tier reach zero turns at some heat, or only at heat

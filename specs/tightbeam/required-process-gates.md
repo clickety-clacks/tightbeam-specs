@@ -1,26 +1,23 @@
 # Declarative required-process gates
 
-Status: changes-requested specification amended after round-2 verdict
-`att_9b353a42-cd00-48c0-8b0c-f3e244315052`; the amended bytes require a cold
-digest and re-review for `wi_f165cdbd-72c0-4add-bb8d-2113908c3e55`. This
+Status: specification amended after round-2 review; the amended bytes require
+a cold digest and re-review. This
 specification authorizes no
 implementation, identity publication, deployment, runtime mutation, or release
 operation.
 
 Authority and evidence:
 
-- Mike ruled in `dr_e2a6657c-a7c8-457d-a7c9-fc88ea53a151` that this MVP uses
+- The operator ruled that this MVP uses
   organization, Topline, and work-item scopes. It does not add project or
   release entities.
-- The Topline scope means the explicit V5 human-intent model from
-  `wi_35abce19-8d05-4a18-90db-335cabe0893c`. It does not mean the legacy
+- The Topline scope means the explicit V5 human-intent model. It does not mean the legacy
   `toplines` telemetry, creator-turn parentage, causal trees, or an automatic
   rollup.
-- The reviewed Toplines V5 specification is `art_e275210f` at SHA-256
+- The reviewed Toplines V5 specification has SHA-256
   `d39dd61cb44f5c6ff0bbc301b28d64a893b294d1a894e148b1449b36d5585bf9`.
   Core integration is recorded against that specification. Runtime proof
-  remains **NOT-PROVEN** under
-  `att_a76de51c-0fb3-47a6-9ce0-8313d8be4cc6`.
+  remains **NOT-PROVEN**.
 - The current source census uses Tightbeam `origin/main`
   `b8e6c47e4631da8345aaf8c6ab73b0858e630bf6`. It contains `org_settings`,
   V5 Topline and explicit membership rows, work-item close, dispatch-tier
@@ -30,11 +27,11 @@ Authority and evidence:
 - `completion-rails-decisions.md` remains the authority for assignment-card
   completion rail composition. This specification does not duplicate or
   supersede it.
-- Independent review `att_d9aa11c7-ea16-4797-8e36-ddf05fa6706f` requested six
+- Independent review requested six
   changes: established rail identity reuse, a deterministic V5 capability seam,
   an exact wire contract, wrong-scope refusal, a concrete catalog-transition
   gate, and canonical hash bytes. This revision addresses only those blockers.
-- Round-2 review `att_9b353a42-cd00-48c0-8b0c-f3e244315052` found that the
+- Round-2 review found that the
   catalog gate named the post-publication `identity-apply` consumer instead of
   the actual pre-publication `tightbeam/live` boundary, and that invalid scalar
   wire values lacked exact refusals and precedence. This revision removes the
@@ -181,7 +178,7 @@ proof would defeat the opt-in contract.
    specification and release.
 9. The final MVP can depend on the reviewed V5 contract before V5 runtime proof
    exists. Deployment cannot claim this dependency until runtime proof resolves
-   `att_a76de51c`.
+   the V5 NOT-PROVEN finding.
 
 ## Invariants
 
@@ -387,7 +384,7 @@ legacy Topline response. None consults Execution Map telemetry or legacy
 `toplines` behavior.
 
 The MVP is not runtime-proven until the V5 runtime proof resolves
-`att_a76de51c`. A staged build can expose organization and work-item policy
+the V5 NOT-PROVEN finding. A staged build can expose organization and work-item policy
 first. It does not register or replace `topline-close`. After the V5
 implementation supplies that reviewed lifecycle, the close handler activates
 this specification's Topline gate only when the exact V5 capability is enabled.
@@ -1226,6 +1223,6 @@ changes it.
 
 ## Open Questions
 
-None. Mike's ruling fixes the MVP scopes and the target boundary. The reviewed
+None. The operator's ruling fixes the MVP scopes and the target boundary. The reviewed
 V5 dependency remains a rollout prerequisite with NOT-PROVEN runtime evidence;
 it is not an unmarked design choice in this specification.

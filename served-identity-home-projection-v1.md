@@ -1,8 +1,7 @@
 # Home projection: shared {harness,machine} home + per-session cwd identity — v1
 
-Status: DRAFT r4 (Opus-authored 2026-07-24). Greenfield — no production. The design was hardened
-through independent adversarial review rounds and the live harness spikes cited below. Pending:
-Sol-high review, then implementation.
+Status: DRAFT r4 (2026-07-24). Greenfield — no production. The design was hardened
+through the live harness spikes cited below. Pending: implementation.
 
 ## Provenance & rationale (why this architecture — do not lose this)
 
@@ -247,8 +246,8 @@ four verbs:
 - **`tightbeam identity apply [<session>|--all]`** — update each selected session's Tight-Beam-owned
   skill files from the current `live` revision, stamp that revision, then send an ordinary
   best-effort re-read prompt. Turn state is not a precondition, and there is no strict confirmation
-  that a session read the new bytes. Mike's ruling `dr_07bdef13` removed the bounce, the
-  turn-boundary refusal, and every transition primitive from this verb;
+  that a session read the new bytes. The bounce, the turn-boundary refusal, and every transition
+  primitive are removed from this verb;
   `immediate-identity-apply-v1.md` is its sole home and governs its behavior in full.
 
 §6 teaches these verbs to the agent; the verb named there is `tightbeam identity edit`.
@@ -507,7 +506,7 @@ required to be present.
    start. Additionally: a SUCCESSFUL `live` advance causes NO automatic refresh — an open session's
    materialized skills, delivered guidance, and stamp are byte-identical before and after the
    publication until `identity apply` runs. `apply`'s own acceptance is not stated here — it lives
-   in `immediate-identity-apply-v1.md`, which owns that verb per `dr_07bdef13`.
+   in `immediate-identity-apply-v1.md`, which owns that verb.
 14. **Per-machine credential isolation.** With two machine contexts, assert each onboards
    independently, each runtime is launched with only its local credential, and no credential bytes
    traverse the placement/control channel between them (fail-on-revert against the transport
@@ -520,7 +519,7 @@ acceptable; sessions are durable and resume). The rule is the ratified B2 model:
 - **Guidance/skill changes** touch **session workdirs / the injected identity on next session**, not
   the shared home → nothing bounces AUTOMATICALLY; new sessions pick the changes up at start.
   **`identity apply [<session>|--all]` is the explicit per-session refresh, and it does NOT bounce.**
-  Per Mike's ruling `dr_07bdef13`, apply is an ordinary file update plus a nudge: replace the
+  Apply is an ordinary file update plus a nudge: replace the
   session's Tight-Beam-owned skill files from the current `live` revision, stamp that revision, then
   send a best-effort re-read prompt. It does not close the harness session, does not recompose
   non-file guidance, does not wait for or refuse on a running turn, and returns no strict
@@ -598,7 +597,7 @@ refresh to classify (that would be a second refresher — forbidden by Invariant
 ## 11. Migration — none (greenfield)
 
 There is no production and no live deployment on the old per-archetype-home model to protect. Build
-the target model directly; stand up shrdlu/eezo fresh on it. No add→onboard→collapse→retire cutover,
+the target model directly; stand up each machine fresh on it. No add→onboard→collapse→retire cutover,
 no per-machine migration state machine. (This deletes r3's B5/B6.)
 
 ## 12. Component-by-component changes

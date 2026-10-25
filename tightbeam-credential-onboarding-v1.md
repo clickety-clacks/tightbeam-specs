@@ -1,7 +1,7 @@
 # Tightbeam credential onboarding + lifecycle — v1
 
-Status: DRAFT r3 (Opus-authored 2026-07-24). Greenfield — no production. Both architecture decisions
-are Flynn-ratified (B2, B5). Pending: r3 Sol-high review, then Sol implementation.
+Status: DRAFT r3 (2026-07-24). Greenfield — no production. Both architecture decisions
+are ratified (B2, B5).
 
 `served-identity-home-projection-v1` is the authoritative statement of the home/identity model,
 racelessness, onboarding mechanisms, and skill/guidance delivery — including the shared **Provenance
@@ -31,14 +31,14 @@ credential-onboarding-and-lifecycle companion; where they overlap, the served-id
 
 ## Ratified decisions
 
-- **B2 — restart picks up the current credential; bounce on broken (Flynn FINAL 2026-07-24).** To get
+- **B2 — restart picks up the current credential; bounce on broken (FINAL 2026-07-24).** To get
   a new/refreshed credential into an agent, **reset/bounce/resume** it — on (re)start it reads the
   current credential. A **broken** credential (rejected and not silently recoverable) makes the
   bounce **required — and replacement-conditioned**: per the serialized lifecycle (Invariant 3b /
   served-identity §9b) the bounce happens only AFTER the replacement credential is written; a
   terminal mark parks sessions, it never restarts them against the revoked credential. In-flight
   swap is permitted but never a dependency. No continuous fan-out into running agents.
-- **B5 — per-host credentials + tightbeam-guided onboarding (Flynn ratified 2026-07-24).** Each
+- **B5 — per-host credentials + tightbeam-guided onboarding (ratified 2026-07-24).** Each
   machine keeps its OWN local credential; secrets NEVER transit between machines. Tight Beam ITSELF
   walks a user through onboarding on each machine — a first-class product flow, per host.
 
@@ -100,7 +100,7 @@ re-onboarding) — WITHOUT becoming a second refresher.
    only after the serialized re-onboarding (Invariant 3b) has written the replacement — never before.
    The resumed process reads the current (new) credential at start.
 9. **Security: 0600, same-UID trust, minimal copies.** Credential/metadata files are 0600 under a
-   same-UID trust model (portable to Linux/gibson). Keychain/secret-manager is a v1 non-goal.
+   same-UID trust model (portable to Linux). Keychain/secret-manager is a v1 non-goal.
 
 ## Architecture — `Tightbeam.Credentials` (per host)
 
@@ -196,7 +196,7 @@ onboarded` / `unsupported (no subscription)` / `revoked`), never a silently empt
 ## Migration — none (greenfield)
 
 No production, no live deployment on the old harvest/per-archetype-home model to protect. Build the
-target model directly; onboard shrdlu/eezo fresh. No add→onboard→retire cutover.
+target model directly; onboard each host fresh. No add→onboard→retire cutover.
 
 ## Non-goals (v1)
 

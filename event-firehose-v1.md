@@ -5,26 +5,24 @@ notices for durable Topline mutations and independently committed subagent
 markers. These notices make the composed Toplines and ExecutionMap REST views
 refreshable from each matching committed source change. They add no
 ExecutionMap class and no rebuildable source resource. r6 also folds the
-adjudicated Sol review-gate
+review-gate
 findings (review-gate-observability-2026-08-21.md): row versions +
 always-upsert (F7), seq heartbeat (F6), revocation closes sockets (F12),
 visibility-change rebuild (F11), pre-delete authorization (F18), class
 mapping table (F2), mutation classes (F3), composed-view refetch rule
 (F4), op:"observe" (F5), read-marker verb semantics (F10), refs id law
 (F17), protocolVersion at upgrade (F19), in-band auth like the chat
-socket (F20 — Mike's catch: no tickets, the existing protocol already
-solves it). r5: r5 folds the tb02 adjudication of recon
-wi_9239a7f1's report (rest-state-api-recon.md on the NFS; adjudication in
-rest-vs-cli-adjudication.md r2): V3 now means canonical public
+socket (F20 — no tickets, the existing protocol already
+solves it). r5: r5 folds the recon report
+(rest-state-api-recon.md; rest-vs-cli-adjudication.md r2): V3 now means canonical public
 projections, never raw rows (the db stores credentials); notices carry
 resource + op with delete tombstones; message.created joins the registry;
 verb/lifecycle/rail classes are marked observational-only, outside the
-rebuildable-state contract. r4.2: r4.2 (lavish review): M1 hardened —
+rebuildable-state contract. r4.2: r4.2: M1 hardened —
 subscribe-first is normative and the model-build algorithm SHALL be
-idempotent under duplicates; REST-vs-CLI recon carded and staffed (see
-P5). r4.1: read markers RULED into the spec
+idempotent under duplicates. r4.1: read markers RULED into the spec
 (§Read markers) — user-scoped substrate rows, changes broadcast as
-read_marker.updated. r4 was a rescoping fold of Mike's state-model
+read_marker.updated. r4 was a rescoping fold of the state-model
 ruling (2026-08-21): the EVENTS are not the entity — the TIGHTBEAM STATE
 MODEL is. The ws exists only to tell a client that an aspect of the state
 db changed. There is NO way to fetch previous events from the socket:
@@ -36,15 +34,10 @@ When build work starts it branches from main tip.
 
 G1 current-main composition successor, 2026-08-27: PROPOSED. Add the canonical
 transcript `messageType` discriminator to the shared projection used by
-`message.created` and matching REST rows on base
-`277bb5031a06270aabbc57e3c222cbd2ec89bc73`. Exact candidate `b53b1f5f`
-passed the G1 behavior review; verdict `att_adea7aeb` and report
-`art_a3fc1d81` requested only current-main composition. Product-owner
-disposition `att_e0a20ce9` preserves F1/F2. This successor changes no notice
+`message.created` and matching REST rows. It preserves F1/F2. This successor changes no notice
 envelope, source-invalidation mapping, G4 error, or G8 authority label.
 
-G9 setHarness capability successor, 2026-08-28: PROPOSED under Mike ruling
-`dr_7f4b03d9-d37f-4889-a118-8be67e9eae45` option A. Add
+G9 setHarness capability successor, 2026-08-28: PROPOSED. Add
 `session.harness_changed`, session capability payloads, notice schema 2, and
 firehose protocol 2. The exact behavior contract is
 `session-status-set-harness-capability-v1.md`.
@@ -55,14 +48,14 @@ firehose rescope of the archived focused design. Their carried-forward
 content is restated here; anything absent from r4 is superseded.
 
 Authority and inputs:
-- Mike's state-model ruling (2026-08-21, ruled in review): "the events
+- The state-model ruling (2026-08-21): "the events
   aren't important, the tightbeam state model is, and ws is really only
   there to tell you when an aspect of the state db has changed... a fresh
   client would rebuild up to the current point and use a sub to keep the
   model updated." A subscription starts feeding at the point of
   subscription; previous events are fetched nowhere — history is the
   query surface's job.
-- Mike's earlier rulings, still in force: the stream is part of the
+- Earlier rulings, still in force: the stream is part of the
   observability layer alongside CLI reads and direct ro state-db queries
   (2026-08-20); auth is the requesting user's existing gateway credential,
   no capability keys, localhost/tailscale deployment (2026-08-20); notice
@@ -70,19 +63,16 @@ Authority and inputs:
   subscriptions are multiplexed on one connection, each with its own
   filters (r3.1 comment); the class vocabulary is enumerated in-doc (r1
   comment).
-- Companion recon wi_9fdc0c07 (client buildability): with the socket
+- Companion client-buildability recon: with the socket
   carrying no history at all, the query surface is the ONLY path to the
   past. The recon proves a Clawline-class chat client stands on queries
   plus this subscription — its gaps are blocking findings against the
   query surface.
-- Mike's firehose gap remediation ruling, message
-  `s_fe001c27-c509-4cf6-8866-47defe5eaa21` (2026-08-27), accepts recon verdict
-  `att_556f55ae-f1d2-4c83-b55d-9daf06aae929` and report `art_1d389e8e`.
-  It makes G2 session freshness a read-side firehose prerequisite and leaves
+- The firehose gap remediation ruling (2026-08-27) accepts the
+  client-buildability recon findings. It makes G2 session freshness a read-side firehose prerequisite and leaves
   the G3 write contract outside this amendment.
-- Firehose client-buildability recon verdict
-  `att_556f55ae-f1d2-4c83-b55d-9daf06aae929` and report `art_1d389e8e`
-  identify G1. Mike's 2026-08-27 remediation ruling adopts it as a slice-2
+- The firehose client-buildability recon identifies G1. The 2026-08-27
+  remediation ruling adopts it as a slice-2
   prerequisite. Prior product commit
   `505b56aa29f151faab7cd9618ca1bba922cff357` supplies the additive values
   and compatibility behavior.
@@ -93,7 +83,7 @@ Authority and inputs:
   complementary — this spec generalizes exactly that contract to the whole
   state model on a dedicated endpoint; observability-v1 remains authority
   for the existing chat wire's doorbells.
-- Related card: wi_bdf9a537 (gateway behind tailscale serve) — transport
+- Related: the gateway behind tailscale serve — transport
   posture this endpoint would inherit.
 
 G2 session-freshness landing, 2026-08-27: adds sessions to the complete
@@ -111,8 +101,7 @@ The canonical firehose spec lives only in the `tightbeam-specs` repository as
 dependency, its filter value, or its wire type lands those coupled files in
 one reviewed revision. Recon documents, adjudication ledgers, artifact rows,
 transcripts, worktrees, and review reports are authority evidence, not
-canonical custody. The source-invalidation companion landed with REST r4 at
-`0139d9a71180a7175965473fade9b183d2b57601`.
+canonical custody. The source-invalidation companion landed with REST r4.
 
 G1 uses the same exact canonical set. A change to the transcript-message
 projection, `message.created` mapping, or `messageType` wire contract lands all
@@ -281,7 +270,7 @@ violate the ruled freshness-only architecture.
 V2. Classes are namespaced `area.happening`, lowercase, dot-separated. The
 registry below is part of this spec. A class name never changes meaning.
 
-V3. **RULED (Mike), refined r5:** an R8 rebuildable-state notice payload is the
+V3. **RULED, refined r5:** an R8 rebuildable-state notice payload is the
 resource's CANONICAL PUBLIC PROJECTION — the full recorded product fields and
 user content, unredacted after authorization, sufficient to update a displayed
 model without a follow-up query. "Unredacted" never means raw rows: the
@@ -334,7 +323,7 @@ schema-2 frame.
 
 V5. Payload rows SHALL carry the same primary ids the query surface
 returns for the same rows, so a client can match a notice against fetched
-state (the correlation seam; recon wi_9fdc0c07 verifies it).
+state (the correlation seam; the client-buildability recon verifies it).
 
 V5a. The `message.created` payload is the exact shared R7 transcript-message
 item. Its `messageType` value comes from the stored discriminator; neither the
@@ -377,7 +366,7 @@ R3. Org shape:
 R4. Records: `artifact.recorded`, `read_marker.updated` (RM3).
 
 R4b. Conversation: `message.created` — without it a chat client cannot be
-lively (M4 promised message classes; recon wi_9239a7f1 caught the
+lively (M4 promised message classes; the REST recon caught the
 registry gap).
 
 R4c. Composed-view invalidation sources: `topline.created`,
@@ -468,7 +457,7 @@ subscriptions to force it.
 ## Connection and auth
 
 C1. A WebSocket upgrade on the gateway's existing HTTP listener, at its
-own path, separate from the chat socket. RULED (Mike, 2026-08-22): this
+own path, separate from the chat socket. RULED (2026-08-22): this
 socket ADDS to the product, it does not replace Clawline's chat ws —
 the two coexist indefinitely: GET /ws stays the chat wire exactly as
 today; the firehose mounts at its own path (working name /ws/changes)
@@ -487,7 +476,7 @@ affecting a connection's principal closes that connection (1008); the
 client's reconnect re-auths and rebuilds (M2).
 
 C3. Transport posture: localhost or tailscale; TLS termination is the
-operator's proxy (see wi_bdf9a537 for the tailscale-serve posture).
+operator's proxy.
 
 ## Subscribing
 
@@ -525,7 +514,7 @@ then a fresh subscribe on the same connection. Duplicate subscriptionId or
 unknown unsubscribe is `invalid_request`.
 
 S5. No admission or concurrency limit (ruled 2026-08-20) — with one
-sanity cap (Mike, 2026-08-22, resolving review finding F23): at most 100
+sanity cap (2026-08-22, resolving review finding F23): at most 100
 subscriptions per connection; the 101st subscribe is refused with a typed
 invalid_request naming the cap. Not an admission limit — a runaway-client
 backstop no real client hits.
@@ -534,7 +523,7 @@ backstop no real client hits.
 
 M1. Subscribe (get `subscription_ready`) FIRST, then snapshot current
 state through the query surface, then apply incoming notices to the
-model. Mike's review note is normative: the danger zone is the gap
+model. This note is normative: the danger zone is the gap
 between building the model and receiving the first notice — subscribing
 first closes it, and the worst case becomes duplicate records, never
 missed ones. Therefore the client's model-build algorithm SHALL be
@@ -570,7 +559,7 @@ STATE rows (a row id or timestamp per view), never against the stream.
 Shared markers live in substrate rows (RM1); a strictly single-instance
 client MAY keep its marker client-local instead.
 
-## Read markers (RULED, Mike 2026-08-21)
+## Read markers (RULED 2026-08-21)
 
 RM1. The substrate SHALL provide user-scoped read-marker rows:
 `(userId, scopeKey, marker)`. `scopeKey` is a client-chosen string naming
@@ -595,7 +584,7 @@ before/after); send via wake; watch `wake.scheduled` and the turn/message
 classes update the model; watch `session.*` for picker, engine, identity,
 history-barrier, retirement, and mechanical-status freshness; deep scroll-back
 pages the transcript read.
-Whether every piece stands on today's query surface is recon wi_9fdc0c07.
+Whether every piece stands on today's query surface is the client-buildability recon's question.
 
 A chat client builds conversation state from the canonical REST
 `GET /api/sessions/:sessionKey/messages` read and may reach it through the
@@ -611,7 +600,7 @@ request notice replay, use a stream cursor, or treat an `after` page as gap
 recovery. REST R5d and `transcript-verb-v1.md` carry the history and wrapper
 acceptance. The closed M1 cut, covered-version comparison, and the mandatory
 rebuild for every newer different-boundary session notice are specified by
-`transcript-verb-v1.md` steps 3 through 8 and A5. Recon wi_9fdc0c07 remains the
+`transcript-verb-v1.md` steps 3 through 8 and A5. The client-buildability recon remains the
 demand evidence.
 
 ## Delivery semantics
@@ -860,7 +849,7 @@ publisher being installed and routable. If the publisher or fan-out crashes
 after commit before handoff completes, zero notice is permitted and the next
 authorized REST rebuild converges to the committed row.
 
-## Open questions for Mike
+## Open questions
 
 None. The read-marker question (r4's MQ1) is RULED 2026-08-21: substrate rows,
 per §Read markers. Everything earlier is resolved or mooted by the state-model
@@ -869,7 +858,6 @@ full canonical row; R8b carries only its exact invalidation version; no event
 storage, retention, or cursor exists. The adopted REST companion owns the
 query surface.
 
-The source-invalidation amendment is ruled by
-`att_d5b0a440-bd51-498f-8b96-e6512fedf68f`: preserve marker-backed `fanOut`
+The source-invalidation amendment is ruled: preserve marker-backed `fanOut`
 and durable Toplines, map their exact source commits, and add no
 ExecutionMap notice class.

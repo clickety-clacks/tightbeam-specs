@@ -2,8 +2,6 @@
 
 Status: FROZEN FOR INDEPENDENT REVIEW
 
-Work item: `wi_113d569f-7aff-412b-aec3-0c21f2e87f40`
-
 Source baselines:
 
 - installed Tightbeam 0.1.7 at commit
@@ -38,34 +36,26 @@ tested mechanism (wisdom 15-22).
 ### Authority and evidence custody
 
 The direct owner assignment
-`asg_70ab4afc-ac6a-4e50-a2b5-5e828d6ab372` consolidated the sibling failure family into
+consolidated the sibling failure family into
 this work item and required durable intent through handling or explicit cancellation,
 typed attempt and handling outcomes, bounded idempotent backoff, capable-parent
-escalation, and duplicate prevention
-(`att_59034f84-2bdb-4aa9-babc-8e0cbfaca986`). The original incident owner
+escalation, and duplicate prevention. The original incident owner
 recorded two canceled wakes that still fired, queued turns stranded by a planned model
-swap, and a 24-hour quiescence check that fired after owner activity
-(`att_941bbfdc-ccf4-4d1f-be9e-0f5eacf53cc8`,
-`att_57ef3b7b-6a69-4561-8141-a9962af99ab3`,
-`att_48fa113d-9907-4126-aff5-a1e0449b25e4`). The work-item trace contains four
-consecutive failed wake turns, each recorded `wake_fired` before its failed terminal
-(turns 10415, 10472, 10476, and 10478).
+swap, and a 24-hour quiescence check that fired after owner activity. The work-item trace contains four
+consecutive failed wake turns, each recorded `wake_fired` before its failed terminal.
 
-Recon assignment `asg_0164bb13-c204-4686-97d3-96b50ab0f602` and its verdict
-`att_54f4736d-e56f-4528-9b00-07826c29dabe` recorded the same partial state. Its report
-artifact `art_b94039d1` names path
-`gibson:/home/mike/.tightbeam/work/3d714ecc0498/wake-delivery-lifecycle-recon-2026-08-12.md`
+A recon assignment and its verdict
+recorded the same partial state. Its report
+artifact names a work-directory path
 and SHA-256
 `6d73e2bd4ccd3001a811428bd45fa66ca7a7a9c61a9de2383152ca88ffb27c99`, but the
-exact recorded path and work directory `/home/mike/.tightbeam/work/3d714ecc0498`
+exact recorded path and work directory
 returned ENOENT. The original report is unavailable. No durable artifact or archive
 pointer resolves to SHA-matching bytes, so this specification treats the artifact bytes
 as irrecoverable. It does not reconstruct, quote, or rely on those bytes, and it labels
 no transcript-derived text as the artifact. The loss and corrected observation time are
-recorded in `att_2a7d2e0a-0886-4a0f-99ea-6912748a7974` and
-`att_1190bc05-4c47-46c6-b738-8121f4bc226f`. Artifact `art_c93203f0` is retained only as
-integrity evidence because its caller-supplied digest did not match the file digest
-(`att_1688d32e-7e18-4ae3-894b-7f7ad7abd4b6`).
+recorded durably. One further artifact is retained only as
+integrity evidence because its caller-supplied digest did not match the file digest.
 
 Each load-bearing clause below was re-derived from the durable rows and both source
 baselines. Neither missing artifact supplies authority to a requirement.
@@ -77,8 +67,8 @@ baselines. Neither missing artifact supplies authority to a requirement.
 | A — cancel versus admission | `Wakes.cancel_in_txn/3` accepts a pending row, while the prompt scheduler reads pending wakes, invokes delivery outside that cancellation transaction, and marks the wake later. The callback-to-mark window remains (`lib/tightbeam/wakes.ex:323-380,895-960,1166-1207,1366-1386`). Process-origin wakes can mark inside the message/turn transaction, but that update does not assert one changed wake row (`lib/tightbeam/gateway.ex:978-1135`). These files are unchanged between the two baselines. | R1-R4 replace the split edge with one checked admission CAS shared by message, turn, and wake outcomes. |
 | B — outcomes, retry, and bubble | Wake state remains `pending | fired | canceled`; turn state is durable and `wakeId` is unique, but the ledger explicitly performs no automatic retry (`lib/tightbeam/wakes.ex:63-97`; `lib/tightbeam/ledger.ex:1-18,39-76,363-449`). A failed scheduler callback merely leaves the wake pending, and the existing test has no bound or exhaustion (`test/wakes_test.exs:354-393,445-490`). Bubble dedupe is keyed by cause turn and recipient, and its prompt names only the turn (`lib/tightbeam/productions/bubble.ex:1-30,37-39,49-110,141-165`). These files are unchanged between the two baselines. | R5-R10 add typed wake outcomes, safe bounded retries, one logical undeliverable cause, and a wake-named bubble by extending the existing stores and Bubble production. |
 | C — queued turn and model swap | The ledger reads the session's selected model and harness when it claims a queued turn, and the test queues before tuning then proves the live selection was stamped (`lib/tightbeam/ledger.ex:179-271`; `test/ledger_test.exs:104-133`). Model and harness changes use the session lane's turn boundary (`lib/tightbeam/session_lane.ex:90-111`; current-main `lib/tightbeam/gateway.ex:4229-4235,4361-4403`; `test/gateway_test.exs:3764-3883,5117-5257`). | R14 retains the fixed structure. A5 adds the missing combined wake regression. No model-switch mechanism is added. |
-| D — quiescence | The incident row names later owner activity as the stale-premise event (`att_48fa113d-9907-4126-aff5-a1e0449b25e4`). Current main adds assignment liveness checkpoint binding for a self-scheduled wake, but it does not compare owner activity before delivery (`lib/tightbeam/gateway.ex:3535-3569`; `lib/tightbeam/supervision.ex:253-294`). The checkpoint binding is absent from 0.1.7. | R12-R13 add one typed owner-activity invalidation guard. Existing checkpoint semantics remain. |
-| E — reliable handoff | Dispatch already commits the assignment, prompt echo, and turn in one transaction (`lib/tightbeam/assignments.ex:540-579,596-623`). An arbitrary wake remains a hint whose later carrier failure is not conserved, as recorded in `att_08870951-f045-42dc-844c-bc0addf16fba`. | Atomic dispatch remains authoritative. This specification closes only the ordinary wake carrier. |
+| D — quiescence | The incident row names later owner activity as the stale-premise event. Current main adds assignment liveness checkpoint binding for a self-scheduled wake, but it does not compare owner activity before delivery (`lib/tightbeam/gateway.ex:3535-3569`; `lib/tightbeam/supervision.ex:253-294`). The checkpoint binding is absent from 0.1.7. | R12-R13 add one typed owner-activity invalidation guard. Existing checkpoint semantics remain. |
+| E — reliable handoff | Dispatch already commits the assignment, prompt echo, and turn in one transaction (`lib/tightbeam/assignments.ex:540-579,596-623`). An arbitrary wake remains a hint whose later carrier failure is not conserved. | Atomic dispatch remains authoritative. This specification closes only the ordinary wake carrier. |
 | F — GAGGED versus negligence | The prod left-hand side checks terminal existence but does not read terminal status or failure class; a failed terminal can match the negligence ladder (`lib/tightbeam/supervision.ex:854-905,1000-1025,1114-1140`). | R11 makes the typed terminal failure a higher-priority, consumed fact. |
 | G — O6 | O6 commits `078919d`, `67e1bcf`, `f64ffa7`, `81fbc2d`, and merge `ba5952b` are ancestors of both baselines. O6 regression tests remain at `test/gateway_test.exs:6452-6765`. | O6 is superseded for this work and stays closed. |
 
@@ -784,11 +774,11 @@ second logical cause. Proves R7-R11, R16.
 
 ### A4 — Stale-quiescence invalidation
 
-Given session `S1` is running an owner-origin turn for user `mike`, when `S1` schedules a
-delayed self-wake with `--cancel-on-owner-activity`, then the wake stores owner `mike` and
+Given session `S1` is running an owner-origin turn for user `alice`, when `S1` schedules a
+delayed self-wake with `--cancel-on-owner-activity`, then the wake stores owner `alice` and
 the current owner-turn cursor.
 
-Given a later `user:mike` turn is admitted to another mike-owned session `S2`, when the
+Given a later `user:alice` turn is admitted to another alice-owned session `S2`, when the
 quiescence wake reaches its act edge, then one typed cancellation names
 `owner_turn_admitted:<S2 turn seq>`, the wake becomes canceled, and no prompt echo, turn,
 attempt, or admitted outcome is created for it.

@@ -4,31 +4,22 @@ Status: READY FOR ONE INDEPENDENT CROSS-HARNESS SPEC REVIEW
 
 Date: 2026-08-18 UTC
 
-Work item: `wi_2342b1ae-3374-40a1-9034-f0b32bbcad38`
-
-Producer assignment: `asg_485a757e-69bb-45d9-bbf4-97cda07d2d94`
-
 Source line: MAIN only
 
-Exact intermediate source: `origin/coder/wi-2342b1ae-bugb-main` at
+Exact intermediate source: the Bug B intermediate branch at
 `1ae81e619452963fe2ffcf96791d2085cdb311f9`
 
 ## Authority and amendment boundary
 
-This file amends only Bug B finding F5 in `art_6817803a`, SHA-256
-`a8fc963dd141721df2253a52644a60da7f9ef8792579518f7d65a3377829a990`.
+This file amends only Bug B finding F5 in the Bug B specification.
 It supersedes the four-field identity proof in revision 6 sections B2, B3, B4, B5,
 B7, Architecture, Release-line fix plan, and review question 4 only where those
 clauses authorize a process-group signal or classify a live process.
 
-The review verdict is `att_c36308f5-7989-492e-86dd-58a3f3abd0ae`.
-The controlling F5 ruling is `att_ed7f4892-b226-4dbe-a621-dcc20d617c40`.
-The slice-order ruling is `att_ef5f0a1d-7e39-4285-b897-27d0036625fd`.
-The intermediate-base gate is `att_0246dcb8-6e25-43ed-a0b5-f19c3e7f1353`.
-The intermediate-base readiness record is `att_3a35adbe-4ef6-4eaa-a24f-1e866ef0c249`.
+This amendment rests on the review verdict, the controlling F5 ruling, the slice-order
+ruling, the intermediate-base gate, and the intermediate-base readiness record.
 
-`art_1bdd00f8` remains historical provenance. Its registry SHA is
-`31cd14a3fa47989c934bd2138c29ea812fc39c6e13d1be9f0d7f7ccf8f62e905`.
+An earlier report remains historical provenance.
 Its bytes and origin path are absent. Owner adjudication forbids consuming or
 reconstructing that report. This amendment uses the gate, readiness record, exact Git
 object, and controlling rulings instead.

@@ -1,7 +1,6 @@
 # Standing accountability lifecycle
 
-Status: canonical amended MVP spec for
-`wi_0552815b-e5b5-4c56-90ed-c40825c3b9ad`; pending exact-tip re-review.
+Status: canonical amended MVP spec.
 
 This spec is the authoritative bounded amendment for these clauses:
 
@@ -140,8 +139,8 @@ deadline.
 
 ## Assumptions
 
-A1. The reconciled disposition for this work is KEEP. Attest
-`att_b0c48d26-d2b1-4497-aa3d-0b27bf233cbf` found no typed completion-free lifecycle
+A1. The reconciled disposition for this work is KEEP. An earlier attest
+found no typed completion-free lifecycle
 and no deterministic no-prod regression on canonical main. This spec preserves that
 ruling and does not revive the superseded CLOSE interpretation.
 
@@ -158,11 +157,11 @@ and standing-accountability production and trigger values.
 A4. Holder retirement already disposes each open assignment through the recorded
 revocation path. This feature relies on that existing exit.
 
-A5. Product-owner evidence `att_6c6b3c37-56b0-40ef-be55-00abc95d27f8`
+A5. Product-owner evidence
 requires standing liveness to use periodic reaffirmation instead of completion.
-Evidence `att_50f7e16b-dfaf-4e3a-b142-abbb8c7dc0b5` requires the primitive to be
-assignment-scoped and holder-usable. This spec treats those rulings as the F1 product
-decision requested by review `att_73566dd9-48e4-443e-a9c9-cc3e9094b8bd`.
+Further evidence requires the primitive to be
+assignment-scoped and holder-usable. This spec treats those rulings as the product
+decision requested by review.
 
 A6. The existing supervision entitlement stores a positive
 `supervisionIntervalMs`, a due time, cause, and principal. The existing prod ladder

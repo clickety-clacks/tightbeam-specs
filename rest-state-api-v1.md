@@ -30,8 +30,7 @@ query, visibility, serializer, and outer-envelope seams. This amendment adds
 no R7/R7a field, R8 class, authorization grant, REST-local projection, or
 second wire shape.
 
-G9 setHarness capability successor, 2026-08-28: PROPOSED under Mike ruling
-`dr_7f4b03d9-d37f-4889-a118-8be67e9eae45` option A. Add the closed session
+G9 setHarness capability successor, 2026-08-28: PROPOSED. Add the closed session
 `capabilities.setHarness` projection and matching
 `session.harness_changed` R8 class. The exact behavior contract is
 `session-status-set-harness-capability-v1.md`.
@@ -45,71 +44,48 @@ ExecutionMap error. The exact candidate set for G4 is this file and
 `rest-state-api-v1-wire-schema.md`; it requires fresh independent review
 before implementation or specRef binding.
 
-Review history: exact review
-`att_90efe520-f84c-4d3b-bd09-9c36f8a0ff08` requested changes on exact
-`e4a27977477a25c3037bba164db2bc1d508bcd7a`; full report `art_bffa387b`
-supplied findings F6-F7. Product-owner ruling
-`att_c0fee9c0-3489-4a57-b981-080fbcca4f66` preserved the existing
-message-bearing session-owner refusal and restored R6 while keeping
-ExecutionMap-scoped R6a. Earlier F1-F5 and SQ6-SQ8 rulings remain
-incorporated.
-
 G1 current-main composition successor, 2026-08-27: PROPOSED. This amendment
-composes the accepted `messageType` F1/F2 behavior onto canonical
-`277bb5031a06270aabbc57e3c222cbd2ec89bc73`. Exact candidate `b53b1f5f` passed
-the G1 behavior review but requested current-main composition in verdict
-`att_adea7aeb-5448-4286-8cad-4fe250e1648c` and report `art_a3fc1d81`.
-Product-owner disposition `att_e0a20ce9-3bcc-4a0c-800f-681a51cd85c4`
-preserves F1/F2 and requires unique current-canonical clause identifiers. This
+composes the accepted `messageType` F1/F2 behavior onto the current canonical
+spec and requires unique current-canonical clause identifiers. This
 successor changes no G4 error or G8 authority-label behavior.
 
-Revision history: r3 folded the REST-side adjudicated findings
+Revision history: r3 folded the REST-side findings
 F1/F8/F9/F13/F14/F16/F21/F22 from
-`review-gate-observability-2026-08-21.md` and aligned with firehose r6. It
-resolved changes-requested `att_71210c7b` against exact commit
-`c8eb1d080890ad571c5319b2514230c71a021427`; its closure map is in the
-adjudication companion. r3 also consumed Mike's ruled SQ2: the admin read plane
-includes users, devices, ops metadata, and first-class archetype, kungfu, rail,
-and guidance content, all admin-only with secrets structurally excluded. r2
-folded the reviewed mechanical amendment
-`art_8e2d8444` (reviewed-clean `att_0b648694`): adopted route/filter
+`review-gate-observability-2026-08-21.md` and aligned with firehose r6. Its
+closure map is in the adjudication companion. r3 also incorporated SQ2: the
+admin read plane includes users, devices, ops metadata, and first-class
+archetype, kungfu, rail, and guidance content, all admin-only with secrets
+structurally excluded. r2 folded a mechanical amendment: adopted route/filter
 inventory, interim/final CLI transport, firehose serializer scope, the
-R12-to-M5 repair, and the harness-catalog compatibility ruling. Written
-by tb02 and product-owner:rest-state-api. Untargeted (0.2.0 or
-later); when build work starts it branches from main tip. The current contract
-is owned by successor `product-owner:rest-state-api-v2`; the legacy PO session
-is revoked. Spirit questions route through the successor.
+R12-to-M5 repair, and the harness-catalog compatibility ruling. Untargeted
+(0.2.0 or later); when build work starts it branches from main tip.
 
 Authority and inputs:
-- rest-vs-cli-adjudication.md r2 (tb02, Mike-directed): the three-plane
+- rest-vs-cli-adjudication.md r2: the three-plane
   ruling this spec implements. REST is the read plane, verbs are the
   write plane, the CLI is sugar.
-- Recon wi_9239a7f1's report (NFS
-  shared/specs/tightbeam/rest-state-api-recon.md): the inventory,
+- The recon report (`rest-state-api-recon.md`): the inventory,
   contract baseline, and code evidence. Adopted with zero material
   rejections; its six conditions are folded in as requirements here.
 - event-firehose-v1.md r6: the sibling notice socket. The two contracts
   share serializers (SR series below) — that sharing is the whole
   correlation story.
-- Mike's rulings, 2026-08-20/21: clients build models from state, not
+- Rulings, 2026-08-20/21: clients build models from state, not
   events; SQL against state.db is not a product interface; the CLI makes
   common things easy and never re-creates SQL; auth is the existing
   gateway credential, no API keys; deployment is localhost/tailscale.
-- Mike's firehose gap remediation ruling, message
-  `s_fe001c27-c509-4cf6-8866-47defe5eaa21` (2026-08-27), accepts recon verdict
-  `att_556f55ae-f1d2-4c83-b55d-9daf06aae929` and report `art_1d389e8e`.
+- The firehose gap remediation ruling (2026-08-27) accepts the firehose
+  client-buildability recon.
   It makes G2 session freshness a read-side firehose prerequisite and leaves
   G1 and G3-G8 outside this amendment.
-- Mike's rulings, 2026-08-25: remove the `asUser` GET prohibition. The
+- Rulings, 2026-08-25: remove the `asUser` GET prohibition. The
   parameter only transports the CLI's existing principal selection and adds
   no credential, binding, authorization, or tailnet-identity behavior. After
   client parity, remove legacy dispatch-read transport and compatibility
-  aliases; dispatch remains the write plane. Durable authority is message
-  `s_21b93fdd-5e62-4ed9-ac7e-923697463936`. This ruling supersedes only the
+  aliases; dispatch remains the write plane. This ruling supersedes only the
   contrary “no asUser query parameter” clauses in rest-vs-cli-adjudication.md
   r2 and its adopted recon baseline.
-- Product-owner R3 ruling `att_2d3a8333-a1d2-478f-9b0a-f8fb75b795df`, which
-  consumes D1 verdict `att_8eaa2c03` and report `art_3990b5e1`: for AU2,
+- The R3 ruling: for AU2,
   the existing dispatch resolver verifies a matching session `ownerUserId`
   and resolves `{:user, ownerUserId}`; a mismatch returns
   `403 identity_not_yours`. It rules the contrary canonical AU2
@@ -122,29 +98,22 @@ Authority and inputs:
   message identifiers, the closure map, and the SQ2 ruling pointer.
 - rest-state-api-v1-wire-schema.md: normative JSON types, nested shapes,
   enum domains, nullability, and canonical ordering for R7/R7a.
-- Companion mapping ruling `art_4a1cce6e`, SHA-256
-  `5db8aab3496747d008fb8c024a4f1617f92695d144c89481bca3a1f20842550a`:
+- The companion mapping ruling:
   condition facts and critical leases enter firehose R8 with the exact R8 rows
-  below; it supersedes the fact-only `art_5d8bacb2`.
-- Firehose client-buildability recon verdict
-  `att_556f55ae-f1d2-4c83-b55d-9daf06aae929` and report `art_1d389e8e`
-  identify G1. Mike's 2026-08-27 remediation ruling adopts one canonical
+  below; it supersedes the earlier fact-only mapping.
+- The firehose client-buildability recon
+  identifies G1. The 2026-08-27 remediation ruling adopts one canonical
   transcript-message discriminator across fetched rows and the firehose.
   Prior product commit `505b56aa29f151faab7cd9618ca1bba922cff357`
   supplies the additive values and compatibility behavior.
 - ExecutionMap authority: `topline-map-v1.md` plus product source
   `Tightbeam.ExecutionMap` at `d00e06aea578d711e608637d38a97872487df15e`.
   Durable `Tightbeam.Toplines` at that revision remains a separate source.
-  D2 `wi_ea98345b-51f4-4fae-b7df-3670c0d54f6b` and D3
-  `wi_113442f5-22ae-457b-a971-1b620069d490` consume this amendment; they do
+  D2 and D3 consume this amendment; they do
   not define its contract. The adopted six-resource seam contract remains
   `art_b1995a26` / fact 1093 and is unchanged.
-- Work-item priority/shared-seam authority: product-owner ruling
-  `att_7633d9ce-d487-4bd6-aee0-42ca340df4dc` and fact 2889, which resolve the
-  parity blocker in `att_55799c31-541f-41c0-a90e-8d4b9b58cc50` and report
-  `art_30310cce`. The candidate may be authored and reviewed while the
-  main-landing hold in `att_fba59bdc-881a-442f-8323-d5e7e970b072` remains
-  active; it may not land under that hold.
+- Work-item priority/shared-seam authority: the ruling that resolves the
+  work-item parity blocker.
 
 ## Spec homing
 
@@ -171,12 +140,7 @@ revision.
 `rest-state-api-r3-adjudication.md`, `rest-vs-cli-adjudication.md`, and
 `topline-map-v1.md` remain authority inputs, not custody companions for this
 contract. A worktree, artifact row, transcript, adjudication ledger, or review
-report is evidence, not canonical custody. Canonical r3 passed joint
-independent review at `att_45676d30` and landed in merge
-`c84b1b8dc856861baeaa7b5ff781317ded568cb1`. The r4 ExecutionMap companion set
-landed at `0139d9a71180a7175965473fade9b183d2b57601`; the Toplines/session lookup
-landed at `05d08b8af74a877d4dabe3dcba8250787d5d430e`; and the AU2 parity correction
-landed at `8133efdab14c5470937360a2e4be7fe595639a9d`.
+report is evidence, not canonical custody.
 G4 remains a candidate until
 one exact revision of its two-file candidate set passes independent review
 and lands in `tightbeam-specs`.
@@ -336,7 +300,7 @@ resources or classes would remove approved shared state, while accepting
 collection-only access would leave A6 without an addressable comparator and
 would prevent single-row recovery.
 
-## Spirit (read this before quizzing Mike)
+## Spirit (read this before raising spirit questions)
 
 SP1. The state db is the truth; clients hold display models of slices of
 it. This API exists so a client can build and refresh that model with
@@ -347,7 +311,7 @@ SP2. The API is deliberately boring: resources that mirror the PRODUCT
 model (not the storage layout), keyset pagination, whitelist filters. No
 query language, no caller-selected joins, no fields/sort/include. When a
 client needs a new shape, the answer is a new whitelisted filter or a new
-composed resource — decided by this spec's PO — never a generic escape
+composed resource — decided by this spec — never a generic escape
 hatch. Flexibility creep here is how SQL sneaks back in wearing a hat.
 
 SP3. Reads are safe and boring; writes are law. Nothing on this surface
@@ -1123,14 +1087,11 @@ and verify rejection of malformed stored versions instead of timestamp fallback.
 Given an
 agent row before return, both encodings retain the null triplet; given a
 non-agent row, both omit it. Existing non-agent and legacy bytes remain
-unchanged. Authority: `att_1a51f90d-5b31-4824-beab-0a070f8cb342` and
-`att_31523b79-c3e9-4950-9053-b30fb6cd75e6`.
-Version authority: `att_24e0e18c-261c-4253-a9bc-37621e93fb2c`,
-`att_e8698224-3109-4004-957a-e5fa376c4d31`, and
-`att_82ba72b0-2d84-4fc0-a2b9-aa90c737065d` govern both main and 0.1.9.
-Corrective ruling `att_d0c0d903-9eef-4713-bba6-edfb73c1e0d4` supersedes the
-fallback wording previously derived from `att_1a51f90d`; return-field authority
-and agent-only status behavior remain unchanged.
+unchanged.
+The version rules govern both main and 0.1.9.
+A corrective ruling supersedes the fallback wording previously derived from
+the return-field ruling; return-field authority and agent-only status behavior
+remain unchanged.
 
 R7m. The transcript-message write seam assigns `messageType` without parsing
 message content. Current assignments are exact:
@@ -1289,7 +1250,7 @@ integers with the same positive numeric value; `rowVersion` equals `id`.
 `critical_lease.updated` emits
 once after a committed lease change and uses the R7 version. An idempotent
 no-change replay emits no state notice. Both use the same AU4 visibility and
-exact R7 serializer as their REST resources, per `art_4a1cce6e`.
+exact R7 serializer as their REST resources, per the companion mapping ruling.
 
 The operator-ruling-provenance detail route and
 `operator_ruling.provenance_recorded` use the one shared serializer
@@ -1461,7 +1422,7 @@ credential-bearing path or env value; host-env and config expose safe
 values only. A test greps every projection (firehose A6).
 
 SR3. Projections carry the resource's full product fields and user
-content, unredacted after authorization (Mike's payload ruling as refined
+content, unredacted after authorization (the payload ruling as refined
 in firehose V3): "unredacted" governs content, never storage secrets.
 
 SR4. Ids are the correlation contract: each projection's primary id equals the
@@ -1550,15 +1511,13 @@ automatic GET or additional request for this readback contract. Raw dispatch
 clients require no new read solely for this parity contract. This distinction
 adds no R7 field, endpoint, flag, serializer, wrapper, or create/disposition
 deliverable migration.
-Authority: owner mutation-compatibility ruling
-`att_fa03387e-6b5d-4214-aaa1-42b227cd7df8` and explicit CLI readback ruling
-`att_8c453190-5376-45be-9169-9a951d2d7835`.
+Authority: the mutation-compatibility ruling and the explicit CLI readback
+ruling.
 
 B2 covers shared canonical GET/notice item parity and the retained write
 compatibility assertions. The explicit CLI read migration and its parity
-acceptance remain an outstanding D3 obligation under
-`asg_ae464dcd-98db-4251-bcc7-74aa779b18a6` within Firehose portfolio
-`asg_34c16cdf-8195-4a73-a7e7-88b2dfbc7674`. B2 completion does not complete or
+acceptance remain an outstanding D3 obligation within the Firehose
+portfolio. B2 completion does not complete or
 waive full Firehose CLI parity.
 
 ## Requirements — auth and visibility
@@ -2307,7 +2266,7 @@ committed row. A boot missing any G9 registry, encoder, serializer, or publisher
 member routes no G9 firehose upgrade, `tune set_harness` request, or current G9
 session representation.
 
-## Open questions — Spirit questions for Mike
+## Open questions — Spirit questions
 
 G4 has no open questions. R4c closes its error variants, status map, headers,
 precedence, and preserved special cases. The broader ruled and non-blocking
@@ -2327,8 +2286,7 @@ recovery, and atomic activation boundary.
 SQ1. **RULED 2026-08-25 — transport existing `asUser`.** Remove the
 prohibition on an `asUser` GET parameter. It only transports the CLI's
 existing principal selection and adds no credential, binding, authorization,
-or tailnet-identity behavior. Message
-`s_21b93fdd-5e62-4ed9-ac7e-923697463936` supersedes only the contrary
+or tailnet-identity behavior. The ruling supersedes only the contrary
 parameter prohibition in the adjudication and recon baseline. M4 direct REST
 CLI reads may proceed under AU2.
 
@@ -2341,19 +2299,17 @@ AU4 admin-only row are the ruling's security boundary.
 SQ3. **RULED 2026-08-25 — remove after migration.** Remove every M5
 compatibility alias and legacy dispatch read path after M4, M6, and M7 parity
 acceptance passes. Do not remove an alias before its client moves. Dispatch
-write verbs remain. Authority is message
-`s_21b93fdd-5e62-4ed9-ac7e-923697463936`.
+write verbs remain.
 
 SQ4. **RULED 2026-08-23 — REST-first.** Build the shared M1 seams, ship M2
 REST as the rebuildable state source, then ship the M3 firehose freshness
-plane. Mike's direct auto-adjudication message
-`s_75aeaab2-94e1-4a80-ab87-004570ec75a9` is the ruling authority. The ruling
+plane. The ruling
 does not change projections, authorization, or serializer identity. For G9,
 build order remains REST-first, but R8c forbids activation of the new session
 shape or mutation handler before its matching firehose publisher is active.
 
 SQ5. **Open; non-blocking because v1 remains bearer-only.** Tailnet identity:
-wi_bdf9a537 (gateway behind tailscale serve) would
+running the gateway behind tailscale serve would
 add tailscale identity headers — should AU1 anticipate accepting tailnet
 identity as a principal source once that lands, or stay
 bearer-credential-only in v1?
@@ -2361,19 +2317,17 @@ bearer-credential-only in v1?
 SQ6. **RULED 2026-08-25 — preserve marker-backed `fanOut`.** Add exact
 `subagent_marker.appended` source invalidation through the event-firehose
 companion. Do not use `turn.*` as a proxy and do not add an ExecutionMap class.
-Authority: `att_d5b0a440-bd51-498f-8b96-e6512fedf68f`.
 
 SQ7. **RULED 2026-08-25 — preserve durable Toplines with notices.** Add exact
 source invalidation mappings and durable versions for Topline and
 topline-work-membership mutations. No snapshot-only or no-notice exclusion
-exists. Authority: `att_d5b0a440-bd51-498f-8b96-e6512fedf68f`.
+exists.
 
 SQ8. **RULED 2026-08-25 — pre-build evidence boundary.** Deterministic spec
 lint and fresh independent exact-byte review are canonical r4's pre-build
 gate. Acceptance clauses remain executable and decidable. Product tests and a
-`tests-passed` receipt belong to the later implementation card; this spec-only
-assignment does not implement or claim them. Authority:
-`att_d5b0a440-bd51-498f-8b96-e6512fedf68f`.
+`tests-passed` receipt belong to the later implementation work; this spec-only
+revision does not implement or claim them.
 
 Deleting `fanOut` or Toplines would remove current product meaning. Accepting
 snapshot-only or no-notice freshness would break I5 and the live display-model

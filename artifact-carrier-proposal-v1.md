@@ -1,11 +1,11 @@
 # Artifact-record firing-turn carrier — v1
 
-Status: **RULED — APPROVED (Flynn, 2026-07-29), stable requirements R1–R7; implementation cycle active.** Fail OPEN (R1); nullable recordedMessageId + recordedTurnEvidence with this doc's exact meanings (R2); tool-call-observed is observation-quality, never unforgeability (R3); clauses 8/11 + the C1 note amended per R4 (former exactness recorded unsatisfiable, not closed); artifact-kind completion gate preserved, no consumer treats lower classes as exact proof (R5); clause 12 separate and open (R6); Gibson remains NO-GO until the R7 activation gate passes. Gibson activation is gated on this
+Status: **RULED — APPROVED (2026-07-29), stable requirements R1–R7; implementation cycle active.** Fail OPEN (R1); nullable recordedMessageId + recordedTurnEvidence with this doc's exact meanings (R2); tool-call-observed is observation-quality, never unforgeability (R3); clauses 8/11 + the C1 note amended per R4 (former exactness recorded unsatisfiable, not closed); artifact-kind completion gate preserved, no consumer treats lower classes as exact proof (R5); clause 12 separate and open (R6); The production host remains NO-GO until the R7 activation gate passes. Production-host activation is gated on this
 ruling and the fix that follows it (ROADMAP item 0a).
 
 Governing context: `core-causality-fixes-v1.md` §C1 (which names an unforgeable
 per-turn request carrier as out of scope and rejects concurrency-derivation as
-proof), `conformance-handoff-ledger.md` clauses 8 and 11 (Lane: fix-artifacts),
+proof), `conformance-handoff-ledger.md` clauses 8 and 11,
 and `harness-support.md` (the closed capability census).
 
 ---
@@ -26,7 +26,7 @@ That refusal is not cosmetic, because org law depends on the verb succeeding.
 completion attest until a `report` artifact is recorded, and its remedy wakes the
 holder with a prompt telling them to run `tightbeam artifact-record`. The verb
 refuses, the completion stays denied, the remedy fires again. A correct agent is
-held in a loop it cannot exit, which is why the shrdlu run needed the org-law
+held in a loop it cannot exit, which is why the `host-a` run needed the org-law
 workaround (`eb0ea2b`) to make progress at all.
 
 ### 1.2 The structural fact that decides this
@@ -72,7 +72,7 @@ on its own default path.** This is what makes the fails-open/fails-closed questi
 load-bearing rather than a corner case, and it is the single most important input
 to the ruling.
 
-### 1.4 What Flynn is being asked to rule
+### 1.4 What the operator is being asked to rule
 
 1. **Does `recordedMessageId` keep asserting exactness?** As written
    (`NOT NULL REFERENCES messages(id)`, `lib/tightbeam/artifacts.ex:19`) it claims
@@ -121,7 +121,7 @@ reader — its own index (`lib/tightbeam/artifacts.ex:31`). Nothing joins on it.
 Changing its shape is cheap today and expensive once the topology readers clauses
 33 and 40 anticipate exist.
 
-**It follows a precedent Flynn already ruled.** §C1 established that a nullable
+**It follows a precedent the operator already ruled.** §C1 established that a nullable
 value paired with an explicit statement of *how the substrate looked* is the
 honest shape for a fact the substrate observes but cannot prove. The artifact case
 needs three values rather than C1's `createdContextKnown` bit because there are
@@ -274,8 +274,7 @@ request by session and time, not cryptographically. Three joins were considered:
 **Live evidence.** `PreToolUse` fires for Bash and genuinely blocks
 pre-execution, attributed by the agent to the runtime rather than to itself, on
 Claude on both Linux and macOS
-(`~/shared-workspace/tightbeam_ex/smoke-runs/2026-07-29-73d5817-satellite-macos-mac-0729a.md`
-and `…-tars-gw-0729b.md`). Codex rests on the 0.145.0 spike, not on a live
+(the 2026-07-29 macOS and Linux satellite smoke-run scorecards). Codex rests on the 0.145.0 spike, not on a live
 Tightbeam e2e leg — see §5.2 and §7.3.
 
 **Unmeasured cost, to be measured before build:** one gateway round trip per
@@ -318,8 +317,8 @@ opened it has no value.
 
 ### 4.3 (iii) The parked concurrency derivation — REHABILITATED, not as proof
 
-Branch `remand/artifact-record-firing-turn` at `83b3602` (checkout
-`/Users/mike/src/tightbeam_ex/scratch/wire-seam-lane`) adds
+Branch `remand/artifact-record-firing-turn` at `83b3602` (in a local scratch
+checkout) adds
 `Ledger.running_turn_message_id/2` and a `firing_message_edge/3` clause in the
 router. Its own commit message correctly rejects it against §C1: the request
 carries no turn identity, so a separate request on the same session token binds a
@@ -383,7 +382,7 @@ is allow/deny with no input mutation (`harness-support.md` CAP-008,
 **Not yet live-proven in Tightbeam.** Tonight's runs were Claude-only — the
 macOS scorecard records `settings.json` with five gates and *no* `hooks.json`. The
 Codex hook path rests on spike evidence at a pinned version. §7.3 makes a Codex
-leg a precondition of the gibson gate.
+leg a precondition of the production-host gate.
 
 ### 5.3 A harness with no hook surface
 
@@ -422,8 +421,8 @@ without breaking `completion-requires-results-artifact`.
 
 ### 7.1 The parked branch
 
-`remand/artifact-record-firing-turn` at `83b3602` is a local branch in the
-`/Users/mike/src/tightbeam_ex/scratch/wire-seam-lane` checkout and is not on
+`remand/artifact-record-firing-turn` at `83b3602` is a local branch in a
+local scratch checkout and is not on
 `origin`. Reviving it requires, in order:
 
 1. A one-line arity fix at `test/wire_seam_test.exs:78`, which calls
@@ -481,7 +480,7 @@ Each of these must fail on `6fe6062` before the fix and pass after:
     `completion-requires-results-artifact` records a report and then completes.
     Fail-before is the remedy loop of §1.1.
 
-### 7.3 "Freshly proven" for the gibson gate
+### 7.3 "Freshly proven" for the production-host gate
 
 **No e2e leg exercises `artifact-record` today.** `scripts/feature_smoke.exs` and
 `lib/tightbeam/client_e2e/**` contain no artifact coverage, and the T2a journey
@@ -497,7 +496,7 @@ then complete, and asserts the persisted `recordedTurnEvidence` and
 behavior over real turns, and T2a already runs one leg per registered harness,
 which is what forces §5.2's Codex proof to exist.
 
-Gibson activation requires:
+Production-host activation requires:
 
 1. T1 green.
 2. **T2a green on both legs** — Claude and Codex — with the new journey. The Codex
@@ -506,8 +505,8 @@ Gibson activation requires:
 3. A **T3 satellite** confirmation that the hook observation survives the network
    hop, since the correlation call crosses SSH from a satellite. One
    satellite-hosted `artifact-record` landing `tool-call-observed` is sufficient.
-4. `eb0ea2b`, the shrdlu org-law workaround, **reverted** — ROADMAP 0a2 pins the
-   two as retiring together, and leaving it in place would make the shrdlu leg
+4. `eb0ea2b`, the `host-a` org-law workaround, **reverted** — ROADMAP 0a2 pins the
+   two as retiring together, and leaving it in place would make the `host-a` leg
    unfalsifiable for exactly the statute this fix restores.
 5. A scorecard per `e2e-tier-map-v1.md` §Scorecards naming the legs run, the
    platforms, and any waiver.

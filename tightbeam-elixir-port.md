@@ -16,14 +16,14 @@ via release eval). Every one lands as a kill-matrix or acceptance test that
 the implementation must pass; code review (cross-provider, per SOP) resumes
 on the Elixir code itself.
 
-**Status:** Spec v3 — revised per adversarial review rounds 1+2 (both REJECT;
-archived as `tightbeam-elixir-port-review-1.md` and `-review-2.md`). Round-2
+**Status:** Spec v3 — revised per adversarial review rounds 1+2 (archived
+as `tightbeam-elixir-port-review-1.md` and `-review-2.md`). Round-2
 defects 1–9 addressed below; TS-side findings fixed in commits e446bc6,
 136519e, 649a02e (adapter-rule text fully reconciled — SOURCE OF TRUTH is the
 executable `src/acp/harness.ts` setModel(); package.json reconciled with the
 lockfile). For re-review, then implementation.
 **Date:** 2026-07-17
-**Decision (Flynn):** Port NOW — uptime is a product requirement; establish
+**Decision (operator):** Port NOW — uptime is a product requirement; establish
 architecture/patterns early; waiting only grows the port.
 
 ## Why (unchanged from v1, claims tempered per review §6)
@@ -134,7 +134,7 @@ recovery.
   idempotency PK; handle UNIQUE; first-user bootstrap wrapped in one
   transaction).
 
-## Anti-openclaw commitments (Flynn gut-check, 2026-07-17 — BINDING)
+## Anti-openclaw commitments (operator gut-check, 2026-07-17 — BINDING)
 
 Openclaw lost prompts inside clever shadow machinery (retries, requeues,
 channel logic) that could silently disagree with harness reality. The turns
@@ -352,8 +352,8 @@ host dependency** (adapters + retained TS CLI are Node). Concrete layout
   **E2**: wire (Bandit/WebSock/Plug + ConnRegistry + replay watermark) —
   exit: golden traces + black-box wire driver. **E3**: wakes/homes/devices/
   assets/verbs — exit: remaining drivers + kill matrix complete. **E4**:
-  adopt-in-place + sim E2E + soak → cutover of eezo serve (same baseDir) →
-  TARS deploy via release + doctor.
+  adopt-in-place + sim E2E + soak → cutover of `host-a` serve (same baseDir) →
+  `host-b` deploy via release + doctor.
 
 ## Open questions resolved (per review §5)
 

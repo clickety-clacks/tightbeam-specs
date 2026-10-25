@@ -1,6 +1,6 @@
 # Spinup detection & deployment v1 — implementation spec
 
-Topology is the sole source of truth for capability (Flynn ruling,
+Topology is the sole source of truth for capability (operator ruling,
 2026-07-19): no capability registry, no cached "what works" — the machine
 is asked, live, at every placement decision, and org-owned artifacts are
 deployed idempotently as part of the same act. Records exist only as
@@ -24,8 +24,8 @@ and test layout only. Gates: `mix compile --warnings-as-errors` clean,
    DETECTED, never copied, written, or deployed (grant doctrine: logins
    are the operator's act).
 3. DENIALS NAME THE GAP AND THE REMEDY, as found on the machine at that
-   moment: e.g. "host tars is not ready for claude: no credentials in
-   /Users/mike/.tightbeam/auth/claude (run the setup ceremony there)".
+   moment: e.g. "host host-a is not ready for claude: no credentials in
+   /Users/user/.tightbeam/auth/claude (run the setup ceremony there)".
 4. TURN-TIME UNTOUCHED: no probing anywhere except the placement
    decisions listed above. Running adapters, lanes, wakes: zero change.
 5. HISTORY, NOT AUTHORITY: every spinup writes one lifecycle event

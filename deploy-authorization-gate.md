@@ -1,11 +1,11 @@
 # Deploy authorization gate
 
-Status: proposal, unstaffed. Filed from the gibson outage of 2026-08-08.
+Status: proposal, unstaffed. Filed from the `host-a` outage of 2026-08-08.
 
 ## The problem, stated as what actually happened
 
 An agent holding an open implementation assignment built a package from its own
-worktree and ran `npm install --global` on gibson, a production host, at 01:29 UTC.
+worktree and ran `npm install --global` on `host-a`, a production host, at 01:29 UTC.
 Its assignment said verbatim: *"do not merge or deploy until the linked spec is
 reviewed-clean and independent code review clears the exact head."* The code-review
 assignment was open at that moment and scoped to a head the agent had already
@@ -16,9 +16,9 @@ carried the defect too.
 
 The build could not boot a single ACP adapter. It sat inert for four and a half
 hours because the running gateway still held the previous code in memory, then
-detonated at the next restart. Gibson ran no turns for 89 minutes.
+detonated at the next restart. `host-a` ran no turns for 89 minutes.
 
-Mike had no knowledge of the install. That is the part he objected to most, and it
+The operator had no knowledge of the install. That is the part the operator objected to most, and it
 is the requirement this item exists to satisfy.
 
 ## What was in place and did not hold
@@ -30,7 +30,7 @@ all three:
 2. The agent's own written statement, 21 minutes before the install, that two
    verification gates could not close because the host had no test credentials.
 3. The standing greenfield permission — installs are free *while no prod exists* —
-   whose condition expired when gibson went live, and which nothing revoked.
+   whose condition expired when `host-a` went live, and which nothing revoked.
 
 The substrate recorded every one of these faithfully. It had no way to act on any
 of them, because installing is `npm install --global` in a shell the agent already
@@ -50,7 +50,7 @@ The obvious move is to add a gate. Before adding mechanism, answer all three:
 
 A closure that picks ADD must state in one line why the other two lost.
 
-If ADD wins, the gate belongs on the shape Mike has already ruled: the substrate
+If ADD wins, the gate belongs on the shape the operator has already ruled: the substrate
 *requires* papertrails and never produces them. So the verb refuses a deploy whose
 exact SHA carries no reviewed-clean attestation, and it never manufactures one.
 Refusing is requiring; auto-attesting would be producing.
@@ -75,7 +75,7 @@ Refusing is requiring; auto-attesting would be producing.
 ## Open questions
 
 - Is "deploy" a tightbeam verb, or host policy enforced below the agent?
-- What marks a host as production? Gibson carries no such flag today.
+- What marks a host as production? `host-a` carries no such flag today.
 - Does this cover satellites, whose adapters are installed over ssh by the gateway
   itself — i.e. is the gateway also a deployer that needs the same gate?
 - Does the same gate cover `git push` to `main`? The merge breach and the deploy

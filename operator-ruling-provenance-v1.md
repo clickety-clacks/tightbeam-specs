@@ -4,9 +4,7 @@ Status: ruled core-cut candidate for independent review. This file carries no pr
 implementation, merge-to-main, release, deploy, configuration, identity, service, or live-state
 authority.
 
-Authority: Mike's rulings recorded in `tightbeam-decisions.md` at commits
-`13b8203d6aa36f557f5a1dc4bbdfefb6a6b30619` and
-`d84633447205dc024976cc18d8b24cc8fd2ec25f`.
+Authority: the operator's rulings.
 
 Canonical path: `operator-ruling-provenance-v1.md` in the `tightbeam-specs` repository. This
 revision replaces the broader candidate at
@@ -25,7 +23,7 @@ The change must retain the existing operator-request lifecycle and authorization
 may rule when the existing policy authorizes that delegate. The ruling row names both the authority
 user and the submitting session.
 
-The product-owner ruling identifies 315 current Mike-attributed historical rulings whose submitting
+The product-owner ruling identifies 315 current operator-attributed historical rulings whose submitting
 provenance is unproven. Migration labels that historical population `unknown`; it does not infer a
 direct-user path.
 
@@ -94,11 +92,11 @@ not present a ruling through an owner identity without a submitting session.
 6. Existing decision-request REST resources and `decision_request.ruled` Firehose frames have
    exact-key consumers.
 7. External-caller enforcement needs visitor identity from
-   `wi_4ee303fa`. This dependency blocks activation on that ingress, not review or merge of this spec.
-8. The product-owner card records 315 Mike-attributed historical rulings on 2026-08-31. That number
+   separate visitor-identity work. This dependency blocks activation on that ingress, not review or merge of this spec.
+8. The product-owner card records 315 operator-attributed historical rulings on 2026-08-31. That number
    is point-in-time context, not an activation count gate.
 9. The frozen 2026-08-30 census at
-   `operator-ruling-provenance-census-2026-08-30.md` records 294 Mike-attributed rulings: 291 without
+   `operator-ruling-provenance-census-2026-08-30.md` records 294 operator-attributed rulings: 291 without
    a retained session key, 3 with one, and 0 proven direct-user. Those counts are point-in-time
    evidence of the defect. They are not the current 315-row migration population.
 10. The frozen diagnosis at `operator-ruling-provenance-diagnosis-2026-08-30.md` records the source
@@ -188,7 +186,7 @@ transport, retry, delivery receipt, or other human-contact action.
 P16. Writer activation is atomic across each enabled `operator-rule` ingress. Activation refuses as
 `operator_ruling_external_identity_unavailable` while an enabled external-caller ingress cannot
 produce a real submitting session. The spec and its read/migration design may merge before
-`wi_4ee303fa` supplies visitor identity; the post-epoch writer may not activate partially.
+the visitor-identity work supplies visitor identity; the post-epoch writer may not activate partially.
 
 ## Architecture
 
@@ -217,12 +215,12 @@ without a session. Unrelated request reads and mutations remain available.
 
 ## Acceptance
 
-T1. Given an authorized delegate's authenticated session and an open Mike-owned operator request,
-when the delegate calls `operator-rule`, then the same transaction stores `user:mike` as
+T1. Given an authorized delegate's authenticated session and an open operator request owned by `user:user-a`,
+when the delegate calls `operator-rule`, then the same transaction stores `user:user-a` as
 `authorityPrincipal`, stores the delegate's retained session key, rules the request, and exposes
 `state:"recorded"`.
 
-T2. Given a call that asserts `user:mike` and has no real submitting session, when it calls
+T2. Given a call that asserts `user:user-a` and has no real submitting session, when it calls
 `operator-rule`, then it receives `operator_ruling_submitting_session_required`; the request remains
 open and no terminal effect listed in P3 exists.
 
@@ -267,7 +265,7 @@ request is open and no provenance or companion event exists. Given loss after co
 terminal ruling with one recorded session is readable, and replay does not create another ruling.
 
 T10. Given an enabled external-caller ingress without visitor identity, when activation runs before
-`wi_4ee303fa` lands, then activation returns
+the visitor-identity work lands, then activation returns
 `operator_ruling_external_identity_unavailable` and no post-epoch writer is enabled. The spec merge
 itself remains valid.
 
@@ -281,5 +279,5 @@ to T11. P16 maps to T10.
 
 ## Open Questions
 
-None. The external visitor-identity dependency is owned by `wi_4ee303fa`; it does not reopen this
+None. The external visitor-identity dependency is owned by separate work; it does not reopen this
 spec's ruled scope and does not block independent review or merge of the spec.

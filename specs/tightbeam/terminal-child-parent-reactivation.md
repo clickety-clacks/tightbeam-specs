@@ -1,23 +1,20 @@
 # Terminal-child parent wake — reduced contract and implementation brief
 
-Status: **ready for independent specification review; not implementation authority**  
-Work item: `wi_236e5efa-b5a2-49b4-b6d5-9dcbe5e9fdad`  
-Coordinator: `asg_e32bb9d9-9b55-4787-8e97-c3542f5f4f0b`  
-Frozen historical producer: `asg_f627fbdf-3624-4823-90d5-35fefc39a2cf`
+Status: **ready for independent specification review; not implementation authority**
 
 ## 1. Authority and supersession
 
 This specification is the exact reduced subject required by:
 
-- Mike's scope correction `att_fd1c03c9-0aa8-4f4d-96eb-e297ee39d0b5`;
-- PDO verdict `att_e1a670c5-b776-469c-b3ef-05eb21f3b7fc` and its bound reconciliation `art_11569cec`, SHA-256 `c8ab78d67563a8c9cd7c3a21cab1270dc57249ba184d85a1f0dfada94f0d265b`;
-- PDO coverage/order verdict `att_e2db043f-4802-4865-aeaf-dd7b9923b48b` and `art_d72331cb`, SHA-256 `0e8cb22df8986414c605ea68b3a42e379c46e6290427e991b40ce06c1f917471`.
+- the operator's scope correction;
+- the PDO reconciliation; and
+- the PDO coverage/order ruling.
 
 The historical reviewed contracts remain evidence for unchanged guarantees:
 
-- `art_ead2e407`, SHA-256 `b1623a57fc2d17683e60e24c6a11921f64a1fb0ae17d2cb1f20e27ff0f879c92`;
-- amended `art_90c8962c`, SHA-256 `d6e36b86354f93fdb48a5eeaedd796bb50bc7c62ccc74130f1d09274514d7f18`;
-- reviewed revocation amendment `att_66bcd4fe-0cbb-4506-882d-2eac75064d6d` / `art_4b001733`.
+- the original contract;
+- its amended revision; and
+- the reviewed revocation amendment.
 
 They are not blanket approval of this changed subject. This reduced specification needs one independent specification review. It supersedes historical requirements only where this document says so.
 
@@ -105,7 +102,7 @@ Delivery wakes a responsible mind; it does not complete, reassign, retry, retire
 
 ### R10 — Physical liveness remains separate
 
-Physical liveness remains the computed diagnostic governed by `wi_4ef0bb82-7d16-4ddd-acff-54fbb516e80f`. Agent-authored progress, artifacts, attest prose, notification count, and owner response are not stored as physical-liveness truth and do not gate terminal-notification admission.
+Physical liveness remains the computed diagnostic governed by its own separate work item. Agent-authored progress, artifacts, attest prose, notification count, and owner response are not stored as physical-liveness truth and do not gate terminal-notification admission.
 
 ### R11 — Privacy, authority, and audit
 
@@ -195,7 +192,7 @@ Progress attestations, artifact filings, owner responses, and message count cann
 
 ### AC15 — Cancellation and retirement races
 
-The combined seam exposes enough exact identity and recovery state for the existing cancellation-provenance lane to prove typed reason, requester, causal source, replacement/disposition linkage, rollback, restart safety, and no silent orphan. Cancellation implementation follows the reviewed combined seam; it is not parallel first-touch work.
+The combined seam exposes enough exact identity and recovery state for the existing cancellation-provenance work to prove typed reason, requester, causal source, replacement/disposition linkage, rollback, restart safety, and no silent orphan. Cancellation implementation follows the reviewed combined seam; it is not parallel first-touch work.
 
 ### AC16 — No replacement framework
 
@@ -205,13 +202,13 @@ Source and schema census shows the outcome is implemented through existing wake,
 
 | Order | Existing work/custody | Required result | Boundary |
 | --- | --- | --- | --- |
-| 0 | Historical producer `asg_f627fbdf` / `s_cb647d0b` | Preserve old candidates, drafts, patches, gates, and reviews as provenance. | Frozen and read-only; no wake, edit, gate, push, or adoption. |
-| 1 | Stale-message owner `asg_b95aa412-e17f-4a71-9185-ff8ff18ee6e5`; producer `asg_b54dec3d-8462-417a-83b2-448a4db64600`; candidate `140ab59d28b9bbaebd4f2f9cc2e469ee81d322de` / tree `2d0b5400` | Existing changed-subject independent review, then its already-authorized macOS/line disposition if clean. | Sole first-touch custody for `gateway.ex`, `ledger.ex`, `schema.ex`, `queued_message_suppression.ex`, and its tests. No duplicate review/gate. |
-| 2 | This coordinator `asg_e32bb9d9` | This exact reduced specification and one independent reviewed-clean verdict. | No code authority; review is of this changed subject, not an empty confirmation of historical review. |
-| 3 | Wake-delivery item `wi_113d569f-7aff-412b-aec3-0c21f2e87f40`; coordinator `asg_abbd8e46-bd4b-4e8e-b6ac-0925a2bc3129`; source owner `asg_19d32a78-e2e0-47af-98ea-50327ee7ae35` / `s_fd3a9283` | Reuse reviewed/current wake admission, delivery-state, failure/unknown, restart, and bounded-recovery semantics. | Historical `26ce6e9e` and 0.1.9 WIP are comparison evidence, not edit-base or cherry-pick authority. |
-| 4 | Future combined seam; selected eligible executor remains `asg_19d32a78` only after a later PDO execution-control row | One fresh candidate combining accepted stale-message boundary, wake lifecycle, and terminal owner notification on exact authorized bases. | No execution until step 1 disposition, reviewed-clean step 2, exact target/base authority, shared-hunk release, and a later PDO control record. |
-| 5 | Cancellation source `asg_6b3247e4-8858-4b21-8e30-e8bb33e6dcbb` / `s_0184755c`; wire fixture `asg_933e6f72` / `s_fcdd77af` | Consume the exact reviewed combined seam and close AC15 follow-on behavior. | Follows, never edits in parallel; `asg_933e6f72` retains `test/wire_seam_test.exs`. |
-| 6 | `wi_809821f8`, `wi_d884d359`, `wi_86165cfa`, and other named overlap owners | Close already-covered behavior as no-op dependency dispositions; retain only specifically uncovered behavior on its existing item. | No imported framework or duplicate producer. Delivered `wi_21c95808` stays delivered; held `wi_fcbc79fe` is not contacted; `wi_4ef0bb82` stays diagnostic. |
+| 0 | Historical producer assignment and session | Preserve old candidates, drafts, patches, gates, and reviews as provenance. | Frozen and read-only; no wake, edit, gate, push, or adoption. |
+| 1 | Stale-message owner assignment; producer assignment; its candidate commit and tree | Existing changed-subject independent review, then its already-authorized macOS/line disposition if clean. | Sole first-touch custody for `gateway.ex`, `ledger.ex`, `schema.ex`, `queued_message_suppression.ex`, and its tests. No duplicate review/gate. |
+| 2 | This coordinator assignment | This exact reduced specification and one independent reviewed-clean verdict. | No code authority; review is of this changed subject, not an empty confirmation of historical review. |
+| 3 | Wake-delivery work item; its coordinator assignment; source owner assignment and session | Reuse reviewed/current wake admission, delivery-state, failure/unknown, restart, and bounded-recovery semantics. | The historical wake-delivery commit and 0.1.9 WIP are comparison evidence, not edit-base or cherry-pick authority. |
+| 4 | Future combined seam; selected eligible executor remains the order-3 source owner only after a later PDO execution-control row | One fresh candidate combining accepted stale-message boundary, wake lifecycle, and terminal owner notification on exact authorized bases. | No execution until step 1 disposition, reviewed-clean step 2, exact target/base authority, shared-hunk release, and a later PDO control record. |
+| 5 | Cancellation source assignment and session; wire fixture assignment and session | Consume the exact reviewed combined seam and close AC15 follow-on behavior. | Follows, never edits in parallel; the wire fixture assignment retains `test/wire_seam_test.exs`. |
+| 6 | Named overlap owners' work items | Close already-covered behavior as no-op dependency dispositions; retain only specifically uncovered behavior on its existing item. | No imported framework or duplicate producer. The delivered overlapping item stays delivered; the held overlapping item is not contacted; the physical-liveness item stays diagnostic. |
 
 ## 8. Future implementation brief
 
@@ -237,6 +234,6 @@ The frozen producer remains frozen. The only current transition is:
 
 1. record this exact artifact and SHA;
 2. obtain one independent specification verdict on this changed subject; and
-3. if reviewed-clean, emit `po-wake-scope-reconciled` for `wi_236e5efa-b5a2-49b4-b6d5-9dcbe5e9fdad` with this artifact, its review report/verdict, and the still-controlling downstream dependencies.
+3. if reviewed-clean, emit `po-wake-scope-reconciled` for this work item with this artifact, its review report/verdict, and the still-controlling downstream dependencies.
 
-No source lane resumes merely because the specification is reviewed-clean. PDO must later issue the exact execution-control row after every condition in the dependency map is satisfied.
+No source work resumes merely because the specification is reviewed-clean. PDO must later issue the exact execution-control row after every condition in the dependency map is satisfied.

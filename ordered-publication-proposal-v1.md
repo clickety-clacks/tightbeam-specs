@@ -1,6 +1,6 @@
 # Ordered publication — technical proposal v1
 
-Status: **REJECTED 2026-08-04 by Sol xhigh review. Do not build §4.** The ratified design
+Status: **REJECTED 2026-08-04. Do not build §4.** The ratified design
 is at the bottom of this file under "RATIFIED DESIGN". §4 contained five factual errors,
 recorded below because the errors are more instructive than the design: (1) the isolation
 argument was invented — ConnRegistry's delivery functions are local `send/2`, so no wire
@@ -12,31 +12,28 @@ rollback does not exist — every cited site already publishes only from its `{:
 branch; (5) a per-session ticket counter would create a SECOND authority for commit order
 when `seq` is already monotonic (projection.ex:53) — a T-SOURCE violation inside a
 proposal citing T-SOURCE. The gap-buffer timeout was correctly called out as
-accommodating dirt. Lesson for the author: a design that invents a constraint then builds
-machinery to satisfy it is a lattice, and the reviewer's answer is a `send` in the right
-place.
+accommodating dirt.
 
-Original status line (kept for the record): §1's MOTIVATING EVIDENCE IS REFUTED (2026-08-04, lane G8, by
+Original status line (kept for the record): §1's MOTIVATING EVIDENCE IS REFUTED (2026-08-04, by
 measurement). The T2b row-10 failure is NOT this mechanism.** Instrumented publish path,
 failing run: publish→client-arrival 0ms on all three frames; commit order == publish
 order == arrival order; nothing dropped or reordered. Actual cause: the journey's oracle
 (journeys.ex:786) asserts Smoke B's reply lands BEFORE Main's by comparing indices, and
 in the full codex leg B's trivial turn took 20.4s against Main's deliberately-slow 12.6s,
 so B's reply committed 8.2s after Main's turn ended — the FAIL branch (:824) then names it
-"a delayed client frame" by construction. A test defect; G8 is repairing the oracle.
-The decisive argument, which the author should have applied before writing this: A DROPPED
+"a delayed client frame" by construction. A test defect; the oracle is being repaired.
+The decisive argument: A DROPPED
 FRAME NEVER ARRIVES, and B's frame is present in reply_order.
 
 WHAT SURVIVES: §2's mechanism is still REAL and still LATENT — conn_registry.ex:14-27
-documents an ordering precondition that no code provides, and lane G5 flagged it
+documents an ordering precondition that no code provides, and it was flagged
 independently. It has NO known reproduction. Therefore: DEMOTED from in-gate blocker to
-post-Gibson item, and this proposal is a design for a latent defect, to be built only if
-review judges it worth building before a reproduction exists. Reviewer: judge §4's design
+post-gate item, and this proposal is a design for a latent defect, to be built only if
+review judges it worth building before a reproduction exists. §4's design is to be judged
 on its merits for the latent defect; disregard §1's urgency framing entirely.
 
-Original status line: PROPOSAL, awaiting review. Authored 2026-08-04 by the team-lead session, for
-Sol xhigh review before any implementation. Lane G8 is confirming the mechanism and
-building the acceptance test only; no design work is delegated.
+Original status line: PROPOSAL, awaiting review. Authored 2026-08-04, for
+review before any implementation.
 
 ## 1. The defect, as a user experiences it
 
@@ -96,9 +93,9 @@ durable assertion passes, and only a live client is lied to — which is why uni
 soak, and five review rounds never saw it, and why T2b's client-side half is the only
 oracle that could.
 
-Why it appeared now: nothing in the merged lanes broke it. Lane G5 named it explicitly as
+Why it appeared now: nothing in the merged changes broke it. One merged change named it explicitly as
 pre-existing at every append-then-publish site and deliberately left it (correctly — it
-was out of its scope). G5 also *removed* a wide post-commit `Org.get` round-trip from one
+was out of its scope). That change also *removed* a wide post-commit `Org.get` round-trip from one
 path, which plausibly narrowed the window enough to change how often the inversion lands.
 The defect is older than tonight; tonight it became reproducible.
 
@@ -162,7 +159,7 @@ possible; a delayed frame is acceptable, an unrecorded reorder is not.
 
 `gateway.ex:5772` and `event_log.ex:360` stop publishing directly and instead declare
 intent on the txn they are already inside. `EventLog.notice/5` keeps its one-call
-record-and-notify contract (G5's invariant) — the notify half becomes an intent rather
+record-and-notify contract — the notify half becomes an intent rather
 than a synchronous publish, which strengthens it: today a `notice` whose transaction
 rolls back has already published.
 
@@ -172,7 +169,7 @@ rolls back has already published.
   become correct-with-their-precondition-actually-true.
 - Replay: untouched. `Projection.list_after/5` + socket cursors already repair history and
   will simply have less to repair.
-- Ledger claim/enqueue (G1) and the notice row/message contract (G5): untouched.
+- Ledger claim/enqueue and the notice row/message contract: untouched.
 - `broadcast/4` (non-message events: turn state, typing, stream) has no seq filter and no
   ordering dependency. NOT in scope. Say so explicitly if review disagrees.
 
@@ -216,7 +213,7 @@ rolls back has already published.
 
 ## 8. Acceptance
 
-Lane G8's deterministic inversion test (two writers, forced commit/publish inversion, red
+The deterministic inversion test (two writers, forced commit/publish inversion, red
 on current main) is the unit-level gate, and it must pin the PROPERTY — a connected client
 receives both messages, in commit order — not any implementation detail.
 
@@ -236,7 +233,7 @@ the claude leg, plus the combined soak unchanged.
    publisher holding a stale connection reference?
 
 
-## RATIFIED DESIGN (Sol xhigh, 2026-08-04) — build THIS
+## RATIFIED DESIGN (2026-08-04) — build THIS
 
 The minimum mechanism that makes ConnRegistry's documented precondition true:
 
@@ -258,4 +255,4 @@ The minimum mechanism that makes ConnRegistry's documented precondition true:
   no-live-connection then replay; register/replay/live interleavings; restart recovery.
   `broadcast/4` inversion tracked separately.
 
-Status: post-Gibson (the defect is latent — no reproduction; T2b row 10 was a test defect).
+Status: post-gate (the defect is latent — no reproduction; T2b row 10 was a test defect).
