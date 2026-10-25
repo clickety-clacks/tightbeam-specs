@@ -37,6 +37,14 @@ transcript `messageType` discriminator to the shared projection used by
 `message.created` and matching REST rows. It preserves F1/F2. This successor changes no notice
 envelope, source-invalidation mapping, G4 error, or G8 authority label.
 
+Reset-safe history amendment, 2026-10-25: PROPOSED. Defined by
+`chat-reset-safe-history-v1.md`. The history boundary no longer changes which
+transcript messages a client holds, so a session notice that changes it is an
+ordinary last-version-wins update and triggers no rebuild. A message whose
+served projection changes receives a strictly greater `rowVersion`. R4b names
+the served conversation resource and the classes that are absent. This adds no
+class, envelope, or source-invalidation mapping.
+
 G9 setHarness capability successor, 2026-08-28: PROPOSED. Add
 `session.harness_changed`, session capability payloads, notice schema 2, and
 firehose protocol 2. The exact behavior contract is
@@ -367,7 +375,11 @@ R4. Records: `artifact.recorded`, `read_marker.updated` (RM3).
 
 R4b. Conversation: `message.created` — without it a chat client cannot be
 lively (M4 promised message classes; the REST recon caught the
-registry gap).
+registry gap). `message.created` notices SHALL carry `resource:"messages"`.
+Boundary markers travel as `message.created`. The registry includes neither
+`turn.queued` nor `transition.recorded`, and a client SHALL treat both as
+absent. Example: a client decoding current output finds neither class and
+degrades to the behavior it has without them.
 
 R4c. Composed-view invalidation sources: `topline.created`,
 `topline_work_membership.linked`, `topline_work_membership.unlinked`, and
@@ -406,7 +418,7 @@ correlation contract). A class without a row is a red build.
 | `condition_fact.filed` | `condition facts` | `upsert` | `factId` | exact shared R7 condition-fact serializer | The condition fact `id` is its append-only natural version; its `rowVersion` equals `id`. Each successful insertion into `condition_facts` emits one notice after commit. An idempotent filing that returns the existing fact emits none. | `GET /api/facts` visibility. Consumers apply last-version-wins by `factId`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 | `critical_lease.updated` | `critical state` | `upsert` | `sessionKey` | exact shared R7 critical-state serializer | The item uses R7 critical-state `rowVersion`. Each committed change to the R7 item for one `sessionKey` emits one notice after commit. A replay or idempotent request that leaves the item and `rowVersion` unchanged emits none. | `GET /api/critical-state` admin-only visibility. Consumers apply last-version-wins by `sessionKey`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 | `operator_ruling.provenance_recorded` | `operator ruling provenance` | `upsert` | `decisionRequestId`, `sessionKey` | `Tightbeam.Escalation.public_operator_ruling_provenance_item/1`, the exact shared R7 operator-ruling-provenance serializer | The terminal mutation allocates the decision-request row's next positive `rowVersion`. Each successful post-epoch ruling emits one notice after commit. A refusal, pre-epoch row, migration, or replay that leaves the terminal row unchanged emits none. | `GET /api/decision-requests/:id/operator-ruling-provenance` visibility: operator-request owner user or admin. Consumers apply last-version-wins by `(requestId,rowVersion)`. Payload `requestId` equals `refs.decisionRequestId`; payload `submittingSessionKey` equals `refs.sessionKey`. | A1 covers the class, emission seam, resource, op, and refs. A6 verifies the complete payload is byte-equivalent to the REST detail item. |
-| `message.created` | `transcript messages` | `upsert` | `messageId`, `sessionKey` | exact shared R7 transcript-message serializer | The item uses its R7 `rowVersion`. Each newly committed transcript message emits one notice after commit; an idempotency replay that returns the existing row emits none. | `GET /api/sessions/:sessionKey/messages` visibility. Consumers correlate by `messageId` and apply last-version-wins by `(payload.id, payload.rowVersion)`. | A1 covers the class and both refs. A6 verifies the complete item, including conditional `messageType` omission, is byte-equivalent to the matching REST row. |
+| `message.created` | `transcript messages` | `upsert` | `messageId`, `sessionKey` | exact shared R7 transcript-message serializer | The item uses its R7 `rowVersion`. Each newly committed transcript message emits one notice after commit; an idempotency replay that returns the existing row emits none. When a message's served projection changes, any notice that carries the changed item SHALL carry a `rowVersion` strictly greater than every version previously served for that message id; two notices, or a notice and a REST item, with the same `(id,rowVersion)` carry identical items (REST R7s). | `GET /api/sessions/:sessionKey/messages` visibility. Consumers correlate by `messageId` and apply last-version-wins by `(payload.id, payload.rowVersion)`. | A1 covers the class and both refs. A6 verifies the complete item, including conditional `messageType` omission, is byte-equivalent to the matching REST row. |
 
 R8b. Source invalidation classes are deliberately not R8 rebuildable-state
 rows. Each emits `op:"observe"`, omits `resource`, and carries exactly
@@ -535,13 +547,14 @@ no-op, anything applied twice converges. Plain drop-by-id is FORBIDDEN
 
 M4's conversation-specific snapshot-to-buffer cut is a client-state critical
 section. The session reads before and after the REST message snapshot must
-match in both `rowVersion` and `clearedThroughSeq`; that accepted `rowVersion`
-is the snapshot coverage watermark. The client detaches a finite buffered
-prefix, discards covered session versions, resolves higher versions in order,
-marks the prefix consumed, and publishes the candidate in that critical
-section. Notices above the cut remain buffered and are processed in
-connection-sequence order. M4 defines when a higher session version invalidates
-the candidate instead of entering the model as an upsert.
+match in `rowVersion`; that accepted `rowVersion` is the snapshot coverage
+watermark. The client detaches a finite buffered prefix, discards covered
+session versions, resolves higher versions in order, marks the prefix
+consumed, and publishes the candidate in that critical section. Notices above
+the cut remain buffered and are processed in connection-sequence order. A
+higher session version, including one that changes `clearedThroughSeq`,
+enters the model as an ordinary last-version-wins upsert and does not
+invalidate the candidate.
 
 M1b. Apply only R8 `upsert` and `delete` payloads directly to the model under
 M1. For each allowed R8b `observe` notice, refetch every currently held R9 view
@@ -593,15 +606,23 @@ A chat client builds conversation state from the canonical REST
 `wake.scheduled`, the turn/message classes, and `session.*` as supplied by the
 separate recon-finding-G2 prerequisite. After the client chooses a
 `sessionKey`, it subscribes to `message.created` and the `session.` prefix for
-the selected key before reading conversation state. On reconnect, a
-seq skip, or a session history-boundary change, it applies M2: subscribe first
-and rebuild the displayed slice from a cursorless REST tail. It does not
-request notice replay, use a stream cursor, or treat an `after` page as gap
-recovery. REST R5d and `transcript-verb-v1.md` carry the history and wrapper
-acceptance. The closed M1 cut, covered-version comparison, and the mandatory
-rebuild for every newer different-boundary session notice are specified by
-`transcript-verb-v1.md` steps 3 through 8 and A5. The client-buildability recon remains the
-demand evidence.
+the selected key before reading conversation state. On reconnect or a
+seq skip, it applies M2: subscribe first and rebuild the displayed slice from
+a cursorless REST tail. It does not request notice replay, use a stream
+cursor, or treat an `after` page as gap recovery. The client SHALL treat a
+session notice that changes `clearedThroughSeq` as an ordinary
+last-version-wins session update. A change in `clearedThroughSeq` SHALL NOT
+cause the client to drop rows, reject a snapshot, or rebuild; reconnect, a
+sequence skip, and other M2 doubt still rebuild. REST R5d and
+`transcript-verb-v1.md` carry the history and wrapper acceptance. The closed
+M1 cut and covered-version comparison are specified by `transcript-verb-v1.md`
+steps 3 through 8 and A5. The client-buildability recon remains the demand
+evidence.
+
+Example: during a cold build the buffered prefix holds a session notice with a
+higher `rowVersion` and `clearedThroughSeq` 120, and message notices for rows
+118–122. The client advances the session item, applies all five messages, and
+publishes. No row at or below 120 is omitted, and no rebuild starts.
 
 ## Delivery semantics
 

@@ -10,8 +10,15 @@ public contract. It does not supersede the existing dispatch audit-elision or
 router non-target safeguards. This revision restates both safeguards for the
 M4 migration window.
 
+Reset-safe history amendment, 2026-10-25: PROPOSED. Defined by
+`chat-reset-safe-history-v1.md`. The history boundary marks an agent-context
+restart and no longer hides transcript messages. This revision removes the
+boundary filter, the boundary cursor cases, and the boundary-change rebuild
+from this wrapper, and states that the wrapper returns the full history to
+every caller. It adds no route, field, cursor meaning, or recovery path.
+
 Authority: `rest-state-api-v1.md` owns the conversation query, item,
-authorization, visibility-floor, page, and cursor semantics.
+authorization, history-boundary, page, and cursor semantics.
 `event-firehose-v1.md` owns freshness and gap detection. This file owns only
 the `tightbeam transcript` CLI mapping and its presentation.
 
@@ -30,8 +37,6 @@ history, and recovery after a firehose gap.
 
 - This wrapper adds no route, row, message field, query, serializer, mutation,
   notice class, event storage, replay, or stream cursor.
-- This wrapper does not expose messages at or below the session's
-  `clearedThroughSeq`.
 - This wrapper does not specify physical deletion of durable message rows.
 - This wrapper does not preserve the superseded case-insensitive substring
   lookup, five-field candidate projection, message-id cursor, or 12-field
@@ -47,13 +52,12 @@ history, and recovery after a firehose gap.
 T1. **REST history authority** — `GET /api/sessions/:sessionKey/messages`
 under REST R4, R5, R5a, R5d, R7, AU4, and AU7.
 
-T2. **Visible history** — the target session's R7 transcript-message rows whose
-`seq` is greater than the session's current `clearedThroughSeq`, ordered by
-`(seq,id)`.
+T2. **Visible history** — every R7 transcript-message row of the target
+session, ordered by `(seq,id)`. It does not depend on `clearedThroughSeq`.
 
-T3. **History boundary** — `clearedThroughSeq`, the logical visibility floor
-for one session. The boundary hides retained rows. It is not firehose
-retention and is not a request filter.
+T3. **History boundary** — `clearedThroughSeq`, the per-session `seq` at which
+the agent's working context last restarted. It is a position, not a filter,
+and hides no row. It is not firehose retention and is not a request filter.
 
 T4. **Page cursor** — an opaque signed REST cursor returned as
 `page.oldestCursor` or `page.newestCursor`. The cursor encodes the immutable
@@ -63,8 +67,8 @@ T5. **Cold build** — subscribe first, then construct the displayed
 conversation slice from REST while buffering post-subscription notices.
 
 T6. **Gap recovery** — rebuild the displayed conversation slice from REST
-after reconnect, a skipped firehose sequence, a session history-boundary
-change, or a gateway restart reported by the connection.
+after reconnect, a skipped firehose sequence, or a gateway restart reported
+by the connection.
 
 ## Assumptions
 
@@ -80,8 +84,7 @@ supplies `session.spawned`, `session.updated`, and `session.retired` under the
 this spec does not duplicate it.
 
 AS4. Firehose M1 and M2 supply subscribe-first buffering, version comparison,
-gap detection, and full displayed-slice rebuild. A history-boundary change is
-a rebuild trigger under I7; it is not an ordinary last-version-wins merge.
+gap detection, and full displayed-slice rebuild.
 
 ## Invariants
 
@@ -93,26 +96,25 @@ exact Unicode-code-point `displayName` filter. It returns visible full R7
 session items in `(createdAt,sessionKey)` order. It returns no message content.
 
 I3. `transcript --session <sessionKey>` performs the REST transcript-message
-collection read. Each returned item has the R7 transcript-message shape.
+collection read. Each returned item has the R7 transcript-message shape. The
+wrapper returns the same envelope, items, and cursors as direct REST, and
+therefore the full visible history, to every caller, including an agent
+reading its own session.
 
 I4. The wrapper passes `before`, `after`, and `limit` to REST without decoding,
 rewriting, or translating a cursor. It returns the REST R4 page object without
 rewriting either cursor. A prior message id passed as a cursor receives REST's
 `400 invalid_cursor`; the wrapper does not provide a compatibility alias.
 
-I5. REST evaluates the history boundary on each message-page request. A page
-contains only items whose `seq` is greater than the boundary used for that
-request. The service reads the boundary, selects the items, and computes the
-page flags as one indivisible read. A returned page reflects one boundary
-value.
+I5. A message page does not depend on `clearedThroughSeq`.
 
 I6. `clearedThroughSeq` does not enter a cursor fingerprint because it is
 server-owned state, not caller selection. A boundary advance does not make an
 otherwise valid cursor malformed.
 
 I6a. The observable `clearedThroughSeq` for one `sessionKey` is
-non-decreasing. A session mutation cannot make a cleared message visible
-again. REST R5d owns the sole transition seam and its closed caller inventory.
+non-decreasing. A session mutation never removes a row from the visible
+history. REST R5d owns the sole transition seam and its closed caller inventory.
 
 I7. A client uses `page.oldestCursor` as the next `before` value to walk
 backward. It uses `page.newestCursor` as an `after` value only while the same
@@ -157,15 +159,6 @@ cursorless tail sets `hasMoreAfter:false`. An empty cursorless tail sets both
 flags false. An empty caught-up `after` page sets
 `hasMoreBefore:(visible history is nonempty)` and `hasMoreAfter:false`.
 
-For a valid message cursor whose tuple is at or below a newly advanced history
-boundary:
-
-- `before=<cursor>` returns an empty item list with
-  `hasMoreBefore:false`; `hasMoreAfter` is true exactly when visible history
-  exists above the boundary;
-- `after=<cursor>` returns the first visible page above the boundary; and
-- neither request resolves the cursor through a live message row.
-
 REST R5d defines the only production transition of `clearedThroughSeq`. This
 wrapper consumes the resulting session item and does not write the boundary.
 
@@ -176,36 +169,31 @@ Cold build uses this closed snapshot-to-buffer handoff:
 2. Establish a firehose subscription filtered to that `sessionKey`. The
    subscription includes `message.created` and the `session.` prefix supplied
    by recon finding G2. Receive `subscription_ready`.
-3. Fetch the selected R7 session item as `S0`. Record its
-   `clearedThroughSeq` as `F0` and its `rowVersion` as `V0`.
+3. Fetch the selected R7 session item as `S0`. Record its `rowVersion` as
+   `V0`.
 4. Fetch the transcript tail. Page backward with `oldestCursor` only until the
    displayed slice is complete.
-5. Fetch the session item again as `S1` and record `F1` and `V1`. Accept the
-   session snapshot only if both `F1 = F0` and `V1 = V0`. Otherwise discard the
-   candidate slice and repeat from step 3.
+5. Fetch the session item again as `S1` and record `V1`. Accept the session
+   snapshot only if `V1 = V0`. Otherwise discard the candidate slice and
+   repeat from step 3.
 6. Enter one client-state critical section. Capture the current buffer-tail
    position as `Q` and detach the finite buffered prefix through `Q`. If the
    connection has entered doubt through `Q`, reject the candidate and restart
    from step 2 on a healthy subscription.
 7. In the same critical section, drain the detached prefix one notice at a time
    in connection order. For a session notice, discard a
-   `rowVersion <= V1` as covered by `S1`, even when it carries an older
-   boundary. Compare a higher version with the current accepted session item,
-   starting with `S1`. A higher version with boundary `F1` advances that item.
-   A higher version with any other boundary rejects the candidate before
-   publication; mark the entire detached prefix as covered by the next REST
-   rebuild, leave notices after `Q` buffered, and repeat from step 3. For a
-   message notice, apply `(id,rowVersion)` last-version-wins and omit the
-   message when its `seq <= F1`. After the ordered drain, mark the prefix
+   `rowVersion <= V1` as covered by `S1`. Compare a higher version with the
+   current accepted session item, starting with `S1`; a higher version
+   advances that item, whatever its `clearedThroughSeq`. For a message notice,
+   apply `(id,rowVersion)` last-version-wins. After the ordered drain, mark the prefix
    through `Q` consumed and publish the candidate. Drain, consumption, and
    publication form one client-state transition; no notice can enter the
    accepted slice between the buffer cut and publication.
 8. Process each later notice in connection-sequence order. A session notice at
    or below the accepted session `rowVersion` is a no-op. A newer session notice
-   with the same boundary is an ordinary last-version-wins update. A newer
-   session notice with a different boundary invalidates the displayed slice
-   before the next repaint and starts a cursorless cold build. A gap also
-   invalidates the slice and starts that build.
+   is an ordinary last-version-wins update, including one that changes
+   `clearedThroughSeq`. A gap invalidates the displayed slice before the next
+   repaint and starts a cursorless cold build.
 
 During M4 migration, the legacy dispatch adapter preserves two safeguards:
 
@@ -264,12 +252,10 @@ caller requests the next page, then the server compares the decoded
 `(seq,id)` tuple and returns the same page it would have returned while the
 boundary row existed.
 
-A4 (I5, I6, I7). Given a client that holds a tail page and its cursors, when
-`clearedThroughSeq` advances through the held page and newer messages commit,
-then `before=<held-oldest-cursor>` returns an empty item list with
-`hasMoreBefore:false`, and `after=<held-newest-cursor>` returns only rows above
-the new boundary. The before page sets `hasMoreAfter:true`. A cold rebuild
-removes the held rows whose `seq` is at or below the new boundary.
+A4 (I5, I6, I7). Given a held tail page and a boundary advance through it,
+then the held rows stay, the `before` cursor returns the same page as before,
+the `after` cursor returns the boundary marker and any later rows, and a cold
+rebuild returns the held rows and the marker.
 
 A4a (I5, I7). Given nonempty visible history and a caught-up `after` cursor,
 when the caller requests the next page, then the page is empty and sets
@@ -280,21 +266,20 @@ when the caller requests the next page, then the page is empty and sets
 A4b (I6a). Given REST R5d's closed boundary-transition inventory, when the
 harness-change caller and the turn-failure-recovery caller each submit a
 candidate below the stored value through the sole transition seam, then the
-next session read returns the stored value and no cleared message becomes
-visible. The source-structure proof in REST A51c finds no other initializer,
+next session read returns the stored value and no visible message is
+removed. The source-structure proof in REST A51c finds no other initializer,
 writer, or caller.
 
 A5 (I5, I6, I6a). Given buffered session versions with boundaries `F=5` then
 `F=10`, when `S0` and `S1` are the later version with `F=10`, then step 7
 discards both covered notices and does not livelock. Given any session mutation
 between `S0` and `S1`, including one that retains the boundary, then the
-`rowVersion` comparison rejects the candidate. Given a boundary advance between
-the last message page and `S1`, then the boundary comparison also rejects the
-candidate. Given a newer different-boundary notice at or before cut `Q`, then
-the critical section rejects the candidate before publication. Given that
-notice after `Q`, then step 8 invalidates the published slice before its next
-repaint and performs a cursorless rebuild. Every accepted slice contains no row
-with `seq <=` its accepted boundary.
+`rowVersion` comparison rejects the candidate. Given a buffered prefix that
+holds a session notice with a higher `rowVersion` and `clearedThroughSeq` 120,
+and message notices for rows 118–122, then the client advances the session
+item, applies all five messages, and publishes; no row at or below 120 is
+omitted, and no rebuild starts. Every accepted slice includes rows at or below
+its session's boundary.
 
 A6 (I7). Given a firehose sequence skip after the client has paged three history
 pages, when gap recovery runs, then the client subscribes first, refetches the
@@ -307,7 +292,9 @@ page cursors are equal. Given a REST refusal, the wrapper returns the same REST
 error code without choosing a second authorization or cursor outcome. A source
 check rejects SQL, a second serializer, a second visibility predicate,
 message-id cursor conversion, and fallback to the legacy dispatch read after
-M4 parity passes.
+M4 parity passes. Given an agent that runs `transcript --session` for its own
+session after a harness change, then it receives the rows below the boundary,
+equal to the REST response.
 
 A8 (I4). Given a prior transcript message id in `--before`, when the M4 wrapper
 runs, then REST returns `400 invalid_cursor`. The wrapper does not retry with a

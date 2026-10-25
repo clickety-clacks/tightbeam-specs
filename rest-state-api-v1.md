@@ -11,6 +11,15 @@ amendment adds the durable `/api/toplines` `(createdAt,id)` cursor and closed
 `transcript --name`. It leaves the ExecutionMap/firehose companion, R7 items,
 authorization, and public serializers unchanged.
 
+Reset-safe history amendment, 2026-10-25: PROPOSED. Defined by
+`chat-reset-safe-history-v1.md`. The history boundary `clearedThroughSeq`
+marks an agent-context restart and no longer filters transcript-message
+history (R5d). A boundary advance appends one boundary marker in the same
+commit. R7 lists the optional transcript-message `marker` key, and R7s fixes
+human-row sender attribution and message version monotonicity. This amendment
+adds no route, query parameter, filter, notice class, or retention rule, and
+changes neither agent context nor the boundary's writers.
+
 Work-item priority/shared-seam candidate, 2026-09-01: PROPOSED. Add the
 existing public work-item `priority` field to R7 and bind canonical work-item
 reads, mutation readback, and state notices to one visible query and public
@@ -799,15 +808,18 @@ route clamps a valid value above 500 to 500. This clause changes no other
 resource's pagination contract.
 
 R5d. Conversation history has one authority: the REST transcript-messages
-collection. For a target session with current history boundary
-`clearedThroughSeq = F`, the visible set is the R7 transcript-message rows
-whose `seq > F`, ordered by R5a `(seq,id)`. Tail, `before`, `after`,
-`hasMoreBefore`, and `hasMoreAfter` operate only on that visible set. Cleared
-rows do not make either page flag true. The service reads `F`, selects the
-items, and computes the flags as one indivisible read; a returned page reflects
-one value of `F`. For one `sessionKey`, the observable value of `F` is
-non-decreasing. A production mutation cannot expose a row that an earlier
-value of `F` hid.
+collection. The history boundary `clearedThroughSeq = F` is the per-session
+`seq` at which the agent's working context last restarted. It is a position,
+not a filter. The visible set is every R7 transcript-message row of the target
+session, ordered by R5a `(seq,id)`, and does not depend on `F`. The
+transcript-messages collection SHALL return the visible set without reference
+to `F`. Tail, `before`, `after`, `hasMoreBefore`, and `hasMoreAfter` SHALL
+operate on the visible set. When `F` advances, no row SHALL leave the visible
+set: every page SHALL equal the page the same request returns over the same
+committed rows with `F` ignored. The only row an advance adds is its boundary
+marker below, so a page can differ from the same request made before the
+advance only by that marker and by other rows committed since. For one
+`sessionKey`, the observable value of `F` is non-decreasing.
 
 Session creation is the sole initializer and writes
 `clearedThroughSeq = 0`. After creation, the sole production write seam is the
@@ -815,8 +827,22 @@ canonical session-store operation
 `advanceClearedThroughSeq(sessionKey,candidateSeq)`. It atomically writes and
 returns `max(storedValue,candidateSeq)` in the session transaction. When that
 maximum changes the row, the same commit publishes the resulting session
-`rowVersion`; a no-change candidate returns the unchanged row and version. The
-closed v1 caller inventory contains exactly two causes and source sites:
+`rowVersion`; a no-change candidate returns the unchanged row and version.
+
+When `advanceClearedThroughSeq` changes the stored `F` to `F′`, the same
+commit SHALL append one boundary marker: a transcript row with
+`messageType:"marker"`, a `marker` object, and `seq > F′`. Its `marker.kind`
+SHALL be `harness-switch` for the harness-change cause and `session-restart`
+for the turn-failure-recovery cause. A `session-restart` marker's `from` and
+`to` SHALL be the old and new native harness session ids. A no-change call
+SHALL append no marker. A boundary marker's `content` SHALL NOT state that
+earlier messages are hidden, removed, or no longer shown; it MAY state that the
+agent no longer remembers them. A boundary advance SHALL leave agent context,
+meaning what the harness gives the model when a turn starts, exactly as it is
+without the reset-safe history amendment. A REST or CLI read that the agent
+performs during a turn is a lookup, not agent context.
+
+The closed v1 caller inventory contains exactly two causes and source sites:
 
 - the harness-change path submits the current maximum message `seq` at
   `gateway.ex:2700-2712`; and
@@ -835,14 +861,11 @@ tuple directly and does not resolve it through a live row. Deleting the
 boundary row or advancing the history boundary therefore does not invalidate
 an otherwise valid cursor.
 
-When a valid cursor tuple is at or below the current history boundary,
-`before` returns an empty page with `hasMoreBefore:false` and
-`hasMoreAfter:true` exactly when the visible set is nonempty. `after` returns
-the first visible page above the boundary. An empty caught-up `after` page has
-`hasMoreAfter:false`; the caller retains its last non-null `newestCursor` for
-healthy catch-up. Reconnect, a firehose sequence skip, or a history-boundary
-change invokes a fresh displayed-slice rebuild from a cursorless tail instead
-of treating `after` as gap recovery.
+An empty caught-up `after` page has `hasMoreAfter:false`; the caller retains
+its last non-null `newestCursor` for healthy catch-up. Reconnect or a firehose
+sequence skip invokes a fresh displayed-slice rebuild from a cursorless tail
+instead of treating `after` as gap recovery. A history-boundary change is an
+ordinary session update and invokes no rebuild.
 
 For a nonempty page, `hasMoreBefore` is true exactly when a visible row exists
 below the page's first item, and `hasMoreAfter` is true exactly when a visible
@@ -998,8 +1021,8 @@ A composed item carries `dependencyVersion` as described in R9 instead. No
 adapter may add a storage column or a caller-selected field.
 
 For transcript messages, “exactly” applies after the conditional R7m rule.
-`messageType` is optional, not a nullable public key, and is the sole
-conditionally omitted transcript-message key. Decision requests apply the
+`messageType` and `marker` are optional, not nullable public keys, and are the
+only conditionally omitted transcript-message keys. Decision requests apply the
 agent-only return-field condition in the table note below.
 
 | Resource | Canonical item fields |
@@ -1008,7 +1031,7 @@ agent-only return-field condition in the table note below.
 | harness catalog | `harness`, `provider`, `models`, `capabilities`, `dependencyVersion` |
 | hosts | `host`, `rowVersion` |
 | sessions | `sessionKey`, `displayName`, `kind`, `orderIndex`, `isBuiltIn`, `adopted`, `ownerUserId`, `origin`, `spawnedBy`, `handle`, `archetype`, `overrides`, `identityName`, `identityRevision`, `harness`, `provider`, `model`, `thinkingLevel`, `modelContext`, `host`, `clearedThroughSeq`, `state`, `createdAt`, `updatedAt`, `mechanicalStatus`, `capabilities`, `rowVersion` |
-| transcript messages | `id`, `seq`, `sessionKey`, `role`, `messageType`, `content`, `at`, `sender`, `deviceId`, `clientMessageId`, `replyToMessageId`, `replyToClientMessageId`, `llmVisibleMessageId`, `attachments`, `attentionTier`, `turnSeq`, `assignmentId`, `jobRef`, `harness`, `provider`, `model`, `effort`, `context`, `rowVersion` |
+| transcript messages | `id`, `seq`, `sessionKey`, `role`, `messageType`, `marker`, `content`, `at`, `sender`, `deviceId`, `clientMessageId`, `replyToMessageId`, `replyToClientMessageId`, `llmVisibleMessageId`, `attachments`, `attentionTier`, `turnSeq`, `assignmentId`, `jobRef`, `harness`, `provider`, `model`, `effort`, `context`, `rowVersion` |
 | work items | `id`, `title`, `specRefName`, `specRefSha256`, `isBug`, `ownerUserId`, `state`, `failReason`, `routingWakeId`, `slateWakeId`, `createdByUser`, `createdBySession`, `createdInTurnSeq`, `createdContextKnown`, `createdAt`, `priority`, `rowVersion` |
 | assignments | `id`, `subject`, `holderKey`, `holderRole`, `holderFallback`, `openedByUser`, `openedBySession`, `openedAt`, `state`, `outcome`, `closedAt`, `closedByUser`, `closedBySession`, `closingAttestId`, `revocationReason`, `workItemId`, `reviewsAssignmentId`, `holderHarness`, `holderProvider`, `files`, `effectKind`, `derivedStatus`, `rowVersion` |
 | attests | `id`, `assignmentId`, `kind`, `verdictKind`, `note`, `bySession`, `byUser`, `producer`, `producerCommand`, `byHarness`, `byProvider`, `commitRefs`, `ts`, `rowVersion` |
@@ -1113,6 +1136,61 @@ for message-type presentation; it does not change `role`. Readers do not reject
 the item or parse `content`. For a non-null source, the R7 serializer copies the
 stored string. REST, CLI wrappers, and `message.created` call that one
 serializer; an adapter does not construct another transcript-message map.
+
+An item carries `marker` immediately after `messageType` exactly when the row
+has a stored marker, which the stored row ties to `messageType:"marker"`. Its
+value is the closed object `{kind, from, to}` of non-null strings. Other items
+omit the key and never emit `marker:null`. `marker.kind` is one of
+`harness-switch`, `model-retune`, or `session-restart`; this enum is closed.
+Markers travel as `message.created`; no `transition.recorded` class exists.
+`marker.kind` names a transition; `messageType` remains the message-kind
+discriminator.
+
+Example: a harness-change marker item reads
+`…"messageType":"marker","marker":{"kind":"harness-switch","from":"…","to":"…"},"content":…`;
+an ordinary assistant item has no `marker` key.
+
+R7s. Human-row attribution and message versions. A human row is a
+transcript-message row with `role:"user"` whose stored `messageType` is null,
+so the item omits `messageType`. A historical role-user row with a null
+`messageType` is a human row even when an old non-human origin wrote it. The
+attribution path is the shared read projection that fills a human row's
+sender as `user:<principal>` from the row's direct turn or source-wake
+principal, else from the session owner.
+
+- When REST or `message.created` serves a human row, its `sender` SHALL be a
+  nonempty string.
+- A human row whose stored sender is null and one whose stored sender is `""`
+  SHALL go through the same attribution path and be served with the same
+  value. A nonempty stored sender SHALL pass through unchanged.
+- When the attribution path cannot find a direct turn or source-wake
+  principal, it SHALL use the session owner and SHALL NOT infer a poster from
+  content, device, or other fields. Owner fallback stands even when the
+  original poster of an unlinked legacy row was someone else; this contract
+  does not reconstruct that poster.
+- When a message's served projection, meaning the R7 item bytes REST returns
+  and `message.created` carries for that message, changes, its `rowVersion`
+  SHALL be strictly greater than every version previously served for that
+  message id. Two `message.created` notices, or a notice and a REST item, that
+  carry the same `(id,rowVersion)` SHALL carry identical items. This does not
+  require `rowVersion` to equal `seq`. It covers changes inside one running
+  build; a projection change that an upgrade causes is covered by the
+  firehose M2 rebuild that every gateway restart triggers.
+
+Example: two unlinked legacy human rows in a session owned by user `u1`, one
+stored null and one stored `""`, are both served with `sender:"user:u1"`. A
+row stored with `sender:"user:u2"` is served with `"user:u2"`. An unlinked
+legacy post that another user made into `u1`'s session is served as
+`user:u1`; that is the accepted limit, not a defect. No REST page or
+`message.created` payload contains a human row with `sender:null` or
+`sender:""`.
+
+Example: a queued human message is published at acceptance with
+`turnSeq:null` and `rowVersion` v. On delivery it is published again with a
+non-null `turnSeq`. The second notice carries a version greater than v, and a
+REST read after delivery returns that greater version with the same item. A
+pure duplicate of the first notice with the same version and the same bytes is
+still allowed and converges under firehose M1.
 
 R7e. The session `capabilities` value is the closed object whose sole key is
 `setHarness`. The wire companion owns its exact unsupported and supported
@@ -2168,11 +2246,14 @@ A51. Given a cursor returned before its boundary row is deleted, when the next
 page runs, then its items and page object equal the result produced while that
 row existed while the other rows remain unchanged.
 
-A51a. Given a cursor whose tuple is at or below a newly advanced
-`clearedThroughSeq`, when `before` runs, then it returns an empty item list,
-`hasMoreBefore:false`, and `hasMoreAfter:true` exactly when visible rows exist.
-When `after` runs with that cursor, it returns only visible rows above the new
-boundary.
+A51a. Given a session with rows `seq` 1–120 and `clearedThroughSeq` 100, when
+the cursorless tail runs with `limit=50`, then it returns 71–120 with
+`hasMoreBefore:true`, and paging `before` reaches row 1 and stops with
+`hasMoreBefore:false`. Given a client holding `oldestCursor` at `seq` 90 and
+`newestCursor` at `seq` 120, when the boundary advances from 0 to 120 and its
+marker is appended at 121, then `before=<oldestCursor>` returns the rows below
+90 exactly as before the advance, and `after=<newestCursor>` returns the
+marker at 121.
 
 A51b. Given nonempty visible history and a caught-up `after` cursor, when the
 caller requests the next page, then the page is empty and sets
@@ -2189,13 +2270,18 @@ caller sites: the harness-change maximum-message-seq path at
 the stored value through both callers, then every committed and subsequently
 read value equals the maximum value seen for that session. A changed value and
 its new session `rowVersion` become visible in the same commit; an unchanged
-value retains its row version. The transcript route exposes no previously
-cleared row. The test fails for a direct write, a second writer, an unlisted
+value retains its row version. An advance removes no row from the transcript
+route and appends its R5d boundary marker in the same commit: a harness change
+at maximum `seq` 120 yields `F = 120` and a `harness-switch` marker at `seq`
+121, and a second identical call leaves `F` at 120 and adds no row. The
+marker's content contains no claim that earlier messages are not shown. The
+test fails for a direct write, a second writer, an unlisted
 caller, a decreasing result, or separate boundary and row-version publication.
 
 A52. Given concurrent message inserts and a boundary advance, when the REST
-tail and backward pages run, then each returned page corresponds wholly to the
-boundary before or after the commit and never mixes both. The versioned
+tail and backward pages run, then each returned page equals the page the same
+request returns over the same committed rows with `clearedThroughSeq`
+ignored; the advance adds only its R5d boundary marker. The versioned
 snapshot-to-buffer handoff and reconnect proof are
 `transcript-verb-v1.md` A5 and A6; this REST test does not define a second
 client recovery algorithm.
@@ -2205,7 +2291,9 @@ A53. Given the same principal and selection, when direct REST and the M4
 page cursors are equal. Given a REST refusal, the wrapper returns the same
 error code without choosing a second authorization or cursor outcome. Passing
 a prior message id as `before` returns `400 invalid_cursor`; the wrapper does
-not decode, translate, retry, or invoke the legacy dispatch read.
+not decode, translate, retry, or invoke the legacy dispatch read. Given an
+agent that runs `transcript` for its own session after a harness change, then
+it receives the rows below the boundary, equal to the REST response.
 
 A54. Given stored decision-request rows with `(kind,deadlineAt)` equal to
 `(agent,null)`, `(statute,1)`, and `(effort,2)`, when the shared serializer
