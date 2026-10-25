@@ -90,7 +90,7 @@ failure:
 Note the asymmetry that made this survive: the drop is *permanent for live delivery* but
 *invisible to storage*. Reconnect replay reads the projection and shows both. So every
 durable assertion passes, and only a live client is lied to — which is why unit tests, the
-soak, and five review rounds never saw it, and why T2b's client-side half is the only
+soak, and code review never saw it, and why T2b's client-side half is the only
 oracle that could.
 
 Why it appeared now: nothing in the merged changes broke it. One merged change named it explicitly as

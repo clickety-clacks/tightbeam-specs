@@ -1,6 +1,6 @@
 # Release readiness, frozen main candidates, and optional release lines — revision 5
 
-Status: spec-approved candidate for fresh independent exact-artifact review.  
+Status: candidate specification.  
 Canonical path: `specs/tightbeam/release-readiness-design-v5.md`
 
 This revision replaces the decision authority of revision 4, SHA-256
@@ -13,7 +13,7 @@ imported baseline, SHA-256
 `3252a3928f3ff64865c8f8c53ea3a94d68a9cd24ba134aaf7ac49cee94828001`.
 Those artifacts and earlier revisions remain immutable history.
 
-This revision closes the eight revision-4 findings F1-F8. It no longer makes a release
+This revision no longer makes a release
 branch the default candidate path; the older ruling that did so has no normative force in
 this revision.
 
@@ -493,19 +493,6 @@ set of rails for facts the substrate must recover without inference. DELETE lose
 required first-release provenance, owner reissue, automatic push admission, or optional
 release mode respectively. ACCEPT loses because each missing fact permits an unreviewed
 candidate, ownerless hold, duplicate run, or post-proof ref race.
-
-Revision-4 review findings trace in both directions as follows:
-
-| Finding | Normative closure | Acceptance |
-| --- | --- | --- |
-| F1 review author not holder-bound | Independent evidence term; I-12; Architecture 4 | A-10 |
-| F2 brief fields undefined | I-04; Architecture 3 closed schema | A-04, A-50, A-55 |
-| F3 empty-range/arbitrary-base escape | Anchor term; I-12; Architecture 2 and 4 | A-11, A-12, A-54 |
-| F4 optional ref-effect promotion race | Line generation lock term; I-25; Architecture 4 and 6 | A-28B, A-43 |
-| F5 offer and relief lifecycle missing | Offer/relief terms; I-05, I-26; Architecture 2 | A-03B, A-46B, A-47 |
-| F6 branch-push replay unkeyed | I-14, I-20; Architecture 5 | A-18C, A-35 |
-| F7 decision terminal occurrences absent | I-07; Architecture 3 | A-05, A-06, A-48 |
-| F8 provisional digests unnamed | Header rejection | A-53 |
 
 ### 2. Owner and brief lifecycle
 

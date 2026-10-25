@@ -1,6 +1,6 @@
 # Prodder provenance v1
 
-Status: bounded F1/F2 successor; awaiting fresh independent exact-artifact review
+Status: candidate; awaiting independent exact-artifact review
 
 Authority:
 

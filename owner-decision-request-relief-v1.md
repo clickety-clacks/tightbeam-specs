@@ -613,8 +613,8 @@ deliberately, because reopening lets one review card carry several verdicts over
 its life, so "which verdict wins" and "whose card is it on" cannot be two
 separately-derived answers that have to agree by luck. Pooling across cards makes
 that temptation stronger, not weaker: a builder who computes the winning verdict
-in one query and the qualifying cards in another has reintroduced the defect a
-previous review of this fact already removed.
+in one query and the qualifying cards in another has reintroduced a defect this
+fact's single-query design already removed.
 
 **Kind collapse, measured.** Ten review cards in the live database carry the
 holder-filed sequence `reviewed-clean -> verified` as their complete verdict
@@ -649,8 +649,7 @@ independence, and the producing card is denied even though an earlier
 independent round concluded `reviewed-clean`. That behaviour is deliberate: the
 fact's own documentation states it as a rule, that a self-held latest round
 still disqualifies so a holder cannot launder its own verdict past an earlier
-independent one, and it was written that way in response to a previous review of
-this fact.
+independent one.
 
 It looks like a third false positive and it is not one. Removing it would let a
 producing card's holder resurrect a stale independent clean by filing a verdict

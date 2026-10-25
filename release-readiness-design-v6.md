@@ -1,6 +1,6 @@
 # Release readiness, frozen main candidates, and optional release lines — revision 6
 
-Status: spec-approved candidate for fresh independent exact-artifact review.  
+Status: candidate specification.  
 Canonical path: `specs/tightbeam/release-readiness-design-v6.md`
 
 This revision replaces the decision authority of sealed revision 5.
@@ -12,13 +12,7 @@ Revision 4 remains immutable at `specs/tightbeam/release-readiness-design-v4.md`
 Revision 4 had replaced an earlier revision and its imported baseline.
 Those artifacts and earlier revisions remain immutable history.
 
-This revision closes the five findings in the revision-5 review under owner rulings
-for F1-F3 and F4-F5.
-
-It preserves revision 5's closure of the eight findings in the revision-4 review
-under owner rulings for F1-F4 and F5-F8. It retains the closure of the controlling
-historical review and its full report.
-It also implements a product-owner ruling in the design. That ruling supersedes
+This revision implements a product-owner ruling in the design. That ruling supersedes
 the older ruling where it made a release
 branch the default candidate path. The older ruling remains superseded provenance and
 has no normative force in this revision.
@@ -582,29 +576,6 @@ recoverable identity and ordering across crashes. DELETE loses because the requi
 delegation, provider-event, proposal, and stale-brief surfaces remain product obligations.
 ACCEPT loses because a stale owner, duplicate run, unrecorded proposal, or unrefreshed brief
 would become a silent release-authority error.
-
-Revision-4 review findings trace in both directions as follows:
-
-| Finding | Normative closure | Acceptance |
-| --- | --- | --- |
-| F1 review author not holder-bound | Independent evidence term; I-12; Architecture 4 | A-10 |
-| F2 brief fields undefined | I-04; Architecture 3 closed schema | A-04, A-50, A-55 |
-| F3 empty-range/arbitrary-base escape | Anchor term; I-12; Architecture 2 and 4 | A-11, A-12, A-54 |
-| F4 optional ref-effect promotion race | Line generation lock term; I-25; Architecture 4 and 6 | A-28B, A-43 |
-| F5 offer and relief lifecycle missing | Offer/relief terms; I-05, I-26; Architecture 2 | A-03B, A-46B, A-47 |
-| F6 branch-push replay unkeyed | I-14, I-20; Architecture 5 | A-18C, A-35 |
-| F7 decision terminal occurrences absent | I-07; Architecture 3 | A-05, A-06, A-48 |
-| F8 provisional digests unnamed | Header rejection | A-53 |
-
-Revision-5 review findings trace in both directions as follows:
-
-| Finding | Normative closure | Acceptance |
-| --- | --- | --- |
-| F1 watch ownership cannot survive transfer | Watch term; I-05, I-26; Architecture 2 and 3 | A-03, A-46, A-55 |
-| F2 stale or competing offers can accept | Offer and train-generation terms; I-26; Architecture 2 | A-03B, A-46, A-46B |
-| F3 branch-push envelope has no production enrichment seam | Branch-push delivery term; I-14, I-20; Architecture 5 | A-18C, A-24, A-35 |
-| F4 relief proposal has no durable lifecycle | Relief proposal term; I-27; Architecture 2, 9, and 10 | A-47 |
-| F5 candidate pointer can change without durable refresh coverage | Candidate pointer term; I-15; Architecture 3 and 5 | A-49 |
 
 ### 2. Owner and brief lifecycle
 

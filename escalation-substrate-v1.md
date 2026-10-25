@@ -1,11 +1,8 @@
 # Escalation substrate v1 — the `escalate` gate outcome, decision-requests, rulings, waivers
 
-Status: RATIFIED to the ruled model (2026-07-21). Spec review resolved the
-four-shape-union / tagged-raiserId / waiver-scope / open-race set, and the
-digest effect-neutral exclusion, pinned deadline config home, and
-verb-edge-only consume. This ratification unblocks the `escalate` effect
-that `rails-mechanism-v1.md` defines-but-holds-unreachable (§A1/X4).
-Adversarial spec-review continues; no build precedes it landing clean.
+Status: RATIFIED to the ruled model (2026-07-21). This ratification unblocks the
+`escalate` effect that `rails-mechanism-v1.md` defines-but-holds-unreachable (§A1/X4).
+No build precedes this spec's adversarial review landing clean.
 
 Authority: this spec is the sole authority for the `escalate` dispatch outcome,
 the decision-request record, the ruling and waiver verbs and their facts, and the

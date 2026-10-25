@@ -34,7 +34,7 @@ authority; this ruling is that authority, and the guard returns with it.
 
 Note the distinction from what was deleted: the gateway does **not** infer a remote CLI's
 identity from exit codes and stdout at boot. That inference was unbounded in its failure
-modes and produced a new defect every review round. Asking a CLI its version and reading the
+modes and produced a new defect every revision. Asking a CLI its version and reading the
 answer is a different mechanism with a different epistemic basis.
 
 ## Cutting a release REQUIRES a compatibility decision

@@ -12,12 +12,10 @@ authority. This specification is based on Tightbeam
 `e125efe346a51f115785b5e7ad5804355b958a42`.
 
 Product authority comes from the work item's user-authored durable trace.
-The B1 and B2 corrections come from an owner ruling. They answer the blocking
-findings of the prior review. This specification amends the product-scope, spec-review, and
+The B1 and B2 corrections come from an owner ruling. This specification amends the product-scope, spec-review, and
 spec-assignment-opening clauses of `agentic-engineering-guidance-spec.md`.
-The explicit automatic-remedy purpose transport closes the findings of a later
-review without
-changing the owner-ruled B1 or B2 boundary.
+The explicit automatic-remedy purpose transport does not change the owner-ruled B1
+or B2 boundary.
 
 ## Goal
 

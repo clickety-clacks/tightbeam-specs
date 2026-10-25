@@ -246,7 +246,7 @@ Findings to fix (file:line refs from the review, branch identity-v2):
 Gates unchanged; run the FULL suite after fixes. Do not commit.
 
 ## Follow-up fixes
-1. PARTIAL (finding 1): reconstruction collision check queries state='active' only — must check ALL rows carrying the identityName (retired included; a retired row's differing recipe still proves a collision).
+1. PARTIAL: reconstruction collision check queries state='active' only — must check ALL rows carrying the identityName (retired included; a retired row's differing recipe still proves a collision).
 2. REGRESSION: pin dirs are created BEFORE reprojection and their mere existence forces pinned linkage — if reprojection fails, deletion aborts but later deliveries use the snapshot despite the library being live. Order/guard so pinned linkage only takes effect once the transform commits (e.g. mark-complete file or pin under a staging name until success).
 3. REGRESSION: set_harness persists the new engine BEFORE fallible eager delivery — a delivery failure leaves the row switched with no history clear/response. Deliver first (or make persistence contingent); on failure leave org state unchanged and surface the error.
 Gates as always; do not commit.

@@ -1,9 +1,7 @@
 # V9 identity transition design
 
 Status: bounded reuse design under the owner's `rule-reuse-boundaries` ruling.
-No implementation or live action is authorized by this document. No product tests
-ran during its preparation. One independent design review follows the writer's
-cold digest; this document does not claim that review has passed.
+No implementation or live action is authorized by this document.
 
 The owner's decision of 2026-09-05 resolves Q1–Q3: reuse relearn after separately authorized installed
 input preparation; retain retired old-reviewer rows for historical access and

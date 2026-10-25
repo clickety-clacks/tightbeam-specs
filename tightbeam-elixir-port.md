@@ -1,32 +1,25 @@
 # Tightbeam Elixir Port — v3 (IMPLEMENTATION UNDERWAY)
 
-**Review disposition:** three adversarial spec rounds (all archived as
-`-review-{1,2,3}.md`) hardened the design; per operator ruling, spec
-iteration is CLOSED and proof moves to code. Round-3's six defects are
-carried as REQUIRED acceptance items, not prose solutions: (1) reconciler
-liveness incl. lane-startup ownership + status-leading index; (2) terminal
-publication = exactly-one durable transition + at-least-once publish attempt
-(no stronger claim); (3) orphan quiescence must be provable (turns carry
-adapter generation + request ref; quarantine until observed resolution or
-durable generation recycle); (4) no blocking GenServer.call in the turn path
-(async request/receive protocol); (5) ordered publication seam (publish in
-commit order from the single writer) — a committed message may NEVER be
-filter-dropped; (6) executable packaging (correct npm artifact names; doctor
-via release eval). Every one lands as a kill-matrix or acceptance test that
-the implementation must pass; code review (cross-provider, per SOP) resumes
-on the Elixir code itself.
-
-**Status:** Spec v3 — revised per adversarial review rounds 1+2 (archived
-as `tightbeam-elixir-port-review-1.md` and `-review-2.md`). Round-2
-defects 1–9 addressed below; TS-side findings fixed in commits e446bc6,
-136519e, 649a02e (adapter-rule text fully reconciled — SOURCE OF TRUTH is the
-executable `src/acp/harness.ts` setModel(); package.json reconciled with the
-lockfile). For re-review, then implementation.
+**Status:** Spec v3. Per operator ruling, spec iteration is CLOSED and proof
+moves to code. Six items are carried as REQUIRED acceptance items, not prose
+solutions: (1) reconciler liveness incl. lane-startup ownership +
+status-leading index; (2) terminal publication = exactly-one durable
+transition + at-least-once publish attempt (no stronger claim); (3) orphan
+quiescence must be provable (turns carry adapter generation + request ref;
+quarantine until observed resolution or durable generation recycle); (4) no
+blocking GenServer.call in the turn path (async request/receive protocol);
+(5) ordered publication seam (publish in commit order from the single
+writer) — a committed message may NEVER be filter-dropped; (6) executable
+packaging (correct npm artifact names; doctor via release eval). Every one
+lands as a kill-matrix or acceptance test that the implementation must pass;
+code review resumes on the Elixir code itself. Adapter-rule SOURCE OF TRUTH
+is the executable `src/acp/harness.ts` setModel(); package.json is
+reconciled with the lockfile.
 **Date:** 2026-07-17
 **Decision (operator):** Port NOW — uptime is a product requirement; establish
 architecture/patterns early; waiting only grows the port.
 
-## Why (unchanged from v1, claims tempered per review §6)
+## Why
 
 Openclaw's ops taxonomy (random downtime; 50% of tokens on firefighting;
 ever-novel failure modes; threading/wedging/deadlocks; silent partial death)
@@ -50,8 +43,7 @@ evidence of correctness; the acceptance wall is.
 4. **SQLite: ADDITIVE-ONLY schema evolution.** Existing tables/indices are
    never altered (the TS gateway must be able to reopen the DB untouched);
    the BEAM gateway may ADD tables (`turns`, `lifecycle_events`) that TS
-   ignores. This supersedes v1's "same schema, no migration" and resolves the
-   review's schema-vs-recovery contradiction: crash/lifecycle records go to
+   ignores. This supersedes v1's "same schema, no migration" and resolves the schema-vs-recovery contradiction: crash/lifecycle records go to
    the NEW `lifecycle_events` table — the existing `events.kind` CHECK
    (`verb|denied`) is untouched.
 5. Adapter rules: **source of truth is `src/acp/harness.ts` + PATTERNS.md as
@@ -83,7 +75,7 @@ CREATE INDEX turns_session ON turns (sessionKey, status, seq);
 CREATE INDEX turns_unpublished ON turns (publishedAt) WHERE endedAt IS NOT NULL;
 ```
 
-**Liveness — the Reconciler (round-2 defect #1).** Commit-then-crash windows
+**Liveness — the Reconciler.** Commit-then-crash windows
 (doorbell never sent; lane process not remembered by a restarted
 DynamicSupervisor) are closed by an explicit reconciliation responsibility:
 at boot AND every 5s, the LaneManager scans `turns WHERE status IN
@@ -93,7 +85,7 @@ the scan is the guarantee. THIS is the mechanical enforcement of the prompt
 conservation law — a committed turn cannot strand because liveness never
 depends on a volatile message having been delivered.
 
-**Terminal semantics corrected (defect #2):** the guarantee is **exactly-one
+**Terminal semantics corrected:** the guarantee is **exactly-one
 durable terminal TRANSITION** (the guarded UPDATE). Publication to sockets is
 **at-least-once**: the publisher sets `publishedAt` after broadcasting; the
 Reconciler re-publishes any terminal row with `publishedAt IS NULL`.
@@ -101,7 +93,7 @@ Duplicate terminal frames are harmless by wire semantics (client keys turn
 state by messageId; a repeated terminal for the same messageId is idempotent
 UI-wise) and are covered by a referee assertion.
 
-**Orphan quarantine (defect #3):** when recovery marks a running turn
+**Orphan quarantine:** when recovery marks a running turn
 `failed_unknown`, the session is QUARANTINED: its lane will not start the
 next queued turn until quiescence — either (a) Acp.Adapter confirms the
 orphaned request ref has resolved (response/error arrived, or its cancel
@@ -111,24 +103,24 @@ recovery.
 
 - **Enqueue is transactional**: message insert + turn insert commit together.
   `turns.seq` (assigned by the store, in-transaction) is THE execution order —
-  multi-producer BEAM message reordering (review §1a) cannot affect it. The
+  multi-producer BEAM message reordering cannot affect it. The
   lane's mailbox is a doorbell, never a queue.
 - **Lane recovery**: a restarted lane reads `status IN ('queued','running')`
   for its session. A found `running` turn has UNKNOWN outcome → set
   `failed_unknown`, broadcast one failed terminal state, **never auto-retry**
-  (tools may have executed — review §1c). Queued turns resume in seq order
+  (tools may have executed). Queued turns resume in seq order
   after adapter adoption.
 - **Exactly-once terminal broadcast**: terminal transition is
   `UPDATE turns SET status=? WHERE seq=? AND status='running'`; only the
   caller with rows-affected=1 broadcasts.
-- **Wake commit point** (review §1k): WakeScheduler delivers by executing the
+- **Wake commit point**: WakeScheduler delivers by executing the
   SAME transaction (message + turn insert with `wakeId`) and marks the wake
   fired IN THAT TRANSACTION. Crash before commit → wake still pending, retry
   is safe (the `turns.wakeId UNIQUE` constraint dedupes); crash after → turn
   is durable. At-least-once attempts, exactly-once enqueue, 1:1 wake→turn
   preserved. A target retired between schedule and fire → wake marked
   `canceled` (not silently fired) + lifecycle event.
-- Concurrency correctness for dedupe/idempotency/uniqueness (review §3):
+- Concurrency correctness for dedupe/idempotency/uniqueness:
   every check-then-insert becomes INSERT with constraint + error adjudication
   inside a transaction (message `c_` dedupe by existing unique index; spawn
   idempotency PK; handle UNIQUE; first-user bootstrap wrapped in one
@@ -164,27 +156,27 @@ Tightbeam.Application
     ├── Tightbeam.Lifecycle   (lifecycle_events writer; monitors subtrees)
     ├── Tightbeam.ConnRegistry(socket registry: owner-scoped fan-out, device
     │                          takeover atomicity, GLOBAL device-keyed rate
-    │                          limits (review §1h), replay watermarks)
+    │                          limits, replay watermarks)
     ├── Tightbeam.WakeScheduler
     ├── Tightbeam.AdapterCoordinator
     │     └── AdapterSupervisor (DynamicSupervisor)
     │           └── Acp.Adapter (one per harness×archetype; OWNS its Port —
-    │                            conn+adapter are one work unit, review §4)
+    │                            conn+adapter are one work unit)
     ├── LaneManager (owns the Reconciler scan; starts lanes on demand)
     ├── LaneSupervisor (DynamicSupervisor; max_restarts 50 / 10s)
     │     └── SessionLane (GenServer per active session)
     ├── TurnTaskSupervisor (Task.Supervisor — TurnTasks live HERE, not under
-    │                       lanes; explicit in the tree per round-2 #4)
+    │                       lanes; explicit in the tree)
     └── Bandit (wire endpoint; WebSock handler per connection)
 ```
 
-Restart intensities (defect #9): root supervisor 3/30s (rest_for_one — DB
+Restart intensities: root supervisor 3/30s (rest_for_one — DB
 restart deliberately restarts dependents); LaneSupervisor 50/10s;
 ConnRegistry, WakeScheduler, LaneManager, DB: 5/60s each; Acp.Adapter
 children are coordinator-managed (:temporary — the AdapterCoordinator owns
 all restarts/backoff, so `normal` exits and crashes take the same path).
 
-**Task topology, precisely (defect #4) — monitors only, NO links:**
+**Task topology, precisely — monitors only, NO links:**
 - Lane starts TurnTask via `Task.Supervisor.async_nolink` and MONITORS it.
   Task crash → lane gets :DOWN, transitions the turn, lives on.
 - TurnTask's first act is to MONITOR its lane. Lane :DOWN → task issues
@@ -198,29 +190,28 @@ all restarts/backoff, so `normal` exits and crashes take the same path).
   timeouts via Process.send_after. Port frames and cancels are therefore
   always processed promptly.
 
-**Lifecycle proof, implementable (defect #9):** a `boot_epochs` table (epoch,
+**Lifecycle proof, implementable:** a `boot_epochs` table (epoch,
 bootedAt, cleanShutdownAt). Clean shutdown stamps the epoch; at boot, a NULL
 cleanShutdownAt on the prior epoch synthesizes a `dirty_exit` lifecycle event
 for it — so DB-owner death and `kill -9` are RECORDED BY INFERENCE at next
 boot rather than impossibly at crash time. Tightbeam.Lifecycle makes no claim
 to log its own dependency's death in real time.
 
-- **DB ownership (review §3)**: ONE writer connection owned by Tightbeam.DB;
+- **DB ownership**: ONE writer connection owned by Tightbeam.DB;
   all writes are `DB.transaction/1` calls through it (true single-writer, not
   convention). Read pool separate; EVERY connection pinned on checkout:
   `journal_mode=WAL, foreign_keys=ON, synchronous=NORMAL, busy_timeout=5000`
-  (busy_timeout is an acknowledged, deliberate addition over TS — recorded
-  here per review §6). No Ecto; module named `Tightbeam.DB` (not Repo).
-- **Lanes never link to adapters and never blocking-call them** (review §1e):
+  (busy_timeout is an acknowledged, deliberate addition over TS). No Ecto; module named `Tightbeam.DB` (not Repo).
+- **Lanes never link to adapters and never blocking-call them**:
   the TurnTask (not the lane) calls Acp; the lane monitors the task. Adapter
   death → lanes receive :DOWN via monitors → current turn transitions per the
   turns table → lanes LIVE ON. The restart-storm vector is removed by
   isolation, not by tuning.
-- **TurnTask semantics (review §1c)**: lane spawns TurnTask under a
+- **TurnTask semantics**: lane spawns TurnTask under a
   Task.Supervisor, monitors it, stays responsive (cancel/status handled
   mid-turn). Lane death kills its TurnTask (link); Acp.Conn detects the
   requester's :DOWN and issues session/cancel for the orphaned request.
-- **Adapter lifecycle (review §1d)**: AdapterCoordinator owns a monotonic
+- **Adapter lifecycle**: AdapterCoordinator owns a monotonic
   GENERATION per adapter key. On Port exit (any reason — children are
   coordinator-managed, not supervisor-auto-restarted, so `normal` exits are
   handled too): generation++, publish; restart with exponential backoff
@@ -232,13 +223,13 @@ to log its own dependency's death in real time.
   concurrent loads — no thundering herd). session/load failure → session
   degraded + turn failed with reason; planned idle-reap is a coordinator
   action flagged as such (distinguished from crashes in lifecycle_events).
-- **Port framing (review §1f)**: binary stream mode + hand-rolled buffer
+- **Port framing**: binary stream mode + hand-rolled buffer
   (NOT {:line,N} — avoids :noeol reassembly limits), UTF-8-safe splits,
   malformed-line tolerance (drop + lifecycle event). Adapters spawned via
   `sh -c 'exec ... 2>>stderr.log'` (stderr never merges into ndjson stdout).
   Child lifetime: adapters exit on stdin EOF; acceptance verifies no orphan
   survives BEAM death (kill -9 the VM, assert adapter exit).
-- **Replay vs live delivery (round-2 defect #5)**: every published message
+- **Replay vs live delivery**: every published message
   carries its per-session store seq. Each connection maintains a PERSISTENT
   per-session `lastDeliveredSeq` filter for its ENTIRE lifetime (not only
   during drain): any push with seq ≤ lastDeliveredSeq is dropped. Auth flow:
@@ -247,20 +238,19 @@ to log its own dependency's death in real time.
   sync_complete → live pushes continue through the same filter. Late
   publications of pre-watermark commits are thereby suppressed forever, not
   just during drain. Referee: reconnect-under-write asserts no gap, no dupe.
-- **Takeover (defect #5b)**: registrations are generation-tagged. Takeover =
+- **Takeover**: registrations are generation-tagged. Takeover =
   ConnRegistry atomically swaps the device slot to the new (gen+1)
   registration, THEN asynchronously sends session_replaced/close to the old
   socket; the old connection's unregister compares generations and cannot
   delete its replacement.
 - **Wire behavior parity notes**: rate limits stay GLOBAL per deviceId in
-  ConnRegistry (per-connection state would reset on reconnect — review §1h).
+  ConnRegistry (per-connection state would reset on reconnect).
 
-## Referee (replaces v1's impossible "unmodified scripts" gate — review §2)
+## Referee (replaces v1's impossible "unmodified scripts" gate)
 
 **E0 (work in the TS repo, before any Elixir):**
 1. Convert the three E2E scripts into BLACK-BOX drivers: accept
-   `TIGHTBEAM_URL` **and `TIGHTBEAM_TOKEN`** (the CLI requires both — round-2
-   #6), plus optional baseDir for auth seeding; never import startGateway;
+   `TIGHTBEAM_URL` **and `TIGHTBEAM_TOKEN`** (the CLI requires both), plus optional baseDir for auth seeding; never import startGateway;
    nonzero exit on failure (fixed, e446bc6). TS gateway passes them via a
    launcher; BEAM is driven by the identical binaries.
 2. Golden differential traces recorded against the TS gateway **using a
@@ -269,7 +259,7 @@ to log its own dependency's death in real time.
    stored under `test/golden/`; a comparator replays the same script against
    any URL and diffs frame shapes AND ordering.
 3. Exact frame-order assertion for the canonical turn, **matching the TS
-   implementation as-built** (round-2 #6; cite gateway.ts/server.ts):
+   implementation as-built** (cite gateway.ts/server.ts):
    echo → accepted → running → typing(on) → activity(on) → ack (after
    dispatch returns) → assistant → **terminal state** → typing(off) →
    activity(off). The oracle is what TS DOES, not what reads nicely.
@@ -291,7 +281,7 @@ to log its own dependency's death in real time.
   exactly-one terminal state per turn, lifecycle events present.
 - Black-box: the three E0 drivers + golden-trace comparator vs TS reference.
 - Sim E2E: real Clawline client pair/chat/reply.
-- **Adopt-in-place protocol** (review §3, verbatim): TS creates+populates all
+- **Adopt-in-place protocol**: TS creates+populates all
   tables incl. pending wakes + high AUTOINCREMENT; BEAM opens same dir, runs
   integrity_check/foreign_key_check, alters nothing pre-existing; BEAM
   mutates all row types; TS REOPENS and reads BEAM's writes; repeat with
@@ -304,7 +294,7 @@ to log its own dependency's death in real time.
   mailboxes < 1k msgs sustained; BEAM RSS growth < 10%; DB busy errors = 0;
   scheduler run-queue p99 < 10.
 
-## Telemetry & health (review §5.4)
+## Telemetry & health
 
 - `/version`: `{protocolVersion: 1, build: {version, otp, elixir, gitSha}}`.
   The Node-specific `loopLagP99Ms` is NOT faked; if a jitter-equivalent is
@@ -314,11 +304,10 @@ to log its own dependency's death in real time.
   states, active lanes/connections. Adapter degradation degrades sessions,
   never global readiness.
 
-## Packaging (review §5.3, node deps §9)
+## Packaging
 
 Mix release with ERTS included; OTP/Elixir pinned. **Node ≥24 is a declared
-host dependency** (adapters + retained TS CLI are Node). Concrete layout
-(round-2 defect #8):
+host dependency** (adapters + retained TS CLI are Node). Concrete layout:
 
 - The release ships `priv/runtime/{package.json, package-lock.json}` — the
   SHIPPED manifest pins `@agentclientprotocol/claude-agent-acp`,
@@ -333,18 +322,17 @@ host dependency** (adapters + retained TS CLI are Node). Concrete layout
   release commands/eval) — verifies node presence+version, the runtime tree
   paths above, opens a PROBE connection asserting journal_mode/foreign_keys/
   synchronous/busy_timeout, and asserts the configured checkout PRAGMAs in
-  app config. (Acknowledged limit per review: a preboot probe proves the
+  app config. (Acknowledged limit: a preboot probe proves the
   probe connection and the CONFIG, not future pool checkouts; a runtime
   /health assertion re-verifies a sampled pool connection.)
 
-## Build SOP (unchanged) + phasing (E0 added)
+## Phasing
 
-- Fable: E0 referee hardening (TS repo) + OTP skeleton/spine + ONE vertical
-  slice as production architecture (review §6: the skeleton IS the product,
-  not a prototype) + Elixir continuity docs.
-- Sol fleet: module ports per coding-with-codex, one focused goal each, gated
-  on that module's ExUnit port.
-- Cross-provider review per SOP; this spec re-reviewed (sol xhigh) before E1.
+- E0 referee hardening (TS repo) + OTP skeleton/spine + ONE vertical slice
+  as production architecture (the skeleton IS the product, not a prototype)
+  + Elixir continuity docs.
+- Module ports follow, one focused goal each, gated on that module's ExUnit
+  port.
 - **E0**: black-box drivers + golden traces + frame-order assertions, proven
   against the TS gateway. **E1**: mix skeleton, DB owner, turns table,
   Dispatch/EventLog/Lifecycle, one SessionLane+TurnTask+Acp.Adapter slice —
@@ -355,7 +343,7 @@ host dependency** (adapters + retained TS CLI are Node). Concrete layout
   adopt-in-place + sim E2E + soak → cutover of the first host's serve (same baseDir) →
   deploy to a second host via release + doctor.
 
-## Open questions resolved (per review §5)
+## Open questions resolved
 
 Bandit (registry/broadcast ownership explicitly ours, in ConnRegistry). Raw
 exqlite via Tightbeam.DB owner (no Ecto, no migrations metadata). Mix release

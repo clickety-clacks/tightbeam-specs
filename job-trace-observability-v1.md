@@ -1,13 +1,13 @@
 # Job trace observability — v1
 
 Status: READY. The load-bearing joins are sound (reviewsAssignmentId reaches verdicts;
-matchedFactAt reconstructible). This is the ruthlessly-minimal v1. The repeated finding —
+matchedFactAt reconstructible). This is the ruthlessly-minimal v1. The recurring gap —
 "family X keeps no history / no timestamp / no attribution" — is answered structurally: v1
 traces ONLY families needing ZERO new durability infrastructure; everything that would
 need a new column, timestamp, or attribution is named for `job-forensics-v2`. This is an
 ADDITIVE feature (new nullable columns + one read verb; no existing behavior changes), low
 blast radius; it ships with the one residual (exact JSON key strings) as an
-implementation-verified proof, not another review round. Depends on
+implementation-verified proof, not a further spec revision. Depends on
 `work-item-brackets-v1` (job identity).
 
 ## Law 0 — no ceremony (binding)

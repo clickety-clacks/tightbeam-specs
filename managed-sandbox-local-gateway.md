@@ -1,6 +1,6 @@
 # Managed-sandbox local Tightbeam gateway
 
-Status: STOPPING-RECOVERY-CORRECTED PROPOSAL PENDING CLEAN INDEPENDENT REVIEW
+Status: PROPOSAL PENDING CLEAN INDEPENDENT REVIEW
 
 Source basis: Tightbeam `7a70a2f616363074514237b5bee48ba67c52e2ea` and
 tightbeam-specs `2327bc66a45c7cedf6e726bf8e13b40153531e0b`, both current

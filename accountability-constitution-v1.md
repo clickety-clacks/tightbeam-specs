@@ -187,10 +187,9 @@ Two implementation stages of total emission, both tracked on the roadmap:
 
 ## Provenance
 
-Ratified in conversation 2026-07-21/22 during the first in-substrate org test (three
-incidents: silent strand via borrowed-orchestrator retirement; unbooked expectation at
-two chain links including the operator's own dispatch; retired-session process/drawer
-ghosts). Decisions ledger carries the narrative; the roadmap tracks scheduling. Guidance
+Derived from the first in-substrate org test, which surfaced three incidents: silent
+strand via borrowed-orchestrator retirement; unbooked expectation at two chain links
+including the operator's own dispatch; retired-session process/drawer ghosts. Guidance
 already shipped: dispatching skill (expecter-opens-card, pointer briefs, threading,
 retire duty, bottom-up sweep), product-owner archetype (self-assignment, orchestrator
 exclusivity, slates), orchestrator archetype (no source editing), operating manual

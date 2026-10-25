@@ -293,8 +293,8 @@ ran), `Wall clock`, and `Runid`. Verdict cells: `PASS`, `PASS (workaround: …)`
 `FAIL(note)`, `INCOMPLETE(blocker)`, `SKIP(reason)`. A run report alone is not filing —
 `e2e-tier-map-v1` §Scorecards is the rule.
 
-## History
+## Why a runbook
 
-r1-r3 were spec rounds for a scripted driver; the spec was redirected to an agent-executed
-runbook (scripts rot; agents adapt). The oracle/rail content survived unchanged — the
-gate work was about WHAT to verify and what's safe, which is executor-independent.
+The executor is an agent following a runbook rather than a scripted driver (scripts rot;
+agents adapt). The oracle and rail content is executor-independent: it defines WHAT to
+verify and what's safe.

@@ -1,7 +1,6 @@
 # Patrol response acknowledgment
 
-Status: cold-digested reviewed-correction candidate; earlier superseded artifacts
-are historical evidence and no longer
+Status: candidate; earlier superseded artifacts are no longer
 implementation authority; not cleared for implementation until this exact
 candidate is recorded and exactly one fresh linked independent review returns
 clean

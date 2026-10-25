@@ -1,7 +1,6 @@
 # Declarative required-process gates
 
-Status: specification amended after round-2 review; the amended bytes require
-a cold digest and re-review. This
+Status: draft specification. This
 specification authorizes no
 implementation, identity publication, deployment, runtime mutation, or release
 operation.
@@ -27,15 +26,6 @@ Authority and evidence:
 - `completion-rails-decisions.md` remains the authority for assignment-card
   completion rail composition. This specification does not duplicate or
   supersede it.
-- Independent review requested six
-  changes: established rail identity reuse, a deterministic V5 capability seam,
-  an exact wire contract, wrong-scope refusal, a concrete catalog-transition
-  gate, and canonical hash bytes. This revision addresses only those blockers.
-- Round-2 review found that the
-  catalog gate named the post-publication `identity-apply` consumer instead of
-  the actual pre-publication `tightbeam/live` boundary, and that invalid scalar
-  wire values lacked exact refusals and precedence. This revision removes the
-  false seam and closes those scalar cases.
 
 ## Goal
 

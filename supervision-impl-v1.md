@@ -78,260 +78,23 @@ its work is bounded (one walk up the spawner chain + one delivery per
 retirement), and the retirement tests extend accordingly. (UNBUILT: queued
 with the recovery's integration work.)
 
-Status: r21 (stale "DRAFT r20" label corrected by the 2026-08-12 amendment;
-the r20 gate record follows: r19-review returned NOT-READY on TWO findings, both
-now closed — NO change to the atomic-fire mechanism, which the reviewer
-independently CONFIRMED correct and wireable at the named seam. (1) SCOPE
-LEAK: origin `process:tightbeam` was NOT exclusive to supervision because
-the external attribution seams accepted `asProcess: "tightbeam"`
-(router.ex ~332/~410-415), so the `:fire_wake_in_txn` selector could gate
-a FORGED external wake. FIX: `process:tightbeam` is now a RESERVED
-substrate origin — both `asProcess` acceptance points return `403
-reserved_origin` for the name `tightbeam`, an integrity invariant (the
-substrate's own canonical self-name is not externally attributable, like
-one session cannot forge another's identity); after r20 origin
-`process:tightbeam` on a wake row can ONLY be supervision's, so the
-selector is exact by construction (§Atomic wake delivery RESERVED ORIGIN;
-scope-control test adds the rejection case). (2) TEST-ORACLE BUG: the
-escalation verbatim oracle compared against the UNSTAMPED ladder template
-though delivery prepends `[from process:tightbeam]` exactly as the PROD
-oracle already required — fixed to compare the STAMPED delivered message.
-Both are spec/test fixes plus one tiny router rejection; mechanism, proof,
-and boundedness UNCHANGED.) Prior: DRAFT r19 (the BUILD of r18 correctly STOPPED on a genuine
-implementation-vs-spec race the r18 liveness argument had ASSUMED
-away. Wake DELIVERY is DELIVER-THEN-MARK — `deliver_prompt` commits
-the turn's enqueue transaction and post-commit `LaneManager.ensure_lane`
-NUDGES the lane (gateway.ex ~456-495) BEFORE `Wakes.deliver_due` marks
-the wake FIRED in a SEPARATE later transaction (wakes.ex ~204-233;
-verified against main 5770d7c). A fast provoked turn can terminate in
-the gap between the lane nudge (step 2) and the fired-mark (step 3): at
-that moment supervision's step-4 predicate reads the ORIGINATING prod
-wake STILL 'pending' (`Wakes.pending_count > 0`) and returns
-`:continuation` (SUPPRESSED), the fired-mark then lands with no new
-terminal edge, and the prod→turn→prod self-driving chain STALLS
-PERMANENTLY. The r18 termination proof assumed delivery was atomic with
-fired-marking; it is not. FIX (atomic-fire, the source-level fix): for supervision's OWN delivered
-wakes ONLY, the wake is marked FIRED ATOMICALLY inside the SAME
-`deliver_prompt` enqueue transaction that enqueues the turn (additive
-`:fire_wake_in_txn` opt on `deliver_prompt`, set by the wake deliver
-closure for supervision's process-origin direct wakes only), so a
-delivered supervision prod/escalation is committed 'fired' BEFORE the
-post-commit lane nudge and is NEVER observable as 'pending' by the
-terminal it provokes; post/role/external wakes keep today's
-deliver-then-mark fired-marking UNCHANGED (minimal blast radius). This
-was VERIFIED FEASIBLE at the real seam — the fired-mark is one in-txn
-CAS added to `deliver_prompt`'s existing append+enqueue transaction,
-`opts[:wake_id]` already in scope — so the atomic-fire approach is
-taken; the recorded FALLBACK (the suppression-predicate: exclude
-supervision's own just-delivered gated wake from step-4's pending
-count — supervision's `:continuation` suppression is for a
-FUTURE-scheduled continuation the AGENT scheduled, never for
-supervision's own in-flight prod) was NOT needed and survives below as
-the documented alternative only. §Atomic wake delivery, §Self-driving
-liveness, §step 4, Invariants 5/8, and §Tests are updated; the SETTLED
-mechanism and the §Cascade-boundedness TERMINATION proof are otherwise
-UNCHANGED — this is a LIVENESS fix (a stalled chain is still bounded),
-not a boundedness one). Prior: DRAFT r18 (r17-review confirmed 'no infinite internal cascade found — the path-blind watermark argument is complete' with ONE lemma correction: a past-sink wake to Main may have ONE successor — an SC wake for another Main-held stalled assignment — which strictly DECREASES Φ and is already in the ≤Φ SC budget, never a PS-provokes-PS escape; wording 'the chain ends at Main' was imprecise, now stated as the SC-only continuation). Prior: DRAFT r17 (§Cascade-boundedness REWRITTEN: the r12–r16 closed-form wake-COUNT (2·(Φ+|R|), episode/frontier/credit machinery) is REPLACED by a path-blind TERMINATION argument from two pinned facts — (1) the watermark admits ONE claim per (session,terminal) EVER regardless of re-evaluation path, so reconcile-republish/sweep/request_sweep can't produce unbounded wakes; (2) each internal wake decreases the finite Φ measure or hits the immortal Main sink. Termination given finite external input; no numeric count to enumerate frontiers for. Mechanism UNCHANGED, feasible per r13-review). Prior: DRAFT r16 (r15-review: SWEEPS — both the restart recovery sweep AND the public request_sweep/1 — are now EXPLICIT EPISODE BOUNDARIES, not in-episode events; a sweep is the only thing that re-evaluates a session without a new terminal, so it ends an episode like any external trigger and directly emits ≤|open assignments| wakes charged to ITSELF, never to a prior t₀. This closes the suppressed-terminal / past-sink reclaim as sweep-rooted external work. Overall claim reframed as termination given finite external triggers, with 2·(Φ+|R|) the per-episode figure. Mechanism unchanged, feasible per r13-review). Prior: DRAFT r15 (r14-review's one remaining proof gap closed: suppressed terminals produce nothing within an episode, and past-sink OPEN assignments — slots=0 — emit escalations bounded by EXTERNAL input/restarts, not the internal Φ-cascade, so they are not counterexamples to the 2·(Φ+|R|) figure; mechanism unchanged, CONFIRMED FEASIBLE in r13-review). Prior: DRAFT r14 (revised per the r13 confirmation round: verdict
-NOT-READY with TWO blockers, BOTH proof-rigor findings against
-§Cascade-boundedness's termination argument — NO design change
-anywhere; the r13 MECHANISM was CONFIRMED SOUND against main
-f739c07 (flag resolution below). (1) the r13 "≤ 2·Φ(t₀) + |R|"
-figure was FALSE on r13's own in-flight scenario: at t₀ a
-slot-consuming wake already pending, its source assignment closed,
-and the recipient's assignment past-sink give Φ(t₀) = 0 and
-|R| = 1, yet the root wake's delivery PLUS the one past-sink wake
-its terminal claims toward Main are TWO delivered wakes against a
-bound of one — the single root credit was spent both on the root's
-own delivery and on the past-sink tail its terminal provokes. r14
-replaces the chain argument with PER-TOKEN CREDIT ACCOUNTING —
-every frontier token is credited for its OWN delivery AND for the
-≤ 1 past-sink successor its terminal can claim, every Φ unit
-likewise — and the corrected bound is ≤ 2·(Φ(t₀) + |R(t₀)|); the
-required tests now assert the bound VALUE, not termination alone
-(r13's test asserted termination only — exactly how the false
-figure survived review). (2) r13's root set R was neither complete
-nor fixed at t₀: a supervision wake FIRED before t₀ whose provoked
-turn had not yet reached terminal — neither a pending wake nor an
-external terminal — could claim an uncredited post-t₀ past-sink
-wake; terminals already occurred but not yet evaluated had the same
-gap; pending outbox entries with a past-sink rung produce an unpaid
-wake with no post-t₀ claim at all; and "the recovery sweep's claims
-if a start occurs" made R depend on FUTURE restarts. r14 defines
-R(t₀) as the COMPLETE FRONTIER — pending wake rows, in-flight
-turns, unevaluated terminals, pending outbox entries, each finite
-and fixed by the state at t₀ alone — and rules that a RESTART
+Status: r21.
+
+`supervision_stranded`, `strandedAt`, and `notify_retired` are OPTIONAL
+best-effort doorbells (thin-event/fat-query); no atomic stranded-write
+protocol is a correctness requirement.
+
+The r14 bound-value tests in §Tests use the per-episode figure
+≤ 2·(Φ(t₀) + |R(t₀)|) under per-token credit accounting: every frontier
+token is credited for its OWN delivery AND for the ≤ 1 past-sink
+successor its terminal can claim, and every Φ unit likewise. R(t₀) is
+the COMPLETE FRONTIER at episode start t₀: (1) pending wake rows,
+(2) in-flight turns, (3) unevaluated terminals, and (4) pending outbox
+entries, each finite and fixed by the state at t₀ alone. A RESTART
 STARTS A NEW EPISODE with its own t₀ and its own fresh frontier: no
-episode's R ever includes another episode's events
-(§Cascade-boundedness). ⚑ FLAG RESOLVED (r13 review, against
-f739c07): the r13 transactional wrap is CONFIRMED FEASIBLE in the
-real deliver path — `deliver_prompt` already wraps the projection
-append and `Ledger.enqueue_in_txn` in one transaction (gateway.ex
-~448), `DB.transaction` runs its body as one BEGIN IMMEDIATE…COMMIT
-pass in the single DB-owner process (db.ex ~123), `Org.retire`
-writes through that same owner (org.ex ~411) and serializes
-whole-before-whole, the in-txn `Txn.q` target read and the pure
-`ladder_target(txn, holder, rung)` walk are safe inside it, the
-three nullable wake columns and triple validation fit the additive
-migration path, and H→S→H re-resolves to Main. The bounded-sweep
-fallback is NO LONGER A LIVE ALTERNATIVE — the no-periodic-sweep
-ruling HOLDS as designed; the flag survives in the r13 history
-below as record only, and §Atomic wake delivery's build-time STOP
-remains the ordinary escalate-don't-improvise guard.)
-r13 was: (revised per the r12 confirmation round's three
-blockers — each closes a gap in an r12 fix; no ruled question is
-reopened. (1) WAKE DELIVERY IS CHECK-AND-ACT ATOMIC — r12-review
-finding 1: the deliver closure's active-check (gateway.ex ~226) and
-`deliver_prompt`'s enqueue transaction (~448) were SEPARATE DB-owner
-calls, so `Org.retire` (~1832) could commit in the gap — the turn
-enqueued on a retired session, the wake marked fired, delivered to no
-one. r13 moves the target-state read INSIDE `deliver_prompt`'s
-existing single transaction (`DB.transaction/2` = one BEGIN
-IMMEDIATE…COMMIT pass in the one DB-owner process, whole-serialized
-against `Org.retire`'s own write): delivery either reads the target
-LIVE and enqueues in the same transaction, or reads it RETIRED and —
-in that same transaction — re-resolves (escalation) or no-ops (prod →
-derived-stranded). The race is closed with NO sweep, preserving the
-no-periodic-sweep ruling (§Atomic wake delivery). ⚑ FLAG
-(RESOLVED by the r13 review — wrap CONFIRMED feasible, see the r14
-note above): this
-transactional wrap is the ALTERNATIVE to a bounded safety sweep; if
-the wrap proves infeasible in the real deliver path during the build,
-the fallback is that sweep — STOP and put the choice to the operator; do not
-improvise a third design. SCOPE: this touches the SHARED wake
-pipeline — every direct wake's retired-target no-op becomes
-race-free with identical observable behavior (a general correctness
-improvement); only supervision ESCALATION wakes gain the
-in-transaction re-resolve branch. (2) THE DELIVERY RE-RESOLVER IS THE
-HOLDER-SEEDED LADDER WALK; `lineage_target/2` IS DELETED —
-r12-review finding 2: a resolver walking up from the DEAD target
-without the holder in its visited set resolves the cycle H→S→H (S
-retired) back to H — the original holder — where `ladder_target(H, 1)`
-skips the cycle and resolves Main; coherence, the non-holder
-escalation leg, and the contiguous-chain bound all broke. r13: the
-escalation wake row PERSISTS its resolution inputs (`reresolveSeed` =
-the holder, `reresolveRung` = the rung) and delivery re-RUNS
-`ladder_target(seed, rung)` — the SAME walk dispatch ran, holder seed
-and all, on fresh truth inside the delivery transaction — so a
-retired intermediate resolves exactly as the original walk would,
-skipping cycles, sinking at the immortal Main. (3) THE TERMINATION
-BOUND IS EPISODE-RELATIVE; IN-FLIGHT WAKES ARE ROOTS — r12-review
-finding 3: `prodCount` consumes its Φ slot at wake CREATION (the
-outbox clear), before delivery, so a slot-consuming wake still
-PENDING when its source assignment closes leaves Φ = 0 with a wake in
-flight, whose later delivery can provoke a past-sink escalation no
-live Φ unit pays for. r13 replaces the "≤ 2·Φ_global" figure with a
-CHAIN argument over an episode's finite ROOT SET R — external
-terminals, progress/assign events, sweep claims, AND every
-supervision wake already pending at episode start, each carrying its
-own credit — proving internally-provoked delivered wakes
-≤ 2·Φ(t₀) + |R| (§Cascade-boundedness); the N=0 cross-assignment
-counterexample and a new in-flight-wake case are required
-terminating tests.)
-r12 was: (revised per the r11 adversarial round's two
-blockers; BOTH fixes PRESERVE the no-periodic-sweep ruling by
-exploiting MAIN IMMORTALITY — the retire verb denies built-in Mains
-("main sessions are permanent", gateway.ex ~1809), so the owner's
-Main is an always-live terminal sink for every escalation ladder.
-(1) ESCALATION TARGETS RE-RESOLVE AT DELIVERY, NEVER PINNED-DEAD —
-r11-review finding 1: an escalation target retiring after its claim,
-or after its wake row was scheduled, left a LIVE holder's ladder
-permanently silent (the holder's reply-chain had already ended at
-the escalation, the holder is not derived-stranded — it is alive —
-the restart sweep dies at `:duplicate`, and no internal edge ever
-re-resolves the rung). The fix: the outbox stores the RUNG, never a
-target — `pendingTarget` is DELETED from the schema; the act/drain
-resolves `ladder_target(holder, rung)` AT DISPATCH TIME, skipping
-retired ancestors and sinking at the immortal Main — and the
-scheduled escalation wake row carries the new additive
-`reresolve: "lineage"` wake param, so the DELIVERY tick, on finding
-its target retired, re-resolves up the dead target's own
-`spawned_by` lineage to the nearest active ancestor or the owner's
-Main instead of silently no-opping (§Escalation delivery
-re-resolution). A claimed escalation is therefore ALWAYS delivered
-to a live session, crash-robustly: both carriers — the outbox entry
-and the wake row — are DURABLE and retried until they land. PRODS
-ARE UNCHANGED: only escalations have an immortal sink to walk
-toward; a retired PROD target IS the retired holder — the
-derived-stranded case, never delivered. (2) the r11 per-assignment
-≤ N+1 termination claim is DELETED — r11-review finding 2: false as
-stated (with n = 0, cross-assignment re-entry lets one assignment
-emit more than N+1 internally-provoked wakes) and its "separately
-bounded chains compose" argument was circular. Replaced by a GLOBAL
-TERMINATION argument on the measure Φ_global — the sum, over open
-assignments, of remaining prod slots plus remaining rungs to the
-Main sink (§Cascade-boundedness) — well-defined and finite
-precisely because Main is immortal; N+1 survives only as a
-per-contiguous-reply-chain observation.) r11 was: (ARCHITECTURAL
-SIMPLIFICATION after the r10 round returned five
-blockers: (1) STRANDED IS DERIVED, NOT EMITTED — an assignment is
-stranded iff it is OPEN and its HOLDER session is RETIRED, a
-view-state computed at query time from the join, never a fact that
-must be reliably emitted; `supervision_stranded`/`strandedAt`/
-`notify_retired` all demoted to OPTIONAL best-effort doorbells
-(thin-event/fat-query) and the r9/r10 atomic stranded-write protocol
-DELETED as a correctness requirement — dissolving r10-review
-findings 2 and 5. (2) NO PERIODIC SWEEP, EVER — prods SELF-DRIVE the
-ladder for LIVE holders (prod→turn→prod→…→escalation, no timer,
-§Self-driving liveness), dead holders' work is derived-stranded;
-only the START-TIME recovery sweep remains. (3) the r10 global
-potential Φ deleted — unbounded below — for a per-assignment ≤ N+1
-bound, itself deleted by r12. (4) delivery requalified to LIVE
-holders and the evaluation order fixed to drain → IDLE-DETERMINATION
-→ dedupe, so a drained stale closed-assignment entry on a session
-with no open assignments returns `:idle`, never `:duplicate`.)
-r10 was: (r9 round: eight
-adversarial blockers — F1 retired-TARGET drain split from
-retired-HOLDER stranding; F2 retirement as an edge, `notify_retired`;
-F3 drain-first-then-idle; F4 stranded row + strandedAt as one
-transaction; F5 raising-handler test → `supervision_dispatch_failed`;
-F6 self-target guard scoped to the ESCALATION branch; F7
-cascade-boundedness as a global potential Φ; F8 the ≤tick_ms SLA
-weakened to eventual delivery — F2/F4/F7 since superseded by r11's
-rulings, F8's weakening kept). r9 was: (r8 round: the
-r8 inline patches propagated into the
-normative sections — the schema formally carries `strandedAt` /
-`pendingK` / `pendingN` and the evaluation contract gains `:stranded`;
-the outbox stores BOTH numbers (k-or-rung AND the prod_limit in force
-at claim) and the act renders template text ENTIRELY from stored
-values, never recomputing; the drain checks the pending TARGET's
-session state — retired target clears without dispatch and emits the
-stranded row, live non-holder targets dispatch normally; the
-retired-holder rule strands PER-ASSIGNMENT over EVERY open assignment
-in both terminal path and sweep, with the four edge cases ruled
-explicitly; "every stall claims a wake" scoped to LIVE holders —
-retired holders strand). r8 was: (r7 round: retired-holder rule made UNIFORM — stranded-rows-only, never woken, strandedAt dedupe column, sweep branch explicit; transient-retry prose aligned with the drain short-circuit; pendingK added to the outbox for config-change-proof replay; attest-absence finding was the build-ordering gate working). r7 was: (r6 confirmation round: transient-drain short-circuit pinned — the outbox slot is never overwritten while occupied; RETIRED-HOLDER RULE — retired holders escalate, never prodded, with the post-claim retire race accepted + supervision_stranded sweep observability; denied clear pinned as one transaction; supervision_dispatch_failed added to the lifecycle inventory; proof scoped per-assignment). r6 was: revised per the clean r5 re-review (two required
-findings: cascade-proof legs 3-4 rewritten — no fixed per-epoch bound,
-self-termination at N+1 internally-provoked wakes, terminus
-disambiguated; sweep candidates = open-holders UNION pending-outbox
-sessions, with the closed-assignment drain rule clear-without-dispatch;
-plus: denied-clear restricted to statute-tier codes with
-supervision_dispatch_failed retry semantics for transient errors,
-clear pinned as one transaction; idempotency-key question adjudicated
-KEEP-TRADEOFF). r5 was: The r5 model is
-EXACTLY-ONCE COUNTING with what r5 called "at-least-once delivery"
-(requalified by r11 — see the normative contract, §The seam: delivered
-to LIVE targets; a dead holder's obligation is derived-stranded, never
-delivered): the claim transaction
-records the decided action as an OUTBOX entry on the watermark row
-(`pendingBranch`/`pendingTarget`/`pendingAssignment`), and every
-evaluation and sweep DRAINS the outbox first — a claim can no longer
-be lost to a crash, and the rare crash between dispatch and clear
-yields a duplicate wake, ACCEPTED and documented (a duplicate prod is
-a harmless message; permanent silence violated the invariant — that is
-the tradeoff). Supervision never inline-fires: its wakes are scheduled
-rows (dueAt = now) delivered by WakeScheduler's own tick, which
-removes every synchronous edge out of Supervision except the DB owner
-and moves the sweep trigger back into Supervision's own init. The
-counter splits into `attemptCount` (every claim) and `prodCount`
-(delivered wakes only — drives branch, ladder text, and escalation),
-with `supervision_prod_denied`/`supervision_blocked` lifecycle rows
-for statute-denied attempts. Older-seq rejections are renamed
-`:coalesced` and documented as accepted per-session coalescing. The
-cascade proof is redone on four honest legs. Prior history: r4
-per-session monotone watermark + claim-then-act + total catch +
-predicate-NOW sweep; r3 equality watermark, recovery sweep,
-`--session` flag fix; r2 serialized executor GenServer, decoupled
-attest column names, seeded ladder walk.
+episode's R ever includes another episode's events. The termination
+proof itself is the path-blind argument of §Cascade-boundedness.
+
 Parent design: supervision-v1.md (ratified; §Prerequisites items 2–4 —
 this spec implements them EXACTLY). This spec is the sole authority for
 the build lane; supervision-v1.md is background.
@@ -435,8 +198,7 @@ identity; default `fn _, _ -> :ok end`, same idiom as
         Supervision.notify_terminal(session_key, seq)   # GenServer.cast
       end
 
-DERIVED STRANDING (r11 — dissolves r10-review finding
-2): an assignment is STRANDED iff it is OPEN and its HOLDER session is
+DERIVED STRANDING (r11): an assignment is STRANDED iff it is OPEN and its HOLDER session is
 RETIRED. That is a DERIVED VIEW-STATE, computed at query time by any
 observer from the join (assignment holderKey → session state via
 attest's `Assignments.list` + `Org.get`) — NOT a fact supervision must
@@ -542,14 +304,13 @@ ESCALATION wake — those carry the `reresolve` triple and are
 re-resolved to a live recipient, atomically with the enqueue, at that
 exact branch (r12/r13, §Escalation delivery re-resolution), so an
 escalation recipient's death is NOT a fourth terminator of the chain
-(the r11-review finding-1 hole, closed). That live/dead split IS "never silent": LIVE
+(the r11 silenced-ladder hole, closed). That live/dead split IS "never silent": LIVE
 holders are prodded (self-driving); DEAD holders' open assignments are
 derived-stranded (query-surfaced).
 
-ESCALATION DELIVERY RE-RESOLUTION (r12, closing r11-review finding 1
-— the mechanism that makes escalation delivery unconditional). The
-hole had two variants, both confirmed against main pre-r12 (and the
-race remainder against f739c07 by the r12 review):
+ESCALATION DELIVERY RE-RESOLUTION (r12 — the mechanism that makes
+escalation delivery unconditional). The hole had two variants, both
+present on main pre-r12 (and the race remainder against f739c07):
 POST-DISPATCH — escalation claimed, wake row created, outbox cleared
 and `prodCount` advanced; target S retires before the tick; the
 deliver closure's non-active branch returns `:ok` (gateway.ex
@@ -602,8 +363,7 @@ walk sinks at the owner's Main, which cannot die:
   built-ins, gateway.ex ~1823). The resolved target is live AS OF
   THE DELIVERY TRANSACTION, and the enqueue commits in that same
   transaction — no retirement can slip between resolution and
-  enqueue. The r12 `lineage_target/2` is DELETED — r12-review
-  finding 2: a resolver that walks up from the DEAD target without
+  enqueue. The r12 `lineage_target/2` is DELETED: a resolver that walks up from the DEAD target without
   the holder in its visited set resolves the cycle H→S→H (S
   retired) back to H, the original holder, where the holder-seeded
   walk skips the cycle and resolves Main. Re-resolution must be the
@@ -622,8 +382,8 @@ identical message. Redelivery across a crash is deduped by
 attempts resolve different recipients (further retirements), at
 most one turn is ever enqueued per wake.
 
-ATOMIC WAKE DELIVERY (r13, closing r12-review finding 1 — the
-load-bearing fix; the header's ⚑ FLAG records the fallback).
+ATOMIC WAKE DELIVERY (r13 — the load-bearing fix; the FEASIBILITY
+FALLBACK below records the alternative).
 The r12 delivery path was check-THEN-act across TWO DB-owner calls:
 the deliver closure read the target's state (`Org.get`, gateway.ex
 ~226) and only then called `deliver_prompt`, whose transaction
@@ -720,8 +480,8 @@ rows, verified against main); post, role, and external direct wakes are
 NOT gated and keep today's post-closure fired-mark UNCHANGED (minimal
 blast radius).
 
-RESERVED ORIGIN — `process:tightbeam` IS EXCLUSIVE TO THE SUBSTRATE (r20,
-closes review finding 1). The marker above only selects supervision's own
+RESERVED ORIGIN — `process:tightbeam` IS EXCLUSIVE TO THE SUBSTRATE (r20).
+The marker above only selects supervision's own
 rows if no external caller can create a wake row carrying that origin.
 Today the external attribution seams accept it: an authenticated org-CLI
 request with `asProcess: "tightbeam"` resolves to origin
@@ -748,7 +508,7 @@ in-txn CAS added to a transaction that already writes (append +
 `enqueue_in_txn`), on the DB owner's single mailbox, `opts[:wake_id]`
 already threaded to `deliver_prompt` (gateway.ex ~463) — no new seam,
 no walk, no owner call. RECORDED FALLBACK (the alternative, NOT
-taken — documented per the r13 ⚑-flag pattern): had the in-txn fire
+taken — documented like the r13 feasibility fallback): had the in-txn fire
 been infeasible, the suppression-predicate fix instead — supervision's
 step-4 `:continuation` suppression is for a FUTURE continuation the
 AGENT scheduled, never for supervision's OWN in-flight prod, so step 4
@@ -983,8 +743,7 @@ recipient is DERIVED at act/drain time: a prod or terminus targets
 the row's own `sessionKey` (the holder — a prod's target is always
 its holder, and a terminus never dispatches); an escalation resolves
 `ladder_target(sessionKey, pendingK)` at dispatch. The r5–r11
-`pendingTarget` column is deleted BECAUSE it was r11-review finding
-1's bug class: a pinned target can die between claim and act, and
+`pendingTarget` column is deleted BECAUSE of its bug class: a pinned target can die between claim and act, and
 clearing the entry on its corpse wedged the ladder forever. For
 escalation entries `pendingK` IS the pending rung. (r13: at dispatch
 the escalation's WAKE row is stamped with the same resolution inputs
@@ -1033,7 +792,7 @@ because stranded-ness is DERIVED at query time (open ∧ holder
 retired) — no code path branches on `strandedAt` or on a
 `supervision_stranded` row existing. (This replaces the r9/r10
 one-transaction protocol, which is deleted as a correctness
-requirement, and moots the r10-review finding-5 absent-row question:
+requirement, and moots the r10 absent-row question:
 the write is an upsert, and even a wrong write would break nothing.)
 These tables are supervision's own state;
 the `assignments` table and the attest verbs are not modified in any
@@ -1126,8 +885,7 @@ Steps, in order:
    under-evaluation, recovered by predicate-NOW on a later edge or
    sweep.
 2. IDLE DETERMINATION, then DEDUPE — in THIS order, so the watermark
-   can never swallow the idle determination (r11, fixes r10-review
-   finding 4: a drained stale closed-assignment entry followed by
+   can never swallow the idle determination (r11: a drained stale closed-assignment entry followed by
    no-open-assignments must return `:idle`, not `:duplicate`).
    (2a) `a := Assignments.oldest_open(db, session_key)`; nil → return
    `:idle` — the session holds no open assignment, so whatever the
@@ -1433,7 +1191,7 @@ the WakeScheduler process, calls it with the delivery transaction's
 txn. (The r12 `lineage_target/2` — a walk up from the dead target
 seeded only with itself — is DELETED: without the holder in its
 visited set, the cycle H→S→H with S retired resolved back to the
-holder H instead of skipping to Main; r12-review finding 2.)
+holder H instead of skipping to Main.)
 
 The no-void terminus: Mains are permanent by construction (retire refuses
 them), so the ladder always resolves. A worker spawned by a user
@@ -1506,10 +1264,10 @@ four legs:
 
 TERMINATION, GIVEN FINITE EXTERNAL INPUT (r17 — this REPLACES the
 r12–r16 episode/frontier/credit machinery ENTIRELY). The reaction
-cannot cascade infinitely. Rounds r12–r16 each tried to COUNT internal
+cannot cascade infinitely. Revisions r12–r16 each tried to COUNT internal
 wakes with a closed-form figure (`2·Φ_global`, then `2·(Φ(t₀)+|R|)`),
 which forced enumerating every in-flight token AND every re-evaluation
-entry point — and each review round found one the frontier set missed
+entry point — and each revision left one the frontier set missed
 (a lost cast, a `LaneManager` reconcile republish, a restart sweep, a
 public `request_sweep/1`). r17 drops the count and proves TERMINATION
 from two facts already pinned in the mechanism — both PATH-BLIND, so
@@ -1593,7 +1351,7 @@ terminal yields ≤ 1 claim, and by Fact 2 each resulting chain is finite.
 Finitely many external triggers → finitely many finite chains → the
 reaction emits finitely many wakes and QUIESCES. That is
 cascade-boundedness: bounded by external input, never self-sustaining.
-The sweep double-emit r16-review raised (a drain PLUS a fresh claim in
+The sweep double-emit case (a drain PLUS a fresh claim in
 one `evaluate`) is bounded the same way: the drained wake is the
 RE-DELIVERY of an already-counted claim (Fact 1 counted it when it was
 first claimed — re-delivery across a crash never re-counts, leg 1), and
@@ -1628,8 +1386,8 @@ block in config/runtime.exs, `String.to_integer`). Thread it exactly like
 `:prod_limit` opt. Validate
 in `children/1`: an integer ≥ 0 or raise (law fails closed). `n = 0` is a
 legal ruling: no worker prods, first stall escalates. APPROVED
-DEVIATION, recorded verbatim per the orchestrator's r4 ruling message
-(2026-07-19, the authorization for this narrowing): v1 hardcodes the
+DEVIATION, recorded verbatim per the r4 ruling (2026-07-19, the
+authorization for this narrowing): v1 hardcodes the
 ladder SHAPE (spawner-walk → Main terminus); the parent's "policy
 knobs are operator data" (supervision-v1.md) is satisfied by N
 (`TIGHTBEAM_PROD_LIMIT`); shape-as-data is deferred to a future
@@ -1819,8 +1577,7 @@ Add ONE built-in skill to `@builtin_skills`, name `tightbeam-dispatching`
 6. Cascade-bounded per §Cascade-boundedness; the self-target guard and
    the delivered counter are the mechanical enforcement.
 7. Zero NEW claims for sessions holding no open assignments —
-   DRAIN-FIRST, THEN IDLE, THEN DEDUPE (r11 order, fixing r10-review
-   finding 4): `evaluate` runs the unconditional step-1 outbox drain
+   DRAIN-FIRST, THEN IDLE, THEN DEDUPE (r11 order): `evaluate` runs the unconditional step-1 outbox drain
    FIRST (a stale pending entry, e.g. one whose assignment has since
    closed, is cleared WITHOUT dispatch — a legitimate write, not a
    claim), then the step-2a idle determination — no open assignments →
@@ -1871,7 +1628,7 @@ Add ONE built-in skill to `@builtin_skills`, name `tightbeam-dispatching`
 ## Tests (condensed contract — cover every clause)
 
 r19 additions (the deliver-then-mark race the r18 build correctly
-stopped on, plus the review's four contract-test gaps).
+stopped on, plus four contract-test gaps).
 
 DELIVER-THEN-MARK SELF-SUPPRESSION (the exact race — the load-bearing
 r19 test). A live holder H with one open assignment and an empty
@@ -1902,8 +1659,7 @@ originating prod as `fired` (never `pending`), the self-driving chain
 NEVER stalls on a false `:continuation`, and the fixture quiesces ONLY
 at the ladder terminus.
 
-INTERNAL-TERMINATION CASCADE ASSERTS QUIESCENCE (gap (a) — the review's
-"true internal-termination-cascade" gap: the r11/r12 tests asserted the
+INTERNAL-TERMINATION CASCADE ASSERTS QUIESCENCE (the r11/r12 tests asserted the
 test process stopped receiving casts, not that the substrate reached
 rest). The N=0 cross-assignment re-entry, the past-sink-open assignment
 under repeated external terminals, the suppressed-then-reclaimed
@@ -1918,9 +1674,9 @@ asserts the reaction DID re-enter (internally-provoked wake count for
 the escalated assignment exceeds N+1) AND still quiesced — termination,
 not a count (§Cascade-boundedness). The N=0 RE-ENTRY quiescence run is
 the direct assertion that no infinite internal cascade exists on the
-adversary's own counterexample.
+cross-assignment counterexample.
 
-RECOVERY SEAMS (gap (c)). (i) RESTART GAP: a lane's `finalize` marks the
+RECOVERY SEAMS. (i) RESTART GAP: a lane's `finalize` marks the
 terminal published and casts while Supervision is DOWN (drop the cast);
 on Supervision (re)start the `{:continue, :recovery_sweep}` runs BEFORE
 any queued cast and prods the now-stalled holder exactly once — assert
@@ -1933,7 +1689,7 @@ advances EXACTLY once. (iii) EXACTLY ONE SWEEP PER START: a Supervision
 restart runs exactly one recovery sweep (not zero, not two), verified
 by counting sweep passes across a boot and a forced restart.
 
-VERBATIM PROMPT TEMPLATES (gap (d)). Assert the delivered PROD message
+VERBATIM PROMPT TEMPLATES. Assert the delivered PROD message
 equals the §The prod wake template BYTE-FOR-BYTE with `<id>`,
 `<subject>`, `<k>`, `<N>` interpolated AND the `[from process:tightbeam]`
 first-line stamp the delivery prepends; assert the delivered ESCALATION
@@ -1948,8 +1704,8 @@ match §Guidance line + dispatching skill verbatim. A replay after a
 `prod_limit` change reproduces the STORED `<N>` (the frozen
 `pendingN`), never the new limit.
 
-r13 additions (one per r12-review finding). CONCURRENT RETIREMENT
-DURING DELIVERY (finding 1) — race `Org.retire` against `deliver_due`
+r13 additions. CONCURRENT RETIREMENT
+DURING DELIVERY — race `Org.retire` against `deliver_due`
 over a pending direct wake: the two deterministic orderings (retire
 committed BEFORE the delivery transaction → no-op for a plain/prod
 wake, in-transaction re-resolve for a `reresolve` wake; retire
@@ -1960,15 +1716,15 @@ interleaving lands in that outcome set and NEVER the r12 bug — a
 turn row enqueued by a transaction that began after the target's
 retire committed, or a wake marked fired with neither a turn nor
 (for `reresolve`) a re-resolved turn. H→S→H CYCLE AT DELIVERY
-(finding 2) — holder H spawned by S, S spawned by H; H's escalation
+— holder H spawned by S, S spawned by H; H's escalation
 resolves rung 1 = S at dispatch; S retires before the tick: delivery
 re-runs `ladder_target(reresolveSeed = H, reresolveRung = 1)` and
 enqueues at the owner's MAIN — asserted NOT H (the r12
 `lineage_target` outcome — walking the dead target's lineage without
 the holder seed lands back on H — is the bug; asserting it is a spec
-violation). IN-FLIGHT-WAKE BOUND (finding 3, hardened by r14 —
+violation). IN-FLIGHT-WAKE BOUND (hardened by r14 —
 the r13 version asserted termination only, which is exactly how the
-false r13 figure survived its review; asserting the VALUE is the
+false r13 figure went undetected; asserting the VALUE is the
 point) — a slot-consuming supervision wake is created (outbox
 cleared, `prodCount` advanced) and left PENDING; its source
 assignment then closes (its Φ contribution is gone); the wake is
@@ -1983,7 +1739,7 @@ after t₀ must be ≤ 2·(Φ(t₀) + |R(t₀)|) = 2 — assert EXACTLY two
 (the root's own delivery and the past-sink escalation to Main) and
 not one more (§Cascade-boundedness: the bound is tight here).
 
-r14 addition (r13-review blocker 2 — frontier completeness).
+r14 addition (frontier completeness).
 FIRED-WAKE FRONTIER TOKEN — a slot-consuming supervision wake is
 created AND delivered (marked fired, its turn enqueued) but the
 turn has NOT yet run at t₀; the source assignment closes and the
@@ -2018,7 +1774,7 @@ CONTIGUOUS-CHAIN BOUND: with no external input after the first stall
 edge, one uninterrupted holder reply-chain delivers at most N+1
 wakes (prods 1..N + the escalation that moves off the holder); NO
 test asserts N+1 as a per-assignment TOTAL — that r11 wording is
-retired. CROSS-ASSIGNMENT RE-ENTRY TERMINATES — the r11-review
+retired. CROSS-ASSIGNMENT RE-ENTRY TERMINATES — the cross-assignment
 counterexample verbatim: n = 0, assignment A held by H escalates to
 S; S's reply terminal claims against S's own open assignment B; B's
 escalation wakes H; H's fresh terminal claims escalation 2 for A —
@@ -2028,14 +1784,14 @@ internally-provoked wake is a link in a chain rooted in the
 episode's root set, and each chain's slot-consuming links draw down
 the finite Φ(t₀) — §Cascade-boundedness); no
 potential-function VALUE is asserted, only termination. DRAIN→IDLE→DEDUPE ORDER
-(review finding 4) — a session with NO open assignments and a stale
+— a session with NO open assignments and a stale
 pending entry on a now-closed assignment, evaluated with its
 ALREADY-CLAIMED terminal seq: `evaluate` clears the entry (a write)
 and returns `:idle`, NOT `:duplicate` — the watermark must not
 swallow the idle determination; a session with no opens and no
 pending entry writes NOTHING; a session WITH an open assignment and
 an already-claimed seq still returns `:duplicate` (dedupe intact
-where it belongs). LIVE-TARGET DELIVERY CONTRACT (review finding 3) —
+where it belongs). LIVE-TARGET DELIVERY CONTRACT —
 a wake WITHOUT `reresolve` to a retired target is a gateway no-op
 marked fired
 (today's observable behavior, decided in-transaction as of r13 —
@@ -2062,7 +1818,7 @@ the HOLDER stays LIVE: the drain RESOLVES the rung fresh and
 DISPATCHES to the next active ancestor (or the owner's Main) —
 delivered, `prodCount` advanced once, entry cleared, NO doorbell and
 NO `strandedAt` on the holder's assignment, NOT stuck (the r11
-clear-and-wait outcome is exactly the r11-review finding-1 bug;
+clear-and-wait outcome is exactly the r11 silenced-ladder bug;
 asserting it is now a spec violation); contrast: a pending PROD
 whose target retired (target IS the holder) clears without dispatch
 and the holder's assignment is derived-stranded (doorbell optional).
@@ -2181,7 +1937,7 @@ action total — one wake row, one counter advance, one event row —
 asserted separately for the PROD branch, the ESCALATION branch
 (prodCount already at N: holder idle, ladder woken once, never again
 at rung+1), and the TERMINUS branch (one `supervision_terminus`
-lifecycle row, one attemptCount advance); COALESCING — the reviewer's
+lifecycle row, one attemptCount advance); COALESCING — the
 exact ordering: T1's cast lost while Supervision is down, restart, T2
 arrives and is claimed+acted FIRST, reconcile republishes T1 →
 `:coalesced`, watermark unmoved, no action, and the episode was not

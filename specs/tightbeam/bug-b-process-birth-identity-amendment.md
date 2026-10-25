@@ -1,6 +1,6 @@
 # Bug B F5 amendment: OS-verifiable process-birth identity
 
-Status: READY FOR ONE INDEPENDENT CROSS-HARNESS SPEC REVIEW
+Status: DRAFT
 
 Date: 2026-08-18 UTC
 

@@ -1,12 +1,12 @@
 # Durable activations v1
 
-Status: evidence-only review correction — independent re-review required  
+Status: draft  
 Date: 2026-08-09 UTC  
 Source baseline: Tightbeam `origin/main` at
 `769d4b44a98aa7db862fdf5619f215aded66a408`  
 Prior consumer recon: the deploy-specific proposal recast below  
 Acceptance authority: operator ruling  
-Owner ruling (corrected): supersedes only the review's broader F2 read remedy and requires
+Owner ruling: supersedes only a broader read remedy and requires
 the terminal same-work-item successor bridge  
 Operating pattern: a domain-owned adapter decides whether an external action may run;
 Tightbeam records the adapter's declared input, authority evidence, attempt, observation,
