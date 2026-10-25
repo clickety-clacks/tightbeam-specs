@@ -439,11 +439,11 @@ No new delete API, cascade, retention timer, or secret-bearing column exists.
 
 Implementation commits these immutable, real-row fixtures and a provenance file:
 
-1. `test/fixtures/assignment_lifecycle/routing-owner-present.json` — work item `wi_8cd66374-6a48-446e-88e1-502652ff24c0`, routing wake `w_9a13250f-2e93-4819-a464-b02bd10356c7`, assignment `asg_64cdf952-5d10-4c58-b74f-224fa5c1f278`.
-2. `test/fixtures/assignment_lifecycle/live-switch-failed-worker.json` — work item `wi_507991c2-af57-440f-92a3-da199d9b00e1`, owner assignment `asg_9f5977dd-1d6e-49a5-a48a-c3d68b387f7f`, worker assignment `asg_15c877a9-6015-4f93-939a-e94d75de240e`, failed turns `3523` and `3601`.
-3. `test/fixtures/assignment_lifecycle/overlay-user-rooted.json` — work item `wi_4274ccf5-62b6-45e2-9753-74bae345c2f4`, assignment `asg_7b5f3876-2b6f-4d3b-b92c-f3b2dd8f64c6`, failed supervision turn `5352`, surrender attest `att_2a04e02a-e461-4343-b77d-d0e69df686c0`, delivered slate turn `5727`.
-4. `test/fixtures/assignment_lifecycle/fable-routing-cancellation.json` — separate negative fixture for work item `wi_9086ebd5-bd62-4c04-9b97-ac83ce34f53e`, routing wake `w_90267efc-5c07-4153-802f-14c9b1e819f1`, assignment `asg_8e48d3cb-60f6-4a66-be36-345f5b86f841`.
-5. `test/fixtures/assignment_lifecycle/provenance.json` — source artifact `art_9d7e1cd9`, source SHA-256 `009d3659f5c16729dccdd3d5e5c177c6db4e6160ebab37be96f364874cffe574`, producer `att_f9faaead-4952-48dc-b2e8-a6b9c1389dc0`, reviewed-clean `att_fbdc63ab-0758-4801-8ab8-080c81b5004a`, completion `att_6a156a8a-9e77-478e-a513-cec717f8ab66`, capture commit `f5e4b25971c0037a2a17a8df4edf5f4e6e7e45cc`, and exact capture argv.
+1. `test/fixtures/assignment_lifecycle/routing-owner-present.json` — the captured work item, routing wake, and assignment of the routing-owner-present case.
+2. `test/fixtures/assignment_lifecycle/live-switch-failed-worker.json` — the captured work item, owner assignment, worker assignment, and two failed turns of the live-switch failed-worker case.
+3. `test/fixtures/assignment_lifecycle/overlay-user-rooted.json` — the captured work item, assignment, failed supervision turn, surrender attest, and delivered slate turn of the user-rooted overlay case.
+4. `test/fixtures/assignment_lifecycle/fable-routing-cancellation.json` — separate negative fixture: the captured work item, routing wake, and assignment of the routing-cancellation case.
+5. `test/fixtures/assignment_lifecycle/provenance.json` — the source artifact and its SHA-256, the producer, reviewed-clean, and completion attests, capture commit `f5e4b25971c0037a2a17a8df4edf5f4e6e7e45cc`, and exact capture argv.
 
 Fixtures preserve identifiers, principals, correlations, timestamps, state, and terminal columns. They redact prompts, errors, subjects, notes, model context, message content, and credentials with byte length and SHA-256 evidence. Hand-written ideal fixtures do not pass.
 

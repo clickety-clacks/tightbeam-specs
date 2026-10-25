@@ -155,15 +155,15 @@ Before the ring fix, these five code-evidenced, stage-5 items were observed
 with `merged=null` rendered gray in the live feed. A raw `merged=null` fixture
 for each must render yellow rather than gray:
 
-- `wi_27396747-b8b6-4c9b-96c5-be50d549673e`
-- `wi_dd815f6e-0300-4b2c-9ac8-0038af8f0e9e`
-- `wi_97ba409e-00dc-4449-bd85-82b8de3492dd`
-- `wi_fa8adc7a-d1fe-445f-bf1c-c3e7cf4a5c01`
-- `wi_8bc90e19-6f7f-46a6-aa85-e903e4fdec7e`
+- `item-a`
+- `item-b`
+- `item-c`
+- `item-d`
+- `item-e`
 
 The canonical resolver must then replace `null` when durable branch evidence
 answers the question. Commit `dded025cc6e6b900bd9bd24b0c24713793f3298b`
-for `wi_27396747-b8b6-4c9b-96c5-be50d549673e` is on canonical
+for `item-a` is on canonical
 `clickety-clacks/tightbeam-atc` main, so that live item must resolve to
 `merged=true` and render black. Resolve the other four from the same explicit
 canonical source; render yellow only when the lookup remains genuinely

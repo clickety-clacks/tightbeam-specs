@@ -74,8 +74,8 @@ inference loses because it cannot prove causality or successor isolation.
     the work item.
 11. This spec teaches no new agent operating pattern. It requires no manual
     guidance amendment.
-12. This spec does not reclassify, delete, or repair historical turns 19082,
-    19084, or 19086. Their timestamps prove delivery before the later revoke;
+12. This spec does not reclassify, delete, or repair the three historical
+    turns of R37. Their timestamps prove delivery before the later revoke;
     they do not by themselves prove every other admission predicate.
 13. This spec does not transfer a patrol count, entitlement, generation,
     acknowledgment, wake, decision request, or observation from a predecessor
@@ -87,9 +87,8 @@ inference loses because it cannot prove causality or successor isolation.
     existing authorized condition-fact seam can assert or retract that fact.
 16. This spec does not add a retry worker, lifecycle sweeper, polling loop, or
     timeout that decides whether an assignment, session, or block is current.
-17. This spec does not mutate the historical review assignments
-    `asg_0cf8e6ec-4530-4ef9-b2aa-8579800bbe34` or
-    `asg_99e999f9-847e-4d72-9f7a-1295067d7bac`.
+17. This spec does not mutate the two historical review assignments
+    recorded in its evidence fixtures.
 
 ## Terms
 
@@ -894,7 +893,7 @@ the typed cancellation reason `patrol_source_mismatch`, requester
 `tightbeam:wake-scheduler`, causal source kind `scheduler_delivery`, causal
 source ref equal to the exact wake id, and a no-replacement outcome.
 
-R37. Historical turns 19082, 19084, and 19086 occurred at
+R37. Three historical turns occurred at
 1786525417781, 1786525418890, and 1786525419917. The later revoke committed at
 1786525633131. The implementation shall leave those rows byte-equal. F10 shall
 assert only that each recorded delivery precedes the recorded revoke. Neither
@@ -1184,8 +1183,8 @@ Trace: R7, R11, R20, R24–R30, I1–I4, I10, I17.
 
 ### F10 — Recorded delivery-before-revoke is not rewritten
 
-Given an immutable evidence fixture containing terminal turns 19082, 19084, and
-19086 at 1786525417781, 1786525418890, and 1786525419917, followed by revoke of
+Given an immutable evidence fixture containing three terminal turns
+at 1786525417781, 1786525418890, and 1786525419917, followed by revoke of
 their source assignment at 1786525633131,
 
 When the fixture reads those durable rows and runs the paired lifecycle
@@ -1216,9 +1215,8 @@ cause, existing queued turns become `canceled` without harness execution, and
 replays return the same stopped rows. No candidate reaches any session or
 assignment that succeeded A.
 
-This fixture carries owner evidence
-`att_83bc1c99-6de5-469e-9d23-dbb4cc59f96d` and specimen `att_ed7280bb` without
-mutating either historical review assignment.
+This fixture carries the recorded owner-evidence attest and the specimen
+attest without mutating either historical review assignment.
 
 Trace: R31-R36, R44-R46, I12-I15, I18.
 

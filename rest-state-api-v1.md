@@ -110,8 +110,8 @@ Authority and inputs:
   `Tightbeam.ExecutionMap` at `d00e06aea578d711e608637d38a97872487df15e`.
   Durable `Tightbeam.Toplines` at that revision remains a separate source.
   D2 and D3 consume this amendment; they do
-  not define its contract. The adopted six-resource seam contract remains
-  `art_b1995a26` / fact 1093 and is unchanged.
+  not define its contract. The adopted six-resource shared-serializer
+  contract is unchanged.
 - Work-item priority/shared-seam authority: the ruling that resolves the
   work-item parity blocker.
 
@@ -190,8 +190,8 @@ serializer boundary.
   route. It only makes changes to the existing R7 session item observable and
   recoverable.
 - REST v1 does not alias ExecutionMap telemetry through `/api/toplines`, add an
-  ExecutionMap firehose class, or change the six adopted shared serializer
-  shapes from `art_b1995a26` / fact 1093. Exact source invalidation notices for
+  ExecutionMap firehose class, or change the six serializer
+  shapes of the adopted six-resource shared-serializer contract. Exact source invalidation notices for
   existing Topline and subagent-marker commits are the ruled exception to the
   earlier no-new-class boundary.
 
@@ -1473,7 +1473,7 @@ same membership resolver, source loader, telemetry builder, edge builder, and
 key. The assignments adapter adds only `noItem`. A route-local node map or a
 second membership, edge, visibility, or serializer implementation is a
 contract failure. These seams are separate from durable Toplines and do not
-change the six shared serializer shapes adopted by `art_b1995a26` / fact 1093.
+change the six serializer shapes of the adopted six-resource shared-serializer contract.
 
 SR8. The decision-request serializer emits the required `deadlineAt` key in
 its R7 position. For `kind=agent`, it emits the stored null value. For
@@ -1908,8 +1908,8 @@ subtree, and assignment routes, then the insertion emits exactly one
 Each route calls the named query family, source-derived visibility composition,
 and sole node serializer; the extractor names exactly the R9a source set and
 the refetch changes marker-backed `fanOut`. The registry has no ExecutionMap
-class, durable Toplines bytes are unchanged, and the six `art_b1995a26`
-serializer bytes remain unchanged.
+class, durable Toplines bytes are unchanged, and the serializer bytes of the
+adopted six-resource shared-serializer contract remain unchanged.
 
 A27. Given each ExecutionMap success, auth failure, invalid `asUser`,
 mismatched session-bearer `asUser`, missing org-principal selection, malformed
