@@ -1,22 +1,11 @@
 # Harness adapter seam — v1
 
-Status: READY (gate-cleared 2026-07-25, Sol-high round 10: zero blocking; trajectory
-8→7→6→3→2→4→1→1→1→0 across ten rounds). r10 supersedes r9 after its NOT-READY(1)
-gate (sole finding: the emission-closures merge `5ae730c` landed mid-gate and added the
-credential-transition capture/publish path — `harness_for_provider` enumeration — as an
-uncovered seam site; folded below). r9 fixed the help fallback (`tightbeam doctor`).
-Prior: NOT-READY(4) at r7
-(rounds: 8→7→6→3→2→4 — r7's regression came from the markers merge landing mid-review).
-r8: harvest/inject prose contradiction removed; exemption widened to ceremony-execution
-literals (home writes still banned); Rust help acceptance is negative as well as
-positive across all three embedded-name sites; NEW `classify_subagent_event` callback
-owns the markers merge's harness-private envelope decode, with its DDL CHECK added to
-the persisted-enum inventory.
+Status: READY (gate-cleared 2026-07-25; zero blocking).
 Ground truth: main `5ae730c` (post markers + emission-closures merges) — the
 served-identity merge moved skills
 materialization to the session cwd (`identity.ex`), landed guidance delivery through ACP
 `_meta` (`adapter.ex session_meta/2` + `codex_acp_patch.ex`), and gave `account/updated`
-a live consumer. r2's inventory (69 sites / 16 files) predates that merge; the impl
+a live consumer. That inventory (69 sites / 16 files) predates that merge; the impl
 re-derives the inventory from THIS main as its first deliverable (§Coverage).
 
 ## The defect
@@ -47,20 +36,20 @@ is **private to the implementing module**. No struct of fields; a field table is
 defect one level up. **Harness modules are stateless, not pure**: callbacks perform
 filesystem, process, network, and credential EFFECTS — stateless means no retained
 process/global state, no harness-specific supervised service, and every dependency or
-mutable context arriving as an argument (r3 gate F12). A harness needing its own
+mutable context arriving as an argument. A harness needing its own
 long-lived supervised service is out of scope for v1 and requires a spec amendment, not
-a workaround (r2 gate, classification D).
+a workaround.
 
 ### Callbacks — named for intent, grounded in a current call site
 
-Each callback exists because a production site needs it TODAY; none is speculative. The
-r2 gate's coverage failures are folded in: launch is ONE operation owning serialization,
+Each callback exists because a production site needs it TODAY; none is speculative.
+Prior coverage failures are folded in: launch is ONE operation owning serialization,
 session configuration and credential readiness are first-class, and every callback names
 its consuming site class.
 
 Callbacks that touch a placement machine take a **`target`** first argument — the
 local/SSH runner context (host, ssh spec, staging/rsync executor) — so satellite behavior
-lives INSIDE the harness module, not assembled in Placement (r3 F5: remote skill
+lives INSIDE the harness module, not assembled in Placement (remote skill
 projection and remote home reconciliation do staging, remote deletion, git-exclude
 reconciliation, SSH and rsync today; leaving that assembly at the call site retains
 harness paths there and breaks the single-writer invariant). The runner primitives
@@ -72,16 +61,15 @@ to touch are the harness's.
   `CODEX_CONFIG` seeding), adapter invocation (binary resolution, shim policy, remote
   package name), and **local-vs-remote serialization** — for a satellite the harness
   module renders the second-shell command string with its own quoting and on-satellite
-  token expansion (r2 F1: `launch_env`/`adapter_command` split an indivisible operation;
+  token expansion (`launch_env`/`adapter_command` split an indivisible operation;
   placement's remote path proves the env cannot be an ordinary map handed back to the
   caller). Returns an executable launch plan, not parts for the caller to assemble.
-- `ensure_adapter(target)` — adapter readiness (r3 F7), PRESERVING today's per-arm
-  behavior (r4 F5): LOCAL = locate the ACP adapter, apply the harness's vendored patch,
+- `ensure_adapter(target)` — adapter readiness, PRESERVING today's per-arm
+  behavior: LOCAL = locate the ACP adapter, apply the harness's vendored patch,
   REFUSE readiness when the adapter is absent (no local install — today's behavior);
   REMOTE = when the requested adapter is absent, trigger the substrate's combined
   install (below), then re-check the REQUESTED executable and patch.
-  **Remote install is a REGISTRY-WIDE substrate operation, not per-module** (r5 A2 —
-  current behavior installs BOTH packages in one npm invocation and
+  **Remote install is a REGISTRY-WIDE substrate operation, not per-module** (current behavior installs BOTH packages in one npm invocation and
   `spinup_test.exs` asserts that package-set): harness-agnostic `Spinup` code asks
   EVERY registry harness for its install contribution via `install_package()` (a
   private-literal-rendering callback — each module renders only its own package
@@ -95,23 +83,22 @@ to touch are the harness's.
   effort encoding. Grounded: `adapter.ex` session paths.
 - `reconcile_home(target, home_path, desired)` — the SINGLE writer for every
   Tight-Beam-owned artifact in this harness's home. `desired` carries rails and
-  auth-link intent together, because artifacts can compose into ONE file write (r2 F3:
-  two independent callbacks racing one file is spec-level corruption). The owned set is
-  enumerated in §Home ownership — re-derived from post-r5 main, r3 F4. Harness-owned
+  auth-link intent together, because artifacts can compose into ONE file write (two independent callbacks racing one file is spec-level corruption). The owned set is
+  enumerated in §Home ownership — re-derived from current main. Harness-owned
   durable state survives byte-identical, locally and on satellites.
 - `materialize_skills(target, cwd, snapshot)` — place elected skills where this harness
   discovers them **at the session cwd** under the reserved `tightbeam__*` namespace
-  (post-r5 `identity.ex materialize!/3`), including the satellite arm (staging, remote
+  (`identity.ex materialize!/3`), including the satellite arm (staging, remote
   delete of stale reserved entries, git-exclude reconciliation — today in Placement).
 - `credential_ready?(target, home_path)` / `harvest_credential(target, home_path)` —
   readiness probing (spinup's checks) and rotation harvest. `harvest_credential`
   RETURNS the harvested bytes (or none) to the caller — the provider store decides
   where they land; the harness module only knows which home entry may hold rotated
-  durable content (r6 A1: no resolved-credential argument exists on harvest — that
+  durable content (no resolved-credential argument exists on harvest — that
   language applied to `prepare_launch` injection only). The harvest-before-wipe
   ordering that has bricked a credential once already is preserved. Distinct from
   onboarding; distinct from launch.
-  **The store/home literal split (r6 A1):** the credential STORE
+  **The store/home literal split:** the credential STORE
   (`auth/<harness>/...` layout, backing filenames, staging paths — `credentials.ex`)
   is PROVIDER mechanics and a NAMED EXEMPTION zone in invariant 1; the HOME-ENTRY
   names (which filename a harness's home links, e.g. its auth entry) are harness
@@ -121,35 +108,35 @@ to touch are the harness's.
 - `probe_cli(target)` — harness CLI discovery/version pinning (placement's
   CODEX_PATH doctrine). Distinct from locating the ACP adapter.
 - `containment_additions()` — harness-derived containment grants (containment.ex).
-- (Onboarding is NOT a harness callback — r4 F7. Credential ceremonies are
+- (Onboarding is NOT a harness callback. Credential ceremonies are
   PROVIDER-owned and stay where they live today: `credentials.ex`, keyed by provider,
   public contract `tightbeam onboard openai|anthropic` UNCHANGED. The harness meets
   credentials only at `prepare_launch` (which takes the resolved credential from the
-  caller for injection) and `harvest_credential` (which RETURNS harvested bytes — r7
-  F1). A multi-provider harness needs no harness ceremony precisely because the
+  caller for injection) and `harvest_credential` (which RETURNS harvested bytes).
+  A multi-provider harness needs no harness ceremony precisely because the
   ceremony belongs to the provider.)
 - `classify_auth_event(event)` — `:terminal | :transient | :unknown`, unknown
-  non-terminal. Grounded post-r5: `adapter.ex` consumes `account/updated.authMode`
-  (r2 F1 called this unspecced; it no longer is).
+  non-terminal. Grounded in current main: `adapter.ex` consumes `account/updated.authMode`
+  (previously unspecced; it no longer is).
 - `classify_subagent_event(update)` — decode this harness's PRIVATE `_meta`/envelope
   shape for subagent activity into `{:subagent_start | :subagent_stop, refs} | :skip`
-  (r7 F4: the markers merge landed `SubagentMarkers.classify/2`, which dispatches on
+  (the markers merge landed `SubagentMarkers.classify/2`, which dispatches on
   harness identity and decodes harness-private shapes — a seam site that existed
   before this spec's implementation and moves behind the behaviour like every other).
   Semantics per `subagent-markers-v1.md` (pinned envelopes, termination carriers);
   parity acceptance covers both harnesses' classification fixtures.
 - `fetch_catalog(state)` — provider transport + parsing + capability hydration for this
   harness's model inventory (codex: home cache file; claude: `/v1/models`). Cohesive,
-  not a god-function (r2 gate, classification A). Deliberately has NO target argument:
-  the catalog is org-level and refreshes only on the gateway machine (r4 F4 — the
+  not a god-function. Deliberately has NO target argument:
+  the catalog is org-level and refreshes only on the gateway machine (the
   target rule covers callbacks that touch a PLACEMENT machine; this one never does).
 
 ### Queryable attributes
 
-`id`, `wire_name`, and `credential_provider`. The last resolves r5 A1's contradiction by
+`id`, `wire_name`, and `credential_provider`. The last resolves a prior contradiction by
 separating two concepts that were being conflated:
 
-- **Billing/model provenance** is the CATALOG ENTRY's `provider` field (r2 F4 stands):
+- **Billing/model provenance** is the CATALOG ENTRY's `provider` field:
   `fetch_catalog` stamps it; spawn, tune, schema generation, and model-to-harness
   inference take provider from the selected entry. Today's `model_catalog.ex`
   `provider/1` harness map collapses into the entry stamp.
@@ -166,7 +153,7 @@ separating two concepts that were being conflated:
   own provider). Spawn's credential-check-before-catalog-resolution ordering is
   UNCHANGED — readiness is per-harness, not per-entry.
 
-**A multi-provider harness is OUT of v1** (r5 A1): it would need per-entry credential
+**A multi-provider harness is OUT of v1**: it would need per-entry credential
 resolution and is a spec amendment when a real one arrives, not a v1 abstraction. The
 catalog/billing side is already entry-shaped, so that future costs one attribute
 migration, not a redesign.
@@ -178,11 +165,11 @@ migration, not a redesign.
 no default-to-claude path. **Registry order is the default order**: `Harness.default/0`
 returns the configured default harness (from product config — `application.ex` /
 runtime env), falling back to the first registry entry; the doctor task and any
-default-model policy read product configuration, not harness mechanics (r2 F6).
+default-model policy read product configuration, not harness mechanics.
 Startup iterates `Harness.all/0`; the current claude-before-codex sweep order is
 preserved by registry order until a test proves it immaterial (§Care sites).
 
-## The parity invariant (Flynn ruling, 2026-07-25 — LAW, active after migration; amendment gate-cleared r3, 4→2→0)
+## The parity invariant (ruled 2026-07-25 — LAW, active after migration)
 
 **Parity on EVERYTHING between registered harnesses is an invariant of the system.**
 Every capability the substrate offers is either (a) parity-complete across every
@@ -195,7 +182,7 @@ surface (below). The smoke matrix (one full leg per registered harness) is this
 invariant's end-to-end enforcement; the per-harness conformance suite (below) is
 its unit-level enforcement.
 
-**Migration gate (r2 F3 — the law ACTIVATES only when these complete; until then its
+**Migration gate (the law ACTIVATES only when these complete; until then its
 status is RATIFIED-PENDING-MIGRATION, because the current tree contains violations the
 law must not bless):** (1) a CLOSED capability-ID census over `harness-support.md` —
 every capability gets a stable ID, and every {capability × registered harness} cell
@@ -211,7 +198,7 @@ default-harness run.
 
 ## Adding a harness — the bundle
 
-**Scope (r2 F1, closed per r3): this bundle is additive-complete for a harness
+**Scope: this bundle is additive-complete for a harness
 consuming an ALREADY-SUPPORTED credential provider.** A harness bringing a NEW
 provider also requires the companion PROVIDER-INTEGRATION bundle, whose membership is
 SCAN-CLOSED rather than hand-listed (the invariant-1 trick): a second checked-in scan
@@ -224,14 +211,14 @@ onboards end-to-end with edits only inside the scan's reported sites." A consume
 scan misses is a scan-pattern bug, not a spec gap.
 
 The obligation set is enumerated in ONE checked-in MACHINE-READABLE manifest
-(`priv/harness_bundle.json`, stable obligation IDs — r2 F4); this section and
+(`priv/harness_bundle.json`, stable obligation IDs); this section and
 `Tightbeam.Harness`'s moduledoc both RENDER that manifest, and a test asserts the
 moduledoc's obligation-ID set equals the manifest's exactly (content equality on IDs,
 not a count — the spec text stays review-enforced prose). A new harness ships:
 
 1. **The behaviour module + conformance vectors** — every `Tightbeam.Harness`
    callback implemented, PLUS the standardized `conformance_vectors()` provider
-   (r2 F2, contract pinned r3). The vector CONTRACT is part of the machine-readable
+   (contract pinned). The vector CONTRACT is part of the machine-readable
    manifest: for EVERY callback it names the required cases and the observable
    ORACLE the shared suite asserts — not return shapes:
    `prepare_launch` — local + remote × railed + lawless vectors; oracle = the
@@ -247,8 +234,7 @@ not a count — the spec text stays review-enforced prose). A new harness ships:
    reserved namespace.
    `credential_ready?`/`harvest_credential` — present/absent/rotated vectors;
    oracle = boolean + harvested bytes.
-   `credential_live?(target, home_path, opts)` — AMENDMENT 2026-07-26 r2 (task #15;
-   obligation ID **HB-08**, capability-matrix ID **CAP-018**; field evidence: sat-e2e
+   `credential_live?(target, home_path, opts)` — AMENDMENT 2026-07-26 (obligation ID **HB-08**, capability-matrix ID **CAP-018**; field evidence: sat-e2e
    lnx-0725b — present codex store, dead grant, login-status masquerade; SMOKE.md
    documents the claude twin). Target-shaped like the sibling credential callbacks
    (harness.ex typing conventions); transport and timeout are INJECTED via opts
@@ -321,14 +307,13 @@ not a count — the spec text stays review-enforced prose). A new harness ships:
 ## Invariants
 
 1. **No harness-specific literal in production implementation code outside
-   `Tightbeam.Harness.*`** (and the Rust boundary, §Cross-language). Scope (r2 F6 —
-   executable, with carve-outs): the prohibition covers hard-coded harness mechanics in
+   `Tightbeam.Harness.*`** (and the Rust boundary, §Cross-language). Scope (executable, with carve-outs): the prohibition covers hard-coded harness mechanics in
    `lib/` production modules. It does NOT cover: values flowing at runtime from the
    registry into logs/API payloads/persisted rows; test files asserting expected
    literals as parity oracles; fixtures; documentation. The greppable form: an
    allowlist-scoped scan of `lib/` excluding `lib/tightbeam/harness/` AND the
    provider-ceremony exemption zone (`credentials.ex` — store-layout AND
-   ceremony-execution literals, r7 F2: running a provider's guided ceremony
+   ceremony-execution literals: running a provider's guided ceremony
    necessarily names the harness env/paths/binaries it onboards for, e.g. the codex
    device-code flow's `CODEX_HOME`/`auth.json` staging; these are ceremony mechanics,
    not call-site dispatch). The exemption does NOT cover home WRITES — `credentials.ex`
@@ -344,13 +329,13 @@ not a count — the spec text stays review-enforced prose). A new harness ships:
 5. **Adding a harness is additive in Elixir**: one module plus one registry entry (Rust
    boundary: §Cross-language).
 6. **One writer per home artifact**: all Tight-Beam-owned writes to a given file flow
-   through `reconcile_home/3` with a declared merge order (r2 F3).
+   through `reconcile_home/3` with a declared merge order.
 
 ## Home ownership
 
-Owned by r5 (`served-identity-home-projection-v1.md` §12): regeneration replaces only
+Defined in `served-identity-home-projection-v1.md` §12: regeneration replaces only
 Tight-Beam-owned paths; harness-owned durable state survives byte-identical. The owned
-set, PER CURRENT MAIN (`homes.ex` moduledoc and projection; r3 F4 killed r2's stale
+set, PER CURRENT MAIN (`homes.ex` moduledoc and projection; superseding an earlier stale
 list): the credential entry (store-backed link; the BACKING content is durable and
 harvested before replacement), the harness rails artifact, `.tightbeam/` (including
 `.tightbeam/manifest`), and the substrate BASELINE skill links (projected separately
@@ -359,7 +344,7 @@ NOT owned here: elected skills (session-cwd material via `materialize_skills`),
 guidance (delivered via `session_config`, not a file), any model pin (none exists in
 the current shared projection — rails is the only spec field). Anything not enumerated
 is harness-owned and untouchable. **The preservation test is BEHAVIORAL, not
-declaration-driven** (r4 F2 — a declaration would need a new queryable surface): seed
+declaration-driven** (a declaration would need a new queryable surface): seed
 the home with sentinel files everywhere plausible, run `reconcile_home`, and assert
 every sentinel survives byte-identical OUTSIDE the paths the reconcile observably
 wrote; the observed write-set must equal this section's enumeration. No declaration
@@ -370,28 +355,28 @@ change.
 ## Cross-language seam — the Rust CLI (DECIDED: option a, offline-capable)
 
 The CLI obtains everything harness-shaped **from the substrate**; Rust holds no harness
-list (r2 F5 — option (b) required a Rust edit per harness, contradicting invariant 5).
+list (option (b) required a Rust edit per harness, contradicting invariant 5).
 
-**Transport preserves the offline doctor (r4 F6):** the gateway PERSISTS the projection
+**Transport preserves the offline doctor:** the gateway PERSISTS the projection
 to `harnesses.json` beside `gateway.json` at every boot, and `GET /harnesses` serves the
 same bytes live. The CLI reads the FILE first (works with no gateway running — today's
 `tightbeam doctor` behavior), falling back to the route; when neither exists (gateway
 never booted here) the doctor reports what it can and says exactly why the harness
 checks are unavailable. Rust still embeds nothing.
 
-**The projection surface (r3 F8, hardened per r4 F8, consumer inventory per r5 A3):**
+**The projection surface:**
 each harness module implements `wire_projection() :: binary()` (normalized at the
-boundary — r5 C1) returning **pre-encoded opaque bytes** carrying id, wire_name,
+boundary) returning **pre-encoded opaque bytes** carrying id, wire_name,
 adapter install package, and adapter process markers (what `probe.rs` matches in
-process listings). NOT ceremony descriptors — onboarding is provider-owned (§Callbacks;
-r4 F7) and its CLI surface is untouched. The **sole Elixir consumers** are the boundary
+process listings). NOT ceremony descriptors — onboarding is provider-owned (§Callbacks)
+and its CLI surface is untouched. The **sole Elixir consumers** are the boundary
 serializer (the route + the boot-time file write); an enforcement test asserts, over
 the codebase, that `wire_projection` has exactly those call sites and that no Elixir
 module reads decoded projection keys (grep/AST-level, checked in beside the literal
 scan). This is a wire projection a non-BEAM process consumes — never a descriptor table
-an Elixir call site dispatches on; opacity plus the call-site test is what keeps r1's
-rejected pattern closed (r4 F8).
-**Rust consumers — the COMPLETE inventory (r5 A3 + r6 A2 + r7 F3):** `args.rs`
+an Elixir call site dispatches on; opacity plus the call-site test is what keeps that
+rejected pattern closed.
+**Rust consumers — the COMPLETE inventory:** `args.rs`
 (harness argument validation, the `claude,codex` default list, AND the HELP TEXT —
 three embedded-name sites: two list-bearing help strings plus the `codex` spawn
 example), `probe.rs` (process markers), and `ceremonies.rs` **assimilation**
@@ -400,9 +385,9 @@ install-package field's named consumer). All replace their embedded lists/litera
 with the fetched projection. Help text renders harness names and examples from the
 projection when one is available and otherwise prints a neutral pointer to the
 EXISTING surface — `tightbeam doctor`, which already reports harness/adapter state
-and consumes the same persisted projection (r8 F1: no new command; the prior "see
-tightbeam harnesses" named a command that does not exist) — it never embeds names. Acceptance is NEGATIVE as well as
-positive (r7 F3): the fixture test asserts help output contains NO harness name
+and consumes the same persisted projection (no new command; an earlier draft named a
+command, "see tightbeam harnesses," that does not exist) — it never embeds names. Acceptance is NEGATIVE as well as
+positive: the fixture test asserts help output contains NO harness name
 absent from the supplied projection (a grep over rendered help against the projection
 set), in addition to the fixture name appearing, across argument validation,
 defaulting, assimilation provisioning, and help rendering. A conformance test asserts
@@ -411,8 +396,8 @@ the projection round-trips every field Rust consumes.
 ## Sites requiring care — mechanical substitution is NOT behaviour-preserving
 
 The care LIST below names site CLASSES; exact line anchors are RE-DERIVED from the
-implementation base SHA as part of the §Coverage table (r3 F10: r2/r3 anchors drifted
-across two merges; anchors in a spec rot, classes do not). Each class needs its
+implementation base SHA as part of the §Coverage table (anchors drifted
+across two merges previously; anchors in a spec rot, classes do not). Each class needs its
 before/after stated explicitly and a parity test:
 
 - Probe provisioning (placement) — probe-directory destruction, `CODEX_CONFIG` seeding,
@@ -421,28 +406,28 @@ before/after stated explicitly and a parity test:
   `prepare_launch` whole.
 - Shared-home artifact write (placement/homes) — per-harness outcomes differ (rails
   merge vs standalone artifact vs NO file); a naive rewrite creates an empty rails file.
-  Current shared projection carries RAILS ONLY (no model pin — r3 F10 corrected r2).
+  Current shared projection carries RAILS ONLY (no model pin — corrected from an earlier draft).
 - Auth ordering (homes) — preserve `harvest_auth_back → wipe → write → relink`;
   boot-wide auth sweeps precede any adapter or home projection. Wipe-before-harvest has
   shipped once.
 - Remote home reconciliation (placement) — current behavior ALREADY preserves and
-  harvests (r3 F10 corrected r2's rm-rf claim); the refactor owes PARITY, not a new
+  harvests (corrected from an earlier rm-rf claim); the refactor owes PARITY, not a new
   behavior. Remote-preservation parity test required.
 - Harness switching (gateway) — preserve the validate → readiness → deliver home →
   persist → history-barrier order; persisting earlier strands a session on an
   unavailable harness.
 - Model inference (gateway) — preserve zero/one/multiple-match semantics iterating the
-  registry; provider comes from the selected catalog entry (F4).
+  registry; provider comes from the selected catalog entry.
 - Startup (gateway) — the all-harness auth-sweep barrier completes before
   `AdapterCoordinator` starts; sweep order follows the registry.
 - Remote spinup (spinup) — reinstall then re-check the REQUESTED adapter binary before
   reporting ready (now owned by `ensure_adapter`).
-- **Credential-transition capture/publication (gateway — r9's addition, landed in
+- **Credential-transition capture/publication (gateway, landed in
   `5ae730c`):** the two-stage park/re-onboard emission enumerates affected sessions by
   provider→harness mapping; under the seam this becomes registry enumeration on
   `credential_provider`, PRESERVING immutable pre-park/pre-resume capture and
   post-success publication exactly as landed. Parity test required.
-- **ACP session lifecycle (adapter — r3 F10's addition):** the harness `_meta` preset
+- **ACP session lifecycle (adapter):** the harness `_meta` preset
   divergence between session NEW and LOAD, strict effort application and its rollback
   on failure, contained-vs-uncontained failure handling, and the gate-attestation
   session path. All flow through `session_config`/adapter parity tests: new, load, gate
@@ -450,11 +435,11 @@ before/after stated explicitly and a parity test:
 
 ## Coverage — the inventory is the checklist
 
-First implementation deliverable: re-derive the site inventory from current main (the
-r2 counts are stale) and check in a coverage table mapping every site to its seam
+First implementation deliverable: re-derive the site inventory from current main (earlier
+counts are stale) and check in a coverage table mapping every site to its seam
 operation (or to "registry", "persisted enum", "test oracle", "docs" per the invariant-1
 carve-outs). The table is the review artifact for the implementation PR; a site absent
-from the table is a finding, not an oversight (r2 F1).
+from the table is a finding, not an oversight.
 
 ## Acceptance
 
@@ -465,16 +450,16 @@ from the table is a finding, not an oversight (r2 F1).
   entry, with zero edits to `placement.ex`, `gateway.ex`, `homes.ex`, `spinup.ex`, the
   mix tasks, or the schema — it spawns, tunes, fetches a catalog, reconciles a home, and
   creates an ACP session — **and the FULL existing test suite passes with the fixture
-  registered** (r2 F8). The three closed-world tests the gate identified
+  registered**. The three closed-world tests identified during review
   (`archetypes_test.exs:562` exact two-name message, `gateway_test.exs:638` two-clause
   probe, `tightbeam_doctor_test.exs:29` two-inventory catalog) are refactored to
   registry-driven form as part of this spec's implementation. The fixture must be
-  selectable through the runtime/default configuration path (r3 F9), not only via
+  selectable through the runtime/default configuration path, not only via
   explicit spawn params.
 - `Harness.parse!("opencode")` raises; nothing defaults to `:claude`.
 - The fixture third harness also proves credential-transition scoping: sessions whose
   harness has `credential_provider == provider` are captured/published on terminal and
-  re-onboard transitions; nonmatching sessions are excluded (r9 gate closure).
+  re-onboard transitions; nonmatching sessions are excluded.
 - Behaviour-parity tests: railed and lawless codex, railed and lawless claude, local and
   remote token injection, unchanged-home preservation, rotated-credential
   harvest-before-wipe, REMOTE home preservation (parity with current behavior),
@@ -487,8 +472,8 @@ from the table is a finding, not an oversight (r2 F1).
 ## Not blocking
 
 The persisted enums (`org.ex` SQLite `CHECK`; `subagent_markers` DDL harness `CHECK`
-added by the markers merge — r7 F4) are sites, not risks: greenfield, the
-database may be deleted and recreated. **`config/runtime.exs` is NOT exempt** (r3 F9):
+added by the markers merge) are sites, not risks: greenfield, the
+database may be deleted and recreated. **`config/runtime.exs` is NOT exempt**:
 its harness parsing is a live closed-world parser — it hardcodes the two names and
 cannot accept a third, so it goes through `Harness.parse!/1` like every other boundary,
 and the fixture-harness seam test must select the fixture through the runtime/default

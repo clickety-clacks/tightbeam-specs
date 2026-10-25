@@ -1,6 +1,6 @@
 # Effort check-in v2 — attestation-anchored, write-detection, no git requirement
 
-Decided 2026-07-28 (Flynn). Supersedes the v1 implementation's semantics
+Decided 2026-07-28. Supersedes the v1 implementation's semantics
 (dispatch-anchored git-motion brackets). Read §Provenance before touching any
 of this — it records the design intent whose loss produced v1's misses.
 
@@ -15,23 +15,22 @@ The ORIGINAL intent, in order:
 3. **Git entered for exactly one reason**: "we don't know when a change
    happened to an existing doc" seemed unanswerable. It is answerable:
    record mtimes before work starts and compare. The question is "did it
-   WRITE to the file, not what" (Flynn, verbatim). Content-addressing,
+   WRITE to the file, not what" (the operator, verbatim). Content-addressing,
    attribution, and diffs were never required.
 
 What v1 built instead: ambient git-motion detection over the workdir,
 armed on dispatch. Three unrequested constraints crept in, none ruled:
 
 - "effect" narrowed to *git tree motion* (git became a REQUIREMENT, not
-  the optional artifact-control Flynn blessed);
-- observation narrowed to *inside the workdir* (Flynn: "I never asked for
-  that constraint" — work legitimately happens elsewhere, including over
-  ssh on other machines, e.g. standing up a web server);
+  the optional artifact-control the operator blessed);
+- observation narrowed to *inside the workdir* (the operator: "I never
+  asked for that constraint" — work legitimately happens elsewhere,
+  including over ssh on other machines, e.g. standing up a web server);
 - substrate-side activity (artifacts, attests, work-item updates) was
   computed as alarm METADATA (`turnsSinceArmed`) but ignored by the
   verdict — an alarm carrying its own refutation.
 
-The standing lesson (recorded in orchestrator memory as
-attribute-failures-to-authority-first): when a mechanism misfires, first ask
+The standing lesson: when a mechanism misfires, first ask
 whether the failing constraint was ever requested. Unrequested constraints
 are deleted, not accommodated with more mechanism. The audit that reviewed
 v1 misattributed these constraints as "bad design" and proposed pluggable
@@ -83,7 +82,7 @@ probes — more machinery to compensate for machinery nobody ordered.
    the attest and never blames the credential or the claim.
    (An earlier draft of this clause implied a new `--referents` attest
    input. That was drift past the ruled design — an invented input surface
-   on a delete-mechanism change — caught by the implementing lane before it
+   on a delete-mechanism change — caught before it
    was built. Recorded here so it is not reinvented.)
 6. **External artifacts survive archival.** `artifact-record` accepts any
    origin (verified: origin_path is opaque at record time). Archival
@@ -108,7 +107,7 @@ probes — more machinery to compensate for machinery nobody ordered.
 ## Acceptance
 
 1. **The prod happens when agents neither write, attest, nor record**
-   (Flynn's direct question — this test is mandatory): an armed assignment
+   (a direct operator question — this test is mandatory): an armed assignment
    whose holder has turns but no writes/artifacts/attests/updates receives
    the agent prod at the horizon; the same setup WITH an artifact recorded
    receives silence. Fail-before demonstrable against v1 (which knows

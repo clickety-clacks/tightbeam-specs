@@ -1,54 +1,32 @@
 # REST read plane D1 — transport foundation and six shared-seam resources
 
-Status: build specification. Amendment status: FROZEN OWNER-DEATH SUCCESSOR
-CANDIDATE FOR ONE FRESH LINKED INDEPENDENT REVIEW — cursor-signing
-indeterminate-commit quarantine and recovery.
-Authority: canonical REST r3 `art_971f45b5`,
-reviewed SHA-256 `49b86ec874283c523001be7449b1e14aef47ca72932955445638ce6443aad754`;
-the adopted six-resource contract `art_b1995a26` / fact 1093; reviewed
-firehose tip `8e4a412f25950dae1e1f33af42c390a4707bcf89`; PO rulings
-`att_2d3a8333` and `att_304a6d07`; and the reviewed canonical AU2 repair
-required by `wi_b0a6f85f-3523-45bb-8d10-1a67a2ad02bb` /
-`asg_cd74975c-70c4-479b-8e34-20f91ef44452`.
+Status: build specification. Amendment status: candidate for one fresh
+independent review — cursor-signing indeterminate-commit quarantine and
+recovery.
+Authority: the canonical REST specification; the adopted six-resource
+shared-serializer contract; the reviewed firehose baseline; and the
+reviewed canonical AU2 repair.
 
-This is one bounded amendment to the cursor-authenticity seam. It serves
-`wi_cb5734eb-c175-4815-8763-882d69dfa9bf` / `asg_3aa6cba1-d7cf-4859-81a7-41209df77991`.
-Its authority inputs are the rejected D1 tip `af4c8b21d1173a23646434491e22700ce2b8b0e4`,
-recovery review `att_1a124822-e5de-4cf2-ae20-c313e339856d` / report
-`art_53518583`, missing-seam evidence `att_acef51b5-42d2-491a-8ce4-f88124374504` /
-`art_c2b2ca17`, and the product-owner disposition
-`att_df797c4a-083c-4a30-9e98-224a5a9900f3`. It changes design only and authorizes
-no product edit, implementation, main landing, `specRef` change, D2/D3 work,
-deployment, or release.
+This is one bounded amendment to the cursor-authenticity seam. It changes
+design only and authorizes no product edit, implementation, main landing,
+`specRef` change, D2/D3 work, deployment, or release.
 
-The durability amendment serves
-`wi_d417a2dd-13a4-49c5-a285-917eca9fea03` /
-`asg_29485a6f-b7a1-40ef-b701-b43ca6c01dfd`. Its authority inputs are the
-exact-tip review `att_4cb0d3e7-33f4-46ff-8618-2f68d289ec83` / report
-`art_ff237615`, the stop ruling
-`att_8e52b146-5a2c-40c3-8599-ed797a41ab3a`, and the storage-contract evidence
-`att_1a39c856-a23d-4ac9-a1c1-050fd32044d9` / `art_5516885a`. The first frozen
-candidate review `att_1deac03d-e402-4194-93fe-10e76419fff6` / `art_8c009daf`
-and disposition `att_47726348-adbf-4f5e-955c-72a6bbed036b` require only the
-lifecycle and overlapping-mutation clarifications in this successor. It
-changes only provisioning and rotation durability outcomes, the resulting
-quarantine and recovery behavior, and their acceptance. It authorizes no
-product edit, implementation, D1 route, D2/D3/CLI/firehose work, `specRef`
-change, target, landing, deployment, or release.
+The durability amendment changes only provisioning and rotation durability
+outcomes, the resulting quarantine and recovery behavior, and their
+acceptance. It authorizes no product edit, implementation, D1 route,
+D2/D3/CLI/firehose work, `specRef` change, target, landing, deployment, or
+release.
 
-The successor review `att_d4aba352-ce0a-41c8-bc8c-dba303fc85cd` / report
-`art_ccf48b43` found one remaining case: mutation-admission owner death
-after atomic publication and before a durability outcome. Product-owner
-disposition `att_a4ff40b1-a065-4215-9969-269aa7d6e360` limits this revision to
+This revision addresses one remaining case: mutation-admission owner death
+after atomic publication and before a durability outcome. It is limited to
 that admitted-mutation failure boundary and its acceptance fixture.
 
 ## Spec homing
 
-This file is the D1 build specification for
-`wi_ed4f9020-3fb9-4ee1-9f8f-0cb2629fed96`. Its reviewed content hash, rather
+This file is the D1 build specification. Its reviewed content hash, rather
 than an unreviewed branch tip or a worktree copy, is the implementation
 binding. A later D1 amendment replaces this file and receives a fresh exact
-review before the work item binding changes.
+review before the work-item binding changes.
 
 Operating pattern taught to agents: none. This file specifies product storage
 behavior; it does not amend the Tightbeam operating manual or agent guidance.
@@ -154,14 +132,14 @@ the resource. It adds no second data shape.
 
 1. Canonical green `main` contains M1's six shared query, serializer, and
    visibility seams before a D1 product edit begins.
-2. `asg_fd993fc7-43fd-401f-9433-190e07d5d7f1` is qualifying evidence for those
-   M1 seams. It is not an M3 activation gate. If its landing combines M1 with
-   active M3 payload wiring, the implementer waits for that landing or an
-   M1-only integration split; D1 does not redefine SQ4.
-3. A reviewed canonical correction for AU2 from `wi_b0a6f85f` /
-   `asg_cd74975c` is a hard authority dependency. Before that correction is
-   reviewed and present on canonical green `main`, D1 code does not start and
-   no implementation selects session `asUser` behavior from this file.
+2. The M1 seam landing used as qualifying evidence for those M1 seams is not
+   an M3 activation gate. If that landing combines M1 with active M3 payload
+   wiring, the implementer waits for that landing or an M1-only integration
+   split; D1 does not redefine SQ4.
+3. A reviewed canonical correction for AU2 is a hard authority dependency.
+   Before that correction is reviewed and present on canonical green `main`,
+   D1 code does not start and no implementation selects session `asUser`
+   behavior from this file.
 4. The green M1 host visibility seam implements AU4: an authenticated org user
    or session can read hosts. The old admin-only implementation is not a D1
    authority source.
@@ -226,8 +204,7 @@ The implementer proves both gates before editing product source:
 
 1. Canonical green `main` contains the six M1 seams, with the M1 qualification
    described in Assumption 2.
-2. Canonical green `main` contains the reviewed AU2 correction from
-   `wi_b0a6f85f` / `asg_cd74975c`.
+2. Canonical green `main` contains the reviewed AU2 correction.
 
 Failure of either gate stops D1 before a product edit. A private firehose tip,
 an unreviewed AU2 repair branch, and an M3-only integration do not satisfy a

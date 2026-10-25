@@ -1,6 +1,6 @@
 # Model identity is structured — packed strings are line formats
 
-Status: **DECIDED 2026-08-02 by Flynn, not yet implemented.**
+Status: **DECIDED 2026-08-02, not yet implemented.**
 
 > "tightbeam should not be using the [] to mean anything. when model names come in they
 > should cross a seam and within it tightbeam should be modelling them as a structure or an

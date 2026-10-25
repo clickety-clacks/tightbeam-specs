@@ -2,13 +2,13 @@
 
 > Governing amendment, 8 September 2026: the [core operating principle](tightbeam.md#operating-principle-trust-record-and-agent-judgment) governs which rules are enforced. Mechanism capability and historical rollout examples do not justify a workflow restriction. Review existing engineering rules, tool guards and hard-coded checks together with guidance. The [0.1.9 enforcement assessment](tightbeam-019-enforcement-assessment-2026-09-08.md) records current findings and proposed rule dispositions; it does not change live enforcement.
 
-Status: DRAFT r9 (Claude/Opus; hardened through the ensemble adversarial-review
+Status: DRAFT r9 (hardened through the ensemble adversarial-review
 rounds). This is the substrate-mechanism spec referenced by
 `agentic-engineering-guidance-spec.md` §6
 («Substrate mechanism (separate spec)») and by `rails-and-guidance-roadmap.md`
 §8. It makes roadmap phases **P4** (script effect), **P5** (remedies + rail-set
 satisfiability), and **P6** (turn-end sweep) implementable by focused agents. It
-is written against the roadmap **D1 = hybrid** ruling (Flynn, 2026-07-21):
+is written against the roadmap **D1 = hybrid** ruling (2026-07-21):
 predicates remain the always-on hot path; scripts are added.
 
 Ground truth was read from the merged `main`: `lib/tightbeam/rules.ex`,
@@ -19,7 +19,7 @@ Ground truth was read from the merged `main`: `lib/tightbeam/rules.ex`,
 `gateway.ex`. Sibling authorities this spec composes with, unchanged unless named:
 `statute-engine-v1.md` r6 (the predicate engine), `check-tier-v1.md` r4 (verdict
 facts), `escalation-substrate-v1.md`
-(ratified to Flynn's model — the `escalate` outcome, `resolve/3`/`escalate/4`/
+(ratified to the ruled model — the `escalate` outcome, `resolve/3`/`escalate/4`/
 `consume/2` seam), `p3-observables-producers-v1.md` (verdict-independence facts +
 producers), `wake-on-fact-v1.md` (durable `creatorSessionKey`),
 `model-ringdown-pattern.md` (model-adjudication episodes / the session hold — the
@@ -28,7 +28,7 @@ derived-not-stored event model), `supervision-v1.md` / `supervision-impl-v1.md` 
 (the turn-terminal edge). Where this spec is silent, those govern.
 
 Containment is a rails mechanism: adapter-level containment was ruled out
-(Flynn, 2026-07-28; `containment-impl-v1.md` is reduced to that ruling's stub).
+(2026-07-28; `containment-impl-v1.md` is reduced to that ruling's stub).
 The containment profile template, the per-seam renderers, and the wrapper
 contract are contractual HERE (§A3–§A4) and in the code
 (`lib/tightbeam/containment.ex`, `cli/src/contain.rs`).
@@ -261,7 +261,7 @@ file-and-rule-named errors):
   `allow | deny | remedy | escalate`; a return with no effect, or an effect for a
   non-declared return, is a load error. An effect of `remedy` requires a
   `[rule.remedy]` table (§C); an effect of `escalate` requires the escalation
-  engine (`escalation-substrate-v1`, ratified to Flynn's model) to be present —
+  engine (`escalation-substrate-v1`, ratified to the ruled model) to be present —
   statute loading gates on that spec's adversarial review landing clean (a load
   error naming the dependency until then), not on ratification (which is done).
 - `[rule.check].timeout_ms`, when present, is an integer in `1..60000`.
@@ -391,7 +391,7 @@ value the missing observation would have carried:
 | the invocation context could not be resolved (holder absent, non-local, or its workdir would not open) — no script was spawned | **deny + escalate** | `script_error` | `unreported` |
 | the substrate itself raised or exited while running the check | **deny + escalate** | `script_error` | `unreported` |
 
-**No sensor malfunction silently decides against work (Flynn's ruling,
+**No sensor malfunction silently decides against work (ruled
 2026-07-29; generalized the same day under dark-factory doctrine).** A bare
 deny is reserved for the one case where the sensor actually answered "deny"
 — a declared token mapped to `deny` by `[rule.check.effects]`. Every other
@@ -782,7 +782,7 @@ could dispatch only `wake` — the flagship review remedy would be inert. Instea
 
 ### C3. Idempotency — remedy episodes with explicit CAS states
 
-> ERRATA (Fable review, 2026-07-23): the TTL-reclaim CAS below must pin `occurrence`
+> ERRATA (2026-07-23): the TTL-reclaim CAS below must pin `occurrence`
 > in its WHERE clause (`AND occurrence = <observed>`), not only status+openedAt. Without
 > it, if an episode cycles close→reopen (occurrence bumped) between the reclaimer's read
 > and its UPDATE, the reclaimer wins the row at the new occurrence but dispatches under
@@ -1291,8 +1291,7 @@ remedy `R` dispatching verb `W`, two checks:
   by §C2: `assign`, `spawn`, `wake` each admit their own action; nothing else.
 - **(b) Provable pure-deny blocker.** Let `A` be the attributes `R` fixes: `verb =
   W` and `caller.origin_class = "remedy"` (the reserved class, §C2). Those two ARE
-  the closed attribute→fact mapping — nothing else (narrowed by Flynn ruling,
-  adjudication #4, 2026-07-24: the earlier text also promised literal
+  the closed attribute→fact mapping — nothing else (narrowed 2026-07-24: the earlier text also promised literal
   remedy-target/param values mapping to `target.*`/params facts, a dictionary
   that was never defined and that no statute has needed — role literals need
   runtime resolution, spawn fixes no target session, list params have no fact
@@ -1520,7 +1519,7 @@ supervision's watermark (finding 8).
   returns **only** `{:decision_pending, id}`; **`consume/2`** is the actor's
   per-ruling CAS. Plus `decision_requests` +
   `escalation_waivers`, ruling facts, waivers, owner delivery. It is **rewritten to
-  Flynn's ruled model** (Q1–Q4 resolved). The roadmap's sequencing is **satisfied**;
+  the ruled model** (Q1–Q4 resolved). The roadmap's sequencing is **satisfied**;
   statute loading of an `escalate` effect gates on that spec's adversarial review
   landing clean, not on ratification. P4–P6 do not depend on it; it composes now.
 - **Producer strength.** This mechanism enforces fact **existence**, never
@@ -1536,7 +1535,7 @@ supervision's watermark (finding 8).
 
 ---
 
-## §6 model tensions — surfaced, and their team-lead rulings (2026-07-21)
+## §6 model tensions — surfaced, and their rulings (2026-07-21)
 
 Seven places the merged substrate met the guidance-spec §6 model at an edge were
 surfaced for adjudication rather than resolved silently. Each now carries its
@@ -1554,7 +1553,7 @@ catalog's opacity ruling is preserved. This is exactly
 `assignment.cross_harness_verdict_kinds`; the two specs are **coupled** and the
 §C1 worked example gates on it (`reviewed-clean` + author-independence +
 cross-harness). The guidance spec's «cross-model» wording is being updated to
-«cross-harness» to match (team-lead's edit, not this spec's). The same-harness
+«cross-harness» to match (a change to that spec, not this one). The same-harness
 fallback (a fresh session at a higher thinking level) is **guidance-level, not
 rail-enforced** — the rail gates only on the cross-harness fact.
 
@@ -1571,13 +1570,13 @@ to the agent and a `rail_script`/`rail_remedy`/`rail_sweep` row to
 «a judgment the script delegates by spawning a session — both are the same
 mechanism» read literally against «async judgment is never a blocking call» was
 the only genuine contradiction. RULING: this spec's narrowing is now the
-canonical model — the guidance spec §6 has been amended (team-lead's edit) to
+canonical model — the guidance spec §6 has been amended to
 state scripts are **sync-only** and judgment is **gate-on-fact +
 remedy-originated**. A script may only *trigger* a remedy (return a
 `remedy`-mapped token), never *await* a judge (I2). No open item remains.
 
 **X4 — `escalate` sequencing: SATISFIED.** `escalation-substrate-v1` is now
-rewritten to Flynn's ruled model (Q1–Q4 resolved). The multi-shape resolution lives
+rewritten to the ruled model (Q1–Q4 resolved). The multi-shape resolution lives
 in the **in-fold, effect-free `resolve/3`** (unified four-shape union `:allow |
 {:allow, ruling_id} | {:deny, e} | {:needs_request, dr_id|nil}`, folded by
 `Rules.decide`, §B); the effect `escalate/4` returns **only** `{:decision_pending,

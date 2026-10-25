@@ -17,7 +17,7 @@ it is not a conclusion about diligence or the quality of work. Immediate-repeat
 examples and tests below are historical r21 mechanism cases. They do not override
 the amended notification eligibility policy.
 
-## r21 — the turn-end schedule (Flynn-ratified 2026-07-24)
+## r21 — the turn-end schedule (ratified 2026-07-24)
 
 r20's sole-authority claim over the turn-end moment is REPLACED by schedule
 ownership. This module owns the SHIFT — the ordered step list, the shared turn
@@ -65,10 +65,9 @@ enumerating outcomes or lifecycle kinds is now "as of r20" — the tag set gains
 `{:acted, :rail_remedy}`, `{:acted, :rail_escalate}`, `{:held,
 :adjudication_hold}`, and the `rail_sweep` lifecycle kind.
 
-**Retirement handler (r21, ruling #2 + #3):** `notify_retired` keeps
-`Escalation.withdraw_for_retired/2` (escalation r7 §8's fast path — ruling #2)
-and gains the strand notice (accountability constitution §5, Flynn-ruled
-adjudication #3): iff the retired holder has open assignment rows, deliver ONE
+**Retirement handler (r21):** `notify_retired` keeps
+`Escalation.withdraw_for_retired/2` (escalation r7 §8's fast path)
+and gains the strand notice (accountability constitution §5): iff the retired holder has open assignment rows, deliver ONE
 addressed notice to the first living ancestor (org owner at the root) through
 the existing owner-delivery seam. The condition is a row count — a retired
 session with no open assignment was doing nothing anyone is owed — so r20's
@@ -111,8 +110,7 @@ wake STILL 'pending' (`Wakes.pending_count > 0`) and returns
 `:continuation` (SUPPRESSED), the fired-mark then lands with no new
 terminal edge, and the prod→turn→prod self-driving chain STALLS
 PERMANENTLY. The r18 termination proof assumed delivery was atomic with
-fired-marking; it is not. FIX (Flynn-orchestrator PRIMARY ruling —
-atomic-fire, the source-level fix): for supervision's OWN delivered
+fired-marking; it is not. FIX (atomic-fire, the source-level fix): for supervision's OWN delivered
 wakes ONLY, the wake is marked FIRED ATOMICALLY inside the SAME
 `deliver_prompt` enqueue transaction that enqueues the turn (additive
 `:fire_wake_in_txn` opt on `deliver_prompt`, set by the wake deliver
@@ -164,7 +162,7 @@ turns, unevaluated terminals, pending outbox entries, each finite
 and fixed by the state at t₀ alone — and rules that a RESTART
 STARTS A NEW EPISODE with its own t₀ and its own fresh frontier: no
 episode's R ever includes another episode's events
-(§Cascade-boundedness). ⚑ FLYNN FLAG RESOLVED (r13 review, against
+(§Cascade-boundedness). ⚑ FLAG RESOLVED (r13 review, against
 f739c07): the r13 transactional wrap is CONFIRMED FEASIBLE in the
 real deliver path — `deliver_prompt` already wraps the projection
 append and `Ledger.enqueue_in_txn` in one transaction (gateway.ex
@@ -193,12 +191,12 @@ against `Org.retire`'s own write): delivery either reads the target
 LIVE and enqueues in the same transaction, or reads it RETIRED and —
 in that same transaction — re-resolves (escalation) or no-ops (prod →
 derived-stranded). The race is closed with NO sweep, preserving the
-no-periodic-sweep ruling (§Atomic wake delivery). ⚑ FLYNN FLAG
+no-periodic-sweep ruling (§Atomic wake delivery). ⚑ FLAG
 (RESOLVED by the r13 review — wrap CONFIRMED feasible, see the r14
 note above): this
 transactional wrap is the ALTERNATIVE to a bounded safety sweep; if
 the wrap proves infeasible in the real deliver path during the build,
-the fallback is that sweep — STOP and put the choice to Flynn; do not
+the fallback is that sweep — STOP and put the choice to the operator; do not
 improvise a third design. SCOPE: this touches the SHARED wake
 pipeline — every direct wake's retired-target no-op becomes
 race-free with identical observable behavior (a general correctness
@@ -264,7 +262,7 @@ assignments, of remaining prod slots plus remaining rungs to the
 Main sink (§Cascade-boundedness) — well-defined and finite
 precisely because Main is immortal; N+1 survives only as a
 per-contiguous-reply-chain observation.) r11 was: (ARCHITECTURAL
-SIMPLIFICATION, ruled by Flynn after the r10 round returned five
+SIMPLIFICATION after the r10 round returned five
 blockers: (1) STRANDED IS DERIVED, NOT EMITTED — an assignment is
 stranded iff it is OPEN and its HOLDER session is RETIRED, a
 view-state computed at query time from the join, never a fact that
@@ -394,7 +392,7 @@ Check-tier completion gating. `tightbeam probe` subcommand. Ephemeral
 watcher. Lineage env markers / census. Re-staffing or any punitive verb.
 New CLI subcommands or inspect surface for prod state. Per-assignment or
 per-archetype N overrides. Statute-expressed supervision policy. A
-PERIODIC safety sweep of ANY kind — RULED OUT by Flynn (r11), no
+PERIODIC safety sweep of ANY kind — RULED OUT (r11), no
 longer an open question: live holders self-drive their own ladder
 (§Self-driving liveness) and dead holders' work is derived-stranded
 at query time (§step 7), so no timer has a correctness job; only the
@@ -437,7 +435,7 @@ identity; default `fn _, _ -> :ok end`, same idiom as
         Supervision.notify_terminal(session_key, seq)   # GenServer.cast
       end
 
-DERIVED STRANDING (r11, Flynn's ruling — dissolves r10-review finding
+DERIVED STRANDING (r11 — dissolves r10-review finding
 2): an assignment is STRANDED iff it is OPEN and its HOLDER session is
 RETIRED. That is a DERIVED VIEW-STATE, computed at query time by any
 observer from the join (assignment holderKey → session state via
@@ -483,7 +481,7 @@ branch, gateway.ex ~1832-1833). WHY it is now safe to be best-effort:
 the cast is non-durable (a process death between `Org.retire` and the
 cast drops it) and it performs no outbox drain (an occupied outbox
 entry at retirement stays pending until a later drain) — both were r10
-correctness holes and are now, by Flynn's ruling, no holes at all:
+correctness holes and are now, by ruling, no holes at all:
 stranded-ness is derived at query time regardless, a pending PROD
 entry whose holder has retired is cleared without dispatch by
 whatever drain next touches it (hygiene, not correctness), and a
@@ -491,7 +489,7 @@ pending ESCALATION entry never pins a target at all — the drain
 resolves its rung to a live target and dispatches (r12, §step 1).
 Nothing anywhere branches on a stranded record existing.
 
-SELF-DRIVING LIVENESS (r11, Flynn's ruling — pinned as the reason no
+SELF-DRIVING LIVENESS (r11 — pinned as the reason no
 periodic sweep exists): a prod IS a wake. Delivered to a LIVE holder,
 it provokes a turn, and that turn's terminal IS the next stall edge —
 so the chain prod→turn→prod→…→escalation advances with NO timer
@@ -625,7 +623,7 @@ attempts resolve different recipients (further retirements), at
 most one turn is ever enqueued per wake.
 
 ATOMIC WAKE DELIVERY (r13, closing r12-review finding 1 — the
-load-bearing fix; the header's ⚑ FLYNN FLAG records the fallback).
+load-bearing fix; the header's ⚑ FLAG records the fallback).
 The r12 delivery path was check-THEN-act across TWO DB-owner calls:
 the deliver closure read the target's state (`Org.get`, gateway.ex
 ~226) and only then called `deliver_prompt`, whose transaction
@@ -668,12 +666,12 @@ correctness improvement to the SHARED wake pipeline — for every
 non-supervision direct wake the retired-target no-op becomes
 race-free with identical observable behavior — not a
 supervision-specific branch; only wakes carrying `reresolve` gain
-new behavior. FEASIBILITY FALLBACK (Flynn's decision, not the
+new behavior. FEASIBILITY FALLBACK (the operator's decision, not the
 builder's): if the wrap proves infeasible in the real deliver path
 — e.g. the in-txn state read or the txn-scoped ladder walk cannot
 be made to fit `deliver_prompt`'s transaction — STOP and report;
 the recorded alternative is a bounded safety sweep, and choosing it
-reopens the no-periodic-sweep ruling, which only Flynn may do.
+reopens the no-periodic-sweep ruling, which only the operator may do.
 
 ATOMIC FIRED-MARK (r19, closing the deliver-then-mark self-suppression
 race the r18 BUILD correctly STOPPED on — the SECOND atomicity property
@@ -694,8 +692,7 @@ no new terminal, permanently stalling the prod→turn→prod chain
 (§Self-driving liveness). This threatens LIVENESS, not boundedness (a
 stalled chain is still bounded — §Cascade-boundedness is unaffected),
 but it silences a live holder's ladder, which the invariant forbids
-(Invariant 5). THE FIX (Flynn-orchestrator PRIMARY ruling — the
-source-level fix): for SUPERVISION'S OWN delivered wakes ONLY, the wake
+(Invariant 5). THE FIX (the source-level fix): for SUPERVISION'S OWN delivered wakes ONLY, the wake
 is marked FIRED ATOMICALLY inside `deliver_prompt`'s SAME enqueue
 transaction — so a delivered supervision prod is committed 'fired'
 BEFORE the post-commit `ensure_lane` nudge and is NEVER observable as
@@ -721,7 +718,7 @@ marker that selects exactly supervision's prods and escalations among
 wake rows; `notify_session`/push use that origin but never create wake
 rows, verified against main); post, role, and external direct wakes are
 NOT gated and keep today's post-closure fired-mark UNCHANGED (minimal
-blast radius, Flynn's ruling).
+blast radius).
 
 RESERVED ORIGIN — `process:tightbeam` IS EXCLUSIVE TO THE SUBSTRATE (r20,
 closes review finding 1). The marker above only selects supervision's own
@@ -750,7 +747,7 @@ the generic "fire this wake_id in my txn" capability. FEASIBILITY
 in-txn CAS added to a transaction that already writes (append +
 `enqueue_in_txn`), on the DB owner's single mailbox, `opts[:wake_id]`
 already threaded to `deliver_prompt` (gateway.ex ~463) — no new seam,
-no walk, no owner call. RECORDED FALLBACK (Flynn's alternative, NOT
+no walk, no owner call. RECORDED FALLBACK (the alternative, NOT
 taken — documented per the r13 ⚑-flag pattern): had the in-txn fire
 been infeasible, the suppression-predicate fix instead — supervision's
 step-4 `:continuation` suppression is for a FUTURE continuation the
@@ -947,7 +944,7 @@ schedules during boot are delivered by WakeScheduler's tick like any
 other due wake; the tick's boot-window exposure is pre-existing and
 supervision-neutral (see NO INLINE FIRING). This sweep is
 RESTART-RECOVERY ONLY: a PERIODIC safety sweep is RULED OUT (r11,
-Flynn — §Non-goals): the loss classes it would have caught are covered
+§Non-goals): the loss classes it would have caught are covered
 by the self-driving chain for live holders and by derived stranding
 for dead ones; a clock would add nothing but cost.
 
@@ -2000,7 +1997,7 @@ delivered-wake count after t₀ is ≤ 2·(Φ(t₀) + |R(t₀)|) = 2 with
 |R(t₀)| = 1 (here actual = 1 — the past-sink wake; the token's
 own-delivery credit went unused, the bound is an upper bound).
 
-r11 additions (Flynn's simplification rulings). DERIVED-STRANDED AS A
+r11 additions (simplification rulings). DERIVED-STRANDED AS A
 QUERY — open an assignment on a holder, retire the holder, emit NO
 event and run NO sweep: the join (open assignments × session state,
 via `Assignments.list` + `Org.get`) computes the assignment as

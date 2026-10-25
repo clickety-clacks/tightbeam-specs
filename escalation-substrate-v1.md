@@ -1,11 +1,11 @@
 # Escalation substrate v1 — the `escalate` gate outcome, decision-requests, rulings, waivers
 
-Status: RATIFIED to Flynn's ruled model (2026-07-21), r7 — applies Sol spec-review
-blockers r1–r5 (F1–F11), the r6 four-shape-union / tagged-raiserId / waiver-scope /
-open-race set, and the Lattice round (digest effect-neutral exclusion, pinned deadline
-config home, verb-edge-only consume). This ratification unblocks the `escalate` effect
-that `rails-mechanism-v1.md` defines-but-holds-unreachable (§A1/X4). Cross-model
-adversarial spec-review continues; no build precedes it landing clean.
+Status: RATIFIED to the ruled model (2026-07-21). Spec review resolved the
+four-shape-union / tagged-raiserId / waiver-scope / open-race set, and the
+digest effect-neutral exclusion, pinned deadline config home, and
+verb-edge-only consume. This ratification unblocks the `escalate` effect
+that `rails-mechanism-v1.md` defines-but-holds-unreachable (§A1/X4).
+Adversarial spec-review continues; no build precedes it landing clean.
 
 Authority: this spec is the sole authority for the `escalate` dispatch outcome,
 the decision-request record, the ruling and waiver verbs and their facts, and the
@@ -61,13 +61,13 @@ never to execute** — no substrate auto-retry, no stored-verb replay, no
 default-approve. A ruled-`allow` authorizes exactly **one attempt**: the **engine
 never consumes** — it returns `:allow` effect-free; the **actor** consumes, by a
 standalone CAS `ruled → consumed` run **immediately before invoking the handler**
-(CAS-win = the sole authorization to invoke; §2/§9/F1), so a subsequent identical
+(CAS-win = the sole authorization to invoke; §2/§9), so a subsequent identical
 call opens a **fresh** request rather than riding the spent ruling. Consumed on
 **attempt, not success**: a handler that then fails has spent its authorization and a
 retry re-escalates (deliberate fail-closed). The **waiver** (§7) is the deliberately
 **non-consumable** form — that is its whole purpose: while a waiver lives, repeated
 identical actions all pass without re-escalating. Per-request ruling = one authorized
-attempt; waiver = standing authorization for the session's life (F1).
+attempt; waiver = standing authorization for the session's life.
 
 **E2 — DELIVERY IS NOT RESUMPTION (inherited from `wake-on-fact-v1` W1).** Neither
 delivery does any resuming. Delivering the decision-request to the owner delivers a
@@ -90,7 +90,7 @@ one `lifecycle_events` row (§10). A decision-request is never opened, resolved,
 retired without a legible record, and a request is never abandoned silently — a
 withdrawal always names its reason (§8).
 
-**E5 — A WAIVER IS RAISER-SCOPED; ITS LIFETIME DEPENDS ON THE RAISER KIND (F3).** A
+**E5 — A WAIVER IS RAISER-SCOPED; ITS LIFETIME DEPENDS ON THE RAISER KIND.** A
 waiver is never global — it is scoped to a single `raiserId` (§3). A **session**
 raiser's waiver **dies with the session**: it is consulted only while that session is
 active, and is swept-by-revoke at retirement (§8). A **non-session** raiser's waiver
@@ -100,14 +100,14 @@ persists **until explicit revoke**. Either way a waiver is prospective-revocable
 
 **E6 — ACCOUNTABILITY REQUIRES IDENTITY (kept).** A **ruling** and a **waiver** may
 be produced ONLY by a principal the **existing admin axis** admits —
-`admin_origin?`/`resolve_caller`, the same gate that guards `skill-put` (F3) — never
+`admin_origin?`/`resolve_caller`, the same gate that guards `skill-put` — never
 a bare non-admin `process:`, and never the raiser. A **withdrawal** may be produced
-ONLY by the raiser that raised the request (its `raiserId`, F3) **or by the
+ONLY by the raiser that raised the request (its `raiserId`) **or by the
 substrate (`process:tightbeam`) on raiser death** (§8, auto-withdrawal); never
 owner-only, never an arbitrary third party. Every ruling, waiver, and withdrawal is
 provenance-stamped with the acting principal.
 
-**E7 — WHO PARKS DEPENDS ON THE EDGE (the two-edge split, F4).**
+**E7 — WHO PARKS DEPENDS ON THE EDGE (the two-edge split).**
 - **Verb edge (a live raiser).** The wait is the raiser's OWN continuation, built
   from the general `wake-on-fact-v1` self-continuation exit (its case 10), not
   bespoke escalation machinery. The substrate does not schedule the wait and does
@@ -124,8 +124,7 @@ provenance-stamped with the acting principal.
   targeting the holder still reads `:continuation`). Its fallback `dueAt` is the
   decision-request's **`deadlineAt`** (§3) — an org-configurable owner-decision
   deadline carried on the DR, **not** a supervision prod cadence (supervision prods
-  fire at `after_ms: 0`, `supervision.ex:370` — there is no resident deadline clock;
-  F4). The park is **idempotent** via the DR's stored `parkWakeId` (§4): a sweep over
+  fire at `after_ms: 0`, `supervision.ex:370` — there is no resident deadline clock). The park is **idempotent** via the DR's stored `parkWakeId` (§4): a sweep over
   an already-parked open DR re-returns it and never double-parks.
 
 ---
@@ -139,14 +138,14 @@ at the verb edge, `Supervision.evaluate/5` at the turn-end sweep). Every other c
 uses the collapsing `Rules.evaluate` wrapper, where `{:escalate,…}` becomes a plain
 deny without firing (rails §B2). The **raiser identity is derived from
 `call.principal`, never `call.session_key`** (ground truth: `session_key` is the
-delivery *target*, not the actor; F3): at the verb edge the principal is the caller
+delivery *target*, not the actor): at the verb edge the principal is the caller
 session; at the turn-end edge the sweep's pseudo-call carries the **holder**
 principal.
 
 **(1) `Escalation.resolve(db, call, statute)`** — the **effect-free** resolution
 `Rules.decide` reads while folding (rails FRESH-1). A pure read: it consults the
 waiver table and the current ruling for this action (§9), **opens nothing, consumes
-nothing, fires nothing.** Its **public decision union is FOUR shapes** (F1 — a bare
+nothing, fires nothing.** Its **public decision union is FOUR shapes** (— a bare
 atom cannot carry a ruling id, so the consumable allow is its own shape): **`:allow |
 {:allow, ruling_id} | {:deny, e} | {:needs_request, dr_id|nil}`:**
 - `:allow` — **waiver-sourced** (an active waiver). Nothing to consume. The statute
@@ -173,8 +172,8 @@ delivery (§6) is **post-commit**. On `dr_id` **non-nil** the actor re-returns
 The gated verb **does not run** (E1). `ctx` carries the statute's owner-facing
 `question` and optional enumerated `options`.
 
-**(3) The consume batch — the VERB EDGE's authorization step, verb-edge-only (F1 +
-Lattice).** **Consumption happens ONLY at the verb edge** (`Dispatch.dispatch/3`),
+**(3) The consume batch — the VERB EDGE's authorization step, verb-edge-only.**
+**Consumption happens ONLY at the verb edge** (`Dispatch.dispatch/3`),
 where a handler is actually about to run — never at the turn-end sweep, which has **no
 handler to authorize**, so consuming there would spend a ruling with **zero
 execution** (mirrored from rails, which owns the verb-edge-only rule). When the **whole
@@ -193,7 +192,7 @@ re-issue re-escalates each vanished authorization, §9.3).
 **A waiver-sourced allow has no row to consume, and there is NO consume-time
 revalidation — deliberately.** A waiver `:allow` contributes no `to_consume` entry, so
 the actor does **not** re-check the waiver between fold and handler. This is the
-correct consequence of **prospective-only revocation (F6):** a call already in the fold
+correct consequence of **prospective-only revocation:** a call already in the fold
 when a `revoke-waiver` lands **proceeds** — the revoke governs only *future* calls.
 Re-validating the waiver at consume time would wrongly retro-deny an in-flight call;
 rails' no-recheck behavior is right. **Consumed-on-attempt, not on-success:** a handler
@@ -227,42 +226,42 @@ decision — the neutral truth "this action needs the owner." It carries no deri
 state a client caches and no work-item state (E3). Additive table:
 
 ```sql
--- an ordinary rowid table (NOT 'WITHOUT ROWID'): the implicit rowid is the recency cursor (F5-FRESH)
+-- an ordinary rowid table (NOT 'WITHOUT ROWID'): the implicit rowid is the recency cursor
 CREATE TABLE IF NOT EXISTS decision_requests (
   id                TEXT PRIMARY KEY,           -- generated request id (identity, NOT recency ordering)
-  raiserId          TEXT NOT NULL,              -- CANONICAL raiser identity, domain-tagged: "session:"<>key for a session, else the origin string verbatim (F2/F3)
-  raiserSessionKey  TEXT,                        -- park TARGET only: the session key when the raiser is a session; NULL otherwise (F3)
+  raiserId          TEXT NOT NULL,              -- CANONICAL raiser identity, domain-tagged: "session:"<>key for a session, else the origin string verbatim
+  raiserSessionKey  TEXT,                        -- park TARGET only: the session key when the raiser is a session; NULL otherwise
   ownerUserId       TEXT NOT NULL,              -- accountable owner (routing + queue surface)
   assignmentId      TEXT,                        -- the open assignment this action serves (owner context)
   raisedAt          INTEGER NOT NULL,
-  deadlineAt        INTEGER NOT NULL,           -- owner-decision deadline; the park wake's fallback dueAt (F4; config seam §11)
+  deadlineAt        INTEGER NOT NULL,           -- owner-decision deadline; the park wake's fallback dueAt (config seam §11)
   statuteName       TEXT NOT NULL,              -- which rail escalated (waiver + tuning key)
   actionKey         TEXT NOT NULL,              -- substrate digest of the gated call (re-issue match, §9)
   question          TEXT NOT NULL,              -- the rail's owner-facing prompt (from ctx)
-  options           TEXT,                        -- enumerated choices, JSON: each {label, effect ∈ 'allow'|'deny'} (F10)
+  options           TEXT,                        -- enumerated choices, JSON: each {label, effect ∈ 'allow'|'deny'}
   context           TEXT NOT NULL,              -- halted verb + args snapshot, for the owner to JUDGE (E1)
   status            TEXT NOT NULL CHECK (status IN ('open','ruled','consumed','withdrawn')),
-  decision          TEXT CHECK (decision IN ('allow','deny','waived')),  -- closed domain (F10; 'answer' descoped)
+  decision          TEXT CHECK (decision IN ('allow','deny','waived')),  -- closed domain ('answer' descoped)
   rationale         TEXT,
   ruledBy           TEXT,                        -- owner principal (E6)
   ruledAt           INTEGER,
   rulingFactId      INTEGER,                     -- the escalation-ruled condition_facts row (§5)
-  consumedAt        INTEGER,                     -- when the actor spent the ruled-allow authorization (F1)
-  parkWakeId        TEXT,                        -- the sweep's substrate-created park wake, for idempotent re-park (F4)
+  consumedAt        INTEGER,                     -- when the actor spent the ruled-allow authorization
+  parkWakeId        TEXT,                        -- the sweep's substrate-created park wake, for idempotent re-park
   withdrawnBy       TEXT,
   withdrawnReason   TEXT,
   withdrawnAt       INTEGER
 );
 CREATE INDEX IF NOT EXISTS decision_requests_owner  ON decision_requests (ownerUserId, status);
 CREATE INDEX IF NOT EXISTS decision_requests_key    ON decision_requests (raiserId, statuteName, actionKey);
--- at most ONE open request per (raiserId, statuteName, actionKey): arbitrates concurrent opens (F5)
+-- at most ONE open request per (raiserId, statuteName, actionKey): arbitrates concurrent opens
 CREATE UNIQUE INDEX IF NOT EXISTS decision_requests_one_open
   ON decision_requests (raiserId, statuteName, actionKey) WHERE status = 'open';
 ```
 
 - **`actionKey`** is a substrate-canonical fingerprint of the gated call, computed by
   the substrate (never by the statute — the statute decides only *whether* to
-  escalate, never the request's identity). **Normalization (decision-complete, F2):**
+  escalate, never the request's identity). **Normalization (decision-complete):**
   build a canonical JSON object of the call's params with **string keys sorted
   lexicographically**, **nil-valued keys dropped**, and the **EFFECT-NEUTRAL params
   excluded** — the idempotency/`--key` param (wire-dedup) **and annotation params that
@@ -278,16 +277,16 @@ CREATE UNIQUE INDEX IF NOT EXISTS decision_requests_one_open
   changed course, E2) yields a different key and correctly opens a fresh request.
 - **`context`** is the halted call snapshot, present **only** so the owner can judge;
   the substrate never reads it to execute (E1).
-- **`raiserId` is the CANONICAL raiser identity (F3): NOT NULL, and DOMAIN-TAGGED to
-  avoid collision (F2).** It is **`"session:" <> sessionKey`** for a session principal,
+- **`raiserId` is the CANONICAL raiser identity: NOT NULL, and DOMAIN-TAGGED to
+  avoid collision.** It is **`"session:" <> sessionKey`** for a session principal,
   and the **origin string verbatim** otherwise (a non-session principal — an org token
   acting `--as <role>` — whose origin is already tagged `agent:`/`user:`). The two
   namespaces cannot collide by construction (a session key never begins `agent:`/`user:`
   and an origin never begins `session:`). **All** operations key on it uniformly: the
   current-request lookup (§9), withdrawal authorization (the withdrawing call's canonical
   identity must equal `raiserId`, §8), read visibility (§6), and the `escalation_waivers`
-  key (§7). It replaces r1's `raisedBy` for every non-provenance use.
-- **`raiserSessionKey` is the NULLABLE park-target column ONLY (F3).** Parking is a
+  key (§7). It replaces the earlier `raisedBy` for every non-provenance use.
+- **`raiserSessionKey` is the NULLABLE park-target column ONLY.** Parking is a
   **session privilege**: only a session raiser has somewhere to park (a wake targets a
   session), so `raiserSessionKey` = the session key for a session raiser, `NULL` for a
   non-session raiser. A non-session raiser gets **no park** — it receives
@@ -296,12 +295,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS decision_requests_one_open
   `raiserSessionKey` has no session lifetime to end); non-session waivers likewise have
   **no death sweep** — their scope is until-revoke (§7).
 - **`deadlineAt`** is the owner-decision deadline (config seam §11); the park wake's
-  fallback `dueAt` is set to it, and any owner re-prod rides the same clock (F4). It
+  fallback `dueAt` is set to it, and any owner re-prod rides the same clock. It
   replaces the non-existent "prod cadence."
 - **`parkWakeId`** records the sweep's substrate-created park wake so the turn-end
-  re-park is idempotent (recreate only if absent — the adjudication-episode pattern,
-  F4); it is unused at the verb edge (the raiser owns its own wake).
-- **Recency is the implicit `rowid` (F5-FRESH).** The `TEXT PRIMARY KEY` `id` is
+  re-park is idempotent (recreate only if absent — the adjudication-episode pattern); it is unused at the verb edge (the raiser owns its own wake).
+- **Recency is the implicit `rowid`.** The `TEXT PRIMARY KEY` `id` is
   identity, not order; `decision_requests` is an ordinary rowid table, and the "current
   request" for a key is `ORDER BY rowid DESC LIMIT 1` (§9), so a later escalation of the
   same shape supersedes an earlier resolved one.
@@ -309,7 +307,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS decision_requests_one_open
   observability's pattern for the owner surface (§6). The table never carries derived
   state.
 
-Superseded from r1: the `workItemId` field and the `blocked-on-owner` work-item
+Superseded: the `workItemId` field and the `blocked-on-owner` work-item
 condition are **removed** (E3). The `rulingFactId` now points at a `condition_facts`
 row (§5), not an attest.
 
@@ -319,7 +317,7 @@ row (§5), not an attest.
 
 On receiving `{:decision_pending, id}` a **session** raiser parks by the ordinary
 `wake-on-fact-v1` self-continuation exit (its case 10), with **no bespoke
-machinery** (a non-session raiser does not park — §3/F3 — it re-issues later on its
+machinery** (a non-session raiser does not park — §3 — it re-issues later on its
 own initiative):
 
 ```
@@ -347,7 +345,7 @@ tightbeam wake --session <raiser> \
   stores no link between them; the raiser owns its wake (it holds the `wakeId` and may
   cancel it, §8).
 
-### The park protocol — SCHEDULE-THEN-CHECK (normative, F5)
+### The park protocol — SCHEDULE-THEN-CHECK (normative)
 
 The ruling fact and the wake subscription race across the no-replay cursor: a
 condition wake matches only facts filed **strictly after** it is scheduled
@@ -397,7 +395,7 @@ arrives. The loop, spelled out and legible:
 
 This is the explicit "finite fallback + re-subscribe" long-wait pattern. The session
 raiser's own fallback is its choosing (E7 verb edge); the DR's `deadlineAt` (§3) is
-the substrate-carried clock the **turn-end** park and any owner re-prod ride (F4). The
+the substrate-carried clock the **turn-end** park and any owner re-prod ride. The
 owner learns of the pending decision once (§6) and it stays on the owner's open queue
 until ruled/waived/withdrawn; no owner re-prod *loop* is mandated in v1 — a future org
 policy may re-deliver on the `deadlineAt` cadence, out of scope for this engine.
@@ -414,18 +412,18 @@ resolves the request, and (c) files the ruling fact that fires the raiser's wake
 tightbeam rule --request <id> --decision <allow|deny|option> [--rationale "…"]
 ```
 
-1. **Accountability (E6/F3).** `call.principal` must pass the **existing admin axis**
+1. **Accountability (E6).** `call.principal` must pass the **existing admin axis**
    (`admin_origin?`/`resolve_caller`, the same gate as `skill-put`). A non-admin
    `process:`, or the raiser, is rejected `not_owner`.
-2. **Closed decision domain (F10).** `--decision` is `allow | deny`, or an
+2. **Closed decision domain.** `--decision` is `allow | deny`, or an
    **enumerated option label** from the request's `options` (which resolves to that
    option's declared `allow|deny` effect) — the v1 escalation engine gates **actions**
-   only. **Re-rule (F10):** re-`rule` of an already-resolved request with the **same**
+   only. **Re-rule:** re-`rule` of an already-resolved request with the **same**
    decision is an idempotent no-op returning the prior ruling; a **different** decision
    is rejected `not_open`.
 3. **Resolve.** `status open → ruled` (CAS on `status='open'`, §8 race rule); record
    `decision`, `rationale`, `ruledBy`, `ruledAt`.
-4. **File the ruling fact IN-TRANSACTION (F7).** `ConditionFacts.file_in_txn(txn,
+4. **File the ruling fact IN-TRANSACTION.** `ConditionFacts.file_in_txn(txn,
    %{kind: "escalation-ruled", scope: <id>, origin: "process:tightbeam"})` — the
    substrate producer path (`wake-on-fact-v1` §5/§6, the in-transaction writer that
    spec provides), never the public `condition` verb; record its row id as
@@ -447,7 +445,7 @@ The condition fact is a **doorbell only** — it carries no decision payload (W3
 writes (E2/E6). **Coupling to report:** this extends `wake-on-fact-v1`'s reserved-kind
 constant by one; see §11.
 
-There is **no ruling attest kind** (r1's `attest kind = "ruling"` is superseded): an
+There is **no ruling attest kind** (the earlier `attest kind = "ruling"` is superseded): an
 attest is FK-bound to an assignment and CHECK-locked to
 `{progress,completion,surrender,verdict}` (`wake-on-fact-v1` §A), which a ruling is
 not. Provenance lives on the `decision_requests` row (`ruledBy`/`ruledAt`/`decision`/
@@ -461,14 +459,14 @@ append-only records, no attest overload.
 Two things happen for the owner when a request opens, both from the escalate outcome
 (§2), neither a supervision-ladder stall (the raiser is not stalled, E3):
 
-- **One-shot delivery, POST-COMMIT (kept from r1; F7/F9).** After the open-request
+- **One-shot delivery, POST-COMMIT.** After the open-request
   transaction commits, the engine delivers the decision-request to the owner as a
   prompt carrying `question`, `options`, and enough of `context` to judge, origin
   `process:tightbeam`. Delivery reuses the **existing wake-to-user delivery path**
   (the same seam a timed wake or a user post uses to reach a user's session), **not**
   ad-hoc `personal_session_key` string formatting — the engine hands the owner
   `ownerUserId` + prompt to that path and lets it resolve the target. Delivery is
-  never inside the request-open transaction (F7). This is addressed correspondence
+  never inside the request-open transaction. This is addressed correspondence
   (the comms-clock model), delivered once; it resumes nothing (E2).
 - **The queue surface.** Open requests for an owner are the read verb below, with a
   `decision_request_event` doorbell on open/resolve — mirroring observability's
@@ -476,7 +474,7 @@ Two things happen for the owner when a request opens, both from the escalate out
   to; if the one-shot delivery is missed, the request is still on the queue until
   ruled, waived, or withdrawn.
 
-### Read surfaces — the `decision-requests` and `decision-request` verbs (F9)
+### Read surfaces — the `decision-requests` and `decision-request` verbs
 
 Two read-only verbs (added to the agent verb allowlist) expose the queue; neither
 mutates:
@@ -488,14 +486,14 @@ tightbeam decision-request <id>                  # one request, full projection
 
 - **Visibility.** An **admin/owner** principal sees all requests for its
   `ownerUserId` (default `--status open`, filterable). A **raiser** principal sees
-  **only its own** requests (`raiserId` = the caller's canonical identity, F3). Any
+  **only its own** requests (`raiserId` = the caller's canonical identity). Any
   other principal sees none.
 - **Row projection:** `id`, `status`, `statuteName`, `question`, `options`, `raiserId`,
   `raiserSessionKey`, `assignmentId`, `raisedAt`, `deadlineAt`, and — when resolved —
   `decision`, `rationale`, `ruledBy`, `ruledAt` (or `withdrawnReason`, `withdrawnAt`).
   The `context` snapshot is included only in the single-request projection
   (`decision-request <id>`), for the owner to judge; it is elided from the list.
-  Visibility keys on `raiserId` (F3): a raiser sees rows whose `raiserId` = its own
+  Visibility keys on `raiserId`: a raiser sees rows whose `raiserId` = its own
   canonical identity.
 
 The owner acts by `rule` (§5), or `waive` (§7) to clear a whole class, or does
@@ -503,17 +501,17 @@ nothing (the raiser keeps waiting on its fallback-loop, §4).
 
 ---
 
-## 7. Waivers — "ignore that rule for now" (the second ruling form, Q3)
+## 7. Waivers — "ignore that rule for now" (the second ruling form)
 
 A ruling (§5) resolves **one request**. A **waiver** is the standing form the ruled
 model adds so the operator is never forced to context-switch into governance work to
 unblock: it says "for this raiser, ignore that statute for now." It keys on the
-canonical `raiserId` (F3). Additive table:
+canonical `raiserId`. Additive table:
 
 ```sql
 CREATE TABLE IF NOT EXISTS escalation_waivers (
   id                TEXT PRIMARY KEY,
-  raiserId          TEXT NOT NULL,     -- the raiser the waiver applies to, domain-tagged: "session:"<>key or origin string (F2/F3)
+  raiserId          TEXT NOT NULL,     -- the raiser the waiver applies to, domain-tagged: "session:"<>key or origin string
   statuteName       TEXT NOT NULL,     -- the waived statute
   grantedBy         TEXT NOT NULL,     -- owner principal (E6)
   grantedAt         INTEGER NOT NULL,
@@ -525,7 +523,7 @@ CREATE INDEX IF NOT EXISTS escalation_waivers_lookup
   ON escalation_waivers (raiserId, statuteName, revokedAt);
 ```
 
-**Grant** — a new `waive` verb, admin-axis-only (E6/F3):
+**Grant** — a new `waive` verb, admin-axis-only (E6):
 
 ```
 tightbeam waive --request <id> [--reason "…"]          # queue-driven: derives raiserId + statute from the request
@@ -533,11 +531,11 @@ tightbeam waive --session <key> --statute <name> [--reason "…"]   # pre-emptiv
 ```
 
 The `--request` form (the ergonomic, queue-driven path) **derives `raiserId` from the
-request (never inserts NULL, F3)** and does everything in **one transaction (F6):**
+request (never inserts NULL)** and does everything in **one transaction:**
 (a) insert the waiver keyed on the request's `raiserId` + `statuteName`; (b) **resolve
 every currently-OPEN request** matching that `(raiserId, statuteName)` — not only the
 triggering one — as `ruled` with `decision='waived'`, filing an
-`escalation-ruled/<reqId>` doorbell for **each** via `ConditionFacts.file_in_txn` (F7)
+`escalation-ruled/<reqId>` doorbell for **each** via `ConditionFacts.file_in_txn`
 so every parked raiser wake fires; (c) emit one `waiver_granted` lifecycle row plus one
 `decision_request_ruled` per resolved request. A **single post-commit scheduler nudge**
 (whose eager pass fires the newest fact's wake; the other resolved requests' wakes fire on
@@ -554,9 +552,9 @@ engine returns `:allow` (the statute's escalate is ignored; the action passes) �
 lives (E1). A **session** raiser's waiver **auto-expires on session death** (E5,
 swept-by-revoke on retirement, §8) — a retired session never dispatches. A
 **non-session** raiser's waiver (raiserId = an origin string, no session lifetime) has
-**no death sweep**: its scope is **until explicit revoke** (F3).
+**no death sweep**: its scope is **until explicit revoke**.
 
-**Revoke** — a new `revoke-waiver` verb, admin-axis-only; **prospective only (F6)**:
+**Revoke** — a new `revoke-waiver` verb, admin-axis-only; **prospective only**:
 
 ```
 tightbeam revoke-waiver --waiver <waiverId> [--reason "…"]
@@ -566,7 +564,7 @@ Sets `revokedBy`/`revokedAt`; emits `waiver_revoked`. After revoke, **future** c
 under `X` re-escalate; requests **already resolved `waived`** stay historically
 `waived` — a revoke never rewrites past resolutions.
 
-**Self-tuning datapoints — two distinct signals, neither claimed as the other (F6).**
+**Self-tuning datapoints — two distinct signals, neither claimed as the other.**
 Every waiver emits its legibility rows (E4) so the tuning loop can derive rates
 without stored ratings (observability doctrine). But the two grant paths are
 **different signals** and `self-tuning-rails-core-FUTURE.md` §6g must read them apart:
@@ -577,13 +575,13 @@ without stored ratings (observability doctrine). But the two grant paths are
   — an operator suppressing a rail *before* it fired; it is **not** a
   denied-then-overridden event and must not be counted as one.
 Repeated waivers of the same statute-shape signal that a better rail should be
-authored — but **standing rulings beyond the waiver do not exist in v1** (Q3 ruled):
+authored — but **standing rulings beyond the waiver do not exist in v1** (ruled):
 the only two forms are the per-request ruling and the raiser-scoped waiver
 (session-lifetime for a session raiser, until-revoke for a non-session raiser).
 
 ---
 
-## 8. Withdrawal — the raiser retracts its own request (Q4)
+## 8. Withdrawal — the raiser retracts its own request
 
 Withdrawal is **raiser-only** (E6); owner-only withdrawal is rejected as
 anti-automation — a dark factory must not queue corpses for a human janitor to
@@ -596,10 +594,10 @@ tightbeam withdraw --request <id> --reason "…"     # --reason REQUIRED (E4: ne
 ```
 
 1. The withdrawing call's **canonical tagged identity ("session:"<>key for a session, else the origin string) must equal the request's `raiserId`**
-   (F2/F3 — `"session:"<>key` for a session caller, the origin string verbatim for `--as <role>`); else
+   (`"session:"<>key` for a session caller, the origin string verbatim for `--as <role>`); else
    `not_raiser`.
 2. Request must be `open`; else `not_open`.
-3. `status open → withdrawn` (a **CAS on `status='open'`**, F8); record `withdrawnBy`,
+3. `status open → withdrawn` (a **CAS on `status='open'`**); record `withdrawnBy`,
    `withdrawnReason` (required), and `withdrawnAt`; emit `decision_request_withdrawn`.
 
 A withdrawing raiser is alive and re-adjudicating (E2) — it has decided not to wait —
@@ -614,15 +612,15 @@ retire the waiting raiser; a dead raiser's pending questions are noise. Auto-
 withdrawal resolves the retired session's open requests `open → withdrawn` (the same
 `status='open'` CAS) with `withdrawnBy = "process:tightbeam"` and `withdrawnReason =
 "raiser-retired"`, and **revokes** its waivers (a `revoke-waiver`-with-provenance —
-`revokedBy = "process:tightbeam"` — **never a DELETE**; E5/F8). Two triggers, fast
+`revokedBy = "process:tightbeam"` — **never a DELETE**; E5). Two triggers, fast
 path + durable backstop:
 - **Fast path (cast-sweep).** `supervision.ex`'s `handle_cast({:retired,
   session_key}, …)` (:167), which today calls `doorbells_for_holder`, additionally
   calls `Escalation.withdraw_for_retired(db, session_key)`.
-- **Durable backstop (boot recovery scan, F8).** At boot, `Escalation` scans for open
+- **Durable backstop (boot recovery scan).** At boot, `Escalation` scans for open
   requests whose `raiserSessionKey` is a retired session and withdraws them (and
   revokes their orphaned waivers) — so a cast dropped across a crash still resolves.
-**Race with a concurrent `rule` (F8):** the `open → withdrawn` and the `rule`'s `open
+**Race with a concurrent `rule`:** the `open → withdrawn` and the `rule`'s `open
 → ruled` are both CAS-on-`open`, so exactly one wins; a `rule` that loses to an
 auto-withdraw finds the request `withdrawn` and returns `not_open`. The retired
 session's orphaned condition wakes fire-with-zero-enqueue (`wake-on-fact-v1` W6
@@ -635,16 +633,16 @@ handler gains this one call, and boot gains the recovery scan; see §11.
 
 For **raiser `R` = the canonical `raiserId`** (`"session:"<>key` for a session
 principal, else the origin string; derived from `call.principal`, never
-`call.session_key`; F3 — at the turn-end edge this is the holder), statute `X =
+`call.session_key` — at the turn-end edge this is the holder), statute `X =
 statute.name`, and `actionKey = digest(call)` (§3). **Current request for the key =
 `SELECT … WHERE raiserId=R AND statuteName=X AND actionKey=? ORDER BY rowid DESC LIMIT
-1`** (F5-FRESH: the implicit rowid is recency; a later escalation of the same shape
+1`** (the implicit rowid is recency; a later escalation of the same shape
 supersedes an earlier resolved one).
 
 ### 9.1 `Escalation.resolve/3` — the effect-free read (folded into `Rules.decide`)
 
 Returns the four-shape union `:allow | {:allow, ruling_id} | {:deny, e} |
-{:needs_request, dr_id | nil}` (§2 part 1, F1), **opening/consuming/firing nothing**
+{:needs_request, dr_id | nil}` (§2 part 1), **opening/consuming/firing nothing**
 (rails FRESH-1). Consults, in order:
 
 1. **Waiver.** A live waiver for `(R, X)` (§7) → **`:allow`** (waiver-sourced,
@@ -655,7 +653,7 @@ Returns the four-shape union `:allow | {:allow, ruling_id} | {:deny, e} |
      row id>}`** — ruling-sourced; `decide` collects the id into `to_consume` (the actor
      spends it, §9.3).
    - `ruled`, `decision = deny` → `{:deny, deny_form(X, ctx)}`.
-   - `ruled`, `decision = waived` → **`{:needs_request, nil}` (F6).** A `waived`
+   - `ruled`, `decision = waived` → **`{:needs_request, nil}`.** A `waived`
      resolution is **terminal-historical**: the WAIVER was the authorization, and if it
      is now gone (revoked) the historical row confers none. (A *live* waiver is already
      caught by step 1; reaching this branch means the waiver was revoked.)
@@ -671,15 +669,15 @@ Returns the four-shape union `:allow | {:allow, ruling_id} | {:deny, e} |
 dr_id}` — the existing open request — opening nothing. On **nil**, in **one
 transaction**: `INSERT ... ON CONFLICT DO NOTHING` a `decision_requests` row
 (`status='open'`, fields per §3 — `raiserId` = `R`, `raiserSessionKey` = `R`'s session
-or `NULL` (F3), `deadlineAt` = now + the configured deadline (§11), `question`/`options`
+or `NULL`, `deadlineAt` = now + the configured deadline (§11), `question`/`options`
 from `ctx`, `context` = the call snapshot, `ownerUserId` from `R`), then **re-`SELECT`
-the open row** for the key. **Concurrent-open safety (F5):** because `resolve` and
+the open row** for the key. **Concurrent-open safety:** because `resolve` and
 `escalate` are separate phases over a non-unique lookup, two callers can both reach the
 `nil` branch; the **partial unique index** (`decision_requests_one_open`, §3) admits
 exactly one insert, and the loser's `ON CONFLICT DO NOTHING` + re-`SELECT` returns the
 **winner's** row — one open request, both callers get the same `{:decision_pending,
 id}`. The insert winner emits `decision_request_opened`. Owner delivery (§6) is
-**post-commit** (F7). At the turn-end edge the sweep then parks the holder idempotently
+**post-commit**. At the turn-end edge the sweep then parks the holder idempotently
 via `parkWakeId` (§2/§4).
 
 ### 9.3 `Escalation.consume/2` + the batch rule — the authorization (actor, whole-fold `:allow`)
@@ -691,7 +689,7 @@ actor calls **`Escalation.consume(db, ruling_id)`** — a single-statement CAS `
 decision_requests SET status='consumed', consumedAt=? WHERE id=ruling_id AND
 status='ruled'` — no re-resolution by statute/actionKey.
 
-**Batch rule (fail-closed; the partial-spend regression, F1).** The actor CASes every
+**Batch rule (fail-closed; the partial-spend regression).** The actor CASes every
 `to_consume` entry. **If ANY entry loses its CAS, the verb is DENIED**, and the entries
 that already won **STAY consumed** (they are not rolled back) — consumed-on-**attempt**
 covers the whole batch: the attempt spent them, so a re-issue re-escalates each one
@@ -701,8 +699,7 @@ wrapping transaction (rails whole-fold rule): a handler that fails after the bat
 has spent its authorizations and a retry re-escalates.
 
 `digest(call)` is substrate-owned and deterministic (§3 normalization); the statute
-never supplies it. "Per-request" ruling (Q3) is exactly this key **plus consumption
-(F1):** a ruling authorizes the one action-shape that was escalated, for one attempt;
+never supplies it. "Per-request" ruling is exactly this key **plus consumption:** a ruling authorizes the one action-shape that was escalated, for one attempt;
 a raiser that re-adjudicates into a *different* action gets a fresh request, correctly
 uncovered by the old ruling.
 
@@ -720,7 +717,7 @@ migration), bound in-transaction (`EventLog.lifecycle_in_txn/4`):
 - `decision_request_withdrawn` — subject `id`; detail `by=<raiser|process:tightbeam>
   reason=<why>` (`reason=raiser-retired` for the auto-sweep).
 - `waiver_granted` — subject waiver `id`; detail `raiser=<R> statute=<X> by=<owner>
-  path=<request|preemptive>` (the `path` distinguishes the two §6g signals, F6).
+  path=<request|preemptive>` (the `path` distinguishes the two §6g signals).
 - `waiver_revoked` — subject waiver `id`; detail `by=<owner|process:tightbeam>`.
 - `condition_fact_filed` for each `escalation-ruled` fact is emitted by
   `ConditionFacts.file_in_txn` itself (`wake-on-fact-v1` §6), not duplicated here.
@@ -728,7 +725,7 @@ migration), bound in-transaction (`EventLog.lifecycle_in_txn/4`):
 Rating is derived, never stored (observability doctrine): open-request age,
 time-to-rule, and withdrawal rate are queries over these rows. Waiver rate is sliced
 by `path` — **request-triggered** waivers feed §6g's denied-then-overridden metric;
-**pre-emptive** waivers are a distinct signal and are counted apart (F6).
+**pre-emptive** waivers are a distinct signal and are counted apart.
 
 ---
 
@@ -736,10 +733,10 @@ by `path` — **request-triggered** waivers feed §6g's denied-then-overridden m
 
 | Concern | File | Change |
 |---|---|---|
-| Engine + tables | `lib/tightbeam/escalation.ex` (NEW) | `decision_requests` (rowid table; statuses `open/ruled/consumed/withdrawn`; domain-tagged `raiserId` NOT NULL, nullable `raiserSessionKey`, `deadlineAt`, `parkWakeId`; **partial unique index `decision_requests_one_open` WHERE status='open'**, F5) + `escalation_waivers` (keyed on `raiserId`) + `ensure_schema/1`; `resolve/3` (effect-free read, four-shape union incl. `{:allow, ruling_id}`), `escalate/4` (open via `INSERT … ON CONFLICT DO NOTHING` + re-`SELECT`, F5), `consume/2` (`consume(db, ruling_id)` CAS) — §9; `rule/…`, `waive/…` (resolve-all-matching-open, §7), `revoke_waiver/…`, `withdraw/…`; `withdraw_for_retired/2`; boot recovery scan (§8); `digest/1` (§3); read projections (§6) |
-| Deadline config seam (Lattice) | **`config :tightbeam, :escalation_decision_deadline_ms`** — Application env, the same operator-knob home as supervision's prod-limit `N` (`prod_limit`, threaded through `Escalation`'s child spec from `application.ex`) | `escalate/4` reads it at DR creation and sets `deadlineAt = now + it`; overridable at boot by env var **`TIGHTBEAM_ESCALATION_DECISION_DEADLINE_MS`**; default **`@default_decision_deadline_ms = 86_400_000`** (24h) when unset. No new config machinery — it rides the existing Application-env operator knobs |
+| Engine + tables | `lib/tightbeam/escalation.ex` (NEW) | `decision_requests` (rowid table; statuses `open/ruled/consumed/withdrawn`; domain-tagged `raiserId` NOT NULL, nullable `raiserSessionKey`, `deadlineAt`, `parkWakeId`; **partial unique index `decision_requests_one_open` WHERE status='open'**) + `escalation_waivers` (keyed on `raiserId`) + `ensure_schema/1`; `resolve/3` (effect-free read, four-shape union incl. `{:allow, ruling_id}`), `escalate/4` (open via `INSERT … ON CONFLICT DO NOTHING` + re-`SELECT`), `consume/2` (`consume(db, ruling_id)` CAS) — §9; `rule/…`, `waive/…` (resolve-all-matching-open, §7), `revoke_waiver/…`, `withdraw/…`; `withdraw_for_retired/2`; boot recovery scan (§8); `digest/1` (§3); read projections (§6) |
+| Deadline config seam | **`config :tightbeam, :escalation_decision_deadline_ms`** — Application env, the same operator-knob home as supervision's prod-limit `N` (`prod_limit`, threaded through `Escalation`'s child spec from `application.ex`) | `escalate/4` reads it at DR creation and sets `deadlineAt = now + it`; overridable at boot by env var **`TIGHTBEAM_ESCALATION_DECISION_DEADLINE_MS`**; default **`@default_decision_deadline_ms = 86_400_000`** (24h) when unset. No new config machinery — it rides the existing Application-env operator knobs |
 | Reserved kind | `lib/tightbeam/condition_facts.ex` | add `escalation-ruled` to `@reserved_kinds` (§5) |
-| Verbs | `lib/tightbeam/gateway.ex` | `rule` / `waive` / `revoke-waiver` / `withdraw` handlers (admin-axis auth, F3); read handlers `decision-requests` / `decision-request`; post-commit owner delivery via the wake-to-user path (§6, F7/F9) |
+| Verbs | `lib/tightbeam/gateway.ex` | `rule` / `waive` / `revoke-waiver` / `withdraw` handlers (admin-axis auth); read handlers `decision-requests` / `decision-request`; post-commit owner delivery via the wake-to-user path (§6) |
 | Verb allowlist | `lib/tightbeam/wire/router.ex` | add `rule`, `waive`, `revoke-waiver`, `withdraw`, `decision-requests`, `decision-request` to `@agent_verbs` |
 | Retirement + boot | `lib/tightbeam/supervision.ex` + boot | `handle_cast({:retired, …})` also calls `Escalation.withdraw_for_retired/2` (fast path); boot calls the recovery scan (durable backstop) — §8 |
 | CLI | `cli/src/args.rs`, `cli/src/dispatch.rs` | `rule` / `waive` / `revoke-waiver` / `withdraw` + read commands `decision-requests` / `decision-request`; wire mapping; help + arg tests |
@@ -751,8 +748,8 @@ rails as it stands — the four-shape union, consume/2, and the seam are all pre
 - **Seam / union.** rails §B (r9 :405-420) folds this engine's effect-free `resolve/3`,
   collecting ruled-allow ids into `to_consume`, running `escalate/4` (only on `dr_id ==
   nil`) and the per-ruling **`consume/2`** CAS (`consume(db, ruling_id)`, rails r9
-  :386/:1278 — arity confirmed, F4). The **four-shape** union `:allow | {:allow,
-  ruling_id} | {:deny, e} | {:needs_request, dr_id|nil}` (§2/§9.1, F1 — a bare atom
+  :386/:1278 — arity confirmed). The **four-shape** union `:allow | {:allow,
+  ruling_id} | {:deny, e} | {:needs_request, dr_id|nil}` (§2/§9.1 — a bare atom
   cannot carry the id) is carried by rails as it now stands (§B split bullets, I4,
   composition notes, X4). No edit to this document or to rails is pending on it.
 - **Turn-end park.** rails §D2.4 (:846-867) has adopted this spec's park text verbatim:
@@ -761,14 +758,14 @@ rails as it stands — the four-shape union, consume/2, and the seam are all pre
   idempotent via `parkWakeId`, recorded `rail_sweep` decision `escalate-park`. The stale
   "prod-deadline cadence" line is gone.
 - **Composition / X4.** rails' Composition notes (:1268-1281) describe the three-part
-  split (`resolve/3` / `escalate/4` / `consume`), mark the engine "rewritten to Flynn's
-  ruled model (Q1–Q4 resolved)," and gate `escalate`-effect statute loading on **this
+  split (`resolve/3` / `escalate/4` / `consume`), mark the engine "rewritten to the
+  ruled model," and gate `escalate`-effect statute loading on **this
   spec's adversarial review landing clean, not on ratification**.
 - **wake-on-fact.** This spec files rulings through `ConditionFacts.file_in_txn/2` + the
   single outermost-caller post-commit nudge, and reserves `escalation-ruled`
   (`@reserved_kinds` = `{quota-recovered, escalation-ruled}`). Any staleness in
   `wake-on-fact-v1.md`'s own header list of reserved kinds is **that spec author's edit**,
-  routed to them — not this document's (F4).
+  routed to them — not this document's.
 
 No parent-spec edit remains pending on **this** document; **loading gates on this spec's
 review landing clean**, in rails' own form. No cross-spec item is in flight; rails carries
@@ -793,7 +790,7 @@ resumption (E2), and adds no state or flag (E3).
    terminal returns `:continuation`; no prod fires. Assert there is **no**
    `blocked-on-owner` state or flag anywhere (E3).
 
-3. **Ruling resumes; the ACTOR consumes by id (F1).** The owner runs `rule --request
+3. **Ruling resumes; the ACTOR consumes by id.** The owner runs `rule --request
    <id> --decision allow`. Assert: `status=ruled`, `decision=allow`, `ruledBy` = owner;
    one `escalation-ruled/<id>` `condition_facts` row (origin `process:tightbeam`); the
    raiser's wake fires. The raiser re-issues the merge; `resolve/3` returns **`{:allow,
@@ -803,13 +800,13 @@ resumption (E2), and adds no state or flag (E3).
    handler; the handler runs **exactly once**. Assert the substrate never executed the
    halted verb between escalate and re-issue.
 
-4. **Consumed ruling does not re-authorize (F1).** After case 3, the raiser re-issues
+4. **Consumed ruling does not re-authorize.** After case 3, the raiser re-issues
    the **same** action again. Assert `resolve/3` finds `status=consumed` →
    `{:needs_request, nil}` and opens a **fresh** request, NOT a second silent allow.
    Contrast: a **waiver** (case 9) returns bare `:allow` and re-authorizes identical
    repeats.
 
-4b. **Consume-CAS-lose + batch fail-closed (F1).** (a) Two concurrent re-issues of the
+4b. **Consume-CAS-lose + batch fail-closed.** (a) Two concurrent re-issues of the
     same ruled-allow request race `consume(db, ruling_id)`: exactly one CAS wins
     (`ruled → consumed`, handler runs), the loser gets `{:deny,…}` and its handler does
     **not** run. (b) **Batch:** an action escalated by two statutes, both ruled-allow;
@@ -823,7 +820,7 @@ resumption (E2), and adds no state or flag (E3).
    `{:deny,…}` (not consumed); the raiser re-adjudicates and does **not** re-park; a
    further re-issue denies again with no new request.
 
-6. **Schedule-then-check race (F5).** Owner rules **before** the raiser schedules its
+6. **Schedule-then-check race.** Owner rules **before** the raiser schedules its
    wake (ruling fact lands under the wake's future cursor). Assert: the raiser
    schedules first, then reads `status=ruled`, **cancels the wake**, and re-issues —
    the ruling is not lost to the no-replay cursor. Mirror case: owner rules **after**
@@ -835,11 +832,11 @@ resumption (E2), and adds no state or flag (E3).
    `:continuation`, the request stays `open`. Repeat twice; assert never-a-stall and
    one legible fallback row + one re-schedule per iteration.
 
-8. **Accountability via the admin axis (E6/F3).** `rule`/`waive`/`revoke-waiver` by a
+8. **Accountability via the admin axis (E6).** `rule`/`waive`/`revoke-waiver` by a
    principal the admin axis rejects, or by the raiser → `not_owner`, no state change.
    `withdraw` by anyone but the raiser (or `process:tightbeam`) → `not_raiser`.
 
-9. **Waiver short-circuits, resolves all open, dies with the session (F6).** With
+9. **Waiver short-circuits, resolves all open, dies with the session.** With
    **two** open requests for `(raiser, X)`, owner `waive --request <id>` (one of them):
    assert one `escalation_waivers` row; **both** requests resolve `ruled`
    (`decision=waived`) in one transaction and **both** wakes fire; then a subsequent
@@ -848,7 +845,7 @@ resumption (E2), and adds no state or flag (E3).
    (`revokedBy=process:tightbeam`, not deleted) and a fresh session under `X` escalates
    normally (E5).
 
-10. **Revoke is prospective (F6).** `revoke-waiver`; assert `revokedAt` set; the next
+10. **Revoke is prospective.** `revoke-waiver`; assert `revokedAt` set; the next
     same-statute action escalates again; assert requests already resolved `waived` stay
     `waived` (revoke rewrites no past resolution).
 
@@ -857,7 +854,7 @@ resumption (E2), and adds no state or flag (E3).
     with no reason is rejected (E4). After withdrawal a re-issue of the *same* action
     opens a **fresh** request. `withdraw` by the owner → `not_raiser` (E6).
 
-12. **Auto-withdraw on retirement, both triggers + race (F8).** (a) Open a request,
+12. **Auto-withdraw on retirement, both triggers + race.** (a) Open a request,
     retire the raiser via the cast path; assert `status=withdrawn`
     (`withdrawnBy=process:tightbeam`, `reason=raiser-retired`), waiver revoked-with-
     provenance, the owner's open queue no longer shows it, orphaned wake fires-with-
@@ -865,7 +862,7 @@ resumption (E2), and adds no state or flag (E3).
     still-open request. (c) A `rule` racing an auto-withdraw: exactly one CAS wins; the
     loser returns `not_open`.
 
-13. **Per-request scope (Q3).** After a `ruled=allow`-then-consumed for action A, the
+13. **Per-request scope.** After a `ruled=allow`-then-consumed for action A, the
     raiser re-adjudicates into a **different** action B (different `actionKey`); assert
     B escalates a new request, i.e. the ruling authorized A only.
 
@@ -873,16 +870,16 @@ resumption (E2), and adds no state or flag (E3).
     escalation-ruled --scope <id>` → `reserved_kind`, no fact filed, no spurious wake.
     The substrate's `rule` path files it successfully.
 
-15. **Re-rule idempotency + conflict (F10).** Re-`rule` of a resolved request with the
+15. **Re-rule idempotency + conflict.** Re-`rule` of a resolved request with the
     **same** decision → idempotent, returns the prior ruling, no second fact. Re-`rule`
     with a **different** decision → `not_open`.
 
-16. **Post-revoke `waived` row confers no authorization (F6).** A request resolved
+16. **Post-revoke `waived` row confers no authorization.** A request resolved
     `ruled/waived` by a now-**revoked** waiver: re-issue the same action; assert
     `resolve/3` returns `:needs_request` (the historical `waived` row is terminal, the
     waiver was the authorization and it is gone) and a **fresh** request opens.
 
-17. **Turn-end sweep parks the holder, idempotently (E7/F4).** A turn-end-edged
+17. **Turn-end sweep parks the holder, idempotently (E7).** A turn-end-edged
     `escalate` fires from the sweep. Assert the sweep schedules a **substrate-created,
     holder-targeted** `{escalation-ruled, id}` wake with `sessionKey = holder`,
     **`creatorSessionKey = NULL`** and `origin` = the process string (wake-on-fact r3:
@@ -898,7 +895,7 @@ resumption (E2), and adds no state or flag (E3).
     `parkWakeId` absent). With this spec's review landing clean the statute is **not** a
     load error (rails gates loading on review-clean, not ratification; §11).
 
-18. **Domain-tagged `raiserId` — no collision, across all ops (F2/F3).** A **session**
+18. **Domain-tagged `raiserId` — no collision, across all ops.** A **session**
     raiser's DR has `raiserId = "session:" <> sessionKey`; a **non-session** raiser (org
     token `--as reviewer`) has `raiserId = "agent:reviewer"` (the origin verbatim) and
     `raiserSessionKey = NULL`, receives `{:decision_pending, id}` **synchronously** with
@@ -910,15 +907,15 @@ resumption (E2), and adds no state or flag (E3).
     succeeds (canonical identity == `raiserId`), a different origin → `not_raiser`; (d)
     **read visibility** — the same origin sees the row, others do not; (e) a **waiver**
     for that `raiserId` has **no death sweep** — it persists until explicit revoke
-    (E5/F3).
+    (E5).
 
-19. **Read surfaces (F9).** `decision-requests` by the owner lists all its open
+19. **Read surfaces.** `decision-requests` by the owner lists all its open
     requests; by the raiser lists only its own; by an unrelated principal lists none.
     `decision-request <id>` returns the full projection incl. `context` for the owner.
 
-20. **Idempotent open, concurrent open, and rowid recency (F5-FRESH).** (a) Two
+20. **Idempotent open, concurrent open, and rowid recency.** (a) Two
     identical re-issues while `status=open` return the **same** request id and open no
-    duplicate. (b) **Concurrent open (F5):** two callers both reach `escalate/4`'s `nil`
+    duplicate. (b) **Concurrent open:** two callers both reach `escalate/4`'s `nil`
     branch for the same `(raiserId, X, actionKey)`; assert the partial unique index
     (`decision_requests_one_open`) admits **exactly one** insert, the loser's `ON
     CONFLICT DO NOTHING` + re-`SELECT` returns the **winner's** row, and both callers get
@@ -928,7 +925,7 @@ resumption (E2), and adds no state or flag (E3).
     rowid) as current — even though its `TEXT` `id` does not sort after the older one,
     proving recency is rowid, not `id`.
 
-21. **Effect-neutral params excluded from the digest (Lattice).** A turn-end sweep
+21. **Effect-neutral params excluded from the digest.** A turn-end sweep
     escalates a synthesized `attest {assignment_id, kind}` (no `note`); the owner rules
     allow. The agent re-issues the real `attest` **with a `--note`**. Assert the
     re-issue's `actionKey` **equals** the ruling's (note excluded), `resolve/3` returns
@@ -936,7 +933,7 @@ resumption (E2), and adds no state or flag (E3).
     Contrast: changing an **effect-bearing** param yields a different `actionKey` → a
     fresh request (case 13 semantics preserved).
 
-22. **The sweep never consumes (Lattice / verb-edge-only).** With a prior `ruled`-allow
+22. **The sweep never consumes (verb-edge-only).** With a prior `ruled`-allow
     for a stalled assignment's obligation, run the turn-end sweep: assert `resolve/3`
     returns `{:allow, ruling_id}`, the sweep treats the obligation as met, **does NOT**
     CAS the ruling (`status` stays `ruled`), and runs no handler. Then the agent
@@ -956,8 +953,8 @@ resumption (E2), and adds no state or flag (E3).
 - **NO standing rulings beyond the raiser-scoped waiver** — the only two forms are the
   per-request ruling and the raiser-scoped waiver, whose lifetime depends on the raiser
   kind: **session-lifetime** for a session raiser (dies at retirement), **until-revoke**
-  for a non-session raiser (E5/F3, Q3).
-- **NO `answer`/judgment-question form in v1 (F10 descope, deliberate/YAGNI).** The v1
+  for a non-session raiser (E5).
+- **NO `answer`/judgment-question form in v1 (descope, deliberate/YAGNI).** The v1
   escalation engine gates **actions** only; a decision is `allow | deny | waived`.
   A judgment question to the user stays the manual's `wake --user` pattern; a dedicated
   ask-verb can come later if it is ever needed, but is out of scope here.
@@ -968,4 +965,4 @@ resumption (E2), and adds no state or flag (E3).
   live session raiser parks itself with a fallback of its own/its guidance's choosing
   (E7, `wake-on-fact-v1` W5). The turn-end sweep is the sole exception: it parks the
   holder with fallback `dueAt = deadlineAt`, the DR's org-configured deadline — not a
-  supervision prod cadence (prods fire at `after_ms:0`; F4).
+  supervision prod cadence (prods fire at `after_ms:0`).

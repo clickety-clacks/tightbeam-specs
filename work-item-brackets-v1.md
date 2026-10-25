@@ -1,12 +1,9 @@
 # Work-item lifecycle brackets — v1
 
-Status: READY (gate-cleared 2026-07-25 by stop-rule: reviewer confirmed ZERO design/
-feasibility/concurrency/architecture blockers at r5; rounds r5→r6→r7 found only
-stale-sibling-clause text, closed comprehensively by the authoritative-amendment sweep
-below. Trajectory 6→5→4→3→3→3-contract-text). r6 folded from r5 gate NOT-READY(3) — completed the cross-spec amendment sets: work-item-v1 owner/closure clauses + internal-writer authorization, observability-v1 exact emission-site list + metadata meaning, constitution §2 detailed bullets. Reviewer confirmed ZERO design/feasibility/concurrency blockers remain — contract-text only. r4 gate NOT-READY(3) folded — race-interlock proof, slate-rearm/owner-visibility/doorbell proofs, explicit work-item-v1 clause amendments; r3 gate NOT-READY(4) folded — in-txn terminal CAS, replay-hoist validation contract + assign-through-Dispatch proof, exact response envelope, doorbell-count proofs; r2 gate NOT-READY(5) folded — replay-vs-guard total order, icebox cancels BOTH brackets + state!=open predicate, full response-shape enumeration, create-doorbell decision, proof-plan completion; r1 gate NOT-READY(6) folded — idempotency op, dispatch rumination-vs-replay ordering, terminal disposition vs open assignments AND pre-handler statutes, fail-reason persistence, observability visibility model, orphan-owner selector). Implements accountability-constitution-v1
+Status: READY. This spec implements accountability-constitution-v1
 §2's "No intent in limbo" (UNBUILT there; that section remains the DESIGN authority —
-this spec is its implementation contract, resolving the seven readiness gaps the gate
-found against main `766f832`). Flynn: "spec and impl."
+this spec is its implementation contract, resolving the readiness gaps found against
+main `766f832`). The operator: "spec and impl."
 
 ## Spirit (constitution §2, restated)
 
@@ -16,10 +13,10 @@ immediately. Healthy paths are silent (red-tape test). The brackets are the effo
 check-in's sibling: that machinery watches holders who have work; this watches work
 that has no holder.
 
-## Amendments to work-item-v1 (gate F7 + r5-F3 — REQUIRED, each clause named)
+## Amendments to work-item-v1 (REQUIRED, each clause named)
 
 This lane amends FOUR live work-item-v1 clauses explicitly (naming them is the
-necessity gate; the constitution §2 + Flynn's spec-and-impl directive are the
+necessity gate; the constitution §2 + the operator's spec-and-impl directive are the
 authority):
 - **"no work-item states"** → the four-state `state` column (§Terminal dispositions).
 - **"no create idempotency"** → the optional `idempotencyKey` + ledger op (§Bracket 1).
@@ -40,7 +37,7 @@ Plus the persistence clause below.
 
 work-item-v1's "assign is the only verb with persistable workItemId" predates the
 `dispatch` verb. AMENDED: `dispatch` persists `workItemId` exactly as `assign` does
-(same in-txn existence check). **Replay ordering (gate F2):** dispatch today evaluates
+(same in-txn existence check). **Replay ordering:** dispatch today evaluates
 rumination BEFORE the idempotency short-circuit (`dispatch_result` checks
 `rumination_exists?` first). The amendment REORDERS: an idempotency-key hit
 short-circuits and returns the ORIGINAL assignment BEFORE any rumination evaluation —
@@ -49,11 +46,11 @@ original assignment and NO new rumination wake. The constitution's design requir
 persistence (a dispatched assignment must cancel bracket 1 and count for bracket 2);
 this clause additionally pins that replay is rumination-inert. feature_smoke's
 "workItemId assign-only" assertion is updated to assert BOTH verbs persist. (Authority:
-ratified constitution §2 + Flynn's spec-and-impl directive.)
+ratified constitution §2 + the operator's spec-and-impl directive.)
 
 ## Mechanism
 
-### Ownership and targeting (gate F1)
+### Ownership and targeting
 
 `work_items` gains `ownerUserId TEXT NOT NULL` — the OWNER IS ALWAYS A USER. On create:
 a user creator owns directly; a SESSION creator's item is owned by that session's
@@ -63,7 +60,7 @@ target `Org.personal_session_key(ownerUserId)` — always resolvable, never reti
 no fallback chain needed. (The creator session, when there is one, stays recorded in
 the existing creator columns for provenance; it carries no bracket obligation.)
 
-### Bracket 1 — routed-or-deadline (constitution, plus gate F3/F5 fixes)
+### Bracket 1 — routed-or-deadline
 
 - The work-item-create TRANSACTION (which becomes a real multi-write txn) inserts the
   item, arms one `consumer='prompt'` wake to the owner's personal session
@@ -71,8 +68,9 @@ the existing creator columns for provenance; it carries no bracket obligation.)
   / `TIGHTBEAM_WORK_ITEM_TRIAGE_DEADLINE_MS`, default 24h), and stores `routingWakeId`
   on the item. Prompt text: "route it or icebox it" + the item id/title.
 - CANCELED in the same transaction by: the first `assign` OR `dispatch` referencing
-  the item (F7 amendment makes both real), or the `work-item-icebox` verb (below).
-- **Idempotency (gate F5, F1):** `work-item-create` gains an optional
+  the item (the dispatch persistence amendment above makes both real), or the
+  `work-item-icebox` verb (below).
+- **Idempotency:** `work-item-create` gains an optional
   `idempotencyKey` (wire + CLI). The `wire_idempotency.operation` CHECK is WIDENED
   to add `'work-item-create'` (its own op string — reusing `assign` would collide
   cross-verb); key scope is `{operation, key, ownerUserId}`. A key hit returns the
@@ -81,17 +79,17 @@ the existing creator columns for provenance; it carries no bracket obligation.)
   (interactive use) — duplicates then arm duplicate timers, the correct nag for
   genuinely duplicate intent. Migration widens the CHECK via the table-rebuild
   pattern.
-- **Nag persistence (gate F3):** supervision's prod ladder only watches sessions with
+- **Nag persistence:** supervision's prod ladder only watches sessions with
   open assignments, so an ignored bracket wake would die silently. Brackets therefore
-  RE-ARM on fire instead of relying on the lattice. Mechanism (gate reviewer's
-  confirmed seam): a bracket-1 wake is a process-origin prompt wake delivered through
+  RE-ARM on fire instead of relying on the lattice. Mechanism: a bracket-1 wake is
+  a process-origin prompt wake delivered through
   `Gateway.deliver_prompt_in_txn`; that transaction — for a bracket wake — CAS-checks
   the item still unrouted/un-iceboxed, appends the nag turn, arms the replacement wake,
   and updates `routingWakeId`, atomically. The ordinary deliver-then-mark scheduler
   path alone cannot re-arm; the existing Gateway transaction seam carries it. No new
   wake state or consumer. An ignored owner is re-nagged each deadline, by construction.
 
-### Bracket 2 — concluded-or-adjudicated (gate F4 fix)
+### Bracket 2 — concluded-or-adjudicated
 
 - The assignment-CLOSE transaction (all four paths — completion, surrender, revoke,
   retire-strand — the same seams effort cancel_in_txn already rides) checks, AFTER its
@@ -99,7 +97,7 @@ the existing creator columns for provenance; it carries no bracket obligation.)
   is not terminal? If so it ARMS A DURABLE WAKE in that same transaction (owner's
   personal session, prompt "slate clear on <item>: close it, card more work, or rule
   it failed", `dueAt = now` — immediate), storing `slateWakeId` on the item.
-  **No post-commit deliver_owner callback** (gate F4: the escalation pattern's
+  **No post-commit deliver_owner callback** (the escalation pattern's
   commit-then-callback loses the edge on a crash; a durable wake row survives and
   redelivers through `turns.wakeId` dedupe like every other wake).
 - Canceled in-txn by the next `assign`/`dispatch` referencing the item (slate no
@@ -108,16 +106,16 @@ the existing creator columns for provenance; it carries no bracket obligation.)
 - Like bracket 1, an ignored slate wake re-arms itself on fire (deadline = the same
   triage config) — nag by construction.
 
-### Terminal dispositions (gate F2)
+### Terminal dispositions
 
 `work_items` gains `state TEXT NOT NULL DEFAULT 'open' CHECK (state IN
 ('open','iceboxed','closed','failed'))` (amends constitution §8's "no work-item
-states" — §8 currency fix below) and `failReason TEXT NULL` (gate F4 — the
+states" — §8 currency fix below) and `failReason TEXT NULL` (the
 payload-free doorbell has nowhere to carry a reason; durable truth is a column, the
 doorbell stays a bare metadata edge). Verbs, all owner-or-admin authority:
 - `work-item-icebox <id>` — open → iceboxed. **Requires zero open assignments**;
   refused with a legible error while assignments are open. Cancels BOTH brackets
-  in-txn (r3-F2: after a last-close a slate wake exists, so icebox must cancel
+  in-txn (after a last-close a slate wake exists, so icebox must cancel
   bracket 2 too — every disposition cancels both, matching Proof 5).
   `work-item-reopen <id>` (iceboxed → open) re-arms bracket 1.
 - `work-item-close <id>` — open|iceboxed → closed; requires zero open assignments
@@ -126,11 +124,11 @@ doorbell stays a bare metadata edge). Verbs, all owner-or-admin authority:
 - `work-item-fail <id> [--reason]` — open|iceboxed → failed; requires zero open
   assignments; reason → `failReason` column.
 - Same-state transition is a no-op success; disallowed transitions refuse.
-- **Total ordering — idempotency replay, then terminal guard, then statutes
-  (gate r2-F1, r3-F1):** the dispatch chokepoint runs in this exact order for an
+- **Total ordering — idempotency replay, then terminal guard, then statutes:**
+  the dispatch chokepoint runs in this exact order for an
   assign/dispatch verb carrying a workItemId:
-  1. IDEMPOTENCY REPLAY LOOKUP first, for EVERY keyed assign OR dispatch (r4-F2 —
-     not only workItemId-carrying calls). Validation that STILL runs before the
+  1. IDEMPOTENCY REPLAY LOOKUP first, for EVERY keyed assign OR dispatch (not only
+     workItemId-carrying calls). Validation that STILL runs before the
      lookup: authority, subject, key-format, files (assign's existing pre-lookup
      validations — preserved verbatim so assign semantics are unchanged). What the
      lookup BYPASSES on a hit: work-item existence/state validation, statute
@@ -138,17 +136,17 @@ doorbell stays a bare metadata edge). Verbs, all owner-or-admin authority:
      assignment regardless of the item's current state (matching assign-replay's
      pinned bypass-validation). A replay carrying a now-disposed/different/missing/
      unknown item still returns its original assignment; the disposition never sees
-     it. The hoist applies to BOTH verbs through the Dispatch chokepoint (r4-F2: the
+     it. The hoist applies to BOTH verbs through the Dispatch chokepoint (the
      existing assign-replay test calls the handler directly — this lane adds an
      assign-replay-through-Dispatch proof covering disposed items and statute
      inertness).
   2. On a MISS: the TERMINAL GUARD — refuse if `state != 'open'` (iceboxed also
-     refuses new work — r3-F2), before `Rules.decide`, so no statute or remedy
+     refuses new work), before `Rules.decide`, so no statute or remedy
      episode touches a non-open item. This is the EARLY refusal (avoids rail side
      effects); it is NOT the sole guard.
   3. On open + non-replay: `Rules.decide` and the handler proceed; the assignment
      INSERT transaction re-checks `state='open'` as an in-txn INTERLOCK and aborts if
-     it changed (r4-F1: the pre-statute read and the insert are different
+     it changed (the pre-statute read and the insert are different
      transactions; a disposition committing in between must not let a terminal item
      acquire an open assignment). Both guards are required — the pre-statute one for
      rail-inertness, the in-txn one for correctness under concurrency.
@@ -158,7 +156,7 @@ doorbell stays a bare metadata edge). Verbs, all owner-or-admin authority:
 - Observability: state transitions emit the existing work_item_events metadata
   doorbell (bare kind edge; `failReason` is column truth, queryable, not on the
   wire) — no new frame kinds.
-- **Response shapes (r3-F3 + r4-F3, exact envelopes):** the `workItem` OBJECT inside
+- **Response shapes (exact envelopes):** the `workItem` OBJECT inside
   every response (`work-item-create/update/get/list` and device snapshot/detail)
   gains `ownerUserId`, `state`, `failReason` (additive object fields; consumers
   ignoring them unaffected). Wake IDs (`routingWakeId`/`slateWakeId`) are INTERNAL —
@@ -170,7 +168,7 @@ doorbell stays a bare metadata edge). Verbs, all owner-or-admin authority:
   `ok`, WITHOUT the assignments list). A same-state no-op returns the same envelope
   and changes nothing.
 
-### Create doorbell (r3-F4)
+### Create doorbell
 
 observability-v1 declared `work-item-create` SILENT because an unassigned item was not
 board material. This lane makes an unassigned item OWNER-VISIBLE, so that rationale is
@@ -179,7 +177,7 @@ the owner's board reflects the new item; keyed replay emits nothing (it created
 nothing). This re-ratifies the addendum's `work_items` row from "create-silence by
 design" to "create → one owner doorbell; replay silent".
 
-### Observability amendment (gate F5 — REQUIRED, beyond the addendum row)
+### Observability amendment (REQUIRED, beyond the addendum row)
 
 observability-v1 pins work items as state-free with assignment-holder-derived
 visibility, which breaks THREE ways for brackets: an UNASSIGNED item's owner can't
@@ -190,7 +188,7 @@ observability-v1: (1) work-item visibility gains an OWNER path — an item is vi
 to its `ownerUserId` regardless of assignments (the owner column this lane adds is
 the authority); (2) work-item snapshot/detail AND `/agent` shapes gain `ownerUserId`, `state`, and
 `failReason` (additive — §Terminal dispositions enumerates them; an admin listing all
-items needs `ownerUserId` to see ownership); (2b, r5-F2) the EXACT emission-site list
+items needs `ownerUserId` to see ownership); (2b) the EXACT emission-site list
 is extended: observability-v1 today pins sites at update and assign only — this lane
 ADDS the create site (one owner doorbell) and the four disposition sites
 (icebox/close/fail/reopen), and BROADENS the normative `metadata` kind meaning from
@@ -201,11 +199,11 @@ so a transition on an unassigned item reaches someone. This is a named amendment
 a live spec (the necessity gate: authority is constitution §2, which requires the
 owner to be nagged about unassigned items).
 
-### Migration (gate F6)
+### Migration
 
 Table rebuild per the established pattern: `ownerUserId` backfilled from the creator
 columns (session creators → their session's ownerUserId at migration time). **Orphan
-selector (gate F6):** a row whose creator session no longer resolves backfills to the
+selector:** a row whose creator session no longer resolves backfills to the
 DETERMINISTIC org owner = the `users` row with `isAdmin=1` and the lowest `userId`
 (stable ordering; "org owner" is not otherwise a singleton). If ZERO admin users
 exist, the migration REFUSES with a legible error rather than guessing (greenfield
@@ -218,23 +216,23 @@ operator judgment, not substrate law. Upgrade proof from a pre-change schema fix
 `work_item_events`) and asserts `PRAGMA foreign_key_check` clean after the
 parent-table rebuild.
 
-## Constitution currency fixes (gate C9 + r5-F3, folded here)
+## Constitution currency fixes
 
 §2's `dispatch` marker UNBUILT → SHIPPED; §2's brackets marker UNBUILT → points at
 this spec; §8's "no work-item states" line amended to name the four disposition
 states. AND §2's DETAILED bracket bullets are updated to the shipped mechanics
-(r5-F3 — they still describe the pre-implementation design): "first assign cancels"
+(they still describe the pre-implementation design): "first assign cancels"
 → "first assign OR dispatch cancels"; "post-commit owner wake" (bracket 2) → "durable
 in-transaction wake, no post-commit callback"; "both wakes ride the ordinary lattice /
 an ignored owner is prodded" → "brackets RE-ARM on fire (the lattice does not watch
 holderless work); an ignored owner is re-nagged each horizon by the re-arm, not by the
-prod ladder". The constitution's §2 becomes a faithful description of what shipped. Named r7
+prod ladder". The constitution's §2 becomes a faithful description of what shipped. Named
 additions: §2's "No state" clause → the four disposition states; §2's "owner defaults
 to the creator" → owner is the creating user, or a session-creator's owning user (never
 the creator session); the observability exact-site list also adds the `dispatch`
 composition doorbell (dispatch now persists workItemId like assign).
 
-**Authoritative-amendment sweep (r7, deterministic close):** this spec is AUTHORITATIVE
+**Authoritative-amendment sweep (deterministic close):** this spec is AUTHORITATIVE
 wherever it conflicts with prior text describing PRE-BRACKETS work-item behavior. Every
 clause in accountability-constitution-v1 §2/§8, work-item-v1, and observability-v1 that
 asserts any of {no work-item state, no owner semantics, owner-defaults-to-creator,
@@ -247,7 +245,7 @@ state current belief; git carries history).
 
 ## Non-goals
 
-- No supervision/lattice changes (nag-by-re-arm makes them unnecessary — F3).
+- No supervision/lattice changes (nag-by-re-arm makes them unnecessary).
 - No new frame kinds, facts, or statutes; org law MAY later predicate on the doorbell
   events (constitution's "further conditions are ORG LAW" line stands).
 - No auto-icebox, auto-close, or any substrate-decided disposition.
@@ -257,9 +255,9 @@ state current belief; git carries history).
 1. Create (keyed and keyless) arms bracket 1 in the create txn; keyed replay returns
    the original and arms nothing; `routingWakeId` stored.
 2. First `assign` AND first `dispatch` referencing the item each cancel bracket 1
-   in their own txn — and BOTH persist `workItemId` on the assignment (the F7
-   amendment, asserted both directions; the updated smoke assertion ships in this
-   lane).
+   in their own txn — and BOTH persist `workItemId` on the assignment (the dispatch
+   persistence amendment, asserted both directions; the updated smoke assertion
+   ships in this lane).
 3. Bracket-1 fire with the item still unrouted re-arms itself (new wakeId, one nag
    turn delivered); icebox cancels and stops the nag.
 4. Last-close of a non-terminal item arms the slate wake IN the close transaction
@@ -295,7 +293,7 @@ state current belief; git carries history).
     no-op.
 15. Create doorbell: an actual create emits EXACTLY ONE owner-routed metadata
     doorbell (assert count AND recipient = ownerUserId); a keyed replay emits ZERO.
-16. RACE interlock (r4-F1 proof): a disposition committed AFTER the pre-statute guard
+16. RACE interlock: a disposition committed AFTER the pre-statute guard
     read but BEFORE the assignment-insert txn causes the insert to abort on the
     in-txn state='open' check — the terminal item does NOT acquire an open
     assignment (drive the two checks around an injected concurrent disposition).

@@ -1,14 +1,14 @@
-# Work-item v1 — durable feature identity (implementation spec, r2)
+# Work-item v1 — durable feature identity (implementation spec)
 
-Status: DRAFT r2. r1 → r2 (2026-07-20): adds work-item-update per
-Flynn's orchestrator ruling (metadata mutable; state/hierarchy stay
+Status: DRAFT. Revised 2026-07-20: adds work-item-update per
+an orchestrator ruling (metadata mutable; state/hierarchy stay
 absent), re-defines the spec-ref pin as the item's current governing
-spec, and applies the r1 review findings (honest additive-change
-claims, WorkItems-first bootstrap at every site, idempotent-replay
-ordering). Parent ruling: decisions ledger 2026-07-20 (observability
+spec, and applies review findings on the prior draft (honest
+additive-change claims, WorkItems-first bootstrap at every site,
+idempotent-replay ordering). Parent ruling: decisions ledger 2026-07-20 (observability
 direction — "durable work-item object: identity across re-staffing;
 title + spec ref, no state") and the ROADMAP work-item-v1 entry
-(SCHEDULED 2026-07-20, Flynn). This spec EXTENDS attest-v1.md r5
+(SCHEDULED 2026-07-20). This spec EXTENDS attest-v1.md r5
 additively — it is the layer ABOVE assignments; attest-v1 remains
 sole authority for assignment/attest behavior except where this spec
 names an authorized extension. The PRINCIPAL seam is
@@ -81,7 +81,7 @@ the detail query is work-item-get (§Verbs); a filter can arrive
 additively later. NO pagination. NO visibility partitioning
 (single-operator ruling, same as attest §Authorization). No UI.
 
-## Mutability and what the pin means (r2 ruling)
+## Mutability and what the pin means
 
 Work-item metadata — title and the spec-ref pin — is MUTABLE via
 work-item-update. State and hierarchy remain absent: there is
@@ -343,7 +343,7 @@ assignments — do not add a second bullet.
 attest-v1 is MERGED: main @ f739c07 carries the assignments
 machinery. Cut the worktree from main at or after that SHA. If the
 assignments machinery is absent from the base, STOP and report.
-ROADMAP sequences the build after supervision's lane for scheduling
+ROADMAP sequences this build after supervision's for scheduling
 reasons; there is no technical dependency on supervision.
 
 ## Tests (condensed contract — cover every clause)

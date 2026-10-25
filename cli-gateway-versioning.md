@@ -1,6 +1,6 @@
 # CLI ↔ gateway versioning
 
-**Status:** ruled by Flynn, 2026-07-31.
+**Status:** ruled 2026-07-31.
 
 ## The numbering system is semantic versioning
 
@@ -21,7 +21,7 @@ it offered and the version required.
 
 ## Keeping the fleet current
 
-**`update-clients` is admin-only (Flynn ruling, 2026-08-01).** It replaces the CLI binary
+**`update-clients` is admin-only (ruling, 2026-08-01).** It replaces the CLI binary
 on every registered machine, and that reach is an operator power, not an agent verb. An
 implementation guard to this effect was once added unrequested and removed for lacking
 authority; this ruling is that authority, and the guard returns with it.

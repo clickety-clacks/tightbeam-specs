@@ -1,20 +1,16 @@
 # Row-driven wakes: unified production-engine design (0.1.9)
 
-Revision 4 (canonical). Folds the §4 binding correction from spirit-design-accepted
-att_6a34a1ed into revision 3 (specs@e4e39ff) in the same motion as spec drafting — no new
-general design round. Revision 3 revised revision 2 (art_c7772427, specs@0c18c21) per
-spirit-changes-required att_49ee3ba2 (R1-R3; architecture direction accepted, no restart).
-Revision 2 superseded the rejected slice art_ff24cdb7 per att_7785b8e6 (F1-F4 + hole
-rulings) and parent executive ruling att_1bd0c4d1. Work item
-wi_fbcdf1a9-d3fc-4f17-ae1a-eb38ebc9facd, assignment asg_d5b51707,
-orchestrator:row-driven-wakes-019. Posture-heavy (filed).
-Spirit: tightbeam-wait-spirit-20260906-mike.md
-sha256 ba377391d80433b735aca88ae5a104d9add82de86f8bc5e6c93f18fe62753964.
-Evidence: four read-only static inspections of branch 0.1.9 tip f303dce plus parent report
-row-wake-reuse-findings.md (sha256 56fd46a1…). Line cites are that tip. No code executed on
-gibson. Implementation and spec-writer dispatch remain HELD until this design passes spirit;
-protected-ref landing hold (main + 0.1.9) remains until the verified Toplines concern-tags
-pair merge.
+Revision 4 (canonical). Folds the §4 binding correction accepted in review
+into revision 3 in the same motion as spec drafting — no new
+general design round. Revision 3 revised revision 2 per the
+changes-required ruling (R1-R3; architecture direction accepted, no restart).
+Revision 2 superseded the rejected prior slice per its hole
+rulings (F1-F4) and the parent executive ruling.
+Evidence: four read-only static inspections of branch 0.1.9 tip f303dce plus a parent report
+on row-wake reuse findings. Line cites are that tip. No code executed on
+the production host. Implementation and spec-writer dispatch remain HELD until this design passes review;
+the protected-ref landing hold (main + 0.1.9) remains until the related fix
+lands.
 
 ## 1. Architecture: one engine, no second matcher (F1)
 
@@ -105,7 +101,7 @@ produced. So a wait separates two things it previously conflated:
 - Truthful observation remains the producer's duty: the resolver's own row transition is the
   observation. Nothing manufactures facts on the waiter's behalf.
 
-Reconsideration, not permission (carried from wi_fca19e0c): the fired wake is a notification
+Reconsideration, not permission (carried from the closed reconsideration-not-permission card): the fired wake is a notification
 turn. The agent re-reads the rows and decides; a firing never authorizes an action, and the
 continuation prompt is an instruction to reconsider with named context, not a grant.
 
@@ -173,9 +169,9 @@ The suppression gate (gate_reason_in_txn supervision.ex:3132) is rebuilt per-obl
 - **Agent-armed coverage becomes representable.** Sidecar controllerOrigin gains
   `holder_continuation` (CHECK schema.ex:288-330; insert-coherence trigger :684-712 relaxed
   for exactly that origin); wake rows gain obligationRef; agent-created waits may carry
-  assignmentId (admission-checked, §5). This closes the null-assignment gap in executive
-  specimen att_3f02d597: w_9639742e and w_181be052 named obligations in prose while their
-  rows said assignmentId NULL, and prods 118974/118975/118976 fired anyway. That specimen is
+  assignmentId (admission-checked, §5). This closes the null-assignment gap in an executive
+  specimen: two wakes named obligations in prose while their
+  rows said assignmentId NULL, and the covering prods fired anyway. That specimen is
   a named acceptance scenario: a holder with a pending wait whose obligationRef matches the
   obligation is not prodded for it.
 - **After-turn eligibility, specified**: a wake armed during turn T becomes eligible for
@@ -186,8 +182,8 @@ The suppression gate (gate_reason_in_txn supervision.ex:3132) is rebuilt per-obl
   cover until that turn completes (no duplicate prod — spirit turn-end rule l.127-131). If
   the turn completes without discharging the obligation and no new coverage exists,
   eligibility to prod resumes at the next evaluation.
-- **Prod coverage and effort accounting are separate axes** (binding correction,
-  att_6a34a1ed). A valid assignment-scoped pending after-turn wake — and its queued/running
+- **Prod coverage and effort accounting are separate axes** (a binding correction
+  accepted in review). A valid assignment-scoped pending after-turn wake — and its queued/running
   delivery turn — suppresses duplicate prods for its obligation whether the wait is an
   unresolved dependency or a ready-now continuation (agreed turn-end spirit rule l.127-131:
   covering wakes suppress prods per obligation; this follows the spirit, not a new product
@@ -216,7 +212,7 @@ The suppression gate (gate_reason_in_txn supervision.ex:3132) is rebuilt per-obl
   (supervision.ex:1303 — progress prose never resets) are NOT widened, and verification of
   advancement stays with the existing rail policy.
 - **A failed continuation ends its coverage.** When a continuation turn fails — including
-  death on model capacity (specimen 118975) — its queued/running coverage ends at that
+  death on model capacity (the same specimen) — its queued/running coverage ends at that
   failure and the existing retry/failure accountability applies to the turn. Capacity
   failure is neither refusal nor progress nor permanent coverage: it discharges nothing,
   credits no effect channel, and answers no prod; the obligation returns to evaluation
@@ -252,26 +248,27 @@ the typed state machine.
   forced migration).
 
 Sequential G-A → G-B → G-C (one seam, one coder path); G-D follows. Remote regressions per
-goal on eezo/racter via scripts/verify_mix.sh unmodified, host named in each attest; fresh
+goal on host-a/host-b via scripts/verify_mix.sh unmodified, host named in each attest; fresh
 independent review per preferred-models; spirit summary before any integration; integration
 additionally held under the standing landing hold.
 
 **Removed from the plan (hole rulings):** the former G1 interval-default fix. The
 supervision-interval default (today wake_tick_ms=1000ms via config/runtime.exs:32 →
 application.ex:258 → gateway.ex:1004/:1014/:4227, ladder clobber :1858) belongs to
-wi_c737aee7's owner s_0cd749fc; no default is invented here and no duplicate producer is
-staffed. Likewise prod-prompt wording (wi_c60c0189, supervision.ex:4415) is s_0cd749fc's;
+the open cadence-interval card's owner; no default is invented here and no duplicate producer is
+staffed. Likewise prod-prompt wording (supervision.ex:4415) is that same owner's;
 G-C makes the advertised remedy real and this orchestrator coordinates the wording and both
 cards' dispositions with that owner before any fold or close.
 
 ## 7. Card reconciliation
 
-- wi_2ef3d514 (iceboxed): superseded by this design; dueAt-fallback requirement survives.
-  Stays iceboxed, annotated.
-- wi_fca19e0c (closed): reconsideration-not-permission carried as §2 requirement. No reopen.
-- wi_c60c0189 (open, wording, owner s_0cd749fc): G-C supplies the mechanism that makes the
+- The iceboxed interval-default card: superseded by this design; dueAt-fallback requirement
+  survives. Stays iceboxed, annotated.
+- The closed reconsideration-not-permission card: reconsideration-not-permission carried as
+  §2 requirement. No reopen.
+- The open prod-wording card (owned elsewhere): G-C supplies the mechanism that makes the
   prompt true; wording and disposition coordinated with the owner, not folded unilaterally.
-- wi_c737aee7 (open, cadence, owner s_0cd749fc): interval default remains that card's;
+- The open cadence-interval card (owned elsewhere): interval default remains that card's;
   this design only documents the dependency.
 
 ## 8. Remaining marked holes

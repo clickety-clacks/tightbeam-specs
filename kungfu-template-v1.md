@@ -1,14 +1,12 @@
-# Kungfu template + author scaffold — v1 (KP2)
+# Kungfu template + author scaffold — v1
 
-Status: READY-TO-HAND-OFF r3 (Fable-authored 2026-07-23; Fable review r2 confirmed all 3
-blockers closed; r3 applies the trailing-hyphen nit). Handoff to Sol queued behind the
-P4/P5/P6 spine. Roadmap: KP2 — "template bundle exists, loads clean,
+Status: READY-TO-HAND-OFF. Roadmap: "template bundle exists, loads clean,
 seeds via init; author guide written so a new kungfu author needs no other document."
 The author-guide half ships as the `tightbeam-kungfu-crafting` skill (the 7-part
 contract); this spec covers the missing half — a **scaffold that drops a starter of
 each part into its REAL home so the org loads clean** — and its prerequisites.
 
-## The load-bearing correction (r2)
+## The load-bearing correction
 
 A kungfu bundle's parts do NOT all live under `identity/kungfu/<name>/`. **Nothing
 scans that directory.** The loaders read fixed org-level dirs:
@@ -29,7 +27,7 @@ ONLY the two operator docs):
 The scaffold therefore writes a starter of each part **into its real home**, name-scoped
 to `<name>`. "Loads clean" is then real, because the parts are where the loaders read.
 
-## Manifest: a bundle declares WHAT IT IS FOR (Flynn, 2026-08-01)
+## Manifest: a bundle declares WHAT IT IS FOR (2026-08-01)
 
 Every kungfu manifest declares its PURPOSE — what capability adopting this bundle gives an
 org, in plain language a user would recognize from describing their own work. This is not
@@ -129,7 +127,7 @@ commit, archetypes.ex:765). Admin-tier (matching `skill put`). The verb:
 
 ## Prerequisite (must land with or before this)
 
-`tightbeam-kungfu-crafting` is currently only in Flynn's org identity, NOT in the
+`tightbeam-kungfu-crafting` is currently only in the operator's org identity, NOT in the
 substrate (`priv/skills/` ships 8, not this one; not in `@baseline_skill_names`,
 homes.ex:67). For "no other document required" to hold in a FRESH org, ship it as a
 substrate baseline: add its content to `priv/skills/tightbeam-kungfu-crafting/` and its
@@ -152,7 +150,7 @@ README points at a guide a fresh org lacks.
 
 ## Depends on
 
-- The 7-part contract (`tightbeam-kungfu-crafting`) — shipped in Flynn's org; must
+- The 7-part contract (`tightbeam-kungfu-crafting`) — shipped in the operator's org; must
   become a substrate baseline (prerequisite above).
 - Existing loaders + the skill-verb server-side commit discipline. No new validation.
 - `config set default-archetype` (org-settings, shipped) for the root_archetype apply.

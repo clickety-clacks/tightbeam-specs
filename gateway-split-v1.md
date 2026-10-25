@@ -1,6 +1,6 @@
 # Gateway split — the monocode refactor — v1
 
-Status: READY (gate-cleared 2026-07-26, r2 verdict READY — all four r1 findings closed; wave-manifest precision deliberately owned by the manifests. r1 NOT-READY(4) folded — two-phase I1, honestly-scoped I2, belongs-elsewhere split literal-vs-behavioral, per-wave normative manifests). Flynn order:
+Status: READY (gate-cleared 2026-07-26). The operator's order:
 "push the monocode refactor." PURE MOTION refactor — zero behavior change; every wave
 merges with the full suite + live smoke green and `git diff` reviewable as
 moves-plus-qualified-calls. SEQUENCED AFTER feat-s4-forensics merges (it edits
@@ -16,11 +16,11 @@ means agents will keep growing it.
 
 ## Prerequisites (BEFORE any motion — merged as their own commits)
 
-P0. **Task #23 resolved** (dead escalation_context / silent owner doorbell): wire or
+P0. **The dead `escalation_context` / silent owner doorbell resolved**: wire or
     delete BEFORE the split cements a dead surface into a new module.
 P1. **Property tests for the five invariants** (from the seam map; each a named test
     file that any wave must keep green):
-    - I1 hold/wake/claim (spans 6 modules), TWO-PHASE per the gate (a decision hold
+    - I1 hold/wake/claim (spans 6 modules), TWO-PHASE (a decision hold
       legitimately has NO recovery wake):
       DECISION phase (hold='*'): no turn claimable; exactly one live owner-decision
       path (the owner wake/turn or an open decision episode).
@@ -31,7 +31,7 @@ P1. **Property tests for the five invariants** (from the seam map; each a named 
       verbs, wake fire, turn terminal, boot reconcile) in any serializable order.
       Liveness is scoped: in RECOVERY phase the wake exists (no temporal claim about
       DECISION phase, which awaits a human/heal by design). TEST FIRST.
-    - I2 delivery atomicity+dedupe, honestly scoped (gate: exactly-once publication
+    - I2 delivery atomicity+dedupe, honestly scoped (exactly-once publication
       is FALSE today — the txn commits before complete_delivery publishes; a crash in
       the gap publishes zero and a replay republishes nothing): message∧turn commit
       atomically; wakeId UNIQUE collapses at-least-once enqueue; and FOR AN
@@ -78,7 +78,7 @@ W3 the tangle, THIS order: `Gateway.Delivery` (public — four lib modules call 
   path is a second spelling of hold-arming — moving it last lets both converge on
   arm_hold_in_txn instead of freezing the duplication into two modules).
 
-## Belongs-elsewhere — SPLIT per the gate into two classes
+## Belongs-elsewhere — split into two classes
 
 LITERAL-EQUIVALENT moves (in-scope, fix-while-moving, provably zero-behavior):
 - Doorbell SQL reaching into assignments/work_items → WorkState/WorkItems (literal
@@ -86,7 +86,7 @@ LITERAL-EQUIVALENT moves (in-scope, fix-while-moving, provably zero-behavior):
 - base_ref/1 → Adapter.base_model_ref/1 (it is literally
   elem(parse_model_ref(ref), 0)).
 
-BEHAVIORAL consolidations (gate: NOT zero-behavior — DB selection/ordering/caller
+BEHAVIORAL consolidations (NOT zero-behavior — DB selection/ordering/caller
 mutations/filter semantics differ) — OUT OF SCOPE for this refactor, filed as their
 own follow-up tickets with exact invocation/order/filter contracts and before/after
 truth tables; the split MOVES this code verbatim wherever its cluster goes:
@@ -103,7 +103,7 @@ truth tables; the split MOVES this code verbatim wherever its cluster goes:
 - A wave changes NO behavior: moves + qualified calls + @doc moves only. The diff for
   each wave must be reviewable as such; any behavioral fix discovered mid-wave is a
   FINDING routed out, never folded in (necessity gate).
-- **Per-wave NORMATIVE MANIFEST (gate F4), written and reviewed BEFORE the wave's
+- **Per-wave NORMATIVE MANIFEST, written and reviewed BEFORE the wave's
   implementation**: source symbol → destination symbol + visibility; the EXACT caller
   files that change (incl. out-of-gateway callers — Delivery: assignments/wakes/
   effort_checkin/supervision; Status: wire/router) and the compatibility/delegation

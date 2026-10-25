@@ -1,7 +1,6 @@
 # production-machine-v1 — the substrate never waits
 
-Authority: Flynn, 2026-08-05 (the adjudication deletion rulings, recorded in
-tightbeam-decisions.md). Supersedes the mechanism half of
+Authority: ruling 2026-08-05 (the adjudication deletion rulings). Supersedes the mechanism half of
 model-ringdown-pattern.md; its principle ("model choice is judgment, done by
 inference") is carried forward here, its mechanism (episodes, holds, ladder,
 verb) is deleted from the tree.
@@ -47,8 +46,8 @@ it did not mean the machine may not act on what the record now says.
 
 ## The cycle
 
-The target semantics, stated so no mechanism drifts from them (Flynn,
-2026-08-05): whenever state changes, every production whose conditions
+The target semantics, stated so no mechanism drifts from them
+(2026-08-05): whenever state changes, every production whose conditions
 depend on that state gets to run; their acts may change state again, which
 runs THEIR dependents, and the machine iterates until nothing fires —
 QUIESCENCE — where it rests until an external event (a prompt arriving, an

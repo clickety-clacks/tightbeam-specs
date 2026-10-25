@@ -1,6 +1,6 @@
 # Host registry — one writer, one truth
 
-Decided 2026-07-28 (Flynn): host facts move INTO THE DB, behind `Tightbeam.DB`
+Decided 2026-07-28: host facts move INTO THE DB, behind `Tightbeam.DB`
 — the serialization seam that already exists. Placement's "hosts are INSTANCE
 CONFIG, never DB rows" doctrine is AMENDED; it predates `assimilate` being a
 verb that writes hosts. Credential metadata stays host-local (see Non-goals).
@@ -23,7 +23,7 @@ MEASURED on this tree, 40 concurrent registrations of distinct hosts, 10 trials
   concurrent reader can see a zero-length file.
 
 The live sighting behind the ticket (two assimilates interleaving on
-`hosts.json`, `{eurisko}` then `{eliza,eurisko}`) is the two-writer corner of
+`hosts.json`, `{host-a}` then `{host-b,host-a}`) is the two-writer corner of
 the same window. The failure is silent by construction: the CLI reports
 `registered`, exit 0, and the host is gone. It resurfaces later as
 `unknown_host`, or — worse — as a placement decision pointed at the wrong

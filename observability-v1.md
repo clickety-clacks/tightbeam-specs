@@ -1,6 +1,6 @@
 # Observability v1 — grain-agnostic work model, thin change doorbells, query surface (implementation spec, r4)
 
-Status: DRAFT r4 (revised per Flynn's grain-agnostic OBSERVABILITY
+Status: DRAFT r4 (revised per the grain-agnostic OBSERVABILITY
 GRAIN ruling resolving the r3 review's one BLOCKER: the substrate
 does NOT decide what a "card" is — card grain is VIEW-SIDE and
 tightbeam has no business modeling it. r3 made the bare assignment
@@ -67,7 +67,7 @@ escalation epoch). One word per condition; this spec defines the
 stranded QUERY that supervision promised ("computed at query time by
 any observer"). Upheld by the r1 adversarial review.
 
-## Design position — grain-agnostic (Flynn's ruling, 2026-07-20)
+## Design position — grain-agnostic (ruled 2026-07-20)
 
 Recorded verbatim (decisions-ledger 2026-07-20 "OBSERVABILITY /
 KANBAN", under the CODEX-GATES POSTURE + OBSERVABILITY GRAIN entry):
@@ -78,13 +78,13 @@ KANBAN", under the CODEX-GATES POSTURE + OBSERVABILITY GRAIN entry):
 > exposes BOTH model entities (assignments AND work-items)
 > RANDOM-ACCESSIBLY (queries), plus thin change-doorbells; the VIEW
 > (kanban / stream-widget / an unsolved 20k' view) picks its grain and
-> queries. Flynn's load-bearing point: a board is FUNDAMENTALLY RANDOM
+> queries. The load-bearing point: a board is FUNDAMENTALLY RANDOM
 > ACCESS — it needs "all current work + state, now," which comes from a
 > QUERY, never from reconstructing a stream; events only say "re-query
 > this." Product context (why the substrate must stay grain-agnostic —
 > the right view is not yet known): kanban is "too mechanical — like
 > looking under the hood to check if the steering wheel works when
-> turning the wheel would tell you"; Flynn's stream-widget (newest
+> turning the wheel would tell you"; the stream-widget (newest
 > ticket-change inserted left in a horizontally-scrolling list, deltas
 > summarized on top) shows live action well but still lacks the 20k'
 > overview; the 20k' work view is an OPEN product problem. A substrate
@@ -924,7 +924,7 @@ merge. STOP and report on any conflict with existing code, with
 attest / work-item / check-tier as merged or supervision as merged, or
 with this spec.
 
-## Open ruling (Flynn-level, ruled r1, upheld by the r1 review)
+## Open ruling (operator-level, ruled r1, upheld by the r1 review)
 
 `active` is derived from FILINGS (≥1 attest row), not from a running
 turn. Chosen because every input stays assignment-scoped and every
@@ -934,13 +934,13 @@ negated) is equally mechanical but needs hooks at turn-enqueue (hot
 path, several gateway sites) and makes all of one holder's cards
 flip together on every turn. Consequence: the board shows
 open/active by work-record, and "working right now" remains the chat
-wire's turn-state frames. If Flynn wants turn-liveness ON the board,
+wire's turn-state frames. If the operator wants turn-liveness ON the board,
 that is a revision adding states + hot-path emission sites — flag,
 don't improvise.
 
-## Addendum phase — row-family emission audit (Flynn-directed; READY, gate-cleared 2026-07-25 after 5 Sol-high rounds)
+## Addendum phase — row-family emission audit (READY, gate-cleared 2026-07-25)
 
-Flynn's question: have we been consistent about emitting row writes to the clawline
+The question: have we been consistent about emitting row writes to the clawline
 stream? Answer: mostly by design, twice by omission. This addendum is the disposition
 table — every persisted row family, its carriers AT ROW-WRITE GRANULARITY (r1 review:
 family-level "covered" hid silent mutations), and whether each silence is a decision or
@@ -972,7 +972,7 @@ turns); QUERY = no push, truth reachable through a verb; SILENT = none of these.
 | condition_facts | SILENT | by design (hot-path exclusion) |
 | subagent_markers (markers merge, 2026-07-25) | rows SILENT; a STOP's condition-fact may fire a parent wake, whose delivery is CHAT | by design — parent-attributed observability; the parent's wake turn IS the signal, and see-never-expect forbids making children board material |
 | events (dispatch audit) | SILENT (query/feed only) | by design — audit trail, not board material |
-| producer_jobs | SILENT (success may indirectly emit an attest/status edge; failure writes a lifecycle row) | by design pending a Flynn promotion — producer health is operator material, not stream material |
+| producer_jobs | SILENT (success may indirectly emit an attest/status edge; failure writes a lifecycle row) | by design pending an operator promotion — producer health is operator material, not stream material |
 | assignment_prods, assignment_interruptions, adjudication_episodes, rail_remedy_episodes, escalation_waivers | prods/adjudication reach the affected session as CHAT; rows themselves SILENT | by design (supervision enumerates independently) |
 | lifecycle_events | SILENT — a SHARED operational family (adapters, wakes, escalation, producers, placement, rails), not merely supervision's | by design — operational forensics, query-only |
 | artifacts, assets | SILENT | by design (artifacts-and-reconciliation owns any future surfacing) |

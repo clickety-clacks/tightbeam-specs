@@ -1,17 +1,13 @@
 # Job trace observability — v1
 
-Status: READY (Opus-authored 2026-07-25; confirming gate NOT-READY(4) returned only
-pin-level residue — prod-turn exclusion, honest pre-boundary stamp, three encodings,
-a column-count typo — all folded below; the reviewer confirmed the load-bearing joins
-sound (reviewsAssignmentId reaches verdicts; matchedFactAt reconstructible). Cleared
-by additive-feature stop-rule.) Trajectory as job-eval→split→descope→minimal: 8→8→9 (split) → 9→8→6
-(descope) → this ruthlessly-minimal v1. The repeated finding — "family X keeps no
-history / no timestamp / no attribution" — is answered structurally: v1 traces ONLY
-families needing ZERO new durability infrastructure; everything that would need a new
-column, timestamp, or attribution is named for `job-forensics-v2`. This is an ADDITIVE
-feature (new nullable columns + one read verb; no existing behavior changes), low blast
-radius; per the review-calibration doctrine it ships with the one residual (exact JSON
-key strings) as an implementation-verified proof, not another gate round. Depends on
+Status: READY. The load-bearing joins are sound (reviewsAssignmentId reaches verdicts;
+matchedFactAt reconstructible). This is the ruthlessly-minimal v1. The repeated finding —
+"family X keeps no history / no timestamp / no attribution" — is answered structurally: v1
+traces ONLY families needing ZERO new durability infrastructure; everything that would
+need a new column, timestamp, or attribution is named for `job-forensics-v2`. This is an
+ADDITIVE feature (new nullable columns + one read verb; no existing behavior changes), low
+blast radius; it ships with the one residual (exact JSON key strings) as an
+implementation-verified proof, not another review round. Depends on
 `work-item-brackets-v1` (job identity).
 
 ## Law 0 — no ceremony (binding)
@@ -27,7 +23,7 @@ for it. Attests are the one agent-authored record (prior law, untouched); this r
   the effort notification (both enqueue with assignment context in hand) carry both; a
   bracket-1 nag carries `jobRef` only, `assignmentId` NULL (the firing wake is joined
   to its item via the item's own routingWakeId column — durable reverse pointer, no
-  new infrastructure). PROD turns are EXCLUDED in v1 (confirm-gate F1: a prod rides a
+  new infrastructure). PROD turns are EXCLUDED in v1 (a prod rides a
   wake that persists no assignment reference; attributing it needs a wake.assignmentId
   column — new durability → job-forensics-v2; prompt parsing is forbidden).
   Conversational turns NULL.
@@ -36,14 +32,14 @@ for it. Attests are the one agent-authored record (prior law, untouched); this r
 These columns ARE the load-bearing forensic joins (turn → assignment → job; which mind
 ran which turn). They are valuable and unambiguous independent of the trace verb's shape.
 
-## 2. Mind stamp — record the substrate's OWN decision (Flynn redesign 2026-07-26)
+## 2. Mind stamp — record the substrate's OWN decision (redesign 2026-07-26)
 
-**Flynn ruling (supersedes the verified-boundary design and its live-field amendment):**
+**Ruling (supersedes the verified-boundary design and its live-field amendment):**
 "an agent had to select that model to begin with — just record that." The substrate IS
 the selector: spawn chose the model, tune changed it, the session row holds it. So the
 stamp is a PURE OUR-SIDE WRITE — at turn CLAIM (the moment the lane takes the turn to
 run), copy the session's currently-selected model/harness onto the turn row. Claim-time,
-not enqueue-time (delta-review D3): a tune can land while a turn sits queued, and the
+not enqueue-time: a tune can land while a turn sits queued, and the
 selection in effect when the turn RUNS is the answer §1's columns exist to give — same
 cost, one read in the claim txn. No ACP round-trip, no per-turn read-back, no hot-path
 checkpoint, no capability map, no cancel/tune serialization machinery. (The prior
@@ -59,7 +55,7 @@ silent-apply gaps at load and resident-session bypass are closed as part of this
 — so intent≈reality is enforced where reality can change, once, instead of interrogated
 every turn. The stamp's meaning: "the mind the substrate had selected when this turn ran."
 
-Claim-time consequences, named (delta-review follow-up): a turn ENQUEUED but never
+Claim-time consequences, named: a turn ENQUEUED but never
 CLAIMED (queued at shutdown; drained by queued-retirement cancel) terminates with NULL
 model/harness — legitimate, and it means exactly "no mind was ever selected for a run
 of this turn"; the trace's turn entries therefore carry model|null, harness|null and a
@@ -76,7 +72,7 @@ Included — each already durable and job-attributable with NO new infrastructur
 - each assignment (opener, holder, state, files, `reviewsAssignmentId`);
 - each attributed turn (status, stamped mind, enqueue/end timestamps);
 - attests on those assignments AND on assignments whose `reviewsAssignmentId` points
-  into this job (r6-F4: review verdicts are filed on a separate review assignment;
+  into this job (review verdicts are filed on a separate review assignment;
   the trace follows `reviewsAssignmentId` INTO the job so the bad-worker verdict is
   present — the invariant is "a review assignment's attests belong to the reviewed
   assignment's job", enforced by the join, not by requiring the review assignment to
@@ -92,9 +88,9 @@ disposition HISTORY (item keeps current state only — the trace shows current d
 no from/to timeline); `wake_canceled` events (no `canceledAt` column exists); subagent
 MARKERS (carry no assignmentId today — attribution would need a new emission column); the
 overwritten-transition capture (adjudication reopens, rung climbs, prod edges — the
-original causal_events, deferred at r6).
+original causal_events, deferred).
 
-**Pinned schema (r6-F5 + confirm-gate F3, REALLY pinned):** the artifact is
+**Pinned schema:** the artifact is
 `{workItem: {id, ownerUserId, state, failReason, title}, assignments: [{id, holderKey,
 openerRef, state, files, reviewsAssignmentId}], timeline: [entry]}`. Encodings pinned:
 `openerRef` is the string `"user:"<userId>` or `"session:"<sessionKey>` (from the
@@ -123,7 +119,7 @@ extra key fails. (This is the one residual carried as a verified proof, not a ga
 AND an absent id return `not_found` (no existence leak). Tighter than work-item-get;
 named. CLI row in cli-surface.
 
-## 4. `commitRefs` (Flynn-approved rider)
+## 4. `commitRefs` (approved rider)
 
 Completion attests gain OPTIONAL `commitRefs` `[{repo: "host:abs-path", commit}]`. When
 present, the substrate validates at filing that each commit exists in the named repo
@@ -187,5 +183,5 @@ work-item-brackets-v1 merged first.
 `turns.harness` keeps the harness wire name; `turns.model` carries the BARE
 session-selected model reference (e.g. `gpt-5.6-sol[medium]`) copied at claim time. No
 confirmation markers — the verified/capability encoding was retired with the boundary
-design (Flynn redesign: the stamp records the substrate's own selection; apply-failure
+design (redesign: the stamp records the substrate's own selection; apply-failure
 loudness at the three config-change sites is what keeps selection≈reality).

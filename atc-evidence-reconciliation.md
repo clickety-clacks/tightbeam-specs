@@ -147,11 +147,11 @@ private browser with real hover/pointer interaction. Scope is
 `bin/tb-weather-gen`, `server/tb-atc-api.py`, `web/index.html`, and the smallest fixtures. Do not build
 Kung Fu-specific ladders, read evidence contents, redesign the map, deploy, or
 write hosted ATC. Require one concise independent exact-commit review under
-Mike's MVP threshold.
+the operator's MVP threshold.
 
 ### Live merged-ring acceptance cases
 
-Before the ring fix, Mike observed these five code-evidenced, stage-5 items
+Before the ring fix, these five code-evidenced, stage-5 items were observed
 with `merged=null` rendered gray in the live feed. A raw `merged=null` fixture
 for each must render yellow rather than gray:
 

@@ -1,7 +1,7 @@
 # S4 operability — adapter faults heal DARK — v1
 
-Status: READY (gate-cleared 2026-07-26; trajectory 4→4→3→1, final finding was contract-text alignment of the epoch token — folded; reviewer confirmed totality, CAS ruling race, visibility scoping, and restart stability sound. r3 gate NOT-READY(3) folded — totality made normative across all probe terminals, epoch-composed heal tokens restart-stable, visibility/ordering corrected to the code's actual rule. r2 gate NOT-READY(4) folded — total probe-terminal lifecycle, fired-wake/ruling race CAS, episodeId column + visibility/ordering pins, level-triggered heal with generation tokens. r1 gate NOT-READY(4) folded — probe-first atomic transition riding the existing recoveryWakeId invariant, cause encoding + seam-origin rules + model-decision tagging for the load-apply route, decision-requests read-time union pinned, idempotent CAS heal sweep). Task #19; field evidence sat-e2e
-lnx-0725d S4. Flynn ruling: "automatically. dark factory. DARK" — recovery is
+Status: READY (field evidence sat-e2e
+lnx-0725d S4). The operator's ruling: "automatically. dark factory. DARK" — recovery is
 automatic when the cause heals; no operator verbs for routine recovery; humans only
 for genuine decisions. Dark ≠ opaque: full observability stays.
 
@@ -13,13 +13,13 @@ as bare `{:error, :task_crash}` while the designed `{:error, {:adapter_unavailab
 reason}}` path (built for exactly this) never fires; the actionable text sits only in
 adapter stderr. Contract: an adapter that cannot BOOT yields `{:adapter_unavailable,
 <one-line reason incl the spawn error>}` to the turn — same shape as the existing
-designed path — and the turn terminalizes `failed` with that reason. Mechanism note
-(gate r1): the boot-call exit itself carries only `{:error, :closed}`; the reason
+designed path — and the turn terminalizes `failed` with that reason. Mechanism note:
+the boot-call exit itself carries only `{:error, :closed}`; the reason
 requires a boot-boundary catch plus ATTEMPT-SCOPED stderr extraction (the last stderr
 line of that boot attempt), not a generic crash translation. (The gateway-log
-half of this is task #16's lane; this spec owns the REASON reaching the turn row.)
+half of this is tracked separately; this spec owns the REASON reaching the turn row.)
 
-> **AMENDED 2026-08-12 — Defect 2 below is DEAD.** Adjudication was deleted 2026-08-05 ("Adjudication is DELETED. Model policy is guidance, not substrate." — `tightbeam-decisions.md`).
+> **AMENDED 2026-08-12 — Defect 2 below is DEAD.** Adjudication was deleted 2026-08-05 ("Adjudication is DELETED. Model policy is guidance, not substrate.").
 > Holds no longer exist, so a defect about holds releasing themselves has
 > nothing to attach to. Defect 1 above remains live. Retained as history —
 > do not build from Defect 2. See `adjudication-deletion-amendment.md`.
@@ -31,7 +31,7 @@ adjudication hold; when the adapter recovers, the hold persists — session wedg
 the hold is invisible to `decision-requests`; recovery requires a new session.
 
 Contract (dark factory):
-1. **Cause tagging (encoding pinned, r1-F2).** The episode gains ONE additive
+1. **Cause tagging (encoding pinned).** The episode gains ONE additive
    nullable column `cause` — encoding `"adapter_fault:"<adapter key>` where the
    adapter key is the canonical coordinator key string (`<harness>:<preset>@<host>`,
    exactly as /version renders it), derived at the hold-open seam from the session's
@@ -42,10 +42,10 @@ Contract (dark factory):
    `"model_decision"` — a GENUINE decision cause, NEVER auto-released by adapter
    heal (proof 4 uses exactly that failure). Both claim and reopen write/replace
    the cause; legacy rows stay NULL and are never swept.
-2. **Auto-release on heal — probe-FIRST, riding the existing invariant (r1-F1).**
+2. **Auto-release on heal — probe-FIRST, riding the existing invariant.**
    Release is ONE atomic transition per held session: resolve the episode (CAS on
    episode state — see the ruling race below), dispose the owner-adjudication
-   request (r2-F2: the owner wake is normally already FIRED with a queued or
+   request (the owner wake is normally already FIRED with a queued or
    running owner turn by heal time — cancellation of a pending row is the rare
    case; the pinned disposition is: pending wake → canceled; fired wake with a
    queued/running owner turn → the turn is left to complete, and its eventual
@@ -60,10 +60,10 @@ Contract (dark factory):
    the totality rule above (always re-holds, same cause) and, in the SAME
    transaction, arms the probe retry (see Replay identity below) — a re-hold is a
    new hold and owes its own probe.
-   **Heal signal — LEVEL-TRIGGERED with EPOCH-COMPOSED tokens (r1-F4 + r2-F4 +
-   r3-F2, NORMATIVE):** the heal token is `{coordinatorEpoch, generation}` —
+   **Heal signal — LEVEL-TRIGGERED with EPOCH-COMPOSED tokens (NORMATIVE):**
+   the heal token is `{coordinatorEpoch, generation}` —
    coordinatorEpoch a STRICTLY-MONOTONIC value minted once at coordinator init —
-   cross-review F2: ULID is NOT strictly ordered within a millisecond (random suffix),
+   note: ULID is NOT strictly ordered within a millisecond (random suffix),
    so a fast restart can mint a LOWER epoch and reject its own heal token, wedging the
    hold. Use a persistent monotonic counter (an epoch row incremented at each
    coordinator init, durable across restarts) OR millisecond time with a
@@ -84,7 +84,7 @@ Contract (dark factory):
    HOLD: "one probe per (hold, token)" therefore grants each re-hold one probe of
    its own, delivered by the probe retry below — never by a replayed ready event.
    One probe per (hold, token). No operator action at any point.
-   **Probe retry (ruled 2026-07-28, task #103 — dark-factory liveness):** the
+   **Probe retry (ruled 2026-07-28 — dark-factory liveness):** the
    former clause "a re-held session probes again only on a genuinely newer token"
    assumed a failed probe implies a still-faulty adapter whose next death→ready
    cycle mints the next token. Field evidence falsified that assumption: a probe
@@ -113,19 +113,19 @@ Contract (dark factory):
    probe wake identity is chained per attempt (the failed probe's wake id
    discriminates the idempotency key) so an at-least-once retry still enqueues
    exactly one probe.
-3. **Visibility (dark ≠ opaque; read-time union, r1-F3).** The decision_requests
+3. **Visibility (dark ≠ opaque; read-time union).** The decision_requests
    TABLE is untouched (its kind CHECK stays locked); the `decision-requests`
    LISTING gains hold rows via a read-time UNION over adjudication episodes. Episodes gain an
    `episodeId` (additive column, ULID stamped at open; existing rows backfill on
    first touch — the composite key stays the uniqueness truth, episodeId is the
-   STABLE READ HANDLE r2-F3 required; correlationKey stays mutable and is not used
+   STABLE READ HANDLE required; correlationKey stays mutable and is not used
    for identity). Pinned synthetic shape: `kind: "adjudication_hold"`,
    `id: "hold:"<episodeId>`,
    `status: open` while the session's hold is `'*'` OR `probeWakeId` (a
    probe-in-flight hold is still a hold — resolved episodes whose session still
    holds are LISTED), `cause` verbatim, `disposition: "auto_on_adapter_heal"` for
    adapter_fault / `"awaits_ruling"` otherwise, plus sessionKey and raisedAt.
-   Visibility (r2-F3, corrected r3 — the code's ACTUAL rule is owner/raiser/
+   Visibility (corrected to the code's ACTUAL rule — owner/raiser/
    effort-expecter with NO admin axis): synthetic hold rows are visible to the
    held session's OWNER (the same owner axis the existing filter applies) and to
    admins — admin visibility applies to SYNTHETIC HOLD ROWS ONLY and does not
@@ -168,7 +168,7 @@ contradiction. No retroactive repair of holds predating the column
    sweep still probes a re-held session only on a strictly larger token (exactly
    once); the DUE retry wake probes the re-held session exactly once at the SAME
    token while the adapter is ready, and the queued backlog then drains in order
-   with no further heal edge (the task #103 production shape); a due retry
+   with no further heal edge (the probe-retry liveness scenario above); a due retry
    against a NOT-ready adapter probes nothing and leaves the hold eligible for
    the next heal edge; a post-coordinator-restart ready (new epoch, generation
    reset to a small number) DOES sweep a hold stamped under the old epoch.

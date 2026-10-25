@@ -2,11 +2,6 @@
 
 Revision 5 — B-R8 verifier-notice attribution clarified; clarification digest pending.
 
-Work item: `wi_fbcdf1a9-d3fc-4f17-ae1a-eb38ebc9facd`.
-Spec assignment: `asg_26e06eec-4d09-4ecc-bb43-251acb9d82ac`.
-Spec expert: session `agent:main:clawline:mike:main s_c86af874`.
-Delivery owner: `orchestrator:row-driven-wakes-019`.
-
 ## Goal
 
 Deliver G-A through G-D of the accepted row-driven-wake design: evaluate conditional
@@ -17,27 +12,21 @@ Only a justified unresolved dependency qualifies for wait-aware effort treatment
 
 Controlling authority, in order:
 
-1. Mike's Spirit, `tightbeam-specs@9eae6ad668b10707739a3eff4e57ac9c12fadd81:`
-   `tightbeam-wait-spirit-20260906-mike.md`, SHA-256
-   `ba377391d80433b735aca88ae5a104d9add82de86f8bc5e6c93f18fe62753964`, artifact `art_5f4f4acb`.
+1. The governing wait-policy document, `tightbeam-wait-spirit-20260906-mike.md`, SHA-256
+   `ba377391d80433b735aca88ae5a104d9add82de86f8bc5e6c93f18fe62753964`.
    Its Commission and Agreed turn-end rule control the earlier proposals.
-2. Accepted design Revision 4, `tightbeam-specs@017380772ed0da242c5aacf3b135d3e80056fa3b:`
-   `tightbeam-row-driven-wakes-design-20260906.md`, SHA-256
-   `fae821d5e9a4f89ff273b20902f8c810f11c125d3dc771e0296f59b8940e691a`, artifact `art_388a1997`.
-   PO verdict `att_3eb744f2` on `asg_5ac4d197` and binding acceptance `att_6a34a1ed`.
-3. Orchestrator Gap-1/Gap-2 ruling, message `s_92a833e5-5a85-495b-b743-ca42318fa6ea`;
-   Gap-2 amendments `s_33d4038f-c57a-441f-a075-70534eada151` and, controlling,
-   `s_936bcb33-ffeb-4e53-a907-bda184a5c2c6` under parent fidelity ruling `att_ac0d162e`.
-   Mechanical admission and semantic verification are distinct. Every dependency needs
+2. Accepted design Revision 4, `tightbeam-row-driven-wakes-design-20260906.md`, SHA-256
+   `fae821d5e9a4f89ff273b20902f8c810f11c125d3dc771e0296f59b8940e691a`.
+   Its review verdict and binding acceptance control.
+3. The Gap-1/Gap-2 ruling and its controlling Gap-2 amendment, under the parent fidelity
+   ruling. Mechanical admission and semantic verification are distinct. Every dependency needs
    accountable verification/challenge; unresolved verification is explicitly provisional.
    Resolver disposition proves resolution, not necessity. No permanently unverified class.
 4. This document makes that design buildable; it does not reopen the accepted architecture.
 
 Holds, verbatim from the assignment:
 
-> 0.1.9-only scope; implementation held until this spec passes independent review; final Spirit acceptance before integration; no protected-ref landings on the code repo; no runtime/live-org action; gibson compile-only, no code execution there.
-
-The specs-repository main landing is authorized. It is not a code-repository landing.
+> 0.1.9-only scope; implementation held until this spec passes independent review; final Spirit acceptance before integration; no protected-ref landings on the code repo; no runtime/live-org action; the production host is compile-only, no code execution there.
 
 ## Non-Goals
 
@@ -54,7 +43,8 @@ The specs-repository main landing is authorized. It is not a code-repository lan
   qualification remains unchanged; the new revision binding serves wait predicates only.
 - No 0.2.0 work, release, installation, deployment, gateway restart, or production-data repair.
 - No fold/closure of another owner's cadence or prod-wording card. Design §7 controls
-  reconciliation of `wi_2ef3d514`, `wi_fca19e0c`, `wi_c60c0189`, and `wi_c737aee7`.
+  reconciliation of the iceboxed interval-default card, the closed reconsideration-not-permission
+  card, the open prod-wording card, and the open cadence-interval card.
 
 ## Terms
 
@@ -596,10 +586,10 @@ help, parser and output before activating the amendment (wisdom 20–22). Accept
 
 ## Acceptance
 
-Tests use isolated fixtures on **eezo or racter**, over SSH, through unmodified
+Tests use isolated fixtures on **host-a or host-b**, over SSH, through unmodified
 `scripts/verify_mix.sh`. Name the actual host and candidate commit in every gate attest.
 Use source fixtures for SQL/state properties; no invented live observation capture.
-No tests, probes, gates or checkout code execute on gibson. If the remote host fails
+No tests, probes, gates or checkout code execute on the production host. If the remote host fails
 for host/toolchain reasons, record the blocker and stop that run; do not fall back.
 CLI changes also receive the applicable Rust gate on the remote host.
 
@@ -644,7 +634,7 @@ below stand for rows created by those seams. `H1` and `H2` are distinct SHA-256 
 | B12 (I6) | Given a crash after recognition or enqueue but before marking delivery, when the gateway restarts, then pending delivery reuses wakeId and does not duplicate the continuation. Existing target refusal/retry behavior and typed cancellation remain observable. |
 | C1 (I5,I8) | Given A's wait registers during T, when supervision evaluates before T terminal, then the new wait grants no after-turn coverage yet. In the transaction observing T terminal, a valid pending or enqueued continuation suppresses a duplicate prod for A. |
 | C2 (I8) | Given S holds A and B and has a valid pending dependency wake for A, when supervision evaluates both, then A is covered and B remains independently eligible. Repeat with a ready-now pending wake, and with A's queued/running continuation; the result is unchanged. |
-| C3 (I8) | Given the executive specimen shape (`w_9639742e`, `w_181be052`: prose named work but assignmentId was null), when fixtures register the equivalent new wakes with typed A/B scope, then prods corresponding to 118974/118975/118976 are suppressed only for the covered obligations. Legacy null/prose-only wakes earn no new coverage. |
+| C3 (I8) | Given the executive specimen shape (prose named work but assignmentId was null), when fixtures register the equivalent new wakes with typed A/B scope, then the corresponding prods are suppressed only for the covered obligations. Legacy null/prose-only wakes earn no new coverage. |
 | C4 (I8) | Given A's continuation is queued, then running, when successive supervision evaluations occur, then no duplicate prod is issued. When it completes with A open and no next wake, then prod eligibility resumes at the next evaluation. |
 | C5 (I8) | Given two otherwise equivalent covering wakes, one policy-qualified unresolved dependency and one ready-now continuation, when effort is accounted, then only the first receives relief. Self-owed R does not qualify under the shipped other-party policy; an isolated explicit self-block rail election can qualify it, with accountable verification still required. |
 | C6 (I9) | Given an effort generation with used budget U and unchanged effect cursors, when a wait registers, is replaced, or is recognized, then U and cursors do not reset and no effect is credited. A qualifying interval pauses only the remaining horizon; ending it resumes the same remainder. |
@@ -668,31 +658,22 @@ Traceability: G-A implements A-R1–A-R4 (A1–A4, V5); G-B implements B-R1–B-
 policy and the operating amendment (D1–D3, V4). Cross-cutting invariants are cited by each case.
 Build order is G-A → G-B → G-C → G-D through the same implementation seam.
 
-Review handoff requires this canonical file in tightbeam-specs main, exact SHA-256 artifact
-row, and a completed cold digest. Build handoff additionally requires independent spec
-review to pass. The orchestrator returns
-the review verdict to the spec expert. After a clean review, bind the work item's
-implementation specRef/hash to those reviewed bytes. Implementation then returns remote
-gate evidence and fresh independent code review to the orchestrator; final Spirit
-acceptance precedes integration and does not itself lift the protected-ref landing hold.
-
 ## Open Questions
 
 No blocking questions remain. Resolved rulings are retained so later readers do not
 re-decide them:
 
-- **Q1 — RESOLVED:** opener message `s_92a833e5-5a85-495b-b743-ca42318fa6ea`
-  authorizes A-R4's additive nullable producer and revision links, with no backfill or
-  completion-rail changes. The source gap was recorded in `att_e4e85a8f`.
+- **Q1 — RESOLVED:** the opening ruling authorizes A-R4's additive nullable producer and
+  revision links, with no backfill or completion-rail changes. The source gap this
+  addresses is recorded elsewhere.
   Deleting exact revision binding loses a required acceptance case; accepting approximate
   holder/work-item provenance permits stale or unrelated output. Those alternatives lost.
-- **Q2 — RESOLVED:** the same initial ruling, superseded on necessity by messages
-  `s_33d4038f-c57a-441f-a075-70534eada151` and `s_936bcb33-ffeb-4e53-a907-bda184a5c2c6`
-  under `att_ac0d162e`, supplies B-R8 and C-R3. Mechanical admission precedes semantic
+- **Q2 — RESOLVED:** the same initial ruling, superseded on necessity by its controlling
+  amendment, supplies B-R8 and C-R3. Mechanical admission precedes semantic
   confirmation; accountable verification is mandatory and provisional status explicit.
   The existing obligation/attest/wake seams suffice. A new assessor subsystem was declined;
   permanently unverified classes and treating resolver disposition as proof were rejected.
-- **Review B1 — RESOLVED:** verdict `att_621e21e8` / report `art_2c42d897` exposed
+- **Review B1 — RESOLVED:** the review exposed
   unspecified selected-policy provenance under overlapping matches. G-D now selects the
   bytewise-smallest matching name per purpose/snapshot; B-R8 persists that admission cause
   and V1 proves order independence. Deleting provenance loses required accountability;
@@ -703,7 +684,7 @@ re-decide them:
 - **Q4 — NON-BLOCKING: additional row domains.** The required domains above implement the
   accepted examples. New observable domain facts can extend the existing fact seam;
   observation producers and their semantics require their own authority.
-- **Build clarification — RESOLVED:** coder question `s_95f116fc-788d-4c32-956a-6dc08ef6e75d`
+- **Build clarification — RESOLVED:** a build-time question
   exposed the implicit verifier-notice attribution in B-R8. The notice carries V's
   assignment link; controller ownership comes from existing typed controller provenance.
   Leaving the notice unlinked loses accountable turn attribution. Treating the link as

@@ -1,12 +1,12 @@
 # Core causality fixes — stop discarding facts the substrate holds — v1
 
-Status: READY (gate-cleared 2026-07-26, r4 verdict READY, no blocking findings — vocabulary grep clean, C1 consistently durability-only with all five proofs runnable on rows alone, direct/resolved split confined correctly. Trajectory 6→2→3→0.) REWRITTEN rather than patched: r3's gate
-found the causal vocabulary surviving in the status line and downstream section while the
-normative body had retired it — patching is what produced that contradiction. Trajectory
-6 → 2 → 3 → this, and r4 is SMALLER than r3: C1 is durability-only, and C2 stops trying
-to unify reads that legitimately answer different questions.
+Status: READY. REWRITTEN rather than patched: an earlier draft's causal vocabulary
+survived in the status line and downstream section while the normative body had
+retired it — patching is what produced that contradiction. This version is smaller:
+C1 is durability-only, and C2 stops trying to unify reads that legitimately answer
+different questions.
 
-Flynn ruling: "spec as core fixes and prioritize." These are CORE MODEL changes: each
+The operator ruled: "spec as core fixes and prioritize." These are CORE MODEL changes: each
 closes a place where the substrate discards a fact it holds, or leaves a relation
 unconstrained so readers must guess.
 
@@ -46,7 +46,7 @@ stated because they are load-bearing for every consumer:
 `createdContextKnown = 1` means THE SUBSTRATE LOOKED — not that causal truth is known.
 There is no upgrade to proof: the wire-carrier remedy this section once named is not
 constructible — a wire field is agent-filled, hence forgeable, hence exactly what the
-forensics-v2 boundary strips (Flynn's carrier ruling, 2026-07-29, per
+forensics-v2 boundary strips (the carrier ruling, 2026-07-29, per
 artifact-carrier-proposal-v1). The attainable ceiling is the best substrate-observed
 edge plus an explicit evidence class; hook-seam observation (`tool-call-observed`) is
 the highest class and remains an observation-quality claim, never an unforgeability
@@ -57,12 +57,12 @@ an item while holding NO assignment; an assignment-based column would stamp NULL
 The turn is the only carrier present on every path, and it already carries `assignmentId`
 and `jobRef`.
 
-**C1 IS DURABILITY-ONLY (gate r3-F2).** It adds NO response field, requires NO consumer
+**C1 IS DURABILITY-ONLY.** It adds NO response field, requires NO consumer
 change, and makes NO claim about roots, parents, children, or trees — those words appear
 in no field this spec defines. How to present the evidence (shape, naming, whether to
 offer a tree at all) is the consuming reader's decision, in that reader's spec, gated on
-its own merits. r3 defined a response representation while also declaring "no wire
-surface"; that was incoherent.
+its own merits. An earlier draft defined a response representation while also declaring
+"no wire surface"; that was incoherent.
 
 **Proofs.** (1) An item created during a running turn carries that seq with `known = 1`;
 created with no running turn carries NULL with `known = 1`. (2) An agent-supplied
@@ -91,7 +91,7 @@ ambiguity; reporting it was cruft covering a missing constraint.
   the reviewed assignment's item (transitively), else NONE. "At most one" — the NONE case
   is legal and stays legal.
 
-**The two memberships answer DIFFERENT QUESTIONS and stay separate (gate r3-F3).** r3
+**The two memberships answer DIFFERENT QUESTIONS and stay separate.** An earlier draft
 tried to make `work-item-get` adopt resolved membership so item reads would "agree." That
 is both unsafe and false:
 - unsafe — feature_smoke's cleanup fetches `work-item-get` and REVOKES every open
@@ -118,7 +118,7 @@ intended.
 resolves transitively for RESOLVED readers and counts exactly once. (3) An assignment with
 neither key resolves to NONE. (4) DIRECT consumers UNCHANGED: feature_smoke's revoke-loop
 still sees only directly-owned assignments, and client snapshots are byte-identical
-(preservation proofs, per the gate). (5) The boot audit logs conflicts without mutating,
+(preservation proofs). (5) The boot audit logs conflicts without mutating,
 and terminates on a synthetic cycle.
 
 ---
