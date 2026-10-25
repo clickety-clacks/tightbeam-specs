@@ -224,11 +224,13 @@ T2. Given a call that asserts `user:user-a` and has no real submitting session, 
 `operator-rule`, then it receives `operator_ruling_submitting_session_required`; the request remains
 open and no terminal effect listed in P3 exists.
 
-T3. Given the frozen 294-row fixture under
-`fixtures/operator-ruling-provenance-migration-2026-08-30/rows.jsonl`, when migration classifies the
-rows below the epoch, then each row projects `state:"unknown"`, no row projects direct-user, and the
-fixture's recorded 291/3/0 evidence remains unchanged. The test does not treat 294 as the current
-315-row population.
+T3. Given the frozen 294-row fixture
+`fixtures/operator-ruling-provenance-migration-2026-08-30/rows.jsonl` as committed in this
+repository at `14998d5500887a44cec65e82f72251110db4c833` (SHA-256
+`5755b83e36caca22f0f0103eb171c5c53f839ca4e1521e9453b8481fa7fd3dc1`; the file is not in later
+trees), when migration classifies the rows below the epoch, then each row projects
+`state:"unknown"`, no row projects direct-user, and the fixture's recorded 291/3/0 evidence
+remains unchanged. The test does not treat 294 as the current 315-row population.
 
 T4. Given the product-owner's 315-row inventory at the 2026-08-31 ruling boundary, when preflight
 projects that inventory, then the result contains 315 `state:"unknown"` items, zero direct-user
