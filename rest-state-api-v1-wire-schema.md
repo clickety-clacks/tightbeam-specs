@@ -45,6 +45,12 @@ union. The five-file candidate set is this file, `rest-state-api-v1.md`,
 `event-firehose-v1.md`, `cli-surface-v1.md`, and
 `session-status-set-harness-capability-v1.md`.
 
+Reset-safe history amendment, 2026-10-25: PROPOSED. Defined by
+`chat-reset-safe-history-v1.md`. Add the optional transcript-message `marker`
+key, its closed `TransitionMarker` shape and closed kind domain, and the
+nonempty `sender` rule for human rows. This adds no other field or wire
+change.
+
 ## Encoding rules
 
 JSON is UTF-8. Integers are signed JSON integers and never floating-point
@@ -91,9 +97,9 @@ The encoder emits no insignificant whitespace. It escapes JSON strings by the
 same library path for REST, CLI, and firehose.
 
 For transcript messages, “exactly” applies after the conditional
-`messageType` rule below. It is the sole transcript-message key that the
-encoder may omit conditionally. Decision requests apply the agent-only
-return-field condition below.
+`messageType` and `marker` rules below. They are the only transcript-message
+keys that the encoder may omit conditionally. Decision requests apply the
+agent-only return-field condition below.
 
 A current-producer session encoder always emits `capabilities`. A compatibility
 reader accepts a pre-G9 session item that omits that key; this reader rule does
@@ -113,6 +119,14 @@ string. A missing or unrecognized value means `assistant` for message-type
 presentation and does not change the item's `role`. An encoder does not derive
 this field from `content`, `sender`, or another public field.
 
+The transcript-message `marker` key is present immediately after
+`messageType` exactly when the row has a stored marker, which the stored row
+ties to `messageType:"marker"`. Its value is then `O<TransitionMarker>`. Other
+items omit the key; an encoder never emits `marker:null`.
+
+On a human row (main R7s), `sender` is a nonempty string. The nullable
+`sender` rule below applies to every other transcript-message row.
+
 Notation: `S` string, `I` integer, `B` boolean, `N` JSON number, `O<T>` closed
 object shape T, `M<T>` string-keyed map of T, and `A<T>` array of T.
 `J` is an opaque user-content JSON value. J objects recursively sort keys;
@@ -123,6 +137,7 @@ typed J below and still passes SR2/SR6 secret exclusion.
 
 - `Actor`: `{kind:S, ref:S}`; kind is `user|session`.
 - `Attachment`: `{assetId:S, mimeType:S, filename:S, size:I}`.
+- `TransitionMarker`: `{kind:S, from:S, to:S}`.
 - `CommitRef`: `{repo:S, commit:S}`.
 - `Document`: `{path:S, content:S, sha256:S}`.
 - `McpServer`: `{name:S, envNames:A<S>}`.
@@ -230,7 +245,8 @@ ExecutionMap success and error response sets exactly the application headers
 Fields not listed under “nullable” are required and non-null. Enum fields use
 the domains in the next section.
 
-The transcript-message `messageType` key is optional and non-null when present.
+The transcript-message `messageType` and `marker` keys are optional and
+non-null when present.
 The decision-request return triplet is present only for `kind:"agent"`, as
 defined by the decision-request table note below. These are the only
 conditional-presence exceptions.
@@ -264,7 +280,7 @@ mutate this field.
 | Resource | Strings | Integers | Booleans | Arrays / objects | Nullable |
 |---|---|---|---|---|---|
 | sessions | sessionKey, displayName, kind, ownerUserId, origin, spawnedBy, handle, archetype, identityName, identityRevision, harness, provider, model, thinkingLevel, modelContext, host, state, mechanicalStatus | orderIndex, clearedThroughSeq, createdAt, updatedAt, rowVersion | isBuiltIn, adopted | overrides `O<SessionOverrides>`, capabilities `O<SessionCapabilities>` | ownerUserId, spawnedBy, handle, identityName, identityRevision, provider, model, thinkingLevel, modelContext, host, clearedThroughSeq, overrides |
-| transcript messages | id, sessionKey, role, messageType, content, sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, llmVisibleMessageId, assignmentId, jobRef, harness, provider, model, effort | seq, at, attentionTier, turnSeq, rowVersion | — | attachments `A<O<Attachment>>`, context `J` | sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, assignmentId, jobRef, harness, provider, model, effort, turnSeq, context |
+| transcript messages | id, sessionKey, role, messageType, content, sender, deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, llmVisibleMessageId, assignmentId, jobRef, harness, provider, model, effort | seq, at, attentionTier, turnSeq, rowVersion | — | attachments `A<O<Attachment>>`, marker `O<TransitionMarker>`, context `J` | sender (except on a human row), deviceId, clientMessageId, replyToMessageId, replyToClientMessageId, assignmentId, jobRef, harness, provider, model, effort, turnSeq, context |
 | work items | id, title, specRefName, specRefSha256, ownerUserId, state, failReason, routingWakeId, slateWakeId, createdByUser, createdBySession | createdInTurnSeq, createdAt, priority, rowVersion | isBug, createdContextKnown | — | specRefName, specRefSha256, ownerUserId, failReason, routingWakeId, slateWakeId, createdByUser, createdBySession, createdInTurnSeq |
 | assignments | id, subject, holderKey, holderRole, openedByUser, openedBySession, state, outcome, closedByUser, closedBySession, closingAttestId, revocationReason, workItemId, reviewsAssignmentId, holderHarness, holderProvider, effectKind, derivedStatus | openedAt, closedAt, rowVersion | holderFallback | files `A<S>` | holderRole, openedByUser, openedBySession, outcome, closedAt, closedByUser, closedBySession, closingAttestId, revocationReason, workItemId, reviewsAssignmentId, holderHarness, holderProvider |
 | attests | id, assignmentId, kind, verdictKind, note, bySession, byUser, producer, producerCommand, byHarness, byProvider | ts, rowVersion | — | commitRefs `A<O<CommitRef>>` | verdictKind, note, bySession, byUser, producer, producerCommand, byHarness, byProvider, commitRefs |
@@ -320,6 +336,8 @@ canonical REST and notices; legacy response shapes remain unchanged.
 - messageType current producer values: `assistant|substrate|marker|agent`.
   This discriminator is the sole open string domain in this file; missing and
   unrecognized values use the `assistant` fallback defined above.
+- `TransitionMarker.kind`: `harness-switch|model-retune|session-restart`
+  (closed).
 - work-item state: `open|iceboxed|closed|failed`.
 - assignment state: `open|closed`; outcome:
   `completed|surrendered|revoked|null`.
