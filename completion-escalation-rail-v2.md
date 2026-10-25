@@ -144,40 +144,37 @@ agent or user (wisdom 1, 5, 6, 8, and 9).
   authorize inventing that missing operator primitive (`lib/tightbeam/harness_process.ex`
   `begin_park/2`, `complete_park/2`, and `park/2`).
 
-### Revalidation rulings for the five post-review hunks
+### Root Main and generic-retire rulings
 
-1. **Adopt with the R11 boundary.** The ordinary three-choice request applies to a
+1. **Three-choice scope and the R11 boundary.** The ordinary three-choice request applies to a
    non-root child. The exact root Main follows its separate retain-only contract. An
    ordinary same-owner sibling and an explicit report-to recipient cannot act; R11's
    current-recipient and owner-user checks remain authoritative.
-2. **Adopt.** R11's generic-retire gate applies only after a call reaches that precedence
+2. **Generic-retire precedence.** R11's generic-retire gate applies only after a call reaches that precedence
    step. Root park and root retire refuse earlier. The handler identifies generic-retire
    intent wakes through the existing deterministic id seam; it does not rely on the word
    “canonical.”
-3. **Adopt.** A14's generic-retire lease fixture uses an ordinary non-root child because
+3. **A14 fixture.** A14's generic-retire lease fixture uses an ordinary non-root child because
    root Main cannot enter the generic retire path.
-4. **Adopt.** A24 uses one open root request with a stopped scheduler. Exact Main calls
+4. **A24 fixture.** A24 uses one open root request with a stopped scheduler. Exact Main calls
    park and then retire against that row. This proves both refusals without pretending
    that two live empty epochs can coexist after assignment-open supersession.
-5. **Replace as stale evidence.** The predecessor review evidence is against older
-   bytes and an older source. This successor
-   requires one new independent review against `6c13efc…`. Open Question 2 records the current gate.
 
-### Amendment rulings for review findings
+### Retired-session replay and device retirement
 
-1. **F1 — delete retired-session replay.** A retired session has no CLI authentication
+1. **No retired-session replay.** A retired session has no CLI authentication
    seam in release `6c13efc…`. R11, R15, A13, and A16 therefore require a session caller
    to remain active for terminal read or replay. The owner user and an admin retain their
    ordinary read authority. An owner-user replay succeeds only when `actedByUser` names
-   that owner. This amendment adds no retired-session credential or verb exception.
-2. **F2 — carry the authenticated device user as a typed principal.** The device DELETE
+   that owner. This contract adds no retired-session credential or verb exception.
+2. **The authenticated device user is a typed principal.** The device DELETE
    route already authenticates a device row before it constructs generic retirement
    (`lib/tightbeam/wire/router.ex` `DELETE /api/streams/:key` and `retire_target/4`). It must place
    `principal={:user, device.user_id}` on that call. Gateway retirement must derive the
    owner and the durable acting principal from the typed principal, not from `origin`.
    R3, R12, R13, A14, and A21 specify and verify this path.
 
-### Amendment rulings for SQLite vocabulary and routing
+### SQLite vocabulary and routing rulings
 
 1. **Use existing cancellation reasons.** Generation replacement uses `superseded`,
    terminal request disposal uses `obligation_disposed`, and an exact delivery target

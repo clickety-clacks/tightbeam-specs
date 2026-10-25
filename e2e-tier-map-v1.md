@@ -80,14 +80,14 @@ verdict (clear, confusing, actively misleading) / evidence.
   at launch, and homes are per machine+harness rather than per archetype, so learning or
   unlearning NEVER requires re-onboarding. Confirm that on the real host, because "do I
   have to redo my login?" is exactly what a first-run user cannot know.
-- **V1 — no harness installed at all.** No coding-agent CLI on the box. Host: host-d (no
-  node toolchain by design). WALKED 2026-08-01: boot honest ("NOT READY", names it),
+- **V1 — no harness installed at all.** No coding-agent CLI on the box. Host: a test host with no
+  node toolchain by design. WALKED 2026-08-01: boot honest ("NOT READY", names it),
   spawn refuses fast. FOUND: a normal missing-prerequisite is treated as a CRASH
   (exception-driven termination + crash dump); `doctor` needs a RUNNING gateway to learn
   which harnesses to check, so the diagnostic tool cannot fully run on the broken machine
   it exists to diagnose. EXONERATED: no catalog-refresh busywork — zero retries over four
   idle minutes.
-- **V2 — harness present, no credential onboarded.** Host: host-a, fixture harness.
+- **V2 — harness present, no credential onboarded.** Host: a test host with a fixture harness.
   WALKED 2026-08-01: boot names the missing credential; spawn refuses in 4ms with the
   cause. FOUND: `doctor` exits 0 and says NOTHING about missing credentials; the remedy
   it prints names a provider the CLI refuses to accept, so the prescribed fix cannot be
@@ -99,11 +99,11 @@ verdict (clear, confusing, actively misleading) / evidence.
   2026-08-01), so the user must onboard separately. THE QUESTION THIS TIER MUST ANSWER:
   does the product SAY so, or does it report "no credential" while `claude` works fine
   two commands away — which reads as a bug, not a setup step. NOT YET WALKED (dispatched
-  2026-08-01, blocked when the codex budget hit its limit). Host: host-b, which is in
+  2026-08-01, blocked when the codex budget hit its limit). Host: a test host that is in
   exactly this state.
 - **V4 — credential onboarded, recovery to working.** The minimum path from any of the
   above to a usable machine, as the product currently guides it. API-key leg WALKED
-  2026-08-01 on host-b ($0.13, one turn per harness, isolation proven at runtime).
+  2026-08-01 on that same host ($0.13, one turn per harness, isolation proven at runtime).
   FOUND: after a successful onboard the model catalog stays stale and requires a gateway
   RESTART before models are selectable — the cause healed but recovery was not automatic.
   Subscription leg NOT WALKED — needs a human at a browser, on a test host.
@@ -150,7 +150,7 @@ before a credential exists can only ever check that files landed.
 
 ### Verify the binary matches the source before you believe a walk
 
-A V3 re-walk on host-b (2026-08-02) ran against a tree whose SOURCE was current and whose
+A V3 re-walk on that host (2026-08-02) ran against a tree whose SOURCE was current and whose
 RELEASE CLI was five days old, because the copy carried a pre-existing binary and the host
 had no cargo to rebuild. The Elixir-side observations were valid (mix compiled fresh); the
 CLI-side ones were not, and the stale binary reported the very exit code the walk was
@@ -161,7 +161,7 @@ RULE: a walk that exercises the CLI must build the release binary on the target,
 confirm its timestamp against the source, and SAY which it did. A walk cannot verify a fix
 that is not in the binary it ran.
 
-Corollary found the same night: host-d had been the no-harness host "by design" and now has
+Corollary found the same night: the V1 host had been the no-harness host "by design" and now has
 both harnesses installed. Do not depend on a MACHINE staying bare — machines drift. Create
 the state instead: a harness-less PATH gives the same journey on any host and cannot be
 invalidated by someone provisioning the box.
@@ -190,7 +190,7 @@ invalidated by someone provisioning the box.
   auth → Main → sync_complete) against a real in-process gateway
   (`test/client_e2e_test.exs:906` boots Bandit + Router with no harness, no credentials).
 - **Costs**: 129.6s wall, 858 tests + 6 doctests, 0 failures, 16 skipped (measured
-  2026-07-26 on host-c, main @ 70aeb04, `--seed 0`, shared box). No credentials, no
+  2026-07-26 on the orchestration host, main @ 70aeb04, `--seed 0`, shared box). No credentials, no
   network, no tokens.
 - **Requires**: `cargo build --release` in `cli/`. Absence RAISES the suite rather than
   skipping it (`test/cli_integration_test.exs:31-35`).
@@ -269,7 +269,7 @@ harness (T-PARITY). Both burn real tokens.
 
 ## T3 — real-host satellite runbook (agent-executed)
 
-Runbook: `satellite-e2e-v1.md`. Executor is an agent on host-c with SSH per
+Runbook: `satellite-e2e-v1.md`. Executor is an agent on the orchestration host with SSH per
 the environment access record; the safety rails there are absolute and apply to every group below.
 Host matrix, credential requirements (satellite store projection AND gateway-side
 onboarding), fixture bare-metal policy and teardown discipline are unchanged — this map
@@ -288,7 +288,7 @@ only groups the journeys so a targeted run is affordable.
   independent and can run alone.
 - **Costs**: two real hosts + SSH + credentials on both + the lock. Full both-pairing
   pass is an observed ~5 hours; no run has recorded wall clock.
-- **Order**: linux pairing FIRST; macOS/host-e only after a clean linux run
+- **Order**: linux pairing FIRST; macOS pairing only after a clean linux run
   (`satellite-e2e-v1.md` §Host matrix).
 - **Does NOT cover**: client journeys (T2b), verb surface (T2a), sustained load (T4).
 - **Known-FAIL rows are product defects, not oracle problems** — keep reporting them:
@@ -356,10 +356,10 @@ A template org is a full, working org whose credential material is valid on THIS
 `~/.tightbeam-beam` is the dev org and is NOT a valid template today: its home
 projection is keyed `homes/default/`, while every reader resolves
 `homes/<Placement.local_host_name/0>/<harness>` (`lib/tightbeam/homes.ex:245`,
-`lib/tightbeam/placement.ex:108`). Measured 2026-07-26 on host-c:
+`lib/tightbeam/placement.ex:108`). Measured 2026-07-26 on the orchestration host:
 `Tightbeam.ClientE2E.preflight/3` against it returns INCOMPLETE for both harnesses,
-ENOENT on `homes/host-c/claude/oauth-token`. Use an org built as below (the
-`~/.tightbeam-smoke-*` orgs on host-c are of this shape).
+ENOENT on `homes/<hostname>/claude/oauth-token`. Use an org built as below (the
+`~/.tightbeam-smoke-*` orgs on that host are of this shape).
 
 Required contents, all four or the org is not ready:
 
@@ -420,7 +420,7 @@ required"); write the `RUN_MARKER` into the satellite base_dir immediately after
 assimilate (assimilate does not create it, and teardown will rightly refuse an unmarked
 removal); symlink `<run base_dir>/auth/<harness>` → the satellite's persistent store
 BEFORE S2 and again after S5's reinstall; install a run-owned archetype whose `where`
-admits the satellite (the shipped default admits host-c/host-e/host-f only); onboard the
+admits the satellite (the shipped default does not admit every test satellite); onboard the
 GATEWAY for that harness too — model validation is a gateway-side authenticated catalog
 fetch, and a gateway with no credential for a harness cannot place its sessions
 anywhere.
@@ -496,7 +496,7 @@ anywhere.
   *-0.145.0.json` are named for a codex CLI version nothing asserts. Harness CLIs
   auto-update under us, so that stamp should be checked the same way.
 - **Residue, operational**: eight `~/.tightbeam-smoke-*` template orgs and one
-  `~/.tightbeam-client-e2e-*` leg directory are still in `$HOME` on host-c, the latter with
+  `~/.tightbeam-client-e2e-*` leg directory are still in `$HOME` on the orchestration host, the latter with
   a codex home written to minutes ago — a teardown that reported `:not_removed` and left a
   harness process holding the tree, exactly the case `leg_gateway.ex:273-288` documents.
   Not a spec matter; naming it so somebody sweeps.
