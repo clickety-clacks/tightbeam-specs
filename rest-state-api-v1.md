@@ -20,6 +20,12 @@ human-row sender attribution and message version monotonicity. This amendment
 adds no route, query parameter, filter, notice class, or retention rule, and
 changes neither agent context nor the boundary's writers.
 
+Selected-session history snapshot amendment, 2026-10-25: PROPOSED. Defined
+by `selected-session-history-snapshot-v1.md`. R4f adds the canonical session
+item as `session` to each transcript-messages collection response, read from
+the same committed state as its page. It adds no route, session field, or
+notice class and changes no other response.
+
 Work-item priority/shared-seam candidate, 2026-09-01: PROPOSED. Add the
 existing public work-item `priority` field to R7 and bind canonical work-item
 reads, mutation readback, and state notices to one visible query and public
@@ -571,6 +577,17 @@ the same resource value. Each error uses R4c with
 `resource:"work items"`. A compatibility response containing `workItem`,
 `assignments`, or `cursor`, or an error response lacking `schemaVersion` or
 `resource`, remains compatibility-only and is not a canonical response.
+
+R4f. Each history response SHALL encode exactly `schemaVersion`,
+`resource`, `session`, `items`, and `page`, in that order, with
+`resource:"transcript messages"`. `session` SHALL be the canonical session
+item for the path's `sessionKey`, encoded by the same sessions serializer as
+`GET /api/sessions/:sessionKey`. It is never null, never a subset of the R7
+sessions fields, and contains no field that the session detail route does
+not return. The server SHALL read `session`, `items`, and `page` from the
+same committed state. Error responses are unchanged (R4c). The message
+detail route, `GET /api/sessions/:sessionKey`, and every other route are
+unchanged. `schemaVersion` remains `1`.
 
 R4a. ExecutionMap success envelopes are closed. Every successful route returns
 `schemaVersion:1`, `resource:"execution map"`, `edgeBasis:"concurrent_turn"`,
@@ -2394,6 +2411,31 @@ after commit can lose that notice; the next authorized REST rebuild returns the
 committed row. A boot missing any G9 registry, encoder, serializer, or publisher
 member routes no G9 firehose upgrade, `tune set_harness` request, or current G9
 session representation.
+
+A57 (REST, R4f). Given a visible session, one principal, and one running
+gateway build, when the client reads `GET /api/sessions/:sessionKey/messages`
+and `GET /api/sessions/:sessionKey` with no session commit between them, then
+the history response's top-level keys are exactly `schemaVersion`,
+`resource`, `session`, `items`, `page` in that order, and its `session` bytes
+equal the detail response's `item` bytes. Within that same build, any two
+such reads whose session `rowVersion` values are equal return equal bytes.
+Across a gateway release, the wire schema's build-owned harness-catalog rule
+still applies: `capabilities` may change without a `rowVersion` change, and
+the fresh rebuild's value is authoritative. Given a session with no messages,
+the history response still carries `session`. Given an unknown or forbidden
+session key, the response is the existing R4c `not_found` body, with no
+`session` key.
+
+Example: session `rowVersion` 41, `ownerUserId` "alice", `model` null. The
+tail page returns `session.rowVersion:41`, `session.ownerUserId:"alice"`,
+`session.model:null`, byte-equal to the detail `item`.
+
+A58 (REST, R4f same state). Given a committed advance of the history boundary
+to `F'` whose boundary marker appears on a page, then that response's
+`session.clearedThroughSeq >= F'`. A server that reads the session row,
+`items`, and `page` in one ordinary read transaction satisfies R4f's
+same-state rule; this check runs on committed state and needs no concurrent
+writer or timing harness.
 
 ## Open questions — Spirit questions
 

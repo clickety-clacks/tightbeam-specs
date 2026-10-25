@@ -51,6 +51,11 @@ key, its closed `TransitionMarker` shape and closed kind domain, and the
 nonempty `sender` rule for human rows. This adds no other field or wire
 change.
 
+Selected-session history snapshot amendment, 2026-10-25: PROPOSED. Defined
+by `selected-session-history-snapshot-v1.md`. Add the closed
+transcript-messages collection envelope with the non-nullable `session` key.
+Session item keys and types are unchanged.
+
 Tool-call and session-transition successor, 2026-10-25: PROPOSED. Add the
 `tool calls` item, the closed `ToolCallTruncation` shape, and their enum
 domains, and open the `TransitionMarker.kind` reader domain. The `marker` key
@@ -226,6 +231,11 @@ the sole `candidateIds`-bearing variant. The simple variant contains only
 `code`; no variant contains another key. The encoder emits no insignificant
 whitespace. R4c owns the status mapping, allowed route conditions, exact
 application headers, and evaluation precedence.
+
+Transcript-messages collection success responses are closed top-level
+objects in this key order: `{schemaVersion:I, resource:S,
+session:O<sessions item>, items:A<O<transcript message>>, page:O<Page>}`.
+`resource` is exactly `transcript messages`. `session` is not nullable.
 
 ExecutionMap responses are closed top-level objects in this key order:
 

@@ -17,6 +17,12 @@ boundary filter, the boundary cursor cases, and the boundary-change rebuild
 from this wrapper, and states that the wrapper returns the full history to
 every caller. It adds no route, field, cursor meaning, or recovery path.
 
+Selected-session history snapshot amendment, 2026-10-25: PROPOSED. Defined
+by `selected-session-history-snapshot-v1.md`. Cold-build steps 3 to 5 take
+`S0` from the tail response's `session` and `S1` from the last history
+response's `session`, so the build needs no separate session request. Steps
+1, 2, and 6 to 8 are unchanged.
+
 Authority: `rest-state-api-v1.md` owns the conversation query, item,
 authorization, history-boundary, page, and cursor semantics.
 `event-firehose-v1.md` owns freshness and gap detection. This file owns only
@@ -169,13 +175,21 @@ Cold build uses this closed snapshot-to-buffer handoff:
 2. Establish a firehose subscription filtered to that `sessionKey`. The
    subscription includes `message.created` and the `session.` prefix supplied
    by recon finding G2. Receive `subscription_ready`.
-3. Fetch the selected R7 session item as `S0`. Record its `rowVersion` as
-   `V0`.
-4. Fetch the transcript tail. Page backward with `oldestCursor` only until the
-   displayed slice is complete.
-5. Fetch the session item again as `S1` and record `V1`. Accept the session
+3. Fetch the transcript tail. Record the response's `session` as `S0` and
+   its `rowVersion` as `V0`.
+4. Page backward with `oldestCursor` only until the displayed slice is
+   complete.
+5. Record the `session` of the last history response fetched in steps 3
+   and 4 as `S1`, and its `rowVersion` as `V1`. When step 4 fetched no page,
+   that response is the step 3 tail and `S1 = S0`. Accept the session
    snapshot only if `V1 = V0`. Otherwise discard the candidate slice and
    repeat from step 3.
+
+   The comparison requires `S0` to describe a state no later than the first
+   page and `S1` a state no earlier than the last page. A history response's
+   `session` satisfies both, because R4f reads it from that page's committed
+   state. A client that instead fetches `GET /api/sessions/:sessionKey`
+   immediately before step 3 and immediately after step 4 also satisfies it.
 6. Enter one client-state critical section. Capture the current buffer-tail
    position as `Q` and detach the finite buffered prefix through `Q`. If the
    connection has entered doubt through `Q`, reject the candidate and restart
@@ -315,6 +329,18 @@ returns the same transcript-specific 400 error bytes before any target lookup
 and before the generic retired-target or multi-target refusal. Given
 `params.session_key`, then the handler receives that parameter while the
 dispatch call and audit row top-level `sessionKey` remain null.
+
+A11 (transcript-verb, steps 3 to 5). Given a firehose subscription that is
+ready, when a client cold-builds a three-page slice, then it records `S0`
+from the tail response, pages back twice, records `S1` from the third
+response, accepts when `V1 = V0`, and sends no
+`GET /api/sessions/:sessionKey`. Given a session commit between the tail and
+the third page, then `V1 != V0`, the client discards the slice and repeats
+from step 3 with a new tail. Given a slice complete in the tail alone, then
+step 4 fetches nothing, `S1 = S0`, and the client accepts from one response.
+Given the buffered notices of A5, then step 7 discards and advances against
+the page-carried `S1` exactly as A5 states. The `transcript` CLI output
+carries the same `session` bytes as REST.
 
 ## Open Questions
 
