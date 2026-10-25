@@ -24,7 +24,7 @@ and test layout only. Gates: `mix compile --warnings-as-errors` clean,
    DETECTED, never copied, written, or deployed (grant doctrine: logins
    are the operator's act).
 3. DENIALS NAME THE GAP AND THE REMEDY, as found on the machine at that
-   moment: e.g. "host host-a is not ready for claude: no credentials in
+   moment: e.g. "host <host> is not ready for claude: no credentials in
    /Users/user/.tightbeam/auth/claude (run the setup ceremony there)".
 4. TURN-TIME UNTOUCHED: no probing anywhere except the placement
    decisions listed above. Running adapters, lanes, wakes: zero change.

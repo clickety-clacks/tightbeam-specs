@@ -9,9 +9,9 @@ Adapters get the full supervision treatment — restart, backoff, circuit.
 Processes involved in *ceremonies* get no owner at all. Three independent
 sightings of the one hole:
 
-- A `claude setup-token` ceremony ran for TWO DAYS on host-b, orphaned to
+- A `claude setup-token` ceremony ran for TWO DAYS on one host, orphaned to
   init, against a binary deleted from under it (#77). No timeout, no reaper.
-- 40 stopped `tightbeam-producer` test shells accumulated on host-a (oldest
+- 40 stopped `tightbeam-producer` test shells accumulated on a test host (oldest
   2d11h): they `kill -STOP $$` themselves and nothing CONTs or reaps them when
   the parent BEAM dies (#87).
 - Onboarding cancel is CLIENT-driven: the CLI dispatches `cancel` on failure.
@@ -37,7 +37,7 @@ lease, no reaper.
    (`claude setup-token` under script(1); `codex login --device-auth`) in a
    watchdog: on expiry of the same TTL, the process GROUP is terminated and
    the failure reported as a timeout naming what was killed. Codex already
-   self-limits at 15 minutes; claude's does not, and the host-b orphan is
+   self-limits at 15 minutes; claude's does not, and the two-day orphan is
    what that looks like. Kill discipline per the standing pid rule: the
    wrapper signals only the group it created.
 3. **The producer test fixture reaps itself.** `on_exit` reaps anything the
@@ -47,8 +47,8 @@ lease, no reaper.
 4. **One-time cleanup**, host-side, identity-verified per the standing pid
    rule (the `kill -STOP $$` cmdline shape is unambiguous; verify each pid's
    cmdline immediately before signalling):
-   - host-a: the ~40 stopped `tightbeam-producer` shells.
-   - host-b: the Jul 26 `script`/`claude setup-token` pair (pids were
+   - the test host: the ~40 stopped `tightbeam-producer` shells.
+   - the host with the orphaned ceremony: the Jul 26 `script`/`claude setup-token` pair (pids were
      1109018/1109020; RE-VERIFY, they may have died or been recycled).
 
 ## The definition of interactive onboarding (operator, 2026-08-16)
@@ -92,6 +92,6 @@ mechanism and the definition ship together.)
 3. A suite run aborted mid-producer-test leaves zero `tightbeam-producer`
    processes (assert in the fixture's own teardown; the watchdog covers the
    SIGKILLed-BEAM case, verifiable manually).
-4. Cleanup: zero stopped `tightbeam-producer` shells on host-a; the host-b
-   orphan pair gone; both verified by process-table absence, with each kill
+4. Cleanup: zero stopped `tightbeam-producer` shells on the test host; the
+   orphaned ceremony pair gone; both verified by process-table absence, with each kill
    preceded by a cmdline identity check.

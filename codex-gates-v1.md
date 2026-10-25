@@ -1,52 +1,46 @@
 # Codex gates v1 — gate projection for codex homes (implementation spec)
 
-Status: DRAFT r5 (r4 round: two residual stale-text refs corrected — the probe-model reference at ~519 now cites the pinned gpt-5.6-sol[medium], and the historical queued-caller summary at ~39 now matches the accurate timeout-or-exit wording). r4 was: DRAFT r4. r3 → r4 (2026-07-20): FINDING 1 — pins the probe
-MODEL to a codex model resolved by the Gateway's codex fallback
-(`gpt-5.6-sol[medium]`), never `config.default_model` (claude's fable);
-Placement resolves NO per-archetype codex model, so the r3 "archetype's
-configured codex model" source was wrong (§Part 2 Probe opts). FINDING 2
-— corrects the queued-caller claim: callers may TIME OUT on their own
-shorter `GenServer.call` budget OR EXIT with the stopping server;
-neither is a graceful reply (§Part 3 step 5). Framing-symmetry pass so
-codex reads as a peer, not second-class: the non-malicious bar is a
-property of the RAILS TIER on BOTH harnesses (claude rails are equally
-non-hermetic); codex's hook engine is described on its OWN terms
-(neither harness is the reference); and the gate row is a tightbeam-side
-◐ᵗ wiring gap this spec closes, not a codex deficiency (matrix
-reality-audited 2026-07-20, codex has zero true vendor-✖ rows).
-r2 → r3 (2026-07-20): applies the operator's ruling that
-resolves the r2 adversarial review (3 critical, 1 high, 2 medium). THE
-BAR IS "WORKS FOR AGENTS WITH NON-MALICIOUS INTENT." Codex gates are
-RAILS, not a security boundary — exactly like Claude rails, and never
-hermetic. The r2 review's three CRITICALs (probe cwd config ≠ a real
-workdir's project layer; a spoofable marker plus a `hooks.json` swap
-under an unchanged manifest stamp; no containment backstop) EVERY ONE
-requires a malicious or config-hostile actor — one who edits the home,
-plants a project/plugin hook, fakes the marker, or rewrites the seed.
-Under this bar those are OUT OF SCOPE: not defended against, and stated
-as such rather than papered over. Spawn attestation is RETAINED but
-DOWNGRADED from "tamper-proof enforcement proof" to an OPERATIONAL
-WIRING-CHECK — its job is catching the SILENT MISCONFIG (missing/wrong
-bypass seed, a too-old codex, an absent/unparseable hook file, hooks
-switched off at spawn) that would let a COOPERATIVE agent run ungated
-and flail into a forbidden command; it is NOT spoof-proof and never
-claims to be. The containment wall is NO LONGER cited as a security
-backstop — it is unbuilt at main and not the point; codex-gates stands
-alone and does not depend on it. r2's real defects ARE fixed: the
-wiring-check deadline is pinned as ONE absolute 120s budget across the
-whole ACP request sequence with kill-on-deadline (HIGH 4); the
-tamper-recovery step is corrected to change manifest BYTES, not mtime
-(MEDIUM 5); the queued-caller claim is corrected to the truth — during a stalled
-wiring-check callers may TIME OUT on their own shorter GenServer.call
-budget (knows_session? 5s, new/load 30s, all < the 120s deadline) OR
-EXIT with the stopping adapter; either is an exit crash, never a
-graceful {:error, :adapter_unavailable} (MEDIUM 6).
-History: r1 → r2 (2026-07-20) applied the r1 review (2 critical, 2
-high, 2 medium, 2 low) plus three second-spike deltas.
+Status: DRAFT.
 
-Grounded in codex-gates-spike-report.md (spike run 2026-07-20 on `host-a`,
-codex-cli 0.144.6 — read it first; every delivery mechanism below was
-proven live there) plus a second independent two-machine replication
+THE BAR IS "WORKS FOR AGENTS WITH NON-MALICIOUS INTENT" (operator
+ruling). Codex gates are RAILS, not a security boundary — exactly like
+Claude rails, and never hermetic. The non-malicious bar is a property
+of the RAILS TIER on BOTH harnesses (claude rails are equally
+non-hermetic); codex's hook engine is described on its OWN terms
+(neither harness is the reference); and the gate row is a
+tightbeam-side ◐ᵗ wiring gap this spec closes, not a codex deficiency
+(codex has zero true vendor-✖ rows in the matrix). The binding
+decisions, each detailed below:
+
+- A malicious or config-hostile actor — one who edits the home, plants
+  a project/plugin hook, fakes the marker, or rewrites the seed — is
+  OUT OF SCOPE: not defended against, and stated as such rather than
+  papered over (§Security posture).
+- Spawn attestation is an OPERATIONAL WIRING-CHECK, not a tamper-proof
+  enforcement proof. Its job is catching the SILENT MISCONFIG (missing
+  or wrong bypass seed, a too-old codex, an absent/unparseable hook
+  file, hooks switched off at spawn) that would let a COOPERATIVE agent
+  run ungated and flail into a forbidden command; it is NOT spoof-proof
+  and never claims to be (§Part 3).
+- The containment wall is not a security backstop — it is unbuilt at
+  main and not the point; codex-gates stands alone and does not depend
+  on it.
+- The wiring-check deadline is ONE absolute 120s budget across the
+  whole ACP request sequence, with kill-on-deadline (§Part 3 step 4).
+- Tamper recovery changes manifest BYTES, not mtime (§Part 5 SMOKE).
+- During a stalled wiring-check, queued callers may TIME OUT on their
+  own shorter GenServer.call budget (knows_session? 5s, new/load 30s,
+  all < the 120s deadline) OR EXIT with the stopping adapter; either is
+  an exit crash, never a graceful {:error, :adapter_unavailable}
+  (§Part 3 step 5).
+- The probe MODEL is a codex model resolved by the Gateway's codex
+  fallback (`gpt-5.6-sol[medium]`), never `config.default_model`
+  (claude's fable); Placement resolves NO per-archetype codex model
+  (§Part 2 Probe opts).
+
+Grounded in codex-gates-spike-report.md (spike run 2026-07-20 on a test
+host, codex-cli 0.144.6 — read it first; every delivery mechanism below
+was proven live there) plus a second independent two-machine replication
 whose deltas are folded in below. Parent: rails-v1-implementation.md
 defines the gate tier and remains sole authority for statute schema,
 validation, and the compiled command shape — this spec changes none of
@@ -135,8 +129,7 @@ BOTH harnesses, identically. Precisely what is and is NOT in scope:
   documented as out-of-scope, not engineered against.
 - The containment wall is NOT a dependency and NOT a security backstop
   for this spec. It is unbuilt at main, defaults off, and does not
-  bound these bypasses; r2's "the wall backstops the residual" claim is
-  RETRACTED. The wall is a FUTURE hermetic layer aimed at a DIFFERENT
+  bound these bypasses. The wall is a FUTURE hermetic layer aimed at a DIFFERENT
   threat model (an untrusted/malicious agent, kernel-enforced effect
   denial); codex-gates neither invokes it nor leans on it, and this
   spec ships and stands on its own.
@@ -145,8 +138,8 @@ BOTH harnesses, identically. Precisely what is and is NOT in scope:
   (`bypassPermissions`). Codex shares that property AND adds an
   orthogonal HOOK-TRUST layer with no Claude analog; gating
   additionally hangs on the trust seed (§Part 2). Spec, moduledoc, and
-  matrix language must keep these separate — "same bypass-mode
-  immunity" was an r1 overclaim.
+  matrix language must keep these separate and never call them "the
+  same bypass-mode immunity".
 
 ## Why this is now possible (spike findings, condensed)
 
@@ -201,7 +194,7 @@ Second-spike deltas, all binding on this spec:
   MUST redirect `</dev/null`.
 - `codex app-server` REJECTS `--dangerously-bypass-hook-trust` argv,
   so the `CODEX_CONFIG` env override is the ONLY production trust
-  lever — confirming the r1 seeding choice.
+  lever.
 
 The mandatory caveat stands and is EXACTLY the silent misconfig the
 wiring-check exists to catch: codex trust-gates hooks (per-hook-hash
@@ -226,7 +219,7 @@ Changes exactly these files:
   continuation, with the absolute-deadline budget (§Part 3).
 - `lib/tightbeam/archetypes.ex` — `@builtin_harness_matrix` codex
   rails bullet (the builtin `tightbeam-harnesses` skill IS this
-  constant; r1's "no such skill exists" was wrong).
+  constant).
 - `docs/statutes.toml.example` — header line update.
 - `docs/SMOKE.md` — §9 rails goes per-harness; codex stops being the
   negative control; codex live-gate + wiring-check steps added.
@@ -391,15 +384,14 @@ When `harness == :codex` AND `Rails.hook_settings()` is non-nil,
   base_dir for remote adapters — a remote path string, same as `home`).
 - `probe_model`: a CODEX model, pinned to the SAME codex fallback the
   Gateway applies to a modelless codex spawn — the literal
-  `"gpt-5.6-sol[medium]"` (gateway.ex `create_spawn`). Pinned rationale,
-  because r3 got the source wrong: Placement resolves NO session model.
+  `"gpt-5.6-sol[medium]"` (gateway.ex `create_spawn`). Pinned rationale:
+  Placement resolves NO session model.
   The adapter key is `{harness, identity_name, host}` (no model) and
   `adapter_opts/2` sees NEITHER the archetype NOR the per-spawn
   `p[:model]`; session models resolve PER SPAWN at the Gateway
   (`p[:model]` → `archetype.defaults[:model]` → the harness fallback,
   where codex → `gpt-5.6-sol[medium]`, gateway.ex `create_spawn`). So
-  the r3 claim "the archetype's configured codex model, what placement
-  already resolves for real sessions" was wrong on both counts —
+  "the archetype's configured codex model" is not a source at all —
   placement resolves no model, and the builtin archetype carries none.
   Do NOT source the probe model from `config.default_model` /
   `defaults.model`: that is `fable`, a CLAUDE model, and the probe runs
@@ -457,7 +449,7 @@ Mechanism, pinned:
    interpretation of agent content (T1 untouched), and not
    authenticated provenance (a fabricated marker defeats it — out of
    scope).
-4. ONE ABSOLUTE DEADLINE (pin 120 seconds), fail-closed (HIGH 4 fix).
+4. ONE ABSOLUTE DEADLINE (pin 120 seconds), fail-closed.
    Because `Conn.request/4` uses INDEPENDENT per-request timers
    (default 60s each, and a timed-out pending entry is retained,
    conn.ex) they do NOT compose: session creation, model application,
@@ -488,8 +480,8 @@ Mechanism, pinned:
    before signaling ready never becomes ready, its `:DOWN` drives the
    coordinator's uniform backoff → circuit accounting, and NO codex
    session is served for that adapter key while the check fails. Every
-   retry re-runs the wiring-check. HONEST caller behavior (MEDIUM 6,
-   sharpened r4): real-session calls that queued behind
+   retry re-runs the wiring-check. HONEST caller behavior:
+   real-session calls that queued behind
    `handle_continue` never receive a graceful adapter-unavailable
    reply — but the FAILURE MODE is NOT uniformly "exit with the dying
    GenServer," because the adapter's own `GenServer.call` timeouts are
@@ -575,7 +567,7 @@ control:
   then break the gate deliberately (delete `hooks.json`) and restart:
   the adapter must REFUSE to boot with `gate_attestation_failed` and
   no codex session may be served — fail-closed proven live for the
-  silent-misconfig case. RESTORE correctly (MEDIUM 5 fix): touching a
+  silent-misconfig case. RESTORE correctly: touching a
   file does NOT regenerate the home — `Homes.project/2` regenerates
   only when the manifest bytes differ from the stamp
   (`File.read(stamp_path) != {:ok, manifest}`) and extra_files are
@@ -663,7 +655,7 @@ placement_test.exs:
    pre-planted file under it is gone after opts building).
 9. Statute content change → codex manifest bytes change (regeneration
    trigger) — assert via `Homes.manifest_bytes/1` on the two specs.
-   This also pins the MEDIUM 5 recovery mechanism: a statute-byte
+   This also pins the tamper-recovery mechanism: a statute-byte
    change is what forces the home to regenerate.
 
 acp_adapter_test.exs (extend the existing fake-harness script, which
@@ -677,7 +669,7 @@ already streams scripted session/update chunks):
     `{:gate_attestation_failed, :no_marker}` and no queued call is
     answered with a live session. Same fail-closed outcome on
     probe-turn error (`{:gate_attestation_failed, :turn_error}`).
-12. Wiring-check DEADLINE (fail-closed, HIGH 4): the fake STALLS — it
+12. Wiring-check DEADLINE (fail-closed): the fake STALLS — it
     accepts the probe prompt but never streams the marker and never
     completes the turn. With the absolute deadline injectable/shortened
     for the test, the adapter stops with

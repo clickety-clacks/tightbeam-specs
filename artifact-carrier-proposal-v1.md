@@ -26,7 +26,7 @@ That refusal is not cosmetic, because org law depends on the verb succeeding.
 completion attest until a `report` artifact is recorded, and its remedy wakes the
 holder with a prompt telling them to run `tightbeam artifact-record`. The verb
 refuses, the completion stays denied, the remedy fires again. A correct agent is
-held in a loop it cannot exit, which is why the `host-a` run needed the org-law
+held in a loop it cannot exit, which is why a satellite test run needed the org-law
 workaround (`eb0ea2b`) to make progress at all.
 
 ### 1.2 The structural fact that decides this
@@ -505,8 +505,8 @@ Production-host activation requires:
 3. A **T3 satellite** confirmation that the hook observation survives the network
    hop, since the correlation call crosses SSH from a satellite. One
    satellite-hosted `artifact-record` landing `tool-call-observed` is sufficient.
-4. `eb0ea2b`, the `host-a` org-law workaround, **reverted** — ROADMAP 0a2 pins the
-   two as retiring together, and leaving it in place would make the `host-a` leg
+4. `eb0ea2b`, that run's org-law workaround, **reverted** — ROADMAP 0a2 pins the
+   two as retiring together, and leaving it in place would make that satellite leg
    unfalsifiable for exactly the statute this fix restores.
 5. A scorecard per `e2e-tier-map-v1.md` §Scorecards naming the legs run, the
    platforms, and any waiver.

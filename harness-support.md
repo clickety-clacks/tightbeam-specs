@@ -81,7 +81,7 @@ never guessed. Classification mapping consumes this table.
 
 | condition | claude envelope | codex envelope | surfacing / provenance |
 |---|---|---|---|
-| `auth_failed` | ? (opportunistic only — NO auth-breaking probe) | `turn_error` whose output = `"Your access token could not be refreshed because your refresh token was revoked. Please log out and sign in again."` | codex: surfaces at the adapter as `detail=turn_error` (seen at the boot gate wiring-check as `gate wiring-check FAIL detail=turn_error output=…`). LIVE INCIDENT 2026-07-21, `adapter-codex:reviewer@host-a.stderr.log`. First empirical entry. |
+| `auth_failed` | ? (opportunistic only — NO auth-breaking probe) | `turn_error` whose output = `"Your access token could not be refreshed because your refresh token was revoked. Please log out and sign in again."` | codex: surfaces at the adapter as `detail=turn_error` (seen at the boot gate wiring-check as `gate wiring-check FAIL detail=turn_error output=…`). LIVE INCIDENT 2026-07-21, in a codex reviewer adapter's stderr log. First empirical entry. |
 | `model_unavailable` | `"Invalid value for config option model: <ref>"` (config-option refusal; see the Model-selection row — environment-dependent offered set) | ? (SAFE model-refusal probe pending) | claude: known symptom from the Model-selection row; codex: to be captured by applying a catalog-invalid model to a scratch session (safe probe). |
 | `boot_failed` | ? | ? | residual — a boot fault that is neither auth nor model refusal; because boot is lazy it can surface after a successful spawn. Opportunistic. |
 | `quota_exhausted` | ? | ? | NOT inducible on demand — opportunistic capture via the `unclassified_harness_error` seam. |

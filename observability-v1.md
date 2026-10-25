@@ -1,26 +1,15 @@
 # Observability v1 — grain-agnostic work model, thin change doorbells, query surface (implementation spec, r4)
 
-Status: DRAFT r4 (revised per the grain-agnostic OBSERVABILITY
-GRAIN ruling resolving the r3 review's one BLOCKER: the substrate
-does NOT decide what a "card" is — card grain is VIEW-SIDE and
-tightbeam has no business modeling it. r3 made the bare assignment
-THE card and pinned `ref = assignmentId`; work-items now EXIST on
-main. r4 drops that: the substrate exposes BOTH model entities —
-ASSIGNMENTS and WORK-ITEMS — random-accessibly via queries, plus
-thin change-doorbells on BOTH grains; the VIEW picks its grain and
-queries. Also: `verdictKind` merged (check-tier), so the `verified`
-predicate flips from constant-false to LIVE; supervision repinned
-r13 → r17 (consumed seams survive); baseline repinned f739c07 →
-ac60d09.) History: r3 per the r2 confirmation round (supervision
-r12 → r13, re-auth preserves subscription class, `verified` pinned
-constant-false while `verdictKind` absent); r2 per the r1 adversarial
-round (verified predicate pinned, honest dropped-event convergence +
-registration-before-snapshot ordering, delete-all test on non-cursor
-fields, `emit/3` return contract, four emission-site mechanics,
-detail-cursor semantics, work-state-only inbound gating); r1 initial.
+Status: DRAFT. Per the grain-agnostic OBSERVABILITY GRAIN ruling, the
+substrate does NOT decide what a "card" is — card grain is VIEW-SIDE and
+tightbeam has no business modeling it. The substrate exposes BOTH model
+entities — ASSIGNMENTS and WORK-ITEMS — random-accessibly via queries,
+plus thin change-doorbells on BOTH grains; the VIEW picks its grain and
+queries. `verdictKind` is merged (check-tier), so the `verified`
+predicate is LIVE. Pinned to supervision r17 and baseline ac60d09.
 Parent design: the decisions-ledger entries of 2026-07-20
 (OBSERVABILITY DIRECTION RULED + refinements + boundary principle +
-the CODEX-GATES POSTURE + OBSERVABILITY GRAIN ruling that r4 applies).
+the CODEX-GATES POSTURE + OBSERVABILITY GRAIN ruling this spec applies).
 This spec is sole authority for its scope; the ledger entries are
 background. It consumes attest-v1.md r5 (assignments/attests rows,
 the `assignments` query verb), work-item-v1.md r2 (`work_items`
@@ -65,7 +54,7 @@ supervision-impl's ruled vocabulary — supervision already uses
 "stalled"/`stalledAt` for a DIFFERENT mechanical condition (the
 escalation epoch). One word per condition; this spec defines the
 stranded QUERY that supervision promised ("computed at query time by
-any observer"). Upheld by the r1 adversarial review.
+any observer").
 
 ## Design position — grain-agnostic (ruled 2026-07-20)
 
@@ -924,7 +913,7 @@ merge. STOP and report on any conflict with existing code, with
 attest / work-item / check-tier as merged or supervision as merged, or
 with this spec.
 
-## Open ruling (operator-level, ruled r1, upheld by the r1 review)
+## Open ruling (operator-level)
 
 `active` is derived from FILINGS (≥1 attest row), not from a running
 turn. Chosen because every input stays assignment-scoped and every
@@ -942,8 +931,8 @@ don't improvise.
 
 The question: have we been consistent about emitting row writes to the clawline
 stream? Answer: mostly by design, twice by omission. This addendum is the disposition
-table — every persisted row family, its carriers AT ROW-WRITE GRANULARITY (r1 review:
-family-level "covered" hid silent mutations), and whether each silence is a decision or
+table — every persisted row family, its carriers AT ROW-WRITE GRANULARITY (a
+family-level "covered" can hide silent mutations), and whether each silence is a decision or
 a hole — plus the two closures. Emission mechanics for anything added here follow
 §Emission verbatim: cold-path, best-effort, success-branch only, after the domain
 transaction commits, total catch.
@@ -1002,10 +991,9 @@ where one is needed.
    `identity edit`/`relearn` publication stays silent — nothing live changed until
    apply.
 2. **Credential-parking visibility.** The park CLOSURE (runtime stop) is NOT the
-   emission point — it is per-provider-runtime and knows nothing of sessions (r1 review
-   F4). The interface is TWO-STAGE, both closures gateway-supplied, because
+   emission point — it is per-provider-runtime and knows nothing of sessions. The interface is TWO-STAGE, both closures gateway-supplied, because
    `credentials.ex` owns the sequencing but has no DB/session access and a callback
-   first invoked after park cannot recover the pre-park set (r2 review C):
+   first invoked after park cannot recover the pre-park set:
    (a) `mark_terminal` acts only on a nonterminal→terminal TRANSITION (already-terminal
    re-entry emits nothing and re-parks nothing); (b) **stage 1 — pre-park capture**:
    before invoking the park closure, `mark_terminal` calls a gateway-supplied capture
@@ -1033,7 +1021,7 @@ where one is needed.
   provider-session; failed/cancelled onboarding yields none.
 - the captured payload is immutable across the park: a test mutates session membership
   INSIDE the injected park closure and asserts the publication still targets exactly
-  the pre-park set (r2 review C).
+  the pre-park set.
 - Emission failure proven with an injected publisher that raises/exits (a closed
   socket is NOT a failure — broadcasting to zero connections succeeds); the verb
   result is unchanged — total-catch parity with §Emission.

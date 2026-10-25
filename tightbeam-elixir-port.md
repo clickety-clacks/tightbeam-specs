@@ -352,8 +352,8 @@ host dependency** (adapters + retained TS CLI are Node). Concrete layout
   **E2**: wire (Bandit/WebSock/Plug + ConnRegistry + replay watermark) —
   exit: golden traces + black-box wire driver. **E3**: wakes/homes/devices/
   assets/verbs — exit: remaining drivers + kill matrix complete. **E4**:
-  adopt-in-place + sim E2E + soak → cutover of `host-a` serve (same baseDir) →
-  `host-b` deploy via release + doctor.
+  adopt-in-place + sim E2E + soak → cutover of the first host's serve (same baseDir) →
+  deploy to a second host via release + doctor.
 
 ## Open questions resolved (per review §5)
 

@@ -11,10 +11,10 @@ Status: **DECIDED 2026-08-02 by the operator, not yet implemented.**
 
 Raised after a live install where `spawn` refused twice in a row and stopped everything:
 
-- `placement_denied: claude on host-a needs onboarding: :in_progress` — chose a harness with no
+- `placement_denied: claude on <host> needs onboarding: :in_progress` — chose a harness with no
   credential while a fully onboarded one (codex/openai) sat available on the same host.
 - `catalog_unavailable: cannot validate model "claude-sonnet-5[medium]" for codex on host
-  host-a` — the archetype's default model is an anthropic ref, so pinning `--harness codex`
+  <host>` — the archetype's default model is an anthropic ref, so pinning `--harness codex`
   fails on a default that harness can never offer.
 
 Both refusals are correct about the fact and useless as an outcome. The operator had a

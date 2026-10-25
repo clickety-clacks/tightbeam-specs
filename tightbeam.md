@@ -819,8 +819,8 @@ what was detected and failed (forensics). Every
 host — including the gateway's own machine — appears under its real
 hostname; there are no indexical names ("local", "here", "self") in the
 registry, in `where` sets, or on session rows. The org's vocabulary must
-match the operator's: "spawn on host-a" has to resolve on host-a, including
-when asked on host-a. Which machine is the gateway's own is carried by the
+match the operator's: "spawn on <name>" has to resolve on the host the operator calls <name>,
+including when asked on that host. Which machine is the gateway's own is carried by the
 host's transport config (no ssh destination), never by a special name.
 Onboarding a satellite is a client-side ceremony — `assimilate` in the
 reference CLI — in which the operator's CLI prepares the machine over the

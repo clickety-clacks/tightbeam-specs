@@ -23,7 +23,7 @@ MEASURED on this tree, 40 concurrent registrations of distinct hosts, 10 trials
   concurrent reader can see a zero-length file.
 
 The live sighting behind the ticket (two assimilates interleaving on
-`hosts.json`, `{host-a}` then `{host-b,host-a}`) is the two-writer corner of
+`hosts.json`, one host's set and then a two-host set) is the two-writer corner of
 the same window. The failure is silent by construction: the CLI reports
 `registered`, exit 0, and the host is gone. It resurfaces later as
 `unknown_host`, or — worse — as a placement decision pointed at the wrong
