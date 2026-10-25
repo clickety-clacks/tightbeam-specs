@@ -616,8 +616,7 @@ cause the client to drop rows, reject a snapshot, or rebuild; reconnect, a
 sequence skip, and other M2 doubt still rebuild. REST R5d and
 `transcript-verb-v1.md` carry the history and wrapper acceptance. The closed
 M1 cut and covered-version comparison are specified by `transcript-verb-v1.md`
-steps 3 through 8 and A5. The client-buildability recon remains the demand
-evidence.
+steps 3 through 8 and A5.
 
 Example: during a cold build the buffered prefix holds a session notice with a
 higher `rowVersion` and `clearedThroughSeq` 120, and message notices for rows
