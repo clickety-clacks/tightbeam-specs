@@ -50,6 +50,13 @@ G9 setHarness capability successor, 2026-08-28: PROPOSED. Add
 firehose protocol 2. The exact behavior contract is
 `session-status-set-harness-capability-v1.md`.
 
+Tool-call and session-transition successor, 2026-10-25: PROPOSED. Add the
+`tool_call.started`, `tool_call.ended`, and `transition.recorded` classes, the
+tool-calls resource mapping, and the chat-client subscription and rebuild
+rules that read them. The exact behavior contract is
+`tool-call-and-session-transition-records-v1.md`; its TC, TR, and FH labels
+are cited here as defined there.
+
 Revision history: r3.1 multiplexed subscriptions; r3 freshness-not-truth +
 retention; r2.1 client workflows; r2 the nine r1 review comments; r1 the
 firehose rescope of the archived focused design. Their carried-forward
@@ -119,6 +126,11 @@ G9's exact candidate set is this file, `rest-state-api-v1.md`,
 `rest-state-api-v1-wire-schema.md`, `cli-surface-v1.md`, and
 `session-status-set-harness-capability-v1.md`. All five land in one reviewed
 revision.
+
+The tool-call and session-transition successor's exact set is this file,
+`rest-state-api-v1.md`, `rest-state-api-v1-wire-schema.md`, and its behavior
+contract `tool-call-and-session-transition-records-v1.md`. All four land in one
+reviewed revision; `cli-surface-v1.md` is unchanged.
 
 ## Assumptions
 
@@ -373,13 +385,17 @@ R3. Org shape:
 
 R4. Records: `artifact.recorded`, `read_marker.updated` (RM3).
 
-R4b. Conversation: `message.created` — without it a chat client cannot be
+R4b. Conversation: `message.created`, `transition.recorded` — without it a chat client cannot be
 lively (M4 promised message classes; the REST recon caught the
-registry gap). `message.created` notices SHALL carry `resource:"messages"`.
-Boundary markers travel as `message.created`. The registry includes neither
-`turn.queued` nor `transition.recorded`, and a client SHALL treat both as
-absent. Example: a client decoding current output finds neither class and
-degrades to the behavior it has without them.
+registry gap). `message.created` and `transition.recorded` notices SHALL
+carry `resource:"messages"`. Marker messages, including boundary markers,
+travel as `transition.recorded` (FH2). The registry does not include
+`turn.queued`, and a client SHALL treat it as absent. Example: a client
+decoding current output finds no `turn.queued` notice and degrades to the
+behavior it has without it. In the public 0.1.9 and 0.1.12 lines, boundary
+markers travel as `message.created` and `transition.recorded` is absent.
+
+R4d. Tool calls: `tool_call.started`, `tool_call.ended`.
 
 R4c. Composed-view invalidation sources: `topline.created`,
 `topline_work_membership.linked`, `topline_work_membership.unlinked`, and
@@ -418,7 +434,13 @@ correlation contract). A class without a row is a red build.
 | `condition_fact.filed` | `condition facts` | `upsert` | `factId` | exact shared R7 condition-fact serializer | The condition fact `id` is its append-only natural version; its `rowVersion` equals `id`. Each successful insertion into `condition_facts` emits one notice after commit. An idempotent filing that returns the existing fact emits none. | `GET /api/facts` visibility. Consumers apply last-version-wins by `factId`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 | `critical_lease.updated` | `critical state` | `upsert` | `sessionKey` | exact shared R7 critical-state serializer | The item uses R7 critical-state `rowVersion`. Each committed change to the R7 item for one `sessionKey` emits one notice after commit. A replay or idempotent request that leaves the item and `rowVersion` unchanged emits none. | `GET /api/critical-state` admin-only visibility. Consumers apply last-version-wins by `sessionKey`. | A1 covers the class and primary-ref mapping. A6 verifies this serializer is byte-equivalent to the REST detail item. |
 | `operator_ruling.provenance_recorded` | `operator ruling provenance` | `upsert` | `decisionRequestId`, `sessionKey` | `Tightbeam.Escalation.public_operator_ruling_provenance_item/1`, the exact shared R7 operator-ruling-provenance serializer | The terminal mutation allocates the decision-request row's next positive `rowVersion`. Each successful post-epoch ruling emits one notice after commit. A refusal, pre-epoch row, migration, or replay that leaves the terminal row unchanged emits none. | `GET /api/decision-requests/:id/operator-ruling-provenance` visibility: operator-request owner user or admin. Consumers apply last-version-wins by `(requestId,rowVersion)`. Payload `requestId` equals `refs.decisionRequestId`; payload `submittingSessionKey` equals `refs.sessionKey`. | A1 covers the class, emission seam, resource, op, and refs. A6 verifies the complete payload is byte-equivalent to the REST detail item. |
-| `message.created` | `transcript messages` | `upsert` | `messageId`, `sessionKey` | exact shared R7 transcript-message serializer | The item uses its R7 `rowVersion`. Each newly committed transcript message emits one notice after commit; an idempotency replay that returns the existing row emits none. When a message's served projection changes, any notice that carries the changed item SHALL carry a `rowVersion` strictly greater than every version previously served for that message id; two notices, or a notice and a REST item, with the same `(id,rowVersion)` carry identical items (REST R7s). | `GET /api/sessions/:sessionKey/messages` visibility. Consumers correlate by `messageId` and apply last-version-wins by `(payload.id, payload.rowVersion)`. | A1 covers the class and both refs. A6 verifies the complete item, including conditional `messageType` omission, is byte-equivalent to the matching REST row. |
+| `message.created` | `transcript messages` | `upsert` | `messageId`, `sessionKey` | exact shared R7 transcript-message serializer | The item uses its R7 `rowVersion`. Each newly committed non-marker transcript message emits one notice after commit; an idempotency replay that returns the existing row emits none. When a message's served projection changes, any notice that carries the changed item SHALL carry a `rowVersion` strictly greater than every version previously served for that message id; two notices, or a notice and a REST item, with the same `(id,rowVersion)` carry identical items (REST R7s). | `GET /api/sessions/:sessionKey/messages` visibility. Consumers correlate by `messageId` and apply last-version-wins by `(payload.id, payload.rowVersion)`. | A1 covers the class and both refs. A6 verifies the complete item, including conditional `messageType` omission, is byte-equivalent to the matching REST row. |
+| `tool_call.started` | `tool calls` | `upsert` | `toolCallId`, `sessionKey` | the one tool-call serializer (TC9) | A commit that inserts a non-terminal record (TC1, TC6) emits one notice after commit, whatever the record's anchor (FH5). | REST AU4 transcript visibility (TC12). Last-version-wins on `(payload.id, payload.rowVersion)`. | A1 covers the insert seam and class; A6 byte-equivalence with the detail route. |
+| `tool_call.ended` | `tool calls` | `upsert` | `toolCallId`, `sessionKey` | same | A commit that sets a terminal status, by update (TC2) or by first insert (TC4, TC6), emits one notice after commit, whatever the record's anchor (FH5). | same | same |
+| `transition.recorded` | `transcript messages` | `upsert` | `messageId`, `sessionKey` | exact shared R7 transcript-message serializer | Each new marker message emits one notice after commit, in place of `message.created`. An idempotent replay emits none. The `message.created` row's `rowVersion` rule (REST R7s) applies to the item it carries. | `GET /api/sessions/:sessionKey/messages` visibility. Last-version-wins on `(payload.id, payload.rowVersion)`. | A1 covers the marker seam; A6 byte-equivalence with the message detail route. |
+
+Refs also carry `turnSeq` for tool classes, and `assignmentId` when the turn has
+one.
 
 R8b. Source invalidation classes are deliberately not R8 rebuildable-state
 rows. Each emits `op:"observe"`, omits `resource`, and carries exactly
@@ -605,10 +627,12 @@ A chat client builds conversation state from the canonical REST
 `page.oldestCursor` as `before`. The client sends via wake and watches
 `wake.scheduled`, the turn/message classes, and `session.*` as supplied by the
 separate recon-finding-G2 prerequisite. After the client chooses a
-`sessionKey`, it subscribes to `message.created` and the `session.` prefix for
-the selected key before reading conversation state. On reconnect or a
+`sessionKey`, it subscribes to `message.created`, `transition.`, the
+`session.` prefix and, when it shows tool calls, `tool_call.` for the selected
+key before reading conversation state. On reconnect or a
 seq skip, it applies M2: subscribe first and rebuild the displayed slice from
-a cursorless REST tail. It does not request notice replay, use a stream
+a cursorless REST tail. When `tool_call.` is subscribed, the rebuild reads the
+tool-calls collection alongside the messages tail. It does not request notice replay, use a stream
 cursor, or treat an `after` page as gap recovery. The client SHALL treat a
 session notice that changes `clearedThroughSeq` as an ordinary
 last-version-wins session update. A change in `clearedThroughSeq` SHALL NOT
@@ -716,6 +740,13 @@ change `mechanicalStatus`, advance the session `rowVersion`, and select
 `session.updated`. The other cases emit their mapped turn notices and no
 session notice from the T9 input.
 
+For tool calls and transitions, the A1 table covers the tool-record insert
+seam, the tool-record terminal seam, and the marker seam. Each tool-record
+commit selects exactly one of `tool_call.started` and `tool_call.ended` by the
+R8 rule, whatever the record's anchor relative to the history boundary (FH5).
+A marker-message commit selects `transition.recorded`
+and no `message.created`; an idempotent replay emits none.
+
 A2. A subscriber receives a notice for a matching commit made after its
 registration cut, and never one from before it.
 
@@ -777,6 +808,7 @@ exactly these addressable detail routes:
 | attests | `GET /api/attests/{payload.id}` |
 | roles | `GET /api/roles/{payload.name}` |
 | transcript messages | `GET /api/sessions/{payload.sessionKey}/messages/{payload.id}` |
+| tool calls | `GET /api/sessions/{payload.sessionKey}/tool-calls/{payload.id}` |
 | condition facts | `GET /api/facts/{payload.id}` |
 | critical state | `GET /api/critical-state/{payload.sessionKey}` |
 | operator ruling provenance | `GET /api/decision-requests/{payload.requestId}/operator-ruling-provenance` |
@@ -785,7 +817,8 @@ exactly these addressable detail routes:
 Each comparator invokes the same resource query, AU4 visibility predicate,
 and public serializer as its collection and R8 publisher. The REST adapter
 adds only the shared detail envelope. A REST-local projection or a second item
-shape fails A6.
+shape fails A6. The one tool-call serializer (TC9) owns both the
+`tool_call.*` payload and the tool-call detail item.
 
 For an upsert class, A6 compares the live detail `item` with the notice
 payload. For `role.removed`, the delete commit invokes the same roles
