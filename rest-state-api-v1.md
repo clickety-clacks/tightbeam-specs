@@ -109,7 +109,28 @@ Authority and inputs:
   names whose markers it reads with the existing AU2 `asUser` parameter, and
   the gateway resolves it exactly as it does for an org bearer. This covers
   the marker collection as well as the detail route. AU1b carries this
-  ruling.
+  ruling. The 2026-10-26 ruling below replaces its missing-`asUser` result.
+- Ruling, 2026-10-26 (unasked refusals removed): nothing refuses or fails
+  unless the operator asked for that protection. On the observer reads, an
+  empty or malformed `Authorization` header counts as absent; `asUser` on a
+  session or message read follows AU1b; and a marker collection read without
+  `asUser` returns every user's markers, as the admin view does. The AU8
+  forbidden-versus-unknown latency measurement, its bound, and its duration
+  pad are removed. No-token writes and routes outside the observer reads keep
+  `401 auth_failed`. AU1a, AU1b, AU8, A6, A59, and A60 carry this ruling.
+  Its same-day addendum adds a general rule for the observer read routes: no
+  read is refused because of the form or validity of its credential or its
+  `asUser` value, and anything that cannot be used is treated as absent. A
+  bearer that fails verification is served as an observer read, an empty
+  `asUser` is absent, and repeated `asUser` keys use the last value. The D1
+  identity timing proof is removed on the same basis. A further same-day
+  ruling applies the general rule to marker detail: without `asUser`,
+  `GET /api/read-markers/:scopeKey` returns every user's marker for that
+  scope, as the admin view does, and returns not found only when that scope
+  has no marker. AU1b and A60 carry it. A second addendum applies the rule
+  to cursors: on an observer read route, a cursor that cannot be used under
+  the request's current principal is ignored, and the read is served from
+  the first page. R4d, AU7, A59, and A60 carry it.
 - The firehose gap remediation ruling (2026-08-27) accepts the firehose
   client-buildability recon.
   It makes G2 session freshness a read-side firehose prerequisite and leaves
@@ -216,12 +237,14 @@ serializer boundary.
   notices rebuildable state.
 - REST v1 does not retire compatibility aliases before their clients migrate
   or decide future tailnet identity.
-- AU1a observer reads and AU1b marker reads (rulings, 2026-10-25) do not
-  add a user selector, default user, operator designation, user enumeration,
-  endpoint, credential type, write path, or any replacement barrier such as an
-  allowlist, origin check, rate limit, opt-in setting, development mode, or
-  per-app registration. They change no wire schema, item schema, pagination,
-  order, or cursor format.
+- AU1a observer reads and AU1b marker reads (rulings, 2026-10-25 and
+  2026-10-26) do not add a user selector, default user, operator designation,
+  user enumeration, endpoint, credential type, write path, or any replacement
+  barrier such as an allowlist, origin check, rate limit, opt-in setting,
+  development mode, per-app registration, or warning. They change no item
+  schema, order, cursor format, or paging with a usable cursor, and no wire
+  schema except that the AU1b observer marker detail returns the existing
+  collection envelope.
 - REST v1 does not authorize implementation, deployment, or client migration.
 - The work-item priority/shared-seam amendment does not change priority write
   semantics, add a work-item mutation, or promote a legacy composite response
@@ -560,8 +583,9 @@ adapter. Collection, detail, CLI, and firehose callers do not gain another
 query, visibility predicate, field selection, projection, or serializer.
 
 Each G7 route uses the read plane's single shared error encoder. An absent or
-invalid bearer returns `401 auth_failed`, except that a message-detail request
-with no `Authorization` header is an AU1a observer read. AU2 `asUser` failures retain AU2's
+invalid bearer returns `401 auth_failed`, except that the message-detail route
+is an AU1a observer read route, which refuses no read for its credential or
+`asUser` value. Elsewhere, AU2 `asUser` failures retain AU2's
 exact status and code. Malformed percent encoding returns
 `400 malformed_query`. An unsupported query key returns
 `400 invalid_filter`. An unknown key, a forbidden row, a noncanonical
@@ -738,14 +762,14 @@ The closed status and code mapping is:
 
 | HTTP status | Error code | Condition |
 |---|---|---|
-| 400 | `malformed_query` | T8 query decoding fails |
-| 400 | `invalid_as_user` | `asUser` is repeated, or a device bearer supplies it, as AU2 defines |
-| 400 | `invalid_message` | an org bearer omits `asUser` or supplies an empty value, as AU2 defines |
+| 400 | `malformed_query` | T8 query decoding fails; on an AU1a observer read route, an undecodable `asUser` value is treated as absent instead |
+| 400 | `invalid_as_user` | `asUser` is repeated, or a device bearer supplies it, as AU2 defines, except on an AU1a observer read route |
+| 400 | `invalid_message` | an org bearer omits `asUser` or supplies an empty value, as AU2 defines, except on an AU1a observer read route |
 | 400 | `invalid_filter` | a decoded query key, multiplicity, combination, type, or value violates R5/R6 |
 | 400 | `invalid_cursor` | AU7 rejects cursor encoding, signature, resource, direction, schema, tuple, or normalized filter fingerprint |
 | 400 | `ambiguous_id` | an R6a typed prefix resolves to more than one visible full id |
-| 401 | `auth_failed` | AU1 credential verification rejects an absent, empty, invalid, or expired bearer; a request with no `Authorization` header on an AU1a route is an observer read instead, and on an AU1b route resolves `asUser` as for an org bearer |
-| 403 | `identity_not_yours` | a session bearer supplies a present empty or nonmatching AU2 `asUser` value |
+| 401 | `auth_failed` | AU1 credential verification rejects an absent, empty, invalid, or expired bearer; on an AU1a observer read route, a credential that cannot be used is treated as absent instead |
+| 403 | `identity_not_yours` | a session bearer supplies a present empty or nonmatching AU2 `asUser` value, except on an AU1a observer read route |
 | 404 | `not_found` | AU3, AU4, AU4a, the canonical nested-route part of AU5, or AU7 requires the same unknown-or-forbidden result |
 | 500 | `projection_invalid` | after input validation, the service cannot complete the visibility-filtered query, derive one complete result, or encode it against the closed schema |
 
@@ -774,19 +798,21 @@ R4d. Error selection follows this exact precedence. The handler completes one
 step before it starts the next:
 
 1. Authenticate the bearer. Failure returns `401 auth_failed` without query
-   decoding or a resource query. A request with no `Authorization` header on
-   an AU1a route skips this step and carries the observer principal. One on
-   an AU1b route skips this step, and step 3 resolves its `asUser` as for an
-   org bearer.
+   decoding or a resource query. On an AU1a observer read route, a credential
+   that cannot be used is treated as absent, and this step does not fail.
 2. Decode the raw query. T8 failure returns `400 malformed_query` without
-   principal resolution or a resource query.
+   principal resolution or a resource query. On an AU1a observer read route,
+   an `asUser` value that fails decoding is treated as absent.
 3. Validate and resolve AU2 `asUser`. Return its applicable
    `invalid_as_user`, `invalid_message`, or `identity_not_yours` result before
-   resource-specific query validation.
+   resource-specific query validation. On an AU1a observer read route, AU1a
+   resolves the principal and this step returns no error.
 4. Validate decoded query structure and non-cursor values. This includes
    allowed keys, key multiplicity, key combinations, filters, `limit`, and the
    mutual exclusion of `before` and `after`. Failure returns
    `400 invalid_filter` without cursor-token validation or a resource query.
+   On an AU1a observer read route, a repeated `asUser` key is not a
+   multiplicity failure; AU1a uses its last value.
 5. Validate each supplied cursor token against the fields named in AU7.
    Failure returns
    `400 invalid_cursor` without a resource query.
@@ -796,7 +822,9 @@ step before it starts the next:
    `400 ambiguous_id`. Authorization, visibility, and existence selection use
    one visibility-filtered query snapshot. No unfiltered existence result can
    affect error selection. Failure to complete that operation returns
-   `500 projection_invalid` and no partial response.
+   `500 projection_invalid` and no partial response. On an AU1a observer read
+   route, a cursor principal-binding mismatch is not a denial: AU7 ignores
+   that cursor, and this step continues as for the same request without it.
 7. Produce and encode one complete canonical result. Failure returns
    `500 projection_invalid` and no partial success body.
 
@@ -965,7 +993,7 @@ R6. Filters are whitelisted per resource:
 | host environment | host, harness, name exact |
 | harness processes | sessionKey, host, harness, provider, model, state |
 | users and devices | status and ownership filters |
-| read markers | caller user by default; scopeKey exact or prefix |
+| read markers | caller user by default (every user for the AU1a observer principal, AU1b); scopeKey exact or prefix |
 | facts | kind exact, scope exact, origin exact, tsFromInclusive, tsToExclusive |
 | critical state | sessionKey exact |
 | tool calls | afterMessageSeqFromInclusive, afterMessageSeqToExclusive |
@@ -1688,53 +1716,70 @@ where AU4 explicitly grants it.
 No new credential type exists. The optional `asUser` GET parameter is not a
 credential and never authenticates a request.
 
-AU1a. Observer reads (ruling, 2026-10-25). When a request to one of these
-routes carries no `Authorization` header, the gateway SHALL serve it as an
-observer read:
+AU1a. Observer read routes (rulings, 2026-10-25 and 2026-10-26). The
+observer read routes are:
 
 - `GET /api/sessions`
 - `GET /api/sessions/:sessionKey`
 - `GET /api/sessions/:sessionKey/messages`
 - `GET /api/sessions/:sessionKey/messages/:messageId`
+- `GET /api/read-markers`
+- `GET /api/read-markers/:scopeKey`
 
-An observer read resolves to the observer principal. The reader supplies
-nothing but the gateway address: no credential, device pairing, approval,
-registration, or opt-in. The observer principal is not a user or session
-principal. It is read-only, and no route outside this list accepts it. A
-request to any other route with no bearer still returns `401 auth_failed`. A
-request that carries an `Authorization` header, including an empty or
-malformed one, is not an observer read; AU1, AU2, and R4d apply to it
-unchanged. An observer read that supplies `asUser` returns
-`400 invalid_as_user` before principal resolution, as a device bearer does.
-`GET /api/read-markers` and `GET /api/read-markers/:scopeKey` with no
-`Authorization` header follow AU1b.
+On an observer read route, the gateway SHALL NOT refuse a read because of the
+form or validity of its credential or its `asUser` value. Anything that
+cannot be used is treated as absent, and the read is served. The gateway
+resolves the principal in this order:
 
-Example: `GET /api/sessions` with no `Authorization` header returns 200 and
-the same R7 items in the same order that an admin bearer receives for the same
-query. The same request to `GET /api/work-items` returns `401 auth_failed`.
-The same request with `Authorization: Bearer ` (empty) returns
+1. Credential. A bearer that AU1 verifies is used. No `Authorization` header,
+   an empty or malformed one, or a bearer that fails verification is treated
+   as absent.
+2. `asUser`. An empty value, or one that fails T8 decoding, is treated as
+   absent. When the key repeats, the last value is used. A value the verified
+   credential cannot use under AU2, meaning any value with a device bearer or
+   a value that does not match a session bearer's owner, is treated as absent.
+3. Principal. A verified device or session bearer resolves as AU2 does with
+   the remaining `asUser`. With a verified org bearer or no usable
+   credential, one remaining `asUser` value resolves to AU2's self-declared,
+   unverified user principal, with no existence lookup or normalization, and
+   no remaining value resolves to the observer principal.
+
+The observer principal needs nothing but the gateway address: no credential,
+device pairing, approval, registration, or opt-in. It is not a user or session
+principal. It is read-only, and no route outside this list accepts it. Every
+other route, and every write, keeps AU1: a request with no bearer still
+returns `401 auth_failed`.
+
+Example: `GET /api/sessions` with no `Authorization` header, with
+`Authorization: Bearer ` (empty), or with a revoked bearer returns 200 and the
+same R7 items in the same order that an admin bearer receives for the same
+query. `GET /api/sessions?asUser=alice` with no header returns the items an
+org bearer with `asUser=alice` receives, and `asUser=bob&asUser=alice` returns
+the same. The same request to `GET /api/work-items` returns
 `401 auth_failed`.
 
-AU1b. Credentialless marker reads (ruling, 2026-10-25). When a
-`GET /api/read-markers` or `GET /api/read-markers/:scopeKey` request carries
-no `Authorization` header, the gateway SHALL resolve its `asUser` through AU2
-exactly as it does for an org bearer. One value resolves the same
-self-declared, unverified user principal, with no existence lookup or
-normalization. The collection returns that user's markers, and the detail
-route returns that user's marker for the decoded `scopeKey` under the
-existing effective marker key. A missing `asUser` returns AU2's
-`400 invalid_message` identity-required error; an empty value returns AU2's
-empty-value result; repeated keys return `400 invalid_as_user`. AU1b resolves
-a user principal, not the AU1a observer principal. It applies to no other
-route; every marker write keeps AU1. A request that carries an
-`Authorization` header, including an empty one, follows AU1 and AU2
-unchanged.
+AU1b. Marker reads on observer read routes (rulings, 2026-10-25 and
+2026-10-26). On `GET /api/read-markers` and `GET /api/read-markers/:scopeKey`,
+a user principal that AU1a resolves receives that user's markers, and the
+detail route returns that user's marker for the decoded `scopeKey` under the
+existing effective marker key. For the observer principal, the collection
+returns every user's markers in R5b order, as the admin view of all markers
+does; the R6 caller-user default does not apply because the observer
+principal has no user. For the observer principal, the detail route returns
+every user's marker for the decoded `scopeKey`: 200 with the same bytes, in
+the existing collection envelope, that the observer collection returns under
+the R6 exact `scopeKey` filter for that key, and its `page` cursors continue
+as observer collection reads. When no marker has that `scopeKey`, it returns
+the same 404 as an unknown key. Every marker write keeps AU1.
 
 Example: `GET /api/read-markers?asUser=alice` with no `Authorization` header
 returns 200 with the same `items` bytes that an org bearer with
 `asUser=alice` receives, and
 `GET /api/read-markers/chat%3Amain?asUser=alice` returns the same `item`
-bytes. Either request without `asUser` returns `400 invalid_message`.
+bytes. `GET /api/read-markers` with no `asUser`, or with `asUser=`, returns
+200 with every user's markers. `GET /api/read-markers/chat%3Amain` with no
+`asUser` returns 200 with every user's `chat:main` marker, and the same request
+for a scope that has no marker returns 404.
 
 AU2. The org CLI token names no principal by itself. For a CLI GET,
 `asUser=<userId>` transports the same principal selection as the existing
@@ -1761,7 +1806,8 @@ the credential-resolved user principal; its presence returns
 `400 invalid_as_user` before principal resolution. No case creates a
 credential, a new binding, an authorization grant, or tailnet-identity
 behavior. The canonical read service takes the resulting RESOLVED principal,
-so this migration changes only transport, never authorization.
+so this migration changes only transport, never authorization. On an AU1a
+observer read route, AU1a replaces each AU2 refusal above.
 
 AU3. Visibility: collections omit rows the principal cannot read; detail
 returns the same 404 for unknown and forbidden (transcript precedent);
@@ -1774,9 +1820,9 @@ any session that happens to carry that user's id. “Session owner” is an
 explicit grant to the user principal that owns the target session. Admin is
 the authenticated user principal with `isAdmin=true`; a session principal
 does not borrow that bit. The AU1a observer principal is allowed wherever
-admin is allowed for the sessions and transcript messages rows that the AU1a
-routes return, and for every class an event-firehose observer connection
-subscribes to. It holds no other grant.
+admin is allowed for the sessions, transcript messages, and read markers rows
+that the AU1a and AU1b routes return, and for every class an event-firehose
+observer connection subscribes to. It holds no other grant.
 
 | Resource | Allowed principals |
 |---|---|
@@ -1853,19 +1899,20 @@ resource, and filter-fingerprint failures return `400 invalid_cursor` without
 a row lookup. A valid cursor also binds the authenticated principal kind and
 stable principal id. The AU1a observer principal is its own kind with one
 stable id, so an observer cursor used with a bearer, or a bearer cursor used
-on an observer read, is a binding mismatch. A binding mismatch returns the same 404 as unknown. For
-the correct binding, rows hidden now or hidden since cursor creation are
-simply absent from the authorized page; the server never reports that they
-exist. “Unauthorized cursor use” means a binding mismatch or a request whose
-resource itself is forbidden.
+on an observer read, is a binding mismatch. On a route outside AU1a, a binding mismatch returns
+the same 404 as unknown. On an AU1a observer read route, the gateway ignores a
+cursor whose binding does not match the request's current principal and
+serves the first page: the result equals the same request without that
+`before` or `after` key (R5). For the correct binding, rows hidden now or
+hidden since cursor creation are simply absent from the authorized page; the
+server never reports that they exist. “Unauthorized cursor use” means a
+binding mismatch on a route outside AU1a, or a request whose resource itself
+is forbidden.
 
 AU8. “Same timing class” means unknown and forbidden paths use the same
-handler stages, database statement shape, response encoder, and optional
-minimum-duration pad. In a warmed in-process test of at least 10,000 randomized
-requests per case, forbidden and unknown p50 and p95 latency must each differ
-by no more than 5%, and neither case may perform a byte open. The test records
-the statement count and requires exact equality. Production network latency is
-not part of this conformance measure.
+handler stages, database statement shape, and response encoder, and neither
+performs a byte open. It sets no latency bound, latency measurement, or
+duration pad (ruling, 2026-10-26).
 
 ## Requirements — relationship to the CLI
 
@@ -1974,8 +2021,7 @@ the complete R5a tuple and no SQLite `rowid` or live storage locator. While
 paging host environment and read markers, update every visited row; their
 immutable natural-key order produces no skip or duplicate.
 A6. Unauthorized detail, nested child, cursor use, and download are
-indistinguishable from unknown in body, status, headers, and the AU8 measured
-timing class. Malformed, wrong-resource, changed-filter, wrong-principal, and
+indistinguishable from unknown in body, status, headers, and statement shape. Malformed, wrong-resource, changed-filter, wrong-principal, and
 now-hidden-row cursor cases each assert AU7 precedence.
 A7. ATC builds its current model with zero SQLite access; Clawline lists
 sessions, pages transcript, fetches work state, and correlates notices
@@ -1988,9 +2034,9 @@ matching-owner, and mismatched-owner `asUser`. Both transports produce the
 same resolved principal or refusal and the same allow, deny, omission, and
 same-404 results. The matching-owner session case proves that both transports
 resolve the named user principal; the absent session case proves the existing
-credential-derived principal remains unchanged. Separate GET cases prove
-repeated parameters and device bearer plus `asUser` return `400
-invalid_as_user`, and malformed percent encoding returns `400
+credential-derived principal remains unchanged. Separate GET cases on a
+route outside AU1a prove repeated parameters and device bearer plus `asUser`
+return `400 invalid_as_user`, and malformed percent encoding returns `400
 malformed_query`, all before principal resolution. The test proves that the
 parameter adds no credential, binding, authorization, or tailnet-identity
 behavior.
@@ -2101,8 +2147,7 @@ decision requests, markers, dispositions, and a candidate parent, when one
 source row is denied under its existing AU4 predicate, then that row affects
 no count, clock, active flag, mind, fan-out, parent, order, filter result, or
 dependency version. A twin database without the denied row produces
-byte-identical output on all four routes, equal statement counts, and AU8
-latency within the existing bound.
+byte-identical output on all four routes and equal statement counts.
 
 A25. Given an own-pinned review assignment, a null-pin transitive review, a
 cycle, a turn with both `jobRef` and `assignmentId`, a closed former holder,
@@ -2228,8 +2273,9 @@ code, key, whitespace byte, application header, partial item, or changed key
 order.
 
 A36. Given requests that each contain two independently failing inputs, when
-the handler evaluates them, then this table proves R4d precedence and proves
-that no later step runs:
+the handler evaluates them on a route outside AU1a, then this table proves
+R4d precedence and proves that no later step runs; A59 and A60 cover the AU1a
+observer read routes:
 
 | Earlier failure | Later failure | Exact result |
 |---|---|---|
@@ -2242,7 +2288,7 @@ that no later step runs:
 
 A37. Given an unknown detail id and a forbidden detail id on the same route,
 when the same principal requests each, then status, exact body bytes,
-application header bytes, statement shape, and AU8 timing checks match. Given
+application header bytes, and statement shape match. Given
 an unmatched sessions `displayName`, an unknown config detail key, a
 collection containing only denied rows, an ExecutionMap R4b error, a
 compatibility-alias request, and an asset-download request, each retains A32,
@@ -2516,33 +2562,51 @@ writer or timing harness.
 
 A59 (REST, AU1a observer reads). Given a running gateway with one session
 that has one message and one reply, when a client with only the gateway
-address sends each AU1a route with no `Authorization` header, then each
-returns 200. Each collection route returns the same `items` bytes an admin
+address sends each AU1a sessions route with no `Authorization` header, then
+each returns 200. Each collection route returns the same `items` bytes an admin
 bearer receives for the same request, and its `page` cursors work for further
 observer reads. Each detail route returns the same `item` bytes an admin
 bearer receives for the same request.
-Given the same requests from an existing device, session, or org bearer, each
-result is unchanged from before this amendment. Given no `Authorization`
+Given the same requests from an existing device, session, or org bearer that
+AU2 already served, each result is unchanged from before this amendment.
+Given no `Authorization`
 header on `GET /api/work-items` or any write route, the result is unchanged
 (`401 auth_failed` for the read). Given
-an `Authorization` header with an empty value on an AU1a route, the result is
-`401 auth_failed`. Given `asUser` on an observer read, the result is
-`400 invalid_as_user`. Given an observer page cursor sent with an admin
-bearer, the result is AU7's `404 not_found`.
+an `Authorization` header with an empty value, `Bearer` with no credential, a
+non-`Bearer` scheme, or a revoked or unknown bearer on an AU1a route, the
+result equals the same request with no header. Given `asUser=alice`, or
+`asUser=bob&asUser=alice`, with no usable credential, the result equals the
+org-bearer result with `asUser=alice`. Given an empty `asUser` with no usable
+credential, or an org bearer without `asUser`, the result equals the observer
+read. Given a device bearer with `asUser`, or a session bearer with a
+nonmatching `asUser`, the result equals the same bearer without `asUser`.
+Given an observer page cursor sent with an admin bearer, or an admin-bearer
+page cursor sent with no `Authorization` header, the result equals the same
+request without that cursor: the first page for the current principal.
 
-A60 (REST, AU1b marker reads). Given a stored marker for user `alice` and
-scope `chat:main`, when a client with only the gateway address sends
+A60 (REST, AU1b marker reads). Given stored markers for users `alice` and
+`bob`, each with scope `chat:main`, when a client with only the gateway
+address sends
 `GET /api/read-markers?asUser=alice` with no `Authorization` header, then it
 returns 200 with the same `items` bytes an org bearer with `asUser=alice`
 receives, and its `page` cursors work for further AU1b collection reads for
 that user. When it sends `GET /api/read-markers/chat%3Amain?asUser=alice`
 with no `Authorization` header, then it returns 200 with the same `item`
 bytes an org bearer with `asUser=alice` receives. On either route, given an `asUser` value that names no stored user,
-the result equals the org-bearer result for the same value. Given no
-`asUser`, an empty `asUser`, or repeated `asUser` keys, the results equal the
-org-bearer results: `400 invalid_message`, AU2's empty-value result, and
-`400 invalid_as_user`. Given the same request from an existing device,
-session, or org bearer, each result is unchanged from before this amendment.
+the result equals the org-bearer result for the same value. Given
+`GET /api/read-markers` with no `asUser`, the result is 200 with both markers
+in R5b order, and its `page` cursors work for further observer reads. Given
+`GET /api/read-markers/chat%3Amain` with no `asUser`, the result is 200 with
+the same bytes as the observer collection read under the exact `scopeKey`
+filter `chat:main`, holding both markers in R5b order. Given a scope that no
+marker has, the result is the same 404 as an unknown key. Given an empty `asUser`, the result equals the
+request without `asUser`. Given `asUser=bob&asUser=alice`, the result equals
+the request with `asUser=alice`. Given a collection page cursor from
+`asUser=alice` sent with `asUser=bob`, the result equals the `asUser=bob`
+request without that cursor. Each case gives the same result with an
+empty, malformed, or unverifiable `Authorization` header. Given the same request from an existing
+device, session, or org bearer that AU2 already served, each result is
+unchanged from before this amendment.
 
 ## Open questions — Spirit questions
 
@@ -2612,11 +2676,12 @@ snapshot-only or no-notice freshness would break I5 and the live display-model
 outcome. Those subtraction alternatives therefore lose to the four bounded
 source invalidation mappings above.
 
-SQ9. **RULED 2026-10-25.** Whose markers a credentialless
-`GET /api/read-markers` or `GET /api/read-markers/:scopeKey` returns: the
-caller names the user with the existing AU2 `asUser` parameter, resolved
-exactly as for an org bearer. AU1b
-carries the ruling. Under the AU4 observer sentence, an observer connection
+SQ9. **RULED 2026-10-25, amended 2026-10-26.** Whose markers a
+credentialless `GET /api/read-markers` or `GET /api/read-markers/:scopeKey`
+returns: with `asUser`, the named user's, resolved exactly as for an org
+bearer; without `asUser`, the collection returns every user's markers and the
+detail route returns every user's marker for its `scopeKey`, as the admin
+view does. AU1b carries the ruling. Under the AU4 observer sentence, an observer connection
 receives `read_marker.updated` notices for every user's markers, as an admin
 subscriber does; a ruling that wants that narrower changes the AU4 sentence,
 not AU1a or AU1b.

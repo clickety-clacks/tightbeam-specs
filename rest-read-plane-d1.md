@@ -798,30 +798,15 @@ the cases specified above. It uses the canonical error envelope and
     race returns `:stale` without payload. The caller retries the full
     metadata-visible-hydration sequence once. A second race emits the
     canonical 404 and no partial item.
-14. The identity timing proof uses one warmed in-process server, one database,
-    one connection configuration, and one valid closed identity item whose
-    stored encoded payload is at least 116,000 bytes. The suite records the
-    machine, runtime, database version, fixture byte count, and random seeds.
-    It performs exactly 2,000 unrecorded warm-up calls per cohort, then five
-    recorded runs. Each metadata run contains exactly 10,000 known-authorized,
-    10,000 known-forbidden, and 10,000 unknown calls in one balanced random
-    order produced from that run's recorded seed. Each real-HTTP run contains
-    exactly 10,000 forbidden-known and 10,000 unknown calls in one balanced
-    random order. Statement spies run separately from latency measurement.
-    The timer uses monotonic nanoseconds from entry into the measured stage, or
-    HTTP dispatch, through the complete returned value, or response bytes.
-    The suite uses nearest-rank p50 and p95, removes no sample or outlier, and
-    reports every run rather than an average. For each cohort pair and
-    percentile, `delta = abs(a - b) / min(a, b) * 100`; every recorded run must
-    have `delta <= 5%` at both p50 and p95.
+14. Removed (ruling, 2026-10-26). No latency proof, measurement, or bound
+    applies to identity unknown and forbidden reads.
 15. Given non-admin requests for `GET /api/identity/served` and
-    `GET /api/identity/:unknown`, when the deterministic spy proof and the
-    randomized real-HTTP proof run, then both requests enter the metadata stage
+    `GET /api/identity/:unknown`, when the deterministic spy proof runs, then
+    both requests enter the metadata stage
     of `StateResources.query_identity/2` before visibility, use the exact
     statement shape, count, and one-row cardinality from Acceptance 11, emit
     the same canonical 404 and `Cache-Control: no-store`, never invoke
-    hydration or the serializer, open no payload bytes, and meet Acceptance
-    14's timing bound in every run.
+    hydration or the serializer, and open no payload bytes.
 16. Given REST detail, REST collection, CLI identity status, firehose rebuild,
     firehose ref-based reads, and an already-hydrated committed firehose item,
     when caller-contract spies execute each path, then every name-based path

@@ -108,6 +108,12 @@ Authority and inputs:
   for those reads and put no other barrier in its place. Existing
   authenticated callers keep working unchanged. Unauthenticated writes are out
   of scope. C2a and the REST companion's AU1a and AU1b carry this ruling.
+- Ruling, 2026-10-26 (unasked refusals removed): nothing refuses or fails
+  unless the operator asked for that protection. A later `auth` frame on an
+  observer connection is ignored. C2a, E2, and A9 carry this ruling. Its
+  same-day addendum treats a first `auth` frame that cannot be used as
+  absent, and the connection continues as an observer connection. C2, C2a,
+  and A9 carry it.
 
 G2 session-freshness landing, 2026-08-27: adds sessions to the complete
 rebuildable-state mapping. It adds `session.updated`, fixes the session
@@ -512,7 +518,8 @@ one firewall story.
 
 C2. Auth is IN-BAND, exactly like the existing chat socket: connect
 plain, send an `auth` frame carrying the existing gateway credential as
-the first message, receive `auth_result` (same failure vocabulary).
+the first message, receive `auth_result`. A first `auth` frame that cannot
+be used is not refused; C2a treats it as absent (ruling, 2026-10-26).
 Browser-compatible by construction — no Authorization header on the
 upgrade, no tickets, no credential in the URL. No new credential type.
 
@@ -522,13 +529,19 @@ treat the connection as an observer connection for its lifetime. An observer
 connection carries the REST AU1a observer principal. It needs no credential,
 device pairing, approval, registration, or opt-in; the gateway address is all
 a consumer supplies. Each notice's visibility is the REST AU4 grant to that
-principal, applied before filters (REST AU6). An `auth` frame on an observer
-connection returns E2 `invalid_request` and leaves the connection and its
-subscriptions unchanged. A first frame that is `auth` follows C2 unchanged,
-and any other first frame keeps its existing behavior. For an observer
+principal, applied before filters (REST AU6). The gateway ignores an `auth`
+frame on an observer connection: it sends no reply, and the connection, its
+principal, and its subscriptions are unchanged. A first `auth` frame whose
+credential the gateway verifies follows C2 unchanged. A first `auth` frame
+that cannot be used, because it carries no credential, a malformed one, or
+one that fails verification, is treated as absent: the gateway sends no
+`auth_result` for it and does not close the connection, which is an observer
+connection for its lifetime, and it accepts a following `subscribe` as above.
+Any other first frame keeps its existing behavior. For an observer
 connection, each authorized REST read this spec names, such as the E1, E1a,
 and M2 rebuilds, is the matching REST AU1a observer read. A read-marker
-rebuild uses the REST AU1b marker reads, which name the user with `asUser`.
+rebuild uses the REST AU1b marker reads: without `asUser` the collection
+returns every user's markers, and with `asUser` the named user's.
 
 Example: a script with only the gateway address upgrades
 `/ws/changes?protocolVersion=2`, sends `subscribe` with
@@ -546,7 +559,7 @@ operator's proxy.
 
 ## Subscribing
 
-S1. After auth, or from the first frame of a C2a observer connection, the client opens subscriptions — any number, all on this
+S1. After auth, or on a C2a observer connection, the client opens subscriptions — any number, all on this
 one connection:
 
 ```json
@@ -730,7 +743,7 @@ episode, and makes no automatic reconnect.
 E2. After upgrade, one error frame shape
 `{"type":"error","code":"...","message":"..."}` with the single code
 `invalid_request` (malformed subscribe/unsubscribe, duplicate or unknown
-subscriptionId, or an `auth` frame on a C2a observer connection).
+subscriptionId).
 
 E3. Close codes: `4008` slow-consumer (D3), `1012` restarting (D4), plus
 the standard codes.
@@ -940,12 +953,16 @@ as its first frame, then it receives `subscription_ready`, and a later
 committed reply, session change, and read-marker change arrive as
 `message.created`, `session.*`, and `read_marker.updated` notices with the
 same payload bytes an admin subscriber receives. The same client rebuilds its
-session and message state from REST AU1a observer reads, and a named user's
-markers from the REST AU1b marker reads, with no `Authorization`
+session and message state from REST AU1a observer reads, and every user's
+markers from the REST AU1b marker collection read, with no `Authorization`
 header. Given an existing credential-bearing client, its
 `auth`, subscriptions, notices, and C4 revocation close are unchanged. Given
 an `auth` frame after an observer connection's first `subscribe`, the server
-answers `invalid_request` and delivery continues.
+sends no reply to it and delivery continues unchanged. Given a first `auth`
+frame with no credential, a malformed credential, or a revoked or unknown
+credential, the server sends no `auth_result` for it and keeps the connection
+open; a following unfiltered `subscribe` receives `subscription_ready`, and
+the connection receives the same notices as an observer connection.
 
 ## Open questions
 
@@ -956,9 +973,11 @@ full canonical row; R8b carries only its exact invalidation version; no event
 storage, retention, or cursor exists. The adopted REST companion owns the
 query surface.
 
-The observer-read ruling (2026-10-25) is carried by C2a. The REST
+The observer-read ruling (2026-10-25) is carried by C2a. The 2026-10-26
+ruling and its addendum are carried by C2, C2a, E2, and A9. The REST
 companion's SQ9, whose read markers a credentialless REST read returns, is
-RULED 2026-10-25: the caller names the user with `asUser` (REST AU1b).
+RULED 2026-10-25 and amended 2026-10-26: with `asUser` the named user's
+markers, and without it every user's markers (REST AU1b).
 
 The source-invalidation amendment is ruled: preserve marker-backed `fanOut`
 and durable Toplines, map their exact source commits, and add no
