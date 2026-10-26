@@ -807,6 +807,8 @@ step before it starts the next:
    allowed keys, key multiplicity, key combinations, filters, `limit`, and the
    mutual exclusion of `before` and `after`. Failure returns
    `400 invalid_filter` without cursor-token validation or a resource query.
+   On an AU1a observer read route, a repeated `asUser` key is not a
+   multiplicity failure; AU1a uses its last value.
 5. Validate each supplied cursor token against the fields named in AU7.
    Failure returns
    `400 invalid_cursor` without a resource query.
@@ -1798,7 +1800,8 @@ the credential-resolved user principal; its presence returns
 `400 invalid_as_user` before principal resolution. No case creates a
 credential, a new binding, an authorization grant, or tailnet-identity
 behavior. The canonical read service takes the resulting RESOLVED principal,
-so this migration changes only transport, never authorization.
+so this migration changes only transport, never authorization. On an AU1a
+observer read route, AU1a replaces each AU2 refusal above.
 
 AU3. Visibility: collections omit rows the principal cannot read; detail
 returns the same 404 for unknown and forbidden (transcript precedent);
@@ -2021,9 +2024,9 @@ matching-owner, and mismatched-owner `asUser`. Both transports produce the
 same resolved principal or refusal and the same allow, deny, omission, and
 same-404 results. The matching-owner session case proves that both transports
 resolve the named user principal; the absent session case proves the existing
-credential-derived principal remains unchanged. Separate GET cases prove
-repeated parameters and device bearer plus `asUser` return `400
-invalid_as_user`, and malformed percent encoding returns `400
+credential-derived principal remains unchanged. Separate GET cases on a
+route outside AU1a prove repeated parameters and device bearer plus `asUser`
+return `400 invalid_as_user`, and malformed percent encoding returns `400
 malformed_query`, all before principal resolution. The test proves that the
 parameter adds no credential, binding, authorization, or tailnet-identity
 behavior.
@@ -2260,8 +2263,9 @@ code, key, whitespace byte, application header, partial item, or changed key
 order.
 
 A36. Given requests that each contain two independently failing inputs, when
-the handler evaluates them, then this table proves R4d precedence and proves
-that no later step runs:
+the handler evaluates them on a route outside AU1a, then this table proves
+R4d precedence and proves that no later step runs; A59 and A60 cover the AU1a
+observer read routes:
 
 | Earlier failure | Later failure | Exact result |
 |---|---|---|

@@ -255,13 +255,17 @@ performs these steps in one fixed order:
    treated as absent (REST AU1a), and this step does not fail. Every other
    Table 1 route keeps it.
 2. Decode the raw query. Invalid percent encoding or decoded non-UTF-8 bytes
-   return `400 malformed_query` before principal resolution or lookup.
+   return `400 malformed_query` before principal resolution or lookup. On the
+   sessions and read-marker routes, an `asUser` value that fails decoding is
+   treated as absent (REST AU1a).
 3. Apply AU2 to the sole optional `asUser` value. The adapter preserves AU2's
    `invalid_as_user`, `invalid_message`, and `identity_not_yours` status and
    exact bytes, except on the sessions and read-marker routes, where REST AU1a
    resolves the principal and returns no AU2 error.
 4. Reject another decoded query key or invalid multiplicity as
-   `400 invalid_filter` before lookup.
+   `400 invalid_filter` before lookup. On the sessions and read-marker routes,
+   a repeated `asUser` key is not invalid multiplicity; REST AU1a uses its
+   last value.
 5. Decode the path key without trimming, case-folding, aliasing, Unicode
    normalization, typed-prefix expansion, or alternate numeric spelling.
 6. Pass the resolved principal and Table 1 key to the shared lookup and
@@ -316,7 +320,7 @@ The closed cases exercised by this card are:
 | 400 | `malformed_query` | raw query decoding fails, other than an `asUser` value on the sessions or read-marker route |
 | 400 | `invalid_as_user` | AU2 repeated `asUser` or device-bearer case, except on the sessions and read-marker routes |
 | 400 | `invalid_message` | AU2 requires a user selection or receives its empty org-bearer value, except on the sessions and read-marker routes |
-| 400 | `invalid_filter` | decoded query structure contains anything except one optional `asUser` |
+| 400 | `invalid_filter` | decoded query structure contains anything except one optional `asUser`, or except optional `asUser` keys on the sessions and read-marker routes |
 | 401 | `auth_failed` | bearer verification fails, except on the sessions and read-marker routes (REST AU1a) |
 | 403 | `identity_not_yours` | session bearer supplies a nonmatching AU2 user, except on the sessions and read-marker routes |
 | 404 | `not_found` | I3 miss or denial |
