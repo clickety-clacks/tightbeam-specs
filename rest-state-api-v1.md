@@ -127,7 +127,10 @@ Authority and inputs:
   ruling applies the general rule to marker detail: without `asUser`,
   `GET /api/read-markers/:scopeKey` returns every user's marker for that
   scope, as the admin view does, and returns not found only when that scope
-  has no marker. AU1b and A60 carry it.
+  has no marker. AU1b and A60 carry it. A second addendum applies the rule
+  to cursors: on an observer read route, a cursor that cannot be used under
+  the request's current principal is ignored, and the read is served from
+  the first page. R4d, AU7, A59, and A60 carry it.
 - The firehose gap remediation ruling (2026-08-27) accepts the firehose
   client-buildability recon.
   It makes G2 session freshness a read-side firehose prerequisite and leaves
@@ -239,8 +242,9 @@ serializer boundary.
   user enumeration, endpoint, credential type, write path, or any replacement
   barrier such as an allowlist, origin check, rate limit, opt-in setting,
   development mode, per-app registration, or warning. They change no item
-  schema, pagination, order, or cursor format, and no wire schema except that
-  the AU1b observer marker detail returns the existing collection envelope.
+  schema, order, cursor format, or paging with a usable cursor, and no wire
+  schema except that the AU1b observer marker detail returns the existing
+  collection envelope.
 - REST v1 does not authorize implementation, deployment, or client migration.
 - The work-item priority/shared-seam amendment does not change priority write
   semantics, add a work-item mutation, or promote a legacy composite response
@@ -818,7 +822,9 @@ step before it starts the next:
    `400 ambiguous_id`. Authorization, visibility, and existence selection use
    one visibility-filtered query snapshot. No unfiltered existence result can
    affect error selection. Failure to complete that operation returns
-   `500 projection_invalid` and no partial response.
+   `500 projection_invalid` and no partial response. On an AU1a observer read
+   route, a cursor principal-binding mismatch is not a denial: AU7 ignores
+   that cursor, and this step continues as for the same request without it.
 7. Produce and encode one complete canonical result. Failure returns
    `500 projection_invalid` and no partial success body.
 
@@ -1893,11 +1899,15 @@ resource, and filter-fingerprint failures return `400 invalid_cursor` without
 a row lookup. A valid cursor also binds the authenticated principal kind and
 stable principal id. The AU1a observer principal is its own kind with one
 stable id, so an observer cursor used with a bearer, or a bearer cursor used
-on an observer read, is a binding mismatch. A binding mismatch returns the same 404 as unknown. For
-the correct binding, rows hidden now or hidden since cursor creation are
-simply absent from the authorized page; the server never reports that they
-exist. “Unauthorized cursor use” means a binding mismatch or a request whose
-resource itself is forbidden.
+on an observer read, is a binding mismatch. On a route outside AU1a, a binding mismatch returns
+the same 404 as unknown. On an AU1a observer read route, the gateway ignores a
+cursor whose binding does not match the request's current principal and
+serves the first page: the result equals the same request without that
+`before` or `after` key (R5). For the correct binding, rows hidden now or
+hidden since cursor creation are simply absent from the authorized page; the
+server never reports that they exist. “Unauthorized cursor use” means a
+binding mismatch on a route outside AU1a, or a request whose resource itself
+is forbidden.
 
 AU8. “Same timing class” means unknown and forbidden paths use the same
 handler stages, database statement shape, and response encoder, and neither
@@ -2570,8 +2580,9 @@ org-bearer result with `asUser=alice`. Given an empty `asUser` with no usable
 credential, or an org bearer without `asUser`, the result equals the observer
 read. Given a device bearer with `asUser`, or a session bearer with a
 nonmatching `asUser`, the result equals the same bearer without `asUser`.
-Given an observer page cursor sent with an admin bearer, the result is AU7's
-`404 not_found`.
+Given an observer page cursor sent with an admin bearer, or an admin-bearer
+page cursor sent with no `Authorization` header, the result equals the same
+request without that cursor: the first page for the current principal.
 
 A60 (REST, AU1b marker reads). Given stored markers for users `alice` and
 `bob`, each with scope `chat:main`, when a client with only the gateway
@@ -2590,7 +2601,9 @@ the same bytes as the observer collection read under the exact `scopeKey`
 filter `chat:main`, holding both markers in R5b order. Given a scope that no
 marker has, the result is the same 404 as an unknown key. Given an empty `asUser`, the result equals the
 request without `asUser`. Given `asUser=bob&asUser=alice`, the result equals
-the request with `asUser=alice`. Each case gives the same result with an
+the request with `asUser=alice`. Given a collection page cursor from
+`asUser=alice` sent with `asUser=bob`, the result equals the `asUser=bob`
+request without that cursor. Each case gives the same result with an
 empty, malformed, or unverifiable `Authorization` header. Given the same request from an existing
 device, session, or org bearer that AU2 already served, each result is
 unchanged from before this amendment.
