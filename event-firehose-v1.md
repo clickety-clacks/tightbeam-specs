@@ -100,6 +100,14 @@ Authority and inputs:
   for the existing chat wire's doorbells.
 - Related: the gateway behind tailscale serve — transport
   posture this endpoint would inherit.
+- Ruling, 2026-10-25 (observer reads): the firehose exists so any app on the
+  network can connect and get a feed; easy observability is its whole point.
+  An app that has only the gateway address receives live notices and reads
+  the session, message, and read-marker state it needs, with no token, device
+  pairing, approval step, or minted credential. Remove the bearer requirement
+  for those reads and put no other barrier in its place. Existing
+  authenticated callers keep working unchanged. Unauthenticated writes are out
+  of scope. C2a and the REST companion's AU1a and AU1b carry this ruling.
 
 G2 session-freshness landing, 2026-08-27: adds sessions to the complete
 rebuildable-state mapping. It adds `session.updated`, fixes the session
@@ -136,7 +144,7 @@ reviewed revision; `cli-surface-v1.md` is unchanged.
 
 AS1. The gateway already authenticates its existing credentials through the
 chat socket's in-band exchange. C2 reuses that exchange and adds no credential
-type.
+type. A C2a observer connection uses no credential.
 
 AS2. The REST companion ships each R9 snapshot read before the matching
 freshness class. Firehose A7 falsifies this assumption if a consumer cannot
@@ -191,8 +199,10 @@ G2. Every state-changing commit SHALL produce a notice to every connected
 subscription whose filters match. Nothing is excluded from the stream
 itself; filters narrow delivery for one subscriber only.
 
-G3. The endpoint SHALL serve any consumer the gateway can authenticate as
-a user: a dashboard, ATC, a script, another agent.
+G3. The endpoint SHALL serve any consumer that reaches the gateway address:
+one the gateway authenticates as a user (C2), or one that connects with no
+credential as an observer (C2a). Examples are a dashboard, ATC, a script,
+or another agent.
 
 ## Non-goals
 
@@ -211,8 +221,9 @@ N4. Nothing is sent INTO Tightbeam on this socket beyond subscribe
 control messages. A chat client sends through the normal gateway verbs
 (wake) and sees the effect arrive as notices.
 
-N5. No capability or API-key system (ruled 2026-08-20). Auth is the
-existing gateway credential.
+N5. No capability or API-key system (ruled 2026-08-20). A consumer that
+authenticates uses the existing gateway credential; an observer connection
+(C2a) uses none.
 
 N6. No delivery judgment: the substrate never decides a change is
 uninteresting (philosophy gate 5).
@@ -505,16 +516,37 @@ the first message, receive `auth_result` (same failure vocabulary).
 Browser-compatible by construction — no Authorization header on the
 upgrade, no tickets, no credential in the URL. No new credential type.
 
+C2a. Observer connections (ruling, 2026-10-25). When the first frame on an
+upgraded connection is a `subscribe` frame, the gateway SHALL accept it and
+treat the connection as an observer connection for its lifetime. An observer
+connection carries the REST AU1a observer principal. It needs no credential,
+device pairing, approval, registration, or opt-in; the gateway address is all
+a consumer supplies. Each notice's visibility is the REST AU4 grant to that
+principal, applied before filters (REST AU6). An `auth` frame on an observer
+connection returns E2 `invalid_request` and leaves the connection and its
+subscriptions unchanged. A first frame that is `auth` follows C2 unchanged,
+and any other first frame keeps its existing behavior. For an observer
+connection, each authorized REST read this spec names, such as the E1, E1a,
+and M2 rebuilds, is the matching REST AU1a observer read. A read-marker
+rebuild uses the REST AU1b marker reads, which name the user with `asUser`.
+
+Example: a script with only the gateway address upgrades
+`/ws/changes?protocolVersion=2`, sends `subscribe` with
+`classes:["message.created"]`, and receives `subscription_ready`. A reply
+committed later in any session arrives as a `message.created` notice with the
+same payload an admin subscriber receives.
+
 C4. Revocation closes sockets: a `device.revoked` or `session.retired`
 affecting a connection's principal closes that connection (1008); the
-client's reconnect re-auths and rebuilds (M2).
+client's reconnect re-auths and rebuilds (M2). An observer connection has
+no credential to revoke, so C4 never closes it.
 
 C3. Transport posture: localhost or tailscale; TLS termination is the
 operator's proxy.
 
 ## Subscribing
 
-S1. After auth, the client opens subscriptions — any number, all on this
+S1. After auth, or from the first frame of a C2a observer connection, the client opens subscriptions — any number, all on this
 one connection:
 
 ```json
@@ -698,7 +730,7 @@ episode, and makes no automatic reconnect.
 E2. After upgrade, one error frame shape
 `{"type":"error","code":"...","message":"..."}` with the single code
 `invalid_request` (malformed subscribe/unsubscribe, duplicate or unknown
-subscriptionId).
+subscriptionId, or an `auth` frame on a C2a observer connection).
 
 E3. Close codes: `4008` slow-consumer (D3), `1012` restarting (D4), plus
 the standard codes.
@@ -902,14 +934,31 @@ publisher being installed and routable. If the publisher or fan-out crashes
 after commit before handoff completes, zero notice is permitted and the next
 authorized REST rebuild converges to the committed row.
 
+A9. Given a running gateway, when a client with only the gateway address
+upgrades `/ws/changes?protocolVersion=2` and sends an unfiltered `subscribe`
+as its first frame, then it receives `subscription_ready`, and a later
+committed reply, session change, and read-marker change arrive as
+`message.created`, `session.*`, and `read_marker.updated` notices with the
+same payload bytes an admin subscriber receives. The same client rebuilds its
+session and message state from REST AU1a observer reads, and a named user's
+markers from the REST AU1b marker reads, with no `Authorization`
+header. Given an existing credential-bearing client, its
+`auth`, subscriptions, notices, and C4 revocation close are unchanged. Given
+an `auth` frame after an observer connection's first `subscribe`, the server
+answers `invalid_request` and delivery continues.
+
 ## Open questions
 
-None. The read-marker question (r4's MQ1) is RULED 2026-08-21: substrate rows,
+None in this file. The read-marker question (r4's MQ1) is RULED 2026-08-21: substrate rows,
 per §Read markers. Everything earlier is resolved or mooted by the state-model
 ruling: auth uses the existing credential; R8 rebuildable payloads carry the
 full canonical row; R8b carries only its exact invalidation version; no event
 storage, retention, or cursor exists. The adopted REST companion owns the
 query surface.
+
+The observer-read ruling (2026-10-25) is carried by C2a. The REST
+companion's SQ9, whose read markers a credentialless REST read returns, is
+RULED 2026-10-25: the caller names the user with `asUser` (REST AU1b).
 
 The source-invalidation amendment is ruled: preserve marker-backed `fanOut`
 and durable Toplines, map their exact source commits, and add no

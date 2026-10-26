@@ -6,7 +6,7 @@ reviewed content hash, and the reviewed D1 implementation is present on green
 product `origin/main`.
 
 Authority: `rest-state-api-v1.md` SP2, SP4, R2, R4, R4c, R4d, R7, R8,
-SR1-SR4, AU1-AU5, AU7-AU8, and A2/A35-A37; its normative wire companion;
+SR1-SR4, AU1-AU5 (including AU1a and AU1b), AU7-AU8, and A2/A35-A37; its normative wire companion;
 `event-firehose-v1.md` V3-V5 and A6; the D1 transport contract in
 `rest-read-plane-d1.md`; the operator ruling; and the route authority report,
 with its source-readable extract and its R7 correlation correction; a further
@@ -132,7 +132,11 @@ projection, visibility predicate, or error encoder.
 
 I2. The service applies bearer authentication, query decoding, AU2 principal
 resolution, query validation, visibility-filtered lookup, serialization, and
-encoding in R4d order. The visibility check and existence selection use one
+encoding in R4d order. A request to `GET /api/sessions/:sessionKey` with no
+`Authorization` header is an AU1a observer read and skips bearer
+authentication only. A request to `GET /api/read-markers/:scopeKey` with no
+`Authorization` header is an AU1b marker read and likewise skips only bearer
+authentication. The visibility check and existence selection use one
 query snapshot. Before that selection admits a row, neither the route nor the
 shared lookup reads a child collection, reopening, trace, or another composed
 payload.
@@ -245,12 +249,18 @@ Each route accepts only AU2's transport-only `asUser` query key. The D1 adapter
 performs these steps in one fixed order:
 
 1. Authenticate the bearer. A refusal returns `401 auth_failed` before query
-   decoding or lookup.
+   decoding or lookup. On `GET /api/sessions/:sessionKey`, a request with no
+   `Authorization` header skips this step as an AU1a observer read. On
+   `GET /api/read-markers/:scopeKey`, a request with no `Authorization`
+   header skips this step as an AU1b marker read. Every other Table 1 route
+   keeps it.
 2. Decode the raw query. Invalid percent encoding or decoded non-UTF-8 bytes
    return `400 malformed_query` before principal resolution or lookup.
 3. Apply AU2 to the sole optional `asUser` value. The adapter preserves AU2's
    `invalid_as_user`, `invalid_message`, and `identity_not_yours` status and
-   exact bytes.
+   exact bytes. An AU1a observer read that supplies `asUser` returns
+   `400 invalid_as_user`. An AU1b marker read applies AU2 as for an org
+   bearer.
 4. Reject another decoded query key or invalid multiplicity as
    `400 invalid_filter` before lookup.
 5. Decode the path key without trimming, case-folding, aliasing, Unicode
@@ -273,7 +283,9 @@ selection and returns the same 404 without a candidate list or child query.
 The effective marker key step requires a resolved user principal. It uses that
 user id even when the user is an admin. Thus two users can hold the same
 `scopeKey` without ambiguity or cross-user selection. An org or matching
-session bearer can use AU2 to resolve the marker's user. A session principal
+session bearer can use AU2 to resolve the marker's user, and a request with no
+`Authorization` header resolves `asUser` through AU2 like an org bearer
+(REST AU1b). A session principal
 that remains session-scoped gets the ordinary same 404. The route adds no
 `userId` selector.
 
@@ -297,7 +309,7 @@ The closed cases exercised by this card are:
 | 400 | `invalid_as_user` | AU2 repeated `asUser` or device-bearer case |
 | 400 | `invalid_message` | AU2 requires a user selection or receives its empty org-bearer value |
 | 400 | `invalid_filter` | decoded query structure contains anything except one optional `asUser` |
-| 401 | `auth_failed` | bearer verification fails |
+| 401 | `auth_failed` | bearer verification fails; an AU1a observer read on the sessions route and an AU1b marker read have no bearer to verify |
 | 403 | `identity_not_yours` | session bearer supplies a nonmatching AU2 user |
 | 404 | `not_found` | I3 miss or denial |
 | 500 | `projection_invalid` | shared query, projection, schema, or encoding cannot complete one item |
@@ -415,7 +427,7 @@ then it receives the same 404 as an unknown key. No test request supplies a
 `userId` path or query selector.
 
 AC6 — **AU2 and error precedence.** Given each Table 1 route, when the test
-sends an absent bearer, invalid bearer, missing org-bearer `asUser`, empty
+sends an absent bearer (except on the sessions route, where AU1a applies, and the read-marker route, where AU1b applies), invalid bearer, missing org-bearer `asUser`, empty
 org-bearer `asUser`, repeated `asUser`, mismatched session-bearer `asUser`,
 device bearer plus `asUser`, malformed percent escape, and one unsupported
 decoded query key, then the route returns the exact R4c status, body bytes, and
