@@ -72,7 +72,7 @@ Add the other eight detail routes without changing their collection routes.
   The user id is implicit in the resolved principal and does not become a path
   segment or query parameter. A session principal without AU2 user resolution
   has no effective marker key, and neither does the REST AU1a observer
-  principal.
+  principal, whose marker detail read follows REST AU1b.
 - **Shared lookup**: the one `Tightbeam.StateResources` row lookup named in
   Table 1. Seven names exist at product commit `581afe9b`, but the work-item
   and assignment names delegate to composite CLI handlers and are not valid
@@ -142,7 +142,9 @@ payload.
 
 I3. An unknown key, forbidden row, malformed typed string id, noncanonical
 `turnSeq`, or unavailable effective marker key selects the same 404. No earlier
-step exposes row existence.
+step exposes row existence. The one exception is the REST AU1b observer
+marker detail, which returns every user's marker for the decoded `scopeKey`
+and selects the 404 only when no marker has that `scopeKey`.
 
 I4. The detail `item` is the complete R7 item. Collection, REST detail, CLI
 read, and R8 publication use the same serializer bytes. A turn item contains
@@ -266,7 +268,10 @@ performs these steps in one fixed order:
    existing AU4 predicate as one visibility-selection boundary in one query
    snapshot. The corrected work-item and assignment lookups implement that
    boundary before they expose a resource row or child payload. A miss or
-   denial returns the same 404.
+   denial returns the same 404. On `GET /api/read-markers/:scopeKey` with the
+   REST AU1a observer principal, this step and steps 7 and 8 instead return
+   the observer collection read under the exact `scopeKey` filter for the
+   decoded key (REST AU1b), or the same 404 when it holds no marker.
 7. Pass the allowed row to the Table 1 serializer. A lookup, schema,
    serialization, or encoding failure returns `500 projection_invalid` with
    no partial item.
@@ -283,9 +288,11 @@ user id even when the user is an admin. Thus two users can hold the same
 session bearer can use AU2 to resolve the marker's user, and a request with no
 usable credential resolves `asUser` through AU2 like an org bearer
 (REST AU1a). A session principal
-that remains session-scoped gets the ordinary same 404, and so does such a
-request without `asUser`, because the observer principal has no user. The route adds no
-`userId` selector.
+that remains session-scoped gets the ordinary same 404. A request with no
+usable credential and no remaining `asUser` resolves to the observer
+principal, which has no user; under REST AU1b it receives every user's marker
+for the decoded `scopeKey` in the collection envelope, or the same 404 when no
+marker has that `scopeKey`. The route adds no `userId` selector.
 
 ### Success and error bytes
 
@@ -293,6 +300,9 @@ A success body has exactly these outer keys in order and no insignificant
 whitespace:
 
 `{"schemaVersion":1,"resource":"<Table 1 literal>","item":<public item bytes>}`
+
+The REST AU1b observer marker detail is the one exception: it returns the
+REST collection envelope that the observer collection read returns.
 
 An application error uses the shared R4c `RestError` encoder. For example, an
 assignment miss is exactly:
@@ -384,7 +394,8 @@ composite `assignments`, trace, holder, or cursor field.
 AC3 — **Success envelope and shared seams.** Given one visible valid R7 row per
 Table 1 route, when each allowed principal performs the real HTTP GET, then the
 response is 200 with the exact success key order, exact Table 1 resource
-literal, exact public item bytes, and exact application headers. A seam spy
+literal, exact public item bytes, and exact application headers. The REST
+AU1b observer marker detail is excluded here; AC5 covers it. A seam spy
 records one Table 1 lookup, the resource's existing AU4 predicate, one Table 1
 serializer, one D1/M1 shared ordered-item encoder, and one shared envelope
 encoder. It records no route-local SQL, item map, JSON reshaping, visibility
@@ -421,8 +432,11 @@ AC5 — **Read-marker composite identity.** Given two users with the same
 `scopeKey` and distinct marker bytes, when each resolved user fetches that
 path, then each receives only the item whose `(userId,scopeKey)` equals its
 effective marker key. Given a session principal without AU2 user resolution,
-or a request with no `Authorization` header and no `asUser`, then it receives
-the same 404 as an unknown key. No test request supplies a
+then it receives the same 404 as an unknown key. Given a request with no
+`Authorization` header and no `asUser`, then it receives 200 with the same
+bytes as the observer collection read under the exact `scopeKey` filter for
+that key, holding both users' markers in R5b order; for a scope that no marker
+has, it receives the same 404 as an unknown key. No test request supplies a
 `userId` path or query selector.
 
 AC6 — **AU2 and error precedence.** Given each Table 1 route other than the

@@ -123,7 +123,11 @@ Authority and inputs:
   `asUser` value, and anything that cannot be used is treated as absent. A
   bearer that fails verification is served as an observer read, an empty
   `asUser` is absent, and repeated `asUser` keys use the last value. The D1
-  identity timing proof is removed on the same basis.
+  identity timing proof is removed on the same basis. A further same-day
+  ruling applies the general rule to marker detail: without `asUser`,
+  `GET /api/read-markers/:scopeKey` returns every user's marker for that
+  scope, as the admin view does, and returns not found only when that scope
+  has no marker. AU1b and A60 carry it.
 - The firehose gap remediation ruling (2026-08-27) accepts the firehose
   client-buildability recon.
   It makes G2 session freshness a read-side firehose prerequisite and leaves
@@ -234,8 +238,9 @@ serializer boundary.
   2026-10-26) do not add a user selector, default user, operator designation,
   user enumeration, endpoint, credential type, write path, or any replacement
   barrier such as an allowlist, origin check, rate limit, opt-in setting,
-  development mode, per-app registration, or warning. They change no wire schema, item schema, pagination,
-  order, or cursor format.
+  development mode, per-app registration, or warning. They change no item
+  schema, pagination, order, or cursor format, and no wire schema except that
+  the AU1b observer marker detail returns the existing collection envelope.
 - REST v1 does not authorize implementation, deployment, or client migration.
 - The work-item priority/shared-seam amendment does not change priority write
   semantics, add a work-item mutation, or promote a legacy composite response
@@ -1752,16 +1757,21 @@ detail route returns that user's marker for the decoded `scopeKey` under the
 existing effective marker key. For the observer principal, the collection
 returns every user's markers in R5b order, as the admin view of all markers
 does; the R6 caller-user default does not apply because the observer
-principal has no user. The detail route has no effective marker key for the
-observer principal and returns the same 404 as an unknown key. Every marker
-write keeps AU1.
+principal has no user. For the observer principal, the detail route returns
+every user's marker for the decoded `scopeKey`: 200 with the same bytes, in
+the existing collection envelope, that the observer collection returns under
+the R6 exact `scopeKey` filter for that key, and its `page` cursors continue
+as observer collection reads. When no marker has that `scopeKey`, it returns
+the same 404 as an unknown key. Every marker write keeps AU1.
 
 Example: `GET /api/read-markers?asUser=alice` with no `Authorization` header
 returns 200 with the same `items` bytes that an org bearer with
 `asUser=alice` receives, and
 `GET /api/read-markers/chat%3Amain?asUser=alice` returns the same `item`
 bytes. `GET /api/read-markers` with no `asUser`, or with `asUser=`, returns
-200 with every user's markers.
+200 with every user's markers. `GET /api/read-markers/chat%3Amain` with no
+`asUser` returns 200 with every user's `chat:main` marker, and the same request
+for a scope that has no marker returns 404.
 
 AU2. The org CLI token names no principal by itself. For a CLI GET,
 `asUser=<userId>` transports the same principal selection as the existing
@@ -2571,8 +2581,10 @@ bytes an org bearer with `asUser=alice` receives. On either route, given an `asU
 the result equals the org-bearer result for the same value. Given
 `GET /api/read-markers` with no `asUser`, the result is 200 with both markers
 in R5b order, and its `page` cursors work for further observer reads. Given
-`GET /api/read-markers/chat%3Amain` with no `asUser`, the result is the same
-404 as an unknown key. Given an empty `asUser`, the result equals the
+`GET /api/read-markers/chat%3Amain` with no `asUser`, the result is 200 with
+the same bytes as the observer collection read under the exact `scopeKey`
+filter `chat:main`, holding both markers in R5b order. Given a scope that no
+marker has, the result is the same 404 as an unknown key. Given an empty `asUser`, the result equals the
 request without `asUser`. Given `asUser=bob&asUser=alice`, the result equals
 the request with `asUser=alice`. Each case gives the same result with an
 empty, malformed, or unverifiable `Authorization` header. Given the same request from an existing
@@ -2650,8 +2662,9 @@ source invalidation mappings above.
 SQ9. **RULED 2026-10-25, amended 2026-10-26.** Whose markers a
 credentialless `GET /api/read-markers` or `GET /api/read-markers/:scopeKey`
 returns: with `asUser`, the named user's, resolved exactly as for an org
-bearer; without `asUser`, the collection returns every user's markers, as the
-admin view does. AU1b carries the ruling. Under the AU4 observer sentence, an observer connection
+bearer; without `asUser`, the collection returns every user's markers and the
+detail route returns every user's marker for its `scopeKey`, as the admin
+view does. AU1b carries the ruling. Under the AU4 observer sentence, an observer connection
 receives `read_marker.updated` notices for every user's markers, as an admin
 subscriber does; a ruling that wants that narrower changes the AU4 sentence,
 not AU1a or AU1b.
