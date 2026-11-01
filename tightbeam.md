@@ -1049,11 +1049,13 @@ STATUTE. The constitution is the set of rules that make the substrate BE
 the substrate — messages cannot fall into the void, every mutation passes
 the chokepoint attributed, reference seams are typed, history is never
 trimmed, credentials never move, processes cannot mutate identity. These
-are CODE, welded in on purpose, and they are not law-as-data waiting to
-happen: they are already doing their job, and their inexpressibility as
-data is a feature — no operator mistake, confused agent, or compromised
-admin can write a file that turns them off. Changing the constitution is
-forking the product. Statutes are everything where two sane operators
+are fixed on purpose: no operator mistake, confused agent, or
+compromised admin can write a file that turns them off. Changing the
+constitution is forking the product. Today they are CODE. That records where
+they live, not a ruling that every non-domain substrate rule must stay
+compiled: whether a given hard-coded rule is better declared as a rail is a
+question for each rule, and declaring a constitutional rule does not put it
+within any org's reach. Statutes are everything where two sane operators
 could rule differently — quotas, placement sets, tool gates, who may
 retire what — and THOSE are data, fail-closed, refusing by name. The
 litmus: if removing the rule would let the substrate lie, lose work, or
@@ -1065,11 +1067,12 @@ kind changes what completion needs. Each is a kungfu rule: a rail over
 generic facts on the one guarded-transition core, which an org can change or
 drop. The substrate stores the records and attached evidence those rules
 read, as given, and gives them no domain meaning. A domain rule written into
-substrate code is a defect even when the rule itself is sound: it is statute
-welded in as if it were constitution. Moving such a check into kungfu does
-not by itself decide whether an org keeps it. And the composition rule that
-keeps the tiers safe together is DENY-ONLY: a statute may add restrictions,
-never grant a permission the constitution refuses. Data law can tighten the walls; nothing written
+substrate code is a defect even when the rule itself is sound: it takes
+from the org a choice the litmus leaves to it. Moving such a check into
+kungfu does not by itself decide whether an org keeps it. And the
+composition rule that keeps the tiers safe together is DENY-ONLY: a
+statute may add restrictions, never grant a permission the constitution
+refuses. Data law can tighten the walls; nothing written
 in a file can drill through one. Deny-only composition prevents a statute from granting authority the constitution
 withholds. It does not make overrestriction harmless: a bad statute can block
 legitimate delivery or prevent recovery. Such restrictions are product defects
