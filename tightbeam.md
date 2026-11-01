@@ -110,7 +110,12 @@ every agent's instructions.
 Tightbeam is a patchbay: the smallest possible deterministic substrate through which one person and their agents talk, hire,
 and coordinate. The intelligence lives entirely in the harnesses; the
 substrate routes, records, and enforces — it is forbidden to think, and every
-clever thing it might do is a bug that belongs in an agent instead. The
+clever thing it might do is a bug that belongs in an agent instead. It knows
+no domain process: it stores records and the evidence agents attach as given,
+and runs one generic rule engine over them, without knowing what code, a
+commit, a review, a verification or a release is. Every engineering-process
+check is a kungfu rule an org can change or drop; a domain rule written into
+substrate code is a defect even when the rule itself is sound. The
 harness transcript is the only truth about a conversation; Tightbeam keeps a
 ledger, not a shadow, and when something fails it fails as a visible row with
 a reason, never as a mystery. Everything anyone does — human or agent — is
@@ -1053,9 +1058,18 @@ could rule differently — quotas, placement sets, tool gates, who may
 retire what — and THOSE are data, fail-closed, refusing by name. The
 litmus: if removing the rule would let the substrate lie, lose work, or
 strand a message, it is constitution; if reasonable orgs could differ, it
-is statute. And the composition rule that keeps the tiers safe together
-is DENY-ONLY: a statute may add restrictions, never grant a permission
-the constitution refuses. Data law can tighten the walls; nothing written
+is statute. Every engineering-process check falls on the statute side: what
+counts as verification, which review covers a result, whether a result must
+be bound to a commit, which evidence a reviewer must cite, whether an effect
+kind changes what completion needs. Each is a kungfu rule: a rail over
+generic facts on the one guarded-transition core, which an org can change or
+drop. The substrate stores the records and attached evidence those rules
+read, as given, and gives them no domain meaning. A domain rule written into
+substrate code is a defect even when the rule itself is sound: it is statute
+welded in as if it were constitution. Moving such a check into kungfu does
+not by itself decide whether an org keeps it. And the composition rule that
+keeps the tiers safe together is DENY-ONLY: a statute may add restrictions,
+never grant a permission the constitution refuses. Data law can tighten the walls; nothing written
 in a file can drill through one. Deny-only composition prevents a statute from granting authority the constitution
 withholds. It does not make overrestriction harmless: a bad statute can block
 legitimate delivery or prevent recovery. Such restrictions are product defects
