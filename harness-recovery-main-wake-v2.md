@@ -517,7 +517,7 @@ the delivery guarantees and no other policy.
 | Piece | Need | Serves |
 |---|---|---|
 | Recovery notice reaction | One reaction and its plain-English translation in the base seed composition, elected by default and keyed as R62 v13 requires (org, family, source event, slot). | R11 |
-| Release event interface | The reaction's trigger must tell a WI932 release from other resolutions. WI932 section 6 gives the hold-resolved event the hold's state, class, constituent routes and fence presence, but not the resolution's check-cycle correlation that WI932 R7 records. This is the missing WI932 interface (Q5). | R1, R11 |
+| Release event interface | The reaction's trigger must tell a WI932 release from other resolutions. WI932 section 6 gives the hold-resolved event the hold's state, class, constituent routes and fence presence, but not the resolution's check-cycle correlation that WI932 R7 records. Authorized WI932 r3 is to expose it; it is a pending dependency (Q5). | R1, R11 |
 | Owner-Main target | For each affected owner, read from the hold's member rows, resolve that owner's Main by the existing owner-Main selection. No Main is a non-delivered outcome, not an error. | R2, R6, R9 |
 | Tracked notice | One additive table keyed (holdId, ownerUserId) with state, attempt number, current wake id, current turn sequence, last outcome and timestamps. The key enforces R2. Empty on upgrade. Its only consumer is the recovery notice reaction. | R2, R3, R5, R6, R10 |
 | Attempt start | Deliver the R4 prompt to the owner Main in the caller's transaction, as the "other" route does with `Gateway.deliver_prompt_in_txn` and a deterministic wake id. | R4, R6 |
@@ -614,14 +614,21 @@ reports, artifact rows and transcripts are evidence, not canonical custody.
   every affected owner is notified, because the fence held all their sessions on
   that harness and host, and Main judges what stalled.
 
-- **Q5 (BLOCKING, owner: WI932's product owner through delivery ownership):
-  the hold-resolved event must say how the hold was resolved.** R11's trigger fires
-  only on a WI932 release. WI932 R7 resolves the incident with a correlation naming
-  the check cycle, but WI932 section 6 does not list that correlation, or any
-  resolution path, among the hold-resolved event's facts. The needed interface:
-  the hold-resolved event exposes the resolution's correlation, so a reaction can
-  tell a WI932 release from every other resolution. This contract does not amend
-  WI932. Until WI932's owner rules, R1, R11 and their acceptance examples cannot be
-  implemented as written. R2 to R10 and the tracked notice are separable.
+- **Q5 (BLOCKING, pending WI932 contract dependency): the hold-resolved event
+  must say how the hold was resolved.** R11's trigger fires only on a WI932
+  release. The bound WI932 revision named above records the resolution's
+  check-cycle correlation (WI932 R7), but its section 6 does not list that
+  correlation among the hold-resolved event's facts. WI932's product owner ruled on
+  this in `att_a0e28188`: "the bound WI932 contract (85a1e07c...5b7d0) already
+  records the fact ... It does not expose that fact"; "Authorized minimal
+  amendment, WI932 r3: section 6 Hold row events adds that a resolution event
+  carries the resolution correlation recorded by the resolving path"; "Bind WI3bb2
+  against the rebound WI932 revision, not the current one." WI932 r3 is authorized
+  but does not yet exist: it still needs its amendment, independent spec review and
+  rebinding to `wi_93269dbf-9c94-43f9-a8f6-c6e82dfebf87`. This contract does not
+  amend WI932, and SHALL NOT be bound against the WI932 revision named above. Q5
+  closes when WI932 r3 is rebound and this contract's WI932 citation names r3's
+  hash. Until then, R1, R11 and their acceptance examples cannot be implemented as
+  written. R2 to R10 and the tracked notice are separable.
 
 Q5 is the only BLOCKING question.
