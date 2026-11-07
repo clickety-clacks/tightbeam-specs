@@ -74,6 +74,11 @@ narrow set of existing signals.
 
 - **Hold.** A `harness_health_incidents` row as defined in WI932 section 3, for one
   (harness, host).
+- **Route.** WI932's bound definition: (harness, host, shared account, model).
+- **Failed-route set.** WI932's constituent routes of a hold: the distinct routes in
+  the hold's linked terminal-failure evidence, read at release time (WI932 R3).
+- **Outage generation.** One hold id. A hold that opens after an earlier one on the
+  same harness and host closed is a new generation, even for the same routes.
 - **Release.** WI932 R7: the single transaction in which a successful check cycle
   resolves an eligible hold. Under the WI932 seed rail only `rate-limit-dead`
   holds are eligible, and release requires that every constituent route succeeded
@@ -82,8 +87,10 @@ narrow set of existing signals.
   outage for this contract.
 - **Affected owner.** A distinct non-null `sessions.ownerUserId` of a session in the
   hold's `harness_health_members` rows, read in the release transaction.
-- **Episode.** One (hold id, affected owner) pair. A recovered outage has one
-  episode per affected owner.
+- **Episode.** One (outage generation, affected owner) pair, that is (hold id,
+  owner). Its outage is exactly that hold and its failed-route set, never every
+  outage that shares the owner and harness. A recovered outage has one episode per
+  affected owner.
 - **Owner Main.** The session with `kind = 'main'`, `state = 'active'` and the
   owner's `ownerUserId`. This is the same selection harness health already uses
   for its owner-Main fallback. Today it resolves to the owner's personal session
@@ -96,7 +103,7 @@ narrow set of existing signals.
   | `awaiting_main` | No delivery attempt is outstanding. The notice is waiting for a retry signal (R6). |
   | `attempting` | One delivery attempt is outstanding, linked to its wake and, once known, its turn. |
   | `delivered` | A turn carrying the notice reached terminal status `delivered` on an owner Main. Terminal. |
-  | `canceled` | The attempt's wake was canceled by someone other than the delivery scheduler. Terminal. |
+  | `canceled` | The attempt's wake had a deliberate cancellation (R7). Terminal. |
 
 - **Attempt.** One prompt delivery to the owner Main for one notice, with wake id
   `harness-recovery:<holdId>:<owner>:<n>`, where `n` counts attempts from 1.
@@ -140,7 +147,8 @@ Each requirement gives its basis, then an acceptance example.
 ### R1. Only a WI932 release starts episodes
 
 When WI932 releases a hold, the system SHALL create the notices for that hold in
-the release transaction.
+the release transaction. Each notice SHALL record the hold id and the failed-route
+set that the release covered.
 The system SHALL NOT create a notice for a hold resolved or ended any other way.
 This includes normal delivered-turn resolution, `RateLimitReset` fence release,
 repair resume, adapter close, expiry and "other" review.
@@ -149,7 +157,10 @@ repair resume, adapter close, expiry and "other" review.
   add no second detector". Ask: "do not build a second detector". Review F1: the
   v1 owner+harness scope "lets a success on credential/model B close an episode
   opened by credential/model A". WI932 R3 requires success on every constituent
-  route in one cycle, so one route's success cannot end the outage.
+  route in one cycle, so one route's success cannot end the outage. Correction
+  from the commissioning session: "tie the recovered event to the same durable
+  outage generation and failed-route set using WI932's bound route definition
+  (harness, host, shared account, model), without adding a second detector".
 - *Acceptance.*
   - (a) A `rate-limit-dead` hold on Codex has constituents luna, sol and astra. A
     cycle in which only astra succeeds releases nothing and creates no notice. The
@@ -160,6 +171,13 @@ repair resume, adapter close, expiry and "other" review.
     real Claude hold `hhi_0d41a323-d344-4568-a552-cecb99413115` took at
     2026-11-07 01:02 UTC (resolution observation kind `normal-turn-success`).
   - (c) A Claude reset-time fence release under `RateLimitReset` creates no notice.
+  - (d) Hold H on Codex has failed-route set {(codex, host, account A, luna)}. A
+    turn on (codex, host, account B, luna) or on (codex, host, account A, sol)
+    succeeds while H is open. Under WI932 R3 that success is outside H's set, so H
+    is not released and no notice exists for H.
+  - (e) The released notice for hold H records H's id and its routes. A later hold
+    H2 on the same harness and host never satisfies, completes or reuses H's
+    notice.
 
 ### R2. One notice per episode
 
@@ -201,7 +219,7 @@ hold:
 
 > The `<harness>` harness on `<host>` recovered from a `<failureClass>` outage.
 > Hold `<holdId>` opened at `<openedAt>` and was released at `<releasedAt>` after
-> every affected model route answered in one check. `<memberCount>` of your
+> every affected model route (`<routes>`) answered in one check. `<memberCount>` of your
 > sessions were held. Use your installed and learned Kung Fu to find live agents
 > whose work stalled on this harness and host, and resume only those agent
 > graphs. Do not wake or resume unrelated agents.
