@@ -25,6 +25,16 @@ separable clauses were reviewed clean for that phase in `att_21918a0e` (report
 `art_2d2ccd10`). It changes design only. It authorizes no source edit, test run, integration target, release,
 installation or live action.
 
+This amendment, under assignment `asg_259ad210-3b79-4eea-aa58-2cab7f80374f`,
+amends the revision bound at commit `d7b1985026aebd54c23ddc399fab5bd7a47e5de8`
+(SHA-256 `3637b0121721137f2f70042b8dc58962e97492002e0365b68700ee4a891caae4`,
+artifact `art_6220a6c7`). The resolution correlation alone cannot tell a WI932
+release from any other resolution without parsing an opaque value (gap report
+`art_3212fbdd`). This amendment therefore applies product ruling `att_05b91e15`
+(`art_e6b67dda`) and the reviewed and bound WI932 r5, whose section 6 adds the
+typed event value `cycleRelease`, and uses that value as the only release
+discriminator.
+
 Normative keywords follow RFC 2119 as clarified by RFC 8174. Requirement
 sentences use EARS.
 
@@ -42,12 +52,17 @@ Basis labels used below:
 - **R62** cites the row-reaction contract R62 v13, `art_f574333c`, SHA-256
   `d0fdf4c303db2f973a9050d0ba696f7c387e02986e1a900821b18df699b1d19d`, read from
   its registered archive copy.
-- **WI932** cites the bound held-harness contract r3
-  `held-harness-hourly-recovery-r3.md`, work item
+- **WI932** cites the bound held-harness contract r5
+  `held-harness-hourly-recovery-r5.md`, work item
   `wi_93269dbf-9c94-43f9-a8f6-c6e82dfebf87`, SHA-256
-  `4c5104afc91b16ae2fc734400394cf705f0f29a5255f3c7d85bc12807b9aa8f9`
-  (artifact `art_fb3da781`, reviewed clean in `att_0331fd15`). **WI932 section 6
-  note** quotes its note "Resolution correlation on the resolution event (r3)".
+  `6d4dee3fc31b5582d52e41e7094302a792fb1554096eb6819a0a4e2bee66d629`
+  (artifact `art_521abed7`, reviewed clean in `att_890746f6`). **WI932 section 6
+  note** quotes its note "Resolution correlation and cycle release on the
+  resolution event (r3, r5)".
+- **Cycle release ruling** quotes product ruling `att_05b91e15` (`art_e6b67dda`),
+  which approved the typed boolean `cycleRelease` and this contract's rebinding
+  of Terms "Release event", R1, the R11 trigger, the plain-English Conditions row,
+  the "Release event interface" architecture row and Q5.
 - **OAuth** cites `spec-oauth-recovery-main-prompt-v2.md` in this repository.
 - **Brief** quotes the commissioning assignment.
 
@@ -106,9 +121,9 @@ idempotency mechanism.
 - New rail settings, rail-language features, per-owner settings, or notification
   options beyond the reaction's trigger, target and fixed R4 text.
 - Any change to WI932's release effect, its reactions, its plain-English
-  translation or its resolution event. This contract reads the resolution
-  correlation that WI932 section 6 already exposes and adds no field, marker or
-  record to it.
+  translation or its resolution event. This contract reads the `cycleRelease`
+  value that WI932 r5 section 6 already puts on the event and adds no field,
+  marker or record to it.
 - Security hardening, forgery, replay, timing or denial-of-service defenses.
 - Changes to harness-health classification, incident opening, fence ownership,
   intent redelivery or the "other" review routes.
@@ -178,8 +193,14 @@ idempotency mechanism.
   one naming its check cycle (WI932 R7). A normal delivered turn carries "that
   turn's existing normal-success correlation". When no resolution observation was
   recorded, the event carries none.
-- **Release event.** A hold-resolved event whose resolution correlation names a
-  WI932 check cycle. Nothing else is a release event for this contract.
+- **Cycle release value.** The typed boolean `cycleRelease` that the WI932 r5
+  section 6 note puts on hold row events. It is `true` only when it is set in
+  WI932 R7's resolving transaction, after a cycle in which every constituent route
+  succeeded (WI932 R3). It is `false` on every other resolution path and on every
+  opened event. It changes no event's resolution correlation.
+- **Release event.** A hold-resolved event whose `cycleRelease` is `true`, that is
+  an event matching `{"op":"eq","args":[{"ref":"event.cycleRelease"},true]}`.
+  Nothing else is a release event for this contract.
 - **Recovery notice reaction.** The separate reaction in the base seed
   composition's TOML rails that carries this contract's notification policy: its
   trigger, its target and the R4 text (R11). It is not one of WI932's reactions.
@@ -233,7 +254,7 @@ When WI932 releases a hold, the system SHALL create the notices for that hold
 through the recovery notice reaction (R3, R11). Each notice SHALL record the hold id
 and the failed-route set that the release covered.
 The system SHALL recognize a release only by a release event, that is by the
-hold-resolved event's resolution correlation naming a WI932 check cycle.
+hold-resolved event's `cycleRelease` being `true`.
 The system SHALL NOT create a notice for a hold resolved or ended any other way.
 This includes normal delivered-turn resolution, `RateLimitReset` fence release,
 repair resume, adapter close, expiry and "other" review.
@@ -246,10 +267,12 @@ repair resume, adapter close, expiry and "other" review.
   from the commissioning session: "tie the recovered event to the same durable
   outage generation and failed-route set using WI932's bound route definition
   (harness, host, shared account, model), without adding a second detector".
-  WI932 section 6 note: "A WI932 release therefore shows the correlation naming
-  its cycle, which R7 already requires it to record. Every other resolution path
-  carries exactly what it records today"; "The Main wake that reads this belongs
-  to WI3bb2 R11". WI932 ruling: "nothing new is invented for them."
+  WI932 section 6 note: "It SHALL be `true` only when R7 releases the hold after a
+  cycle in which every constituent route succeeded (R3), and `false` on every
+  other resolution path. An opened event SHALL carry `cycleRelease` as `false`";
+  "No resolution path gains, loses or changes its correlation." Cycle release
+  ruling: WI3bb2 needs its own reviewed rebinding of R1 to that value.
+  WI932 ruling: "nothing new is invented for them."
 - *Acceptance.*
   - (a) A `rate-limit-dead` hold on Codex has constituents luna, sol and astra. A
     cycle in which only astra succeeds releases nothing and creates no notice. The
@@ -257,7 +280,8 @@ repair resume, adapter close, expiry and "other" review.
     created under R3.
   - (b) A normal delivered turn resolves a `rate-limit-dead` hold under
     `resolve_normal_turn_in_txn`. Its hold-resolved event carries that turn's
-    normal-success correlation, so it is not a release event, and no notice exists
+    normal-success correlation and `cycleRelease` `false`, so it is not a release
+    event, and no notice exists
     for that hold. This is the path
     real Claude hold `hhi_0d41a323-d344-4568-a552-cecb99413115` took at
     2026-11-07 01:02 UTC (resolution observation kind `normal-turn-success`).
@@ -490,8 +514,9 @@ The base seed composition SHALL contain the recovery notice reaction, elected by
 default, so that the default composition gives R1 to R10 behavior with no setup.
 The reaction SHALL state only:
 
-- its trigger: a release event, that is a hold-resolved event whose resolution
-  correlation names a WI932 check cycle (WI932 section 6 note, R7);
+- its trigger: a release event, that is a hold-resolved event matching
+  `{"op":"eq","args":[{"ref":"event.cycleRelease"},true]}` (WI932 section 6 note,
+  R7), using the existing `eq` operation over the event's typed value;
 - its target: the owner Main of each affected owner;
 - the R4 text.
 
@@ -529,26 +554,28 @@ intentional change.
     the hold, removes the fence and redelivers intents exactly as WI932 R7 says, and
     no notice, attempt or wake from this contract exists.
   - (c) A hold resolved by a normal delivered turn emits a hold-resolved event whose
-    resolution correlation is that turn's normal-success correlation. The reaction
-    does not fire and no notice exists.
+    resolution correlation is that turn's normal-success correlation and whose
+    `cycleRelease` is `false`. The reaction does not fire and no notice exists.
   - (d) WI932's section 5 translation reads the same before and after this feature
     lands, and WI932's release reaction writes no wake or prompt.
   - (e) The reaction's TOML holds its trigger, its target and the R4 text, and no
     other field beyond the identity and translation every R62 reaction carries.
   - (f) A hold ends without a recorded resolution observation, so its
-    hold-resolved event carries no resolution correlation. The reaction does not
-    fire and no notice exists.
-  - Cases (a), (c) and (f) SHALL exercise the same discriminator, the event's
-    resolution correlation, each on its own hold: (a)'s event carries the
-    correlation naming that hold's WI932 check cycle, (c)'s carries the normal
-    turn's correlation, and (f)'s carries none.
+    hold-resolved event carries no resolution correlation and `cycleRelease`
+    `false`. The reaction does not fire and no notice exists.
+  - (g) A hold opens. Its opened event carries `cycleRelease` `false`. The reaction
+    does not fire and no notice exists.
+  - Cases (a), (c), (f) and (g) SHALL exercise the same discriminator, the event's
+    `cycleRelease`, each on its own hold: (a)'s event carries `true`, and (c)'s,
+    (f)'s and (g)'s carry `false`. Each event's resolution correlation is what its
+    path records under WI932 section 6, unchanged by this contract.
 
 ## Default recovery notice reaction, in plain English
 
 | Field | Value |
 |---|---|
 | Trigger | A harness-health hold resolves. |
-| Conditions | The resolution names a WI932 check cycle, that is a release after a cycle in which every constituent route succeeded. A hold resolved any other way, or with no recorded resolution, gets nothing. |
+| Conditions | The hold-resolved event says it is a cycle release (`cycleRelease` is true), which happens only when a check cycle in which every constituent route succeeded releases the hold. A hold resolved any other way, or with no recorded resolution, gets nothing, and an opened hold never qualifies. |
 | Effect / recipient | For each owner whose sessions were held, one prompt to that owner's Main with the fixed recovery text. No other agent or person receives anything. |
 | Timing / repetition / stop | Due at once on release. If it does not reach a delivered Main turn, it waits and is tried again when that owner's Main becomes active, when that Main completes another turn, or when the gateway starts. Stops when delivered or deliberately canceled. No timer. These are runtime behavior, not reaction settings. |
 | Owning bundle | Substrate base seed, on by default. |
@@ -565,7 +592,7 @@ the delivery guarantees and no other policy.
 | Piece | Need | Serves |
 |---|---|---|
 | Recovery notice reaction | One reaction and its plain-English translation in the base seed composition, elected by default and keyed as R62 v13 requires (org, family, source event, slot). | R11 |
-| Release event interface | The reaction's trigger reads the resolution correlation that WI932 section 6 (r3) puts on the hold-resolved event, and fires only when it names a WI932 check cycle. It recognizes that correlation in the form WI932's R7 implementation records it. This contract adds no field, marker or record to the event. | R1, R11 |
+| Release event interface | The reaction's trigger reads the typed `cycleRelease` value that WI932 r5 section 6 puts on hold row events, with the existing `eq` operation, and fires only when it is `true`. The trigger does not read, parse or match the resolution correlation. This contract adds no field, marker, record or rail-language operation. | R1, R11 |
 | Owner-Main target | For each affected owner, read from the hold's member rows, resolve that owner's Main by the existing owner-Main selection. No Main is a non-delivered outcome, not an error. | R2, R6, R9 |
 | Tracked notice | One additive table keyed (holdId, ownerUserId) with state, attempt number, current wake id, current turn sequence, last outcome and timestamps. The key enforces R2. Empty on upgrade. Its only consumer is the recovery notice reaction. | R2, R3, R5, R6, R10 |
 | Attempt start | Deliver the R4 prompt to the owner Main in the caller's transaction, as the "other" route does with `Gateway.deliver_prompt_in_txn` and a deterministic wake id. | R4, R6 |
@@ -637,10 +664,10 @@ The canonical contract lives only in the `tightbeam-specs` repository as
 `harness-recovery-main-wake-v2.md`. It supersedes `harness-recovery-main-wake-v1.md`
 at commits `73aec01d7331e08b148994d6525ff75c2b00e137` and
 `0860144059f1`. Neither revision is on the main line, and neither may land.
-Its coupled authority is WI932 `held-harness-hourly-recovery-r3.md` at the SHA-256
+Its coupled authority is WI932 `held-harness-hourly-recovery-r5.md` at the SHA-256
 named above, held outside this repository. A change to WI932's release action,
-eligibility, Terms, hold-resolved event or resolution correlation requires
-re-review of this contract. Recon documents, review
+eligibility, Terms, hold-resolved event, resolution correlation or `cycleRelease`
+requires re-review of this contract. Recon documents, review
 reports, artifact rows and transcripts are evidence, not canonical custody.
 
 ## Open Questions
@@ -663,12 +690,15 @@ reports, artifact rows and transcripts are evidence, not canonical custody.
   every affected owner is notified, because the fence held all their sessions on
   that harness and host, and Main judges what stalled.
 
-- **Q5 (RESOLVED by WI932 r3): how the reaction tells a WI932 release from other
-  resolutions.** WI932 r3 section 6, bound at the SHA-256 named above, gives each
-  hold-resolved event the resolution correlation its resolving path recorded. A
-  WI932 release's correlation names its check cycle; other paths carry what they
-  record today, and none is added when none was recorded. R1, R3, R11 and the
-  plain-English table use that correlation as the only discriminator (Release
-  event in Terms). This contract does not amend WI932.
+- **Q5 (RESOLVED by WI932 r5 and Cycle release ruling `att_05b91e15`): how the
+  reaction tells a WI932 release from other resolutions.** WI932 r3's resolution
+  correlation alone could not discriminate: a rail can only compare it, and its
+  release form is opaque and unfixed (gap report `art_3212fbdd`). WI932 r5
+  section 6, bound at the SHA-256 named above, adds the typed boolean
+  `cycleRelease`, `true` only in R7's resolving transaction after every
+  constituent route succeeded and `false` on every other path, including opened
+  events. Correlations are unchanged. R1, R3, R11 and the plain-English table use
+  `cycleRelease` as the only discriminator (Release event in Terms), through the
+  existing `eq` operation. This contract does not amend WI932.
 
 No question is BLOCKING.
