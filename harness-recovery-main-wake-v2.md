@@ -43,7 +43,9 @@ ends because an ordinary turn on the held harness succeeds is also a recovered
 outage, and gets the same single Main notice per episode. It keys on the
 hold-resolved event that WI932's existing normal-turn resolution already emits,
 reads only typed values the bound WI932 r5 event already carries, and adds
-nothing to WI932. It also records Section 12 ruling `art_272e927e` in A2.
+nothing to WI932. It also records Section 12 ruling `art_272e927e` in A2. Under
+the coordinator's Correction, every resolved hold gets the notice, whatever path
+resolved it, and `cycleRelease` chooses only which fixed text the notice carries.
 
 Normative keywords follow RFC 2119 as clarified by RFC 8174. Requirement
 sentences use EARS.
@@ -76,6 +78,8 @@ Basis labels used below:
 - **Scope ruling** quotes PO scope ruling `art_0f65a7ef`, which withdrew decision
   `dr_9a52966d` and "Supersedes: att_5172407a's Q2 acceptance and spirit-approved
   att_67b4a3de's scope limit only."
+- **Correction** quotes the commissioning session's scope correction (wake
+  `w_d5527b7b`), which carries the delivery owner's ruling on this amendment.
 - **Section 12 ruling** quotes PO ruling `art_272e927e` on when WI932's section 12
   real-response evidence runs.
 - **WI932 source** cites the WI932 lane source at commit
@@ -109,6 +113,10 @@ Sources relied on:
   an outage ended by the WI932 hourly release." Its basis: 94 of 94 recent
   rate-limit outages ended that way, so a release-only notice "would almost never
   wake Main."
+- Correction: "exactly one due-now Main wake per affected owner for every resolved
+  WI932 outage episode, using WI932 r5 existing resolved hold/incident transition
+  regardless of resolution path"; "Do not gate the notice on cycleRelease or limit
+  it to R7 and ordinary success."
 
 The intent this contract serves: when a harness outage ends, however it ends, the person who owns
 the stalled work should not have to notice it. Their Main is told once, with
@@ -118,13 +126,13 @@ choose which product agents matter.
 ## Goal
 
 When a held harness recovers, each owner whose sessions were held receives
-exactly one due-now prompt at their Main. A hold recovers when WI932 releases it,
-or when an ordinary turn on its harness and host succeeds and WI932's existing
-normal-turn path resolves it. The prompt counts as sent only when it
+exactly one due-now prompt at their Main. A hold recovers when it resolves by any
+WI932 path: WI932's release, its existing normal-turn resolution, or the `other`
+resolve command. The prompt counts as sent only when it
 reaches a delivered Main turn. Until then it stays durable and is retried on a
 narrow set of existing signals. The notice is a separate reaction in the base seed
 composition's TOML rails, on by default and triggered by WI932's hold-resolved
-event. WI932's release and its normal-turn resolution themselves send nothing.
+event. WI932's resolution paths themselves send nothing.
 Delivery, settlement, retry and one notice per episode are runtime guarantees, not
 rail duties.
 
@@ -138,11 +146,9 @@ idempotency mechanism.
 
 - A second outage or recovery detector. No classifier, episode detector, success
   observer or probe beyond WI932's.
-- Recovery notices for "other"-class holds. WI932's normal-turn path never resolves
-  them; they end by their own authorized resolve command or by expiry, and keep
-  their own review and notice routes (see Q6).
-- Recovery notices for holds that end without a hold-resolved event, such as
-  "other" expiry.
+- Recovery notices for holds that expire. Expiry is not a resolution: WI932
+  section 6 admits hold row events only when a hold "opens or resolves", and an
+  expired `other` hold emits none (A7, Q6).
 - Combining holds. Each hold that recovers is its own outage, even when one turn
   resolves several holds on the same harness and host.
 - Choosing, enumerating, waking or resuming product agents.
@@ -151,11 +157,11 @@ idempotency mechanism.
   behavior is fixed by R5 and R6 and is not configurable.
 - New rail settings, rail-language features, per-owner settings, or notification
   options beyond the reaction's trigger, target and fixed R4 texts.
-- Any change to WI932's release effect, its normal-turn resolution, its reactions,
-  its plain-English translation or its resolution event. This contract reads the
-  hold's state and class from the snapshot and the `cycleRelease` value that WI932
-  r5 section 6 already puts on the event, and adds no field, marker or record to
-  it.
+- Any change to WI932's release effect, its normal-turn resolution, its `other`
+  resolve command, its reactions, its plain-English translation or its resolution
+  event. This contract reads the hold's state from the snapshot and the
+  `cycleRelease` value that WI932 r5 section 6 already puts on the event, and adds
+  no field, marker or record to it.
 - Security hardening, forgery, replay, timing or denial-of-service defenses.
 - Changes to harness-health classification, incident opening, fence ownership,
   intent redelivery or the "other" review routes.
@@ -184,8 +190,11 @@ idempotency mechanism.
   (`resolve_normal_turn_in_txn`), whatever model or route the turn used. A turn
   that follows a `RateLimitReset` fence release or a repair resume and is
   delivered is an ordinary-turn resolution.
-- **Recovery.** A release or an ordinary-turn resolution of a hold. The recovery
-  time is the hold's `resolvedAt`.
+- **`other` resolution.** WI932's existing `harness-health-resolve-other` command,
+  unchanged under WI932 section 7, which resolves an open `other` hold.
+- **Recovery.** A resolution of a hold by any WI932 path: a release, an
+  ordinary-turn resolution or an `other` resolution. The recovery time is the
+  hold's `resolvedAt`. Expiry is not a recovery.
 - **Recovered outage.** A hold that ended by recovery. Nothing else is a recovered
   outage for this contract.
 - **Affected owner.** A distinct non-null `sessions.ownerUserId` of a session in the
@@ -239,16 +248,15 @@ idempotency mechanism.
   WI932 R7's resolving transaction, after a cycle in which every constituent route
   succeeded (WI932 R3). It is `false` on every other resolution path and on every
   opened event. It changes no event's resolution correlation.
-- **Release event.** A hold-resolved event whose `cycleRelease` is `true`, that is
-  an event matching `{"op":"eq","args":[{"ref":"event.cycleRelease"},true]}`.
-  Nothing else is a release event for this contract.
-- **Ordinary-turn recovery event.** A hold-resolved event whose `cycleRelease` is
-  `false` and whose hold snapshot class is not `other`, that is an event matching
-  `{"op":"and","args":[{"op":"eq","args":[{"ref":"event.after.state"},"resolved"]},{"op":"eq","args":[{"ref":"event.cycleRelease"},false]},{"op":"ne","args":[{"ref":"event.after.failureClass"},"other"]}]}`.
-  Under A7 this is exactly the event an ordinary-turn resolution emits.
-- **Recovery event.** A release event or an ordinary-turn recovery event. No other
-  event is a recovery event for this contract, and none is told apart by its
-  resolution correlation.
+- **Recovery event.** A hold-resolved event, that is a hold row event whose hold
+  snapshot state is `resolved`, matching
+  `{"op":"eq","args":[{"ref":"event.after.state"},"resolved"]}`. Under A7 every
+  recovery emits exactly one, whatever its path. No other event is a recovery
+  event for this contract.
+- **Release event.** A recovery event whose `cycleRelease` is `true`. It selects
+  the release text (R4(a)) and nothing else: whether a notice exists never depends
+  on it. A recovery event whose `cycleRelease` is `false` carries the work-resumed
+  text (R4(b)).
 - **Recovery notice reaction.** The separate reaction in the base seed
   composition's TOML rails that carries this contract's notification policy: its
   trigger, its target and the R4 texts (R11). It is not one of WI932's reactions.
@@ -293,24 +301,27 @@ Each can be falsified against source or records.
   path records some notice errors as lifecycle evidence instead of failing, so it
   does not by itself meet R3. An implementation meets R3 only through R62's atomic
   or durable-admission contract.
-- **A7.** Exactly three paths emit a hold-resolved event, and each is told apart by
-  typed event values alone. In WI932 source, the only callers that emit a
-  hold-resolved event are `resolve_open` and `resolve_other_open`:
+- **A7.** WI932 emits exactly one hold-resolved event on every path that resolves
+  a hold. In WI932 source the only two writes that set a hold `resolved`, in
+  `resolve_open` and `resolve_other_open`, each emit it in the same transaction,
+  and they serve three paths:
   - WI932 R7 release (`resolve_recovery_cycle_in_txn` into `resolve_open`):
     `cycleRelease` `true`.
   - Ordinary-turn resolution (`resolve_normal_turn_in_txn` into `resolve_in_txn`
-    into `resolve_open`): `cycleRelease` `false`, and the class is never `other`,
-    because that path skips `other` holds. The test-facing `HarnessHealth.resolve/2`
-    runs the same `resolve_in_txn` and has no gateway route.
-  - The `other` resolve command (`harness-health-resolve-other` into
-    `resolve_other_open`): `cycleRelease` `false` and class `other`.
+    into `resolve_open`): `cycleRelease` `false`. The test-facing
+    `HarnessHealth.resolve/2` runs the same `resolve_in_txn` and has no gateway
+    route.
+  - `other` resolution (`harness-health-resolve-other` into `resolve_other_open`):
+    `cycleRelease` `false`.
 
-  Expiry sets state `expired` and emits no hold-resolved event. A `RateLimitReset`
+  The only other way a hold ends is expiry of an `other` hold
+  (`expire_other_incidents_in_txn`). It sets state `expired`, writes only a
+  lifecycle record and emits no hold row event, as WI932 section 6 ("opens or
+  resolves") and section 7 (`other` expiry unchanged) provide. A `RateLimitReset`
   fence release, a repair command and an adapter close resolve no hold
   themselves. A hold they free ends only when a later delivered turn resolves it.
-  This assumption is falsified if any other path emits a hold-resolved event, if
-  the normal-turn path resolves an `other` hold, or if the `other` command resolves
-  a hold of another class.
+  This assumption is falsified if any path sets a hold `resolved` without emitting
+  a hold-resolved event, or if any path other than R7 emits `cycleRelease` `true`.
 
 ## Invariants
 
@@ -318,18 +329,15 @@ Each requirement gives its basis, then an acceptance example.
 
 ### R1. Only a WI932 recovery starts episodes
 
-When WI932 releases a hold, or an ordinary-turn resolution resolves it, the system
-SHALL create the notices for that hold through the recovery notice reaction (R3,
-R11). Each notice SHALL record the hold id, the failed-route set read at recovery,
-and whether the recovery was a release.
-The system SHALL recognize a recovery only by a recovery event: a release by the
-hold-resolved event's `cycleRelease` being `true`, and an ordinary-turn resolution
-by an ordinary-turn recovery event.
-The system SHALL NOT read, parse or match the resolution correlation to recognize
-either.
-The system SHALL NOT create a notice for a hold that opens, or that ends any other
-way. This includes the `other` resolve command, expiry, and any hold that ends
-with no hold-resolved event.
+When a hold resolves by any WI932 path, the system SHALL create the notices for
+that hold through the recovery notice reaction (R3, R11). Each notice SHALL record
+the hold id, the failed-route set read at recovery, and whether the recovery was a
+release.
+The system SHALL recognize a recovery only by its recovery event, whatever its
+`cycleRelease`, class or resolution path.
+The system SHALL NOT read, parse or match the resolution correlation, and SHALL
+NOT use `cycleRelease` to decide whether a notice exists.
+The system SHALL NOT create a notice for a hold that opens or expires.
 
 - *Basis.* Brief: "cite bound WI932 spec ... as the sole recovery definition ...
   add no second detector". Ask: "do not build a second detector". Scope ruling:
@@ -337,11 +345,13 @@ with no hold-resolved event.
   recovery and must produce the same single Main wake as an outage ended by the
   WI932 hourly release"; "WI932 already resolves harness_health_incident rows on
   normal-turn-success and emits the resolved hold transition. The trigger should
-  key on that existing resolved transition, whatever its path." Commissioning
-  assignment `asg_d3e63fc4`: tell ordinary successful-turn resolution from other
-  non-R7 resolutions only by a raw fact, "without parsing opaque correlation or
-  amending WI932". WI932 section 6: hold row events carry "that hold's current
-  facts (state, class, constituent routes, fence presence)". WI932 section 6 note:
+  key on that existing resolved transition, whatever its path." Correction: "every
+  resolved WI932 outage episode ... regardless of resolution path"; "Do not gate the
+  notice on cycleRelease or limit it to R7 and ordinary success." Commissioning
+  assignment `asg_d3e63fc4`: "without parsing opaque correlation or amending
+  WI932". WI932 section 6: hold row events are admitted when a hold "opens or
+  resolves" and carry "that hold's current facts (state, class, constituent routes,
+  fence presence)". WI932 section 6 note:
   "It SHALL be `true` only when R7 releases the hold after a cycle in which every
   constituent route succeeded (R3), and `false` on every other resolution path";
   "No resolution path gains, loses or changes its correlation." Review F1: the v1
@@ -359,8 +369,8 @@ with no hold-resolved event.
   - (b) A normal delivered turn resolves a `rate-limit-dead` hold under
     `resolve_normal_turn_in_txn`. Its hold-resolved event carries that turn's
     normal-success correlation, `cycleRelease` `false` and class
-    `rate-limit-dead`, so it is an ordinary-turn recovery event, and each affected
-    owner gets one notice with the work-resumed text (R4(b)). This is the path real
+    `rate-limit-dead`. Each affected owner gets one notice with the work-resumed
+    text (R4(b)). This is the path real
     Claude hold `hhi_0d41a323-d344-4568-a552-cecb99413115` took at 2026-11-07
     01:02 UTC (resolution observation kind `normal-turn-success`).
   - (c) A Claude reset-time fence release under `RateLimitReset` creates no notice
@@ -376,10 +386,11 @@ with no hold-resolved event.
   - (e) The notice for recovered hold H records H's id and its routes. A later hold
     H2 on the same harness and host never satisfies, completes or reuses H's
     notice.
-  - (f) An `other` hold is resolved by `harness-health-resolve-other`. Its
-    hold-resolved event carries `cycleRelease` `false` and class `other`. No
-    notice exists for it. An `other` hold that expires emits no hold-resolved
-    event and gets no notice.
+  - (f) An `other` hold with owner U's sessions as members is resolved by
+    `harness-health-resolve-other`. Its hold-resolved event carries `cycleRelease`
+    `false` and class `other`. U gets one notice with the work-resumed text. A
+    different `other` hold that expires emits no hold-resolved event and gets no
+    notice.
   - (g) An `auth-dead` hold and a `rate-limit-dead` hold are open on the same
     harness and host, both with owner U's sessions as members. One delivered turn
     resolves both. U gets one notice for each hold.
@@ -398,8 +409,8 @@ If the hold has no affected owner, the system SHALL create no notice.
   duty."
 - *Acceptance.*
   - (a) A hold's members are five sessions of owner U and two of owner V. Its
-    recovery, by release or by an ordinary-turn resolution, creates one notice for
-    (hold, U) and one for (hold, V).
+    recovery, by any WI932 path, creates one notice for (hold, U) and one for
+    (hold, V).
   - (b) A replayed release of the same hold, or a second call of the release
     action in another transaction, finds the hold already resolved under WI932 R7,
     and the uniqueness rule refuses any second (hold, U) notice.
@@ -421,16 +432,17 @@ The implementer MAY create a release's notices in the release transaction, or
 afterwards from its durably admitted recovery event. Where the notices are written
 in the release transaction and a notice write fails, the release SHALL roll back
 and the hold SHALL stay open for WI932's next cycle.
-For an ordinary-turn resolution, a failure to create a notice SHALL NOT fail, roll
-back or change the delivered turn or the hold's resolution, and the notices SHALL
-still be created exactly once.
+For any recovery other than a release, a failure to create a notice SHALL NOT
+fail, roll back or change the resolving turn or command or the hold's resolution,
+and the notices SHALL still be created exactly once.
 
 - *Basis.* Ask: "recovery produces exactly one due-now Main wake". Review F2: a
   notice must not be lost between the recovery and the wake. Ruling: "The author
   decides how the reaction and the notice row commit relative to release, within
   that invariant." WI932 section 7 keeps "normal delivered-turn resolution"
   unchanged, and R6 forbids changing existing turn semantics, so a notice failure
-  cannot undo a delivered turn.
+  cannot undo a delivered turn. WI932 section 7 also keeps the `other` review routes
+  unchanged.
 - *Acceptance.*
   - (a) A fault injected before the release commits leaves the hold open, its fence
     present, and no notice or attempt wake. The next successful cycle produces the
@@ -465,18 +477,18 @@ the hold. Every attempt of a notice SHALL use the same text.
 > whose work stalled on this harness and host, and resume only those agent
 > graphs. Do not wake or resume unrelated agents.
 
-(b) Work-resumed text, when the notice's recovery was an ordinary-turn resolution:
+(b) Work-resumed text, when the notice's recovery was not a release:
 
 > Work resumed on the `<harness>` harness on `<host>` after a `<failureClass>`
 > outage. Hold `<holdId>` opened at `<openedAt>` and was resolved at
-> `<resolvedAt>` when a turn on this harness succeeded. This does not mean every
-> model route on this harness is back. `<memberCount>` of your sessions were held.
+> `<resolvedAt>`. This does not mean every model route on this harness is back. `<memberCount>` of your sessions were held.
 > Use your installed and learned Kung Fu to find live agents whose work stalled on
 > this harness and host, and resume only those agent graphs. Do not wake or resume
 > unrelated agents.
 
 The system MAY append neutral correlation facts such as the notice id and attempt
 number. It SHALL NOT shorten, move or replace any sentence of the chosen text.
+The choice of text SHALL NOT affect whether a notice exists.
 The texts are the reaction's fixed texts. The class, due time and origin are runtime
 behavior, not reaction options.
 
@@ -486,7 +498,8 @@ behavior, not reaction options.
   reference to standing guidance does not satisfy it. Ruling: "no notification
   options beyond trigger, target and fixed R4 text". Scope ruling: "The
   ordinary-path wake text must say work resumed on the harness, not that every
-  route is back."
+  route is back." Correction: "the ordinary-path wording is that work resumed on the
+  harness, and it must not imply every route is back."
 - *Acceptance.*
   - (a) For a released Codex hold with seven members of owner U, U's owner Main
     receives one turn whose prompt contains every sentence of the release text
@@ -496,7 +509,7 @@ behavior, not reaction options.
     turn on model sol, U's owner Main receives one turn whose prompt contains
     every sentence of the work-resumed text with the hold's values, and no sentence
     saying that every route answered. No other session receives a prompt caused by
-    the recovery.
+    the recovery. An `other` resolution gives the same text.
   - (c) That notice's first attempt fails and attempt 2 starts under R6. Attempt
     2's prompt carries the work-resumed text again.
 
@@ -617,11 +630,10 @@ it as new episodes under R1 and R2.
 
 The system SHALL deliver recovery notices only to owner Mains.
 It SHALL NOT enumerate, prompt, wake or resume any other session because of a
-recovery, beyond what WI932 R7 and its ordinary-turn resolution already do.
+recovery, beyond what WI932's resolution paths already do.
 
 - *Basis.* Ask: "Tightbeam neither selects nor broadcasts to product agents."
-- *Acceptance.* A recovery, by release or by an ordinary-turn resolution, with
-  members across 40 sessions of one owner creates exactly one prompt from this
+- *Acceptance.* A recovery by any WI932 path, with members across 40 sessions of one owner creates exactly one prompt from this
   contract, at that owner's Main. WI932's own redelivery and lane starts are
   unchanged and counted separately.
 
@@ -646,13 +658,13 @@ The base seed composition SHALL contain the recovery notice reaction, elected by
 default, so that the default composition gives R1 to R10 behavior with no setup.
 The reaction SHALL state only:
 
-- its trigger: a recovery event, that is a hold-resolved event matching
-  `{"op":"or","args":[{"op":"eq","args":[{"ref":"event.cycleRelease"},true]},{"op":"and","args":[{"op":"eq","args":[{"ref":"event.after.state"},"resolved"]},{"op":"eq","args":[{"ref":"event.cycleRelease"},false]},{"op":"ne","args":[{"ref":"event.after.failureClass"},"other"]}]}]}`
-  (WI932 section 6 and its note, R7, A7), using the existing `or`, `and`, `eq` and
-  `ne` operations over the event's typed values;
+- its trigger: a recovery event, that is a hold row event matching
+  `{"op":"eq","args":[{"ref":"event.after.state"},"resolved"]}` (WI932 section 6,
+  A7), using the existing `eq` operation over the snapshot's typed state, with no
+  condition on `cycleRelease`, class or resolution path;
 - its target: the owner Main of each affected owner;
 - the two R4 texts, with R4(a) chosen when the event's `cycleRelease` is `true`
-  and R4(b) otherwise.
+  and R4(b) otherwise. This choice selects text only.
 
 The reaction SHALL add no rail setting, rail-language feature, per-owner setting or
 notification option beyond those three, apart from the identity and translation
@@ -660,9 +672,9 @@ every R62 reaction carries.
 Notice uniqueness, delivery tracking, settlement, retry, class and timing SHALL be
 runtime behavior and SHALL NOT be configurable from TOML.
 The runtime SHALL contain no compiled copy of the reaction. With the reaction
-removed from a composition, a release or an ordinary-turn resolution SHALL proceed
-under WI932 and SHALL create no notice.
-WI932's release effect and its ordinary-turn resolution SHALL send nothing, and
+removed from a composition, every WI932 resolution path SHALL proceed under WI932
+and SHALL create no notice.
+WI932's resolution paths SHALL send nothing, and
 WI932's reactions and translation SHALL stay unchanged, including "No message goes
 to any agent or person."
 The reaction SHALL have a linked plain-English translation stating trigger;
@@ -683,6 +695,8 @@ intentional change.
   retry is fixed, not a policy knob. Scope ruling: "The trigger should key on that
   existing resolved transition, whatever its path"; "The ordinary-path wake text
   must say work resumed on the harness, not that every route is back."
+  Correction: "regardless of resolution path"; "Do not gate the notice on
+  cycleRelease"
 - *Acceptance.*
   - (a) A new org with the default composition and no configuration has a WI932
     release of a hold whose members belong to owners U and V. U's Main and V's Main
@@ -696,18 +710,19 @@ intentional change.
     `cycleRelease` is `false` and whose class is `rate-limit-dead`. The reaction
     fires, and each affected owner gets one notice with the R4(b) text.
   - (d) WI932's section 5 translation reads the same before and after this feature
-    lands, and neither WI932's release reaction nor its ordinary-turn resolution
-    writes a wake or prompt.
+    lands, and none of WI932's resolution paths writes a wake or prompt.
   - (e) The reaction's TOML holds its trigger, its target and the two R4 texts, and
     no other field beyond the identity and translation every R62 reaction carries.
   - (f) An `other` hold is resolved by `harness-health-resolve-other`. Its
     hold-resolved event carries `cycleRelease` `false` and class `other`. The
-    reaction does not fire and no notice exists. The reaction's trigger contains no
-    reference to the resolution correlation.
-  - (g) A hold opens. Its opened event carries `cycleRelease` `false` and state
-    `open`. The reaction does not fire and no notice exists.
+    reaction fires, and each affected owner gets one notice with the R4(b) text.
+    The reaction's trigger contains no reference to the resolution correlation,
+    `cycleRelease` or class.
+  - (g) A hold opens. Its opened event carries state `open`. The reaction does not
+    fire and no notice exists. An `other` hold expires, no hold row event is
+    emitted, and no notice exists.
   - Cases (a), (c), (f) and (g) SHALL exercise the same trigger, each on its own
-    hold, and differ only in the event's typed `cycleRelease`, state and class.
+    hold: (a), (c) and (f) fire and (g) does not.
     Each event's resolution correlation is what its path records under WI932
     section 6, unchanged by this contract.
 
@@ -716,8 +731,8 @@ intentional change.
 | Field | Value |
 |---|---|
 | Trigger | A harness-health hold resolves. |
-| Conditions | The hold-resolved event says it is a cycle release (`cycleRelease` is true), which happens only when a check cycle in which every constituent route succeeded releases the hold; or the hold is resolved, is not a cycle release and is of any class other than "other", which happens only when an ordinary turn on that harness and host succeeds. An "other" hold resolved by its own command gets nothing, a hold that expires gets nothing, and an opened hold never qualifies. |
-| Effect / recipient | For each owner whose sessions were held, one prompt to that owner's Main. A cycle release uses the fixed recovery text; an ordinary-turn resolution uses the fixed work-resumed text, which says work resumed and does not claim every route is back. No other agent or person receives anything. |
+| Conditions | The hold is now resolved, by any path: the hourly check releasing it, an ordinary turn on that harness and host succeeding, or the "other" resolve command. A hold that expires gets nothing, and an opened hold never qualifies. |
+| Effect / recipient | For each owner whose sessions were held, one prompt to that owner's Main. A cycle release (`cycleRelease` true) uses the fixed recovery text; every other resolution uses the fixed work-resumed text, which says work resumed and does not claim every route is back. No other agent or person receives anything. |
 | Timing / repetition / stop | Due at once on recovery. If it does not reach a delivered Main turn, it waits and is tried again when that owner's Main becomes active, when that Main completes another turn, or when the gateway starts. Stops when delivered or deliberately canceled. No timer. These are runtime behavior, not reaction settings. |
 | Owning bundle | Substrate base seed, on by default. |
 | Intentional change | New behavior. Previously no prompt went to any Main when a held harness recovered. |
@@ -733,7 +748,7 @@ the delivery guarantees and no other policy.
 | Piece | Need | Serves |
 |---|---|---|
 | Recovery notice reaction | One reaction and its plain-English translation in the base seed composition, elected by default and keyed as R62 v13 requires (org, family, source event, slot). | R11 |
-| Recovery event interface | The reaction's trigger reads the typed values that WI932 r5 section 6 puts on hold row events: `cycleRelease`, and the hold snapshot's state and class (`after.state`, `after.failureClass`), with the existing `eq`, `ne`, `and` and `or` operations. It fires on a release event or an ordinary-turn recovery event. The trigger does not read, parse or match the resolution correlation. This contract adds no field, marker, record or rail-language operation. | R1, R4, R11 |
+| Recovery event interface | The reaction's trigger reads the hold snapshot's typed state (`after.state`) that WI932 r5 section 6 puts on hold row events, with the existing `eq` operation, and fires on every hold-resolved event. The text choice reads the event's typed `cycleRelease`. Neither reads, parses or matches the resolution correlation. This contract adds no field, marker, record or rail-language operation. | R1, R4, R11 |
 | Owner-Main target | For each affected owner, read from the hold's member rows, resolve that owner's Main by the existing owner-Main selection. No Main is a non-delivered outcome, not an error. | R2, R6, R9 |
 | Tracked notice | One additive table keyed (holdId, ownerUserId) with state, attempt number, current wake id, current turn sequence, last outcome and timestamps. The key enforces R2. Empty on upgrade. Its only consumer is the recovery notice reaction. | R2, R3, R5, R6, R10 |
 | Attempt start | Deliver the R4 prompt to the owner Main in the caller's transaction, as the "other" route does with `Gateway.deliver_prompt_in_txn` and a deterministic wake id. | R4, R6 |
@@ -748,9 +763,9 @@ second detector under this contract. They are not to be ported.
 
 Compatibility and deletion. The table is additive. Existing turns, wakes, holds
 and "other" routes keep their meaning. WI932's release action, normal-turn
-resolution, reactions and translation keep their meaning, and neither its release
-nor its normal-turn resolution sends anything; the notice is a separate reaction to
-their hold-resolved events. No notice is backfilled for holds released
+resolution, `other` resolve command, reactions and translation keep their meaning,
+and none of its resolution paths sends anything; the notice is a separate reaction
+to their hold-resolved events. No notice is backfilled for holds released
 or resolved before the feature lands. Deleting the feature removes the recovery
 notice reaction, the settlement and signal hooks, and the schema registration. Historical
 notice and wake rows remain readable.
@@ -808,8 +823,7 @@ not choose it.
 
 The work item's done condition is outside this spec's acceptance: "Done only when
 an installed release has real recovered-outage evidence of one Main wake." That
-evidence is one real recovered hold, by release or by ordinary-turn resolution,
-its notice rows and lifecycle events, and one delivered Main turn carrying the R4
+evidence is one real recovered hold, by any WI932 resolution path, its notice rows and lifecycle events, and one delivered Main turn carrying the R4
 text for that path.
 
 ## Spec homing
@@ -820,7 +834,7 @@ at commits `73aec01d7331e08b148994d6525ff75c2b00e137` and
 `0860144059f1`. Neither revision is on the main line, and neither may land.
 Its coupled authority is WI932 `held-harness-hourly-recovery-r5.md` at the SHA-256
 named above, held outside this repository. A change to WI932's release action,
-normal delivered-turn resolution, eligibility, Terms, hold-resolved event, hold
+normal delivered-turn resolution, `other` resolve command, expiry, eligibility, Terms, hold-resolved event, hold
 snapshot state or class, resolution correlation or `cycleRelease` requires
 re-review of this contract. Recon documents, review
 reports, artifact rows and transcripts are evidence, not canonical custody.
@@ -834,6 +848,7 @@ reports, artifact rows and transcripts are evidence, not canonical custody.
 - **Q2 (RESOLVED by Scope ruling `art_0f65a7ef`): holds resolved by a normal
   turn.** An outage that ends because an ordinary turn on the held harness
   succeeds is a recovery and gets the same single Main notice (R1, R4(b), R11).
+  The Correction extends this to every resolution path.
   This supersedes `att_5172407a`'s acceptance of the earlier no-notice default and
   the scope limit in `att_67b4a3de`. Review F1 stays answered: the ordinary-turn
   text says only that work resumed, and each notice records its own hold and
@@ -855,20 +870,17 @@ reports, artifact rows and transcripts are evidence, not canonical custody.
   constituent route succeeded and `false` on every other path, including opened
   events. Correlations are unchanged. R1, R3, R11 and the plain-English table use
   `cycleRelease` as the only discriminator (Release event in Terms), through the
-  existing `eq` operation. Ordinary-turn recovery is told apart from the `other`
-  resolve command by the typed hold state, class and `cycleRelease` that WI932 r5
-  section 6 already carries (A7), not by the correlation. This contract does not
-  amend WI932.
-- **Q6 (NON-BLOCKING): which classes the ordinary-turn path covers.** Default:
-  every class WI932's normal-turn path resolves, that is every class except
-  `other`, because the Scope ruling keys on "that existing resolved transition,
-  whatever its path". `other` holds are excluded because they end by their own
-  resolve command or expiry and keep their own review routes. A read-only query of
-  the live store on 2026-11-07 found, among holds opened in the prior 30 days,
-  128 non-`other` holds resolved by a normal turn (46 `rate-limit-dead`, 51
-  `adapter_unavailable`, 16 `interrupted-outcome-unknown`, 13 `auth-dead`, 2
-  `task_crash`), so the default wakes Main for every class, not only rate limits.
-  Narrowing to `rate-limit-dead` would be one added clause in the trigger. The PO
-  confirms or narrows this at the spirit judgment.
+  existing `eq` operation. Under the Correction, `cycleRelease` now chooses only
+  the notice text; every hold-resolved event triggers the notice (R11), so no
+  resolution path has to be told apart. This contract does not amend WI932.
+- **Q6 (NON-BLOCKING): expired holds.** Default: an `other` hold that expires gets
+  no notice. Expiry is not a resolution, nothing showed the harness working again,
+  and WI932 emits no hold row event for it (A7). A read-only query of the live
+  store on 2026-11-07 found 4 expired `other` holds among those opened in the prior
+  30 days, against 130 resolved ones. If expiry should also notify, the smallest
+  interface gap is in WI932, not here: WI932 section 6 would need to admit a hold
+  row event when an `other` hold expires, carrying the same snapshot. This
+  contract would then add the `expired` state to its trigger. It does not amend
+  WI932.
 
 No question is BLOCKING.
