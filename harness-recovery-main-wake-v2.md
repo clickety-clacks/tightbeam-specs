@@ -12,8 +12,8 @@ This revision answers changes-requested review `att_92d397fe` of
 `40654018a7ec353c393e2ea8230e3ecdc2aed3a6ecc0b3c99e49de1783960aea`), and
 changes-requested review `att_5284b34e` (report `art_74107a30`) of this file at
 commit `c396aced` (SHA-256
-`b24d4fe1601fe8764f1f28f068bb8724b2b80a85efa2fbf4b2a4184801356b4d`). It changes
-design only. It authorizes no source edit, test run, integration target, release,
+`b24d4fe1601fe8764f1f28f068bb8724b2b80a85efa2fbf4b2a4184801356b4d`). It
+applies product ruling `att_5172407a` on that review. It changes design only. It authorizes no source edit, test run, integration target, release,
 installation or live action.
 
 Normative keywords follow RFC 2119 as clarified by RFC 8174. Requirement
@@ -26,6 +26,7 @@ Basis labels used below:
 - **Review 2** quotes `att_5284b34e` and its report `art_74107a30`.
 - **PO** quotes the WI932 PO intent and topology judgment `art_4bd40c7a` as WI932
   R9 quotes it.
+- **Ruling** quotes product ruling `att_5172407a` on Review 2.
 - **WI932** cites the bound held-harness contract
   `held-harness-hourly-recovery.md`, work item
   `wi_93269dbf-9c94-43f9-a8f6-c6e82dfebf87`, SHA-256
@@ -50,6 +51,9 @@ Sources relied on:
 - The PO policy boundary that WI932 R9 carries: "Policy electing eligible holds,
   timing, suppression, recovery and notification belongs in configurable TOML
   rails."
+- Product ruling `att_5172407a`: "With the default composition, every recovered
+  outage gives each affected owner exactly one delivered Main notice. No one has to
+  configure anything."
 
 The intent this contract serves: when a harness outage ends, the person who owns
 the stalled work should not have to notice it. Their Main is told once, with
@@ -61,7 +65,10 @@ choose which product agents matter.
 When WI932 releases a held harness, each owner whose sessions were held receives
 exactly one due-now prompt at their Main. The prompt counts as sent only when it
 reaches a delivered Main turn. Until then it stays durable and is retried on a
-narrow set of existing signals.
+narrow set of existing signals. The notice is a separate reaction in the base seed
+composition's TOML rails, on by default and triggered by WI932's release. WI932's
+release itself sends nothing. Delivery, settlement, retry and one notice per
+episode are runtime guarantees, not rail duties.
 
 "One wake" means one logical notice per episode, of which at most one attempt
 reaches a delivered Main turn. Failed attempts stay as evidence. An attempt whose
@@ -76,8 +83,14 @@ idempotency mechanism.
 - Recovery notices for holds resolved by any path other than the WI932 release
   action (see Q2).
 - Choosing, enumerating, waking or resuming product agents.
-- A general retry engine, a retry timer or exponential backoff. The retry behavior
-  in R5 and R6 is fixed and serves only recovery notices.
+- A general retry engine, a retry timer or exponential backoff. The tracked notice
+  in the Architecture section serves only the recovery notice reaction; its retry
+  behavior is fixed by R5 and R6 and is not configurable.
+- New rail settings, rail-language features, per-owner settings, or notification
+  options beyond the reaction's trigger, target and fixed R4 text.
+- Any change to WI932's release effect, its reactions or its plain-English
+  translation. An interface WI932 lacks is named in Q5 and routed to WI932's owner,
+  not amended here.
 - Security hardening, forgery, replay, timing or denial-of-service defenses.
 - Changes to harness-health classification, incident opening, fence ownership,
   intent redelivery or the "other" review routes.
@@ -102,7 +115,7 @@ idempotency mechanism.
 - **Recovered outage.** A hold that ended by release. Nothing else is a recovered
   outage for this contract.
 - **Affected owner.** A distinct non-null `sessions.ownerUserId` of a session in the
-  hold's `harness_health_members` rows, read in the release transaction.
+  hold's `harness_health_members` rows as they stand when the hold is released.
 - **Episode.** One (outage generation, affected owner) pair, that is (hold id,
   owner). Its outage is exactly that hold and its failed-route set, never every
   outage that shares the owner and harness. A recovered outage has one episode per
@@ -139,6 +152,13 @@ idempotency mechanism.
 - **Deliberate cancellation.** Cancellation of an attempt's wake with any other
   reason, such as `requester_withdrew` or `superseded`.
 - **Retry signal.** One of the three existing events named in R6.
+- **Hold-resolved event.** The row-reaction event that WI932 section 6 ("Hold row
+  events") admits when a hold resolves.
+- **Recovery notice reaction.** The separate reaction in the base seed
+  composition's TOML rails that carries this contract's notification policy: its
+  trigger, its target and the R4 text (R11). It is not one of WI932's reactions.
+  Its translation is in "Default recovery notice reaction, in plain English".
+
 ## Assumptions
 
 Each can be falsified against source or records.
@@ -165,15 +185,24 @@ Each can be falsified against source or records.
   WI932 R7 the fence is removed in the release transaction, so the owner Main can
   run the notice turn. Where WI932 R7's standing-reason guard keeps the fence, the
   attempt waits behind it like any queued turn.
+- **A6.** R62 v13 keys each reaction by (org, family, source event, slot), as
+  WI932 section 8 states, so a reaction acts at most once per source event. Today's
+  row-commit rule notices are scheduled inside the committing transaction
+  (`wakes.ex`, the rule-notice scheduling path). The R62 v13 artifact
+  `art_f574333c` has no stored content, so this contract relies on WI932 section 8
+  for R62's terms. If R62 v13 can neither run the reaction in the release
+  transaction nor durably carry its source event across a restart, R3 needs another
+  route and this contract needs re-review.
+
 ## Invariants
 
 Each requirement gives its basis, then an acceptance example.
 
 ### R1. Only a WI932 release starts episodes
 
-When WI932 releases a hold, the system SHALL create the notices for that hold in
-the release transaction. Each notice SHALL record the hold id and the failed-route
-set that the release covered.
+When WI932 releases a hold, the system SHALL create the notices for that hold
+through the recovery notice reaction (R3, R11). Each notice SHALL record the hold id
+and the failed-route set that the release covered.
 The system SHALL NOT create a notice for a hold resolved or ended any other way.
 This includes normal delivered-turn resolution, `RateLimitReset` fence release,
 repair resume, adapter close, expiry and "other" review.
@@ -189,8 +218,8 @@ repair resume, adapter close, expiry and "other" review.
 - *Acceptance.*
   - (a) A `rate-limit-dead` hold on Codex has constituents luna, sol and astra. A
     cycle in which only astra succeeds releases nothing and creates no notice. The
-    next cycle, in which all three succeed, releases the hold and creates its
-    notices in the same transaction.
+    next cycle, in which all three succeed, releases the hold, and its notices are
+    created under R3.
   - (b) A normal delivered turn resolves a `rate-limit-dead` hold under
     `resolve_normal_turn_in_txn`. No notice exists for that hold. This is the path
     real Claude hold `hhi_0d41a323-d344-4568-a552-cecb99413115` took at
@@ -209,30 +238,47 @@ repair resume, adapter close, expiry and "other" review.
 When a release creates notices, the system SHALL create exactly one notice for
 each affected owner of that hold, and none for any other owner.
 The system SHALL enforce at most one notice per (hold id, owner) durably.
+This is a runtime guarantee and SHALL hold whatever the reaction's TOML states.
 If the hold has no affected owner, the system SHALL create no notice.
 
 - *Basis.* Ask: "exactly one due-now Main wake for that episode"; "a durable
   owner+harness outage". Brief: "match the same owner and harness outage".
+  Ruling: "One notice per episode (R2/R3) remains a runtime guarantee, not a rail
+  duty."
 - *Acceptance.*
   - (a) A hold's members are five sessions of owner U and two of owner V. Release
     creates one notice for (hold, U) and one for (hold, V).
   - (b) A replayed release of the same hold, or a second call of the release
     action in another transaction, finds the hold already resolved under WI932 R7,
     and the uniqueness rule refuses any second (hold, U) notice.
+  - (c) The reaction is delivered its source event twice, for example after a
+    restart. U still has exactly one (hold, U) notice and one first attempt.
 
-### R3. Release and notice commit together
+### R3. A release neither loses nor doubles its notices
 
-The system SHALL commit the hold release, every notice it creates, and each
-notice's first attempt or `awaiting_main` state in one transaction.
-If any notice write fails, the release SHALL roll back and the hold SHALL stay open
-for WI932's next cycle.
+When a release commits under a composition that elects the recovery notice
+reaction, the system SHALL create each affected owner's notice exactly once, even
+if the gateway stops at any point between the release and the notices' creation.
+If the release does not commit, the system SHALL create no notice.
+The system SHALL write each notice and its first attempt or `awaiting_main` state
+in one transaction.
+The implementer MAY create the notices in the release transaction, or afterwards
+from the release's durably admitted hold-resolved event. Where the notices are
+written in the release transaction and a notice write fails, the release SHALL roll
+back and the hold SHALL stay open for WI932's next cycle.
 
 - *Basis.* Ask: "recovery produces exactly one due-now Main wake". Review F2: a
-  notice must not be lost between the recovery and the wake. WI932 R7 puts release
-  in one transaction.
-- *Acceptance.* A fault injected after the notice insert and before commit leaves
-  the hold open, its fence present, and no notice or attempt wake. The next
-  successful cycle produces the release and one notice per affected owner.
+  notice must not be lost between the recovery and the wake. Ruling: "The author
+  decides how the reaction and the notice row commit relative to release, within
+  that invariant."
+- *Acceptance.*
+  - (a) A fault injected before the release commits leaves the hold open, its fence
+    present, and no notice or attempt wake. The next successful cycle produces the
+    release and one notice per affected owner.
+  - (b) The gateway stops at the latest point the implementation allows between the
+    release commit and notice creation. After start, each affected owner has
+    exactly one notice and one first attempt or `awaiting_main` state. A second
+    restart creates no further notice or attempt.
 
 ### R4. The attempt is one due-now Main prompt with fixed content
 
@@ -251,11 +297,14 @@ hold:
 
 The system MAY append neutral correlation facts such as the notice id and attempt
 number. It SHALL NOT shorten, move or replace any sentence above.
+The text is the reaction's fixed text. The class, due time and origin are runtime
+behavior, not reaction options.
 
 - *Basis.* Ask: "one due-now Main wake"; "Main uses installed Kung Fu to inspect
   and resume only work stalled on that harness; Tightbeam neither selects nor
   broadcasts to product agents." OAuth: the prompt text is a contract and a
-  reference to standing guidance does not satisfy it.
+  reference to standing guidance does not satisfy it. Ruling: "no notification
+  options beyond trigger, target and fixed R4 text".
 - *Acceptance.* For a released Codex hold with seven members of owner U, U's owner
   Main receives one turn whose prompt contains every sentence above with the hold's
   values. No other session receives a prompt caused by the release.
@@ -395,18 +444,82 @@ lifecycle text.
   all naming the same hold and owner. Deleting those lifecycle rows in a test copy
   does not change the notice's next action.
 
+### R11. The notice policy is a default reaction in the base seed
+
+The base seed composition SHALL contain the recovery notice reaction, elected by
+default, so that the default composition gives R1 to R10 behavior with no setup.
+The reaction SHALL state only:
+
+- its trigger: a hold-resolved event whose resolution is a WI932 release;
+- its target: the owner Main of each affected owner;
+- the R4 text.
+
+The reaction SHALL add no rail setting, rail-language feature, per-owner setting or
+notification option beyond those three, apart from the identity and translation
+every R62 reaction carries.
+Notice uniqueness, delivery tracking, settlement, retry, class and timing SHALL be
+runtime behavior and SHALL NOT be configurable from TOML.
+The runtime SHALL contain no compiled copy of the reaction. With the reaction
+removed from a composition, a release SHALL proceed under WI932 and SHALL create no
+notice.
+WI932's release effect SHALL send nothing, and WI932's reactions and translation
+SHALL stay unchanged, including "No message goes to any agent or person."
+The reaction SHALL have a linked plain-English translation stating trigger;
+conditions; effect and recipient; timing, repetition and stop; owning bundle; and
+intentional change.
+
+- *Basis.* Ruling: "The Main recovery notice belongs in the existing TOML rail as a
+  reaction in the base seed composition, on by default and triggered by WI932's
+  release of a held harness, over generic runtime mechanics: durable notice and
+  attempt state, settlement and the R6 retry signals." Ruling: "WI932's own release
+  effect keeps its meaning and sends nothing; the notice is a separate reaction to
+  it." Ruling: "Rail placement adds no new configurability: no per-owner settings,
+  no new rail-language features and no notification options beyond trigger, target
+  and fixed R4 text." PO: "Policy electing eligible holds, timing, suppression,
+  recovery and notification belongs in configurable TOML rails." WI932 section 8:
+  base seed reactions follow R62's no-compiled-fallback rule and carry an English
+  translation. Ask: "do not build a second detector or general retry engine", so
+  retry is fixed, not a policy knob.
+- *Acceptance.*
+  - (a) A new org with the default composition and no configuration has a WI932
+    release of a hold whose members belong to owners U and V. U's Main and V's Main
+    each get exactly one delivered notice.
+  - (b) With the reaction removed from the composition, a WI932 release resolves
+    the hold, removes the fence and redelivers intents exactly as WI932 R7 says, and
+    no notice, attempt or wake from this contract exists.
+  - (c) A hold resolved by a normal delivered turn emits a hold-resolved event whose
+    resolution is not a WI932 release. The reaction does not fire and no notice
+    exists.
+  - (d) WI932's section 5 translation reads the same before and after this feature
+    lands, and WI932's release reaction writes no wake or prompt.
+  - (e) The reaction's TOML holds its trigger, its target and the R4 text, and no
+    other field beyond the identity and translation every R62 reaction carries.
+
+## Default recovery notice reaction, in plain English
+
+| Field | Value |
+|---|---|
+| Trigger | A harness-health hold resolves. |
+| Conditions | The hold was resolved by a WI932 release, that is a check cycle in which every constituent route succeeded. |
+| Effect / recipient | For each owner whose sessions were held, one prompt to that owner's Main with the fixed recovery text. No other agent or person receives anything. |
+| Timing / repetition / stop | Due at once on release. If it does not reach a delivered Main turn, it waits and is tried again when that owner's Main becomes active, when that Main completes another turn, or when the gateway starts. Stops when delivered or deliberately canceled. No timer. These are runtime behavior, not reaction settings. |
+| Owning bundle | Substrate base seed, on by default. |
+| Intentional change | New behavior. Previously no prompt went to any Main when a held harness was released. |
+
 ## Architecture
 
 This section names the existing seams. The exact shape is the implementer's
 choice within the invariants.
 
-Where the notification policy lives is open (Q1, BLOCKING). Only the notice
-creation row depends on that answer; the other rows hold under either answer.
+Policy is the reaction's trigger, target and text; the runtime pieces below carry
+the delivery guarantees and no other policy.
 
 | Piece | Need | Serves |
 |---|---|---|
-| Notice creation | In the release transaction, after WI932 resolves the hold: read affected owners, insert notices, and start each first attempt or set `awaiting_main`. Its placement, and any policy or WI932 change it needs, waits on Q1. | R1, R3 |
-| Notice table | One additive table keyed (holdId, ownerUserId) with state, attempt number, current wake id, current turn sequence, last outcome and timestamps. Empty on upgrade. | R2, R5, R6, R10 |
+| Recovery notice reaction | One reaction and its plain-English translation in the base seed composition, elected by default and keyed as R62 v13 requires (org, family, source event, slot). | R11 |
+| Release event interface | The reaction's trigger must tell a WI932 release from other resolutions. WI932 section 6 gives the hold-resolved event the hold's state, class, constituent routes and fence presence, but not the resolution's check-cycle correlation that WI932 R7 records. This is the missing WI932 interface (Q5). | R1, R11 |
+| Owner-Main target | For each affected owner, read from the hold's member rows, resolve that owner's Main by the existing owner-Main selection. No Main is a non-delivered outcome, not an error. | R2, R6, R9 |
+| Tracked notice | One additive table keyed (holdId, ownerUserId) with state, attempt number, current wake id, current turn sequence, last outcome and timestamps. The key enforces R2. Empty on upgrade. Its only consumer is the recovery notice reaction. | R2, R3, R5, R6, R10 |
 | Attempt start | Deliver the R4 prompt to the owner Main in the caller's transaction, as the "other" route does with `Gateway.deliver_prompt_in_txn` and a deterministic wake id. | R4, R6 |
 | Turn settlement | Wherever a terminal transition already reaches `HarnessHealth.settle_other_route_in_txn`, also settle a notice attempt in the same transaction. That covers the `SessionLane` terminal transitions, the post-delivery `reconcile_delivered_turn`, and boot recovery in `Ledger.recover_running`. Find the attempt turn through the attempt wake's `deliveredTurnSeq`, which batching sets on each source wake. | R5, R6 |
 | Wake cancellation | When an attempt's wake is canceled, whether by `Wakes.undeliverable_delivery_in_txn`, retirement or a requester, classify the reason as a non-delivered outcome or a deliberate cancellation in the same transaction. | R6, R7 |
@@ -418,10 +531,11 @@ trigger, and the classifier `HarnessRecovery.unavailable?/1` in source commits
 second detector under this contract. They are not to be ported.
 
 Compatibility and deletion. The table is additive. Existing turns, wakes, holds
-and "other" routes keep their meaning. Whether WI932's release action or rail
-translation changes depends on Q1. No notice is backfilled for holds released
-or resolved before the feature lands. Deleting the feature removes notice
-creation, the settlement and signal hooks, and the schema registration. Historical
+and "other" routes keep their meaning. WI932's release action, reactions and translation
+keep their meaning, and its release sends nothing; the notice is a separate
+reaction to the release's hold-resolved event. No notice is backfilled for holds released
+or resolved before the feature lands. Deleting the feature removes the recovery
+notice reaction, the settlement and signal hooks, and the schema registration. Historical
 notice and wake rows remain readable.
 
 ## Acceptance
@@ -455,7 +569,7 @@ them.
 
 ### A2. Behavioral cases
 
-Each R1–R10 acceptance example SHALL be a behavioral test through the
+Each R1–R11 acceptance example SHALL be a behavioral test through the
 repository's canonical wrapper on an isolated test host. The WI932 check outcomes
 that drive release MAY be synthetic, as WI932 section 12 allows for release logic.
 The tests SHALL use the real specimens in A1 to open holds. The restart cases in
@@ -477,35 +591,21 @@ at commits `73aec01d7331e08b148994d6525ff75c2b00e137` and
 `0860144059f1`. Neither revision is on the main line, and neither may land.
 Its coupled authority is WI932 `held-harness-hourly-recovery.md` at the SHA-256
 named above, held outside this repository. A change to WI932's release action,
-eligibility or Terms requires re-review of this contract. Recon documents, review
+eligibility, Terms or hold-resolved event requires re-review of this contract. Recon documents, review
 reports, artifact rows and transcripts are evidence, not canonical custody.
 
 ## Open Questions
 
-- **Q1 (BLOCKING): where the notification policy lives.** The WI932 PO judgment
-  `art_4bd40c7a`, as WI932 R9 quotes it, says: "Policy electing eligible holds,
-  timing, suppression, recovery and notification belongs in configurable TOML
-  rails." WI932's default rail says of its own effect: "No message goes to any
-  agent or person." Review 2 B2 found that a compiled notice effect in the release
-  action conflicts with that boundary unless a precise PO ruling accepts it. The
-  delivery owner is routing this question to the product owner; this draft does
-  not choose. The two shapes considered:
-  - a compiled substrate effect in WI932's release action, which needs a PO ruling
-    accepting the exception and an amendment to WI932's release effect and
-    translation;
-  - a separately elected TOML rail reacting to the hold's resolution, which needs
-    the hold-resolved event to carry the resolution correlation and affected
-    owners, an owner-Main recipient, a plain-English translation, and no compiled
-    fallback, while the R5 and R6 retry behavior stays a fixed runtime mechanism.
-
-  Blocked until the ruling: the notice creation seam, any rail or WI932 change, and
-  how R1 and R3 apply when no policy is elected. Not blocked: R2 and R4 to R10,
-  including the restart and settlement behavior, hold under either answer.
+- **Q1 (RESOLVED by Ruling `att_5172407a`): where the notification policy lives.**
+  It is a separate reaction in the base seed composition's TOML rails, on by
+  default and triggered by WI932's release (R11). WI932's release sends nothing.
+  One notice per episode is a runtime guarantee (R2, R3).
 - **Q2 (NON-BLOCKING): holds resolved by a normal turn.** Today a single delivered
   turn on any model resolves a `rate-limit-dead` hold before WI932's cycle runs
   (R1 acceptance (b)). Those owners get no notice, though their preserved intents
   are redelivered. Default: no notice, because counting that path re-opens Review
-  F1 and WI932 section 7 keeps it unchanged.
+  F1 and WI932 section 7 keeps it unchanged. Ruling `att_5172407a` accepts this as
+  a disclosed limit, to be confirmed at the PO's spirit judgment of this spec.
 - **Q3 (NON-BLOCKING): an owner with no Main for a long time.** Default: the notice
   waits in `awaiting_main` with its evidence, and nothing is escalated. The
   harness-health "other" path files a `user-alerted` fact when no Main exists; this
@@ -514,4 +614,14 @@ reports, artifact rows and transcripts are evidence, not canonical custody.
   every affected owner is notified, because the fence held all their sessions on
   that harness and host, and Main judges what stalled.
 
-Q1 is the only BLOCKING question.
+- **Q5 (BLOCKING, owner: WI932's product owner through delivery ownership):
+  the hold-resolved event must say how the hold was resolved.** R11's trigger fires
+  only on a WI932 release. WI932 R7 resolves the incident with a correlation naming
+  the check cycle, but WI932 section 6 does not list that correlation, or any
+  resolution path, among the hold-resolved event's facts. The needed interface:
+  the hold-resolved event exposes the resolution's correlation, so a reaction can
+  tell a WI932 release from every other resolution. This contract does not amend
+  WI932. Until WI932's owner rules, R1, R11 and their acceptance examples cannot be
+  implemented as written. R2 to R10 and the tracked notice are separable.
+
+Q5 is the only BLOCKING question.
