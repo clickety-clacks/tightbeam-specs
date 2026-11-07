@@ -13,7 +13,11 @@ This revision answers changes-requested review `att_92d397fe` of
 changes-requested review `att_5284b34e` (report `art_74107a30`) of this file at
 commit `c396aced` (SHA-256
 `b24d4fe1601fe8764f1f28f068bb8724b2b80a85efa2fbf4b2a4184801356b4d`). It
-applies product ruling `att_5172407a` on that review. It changes design only. It authorizes no source edit, test run, integration target, release,
+applies product ruling `att_5172407a` on that review, WI932 ruling
+`att_a0e28188`, and changes-requested review `att_dcadcd9c` (report
+`art_537517fa`) of this file at commit `63c8bedd` (SHA-256
+`e291ff9842ce9e37d3cf134319af069bde8d513aa0d2db46d1f7828c03b5301c`). It changes
+design only. It authorizes no source edit, test run, integration target, release,
 installation or live action.
 
 Normative keywords follow RFC 2119 as clarified by RFC 8174. Requirement
@@ -27,6 +31,11 @@ Basis labels used below:
 - **PO** quotes the WI932 PO intent and topology judgment `art_4bd40c7a` as WI932
   R9 quotes it.
 - **Ruling** quotes product ruling `att_5172407a` on Review 2.
+- **Review 3** quotes `att_dcadcd9c` and its report `art_537517fa`.
+- **WI932 ruling** quotes WI932 product ruling `att_a0e28188`.
+- **R62** cites the row-reaction contract R62 v13, `art_f574333c`, SHA-256
+  `d0fdf4c303db2f973a9050d0ba696f7c387e02986e1a900821b18df699b1d19d`, read from
+  its registered archive copy.
 - **WI932** cites the bound held-harness contract
   `held-harness-hourly-recovery.md`, work item
   `wi_93269dbf-9c94-43f9-a8f6-c6e82dfebf87`, SHA-256
@@ -185,14 +194,17 @@ Each can be falsified against source or records.
   WI932 R7 the fence is removed in the release transaction, so the owner Main can
   run the notice turn. Where WI932 R7's standing-reason guard keeps the fence, the
   attempt waits behind it like any queued turn.
-- **A6.** R62 v13 keys each reaction by (org, family, source event, slot), as
-  WI932 section 8 states, so a reaction acts at most once per source event. Today's
-  row-commit rule notices are scheduled inside the committing transaction
-  (`wakes.ex`, the rule-notice scheduling path). The R62 v13 artifact
-  `art_f574333c` has no stored content, so this contract relies on WI932 section 8
-  for R62's terms. If R62 v13 can neither run the reaction in the release
-  transaction nor durably carry its source event across a restart, R3 needs another
-  route and this contract needs re-review.
+- **A6.** R62 v13 supports both R3 shapes. R62 Terms: "Source transition and
+  action admission MUST be atomic when they share a transaction. Otherwise a
+  durable event cursor and pending evaluation record MUST permit retry without
+  losing or duplicating an effect." It keys each effect as "`(org, family_id,
+  source_event_id, effect_slot)`, independent of rule text and recipient", and a
+  source event carries "committed before/after facts" with "typed relationships"
+  supplied by the engine. Today's row-commit rule notices are scheduled inside the
+  committing transaction (`wakes.ex`, the rule-notice scheduling path), but that
+  path records some notice errors as lifecycle evidence instead of failing, so it
+  does not by itself meet R3. An implementation meets R3 only through R62's atomic
+  or durable-admission contract.
 
 ## Invariants
 
@@ -278,7 +290,9 @@ back and the hold SHALL stay open for WI932's next cycle.
   - (b) The gateway stops at the latest point the implementation allows between the
     release commit and notice creation. After start, each affected owner has
     exactly one notice and one first attempt or `awaiting_main` state. A second
-    restart creates no further notice or attempt.
+    restart, with no attempt turn running in between, creates no further notice or
+    attempt. This case tests replay of the source event; an attempt interrupted
+    while running is governed by R5(b) and R6.
 
 ### R4. The attempt is one due-now Main prompt with fixed content
 
@@ -407,7 +421,8 @@ lifecycle event naming the delivered turn and SHALL leave the notice `canceled`.
 ### R8. After an episode ends, later events do nothing; a new hold is a new episode
 
 While a notice is `delivered` or `canceled`, the system SHALL take no further
-action for it.
+delivery or retry action for it. R7's lifecycle event for late delivery of sealed
+text is evidence, not an action.
 When a later hold on the same harness and host is released, the system SHALL treat
 it as new episodes under R1 and R2.
 
@@ -494,6 +509,9 @@ intentional change.
     lands, and WI932's release reaction writes no wake or prompt.
   - (e) The reaction's TOML holds its trigger, its target and the R4 text, and no
     other field beyond the identity and translation every R62 reaction carries.
+  - Cases (a) and (c) SHALL exercise the same event discriminator that Q5 settles,
+    each on its own hold, so that (a)'s event carries that hold's WI932 check-cycle
+    correlation and (c)'s carries its normal-turn resolution.
 
 ## Default recovery notice reaction, in plain English
 
@@ -614,21 +632,30 @@ reports, artifact rows and transcripts are evidence, not canonical custody.
   every affected owner is notified, because the fence held all their sessions on
   that harness and host, and Main judges what stalled.
 
-- **Q5 (BLOCKING, pending WI932 contract dependency): the hold-resolved event
-  must say how the hold was resolved.** R11's trigger fires only on a WI932
-  release. The bound WI932 revision named above records the resolution's
-  check-cycle correlation (WI932 R7), but its section 6 does not list that
-  correlation among the hold-resolved event's facts. WI932's product owner ruled on
-  this in `att_a0e28188`: "the bound WI932 contract (85a1e07c...5b7d0) already
-  records the fact ... It does not expose that fact"; "Authorized minimal
-  amendment, WI932 r3: section 6 Hold row events adds that a resolution event
-  carries the resolution correlation recorded by the resolving path"; "Bind WI3bb2
-  against the rebound WI932 revision, not the current one." WI932 r3 is authorized
-  but does not yet exist: it still needs its amendment, independent spec review and
-  rebinding to `wi_93269dbf-9c94-43f9-a8f6-c6e82dfebf87`. This contract does not
-  amend WI932, and SHALL NOT be bound against the WI932 revision named above. Q5
-  closes when WI932 r3 is rebound and this contract's WI932 citation names r3's
-  hash. Until then, R1, R11 and their acceptance examples cannot be implemented as
-  written. R2 to R10 and the tracked notice are separable.
+- **Q5 (BLOCKING, pending WI932 contract dependency): the reaction needs a
+  supported way to tell a WI932 release from other resolutions.** R11's trigger
+  fires only on a WI932 release of that hold. The bound WI932 revision named above
+  stores the resolution's check-cycle correlation (WI932 R7), but its section 6
+  does not promise that correlation, or a supported relationship to it, to a
+  reaction on the hold-resolved event. A resolved hold with the same routes and
+  fence state can therefore be either a qualifying release or an excluded
+  resolution. Review 3: the gap is "a **missing explicit consumer contract**, not
+  that the correlation data is absent". WI932's product owner ruled in
+  `att_a0e28188`: "Authorized minimal amendment, WI932 r3: section 6 Hold row
+  events adds that a resolution event carries the resolution correlation recorded
+  by the resolving path"; "Bind WI3bb2 against the rebound WI932 revision, not the
+  current one." WI932 r3 is authorized but does not yet exist: it still needs its
+  amendment, independent spec review and rebinding to
+  `wi_93269dbf-9c94-43f9-a8f6-c6e82dfebf87`. This contract does not amend WI932,
+  and SHALL NOT be bound against the WI932 revision named above. Q5 closes when
+  WI932 r3 is rebound and this contract names r3's hash and the exact interface
+  R1 and R11 rely on.
+
+  Separability. The local contracts of R2 (durable uniqueness), R4 (prompt) and
+  R5 to R10 (notice lifecycle from an admitted notice) do not depend on Q5. R3's
+  end-to-end guarantee and acceptance, R1 and R11 and their acceptance, R2's
+  release-driven examples and R8(b) do depend on it. Separability authorizes no
+  code: implementation still waits for a clean exact review and the PO's spirit
+  judgment.
 
 Q5 is the only BLOCKING question.
