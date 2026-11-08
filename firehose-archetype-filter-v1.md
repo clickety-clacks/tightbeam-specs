@@ -35,7 +35,7 @@ by RFC 8174, and EARS sentence forms.
 Source: the PO outcome on the work item and its topology plan (plan artifact
 SHA-256 b6779f6975e079377e860982507644f840f5a9d567d1184df4a153693e2092c6).
 
-- Mike asked whether Firehose is one stream of every change that filters only
+- The operator asked whether Firehose is one stream of every change that filters only
   narrow. His examples were "only show me tool calls from agent x" and
   "messages and tool calls from PO agents". Asked whether the Gateway should
   add a role filter, he answered "Yes".
@@ -60,7 +60,7 @@ bindings. Reason, checked against the source and the live org on 2026-10-28:
 - A role (`roles` row: `name`, `boundSessionKey`, `ownerUserId`) names one
   bound session. "Every product-owner session" is a category, and a role is
   not one. An exact role name selects one session, which the `sessionKey`
-  filter already does (Mike's "agent x" case).
+  filter already does (the operator's "agent x" case).
 - Role names have no category field. Prefixes such as `product-owner:` are a
   naming convention only (`Tightbeam.Roles` name pattern). In the live org a
   product-owner-archetype session holds no role at all, and a
@@ -303,7 +303,7 @@ Acceptance: documentation check only; the M4 recipe gains this sentence.
 
 - A1. Every notice that concerns a session's messages, tool calls, turns,
   wakes, or session state carries that session in `refs.sessionKey`. If a
-  class Mike's example needs (`message.created`, `tool_call.started`,
+  class the operator's example needs (`message.created`, `tool_call.started`,
   `tool_call.ended`) lacks it, AF2 does not cover it.
 - A2. A session's row is committed before any notice whose subject session it
   is reaches the matcher (D2: commit, then hand-off). If not, a
@@ -345,10 +345,10 @@ no subscribe filter or sessions query parameter and needs no change.
 
 ## Open questions
 
-- Q-A (NON-BLOCKING, PO intent confirmation). Mike's wording was "role
+- Q-A (NON-BLOCKING, PO intent confirmation). The operator's wording was "role
   filter" and "PO agents". This contract reads that as the session's
   archetype, for the reasons in "Decision". Matching role names would select
   single bound sessions, not categories, and in the live org would miss a
   product-owner session that holds no role. The PO is asked to confirm that
-  archetype is what Mike meant. If the PO instead wants role-name matching,
+  archetype is what the operator meant. If the PO instead wants role-name matching,
   this contract is replaced, not amended.
