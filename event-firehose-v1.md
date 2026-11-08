@@ -57,6 +57,13 @@ rules that read them. The exact behavior contract is
 `tool-call-and-session-transition-records-v1.md`; its TC, TR, and FH labels
 are cited here as defined there.
 
+Archetype filter amendment, 2026-10-28: PROPOSED. Add the optional
+`archetype` subscription filter, which matches notices about every session
+of one archetype, including sessions spawned after the subscription began.
+The exact behavior contract is `firehose-archetype-filter-v1.md`; its AF
+labels are cited here as defined there. It adds no class, ref, envelope,
+payload field, visibility grant, or source-invalidation mapping.
+
 Revision history: r3.1 multiplexed subscriptions; r3 freshness-not-truth +
 retention; r2.1 client workflows; r2 the nine r1 review comments; r1 the
 firehose rescope of the archived focused design. Their carried-forward
@@ -491,7 +498,9 @@ either filter does not match an R8b notice. Visibility still runs first, so a
 hidden source never reaches this matcher. A composed-view client subscribes
 to the R9 class prefixes and adds only ref filters for which these rules define
 a value; the matcher derives no ref or filter value from an owner, mutation
-actor, authenticated principal, or other row.
+actor, authenticated principal, or other row, except the subject session's
+archetype for the `archetype` filter under AF2 and I3 of
+`firehose-archetype-filter-v1.md`. No other derived match is added.
 
 R9. Composed views (toplines, execution map, coordination-share,
 digest-members, org) have no notices of their own. Each composed REST resource
@@ -571,7 +580,8 @@ one connection:
     "sessionKey": null,
     "workItemId": null,
     "origin": null,
-    "principal": null
+    "principal": null,
+    "archetype": null
   }
 }
 ```
@@ -581,7 +591,12 @@ E1. A subscribe frame does not repeat it.
 
 S2. `filters` and every field in it are optional; `classes` match by
 prefix; multiple given fields are conjunctive; no filters means
-everything.
+everything. The fields are `classes`, `sessionKey`, `workItemId`, `origin`,
+`principal`, and `archetype`. The optional `archetype` field accepts a string
+or null; null or absence imposes no archetype constraint. Matching uses the
+subject session's committed archetype at the matching instant, including
+sessions spawned after subscription, as defined by AF1-AF8 in
+`firehose-archetype-filter-v1.md`.
 
 S3. The server answers `subscription_ready` (tagged with the
 subscriptionId). Delivery for that subscription begins at the server's
@@ -664,6 +679,10 @@ before/after); send via wake; watch `wake.scheduled` and the turn/message
 classes update the model; watch `session.*` for picker, engine, identity,
 history-barrier, retirement, and mechanical-status freshness; deep scroll-back
 pages the transcript read.
+A client holding an archetype-filtered subscription rebuilds under M1/M2 by
+listing the archetype's sessions through AF10 and then reading each displayed
+session's existing per-session reads (messages, tool calls); this adds no
+cross-session messages or tool-calls read (AF11).
 Whether every piece stands on today's query surface is the client-buildability recon's question.
 
 A chat client builds conversation state from the canonical REST

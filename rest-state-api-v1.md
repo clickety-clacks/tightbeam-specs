@@ -1889,8 +1889,8 @@ AU6. Visibility filtering always runs before subscription filtering. The
 server first evaluates the R8 row or R8b source through its named AU4
 visibility function for the request's or connection's principal, including
 the AU1a observer principal. Only an allowed row may then be tested against
-`classes`, `sessionKey`, `workItemId`, `origin`, or `principal` subscription
-filters. A subscription filter never broadens visibility and never becomes an
+`classes`, `sessionKey`, `workItemId`, `origin`, `principal`, or `archetype`
+subscription filters. A subscription filter never broadens visibility and never becomes an
 existence oracle. Delete uses the last pre-delete projection for this first
 step, as firehose A2b requires.
 
